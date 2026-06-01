@@ -1930,3 +1930,35 @@ textarea.form-input {
   .calendar-day-cell:has(.tag-event) .cell-events::after { background-color: hsl(217, 91%, 60%); }
   .calendar-day-cell:has(.tag-special) .cell-events::after { background-color: hsl(271, 91%, 65%); }
 }
+
+/* Subtle Admin Link on Navbar */
+.nav-admin-btn {
+  display: flex;
+  align-items: center;
+  margin-right: 1.5rem;
+}
+
+.nav-admin-btn a {
+  color: var(--primary);
+  opacity: 0.15; /* Very subtle and hidden in plain sight */
+  font-size: 1.15rem;
+  transition: var(--transition-smooth);
+  display: inline-block;
+}
+
+.nav-admin-btn a:hover {
+  opacity: 0.9;
+  color: var(--accent);
+  transform: rotate(45deg);
+}
+
+/* Align on mobile headers */
+@media (max-width: 991px) {
+  .nav-admin-btn {
+    margin-right: 0;
+    position: absolute;
+    left: 70px;
+    top: 26px;
+    z-index: 10005;
+  }
+}

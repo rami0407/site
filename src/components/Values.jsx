@@ -1,7 +1,38 @@
-import React from 'react';
-import { valuesData } from '../data/schoolData';
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { valuesData as fallbackValues } from '../data/schoolData';
 
 const Values = () => {
+  const [values, setValues] = useState([]);
+
+  useEffect(() => {
+    const fetchValues = async () => {
+      try {
+        const valuesRef = collection(db, 'values');
+        const querySnapshot = await getDocs(valuesRef);
+        const list = [];
+        querySnapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() });
+        });
+
+        if (list.length === 0) {
+          setValues(fallbackValues);
+        } else {
+          // Sort by id order: gold, silver, bronze or as they were originally structured (bronze, silver, gold)
+          const order = { bronze: 1, silver: 2, gold: 3 };
+          list.sort((a, b) => (order[a.id] || 99) - (order[b.id] || 99));
+          setValues(list);
+        }
+      } catch (error) {
+        console.error("Error fetching values from Firestore:", error);
+        setValues(fallbackValues);
+      }
+    };
+
+    fetchValues();
+  }, []);
+
   return (
     <section className="section values-section">
       <div className="container">
@@ -10,8 +41,8 @@ const Values = () => {
         </h3>
         
         <div className="values-grid">
-          {valuesData.map((val) => (
-            <div className={`value-card ${val.grade}`} key={val.id}>
+          {values.map((val) => (
+            <div className={`value-card ${val.grade || 'value-gold'}`} key={val.id}>
               <div className="value-badge">
                 <i className={`fas ${val.icon}`}></i>
               </div>

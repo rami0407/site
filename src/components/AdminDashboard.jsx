@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from 'firebase/auth';
 import { 
   collection, 
   getDocs, 
+  getDoc,
   addDoc, 
   deleteDoc, 
   doc, 
   query, 
-  orderBy 
+  orderBy,
+  updateDoc,
+  setDoc
 } from 'firebase/firestore';
 import { calendarEvents, newsData } from '../data/schoolData'; // defaults for seeding
 
@@ -31,6 +34,24 @@ const NEWS_ICONS = {
   achievements: 'fa-trophy'
 };
 
+const GALLERY_CATEGORIES = {
+  classroom: 'داخل الصفوف',
+  sports: 'الرياضة والأنشطة اللامنهجية',
+  theater: 'مسرح الدمى',
+  activities: 'حفلات ومعارض'
+};
+
+const LINK_ICONS_LIST = [
+  { value: 'fa-link', label: 'رابط عام' },
+  { value: 'fa-user-check', label: 'بوابة الطلاب/أولياء الأمور' },
+  { value: 'fa-chalkboard', label: 'صف رقمي / كلاسروم' },
+  { value: 'fa-landmark', label: 'وزارة التربية والتعليم' },
+  { value: 'fa-seedling', label: 'منصة تعليمية' },
+  { value: 'fa-graduation-cap', label: 'تعليم أكاديمي' },
+  { value: 'fa-book-reader', label: 'مكتبة رقمية' },
+  { value: 'fa-info-circle', label: 'معلومات عامة' }
+];
+
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -38,14 +59,39 @@ const AdminDashboard = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, messages
+  // Monitor setup mode in URL (e.g. #/admin?setup=true)
+  useEffect(() => {
+    const checkSetupMode = () => {
+      const hashParts = window.location.hash.split('?');
+      const queryStr = hashParts[1] || '';
+      const params = new URLSearchParams(queryStr);
+      setShowSetup(params.get('setup') === 'true' || params.get('developer') === 'true');
+    };
+
+    checkSetupMode();
+    window.addEventListener('hashchange', checkSetupMode);
+    return () => window.removeEventListener('hashchange', checkSetupMode);
+  }, []);
+
+  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, values, principal, links, gallery, messages
 
   // Dashboard Data Lists
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [values, setValues] = useState([]);
+  const [principal, setPrincipal] = useState({ message: '', signature: '', image: '' });
+  const [links, setLinks] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // Editing state trackers
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [editingNewsId, setEditingNewsId] = useState(null);
+  const [editingLinkId, setEditingLinkId] = useState(null);
 
   // New Event Form State
   const [newEvent, setNewEvent] = useState({
@@ -60,6 +106,22 @@ const AdminDashboard = () => {
     title: '',
     category: 'activities',
     content: ''
+  });
+
+  // Links Form State
+  const [newLink, setNewLink] = useState({
+    title: '',
+    url: '',
+    desc: '',
+    icon: 'fa-link'
+  });
+
+  // Gallery Form State
+  const [newPhoto, setNewPhoto] = useState({
+    title: '',
+    desc: '',
+    src: '',
+    category: 'classroom'
   });
 
   // Track auth state
@@ -89,6 +151,34 @@ const AdminDashboard = () => {
       setEvents(JSON.parse(localStorage.getItem('db_events') || JSON.stringify(calendarEvents)));
       setNews(JSON.parse(localStorage.getItem('db_news') || JSON.stringify(newsData)));
       setMessages(JSON.parse(localStorage.getItem('school_contacts') || '[]'));
+      
+      const fallbackValues = [
+        { id: 'bronze', grade: 'value-bronze', icon: 'fa-hand-holding-heart', title: 'العطاء والتعاون', desc: 'نرسخ في طلابنا حب الخير والمساعدة والعمل كفريق واحد لخدمة المجتمع.' },
+        { id: 'silver', grade: 'value-silver', icon: 'fa-user-shield', title: 'الاحترام والمسؤولية', desc: 'نهيئ بيئة مبنية على الاحترام المتبادل وتقدير الآخرين وتحمل المسؤوليات اليومية.' },
+        { id: 'gold', grade: 'value-gold', icon: 'fa-award', title: 'التميز والابتكار', desc: 'نسعى للتميز الأكاديمي، ونشجع التفكير النقدي والإبداع واستكشاف الحلول المبتكرة.' }
+      ];
+      const fallbackPrincipal = {
+        image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&auto=format&fit=crop&q=80',
+        message: 'أهلاً بكم في صرح مدرسة مشيرفة الابتدائية. نحن نؤمن بأن التعليم ليس مجرد حشو للمعلومات، بل هو رحلة استكشاف وبناء شخصية متكاملة لطلابنا. من خلال مبادراتنا المتميزة كـ "امتنان" و "مسرح الدمى" و "مقصف المعرفة"، نعمل جاهدين على بناء مهارات المستقبل، وترسيخ قيم العطاء والمحبة والتقدير. نطمح دوماً لشراكة فاعلة ومثمرة مع أولياء الأمور الكرام لبناء غدٍ أفضل وجيل واعد ومتميز.',
+        signature: 'أ. رامي أبو فنة - مدير المدرسة'
+      };
+      const fallbackLinks = [
+        { title: 'بوابة الطلاب وأولياء الأمور', icon: 'fa-user-check', url: 'https://parent.gov.il', desc: 'لمتابعة تحصيل الطالب، الحضور والغياب، والتقارير الأكاديمية.' },
+        { title: 'منصة كلاسروم التعليمية (Classroom)', icon: 'fa-chalkboard', url: 'https://classroom.google.com', desc: 'الصف الدراسي الرقمي لحل الواجبات والتواصل مع المعلمين.' },
+        { title: 'موقع وزارة التربية والتعليم', icon: 'fa-landmark', url: 'https://edu.gov.il', desc: 'البوابة الرسمية للمناهج والتعليمات والرزنامة الوزارية السنوية.' },
+        { title: 'منصة البيدر التعليمية التفاعلية', icon: 'fa-seedling', url: '#', desc: 'منصة خاصة للطلاب لحل التدريبات وتطوير المهارات اللغوية والرياضية.' }
+      ];
+      const fallbackGallery = [
+        { id: '1', category: 'classroom', title: 'بيئة تعليمية تفاعلية', src: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80', desc: 'طلابنا يشاركون بنشاط في حصة العلوم التفاعلية.' },
+        { id: '2', category: 'sports', title: 'الروح الرياضية في الملعب', src: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=800&auto=format&fit=crop&q=80', desc: 'منافسة شيقة وممتعة خلال فعاليات اليوم الرياضي السنوي.' },
+        { id: '3', category: 'theater', title: 'عرض مسرح الدمى الإبداعي', src: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&auto=format&fit=crop&q=80', desc: 'تجسيد شخصيات خيالية لتعزيز التعبير اللفظي والوقوف أمام الجمهور.' }
+      ];
+
+      setValues(JSON.parse(localStorage.getItem('db_values') || JSON.stringify(fallbackValues)));
+      setPrincipal(JSON.parse(localStorage.getItem('db_principal') || JSON.stringify(fallbackPrincipal)));
+      setLinks(JSON.parse(localStorage.getItem('db_links') || JSON.stringify(fallbackLinks)));
+      setGallery(JSON.parse(localStorage.getItem('db_gallery') || JSON.stringify(fallbackGallery)));
+
       setIsLoadingData(false);
       return;
     }
@@ -104,7 +194,7 @@ const AdminDashboard = () => {
       setEvents(fetchedEvents);
 
       // 2. Load News
-      const qNews = query(collection(db, 'news'), orderBy('date', 'desc'));
+      const qNews = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
       const querySnapshotNews = await getDocs(qNews);
       const fetchedNews = [];
       querySnapshotNews.forEach((doc) => {
@@ -120,6 +210,42 @@ const AdminDashboard = () => {
         fetchedMsgs.push({ id: doc.id, ...doc.data() });
       });
       setMessages(fetchedMsgs);
+
+      // 4. Load Values
+      const qValues = collection(db, 'values');
+      const querySnapshotValues = await getDocs(qValues);
+      const fetchedValues = [];
+      querySnapshotValues.forEach((doc) => {
+        fetchedValues.push({ id: doc.id, ...doc.data() });
+      });
+      const order = { bronze: 1, silver: 2, gold: 3 };
+      fetchedValues.sort((a, b) => (order[a.id] || 99) - (order[b.id] || 99));
+      setValues(fetchedValues);
+
+      // 5. Load Principal message
+      const principalDoc = doc(db, 'principal', 'info');
+      const principalSnap = await getDoc(principalDoc);
+      if (principalSnap.exists()) {
+        setPrincipal(principalSnap.data());
+      }
+
+      // 6. Load Links
+      const qLinks = query(collection(db, 'links'), orderBy('createdAt', 'asc'));
+      const querySnapshotLinks = await getDocs(qLinks);
+      const fetchedLinks = [];
+      querySnapshotLinks.forEach((doc) => {
+        fetchedLinks.push({ id: doc.id, ...doc.data() });
+      });
+      setLinks(fetchedLinks);
+
+      // 7. Load Gallery
+      const qGallery = query(collection(db, 'gallery'), orderBy('createdAt', 'desc'));
+      const querySnapshotGallery = await getDocs(qGallery);
+      const fetchedGallery = [];
+      querySnapshotGallery.forEach((doc) => {
+        fetchedGallery.push({ id: doc.id, ...doc.data() });
+      });
+      setGallery(fetchedGallery);
 
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
@@ -139,10 +265,32 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Login failed: ", error);
       let errorMsg = 'فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور.';
-      if (error.code === 'auth/user-not-found') {
-        errorMsg = 'البريد الإلكتروني غير مسجل.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMsg = 'كلمة المرور غير صحيحة.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        errorMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+      }
+      setLoginError(errorMsg);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+
+    try {
+      await createUserWithEmailAndPassword(auth, loginEmail, loginPassword);
+      alert('تم إنشاء حساب مسؤول جديد بنجاح!');
+    } catch (error) {
+      console.error("Registration failed: ", error);
+      let errorMsg = 'فشل إنشاء الحساب. يرجى التأكد من كتابة البريد الإلكتروني بشكل صحيح (6 رموز على الأقل لكلمة المرور).';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMsg = 'البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMsg = 'صيغة البريد الإلكتروني غير صالحة.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMsg = 'كلمة المرور ضعيفة جداً (يجب أن تكون 6 رموز على الأقل).';
       }
       setLoginError(errorMsg);
     } finally {
@@ -164,7 +312,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Event Handlers
+  // ==================== CALENDAR EVENT ACTIONS ====================
   const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date || !newEvent.desc) {
@@ -172,21 +320,60 @@ const AdminDashboard = () => {
       return;
     }
 
-    if (isOfflineMode) {
-      const updated = [...events, { ...newEvent, id: String(Date.now()) }].sort((a,b) => a.date.localeCompare(b.date));
-      localStorage.setItem('db_events', JSON.stringify(updated));
-      setEvents(updated);
-      setNewEvent({ title: '', date: '', category: 'event', desc: '' });
-      return;
-    }
+    if (editingEventId) {
+      // Edit mode
+      if (isOfflineMode) {
+        const updated = events.map(evt => evt.id === editingEventId ? { ...evt, ...newEvent } : evt).sort((a,b) => a.date.localeCompare(b.date));
+        localStorage.setItem('db_events', JSON.stringify(updated));
+        setEvents(updated);
+        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        setEditingEventId(null);
+        return;
+      }
 
-    try {
-      await addDoc(collection(db, 'events'), newEvent);
-      setNewEvent({ title: '', date: '', category: 'event', desc: '' });
-      loadDashboardData();
-    } catch (error) {
-      alert('حدث خطأ أثناء إضافة الفعالية: ' + error.message);
+      try {
+        await updateDoc(doc(db, 'events', editingEventId), newEvent);
+        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        setEditingEventId(null);
+        loadDashboardData();
+        alert('تم تعديل الفعالية بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء تعديل الفعالية: ' + error.message);
+      }
+    } else {
+      // Add mode
+      if (isOfflineMode) {
+        const updated = [...events, { ...newEvent, id: String(Date.now()) }].sort((a,b) => a.date.localeCompare(b.date));
+        localStorage.setItem('db_events', JSON.stringify(updated));
+        setEvents(updated);
+        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'events'), newEvent);
+        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        loadDashboardData();
+        alert('تم إضافة الفعالية بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء إضافة الفعالية: ' + error.message);
+      }
     }
+  };
+
+  const startEditEvent = (evt) => {
+    setEditingEventId(evt.id);
+    setNewEvent({
+      title: evt.title,
+      date: evt.date,
+      category: evt.category,
+      desc: evt.desc
+    });
+  };
+
+  const cancelEditEvent = () => {
+    setEditingEventId(null);
+    setNewEvent({ title: '', date: '', category: 'event', desc: '' });
   };
 
   const handleDeleteEvent = async (id) => {
@@ -207,7 +394,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // News Handlers
+  // ==================== NEWS ACTIONS ====================
   const handleAddNews = async (e) => {
     e.preventDefault();
     if (!newNews.title || !newNews.content) {
@@ -215,29 +402,74 @@ const AdminDashboard = () => {
       return;
     }
 
-    const postDate = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-    const newsItem = {
-      ...newNews,
-      date: postDate,
-      icon: NEWS_ICONS[newNews.category],
-      createdAt: new Date().toISOString()
-    };
+    if (editingNewsId) {
+      // Edit mode
+      const updatedItem = {
+        title: newNews.title,
+        content: newNews.content,
+        category: newNews.category,
+        icon: NEWS_ICONS[newNews.category]
+      };
 
-    if (isOfflineMode) {
-      const updated = [{ ...newsItem, id: Date.now() }, ...news];
-      localStorage.setItem('db_news', JSON.stringify(updated));
-      setNews(updated);
-      setNewNews({ title: '', category: 'activities', content: '' });
-      return;
-    }
+      if (isOfflineMode) {
+        const updated = news.map(n => n.id === editingNewsId ? { ...n, ...updatedItem } : n);
+        localStorage.setItem('db_news', JSON.stringify(updated));
+        setNews(updated);
+        setNewNews({ title: '', category: 'activities', content: '' });
+        setEditingNewsId(null);
+        return;
+      }
 
-    try {
-      await addDoc(collection(db, 'news'), newsItem);
-      setNewNews({ title: '', category: 'activities', content: '' });
-      loadDashboardData();
-    } catch (error) {
-      alert('حدث خطأ أثناء إضافة الخبر: ' + error.message);
+      try {
+        await updateDoc(doc(db, 'news', editingNewsId), updatedItem);
+        setNewNews({ title: '', category: 'activities', content: '' });
+        setEditingNewsId(null);
+        loadDashboardData();
+        alert('تم تعديل الخبر بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء تعديل الخبر: ' + error.message);
+      }
+    } else {
+      // Add mode
+      const postDate = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+      const newsItem = {
+        ...newNews,
+        date: postDate,
+        icon: NEWS_ICONS[newNews.category],
+        createdAt: new Date().toISOString()
+      };
+
+      if (isOfflineMode) {
+        const updated = [{ ...newsItem, id: String(Date.now()) }, ...news];
+        localStorage.setItem('db_news', JSON.stringify(updated));
+        setNews(updated);
+        setNewNews({ title: '', category: 'activities', content: '' });
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'news'), newsItem);
+        setNewNews({ title: '', category: 'activities', content: '' });
+        loadDashboardData();
+        alert('تم نشر الخبر بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء إضافة الخبر: ' + error.message);
+      }
     }
+  };
+
+  const startEditNews = (item) => {
+    setEditingNewsId(item.id);
+    setNewNews({
+      title: item.title,
+      category: item.category,
+      content: item.content
+    });
+  };
+
+  const cancelEditNews = () => {
+    setEditingNewsId(null);
+    setNewNews({ title: '', category: 'activities', content: '' });
   };
 
   const handleDeleteNews = async (id) => {
@@ -258,7 +490,193 @@ const AdminDashboard = () => {
     }
   };
 
-  // Message Handlers
+  // ==================== VALUES ACTIONS ====================
+  const handleUpdateValue = async (id, title, desc, icon, grade) => {
+    if (!title || !desc) {
+      alert('يرجى ملء جميع الحقول للقيمة.');
+      return;
+    }
+
+    const valObj = { id, title, desc, icon, grade };
+
+    if (isOfflineMode) {
+      const updated = values.map(v => v.id === id ? valObj : v);
+      localStorage.setItem('db_values', JSON.stringify(updated));
+      setValues(updated);
+      alert('تم تحديث القيمة بنجاح (محلياً)!');
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'values', id), valObj);
+      loadDashboardData();
+      alert('تم تحديث القيمة بنجاح!');
+    } catch (error) {
+      alert('حدث خطأ أثناء تحديث القيمة: ' + error.message);
+    }
+  };
+
+  // ==================== PRINCIPAL MESSAGE ACTIONS ====================
+  const handleUpdatePrincipal = async (e) => {
+    e.preventDefault();
+    if (!principal.message || !principal.signature || !principal.image) {
+      alert('يرجى ملء جميع حقول كلمة المدير.');
+      return;
+    }
+
+    if (isOfflineMode) {
+      localStorage.setItem('db_principal', JSON.stringify(principal));
+      alert('تم تحديث كلمة المدير بنجاح (محلياً)!');
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'principal', 'info'), principal);
+      loadDashboardData();
+      alert('تم تحديث كلمة المدير بنجاح!');
+    } catch (error) {
+      alert('حدث خطأ أثناء تحديث كلمة المدير: ' + error.message);
+    }
+  };
+
+  // ==================== IMPORTANT LINKS ACTIONS ====================
+  const handleAddLink = async (e) => {
+    e.preventDefault();
+    if (!newLink.title || !newLink.url || !newLink.desc) {
+      alert('يرجى ملء جميع حقول الرابط.');
+      return;
+    }
+
+    if (editingLinkId) {
+      // Edit Mode
+      if (isOfflineMode) {
+        const updated = links.map(l => l.id === editingLinkId ? { ...l, ...newLink } : l);
+        localStorage.setItem('db_links', JSON.stringify(updated));
+        setLinks(updated);
+        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+        setEditingLinkId(null);
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, 'links', editingLinkId), newLink);
+        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+        setEditingLinkId(null);
+        loadDashboardData();
+        alert('تم تعديل الرابط بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء تعديل الرابط: ' + error.message);
+      }
+    } else {
+      // Add Mode
+      const linkObj = {
+        ...newLink,
+        createdAt: new Date().toISOString()
+      };
+
+      if (isOfflineMode) {
+        const updated = [...links, { ...linkObj, id: String(Date.now()) }];
+        localStorage.setItem('db_links', JSON.stringify(updated));
+        setLinks(updated);
+        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'links'), linkObj);
+        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+        loadDashboardData();
+        alert('تم إضافة الرابط بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء إضافة الرابط: ' + error.message);
+      }
+    }
+  };
+
+  const startEditLink = (link) => {
+    setEditingLinkId(link.id);
+    setNewLink({
+      title: link.title,
+      url: link.url,
+      desc: link.desc,
+      icon: link.icon || 'fa-link'
+    });
+  };
+
+  const cancelEditLink = () => {
+    setEditingLinkId(null);
+    setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+  };
+
+  const handleDeleteLink = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الرابط؟')) return;
+
+    if (isOfflineMode) {
+      const updated = links.filter(l => l.id !== id);
+      localStorage.setItem('db_links', JSON.stringify(updated));
+      setLinks(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'links', id));
+      loadDashboardData();
+    } catch (error) {
+      alert('حدث خطأ أثناء حذف الرابط: ' + error.message);
+    }
+  };
+
+  // ==================== GALLERY ACTIONS ====================
+  const handleAddPhoto = async (e) => {
+    e.preventDefault();
+    if (!newPhoto.title || !newPhoto.src || !newPhoto.desc) {
+      alert('يرجى ملء جميع حقول الصورة.');
+      return;
+    }
+
+    const photoObj = {
+      ...newPhoto,
+      createdAt: new Date().toISOString()
+    };
+
+    if (isOfflineMode) {
+      const updated = [{ ...photoObj, id: String(Date.now()) }, ...gallery];
+      localStorage.setItem('db_gallery', JSON.stringify(updated));
+      setGallery(updated);
+      setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
+      alert('تمت إضافة الصورة بنجاح (محلياً)!');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'gallery'), photoObj);
+      setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
+      loadDashboardData();
+      alert('تم إضافة الصورة بنجاح!');
+    } catch (error) {
+      alert('حدث خطأ أثناء إضافة الصورة: ' + error.message);
+    }
+  };
+
+  const handleDeletePhoto = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه الصورة؟')) return;
+
+    if (isOfflineMode) {
+      const updated = gallery.filter(p => p.id !== id);
+      localStorage.setItem('db_gallery', JSON.stringify(updated));
+      setGallery(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'gallery', id));
+      loadDashboardData();
+    } catch (error) {
+      alert('حدث خطأ أثناء حذف الصورة: ' + error.message);
+    }
+  };
+
+  // ==================== MESSAGE ACTIONS ====================
   const handleDeleteMessage = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
 
@@ -289,10 +707,12 @@ const AdminDashboard = () => {
               style={{ width: '80px', height: '80px', margin: '0 auto 1rem', borderRadius: '50%', border: '3px solid var(--primary)' }}
             />
             <h2 style={{ color: 'var(--primary-dark)', fontWeight: '900', fontSize: '1.6rem' }}>بوابة الإدارة المدرسية</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>تسجيل الدخول لإدارة بيانات الرزنامة والأخبار والرسائل</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+              {isRegistering ? 'إنشاء حساب مسؤول جديد للتحكم بالبيانات' : 'تسجيل الدخول لإدارة بيانات الرزنامة والأخبار والرسائل'}
+            </p>
           </div>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={isRegistering ? handleRegister : handleLogin}>
             <div style={{ marginBottom: '1.25rem' }}>
               <label htmlFor="email" className="form-label">البريد الإلكتروني الإداري *</label>
               <input 
@@ -327,21 +747,46 @@ const AdminDashboard = () => {
             )}
 
             <button type="submit" className="btn form-submit-btn" disabled={isLoggingIn} style={{ height: '48px' }}>
-              {isLoggingIn ? <><i className="fas fa-spinner fa-spin"></i> جاري التحقق...</> : <><i className="fas fa-sign-in-alt"></i> دخول مسؤول النظام</>}
+              {isLoggingIn ? (
+                <><i className="fas fa-spinner fa-spin"></i> جاري التنفيذ...</>
+              ) : isRegistering ? (
+                <><i className="fas fa-user-plus"></i> إنشاء حساب مسؤول جديد</>
+              ) : (
+                <><i className="fas fa-sign-in-alt"></i> دخول مسؤول النظام</>
+              )}
             </button>
           </form>
 
-          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>أو لاختبار لوحة الإدارة أوفلاين:</span>
-            <button 
-              type="button" 
-              onClick={handleOfflineLogin} 
-              className="btn btn-outline" 
-              style={{ width: '100%', borderColor: 'var(--primary)', color: 'var(--primary)', padding: '0.6rem', fontSize: '0.95rem' }}
-            >
-              <i className="fas fa-laptop"></i>
-              دخول تجريبي (بدون قاعدة بيانات)
-            </button>
+          {showSetup && (
+            <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsRegistering(!isRegistering);
+                  setLoginError('');
+                }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                {isRegistering ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'ليس لديك حساب مسؤول؟ سجل إيميلك هنا'}
+              </button>
+            </div>
+          )}
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
+            {showSetup && (
+              <>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>أو لاختبار لوحة الإدارة أوفلاين:</span>
+                <button 
+                  type="button" 
+                  onClick={handleOfflineLogin} 
+                  className="btn btn-outline" 
+                  style={{ width: '100%', borderColor: 'var(--primary)', color: 'var(--primary)', padding: '0.6rem', fontSize: '0.95rem', marginBottom: '0.5rem' }}
+                >
+                  <i className="fas fa-laptop"></i>
+                  دخول تجريبي (بدون قاعدة بيانات)
+                </button>
+              </>
+            )}
             <a href="#/" style={{ color: 'var(--text-muted)', fontSize: '0.88rem', textDecoration: 'none', fontWeight: 700, marginTop: '0.5rem' }}>
               <i className="fas fa-arrow-right" style={{ marginLeft: '0.5rem' }}></i> العودة للموقع العام
             </a>
@@ -405,6 +850,42 @@ const AdminDashboard = () => {
             </button>
 
             <button 
+              onClick={() => setActiveTab('values')} 
+              className={`filter-chip ${activeTab === 'values' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-gem" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              قيم المدرسة ({values.length})
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('principal')} 
+              className={`filter-chip ${activeTab === 'principal' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-user-tie" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              كلمة مدير المدرسة
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('links')} 
+              className={`filter-chip ${activeTab === 'links' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-link" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              إدارة الروابط ({links.length})
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('gallery')} 
+              className={`filter-chip ${activeTab === 'gallery' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-images" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              معرض الصور ({gallery.length})
+            </button>
+
+            <button 
               onClick={() => setActiveTab('messages')} 
               className={`filter-chip ${activeTab === 'messages' ? 'active' : ''}`}
               style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
@@ -416,7 +897,7 @@ const AdminDashboard = () => {
         </aside>
 
         {/* Content Panel */}
-        <main style={{ flexGrow: 1, padding: '2.5rem', background: '#f3f4f6' }}>
+        <main style={{ flexGrow: 1, padding: '2.5rem', background: '#f3f4f6', minWidth: '320px' }}>
           
           {isLoadingData ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px', flexDirection: 'column', gap: '1rem' }}>
@@ -432,9 +913,11 @@ const AdminDashboard = () => {
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
                     
-                    {/* Add Event Form */}
+                    {/* Add/Edit Event Form */}
                     <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>إضافة فعالية/حدث جديد</h3>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        {editingEventId ? 'تعديل فعالية/حدث' : 'إضافة فعالية/حدث جديد'}
+                      </h3>
                       <form onSubmit={handleAddEvent}>
                         <div className="form-group-row">
                           <div className="form-group">
@@ -484,9 +967,17 @@ const AdminDashboard = () => {
                           ></textarea>
                         </div>
 
-                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
-                          <i className="fas fa-plus-circle"></i> إضافة إلى الرزنامة
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                            <i className={editingEventId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                            {editingEventId ? ' حفظ التغييرات' : ' إضافة إلى الرزنامة'}
+                          </button>
+                          {editingEventId && (
+                            <button type="button" onClick={cancelEditEvent} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء التعديل
+                            </button>
+                          )}
+                        </div>
                       </form>
                     </div>
 
@@ -501,7 +992,7 @@ const AdminDashboard = () => {
                                 <th style={{ padding: '0.75rem' }}>التاريخ</th>
                                 <th style={{ padding: '0.75rem' }}>العنوان</th>
                                 <th style={{ padding: '0.75rem' }}>التصنيف</th>
-                                <th style={{ padding: '0.75rem' }}>العمليات</th>
+                                <th style={{ padding: '0.75rem', width: '100px' }}>العمليات</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -514,7 +1005,14 @@ const AdminDashboard = () => {
                                       {CATEGORIES_CALENDAR[evt.category]}
                                     </span>
                                   </td>
-                                  <td style={{ padding: '0.75rem' }}>
+                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.75rem' }}>
+                                    <button 
+                                      onClick={() => startEditEvent(evt)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1.1rem' }}
+                                      title="تعديل"
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </button>
                                     <button 
                                       onClick={() => handleDeleteEvent(evt.id)} 
                                       style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.1rem' }}
@@ -544,9 +1042,11 @@ const AdminDashboard = () => {
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
                     
-                    {/* Add News Form */}
+                    {/* Add/Edit News Form */}
                     <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--secondary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>نشر خبر أو إعلان جديد</h3>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--secondary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        {editingNewsId ? 'تعديل الخبر المنشور' : 'نشر خبر أو إعلان جديد'}
+                      </h3>
                       <form onSubmit={handleAddNews}>
                         <div className="form-group-row">
                           <div className="form-group">
@@ -586,9 +1086,17 @@ const AdminDashboard = () => {
                           ></textarea>
                         </div>
 
-                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--secondary)' }}>
-                          <i className="fas fa-bullhorn"></i> نشر الخبر الآن
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--secondary)', flexGrow: 1 }}>
+                            <i className={editingNewsId ? "fas fa-save" : "fas fa-bullhorn"}></i>
+                            {editingNewsId ? ' حفظ التغييرات' : ' نشر الخبر الآن'}
+                          </button>
+                          {editingNewsId && (
+                            <button type="button" onClick={cancelEditNews} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء التعديل
+                            </button>
+                          )}
+                        </div>
                       </form>
                     </div>
 
@@ -598,21 +1106,30 @@ const AdminDashboard = () => {
                       {news.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           {news.map((item) => (
-                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', padding: '1rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-light)' }}>
-                              <div>
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', padding: '1.25rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-light)' }}>
+                              <div style={{ flexGrow: 1, paddingLeft: '1rem' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>
                                   {item.date} | {CATEGORIES_NEWS[item.category]}
                                 </span>
                                 <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary-dark)' }}>{item.title}</h4>
                                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.6' }}>{item.content}</p>
                               </div>
-                              <button 
-                                onClick={() => handleDeleteNews(item.id)} 
-                                style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.5rem' }}
-                                title="حذف"
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
+                              <div style={{ display: 'flex', gap: '0.75rem', shrink: 0 }}>
+                                <button 
+                                  onClick={() => startEditNews(item)} 
+                                  style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.5rem' }}
+                                  title="تعديل الخبر"
+                                >
+                                  <i className="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteNews(item.id)} 
+                                  style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.5rem' }}
+                                  title="حذف"
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -625,7 +1142,313 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 3: CONTACT MESSAGES */}
+              {/* TAB 3: VALUES MANAGER */}
+              {activeTab === 'values' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة القيم العليا للمدرسة</h2>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>تعديل القيم الأساسية الثلاثة التي تظهر في الصفحة الرئيسية للموقع (الذهبية، الفضية، البرونزية).</p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                    {values.map((val) => (
+                      <ValueCardForm 
+                        key={val.id} 
+                        valueItem={val} 
+                        onSave={handleUpdateValue}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: PRINCIPAL MESSAGE EDITOR */}
+              {activeTab === 'principal' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>تعديل كلمة مدير المدرسة</h2>
+                  
+                  <div style={{ background: 'var(--bg-white)', padding: '2.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                    <form onSubmit={handleUpdatePrincipal}>
+                      <div className="form-group">
+                        <label className="form-label">صورة مدير المدرسة (رابط URL) *</label>
+                        <input 
+                          type="url" 
+                          className="form-input" 
+                          required
+                          value={principal.image}
+                          onChange={(e) => setPrincipal({ ...principal, image: e.target.value })}
+                          placeholder="https://example.com/photo.jpg"
+                        />
+                        {principal.image && (
+                          <div style={{ marginTop: '1rem' }}>
+                            <img src={principal.image} alt="معاينة الصورة" style={{ width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', border: '2px solid var(--border-light)' }} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">الرسالة الترحيبية والتوجيهية *</label>
+                        <textarea 
+                          className="form-input" 
+                          required
+                          value={principal.message}
+                          onChange={(e) => setPrincipal({ ...principal, message: e.target.value })}
+                          placeholder="اكتب كلمة الإدارة المدرسية الموجهة للطلاب والأهالي..."
+                          style={{ minHeight: '200px', lineHeight: '1.7' }}
+                        ></textarea>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">اسم وتوقيع المدير *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          required
+                          value={principal.signature}
+                          onChange={(e) => setPrincipal({ ...principal, signature: e.target.value })}
+                          placeholder="مثال: أ. رامي أبو فنة - مدير المدرسة"
+                        />
+                      </div>
+
+                      <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
+                        <i className="fas fa-save"></i> حفظ وتحديث كلمة المدير
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: IMPORTANT LINKS MANAGER */}
+              {activeTab === 'links' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة الروابط الهامة والوصول السريع</h2>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
+                    
+                    {/* Add/Edit Link Form */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        {editingLinkId ? 'تعديل الرابط' : 'إضافة رابط سريع جديد'}
+                      </h3>
+                      <form onSubmit={handleAddLink}>
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">عنوان الرابط *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: بوابة الطالب الرقمية"
+                              value={newLink.title}
+                              onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">أيقونة الرابط *</label>
+                            <select 
+                              className="form-input"
+                              value={newLink.icon}
+                              onChange={(e) => setNewLink({ ...newLink, icon: e.target.value })}
+                            >
+                              {LINK_ICONS_LIST.map((ico) => (
+                                <option key={ico.value} value={ico.value}>{ico.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label font-bold">الرابط الإلكتروني (URL) *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            placeholder="https://example.com"
+                            value={newLink.url}
+                            onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">وصف الرابط *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            placeholder="اكتب شرحاً قصيراً لوظيفة الرابط (يظهر أسفل العنوان)..."
+                            value={newLink.desc}
+                            onChange={(e) => setNewLink({ ...newLink, desc: e.target.value })}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                            <i className={editingLinkId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                            {editingLinkId ? ' حفظ التغييرات' : ' إضافة الرابط للموقع'}
+                          </button>
+                          {editingLinkId && (
+                            <button type="button" onClick={cancelEditLink} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء التعديل
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Links Table */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>الروابط الحالية للموقع ({links.length})</h3>
+                      {links.length > 0 ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '2px solid var(--border-light)' }}>
+                                <th style={{ padding: '0.75rem' }}>الأيقونة</th>
+                                <th style={{ padding: '0.75rem' }}>العنوان</th>
+                                <th style={{ padding: '0.75rem' }}>الرابط</th>
+                                <th style={{ padding: '0.75rem' }}>الوصف</th>
+                                <th style={{ padding: '0.75rem', width: '100px' }}>العمليات</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {links.map((link, idx) => (
+                                <tr key={link.id || idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                  <td style={{ padding: '0.75rem', fontSize: '1.2rem', color: 'var(--primary)' }}>
+                                    <i className={`fas ${link.icon || 'fa-link'}`}></i>
+                                  </td>
+                                  <td style={{ padding: '0.75rem', fontWeight: 700 }}>{link.title}</td>
+                                  <td style={{ padding: '0.75rem', direction: 'ltr', fontSize: '0.85rem' }}>
+                                    <a href={link.url} target="_blank" rel="noopener noreferrer">{link.url}</a>
+                                  </td>
+                                  <td style={{ padding: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{link.desc}</td>
+                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.75rem' }}>
+                                    <button 
+                                      onClick={() => startEditLink(link)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1.1rem' }}
+                                      title="تعديل"
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteLink(link.id)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.1rem' }}
+                                      title="حذف"
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>لا توجد روابط مضافة حالياً.</p>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: GALLERY MANAGER */}
+              {activeTab === 'gallery' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة معرض صور الأنشطة والفعاليات</h2>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
+                    
+                    {/* Add Photo Form */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>إضافة صورة جديدة للمعرض</h3>
+                      <form onSubmit={handleAddPhoto}>
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">عنوان الصورة *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: طلابنا في مختبر العلوم"
+                              value={newPhoto.title}
+                              onChange={(e) => setNewPhoto({ ...newPhoto, title: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">تصنيف النشاط *</label>
+                            <select 
+                              className="form-input"
+                              value={newPhoto.category}
+                              onChange={(e) => setNewPhoto({ ...newPhoto, category: e.target.value })}
+                            >
+                              {Object.entries(GALLERY_CATEGORIES).map(([key, label]) => (
+                                <option key={key} value={key}>{label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label font-bold">رابط عنوان الصورة (Image URL) *</label>
+                          <input 
+                            type="url" 
+                            className="form-input" 
+                            required
+                            placeholder="https://images.unsplash.com/photo-..."
+                            value={newPhoto.src}
+                            onChange={(e) => setNewPhoto({ ...newPhoto, src: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">شرح وتفصيل الصورة *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            placeholder="اكتب شرحاً قصيراً يعبر عن النشاط الظاهر بالصورة..."
+                            value={newPhoto.desc}
+                            onChange={(e) => setNewPhoto({ ...newPhoto, desc: e.target.value })}
+                          />
+                        </div>
+
+                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
+                          <i className="fas fa-plus-circle"></i> إضافة الصورة للمعرض العام
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Gallery List Grid */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>الصور المعروضة حالياً ({gallery.length})</h3>
+                      {gallery.length > 0 ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
+                          {gallery.map((photo, idx) => (
+                            <div key={photo.id || idx} style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: '#fafafa', position: 'relative' }}>
+                              <img src={photo.src} alt={photo.title} style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
+                              <button 
+                                onClick={() => handleDeletePhoto(photo.id)}
+                                style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                title="حذف الصورة"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                              <div style={{ padding: '1rem' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>{GALLERY_CATEGORIES[photo.category]}</span>
+                                <h5 style={{ fontWeight: 800, margin: '0.25rem 0', fontSize: '0.95rem' }}>{photo.title}</h5>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photo.desc}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>لا توجد صور في المعرض حالياً.</p>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 7: CONTACT MESSAGES */}
               {activeTab === 'messages' && (
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>صندوق الاستفسارات ورسائل أولياء الأمور</h2>
@@ -710,6 +1533,71 @@ const AdminDashboard = () => {
         </main>
       </div>
 
+    </div>
+  );
+};
+
+// ==================== SUB-COMPONENTS ====================
+
+const ValueCardForm = ({ valueItem, onSave }) => {
+  const [title, setTitle] = useState(valueItem.title);
+  const [desc, setDesc] = useState(valueItem.desc);
+  
+  useEffect(() => {
+    setTitle(valueItem.title);
+    setDesc(valueItem.desc);
+  }, [valueItem]);
+
+  const getLabelColor = () => {
+    if (valueItem.id === 'gold') return '#d4af37';
+    if (valueItem.id === 'silver') return '#aaa9ad';
+    return '#cd7f32';
+  };
+
+  const getLabelText = () => {
+    if (valueItem.id === 'gold') return 'القيمة الذهبية (التميز والابتكار)';
+    if (valueItem.id === 'silver') return 'القيمة الفضية (الاحترام والمسؤولية)';
+    return 'القيمة البرونزية (العطاء والتعاون)';
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(valueItem.id, title, desc, valueItem.icon, valueItem.grade);
+  };
+
+  return (
+    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: `2px solid ${getLabelColor()}`, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '-14px', right: '20px', background: getLabelColor(), color: valueItem.id === 'gold' ? 'black' : 'white', padding: '0.25rem 1rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800 }}>
+        {getLabelText()}
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ marginTop: '1rem' }}>
+        <div className="form-group">
+          <label className="form-label">العنوان *</label>
+          <input 
+            type="text" 
+            className="form-input" 
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">الشرح والوصف *</label>
+          <textarea 
+            className="form-input" 
+            required
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            style={{ minHeight: '100px' }}
+          ></textarea>
+        </div>
+
+        <button type="submit" className="btn" style={{ background: getLabelColor(), color: valueItem.id === 'gold' ? 'black' : 'white', width: '100%', fontWeight: 700 }}>
+          <i className="fas fa-save"></i> تحديث هذه القيمة
+        </button>
+      </form>
     </div>
   );
 };

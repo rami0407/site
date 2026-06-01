@@ -91,6 +91,13 @@ const Navbar = () => {
             </li>
           ))}
         </ul>
+
+        {/* Subtle Admin Link on Far Left */}
+        <div className="nav-admin-btn">
+          <a href="#/admin" title="بوابة الإدارة" aria-label="لوحة التحكم">
+            <i className="fas fa-cog"></i>
+          </a>
+        </div>
       </div>
     </nav>
   );

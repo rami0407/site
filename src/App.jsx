@@ -14,8 +14,15 @@ import ContactForm from './components/ContactForm';
 import FloatingActions from './components/FloatingActions';
 import AdminDashboard from './components/AdminDashboard';
 import { db } from './firebase';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
-import { calendarEvents, newsData } from './data/schoolData';
+import { collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
+import { 
+  calendarEvents, 
+  newsData, 
+  valuesData, 
+  principalMessage, 
+  importantLinks, 
+  galleryPhotos 
+} from './data/schoolData';
 import './App.css';
 
 function App() {
@@ -59,6 +66,55 @@ function App() {
           }
           console.log("News successfully seeded!");
         }
+
+        // 3. Seed Values (bronze, silver, gold)
+        const valuesRef = collection(db, 'values');
+        const valuesSnap = await getDocs(valuesRef);
+        if (valuesSnap.empty) {
+          console.log("Firestore values collection is empty. Seeding defaults...");
+          for (const val of valuesData) {
+            await setDoc(doc(db, 'values', val.id), val);
+          }
+          console.log("Values successfully seeded!");
+        }
+
+        // 4. Seed Principal Word (document "info" in collection "principal")
+        const principalRef = collection(db, 'principal');
+        const principalSnap = await getDocs(principalRef);
+        if (principalSnap.empty) {
+          console.log("Firestore principal collection is empty. Seeding defaults...");
+          await setDoc(doc(db, 'principal', 'info'), principalMessage);
+          console.log("Principal info successfully seeded!");
+        }
+
+        // 5. Seed Important Links
+        const linksRef = collection(db, 'links');
+        const linksSnap = await getDocs(linksRef);
+        if (linksSnap.empty) {
+          console.log("Firestore links collection is empty. Seeding defaults...");
+          for (const link of importantLinks) {
+            await addDoc(linksRef, {
+              ...link,
+              createdAt: new Date().toISOString()
+            });
+          }
+          console.log("Important Links successfully seeded!");
+        }
+
+        // 6. Seed Gallery Photos
+        const galleryRef = collection(db, 'gallery');
+        const gallerySnap = await getDocs(galleryRef);
+        if (gallerySnap.empty) {
+          console.log("Firestore gallery collection is empty. Seeding defaults...");
+          for (const photo of galleryPhotos) {
+            await addDoc(galleryRef, {
+              ...photo,
+              createdAt: new Date().toISOString()
+            });
+          }
+          console.log("Gallery Photos successfully seeded!");
+        }
+
       } catch (error) {
         console.warn("Firebase auto-seeding skipped (normal for offline/unconfigured environments):", error.message);
       }
@@ -67,7 +123,7 @@ function App() {
     seedFirebaseIfEmpty();
   }, []);
 
-  const isAdminView = currentHash === '#/admin' || currentHash === '#admin';
+  const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
 
   if (isAdminView) {
     return (

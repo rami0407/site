@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { galleryPhotos } from '../data/schoolData';
+import { db } from '../firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { galleryPhotos as fallbackPhotos } from '../data/schoolData';
 
 const GALLERY_CATEGORIES = {
   all: 'الكل',
@@ -10,11 +12,37 @@ const GALLERY_CATEGORIES = {
 };
 
 const Gallery = () => {
+  const [photos, setPhotos] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
+  // Load photos from Firestore
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const q = query(collection(db, 'gallery'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const list = [];
+        querySnapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() });
+        });
+
+        if (list.length === 0) {
+          setPhotos(fallbackPhotos);
+        } else {
+          setPhotos(list);
+        }
+      } catch (error) {
+        console.error("Error fetching gallery from Firestore:", error);
+        setPhotos(fallbackPhotos);
+      }
+    };
+
+    fetchPhotos();
+  }, []);
+
   // Filtered list of photos based on category
-  const filteredPhotos = galleryPhotos.filter(
+  const filteredPhotos = photos.filter(
     (photo) => selectedCategory === 'all' || photo.category === selectedCategory
   );
 
@@ -68,7 +96,7 @@ const Gallery = () => {
           {filteredPhotos.map((photo, idx) => (
             <div 
               className="gallery-card" 
-              key={photo.id}
+              key={photo.id || idx}
               onClick={() => setLightboxIndex(idx)}
             >
               <img src={photo.src} alt={photo.title} loading="lazy" />
@@ -81,7 +109,7 @@ const Gallery = () => {
         </div>
 
         {/* Fullscreen Lightbox Modal */}
-        {lightboxIndex !== null && (
+        {lightboxIndex !== null && filteredPhotos[lightboxIndex] && (
           <div className="lightbox-backdrop" onClick={() => setLightboxIndex(null)}>
             <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
               
