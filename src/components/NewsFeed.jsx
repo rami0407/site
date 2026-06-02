@@ -24,7 +24,7 @@ const NewsFeed = () => {
         const querySnapshot = await getDocs(q);
         const list = [];
         querySnapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() });
+          list.push({ ...doc.data(), id: doc.id });
         });
 
         // Fallback

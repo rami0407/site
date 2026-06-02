@@ -264,7 +264,7 @@ const AdminDashboard = () => {
       const querySnapshotEvents = await getDocs(qEvents);
       const fetchedEvents = [];
       querySnapshotEvents.forEach((doc) => {
-        fetchedEvents.push({ id: doc.id, ...doc.data() });
+        fetchedEvents.push({ ...doc.data(), id: doc.id });
       });
       setEvents(fetchedEvents);
 
@@ -273,7 +273,7 @@ const AdminDashboard = () => {
       const querySnapshotNews = await getDocs(qNews);
       const fetchedNews = [];
       querySnapshotNews.forEach((doc) => {
-        fetchedNews.push({ id: doc.id, ...doc.data() });
+        fetchedNews.push({ ...doc.data(), id: doc.id });
       });
       setNews(fetchedNews);
 
@@ -282,7 +282,7 @@ const AdminDashboard = () => {
       const querySnapshotMsgs = await getDocs(qMsgs);
       const fetchedMsgs = [];
       querySnapshotMsgs.forEach((doc) => {
-        fetchedMsgs.push({ id: doc.id, ...doc.data() });
+        fetchedMsgs.push({ ...doc.data(), id: doc.id });
       });
       setMessages(fetchedMsgs);
 
@@ -291,7 +291,7 @@ const AdminDashboard = () => {
       const querySnapshotValues = await getDocs(qValues);
       const fetchedValues = [];
       querySnapshotValues.forEach((doc) => {
-        fetchedValues.push({ id: doc.id, ...doc.data() });
+        fetchedValues.push({ ...doc.data(), id: doc.id });
       });
       const order = { bronze: 1, silver: 2, gold: 3 };
       fetchedValues.sort((a, b) => (order[a.id] || 99) - (order[b.id] || 99));
@@ -309,7 +309,7 @@ const AdminDashboard = () => {
       const querySnapshotLinks = await getDocs(qLinks);
       const fetchedLinks = [];
       querySnapshotLinks.forEach((doc) => {
-        fetchedLinks.push({ id: doc.id, ...doc.data() });
+        fetchedLinks.push({ ...doc.data(), id: doc.id });
       });
       setLinks(fetchedLinks);
 
@@ -318,7 +318,7 @@ const AdminDashboard = () => {
       const querySnapshotGallery = await getDocs(qGallery);
       const fetchedGallery = [];
       querySnapshotGallery.forEach((doc) => {
-        fetchedGallery.push({ id: doc.id, ...doc.data() });
+        fetchedGallery.push({ ...doc.data(), id: doc.id });
       });
       setGallery(fetchedGallery);
 
@@ -327,7 +327,7 @@ const AdminDashboard = () => {
       const querySnapshotInitiatives = await getDocs(qInitiatives);
       const fetchedInitiatives = [];
       querySnapshotInitiatives.forEach((doc) => {
-        fetchedInitiatives.push({ id: doc.id, ...doc.data() });
+        fetchedInitiatives.push({ ...doc.data(), id: doc.id });
       });
       setInitiatives(fetchedInitiatives);
 

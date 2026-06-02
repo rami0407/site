@@ -13,7 +13,7 @@ const Values = () => {
         const querySnapshot = await getDocs(valuesRef);
         const list = [];
         querySnapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() });
+          list.push({ ...doc.data(), id: doc.id });
         });
 
         if (list.length === 0) {
