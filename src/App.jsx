@@ -14,7 +14,7 @@ import ContactForm from './components/ContactForm';
 import FloatingActions from './components/FloatingActions';
 import AdminDashboard from './components/AdminDashboard';
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
   calendarEvents, 
   newsData, 
@@ -68,15 +68,14 @@ function App() {
           console.log("News successfully seeded!");
         }
 
-        // 3. Seed Values (bronze, silver, gold)
-        const valuesRef = collection(db, 'values');
-        const valuesSnap = await getDocs(valuesRef);
-        if (valuesSnap.empty) {
-          console.log("Firestore values collection is empty. Seeding defaults...");
-          for (const val of valuesData) {
-            await setDoc(doc(db, 'values', val.id), val);
+        // 3. Seed Values (bronze, silver, gold) individually
+        for (const val of valuesData) {
+          const valDocRef = doc(db, 'values', val.id);
+          const valDocSnap = await getDoc(valDocRef);
+          if (!valDocSnap.exists()) {
+            console.log(`Seeding value ${val.id}...`);
+            await setDoc(valDocRef, val);
           }
-          console.log("Values successfully seeded!");
         }
 
         // 4. Seed Principal Word (document "info" in collection "principal")
@@ -116,18 +115,17 @@ function App() {
           console.log("Gallery Photos successfully seeded!");
         }
 
-        // 7. Seed Initiatives
-        const initiativesRef = collection(db, 'initiatives');
-        const initiativesSnap = await getDocs(initiativesRef);
-        if (initiativesSnap.empty) {
-          console.log("Firestore initiatives collection is empty. Seeding defaults...");
-          for (const init of initiativesData) {
-            await setDoc(doc(db, 'initiatives', init.id), {
+        // 7. Seed Initiatives individually
+        for (const init of initiativesData) {
+          const initDocRef = doc(db, 'initiatives', init.id);
+          const initDocSnap = await getDoc(initDocRef);
+          if (!initDocSnap.exists()) {
+            console.log(`Seeding initiative ${init.id}...`);
+            await setDoc(initDocRef, {
               ...init,
               createdAt: new Date().toISOString()
             });
           }
-          console.log("Initiatives successfully seeded!");
         }
 
       } catch (error) {
