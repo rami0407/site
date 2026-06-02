@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +14,36 @@ const ContactForm = () => {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: string }
+
+  const [contactInfo, setContactInfo] = useState({
+    phone: '04-6111111',
+    fax: '04-6222222',
+    email: 'musheirifa.primary@gmail.com',
+    address: 'قرية مشيرفة، طلعة عارة، الرمز البريدي 30026',
+    facebook: 'https://facebook.com',
+    instagram: 'https://instagram.com',
+    youtube: 'https://youtube.com'
+  });
+
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      try {
+        const docRef = doc(db, 'contactDetails', 'info');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setContactInfo(docSnap.data());
+        } else {
+          const local = localStorage.getItem('db_contact_info');
+          if (local) setContactInfo(JSON.parse(local));
+        }
+      } catch (error) {
+        console.warn("Error fetching contact details, using fallback:", error);
+        const local = localStorage.getItem('db_contact_info');
+        if (local) setContactInfo(JSON.parse(local));
+      }
+    };
+    fetchContactInfo();
+  }, []);
 
   const validateForm = () => {
     const errors = {};
@@ -138,7 +168,7 @@ const ContactForm = () => {
               <div className="contact-card-text">
                 <h4 className="contact-card-title">الهاتف والفاكس</h4>
                 <p className="contact-card-info">
-                  <a href="tel:04-6111111">6111111-04</a> / <a href="tel:04-6222222">6222222-04</a>
+                  <a href={`tel:${contactInfo.phone}`}>{contactInfo.phone}</a> / <a href={`tel:${contactInfo.fax}`}>{contactInfo.fax}</a>
                 </p>
               </div>
             </div>
@@ -150,7 +180,7 @@ const ContactForm = () => {
               <div className="contact-card-text">
                 <h4 className="contact-card-title">البريد الإلكتروني</h4>
                 <p className="contact-card-info">
-                  <a href="mailto:musheirifa.primary@gmail.com">musheirifa.primary@gmail.com</a>
+                  <a href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a>
                 </p>
               </div>
             </div>
@@ -162,7 +192,7 @@ const ContactForm = () => {
               <div className="contact-card-text">
                 <h4 className="contact-card-title">العنوان والموقع</h4>
                 <p className="contact-card-info">
-                  قرية مشيرفة، طلعة عارة، الرمز البريدي 30026
+                  {contactInfo.address}
                 </p>
               </div>
             </div>
@@ -298,15 +328,21 @@ const ContactForm = () => {
 
         {/* Social Links */}
         <div className="social-links">
-          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="فيسبوك">
-            <i className="fab fa-facebook-f"></i>
-          </a>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="إنستغرام">
-            <i className="fab fa-instagram"></i>
-          </a>
-          <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="يوتيوب">
-            <i className="fab fa-youtube"></i>
-          </a>
+          {contactInfo.facebook && (
+            <a href={contactInfo.facebook} target="_blank" rel="noopener noreferrer" className="social-link" aria-label="فيسبوك">
+              <i className="fab fa-facebook-f"></i>
+            </a>
+          )}
+          {contactInfo.instagram && (
+            <a href={contactInfo.instagram} target="_blank" rel="noopener noreferrer" className="social-link" aria-label="إنستغرام">
+              <i className="fab fa-instagram"></i>
+            </a>
+          )}
+          {contactInfo.youtube && (
+            <a href={contactInfo.youtube} target="_blank" rel="noopener noreferrer" className="social-link" aria-label="يوتيوب">
+              <i className="fab fa-youtube"></i>
+            </a>
+          )}
         </div>
       </div>
     </section>

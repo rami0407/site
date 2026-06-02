@@ -127,6 +127,22 @@ function App() {
             });
           }
         }
+        // 8. Seed Contact Details
+        const contactDocRef = doc(db, 'contactDetails', 'info');
+        const contactDocSnap = await getDoc(contactDocRef);
+        if (!contactDocSnap.exists()) {
+          console.log("Seeding contact details...");
+          await setDoc(contactDocRef, {
+            phone: '04-6111111',
+            fax: '04-6222222',
+            email: 'musheirifa.primary@gmail.com',
+            address: 'قرية مشيرفة، طلعة عارة، الرمز البريدي 30026',
+            facebook: 'https://facebook.com',
+            instagram: 'https://instagram.com',
+            youtube: 'https://youtube.com'
+          });
+          console.log("Contact details successfully seeded!");
+        }
 
       } catch (error) {
         console.warn("Firebase auto-seeding skipped (normal for offline/unconfigured environments):", error.message);

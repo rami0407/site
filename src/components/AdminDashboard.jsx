@@ -95,6 +95,15 @@ const AdminDashboard = () => {
   const [principal, setPrincipal] = useState({ message: '', signature: '', image: '' });
   const [links, setLinks] = useState([]);
   const [gallery, setGallery] = useState([]);
+  const [contactInfo, setContactInfo] = useState({
+    phone: '',
+    fax: '',
+    email: '',
+    address: '',
+    facebook: '',
+    instagram: '',
+    youtube: ''
+  });
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Editing state trackers
@@ -256,6 +265,17 @@ const AdminDashboard = () => {
       setLinks(JSON.parse(localStorage.getItem('db_links') || JSON.stringify(fallbackLinks)));
       setGallery(JSON.parse(localStorage.getItem('db_gallery') || JSON.stringify(fallbackGallery)));
       setInitiatives(JSON.parse(localStorage.getItem('db_initiatives') || JSON.stringify(fallbackInitiatives)));
+      
+      const fallbackContactInfo = {
+        phone: '04-6111111',
+        fax: '04-6222222',
+        email: 'musheirifa.primary@gmail.com',
+        address: 'قرية مشيرفة، طلعة عارة، الرمز البريدي 30026',
+        facebook: 'https://facebook.com',
+        instagram: 'https://instagram.com',
+        youtube: 'https://youtube.com'
+      };
+      setContactInfo(JSON.parse(localStorage.getItem('db_contact_info') || JSON.stringify(fallbackContactInfo)));
 
       setIsLoadingData(false);
       return;
@@ -333,6 +353,13 @@ const AdminDashboard = () => {
         fetchedInitiatives.push({ ...doc.data(), id: doc.id });
       });
       setInitiatives(fetchedInitiatives);
+
+      // 9. Load Contact Details
+      const contactDoc = doc(db, 'contactDetails', 'info');
+      const contactSnap = await getDoc(contactDoc);
+      if (contactSnap.exists()) {
+        setContactInfo(contactSnap.data());
+      }
 
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
@@ -917,6 +944,24 @@ const AdminDashboard = () => {
     }
   };
 
+  // ==================== CONTACT INFO ACTIONS ====================
+  const handleUpdateContactInfo = async (e) => {
+    e.preventDefault();
+    if (isOfflineMode) {
+      localStorage.setItem('db_contact_info', JSON.stringify(contactInfo));
+      alert('تم تحديث معلومات الاتصال محلياً بنجاح!');
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'contactDetails', 'info'), contactInfo);
+      alert('تم تحديث معلومات الاتصال والشبكات بنجاح!');
+      loadDashboardData();
+    } catch (error) {
+      alert('حدث خطأ أثناء تحديث معلومات الاتصال: ' + error.message);
+    }
+  };
+
   // ==================== MESSAGE ACTIONS ====================
   const handleDeleteMessage = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
@@ -1142,6 +1187,15 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-envelope-open-text" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               صندوق الرسائل ({messages.length})
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('contact-info')} 
+              className={`filter-chip ${activeTab === 'contact-info' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-address-book" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              معلومات الاتصال والشبكات
             </button>
           </div>
         </aside>
@@ -1988,6 +2042,109 @@ const AdminDashboard = () => {
                     ) : (
                       <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>لا توجد أي رسائل واردة حالياً في الصندوق.</p>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 9: CONTACT INFO EDITOR */}
+              {activeTab === 'contact-info' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>تعديل معلومات الاتصال والشبكات الاجتماعية</h2>
+                  
+                  <div style={{ background: 'var(--bg-white)', padding: '2.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                    <form onSubmit={handleUpdateContactInfo}>
+                      
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label className="form-label">رقم الهاتف *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={contactInfo.phone}
+                            onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
+                            placeholder="04-6111111"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">رقم الفاكس *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={contactInfo.fax}
+                            onChange={(e) => setContactInfo({ ...contactInfo, fax: e.target.value })}
+                            placeholder="04-6222222"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label className="form-label">البريد الإلكتروني *</label>
+                          <input 
+                            type="email" 
+                            className="form-input" 
+                            required
+                            value={contactInfo.email}
+                            onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                            placeholder="musheirifa.primary@gmail.com"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">العنوان والموقع للمدرسة *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={contactInfo.address}
+                            onChange={(e) => setContactInfo({ ...contactInfo, address: e.target.value })}
+                            placeholder="قرية مشيرفة، طلعة عارة، الرمز البريدي 30026"
+                          />
+                        </div>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '2rem', marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        الشبكات الاجتماعية للمدرسة
+                      </h3>
+
+                      <div className="form-group">
+                        <label className="form-label">رابط فيسبوك (Facebook URL)</label>
+                        <input 
+                          type="url" 
+                          className="form-input" 
+                          value={contactInfo.facebook}
+                          onChange={(e) => setContactInfo({ ...contactInfo, facebook: e.target.value })}
+                          placeholder="https://facebook.com/yourpage"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">رابط إنستغرام (Instagram URL)</label>
+                        <input 
+                          type="url" 
+                          className="form-input" 
+                          value={contactInfo.instagram}
+                          onChange={(e) => setContactInfo({ ...contactInfo, instagram: e.target.value })}
+                          placeholder="https://instagram.com/yourprofile"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">رابط يوتيوب (YouTube URL)</label>
+                        <input 
+                          type="url" 
+                          className="form-input" 
+                          value={contactInfo.youtube}
+                          onChange={(e) => setContactInfo({ ...contactInfo, youtube: e.target.value })}
+                          placeholder="https://youtube.com/yourchannel"
+                        />
+                      </div>
+
+                      <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', marginTop: '1.5rem' }}>
+                        <i className="fas fa-save"></i> حفظ وتعديل معلومات الاتصال
+                      </button>
+                    </form>
                   </div>
                 </div>
               )}
