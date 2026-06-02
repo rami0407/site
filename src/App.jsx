@@ -19,6 +19,7 @@ import {
   calendarEvents, 
   newsData, 
   valuesData, 
+  initiativesData,
   principalMessage, 
   importantLinks, 
   galleryPhotos 
@@ -113,6 +114,20 @@ function App() {
             });
           }
           console.log("Gallery Photos successfully seeded!");
+        }
+
+        // 7. Seed Initiatives
+        const initiativesRef = collection(db, 'initiatives');
+        const initiativesSnap = await getDocs(initiativesRef);
+        if (initiativesSnap.empty) {
+          console.log("Firestore initiatives collection is empty. Seeding defaults...");
+          for (const init of initiativesData) {
+            await setDoc(doc(db, 'initiatives', init.id), {
+              ...init,
+              createdAt: new Date().toISOString()
+            });
+          }
+          console.log("Initiatives successfully seeded!");
         }
 
       } catch (error) {

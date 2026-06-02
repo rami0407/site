@@ -52,6 +52,12 @@ const LINK_ICONS_LIST = [
   { value: 'fa-info-circle', label: 'معلومات عامة' }
 ];
 
+const INITIATIVE_THEMES = [
+  { value: 'emtnan', label: 'ثقافة الإطراء والشكر (وردي/أحمر)' },
+  { value: 'theater', label: 'تقوية الشخصية والإبداع (بنفسجي/أزرق)' },
+  { value: 'cafe', label: 'مهارات القرن 21 (أخضر/ذهبي)' }
+];
+
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -76,13 +82,14 @@ const AdminDashboard = () => {
     return () => window.removeEventListener('hashchange', checkSetupMode);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, values, principal, links, gallery, messages
+  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages
 
   // Dashboard Data Lists
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
   const [messages, setMessages] = useState([]);
   const [values, setValues] = useState([]);
+  const [initiatives, setInitiatives] = useState([]);
   const [principal, setPrincipal] = useState({ message: '', signature: '', image: '' });
   const [links, setLinks] = useState([]);
   const [gallery, setGallery] = useState([]);
@@ -92,6 +99,7 @@ const AdminDashboard = () => {
   const [editingEventId, setEditingEventId] = useState(null);
   const [editingNewsId, setEditingNewsId] = useState(null);
   const [editingLinkId, setEditingLinkId] = useState(null);
+  const [editingInitiativeId, setEditingInitiativeId] = useState(null);
 
   // New Event Form State
   const [newEvent, setNewEvent] = useState({
@@ -106,6 +114,19 @@ const AdminDashboard = () => {
     title: '',
     category: 'activities',
     content: ''
+  });
+
+  // New Initiative Form State
+  const [newInitiative, setNewInitiative] = useState({
+    title: '',
+    subtitle: '',
+    badge: '',
+    badgeIcon: 'fa-star',
+    icon: 'fa-heart',
+    themeColor: 'emtnan',
+    link: '',
+    description: '',
+    featuresText: '' // multiple lines split by newline
   });
 
   // Links Form State
@@ -173,11 +194,65 @@ const AdminDashboard = () => {
         { id: '2', category: 'sports', title: 'الروح الرياضية في الملعب', src: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=800&auto=format&fit=crop&q=80', desc: 'منافسة شيقة وممتعة خلال فعاليات اليوم الرياضي السنوي.' },
         { id: '3', category: 'theater', title: 'عرض مسرح الدمى الإبداعي', src: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&auto=format&fit=crop&q=80', desc: 'تجسيد شخصيات خيالية لتعزيز التعبير اللفظي والوقوف أمام الجمهور.' }
       ];
+      const fallbackInitiatives = [
+        {
+          id: 'emtnan',
+          title: 'مشروع امتنان',
+          subtitle: 'ثقافة الإطراء والشكر',
+          badge: 'مبادرة جديدة',
+          badgeIcon: 'fa-star',
+          icon: 'fa-heart',
+          themeColor: 'emtnan',
+          description: 'مبادرة فريدة لنشر ثقافة الإطراء والامتنان في مجتمعنا المدرسي، حيث يمكن لكل شخص مشاركة رسائل الشكر والتقدير.',
+          features: [
+            'إفشاء ثقافة الإطراء والتقدير',
+            'إرسال رسائل شكر للمعلمين والزملاء',
+            'بناء مجتمع إيجابي ومحفز',
+            'مشاركة الرسائل المفيدة مع الجميع'
+          ],
+          link: 'https://rami0407.github.io/emtnan/'
+        },
+        {
+          id: 'theater',
+          title: 'مسرح الدمى',
+          subtitle: 'تقوية الشخصية والإبداع',
+          badge: 'مشروع مميز',
+          badgeIcon: 'fa-fire',
+          icon: 'fa-theater-masks',
+          themeColor: 'theater',
+          description: 'برنامج تربوي إبداعي يهدف لتقوية شخصية الطلاب وتنمية مهارات التعبير والوقوف أمام الجمهور بثقة.',
+          features: [
+            'تقوية الثقة بالنفس والشخصية',
+            'تطوير مهارات التحدث أمام الجمهور',
+            'التعبير الإبداعي بطرق فنية مبتكرة',
+            'العمل الجماعي والتعاون المثمر'
+          ],
+          link: 'https://rami0407.github.io/teatron/'
+        },
+        {
+          id: 'cafe',
+          title: 'مقصف المعرفة',
+          subtitle: 'مهارات القرن 21',
+          badge: 'مهارات المستقبل',
+          badgeIcon: 'fa-lightbulb',
+          icon: 'fa-graduation-cap',
+          themeColor: 'cafe',
+          description: 'برنامج تعليمي شامل لإكساب الطلاب مهارات القرن الواحد والعشرين وكسر الحواجز بين المدرسة والعالم الخارجي.',
+          features: [
+            'تعلم مهارات التفكير النقدي',
+            'مهارات التكنولوجيا والبرمجة الحديثة',
+            'حل المشكلات والإبداع الفردي والجماعي',
+            'الربط والاندماج مع العالم الخارجي'
+          ],
+          link: 'https://rami0407.github.io/caffeterea/'
+        }
+      ];
 
       setValues(JSON.parse(localStorage.getItem('db_values') || JSON.stringify(fallbackValues)));
       setPrincipal(JSON.parse(localStorage.getItem('db_principal') || JSON.stringify(fallbackPrincipal)));
       setLinks(JSON.parse(localStorage.getItem('db_links') || JSON.stringify(fallbackLinks)));
       setGallery(JSON.parse(localStorage.getItem('db_gallery') || JSON.stringify(fallbackGallery)));
+      setInitiatives(JSON.parse(localStorage.getItem('db_initiatives') || JSON.stringify(fallbackInitiatives)));
 
       setIsLoadingData(false);
       return;
@@ -246,6 +321,15 @@ const AdminDashboard = () => {
         fetchedGallery.push({ id: doc.id, ...doc.data() });
       });
       setGallery(fetchedGallery);
+
+      // 8. Load Initiatives
+      const qInitiatives = query(collection(db, 'initiatives'), orderBy('createdAt', 'asc'));
+      const querySnapshotInitiatives = await getDocs(qInitiatives);
+      const fetchedInitiatives = [];
+      querySnapshotInitiatives.forEach((doc) => {
+        fetchedInitiatives.push({ id: doc.id, ...doc.data() });
+      });
+      setInitiatives(fetchedInitiatives);
 
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
@@ -487,6 +571,115 @@ const AdminDashboard = () => {
       loadDashboardData();
     } catch (error) {
       alert('حدث خطأ أثناء حذف الخبر: ' + error.message);
+    }
+  };
+
+  // ==================== INITIATIVES ACTIONS ====================
+  const handleAddInitiative = async (e) => {
+    e.preventDefault();
+    if (!newInitiative.title || !newInitiative.subtitle || !newInitiative.description || !newInitiative.link) {
+      alert('يرجى ملء جميع الحقول المطلوبة للمبادرة.');
+      return;
+    }
+
+    const features = newInitiative.featuresText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    const initObj = {
+      title: newInitiative.title,
+      subtitle: newInitiative.subtitle,
+      badge: newInitiative.badge,
+      badgeIcon: newInitiative.badgeIcon,
+      icon: newInitiative.icon,
+      themeColor: newInitiative.themeColor,
+      link: newInitiative.link,
+      description: newInitiative.description,
+      features: features
+    };
+
+    if (editingInitiativeId) {
+      // Edit Mode
+      if (isOfflineMode) {
+        const updated = initiatives.map(item => item.id === editingInitiativeId ? { ...item, ...initObj } : item);
+        localStorage.setItem('db_initiatives', JSON.stringify(updated));
+        setInitiatives(updated);
+        setNewInitiative({ title: '', subtitle: '', badge: '', badgeIcon: 'fa-star', icon: 'fa-heart', themeColor: 'emtnan', link: '', description: '', featuresText: '' });
+        setEditingInitiativeId(null);
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, 'initiatives', editingInitiativeId), initObj);
+        setNewInitiative({ title: '', subtitle: '', badge: '', badgeIcon: 'fa-star', icon: 'fa-heart', themeColor: 'emtnan', link: '', description: '', featuresText: '' });
+        setEditingInitiativeId(null);
+        loadDashboardData();
+        alert('تم تعديل المبادرة بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء تعديل المبادرة: ' + error.message);
+      }
+    } else {
+      // Add Mode
+      const newInitObj = {
+        ...initObj,
+        createdAt: new Date().toISOString()
+      };
+
+      if (isOfflineMode) {
+        const updated = [...initiatives, { ...newInitObj, id: String(Date.now()) }];
+        localStorage.setItem('db_initiatives', JSON.stringify(updated));
+        setInitiatives(updated);
+        setNewInitiative({ title: '', subtitle: '', badge: '', badgeIcon: 'fa-star', icon: 'fa-heart', themeColor: 'emtnan', link: '', description: '', featuresText: '' });
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'initiatives', String(Date.now())), newInitObj); // Using timestamp as ID
+        setNewInitiative({ title: '', subtitle: '', badge: '', badgeIcon: 'fa-star', icon: 'fa-heart', themeColor: 'emtnan', link: '', description: '', featuresText: '' });
+        loadDashboardData();
+        alert('تم إضافة المبادرة بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء إضافة المبادرة: ' + error.message);
+      }
+    }
+  };
+
+  const startEditInitiative = (init) => {
+    setEditingInitiativeId(init.id);
+    setNewInitiative({
+      title: init.title || '',
+      subtitle: init.subtitle || '',
+      badge: init.badge || '',
+      badgeIcon: init.badgeIcon || 'fa-star',
+      icon: init.icon || 'fa-heart',
+      themeColor: init.themeColor || 'emtnan',
+      link: init.link || '',
+      description: init.description || '',
+      featuresText: init.features ? init.features.join('\n') : ''
+    });
+  };
+
+  const cancelEditInitiative = () => {
+    setEditingInitiativeId(null);
+    setNewInitiative({ title: '', subtitle: '', badge: '', badgeIcon: 'fa-star', icon: 'fa-heart', themeColor: 'emtnan', link: '', description: '', featuresText: '' });
+  };
+
+  const handleDeleteInitiative = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه المبادرة؟')) return;
+
+    if (isOfflineMode) {
+      const updated = initiatives.filter(item => item.id !== id);
+      localStorage.setItem('db_initiatives', JSON.stringify(updated));
+      setInitiatives(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'initiatives', id));
+      loadDashboardData();
+    } catch (error) {
+      alert('حدث خطأ أثناء حذف المبادرة: ' + error.message);
     }
   };
 
@@ -850,6 +1043,15 @@ const AdminDashboard = () => {
             </button>
 
             <button 
+              onClick={() => setActiveTab('initiatives')} 
+              className={`filter-chip ${activeTab === 'initiatives' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-rocket" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              المبادرات التربوية ({initiatives.length})
+            </button>
+
+            <button 
               onClick={() => setActiveTab('values')} 
               className={`filter-chip ${activeTab === 'values' ? 'active' : ''}`}
               style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
@@ -1142,7 +1344,203 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 3: VALUES MANAGER */}
+              {/* TAB 3: INITIATIVES MANAGER */}
+              {activeTab === 'initiatives' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة المبادرات التربوية</h2>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
+                    
+                    {/* Add/Edit Initiative Form */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        {editingInitiativeId ? 'تعديل المبادرة التربوية' : 'إضافة مبادرة تربوية جديدة'}
+                      </h3>
+                      <form onSubmit={handleAddInitiative}>
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">عنوان المبادرة *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: مشروع امتنان"
+                              value={newInitiative.title}
+                              onChange={(e) => setNewInitiative({ ...newInitiative, title: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">العنوان الفرعي *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: ثقافة الإطراء والشكر"
+                              value={newInitiative.subtitle}
+                              onChange={(e) => setNewInitiative({ ...newInitiative, subtitle: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">نص الشارة المميزة *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: مبادرة جديدة أو مشروع مميز"
+                              value={newInitiative.badge}
+                              onChange={(e) => setNewInitiative({ ...newInitiative, badge: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">أيقونة الشارة *</label>
+                            <select 
+                              className="form-input"
+                              value={newInitiative.badgeIcon}
+                              onChange={(e) => setNewInitiative({ ...newInitiative, badgeIcon: e.target.value })}
+                            >
+                              <option value="fa-star">نجمة (fa-star)</option>
+                              <option value="fa-fire">لهب (fa-fire)</option>
+                              <option value="fa-lightbulb">مصباح (fa-lightbulb)</option>
+                              <option value="fa-award">جائزة (fa-award)</option>
+                              <option value="fa-heart">قلب (fa-heart)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">الأيقونة الأساسية *</label>
+                            <select 
+                              className="form-input"
+                              value={newInitiative.icon}
+                              onChange={(e) => setNewInitiative({ ...newInitiative, icon: e.target.value })}
+                            >
+                              <option value="fa-heart">قلب (fa-heart)</option>
+                              <option value="fa-theater-masks">أقنعة مسرح (fa-theater-masks)</option>
+                              <option value="fa-graduation-cap">قبعة تخرج (fa-graduation-cap)</option>
+                              <option value="fa-laptop-code">برمجة (fa-laptop-code)</option>
+                              <option value="fa-book-reader">قراءة (fa-book-reader)</option>
+                              <option value="fa-palette">فن ورسم (fa-palette)</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">تنسيق اللون والتصميم *</label>
+                            <select 
+                              className="form-input"
+                              value={newInitiative.themeColor}
+                              onChange={(e) => setNewInitiative({ ...newInitiative, themeColor: e.target.value })}
+                            >
+                              {INITIATIVE_THEMES.map((theme) => (
+                                <option key={theme.value} value={theme.value}>{theme.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label font-bold">رابط الدخول للمبادرة (URL) *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            placeholder="https://rami0407.github.io/caffeterea/"
+                            value={newInitiative.link}
+                            onChange={(e) => setNewInitiative({ ...newInitiative, link: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">الوصف الكامل للمبادرة *</label>
+                          <textarea 
+                            className="form-input" 
+                            required
+                            placeholder="اكتب شرحاً تفصيلياً عن فكرة المبادرة وأهدافها..."
+                            value={newInitiative.description}
+                            onChange={(e) => setNewInitiative({ ...newInitiative, description: e.target.value })}
+                          ></textarea>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">النقاط والميزات الأساسية (اكتب ميزة واحدة في كل سطر) *</label>
+                          <textarea 
+                            className="form-input" 
+                            required
+                            placeholder="أدخل الميزات هنا، مثلاً:&#10;تعليم البرمجة وتصميم الألعاب&#10;إكساب مهارات التفكير النقدي&#10;الربط مع العالم الخارجي"
+                            style={{ minHeight: '120px' }}
+                            value={newInitiative.featuresText}
+                            onChange={(e) => setNewInitiative({ ...newInitiative, featuresText: e.target.value })}
+                          ></textarea>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                            <i className={editingInitiativeId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                            {editingInitiativeId ? ' حفظ التغييرات' : ' إضافة المبادرة التربوية'}
+                          </button>
+                          {editingInitiativeId && (
+                            <button type="button" onClick={cancelEditInitiative} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء التعديل
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Initiatives List */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>المبادرات الحالية المفعّلة ({initiatives.length})</h3>
+                      {initiatives.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          {initiatives.map((item) => (
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', padding: '1.25rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-light)' }}>
+                              <div style={{ flexGrow: 1, paddingLeft: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                                  <span className={`initiative-icon initiative-icon-${item.themeColor || 'emtnan'}`} style={{ display: 'inline-flex', width: '32px', height: '32px', borderRadius: '8px', alignItems: 'center', justifyContent: 'center', color: 'white', background: 'var(--primary)' }}>
+                                    <i className={`fas ${item.icon || 'fa-rocket'}`}></i>
+                                  </span>
+                                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary-dark)', margin: 0 }}>{item.title}</h4>
+                                  <span style={{ fontSize: '0.75rem', background: '#e0e0e0', padding: '0.2rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
+                                    {item.badge}
+                                  </span>
+                                </div>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, margin: '0 0 0.5rem 0' }}>{item.subtitle}</p>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.5rem 0' }}>{item.description}</p>
+                                <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>
+                                  رابط المبادرة: {item.link}
+                                </a>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.75rem', shrink: 0 }}>
+                                <button 
+                                  onClick={() => startEditInitiative(item)} 
+                                  style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.5rem' }}
+                                  title="تعديل المبادرة"
+                                >
+                                  <i className="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteInitiative(item.id)} 
+                                  style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.5rem' }}
+                                  title="حذف"
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>لا توجد مبادرات مسجلة حالياً.</p>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: VALUES MANAGER */}
               {activeTab === 'values' && (
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة القيم العليا للمدرسة</h2>
@@ -1160,7 +1558,7 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 4: PRINCIPAL MESSAGE EDITOR */}
+              {/* TAB 5: PRINCIPAL MESSAGE EDITOR */}
               {activeTab === 'principal' && (
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>تعديل كلمة مدير المدرسة</h2>
@@ -1216,7 +1614,7 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 5: IMPORTANT LINKS MANAGER */}
+              {/* TAB 6: IMPORTANT LINKS MANAGER */}
               {activeTab === 'links' && (
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة الروابط الهامة والوصول السريع</h2>
@@ -1349,7 +1747,7 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 6: GALLERY MANAGER */}
+              {/* TAB 7: GALLERY MANAGER */}
               {activeTab === 'gallery' && (
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة معرض صور الأنشطة والفعاليات</h2>
@@ -1362,7 +1760,7 @@ const AdminDashboard = () => {
                       <form onSubmit={handleAddPhoto}>
                         <div className="form-group-row">
                           <div className="form-group">
-                            <label className="form-label">عنوان الصورة *</label>
+                            <label className="form-label">العنوان *</label>
                             <input 
                               type="text" 
                               className="form-input" 
@@ -1448,7 +1846,7 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 7: CONTACT MESSAGES */}
+              {/* TAB 8: CONTACT MESSAGES */}
               {activeTab === 'messages' && (
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>صندوق الاستفسارات ورسائل أولياء الأمور</h2>

@@ -57,7 +57,7 @@ export const initiativesData = [
       'حل المشكلات والإبداع الفردي والجماعي',
       'الربط والاندماج مع العالم الخارجي'
     ],
-    link: 'https://rami0407.github.io/knowledge-cafe/' // placeholder for cafe link
+    link: 'https://rami0407.github.io/caffeterea/'
   }
 ];
 
