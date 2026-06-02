@@ -100,6 +100,7 @@ const AdminDashboard = () => {
   const [editingNewsId, setEditingNewsId] = useState(null);
   const [editingLinkId, setEditingLinkId] = useState(null);
   const [editingInitiativeId, setEditingInitiativeId] = useState(null);
+  const [editingPhotoId, setEditingPhotoId] = useState(null);
 
   // New Event Form State
   const [newEvent, setNewEvent] = useState({
@@ -828,27 +829,72 @@ const AdminDashboard = () => {
     }
 
     const photoObj = {
-      ...newPhoto,
-      createdAt: new Date().toISOString()
+      title: newPhoto.title,
+      src: newPhoto.src,
+      desc: newPhoto.desc,
+      category: newPhoto.category
     };
 
-    if (isOfflineMode) {
-      const updated = [{ ...photoObj, id: String(Date.now()) }, ...gallery];
-      localStorage.setItem('db_gallery', JSON.stringify(updated));
-      setGallery(updated);
-      setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
-      alert('تمت إضافة الصورة بنجاح (محلياً)!');
-      return;
-    }
+    if (editingPhotoId) {
+      // Edit Mode
+      if (isOfflineMode) {
+        const updated = gallery.map(p => p.id === editingPhotoId ? { ...p, ...photoObj } : p);
+        localStorage.setItem('db_gallery', JSON.stringify(updated));
+        setGallery(updated);
+        setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
+        setEditingPhotoId(null);
+        return;
+      }
 
-    try {
-      await addDoc(collection(db, 'gallery'), photoObj);
-      setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
-      loadDashboardData();
-      alert('تم إضافة الصورة بنجاح!');
-    } catch (error) {
-      alert('حدث خطأ أثناء إضافة الصورة: ' + error.message);
+      try {
+        await updateDoc(doc(db, 'gallery', editingPhotoId), photoObj);
+        setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
+        setEditingPhotoId(null);
+        loadDashboardData();
+        alert('تم تعديل الصورة بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء تعديل الصورة: ' + error.message);
+      }
+    } else {
+      // Add Mode
+      const newPhotoObj = {
+        ...photoObj,
+        createdAt: new Date().toISOString()
+      };
+
+      if (isOfflineMode) {
+        const updated = [{ ...newPhotoObj, id: String(Date.now()) }, ...gallery];
+        localStorage.setItem('db_gallery', JSON.stringify(updated));
+        setGallery(updated);
+        setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
+        alert('تمت إضافة الصورة بنجاح (محلياً)!');
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'gallery'), newPhotoObj);
+        setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
+        loadDashboardData();
+        alert('تم إضافة الصورة بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء إضافة الصورة: ' + error.message);
+      }
     }
+  };
+
+  const startEditPhoto = (photo) => {
+    setEditingPhotoId(photo.id);
+    setNewPhoto({
+      title: photo.title || '',
+      desc: photo.desc || '',
+      src: photo.src || '',
+      category: photo.category || 'classroom'
+    });
+  };
+
+  const cancelEditPhoto = () => {
+    setEditingPhotoId(null);
+    setNewPhoto({ title: '', desc: '', src: '', category: 'classroom' });
   };
 
   const handleDeletePhoto = async (id) => {
@@ -1756,7 +1802,9 @@ const AdminDashboard = () => {
                     
                     {/* Add Photo Form */}
                     <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>إضافة صورة جديدة للمعرض</h3>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        {editingPhotoId ? 'تعديل الصورة بالمعرض' : 'إضافة صورة جديدة للمعرض'}
+                      </h3>
                       <form onSubmit={handleAddPhoto}>
                         <div className="form-group-row">
                           <div className="form-group">
@@ -1808,9 +1856,17 @@ const AdminDashboard = () => {
                           />
                         </div>
 
-                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
-                          <i className="fas fa-plus-circle"></i> إضافة الصورة للمعرض العام
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                            <i className={editingPhotoId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                            {editingPhotoId ? ' حفظ التغييرات' : ' إضافة الصورة للمعرض العام'}
+                          </button>
+                          {editingPhotoId && (
+                            <button type="button" onClick={cancelEditPhoto} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء التعديل
+                            </button>
+                          )}
+                        </div>
                       </form>
                     </div>
 
@@ -1822,13 +1878,22 @@ const AdminDashboard = () => {
                           {gallery.map((photo, idx) => (
                             <div key={photo.id || idx} style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: '#fafafa', position: 'relative' }}>
                               <img src={photo.src} alt={photo.title} style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
-                              <button 
-                                onClick={() => handleDeletePhoto(photo.id)}
-                                style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                                title="حذف الصورة"
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
+                              <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '8px' }}>
+                                <button 
+                                  onClick={() => startEditPhoto(photo)}
+                                  style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                  title="تعديل الصورة"
+                                >
+                                  <i className="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                  onClick={() => handleDeletePhoto(photo.id)}
+                                  style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                  title="حذف الصورة"
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              </div>
                               <div style={{ padding: '1rem' }}>
                                 <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>{GALLERY_CATEGORIES[photo.category]}</span>
                                 <h5 style={{ fontWeight: 800, margin: '0.25rem 0', fontSize: '0.95rem' }}>{photo.title}</h5>
