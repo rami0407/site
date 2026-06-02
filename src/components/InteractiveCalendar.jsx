@@ -15,7 +15,9 @@ const CATEGORY_MAP = {
   exam: { label: 'امتحانات', color: 'exam' },
   holiday: { label: 'عطلات رسمية', color: 'holiday' },
   event: { label: 'فعاليات مدرسية', color: 'event' },
-  special: { label: 'مشاريع خاصة', color: 'special' }
+  special: { label: 'مشاريع خاصة', color: 'special' },
+  trip: { label: 'رحلات وجولات مدرسية', color: 'trip' },
+  religion: { label: 'مناسبات دينية', color: 'religion' }
 };
 
 const InteractiveCalendar = () => {

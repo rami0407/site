@@ -833,6 +833,8 @@ button, input, textarea, select {
 .dot-holiday { background-color: hsl(142, 70%, 45%); }
 .dot-event { background-color: hsl(217, 91%, 60%); }
 .dot-special { background-color: hsl(271, 91%, 65%); }
+.dot-trip { background-color: hsl(25, 95%, 50%); }
+.dot-religion { background-color: hsl(45, 95%, 45%); }
 
 .calendar-container {
   background: var(--bg-white);
@@ -938,6 +940,8 @@ button, input, textarea, select {
 .tag-holiday { background: linear-gradient(135deg, hsl(142, 70%, 45%), hsl(142, 70%, 35%)); }
 .tag-event { background: linear-gradient(135deg, hsl(217, 91%, 60%), hsl(217, 91%, 48%)); }
 .tag-special { background: linear-gradient(135deg, hsl(271, 91%, 65%), hsl(271, 91%, 50%)); }
+.tag-trip { background: linear-gradient(135deg, hsl(25, 95%, 50%), hsl(25, 95%, 40%)); }
+.tag-religion { background: linear-gradient(135deg, hsl(45, 95%, 45%), hsl(45, 95%, 35%)); }
 
 /* Values Section */
 .values-section {
@@ -1929,6 +1933,8 @@ textarea.form-input {
   .calendar-day-cell:has(.tag-holiday) .cell-events::after { background-color: hsl(142, 70%, 45%); }
   .calendar-day-cell:has(.tag-event) .cell-events::after { background-color: hsl(217, 91%, 60%); }
   .calendar-day-cell:has(.tag-special) .cell-events::after { background-color: hsl(271, 91%, 65%); }
+  .calendar-day-cell:has(.tag-trip) .cell-events::after { background-color: hsl(25, 95%, 50%); }
+  .calendar-day-cell:has(.tag-religion) .cell-events::after { background-color: hsl(45, 95%, 45%); }
 }
 
 /* Subtle Admin Link on Navbar */

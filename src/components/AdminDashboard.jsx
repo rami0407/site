@@ -19,7 +19,9 @@ const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
   holiday: 'عطلة رسمية',
   event: 'فعالية مدرسية',
-  special: 'مشروع خاص'
+  special: 'مشروع خاص',
+  trip: 'رحلات وجولات مدرسية',
+  religion: 'مناسبات دينية'
 };
 
 const CATEGORIES_NEWS = {
