@@ -117,6 +117,7 @@ const AdminDashboard = () => {
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
+    endDate: '',
     category: 'event',
     desc: ''
   });
@@ -440,14 +441,14 @@ const AdminDashboard = () => {
         const updated = events.map(evt => evt.id === editingEventId ? { ...evt, ...newEvent } : evt).sort((a,b) => a.date.localeCompare(b.date));
         localStorage.setItem('db_events', JSON.stringify(updated));
         setEvents(updated);
-        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        setNewEvent({ title: '', date: '', endDate: '', category: 'event', desc: '' });
         setEditingEventId(null);
         return;
       }
 
       try {
         await updateDoc(doc(db, 'events', editingEventId), newEvent);
-        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        setNewEvent({ title: '', date: '', endDate: '', category: 'event', desc: '' });
         setEditingEventId(null);
         loadDashboardData();
         alert('تم تعديل الفعالية بنجاح!');
@@ -460,13 +461,13 @@ const AdminDashboard = () => {
         const updated = [...events, { ...newEvent, id: String(Date.now()) }].sort((a,b) => a.date.localeCompare(b.date));
         localStorage.setItem('db_events', JSON.stringify(updated));
         setEvents(updated);
-        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        setNewEvent({ title: '', date: '', endDate: '', category: 'event', desc: '' });
         return;
       }
 
       try {
         await addDoc(collection(db, 'events'), newEvent);
-        setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+        setNewEvent({ title: '', date: '', endDate: '', category: 'event', desc: '' });
         loadDashboardData();
         alert('تم إضافة الفعالية بنجاح!');
       } catch (error) {
@@ -480,6 +481,7 @@ const AdminDashboard = () => {
     setNewEvent({
       title: evt.title,
       date: evt.date,
+      endDate: evt.endDate || '',
       category: evt.category,
       desc: evt.desc
     });
@@ -487,7 +489,7 @@ const AdminDashboard = () => {
 
   const cancelEditEvent = () => {
     setEditingEventId(null);
-    setNewEvent({ title: '', date: '', category: 'event', desc: '' });
+    setNewEvent({ title: '', date: '', endDate: '', category: 'event', desc: '' });
   };
 
   const handleDeleteEvent = async (id) => {
@@ -1225,7 +1227,7 @@ const AdminDashboard = () => {
                       <form onSubmit={handleAddEvent}>
                         <div className="form-group-row">
                           <div className="form-group">
-                            <label className="form-label">تاريخ الفعالية *</label>
+                            <label className="form-label">تاريخ البداية *</label>
                             <input 
                               type="date" 
                               className="form-input" 
@@ -1235,17 +1237,27 @@ const AdminDashboard = () => {
                             />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">تصنيف الفعالية *</label>
-                            <select 
-                              className="form-input"
-                              value={newEvent.category}
-                              onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
-                            >
-                              {Object.entries(CATEGORIES_CALENDAR).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                              ))}
-                            </select>
+                            <label className="form-label">تاريخ النهاية (اختياري - للفعاليات الممتدة)</label>
+                            <input 
+                              type="date" 
+                              className="form-input" 
+                              value={newEvent.endDate || ''}
+                              onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
+                            />
                           </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">تصنيف الفعالية *</label>
+                          <select 
+                            className="form-input"
+                            value={newEvent.category}
+                            onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
+                          >
+                            {Object.entries(CATEGORIES_CALENDAR).map(([key, label]) => (
+                              <option key={key} value={key}>{label}</option>
+                            ))}
+                          </select>
                         </div>
 
                         <div className="form-group">
@@ -1302,7 +1314,9 @@ const AdminDashboard = () => {
                             <tbody>
                               {events.map((evt) => (
                                 <tr key={evt.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                  <td style={{ padding: '0.75rem', fontWeight: 700 }}>{evt.date}</td>
+                                  <td style={{ padding: '0.75rem', fontWeight: 700 }}>
+                                    {evt.date} {evt.endDate && evt.endDate !== evt.date ? ` إلى ${evt.endDate}` : ''}
+                                  </td>
                                   <td style={{ padding: '0.75rem' }}>{evt.title}</td>
                                   <td style={{ padding: '0.75rem' }}>
                                     <span className={`calendar-event-tag tag-${evt.category}`} style={{ display: 'inline-block', width: 'auto' }}>

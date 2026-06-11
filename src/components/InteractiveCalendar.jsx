@@ -132,7 +132,12 @@ const InteractiveCalendar = () => {
   // Filter events for day
   const getEventsForDay = (dateString) => {
     return events.filter(event => {
-      const matchesDate = event.date === dateString;
+      let matchesDate = false;
+      if (event.endDate) {
+        matchesDate = dateString >= event.date && dateString <= event.endDate;
+      } else {
+        matchesDate = event.date === dateString;
+      }
       const matchesFilter = selectedFilter === 'all' || event.category === selectedFilter;
       return matchesDate && matchesFilter;
     });
@@ -234,7 +239,7 @@ const InteractiveCalendar = () => {
               <div className="modal-body">
                 <div className="modal-date">
                   <i className="fas fa-calendar-alt"></i>
-                  <span>التاريخ: {modalEvent.date}</span>
+                  <span>التاريخ: {modalEvent.date} {modalEvent.endDate && modalEvent.endDate !== modalEvent.date ? ` إلى ${modalEvent.endDate}` : ''}</span>
                   <span style={{ margin: '0 0.5rem' }}>|</span>
                   <i className="fas fa-bookmark"></i>
                   <span>التصنيف: {CATEGORY_MAP[modalEvent.category].label}</span>
