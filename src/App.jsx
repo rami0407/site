@@ -26,6 +26,8 @@ import {
 } from './data/schoolData';
 import BooksGuide from './components/BooksGuide';
 import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideData';
+import CustomPageView from './components/CustomPageView';
+import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import './App.css';
 
 
@@ -179,6 +181,28 @@ function App() {
           console.log("School guide letter successfully seeded!");
         }
 
+        // 12. Seed Navigation Links
+        const navigationRef = collection(db, 'navigation');
+        const navigationSnap = await getDocs(navigationRef);
+        if (navigationSnap.empty) {
+          console.log("Firestore navigation collection is empty. Seeding defaults...");
+          for (const item of defaultNavigation) {
+            await setDoc(doc(db, 'navigation', item.id), item);
+          }
+          console.log("Navigation successfully seeded!");
+        }
+
+        // 13. Seed Pages
+        const pagesRef = collection(db, 'pages');
+        const pagesSnap = await getDocs(pagesRef);
+        if (pagesSnap.empty) {
+          console.log("Firestore pages collection is empty. Seeding defaults...");
+          for (const page of defaultPages) {
+            await setDoc(doc(db, 'pages', page.id), page);
+          }
+          console.log("Pages successfully seeded!");
+        }
+
 
       } catch (error) {
         console.warn("Firebase auto-seeding skipped (normal for offline/unconfigured environments):", error.message);
@@ -189,6 +213,8 @@ function App() {
   }, []);
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
+  const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
+  const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
     return (
@@ -208,40 +234,44 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      <main>
-        {/* Hero Banner */}
-        <Hero />
+      {isCustomPageView ? (
+        <CustomPageView pageId={customPageId} />
+      ) : (
+        <main>
+          {/* Hero Banner */}
+          <Hero />
 
-        {/* Counter Statistics */}
-        <Stats />
+          {/* Counter Statistics */}
+          <Stats />
 
-        {/* School Pedagogical Initiatives */}
-        <Initiatives />
+          {/* School Pedagogical Initiatives */}
+          <Initiatives />
 
-        {/* Dynamic & Filterable Event Calendar */}
-        <InteractiveCalendar />
+          {/* Dynamic & Filterable Event Calendar */}
+          <InteractiveCalendar />
 
-        {/* Institutional Values */}
-        <Values />
+          {/* Institutional Values */}
+          <Values />
 
-        {/* Expandable News & Bulletins */}
-        <NewsFeed />
+          {/* Expandable News & Bulletins */}
+          <NewsFeed />
 
-        {/* Principal Welcome Speech */}
-        <PrincipalMessage />
+          {/* Principal Welcome Speech */}
+          <PrincipalMessage />
 
-        {/* Fast Action Hyperlinks */}
-        <ImportantLinks />
+          {/* Fast Action Hyperlinks */}
+          <ImportantLinks />
 
-        {/* Textbooks & Uniform Guide */}
-        <BooksGuide />
+          {/* Textbooks & Uniform Guide */}
+          <BooksGuide />
 
-        {/* Responsive Activity Gallery */}
-        <Gallery />
+          {/* Responsive Activity Gallery */}
+          <Gallery />
 
-        {/* Dynamic Client Validation Contact Form */}
-        <ContactForm />
-      </main>
+          {/* Dynamic Client Validation Contact Form */}
+          <ContactForm />
+        </main>
+      )}
 
       {/* Footer Details */}
       <footer className="footer">

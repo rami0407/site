@@ -28,11 +28,24 @@ try {
     fs.copyFileSync(path.join(assetsDistDir, file), path.join(assetsRootDir, file));
   });
 
-  console.log("4. Copying built production index.html to root...");
+  console.log("4. Copying built production index.html and other root assets to project root...");
   fs.copyFileSync(path.join(distDir, 'index.html'), devHtmlPath);
 
+  // Copy other files in dist/ root (e.g. books_list.pdf, favicon.svg, icons.svg) to root
+  const distRootFiles = fs.readdirSync(distDir);
+  const gitAddedFiles = ['index.html'];
+  distRootFiles.forEach(file => {
+    const srcPath = path.join(distDir, file);
+    const destPath = path.join(rootDir, file);
+    const stat = fs.statSync(srcPath);
+    if (stat.isFile() && file !== 'index.html') {
+      fs.copyFileSync(srcPath, destPath);
+      gitAddedFiles.push(file);
+    }
+  });
+
   console.log("5. Committing and pushing production build to GitHub main branch...");
-  execSync('git add index.html assets', { stdio: 'inherit' });
+  execSync(`git add assets ${gitAddedFiles.join(' ')}`, { stdio: 'inherit' });
   try {
     execSync('git commit -m "Deploy production build to root of main branch"', { stdio: 'inherit' });
   } catch (commitErr) {

@@ -2358,3 +2358,31 @@ textarea.form-input {
   }
 }
 
+/* Custom Page Styles */
+.back-home-link {
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.back-home-link:hover {
+  transform: translateX(-5px);
+  color: var(--primary-dark) !important;
+}
+
+.custom-page-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.custom-page-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.custom-page-body ul, .custom-page-body ol {
+  padding-right: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.custom-page-body li {
+  margin-bottom: 0.5rem;
+}
+

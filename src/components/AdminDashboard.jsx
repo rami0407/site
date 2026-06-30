@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { calendarEvents, newsData } from '../data/schoolData'; // defaults for seeding
 import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
+import { defaultNavigation, defaultPages } from '../data/defaultNavigationData';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -85,7 +86,7 @@ const AdminDashboard = () => {
     return () => window.removeEventListener('hashchange', checkSetupMode);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages, books
+  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages, books, navigation
 
   // Dashboard Data Lists
   const [events, setEvents] = useState([]);
@@ -103,6 +104,24 @@ const AdminDashboard = () => {
     author: '',
     year: '',
     notes: ''
+  });
+
+  const [navigation, setNavigation] = useState([]);
+  const [pages, setPages] = useState([]);
+  
+  const [editingNavId, setEditingNavId] = useState(null);
+  const [newNav, setNewNav] = useState({
+    label: '',
+    type: 'section',
+    target: 'home',
+    order: 1
+  });
+
+  const [editingPageId, setEditingPageId] = useState(null);
+  const [newPage, setNewPage] = useState({
+    id: '',
+    title: '',
+    content: ''
   });
 
   const [values, setValues] = useState([]);
@@ -295,6 +314,8 @@ const AdminDashboard = () => {
       setBooks(JSON.parse(localStorage.getItem('db_books') || JSON.stringify(defaultBooks)));
       setUniforms(JSON.parse(localStorage.getItem('db_uniforms') || JSON.stringify(defaultUniform)));
       setGuideLetter(JSON.parse(localStorage.getItem('db_guide_letter') || JSON.stringify(defaultLetter)));
+      setNavigation(JSON.parse(localStorage.getItem('db_navigation') || JSON.stringify(defaultNavigation)));
+      setPages(JSON.parse(localStorage.getItem('db_pages') || JSON.stringify(defaultPages)));
 
       setIsLoadingData(false);
       return;
@@ -405,6 +426,25 @@ const AdminDashboard = () => {
       if (guideLetterSnap.exists()) {
         setGuideLetter(guideLetterSnap.data());
       }
+
+      // 13. Load Navigation Links
+      const qNav = collection(db, 'navigation');
+      const querySnapshotNav = await getDocs(qNav);
+      const fetchedNav = [];
+      querySnapshotNav.forEach((doc) => {
+        fetchedNav.push({ ...doc.data(), id: doc.id });
+      });
+      fetchedNav.sort((a, b) => (a.order || 0) - (b.order || 0));
+      setNavigation(fetchedNav);
+
+      // 14. Load Pages
+      const qPages = collection(db, 'pages');
+      const querySnapshotPages = await getDocs(qPages);
+      const fetchedPages = [];
+      querySnapshotPages.forEach((doc) => {
+        fetchedPages.push({ ...doc.data(), id: doc.id });
+      });
+      setPages(fetchedPages);
 
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
@@ -587,6 +627,192 @@ const AdminDashboard = () => {
       alert('تم تحديث رسالة الإدارة بنجاح!');
     } catch (err) {
       alert('حدث خطأ أثناء تحديث رسالة الإدارة: ' + err.message);
+    }
+  };
+
+  // ==================== NAVIGATION & CUSTOM PAGES ACTIONS ====================
+  const handleAddNav = async (e) => {
+    e.preventDefault();
+    if (!newNav.label || !newNav.target) {
+      alert('يرجى ملء جميع الحقول المطلوبة للرابط.');
+      return;
+    }
+
+    const navData = { 
+      ...newNav, 
+      order: parseInt(newNav.order) || 1 
+    };
+
+    if (editingNavId) {
+      // Edit mode
+      const navDocData = { ...navData, id: editingNavId };
+      if (isOfflineMode) {
+        const updated = navigation.map(item => item.id === editingNavId ? navDocData : item).sort((a,b) => a.order - b.order);
+        localStorage.setItem('db_navigation', JSON.stringify(updated));
+        setNavigation(updated);
+        setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
+        setEditingNavId(null);
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'navigation', editingNavId), navDocData);
+        const updated = navigation.map(item => item.id === editingNavId ? navDocData : item).sort((a,b) => a.order - b.order);
+        setNavigation(updated);
+        setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
+        setEditingNavId(null);
+      } catch (err) {
+        alert('حدث خطأ أثناء تعديل الرابط: ' + err.message);
+      }
+    } else {
+      // Add mode
+      const generatedId = `nav_${Date.now()}`;
+      const navDocData = { ...navData, id: generatedId };
+
+      if (isOfflineMode) {
+        const updated = [...navigation, navDocData].sort((a,b) => a.order - b.order);
+        localStorage.setItem('db_navigation', JSON.stringify(updated));
+        setNavigation(updated);
+        setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'navigation', generatedId), navDocData);
+        const updated = [...navigation, navDocData].sort((a,b) => a.order - b.order);
+        setNavigation(updated);
+        setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
+      } catch (err) {
+        alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
+      }
+    }
+  };
+
+  const startEditNav = (item) => {
+    setEditingNavId(item.id);
+    setNewNav({
+      label: item.label,
+      type: item.type,
+      target: item.target,
+      order: item.order
+    });
+  };
+
+  const cancelEditNav = () => {
+    setEditingNavId(null);
+    setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
+  };
+
+  const handleDeleteNav = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الرابط من قائمة العناوين؟')) return;
+
+    if (isOfflineMode) {
+      const updated = navigation.filter(item => item.id !== id);
+      localStorage.setItem('db_navigation', JSON.stringify(updated));
+      setNavigation(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'navigation', id));
+      setNavigation(navigation.filter(item => item.id !== id));
+    } catch (err) {
+      alert('حدث خطأ أثناء حذف الرابط: ' + err.message);
+    }
+  };
+
+  // Custom Pages Handlers
+  const handleAddPage = async (e) => {
+    e.preventDefault();
+    if (!newPage.id || !newPage.title || !newPage.content) {
+      alert('يرجى ملء جميع الحقول للصفحة.');
+      return;
+    }
+
+    // Sanitize path id (only lowercase, letters, digits, and hyphens)
+    const sanitizedId = newPage.id.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '-');
+    const pageDocData = {
+      id: sanitizedId,
+      title: newPage.title,
+      content: newPage.content,
+      createdAt: new Date().toISOString()
+    };
+
+    if (editingPageId) {
+      // Edit mode
+      if (isOfflineMode) {
+        const updated = pages.map(p => p.id === editingPageId ? pageDocData : p);
+        localStorage.setItem('db_pages', JSON.stringify(updated));
+        setPages(updated);
+        setNewPage({ id: '', title: '', content: '' });
+        setEditingPageId(null);
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'pages', editingPageId), pageDocData);
+        setPages(pages.map(p => p.id === editingPageId ? pageDocData : p));
+        setNewPage({ id: '', title: '', content: '' });
+        setEditingPageId(null);
+      } catch (err) {
+        alert('حدث خطأ أثناء حفظ الصفحة المخصصة: ' + err.message);
+      }
+    } else {
+      // Add mode
+      // Check if ID already exists
+      const idExists = pages.some(p => p.id === sanitizedId);
+      if (idExists) {
+        alert('المعرّف الخاص بالصفحة مستخدم بالفعل. يرجى اختيار معرّف فريد.');
+        return;
+      }
+
+      if (isOfflineMode) {
+        const updated = [...pages, pageDocData];
+        localStorage.setItem('db_pages', JSON.stringify(updated));
+        setPages(updated);
+        setNewPage({ id: '', title: '', content: '' });
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'pages', sanitizedId), pageDocData);
+        setPages([...pages, pageDocData]);
+        setNewPage({ id: '', title: '', content: '' });
+      } catch (err) {
+        alert('حدث خطأ أثناء إضافة الصفحة المخصصة: ' + err.message);
+      }
+    }
+  };
+
+  const startEditPage = (page) => {
+    setEditingPageId(page.id);
+    setNewPage({
+      id: page.id,
+      title: page.title,
+      content: page.content
+    });
+  };
+
+  const cancelEditPage = () => {
+    setEditingPageId(null);
+    setNewPage({ id: '', title: '', content: '' });
+  };
+
+  const handleDeletePage = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه الصفحة المخصصة؟ سيؤدي ذلك أيضاً لإلغاء صلاحية أي روابط تشير إليها.')) return;
+
+    if (isOfflineMode) {
+      const updated = pages.filter(p => p.id !== id);
+      localStorage.setItem('db_pages', JSON.stringify(updated));
+      setPages(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'pages', id));
+      setPages(pages.filter(p => p.id !== id));
+    } catch (err) {
+      alert('حدث خطأ أثناء حذف الصفحة: ' + err.message);
     }
   };
 
@@ -1352,6 +1578,15 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-book-open" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               الكتب واللباس الموحد ({books.length})
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('navigation')} 
+              className={`filter-chip ${activeTab === 'navigation' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-bars" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              العناوين والصفحات ({navigation.length})
             </button>
 
             <button 
@@ -2497,6 +2732,307 @@ const AdminDashboard = () => {
                         )}
                       </div>
 
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 8.7: NAVIGATION & CUSTOM PAGES EDITOR */}
+              {activeTab === 'navigation' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة روابط سطر العناوين والصفحات المخصصة</h2>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                    
+                    {/* SECTION 1: Dynamic Custom Pages */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        <i className="fas fa-file-alt" style={{ marginLeft: '0.5rem' }}></i>
+                        {editingPageId ? `تعديل الصفحة المخصصة: ${editingPageId}` : 'إنشاء صفحة مخصصة جديدة'}
+                      </h3>
+                      
+                      <form onSubmit={handleAddPage}>
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">معرّف الرابط الفريد (ID بالإنجليزية فقط) *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              disabled={!!editingPageId}
+                              placeholder="مثال: school-charter (سيصبح الرابط: #/page/school-charter)"
+                              value={newPage.id}
+                              onChange={(e) => setNewPage({ ...newPage, id: e.target.value })}
+                            />
+                            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
+                              يُستخدم كعنوان للرابط، لا تستخدم مسافات أو رموز خاصة (استخدم الشرطة - فقط للفصل).
+                            </small>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">عنوان الصفحة (بالعربية) *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: دستور ونظام المدرسة"
+                              value={newPage.title}
+                              onChange={(e) => setNewPage({ ...newPage, title: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">مضمون ومحتوى الصفحة *</label>
+                          <textarea 
+                            className="form-input" 
+                            required
+                            style={{ minHeight: '200px', lineHeight: '1.7' }}
+                            placeholder="اكتب تفاصيل وموضوع الصفحة هنا. افصل بين الفقرات بسطر فارغ لتظهر بشكل منسق للزوار..."
+                            value={newPage.content}
+                            onChange={(e) => setNewPage({ ...newPage, content: e.target.value })}
+                          ></textarea>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                            <i className={editingPageId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                            {editingPageId ? ' حفظ وتعديل الصفحة' : ' إنشاء ونشر الصفحة'}
+                          </button>
+                          {editingPageId && (
+                            <button type="button" onClick={cancelEditPage} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء
+                            </button>
+                          )}
+                        </div>
+                      </form>
+
+                      {/* Pages List */}
+                      <h4 style={{ fontWeight: 800, marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>الصفحات المخصصة المنشورة حالياً ({pages.length})</h4>
+                      {pages.length > 0 ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '2px solid var(--border-light)', background: 'var(--bg-light)' }}>
+                                <th style={{ padding: '0.75rem' }}>عنوان الصفحة</th>
+                                <th style={{ padding: '0.75rem' }}>معرّف الرابط (ID)</th>
+                                <th style={{ padding: '0.75rem' }}>الرابط المباشر للمشاهدة</th>
+                                <th style={{ padding: '0.75rem', width: '100px' }}>العمليات</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pages.map((p) => (
+                                <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                  <td style={{ padding: '0.75rem', fontWeight: 700 }}>{p.title}</td>
+                                  <td style={{ padding: '0.75rem' }}><code>{p.id}</code></td>
+                                  <td style={{ padding: '0.75rem' }}>
+                                    <a href={`#/page/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>
+                                      #/page/{p.id}
+                                    </a>
+                                  </td>
+                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                                    <button 
+                                      onClick={() => startEditPage(p)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1rem' }}
+                                      title="تعديل محتوى الصفحة"
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeletePage(p.id)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1rem' }}
+                                      title="حذف الصفحة"
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem', border: '1px dashed var(--border-light)' }}>لم تقم بإنشاء أي صفحات مخصصة حتى الآن.</p>
+                      )}
+                    </div>
+
+                    {/* SECTION 2: Navbar Links Manager */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        <i className="fas fa-link" style={{ marginLeft: '0.5rem' }}></i>
+                        {editingNavId ? 'تعديل عنوان في القائمة العلوية' : 'إضافة عنوان/رابط جديد للقائمة العلوية'}
+                      </h3>
+                      
+                      <form onSubmit={handleAddNav}>
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">اسم الزر/العنوان (بالعربية) *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: دستور المدرسة"
+                              value={newNav.label}
+                              onChange={(e) => setNewNav({ ...newNav, label: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">نوع الرابط المستهدف *</label>
+                            <select 
+                              className="form-input"
+                              value={newNav.type}
+                              onChange={(e) => {
+                                const newType = e.target.value;
+                                // Reset target depending on type
+                                let defaultTarget = 'home';
+                                if (newType === 'custom_page') {
+                                  defaultTarget = pages.length > 0 ? pages[0].id : '';
+                                } else if (newType === 'external') {
+                                  defaultTarget = 'https://';
+                                }
+                                setNewNav({ ...newNav, type: newType, target: defaultTarget });
+                              }}
+                            >
+                              <option value="section">قسم في الصفحة الرئيسية (Home Section)</option>
+                              <option value="custom_page">صفحة مخصصة (Custom Page)</option>
+                              <option value="external">رابط لموقع خارجي (External Link)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group-row">
+                          <div className="form-group">
+                            <label className="form-label">الهدف المستهدف (Target) *</label>
+                            {newNav.type === 'section' && (
+                              <select 
+                                className="form-input"
+                                value={newNav.target}
+                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                              >
+                                <option value="home">الرئيسية (#home)</option>
+                                <option value="initiatives">المبادرات (#initiatives)</option>
+                                <option value="calendar">الرزنامة (#calendar)</option>
+                                <option value="news">الأخبار (#news)</option>
+                                <option value="principal">كلمة المدير (#principal)</option>
+                                <option value="links">روابط هامة (#links)</option>
+                                <option value="books">الكتب واللباس الموحد (#books)</option>
+                                <option value="gallery">المعرض (#gallery)</option>
+                                <option value="contact">اتصل بنا (#contact)</option>
+                              </select>
+                            )}
+                            {newNav.type === 'custom_page' && (
+                              <select 
+                                className="form-input"
+                                value={newNav.target}
+                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                              >
+                                {pages.length > 0 ? (
+                                  pages.map(p => (
+                                    <option key={p.id} value={p.id}>{p.title} ({p.id})</option>
+                                  ))
+                                ) : (
+                                  <option value="">(يرجى إنشاء صفحة مخصصة أولاً!)</option>
+                                )}
+                              </select>
+                            )}
+                            {newNav.type === 'external' && (
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                required
+                                placeholder="مثال: https://edu.gov.il"
+                                value={newNav.target}
+                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                              />
+                            )}
+                          </div>
+                          
+                          <div className="form-group">
+                            <label className="form-label">رقم ترتيب الظهور (رقم تسلسلي) *</label>
+                            <input 
+                              type="number" 
+                              className="form-input" 
+                              required
+                              min="1"
+                              value={newNav.order}
+                              onChange={(e) => setNewNav({ ...newNav, order: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                            <i className={editingNavId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                            {editingNavId ? ' حفظ التغييرات' : ' إضافة لسطر العناوين'}
+                          </button>
+                          {editingNavId && (
+                            <button type="button" onClick={cancelEditNav} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                              إلغاء التعديل
+                            </button>
+                          )}
+                        </div>
+                      </form>
+
+                      {/* Navbar Links List */}
+                      <h4 style={{ fontWeight: 800, marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>العناوين الحالية في القائمة العلوية ({navigation.length})</h4>
+                      {navigation.length > 0 ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '2px solid var(--border-light)', background: 'var(--bg-light)' }}>
+                                <th style={{ padding: '0.75rem', width: '60px' }}>الترتيب</th>
+                                <th style={{ padding: '0.75rem' }}>عنوان الزر/الصفحة</th>
+                                <th style={{ padding: '0.75rem' }}>النوع</th>
+                                <th style={{ padding: '0.75rem' }}>المعرف/الرابط</th>
+                                <th style={{ padding: '0.75rem', width: '100px' }}>العمليات</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {navigation.map((item) => (
+                                <tr key={item.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                  <td style={{ padding: '0.75rem', fontWeight: 700, textAlign: 'center' }}>{item.order}</td>
+                                  <td style={{ padding: '0.75rem', fontWeight: 700 }}>{item.label}</td>
+                                  <td style={{ padding: '0.75rem' }}>
+                                    <span style={{ 
+                                      background: item.type === 'section' ? 'rgba(30, 58, 138, 0.08)' : item.type === 'custom_page' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                                      color: item.type === 'section' ? 'var(--primary-dark)' : item.type === 'custom_page' ? '#10b981' : '#f59e0b',
+                                      padding: '0.2rem 0.5rem', 
+                                      borderRadius: '4px', 
+                                      fontSize: '0.8rem', 
+                                      fontWeight: 700 
+                                    }}>
+                                      {item.type === 'section' ? 'قسم رئيسي' : item.type === 'custom_page' ? 'صفحة مخصصة' : 'رابط خارجي'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '0.75rem' }}>
+                                    <code>
+                                      {item.type === 'section' ? `#${item.target}` : item.type === 'custom_page' ? `#/page/${item.target}` : item.target}
+                                    </code>
+                                  </td>
+                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                                    <button 
+                                      onClick={() => startEditNav(item)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1rem' }}
+                                      title="تعديل العنوان"
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteNav(item.id)} 
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1rem' }}
+                                      title="حذف من القائمة"
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>لا توجد عناوين مضافة حالياً.</p>
+                      )}
                     </div>
 
                   </div>
