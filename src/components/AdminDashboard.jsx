@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../firebase';
+import { auth, db, storage } from '../firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
   getDocs, 
@@ -191,6 +192,109 @@ const AdminDashboard = () => {
     src: '',
     category: 'classroom'
   });
+
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [isUploadingPrincipal, setIsUploadingPrincipal] = useState(false);
+
+  // Compress and Upload Image helper (Client-side resizing to max 1200px and JPEG quality 82%)
+  const compressAndUploadImage = (file, folderPath) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              reject(new Error('Canvas compression failed'));
+              return;
+            }
+            
+            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+            const storageRef = ref(storage, `${folderPath}/${fileName}`);
+            
+            try {
+              await uploadBytes(storageRef, blob);
+              const downloadUrl = await getDownloadURL(storageRef);
+              resolve(downloadUrl);
+            } catch (err) {
+              reject(err);
+            }
+          }, 'image/jpeg', 0.82); // 82% quality (excellent quality, small size)
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  const handleGalleryFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      alert('يرجى اختيار ملف صورة صالح.');
+      return;
+    }
+
+    try {
+      setIsUploadingGallery(true);
+      const downloadUrl = await compressAndUploadImage(file, 'gallery');
+      setNewPhoto(prev => ({ ...prev, src: downloadUrl }));
+      alert('تم ضغط ورفع الصورة بنجاح!');
+    } catch (err) {
+      console.error('Image upload error:', err);
+      alert('حدث خطأ أثناء رفع الصورة: ' + err.message);
+    } finally {
+      setIsUploadingGallery(false);
+    }
+  };
+
+  const handlePrincipalFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      alert('يرجى اختيار ملف صورة صالح.');
+      return;
+    }
+
+    try {
+      setIsUploadingPrincipal(true);
+      const downloadUrl = await compressAndUploadImage(file, 'principal');
+      setPrincipal(prev => ({ ...prev, image: downloadUrl }));
+      alert('تم ضغط ورفع صورة المدير بنجاح!');
+    } catch (err) {
+      console.error('Image upload error:', err);
+      alert('حدث خطأ أثناء رفع صورة المدير: ' + err.message);
+    } finally {
+      setIsUploadingPrincipal(false);
+    }
+  };
 
   // Track auth state
   useEffect(() => {
@@ -2089,20 +2193,43 @@ const AdminDashboard = () => {
                   <div style={{ background: 'var(--bg-white)', padding: '2.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
                     <form onSubmit={handleUpdatePrincipal}>
                       <div className="form-group">
-                        <label className="form-label">صورة مدير المدرسة (رابط URL) *</label>
-                        <input 
-                          type="url" 
-                          className="form-input" 
-                          required
-                          value={principal.image}
-                          onChange={(e) => setPrincipal({ ...principal, image: e.target.value })}
-                          placeholder="https://example.com/photo.jpg"
-                        />
-                        {principal.image && (
-                          <div style={{ marginTop: '1rem' }}>
-                            <img src={principal.image} alt="معاينة الصورة" style={{ width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', border: '2px solid var(--border-light)' }} />
+                        <label className="form-label">صورة مدير المدرسة *</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handlePrincipalFileChange}
+                            style={{ 
+                              padding: '0.5rem', 
+                              border: '1px dashed var(--border-light)', 
+                              borderRadius: 'var(--radius-sm)',
+                              cursor: 'pointer'
+                            }}
+                          />
+                          {isUploadingPrincipal && (
+                            <p style={{ color: 'var(--primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                              <i className="fas fa-spinner fa-spin"></i> جاري ضغط ورفع الصورة...
+                            </p>
+                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              value={principal.image}
+                              onChange={(e) => setPrincipal({ ...principal, image: e.target.value })}
+                              placeholder="أو الصق رابط الصورة المباشر هنا..."
+                              style={{ flexGrow: 1 }}
+                            />
+                            {principal.image && (
+                              <img 
+                                src={principal.image} 
+                                alt="معاينة الصورة" 
+                                style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', border: '2px solid var(--border-light)' }} 
+                              />
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
 
                       <div className="form-group">
@@ -2310,15 +2437,43 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="form-group">
-                          <label className="form-label font-bold">رابط عنوان الصورة (Image URL) *</label>
-                          <input 
-                            type="url" 
-                            className="form-input" 
-                            required
-                            placeholder="https://images.unsplash.com/photo-..."
-                            value={newPhoto.src}
-                            onChange={(e) => setNewPhoto({ ...newPhoto, src: e.target.value })}
-                          />
+                          <label className="form-label font-bold">صورة الفعالية/النشاط *</label>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={handleGalleryFileChange}
+                              style={{ 
+                                padding: '0.5rem', 
+                                border: '1px dashed var(--border-light)', 
+                                borderRadius: 'var(--radius-sm)',
+                                cursor: 'pointer'
+                              }}
+                            />
+                            {isUploadingGallery && (
+                              <p style={{ color: 'var(--primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                                <i className="fas fa-spinner fa-spin"></i> جاري ضغط ورفع الصورة...
+                              </p>
+                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                required
+                                placeholder="أو الصق رابط الصورة المباشر هنا..."
+                                value={newPhoto.src}
+                                onChange={(e) => setNewPhoto({ ...newPhoto, src: e.target.value })}
+                                style={{ flexGrow: 1 }}
+                              />
+                              {newPhoto.src && (
+                                <img 
+                                  src={newPhoto.src} 
+                                  alt="معاينة الصورة" 
+                                  style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', border: '2px solid var(--border-light)' }} 
+                                />
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <div className="form-group">
