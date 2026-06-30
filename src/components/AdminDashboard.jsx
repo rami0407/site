@@ -252,6 +252,15 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleUploadError = (err, typeName) => {
+    console.error(`${typeName} upload error:`, err);
+    if (err.code === 'storage/retry-limit-exceeded' || err.message?.includes('retry-limit-exceeded')) {
+      alert(`تنبيه هام: فشل رفع الصورة لأن خدمة تخزين الملفات (Firebase Storage) لم يتم تفعيلها/البدء فيها بعد في حساب Firebase الخاص بك.\n\nلحل المشكلة:\n1. افتح لوحة تحكم Firebase للمشروع (site-a8b88).\n2. توجه لقسم Storage (التخزين) في القائمة الجانبية.\n3. اضغط على زر "Get Started" (البدء) لإطلاق الخدمة.\n\nكبديل مؤقت، يمكنك استخدام خيار لصق رابط الصورة يدوياً في الخانة بالأسفل.`);
+    } else {
+      alert(`حدث خطأ أثناء رفع ${typeName}: ` + err.message);
+    }
+  };
+
   const handleGalleryFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -267,8 +276,7 @@ const AdminDashboard = () => {
       setNewPhoto(prev => ({ ...prev, src: downloadUrl }));
       alert('تم ضغط ورفع الصورة بنجاح!');
     } catch (err) {
-      console.error('Image upload error:', err);
-      alert('حدث خطأ أثناء رفع الصورة: ' + err.message);
+      handleUploadError(err, 'الصورة');
     } finally {
       setIsUploadingGallery(false);
     }
@@ -289,8 +297,7 @@ const AdminDashboard = () => {
       setPrincipal(prev => ({ ...prev, image: downloadUrl }));
       alert('تم ضغط ورفع صورة المدير بنجاح!');
     } catch (err) {
-      console.error('Image upload error:', err);
-      alert('حدث خطأ أثناء رفع صورة المدير: ' + err.message);
+      handleUploadError(err, 'صورة المدير');
     } finally {
       setIsUploadingPrincipal(false);
     }
