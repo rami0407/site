@@ -14,6 +14,7 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { calendarEvents, newsData } from '../data/schoolData'; // defaults for seeding
+import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -84,12 +85,26 @@ const AdminDashboard = () => {
     return () => window.removeEventListener('hashchange', checkSetupMode);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages
+  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages, books
 
   // Dashboard Data Lists
   const [events, setEvents] = useState([]);
   const [news, setNews] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [uniforms, setUniforms] = useState([]);
+  const [guideLetter, setGuideLetter] = useState({ title: '', salutation: '', content: '', valediction: '' });
+
+  const [editingBookId, setEditingBookId] = useState(null);
+  const [newBook, setNewBook] = useState({
+    grade: '1',
+    subject: '',
+    title: '',
+    author: '',
+    year: '',
+    notes: ''
+  });
+
   const [values, setValues] = useState([]);
   const [initiatives, setInitiatives] = useState([]);
   const [principal, setPrincipal] = useState({ message: '', signature: '', image: '' });
@@ -277,6 +292,9 @@ const AdminDashboard = () => {
         youtube: 'https://youtube.com'
       };
       setContactInfo(JSON.parse(localStorage.getItem('db_contact_info') || JSON.stringify(fallbackContactInfo)));
+      setBooks(JSON.parse(localStorage.getItem('db_books') || JSON.stringify(defaultBooks)));
+      setUniforms(JSON.parse(localStorage.getItem('db_uniforms') || JSON.stringify(defaultUniform)));
+      setGuideLetter(JSON.parse(localStorage.getItem('db_guide_letter') || JSON.stringify(defaultLetter)));
 
       setIsLoadingData(false);
       return;
@@ -362,6 +380,32 @@ const AdminDashboard = () => {
         setContactInfo(contactSnap.data());
       }
 
+      // 10. Load Books
+      const qBooks = collection(db, 'books');
+      const querySnapshotBooks = await getDocs(qBooks);
+      const fetchedBooks = [];
+      querySnapshotBooks.forEach((doc) => {
+        fetchedBooks.push({ ...doc.data(), id: doc.id });
+      });
+      fetchedBooks.sort((a, b) => a.grade.localeCompare(b.grade) || a.subject.localeCompare(b.subject));
+      setBooks(fetchedBooks);
+
+      // 11. Load Uniforms
+      const qUniforms = collection(db, 'uniform');
+      const querySnapshotUniforms = await getDocs(qUniforms);
+      const fetchedUniforms = [];
+      querySnapshotUniforms.forEach((doc) => {
+        fetchedUniforms.push({ ...doc.data(), id: doc.id });
+      });
+      setUniforms(fetchedUniforms);
+
+      // 12. Load Guide Letter
+      const guideLetterDoc = doc(db, 'schoolGuide', 'letter');
+      const guideLetterSnap = await getDoc(guideLetterDoc);
+      if (guideLetterSnap.exists()) {
+        setGuideLetter(guideLetterSnap.data());
+      }
+
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
     } finally {
@@ -424,6 +468,125 @@ const AdminDashboard = () => {
       setUser(null);
     } else {
       await signOut(auth);
+    }
+  };
+
+  // ==================== BOOKS & UNIFORM ACTIONS ====================
+  const handleAddBook = async (e) => {
+    e.preventDefault();
+    if (!newBook.subject || !newBook.title) {
+      alert('يرجى كتابة اسم الكتاب والمادة.');
+      return;
+    }
+
+    if (editingBookId) {
+      // Edit mode
+      if (isOfflineMode) {
+        const updated = books.map(b => b.id === editingBookId ? { ...b, ...newBook } : b);
+        localStorage.setItem('db_books', JSON.stringify(updated));
+        setBooks(updated);
+        setNewBook({ grade: '1', subject: '', title: '', author: '', year: '', notes: '' });
+        setEditingBookId(null);
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, 'books', editingBookId), newBook);
+        setBooks(books.map(b => b.id === editingBookId ? { ...b, ...newBook } : b));
+        setNewBook({ grade: '1', subject: '', title: '', author: '', year: '', notes: '' });
+        setEditingBookId(null);
+      } catch (err) {
+        alert('حدث خطأ أثناء تعديل الكتاب: ' + err.message);
+      }
+    } else {
+      // Add mode
+      const generatedId = `book_${Date.now()}`;
+      const bookData = { ...newBook, id: generatedId };
+
+      if (isOfflineMode) {
+        const updated = [...books, bookData];
+        localStorage.setItem('db_books', JSON.stringify(updated));
+        setBooks(updated);
+        setNewBook({ grade: '1', subject: '', title: '', author: '', year: '', notes: '' });
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'books', generatedId), bookData);
+        setBooks([...books, bookData]);
+        setNewBook({ grade: '1', subject: '', title: '', author: '', year: '', notes: '' });
+      } catch (err) {
+        alert('حدث خطأ أثناء إضافة الكتاب: ' + err.message);
+      }
+    }
+  };
+
+  const startEditBook = (book) => {
+    setEditingBookId(book.id);
+    setNewBook({
+      grade: book.grade,
+      subject: book.subject,
+      title: book.title,
+      author: book.author || '',
+      year: book.year || '',
+      notes: book.notes || ''
+    });
+  };
+
+  const cancelEditBook = () => {
+    setEditingBookId(null);
+    setNewBook({ grade: '1', subject: '', title: '', author: '', year: '', notes: '' });
+  };
+
+  const handleDeleteBook = async (id) => {
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا الكتاب؟')) return;
+
+    if (isOfflineMode) {
+      const updated = books.filter(b => b.id !== id);
+      localStorage.setItem('db_books', JSON.stringify(updated));
+      setBooks(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'books', id));
+      setBooks(books.filter(b => b.id !== id));
+    } catch (err) {
+      alert('حدث خطأ أثناء حذف الكتاب: ' + err.message);
+    }
+  };
+
+  const handleUpdateUniform = async (id, updatedDesc) => {
+    if (isOfflineMode) {
+      const updated = uniforms.map(u => u.id === id ? { ...u, description: updatedDesc } : u);
+      localStorage.setItem('db_uniforms', JSON.stringify(updated));
+      setUniforms(updated);
+      alert('تم تحديث اللباس الموحد محلياً بنجاح!');
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'uniform', id), { description: updatedDesc });
+      setUniforms(uniforms.map(u => u.id === id ? { ...u, description: updatedDesc } : u));
+      alert('تم تحديث اللباس الموحد بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء تحديث اللباس الموحد: ' + err.message);
+    }
+  };
+
+  const handleUpdateLetter = async (e) => {
+    e.preventDefault();
+    if (isOfflineMode) {
+      localStorage.setItem('db_guide_letter', JSON.stringify(guideLetter));
+      alert('تم تحديث رسالة الإدارة محلياً بنجاح!');
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'schoolGuide', 'letter'), guideLetter);
+      alert('تم تحديث رسالة الإدارة بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء تحديث رسالة الإدارة: ' + err.message);
     }
   };
 
@@ -1180,6 +1343,15 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-images" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               معرض الصور ({gallery.length})
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('books')} 
+              className={`filter-chip ${activeTab === 'books' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-book-open" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              الكتب واللباس الموحد ({books.length})
             </button>
 
             <button 
@@ -2056,6 +2228,277 @@ const AdminDashboard = () => {
                     ) : (
                       <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>لا توجد أي رسائل واردة حالياً في الصندوق.</p>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 8.5: BOOKS & UNIFORM GUIDE EDITOR */}
+              {activeTab === 'books' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة دليل الكتب المدرسية واللباس الموحد</h2>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                    
+                    {/* SECTION 1: Welcome Letter Editor */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        <i className="fas fa-envelope-open-text" style={{ marginLeft: '0.5rem' }}></i>
+                        تعديل رسالة التوجيه لأولياء الأمور
+                      </h3>
+                      <form onSubmit={handleUpdateLetter}>
+                        <div className="form-group">
+                          <label className="form-label">عنوان الرسالة *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={guideLetter.title || ''}
+                            onChange={(e) => setGuideLetter({ ...guideLetter, title: e.target.value })}
+                            placeholder="مثال: حضرة ولي امر الطالب/ة المحترم"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">التحية والافتتاحية *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={guideLetter.salutation || ''}
+                            onChange={(e) => setGuideLetter({ ...guideLetter, salutation: e.target.value })}
+                            placeholder="مثال: تحية عطرة وبعد:"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">مضمون الرسالة الموجهة *</label>
+                          <textarea 
+                            className="form-input" 
+                            required
+                            style={{ minHeight: '150px' }}
+                            value={guideLetter.content || ''}
+                            onChange={(e) => setGuideLetter({ ...guideLetter, content: e.target.value })}
+                            placeholder="اكتب مضمون الرسالة هنا بالتفصيل..."
+                          ></textarea>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">التوقيع والخاتمة *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={guideLetter.valediction || ''}
+                            onChange={(e) => setGuideLetter({ ...guideLetter, valediction: e.target.value })}
+                            placeholder="مثال: باحترام، مدير المدرسة والهيئة التدريسية"
+                          />
+                        </div>
+                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
+                          <i className="fas fa-save"></i> حفظ وتحديث الرسالة
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* SECTION 2: Uniform Guidelines Editor */}
+                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                        <i className="fas fa-tshirt" style={{ marginLeft: '0.5rem' }}></i>
+                        إدارة اللباس المدرسي الموحد
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                        {uniforms.map((uni) => (
+                          <div 
+                            key={uni.id} 
+                            style={{ 
+                              border: '1px solid var(--border-light)', 
+                              borderRadius: 'var(--radius-sm)', 
+                              padding: '1.5rem', 
+                              background: 'var(--bg-light)', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: '1rem' 
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: uni.colorCode }}></span>
+                              <strong style={{ fontSize: '1.05rem', color: 'var(--primary-dark)' }}>الصفوف: {uni.grades}</strong>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: '0.82rem' }}>وصف اللباس واللون المعتمد *</label>
+                              <textarea 
+                                className="form-input"
+                                style={{ minHeight: '80px', fontSize: '0.9rem' }}
+                                value={uni.description}
+                                onChange={(e) => {
+                                  setUniforms(uniforms.map(u => u.id === uni.id ? { ...u, description: e.target.value } : u));
+                                }}
+                              ></textarea>
+                            </div>
+                            <button 
+                              onClick={() => handleUpdateUniform(uni.id, uni.description)} 
+                              className="btn" 
+                              style={{ background: 'var(--primary-dark)', fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                            >
+                              <i className="fas fa-check-circle"></i> تحديث
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* SECTION 3: Textbooks Editor */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
+                      
+                      {/* Form to Add/Edit book */}
+                      <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                          {editingBookId ? 'تعديل بيانات كتاب' : 'إضافة كتاب مدرسي جديد'}
+                        </h3>
+                        <form onSubmit={handleAddBook}>
+                          <div className="form-group-row">
+                            <div className="form-group">
+                              <label className="form-label">الصف المدرسي *</label>
+                              <select 
+                                className="form-input"
+                                value={newBook.grade}
+                                onChange={(e) => setNewBook({ ...newBook, grade: e.target.value })}
+                              >
+                                <option value="1">الصف الأول</option>
+                                <option value="2">الصف الثاني</option>
+                                <option value="3">الصف الثالث</option>
+                                <option value="4">الصف الرابع</option>
+                                <option value="5">الصف الخامس</option>
+                                <option value="6">الصف السادس</option>
+                              </select>
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">المادة والموضوع *</label>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                required
+                                placeholder="مثال: لغة عربية، رياضيات، علوم"
+                                value={newBook.subject}
+                                onChange={(e) => setNewBook({ ...newBook, subject: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">اسم الكتاب *</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              placeholder="مثال: الغيث الجزء الأول"
+                              value={newBook.title}
+                              onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="form-group-row">
+                            <div className="form-group">
+                              <label className="form-label">المؤلف (اختياري)</label>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                placeholder="مثال: وئام وتد"
+                                value={newBook.author}
+                                onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">سنة الإصدار (اختياري)</label>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                placeholder="مثال: 2017 أو طبعة جديدة"
+                                value={newBook.year}
+                                onChange={(e) => setNewBook({ ...newBook, year: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">ملاحظات إضافية (اختياري)</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="مثال: تجريبي، يوزع من المدرسة"
+                              value={newBook.notes}
+                              onChange={(e) => setNewBook({ ...newBook, notes: e.target.value })}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
+                              <i className={editingBookId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                              {editingBookId ? ' حفظ التغييرات' : ' إضافة الكتاب'}
+                            </button>
+                            {editingBookId && (
+                              <button type="button" onClick={cancelEditBook} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                                إلغاء التعديل
+                              </button>
+                            )}
+                          </div>
+                        </form>
+                      </div>
+
+                      {/* Books Table */}
+                      <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>الكتب المسجلة حالياً ({books.length})</h3>
+                        {books.length > 0 ? (
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
+                              <thead>
+                                <tr style={{ borderBottom: '2px solid var(--border-light)' }}>
+                                  <th style={{ padding: '0.75rem' }}>الصف</th>
+                                  <th style={{ padding: '0.75rem' }}>المادة</th>
+                                  <th style={{ padding: '0.75rem' }}>اسم الكتاب</th>
+                                  <th style={{ padding: '0.75rem' }}>المؤلف</th>
+                                  <th style={{ padding: '0.75rem' }}>السنة</th>
+                                  <th style={{ padding: '0.75rem', width: '90px' }}>العمليات</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {books.map((book) => (
+                                  <tr key={book.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                    <td style={{ padding: '0.75rem', fontWeight: 700 }}>
+                                      الصف {book.grade === '1' ? 'الأول' : book.grade === '2' ? 'الثاني' : book.grade === '3' ? 'الثالث' : book.grade === '4' ? 'الرابع' : book.grade === '5' ? 'الخامس' : 'السادس'}
+                                    </td>
+                                    <td style={{ padding: '0.75rem' }}>
+                                      <span style={{ background: 'rgba(30, 58, 138, 0.08)', color: 'var(--primary-dark)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                        {book.subject}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '0.75rem' }}>{book.title}</td>
+                                    <td style={{ padding: '0.75rem' }}>{book.author || '—'}</td>
+                                    <td style={{ padding: '0.75rem' }}>{book.year || '—'}</td>
+                                    <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                                      <button 
+                                        onClick={() => startEditBook(book)} 
+                                        style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1rem' }}
+                                        title="تعديل"
+                                      >
+                                        <i className="fas fa-edit"></i>
+                                      </button>
+                                      <button 
+                                        onClick={() => handleDeleteBook(book.id)} 
+                                        style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1rem' }}
+                                        title="حذف"
+                                      >
+                                        <i className="fas fa-trash"></i>
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>لا توجد كتب مضافة حالياً.</p>
+                        )}
+                      </div>
+
+                    </div>
+
                   </div>
                 </div>
               )}

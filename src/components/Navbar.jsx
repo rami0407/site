@@ -7,6 +7,7 @@ const navItems = [
   { id: 'news', label: 'الأخبار' },
   { id: 'principal', label: 'كلمة المدير' },
   { id: 'links', label: 'روابط هامة' },
+  { id: 'books', label: 'الكتب واللباس الموحد' },
   { id: 'gallery', label: 'المعرض' },
   { id: 'contact', label: 'اتصل بنا' }
 ];

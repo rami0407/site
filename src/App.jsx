@@ -24,7 +24,10 @@ import {
   importantLinks, 
   galleryPhotos 
 } from './data/schoolData';
+import BooksGuide from './components/BooksGuide';
+import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideData';
 import './App.css';
+
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
@@ -144,6 +147,39 @@ function App() {
           console.log("Contact details successfully seeded!");
         }
 
+        // 9. Seed Books
+        const booksRef = collection(db, 'books');
+        const booksSnap = await getDocs(booksRef);
+        if (booksSnap.empty) {
+          console.log("Firestore books collection is empty. Seeding defaults...");
+          for (const book of defaultBooks) {
+            await setDoc(doc(db, 'books', book.id), book);
+          }
+          console.log("Books successfully seeded!");
+        }
+
+        // 10. Seed Uniform
+        const uniformRef = collection(db, 'uniform');
+        const uniformSnap = await getDocs(uniformRef);
+        if (uniformSnap.empty) {
+          console.log("Firestore uniform collection is empty. Seeding defaults...");
+          for (const uni of defaultUniform) {
+            await setDoc(doc(db, 'uniform', uni.id), uni);
+          }
+          console.log("Uniform successfully seeded!");
+        }
+
+        // 11. Seed School Guide Letter
+        const schoolGuideRef = collection(db, 'schoolGuide');
+        const letterDocRef = doc(db, 'schoolGuide', 'letter');
+        const letterDocSnap = await getDoc(letterDocRef);
+        if (!letterDocSnap.exists()) {
+          console.log("Seeding school guide letter...");
+          await setDoc(letterDocRef, defaultLetter);
+          console.log("School guide letter successfully seeded!");
+        }
+
+
       } catch (error) {
         console.warn("Firebase auto-seeding skipped (normal for offline/unconfigured environments):", error.message);
       }
@@ -196,6 +232,9 @@ function App() {
 
         {/* Fast Action Hyperlinks */}
         <ImportantLinks />
+
+        {/* Textbooks & Uniform Guide */}
+        <BooksGuide />
 
         {/* Responsive Activity Gallery */}
         <Gallery />
