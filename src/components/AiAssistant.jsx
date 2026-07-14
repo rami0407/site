@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 const GEMINI_API_KEY = "AIzaSyC-pSd6CjI5HaMabEdcorKxH9uAMa8uSDg";
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
