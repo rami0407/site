@@ -28,6 +28,7 @@ import BooksGuide from './components/BooksGuide';
 import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideData';
 import CustomPageView from './components/CustomPageView';
 import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
+import AiAssistant from './components/AiAssistant';
 import './App.css';
 
 
@@ -285,6 +286,9 @@ function App() {
 
       {/* Floating Helpers (WhatsApp & ScrollToTop) */}
       <FloatingActions />
+
+      {/* Gemini AI Assistant Chatbot */}
+      <AiAssistant />
     </>
   );
 }
