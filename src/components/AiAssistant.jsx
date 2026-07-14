@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
-const GEMINI_API_KEY = "AIzaSyC-pSd6CjI5HaMabEdcorKxH9uAMa8uSDg";
 const GEMINI_MODEL = "gemini-1.5-flash";
 
 const AiAssistant = () => {
@@ -13,6 +12,7 @@ const AiAssistant = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [schoolContext, setSchoolContext] = useState('');
+  const [apiKey, setApiKey] = useState('');
   
   const chatEndRef = useRef(null);
 
@@ -100,12 +100,34 @@ const AiAssistant = () => {
       }
     };
 
+    const fetchApiKey = async () => {
+      try {
+        const keyDoc = await getDoc(doc(db, 'schoolGuide', 'gemini'));
+        if (keyDoc.exists()) {
+          setApiKey(keyDoc.data().apiKey || '');
+        }
+      } catch (e) {
+        console.warn("Failed loading Gemini API key for AI context:", e);
+      }
+    };
+
+    fetchApiKey();
     compileContext();
   }, []);
 
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
+
+    if (!apiKey) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', text },
+        { role: 'model', text: 'عذراً، مساعد الذكاء الاصطناعي غير مفعل حالياً. يرجى تهيئة مفتاح الـ API من لوحة التحكم لتشغيل الخدمة.' }
+      ]);
+      setInputText('');
+      return;
+    }
 
     // Add user message to state
     const updatedMessages = [...messages, { role: 'user', text }];
@@ -122,7 +144,7 @@ const AiAssistant = () => {
 
       // Call Gemini API via fetch REST request
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
