@@ -17,7 +17,7 @@ const DEFAULT_CHALLENGE = {
 const DEFAULT_STARS = [
   { id: 'star-1', name: 'أحمد محمود جبارين', grade: 'الصف الخامس أ', badge: 'بطل الرياضيات 🌟', likes: 18, date: 'هذا الأسبوع' },
   { id: 'star-2', name: 'سارة إياد اغبارية', grade: 'الصف الثالث ب', badge: 'عبقرية اللغات 💡', likes: 24, date: 'هذا الأسبوع' },
-  { id: 'star-3', name: 'محمد يوسف أبو فنة', grade: 'الصف الرابع 1', badge: 'نجم التحدي 🏆', likes: 15, date: 'هذا الأسبوع' }
+  { id: 'star-3', name: 'محمد يوسف ارفاعية', grade: 'الصف الرابع 1', badge: 'نجم التحدي 🏆', likes: 15, date: 'هذا الأسبوع' }
 ];
 
 const WeeklyChallenge = () => {
@@ -309,7 +309,7 @@ const WeeklyChallenge = () => {
                   <input
                     type="text"
                     className="student-name-input"
-                    placeholder="اسم الطالب الثلاثي (مثال: كريم رامي أبو فنة)"
+                    placeholder="اسم الطالب الثلاثي (مثال: كريم رامي ارفاعية)"
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
                     required

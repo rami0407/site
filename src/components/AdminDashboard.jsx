@@ -341,7 +341,7 @@ const AdminDashboard = () => {
       const fallbackPrincipal = {
         image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&auto=format&fit=crop&q=80',
         message: 'أهلاً بكم في صرح مدرسة مشيرفة الابتدائية. نحن نؤمن بأن التعليم ليس مجرد حشو للمعلومات، بل هو رحلة استكشاف وبناء شخصية متكاملة لطلابنا. من خلال مبادراتنا المتميزة كـ "امتنان" و "مسرح الدمى" و "مقصف المعرفة"، نعمل جاهدين على بناء مهارات المستقبل، وترسيخ قيم العطاء والمحبة والتقدير. نطمح دوماً لشراكة فاعلة ومثمرة مع أولياء الأمور الكرام لبناء غدٍ أفضل وجيل واعد ومتميز.',
-        signature: 'أ. رامي أبو فنة - مدير المدرسة'
+        signature: 'أ. رامي ارفاعية - مدير المدرسة'
       };
       const fallbackLinks = [
         { title: 'بوابة الطلاب وأولياء الأمور', icon: 'fa-user-check', url: 'https://parent.gov.il', desc: 'لمتابعة تحصيل الطالب، الحضور والغياب، والتقارير الأكاديمية.' },
@@ -2301,7 +2301,7 @@ const AdminDashboard = () => {
                           required
                           value={principal.signature}
                           onChange={(e) => setPrincipal({ ...principal, signature: e.target.value })}
-                          placeholder="مثال: أ. رامي أبو فنة - مدير المدرسة"
+                          placeholder="مثال: أ. رامي ارفاعية - مدير المدرسة"
                         />
                       </div>
 
