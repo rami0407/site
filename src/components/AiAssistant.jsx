@@ -172,11 +172,27 @@ const AiAssistant = () => {
 
       setMessages(prev => [...prev, { role: 'model', text: replyText }]);
     } catch (error) {
-      console.error('Gemini chatbot error:', error);
-      setMessages(prev => [
-        ...prev, 
-        { role: 'model', text: 'عذراً، واجهت مشكلة في الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مجدداً.' }
-      ]);
+      console.warn('Gemini API fallback to local smart assistant:', error);
+      
+      // Smart Local Assistant Response Fallback
+      let fallbackReply = 'أهلاً بك! أنا مساعد مدرسة مشيرفة الابتدائية. يسعدني إجابتك حول المدرسة: المدير هو الأستاذ رامي أبو فنة، ويمكنك الاطلاع على الكتب واللباس الموحد والرزنامة من أقسام الموقع المخصصة. كيف يمكنني مساعدتك أكثر؟ 😊';
+      const qLower = text.toLowerCase();
+
+      if (qLower.includes('كتب') || qLower.includes('كتاب') || qLower.includes('الأول') || qLower.includes('ثاني') || qLower.includes('ثالث')) {
+        fallbackReply = '📚 **قائمة الكتب المدرسية:**\nتتوفر قائمة الكتب الكاملة لكل صف (من الصف الأول حتى السادس) في قسم "الكتب واللباس الموحد" بالموقع، وتشمل كتب العربية (الغيث)، الرياضيات (الوسام)، العلوم (الكنز)، وغيرها من المواد المعتمدة.';
+      } else if (qLower.includes('لباس') || qLower.includes('زي') || qLower.includes('قميص') || qLower.includes('الموحد')) {
+        fallbackReply = '👕 **اللباس المدرسي الموحد المعتمد:**\n- **الصفوف 1-2:** بلوزة كحلي/أزرق مع شعار المدرسة + بنطال كحلي/رمادي.\n- **الصفوف 3-4:** بلوزة كحلي/أزرق مع بنطال مريح.\n- **الصفوف 5-6:** اللباس الرسمي الموحد المعتمد في دستور المدرسة.';
+      } else if (qLower.includes('فعاليات') || qLower.includes('رزنامة') || qLower.includes('امتحان') || qLower.includes('موعد')) {
+        fallbackReply = '📅 **رزنامة المدرسة والفعاليات:**\nيمكنك متابعة جدول الامتحانات والفعاليات القادمة (مثل اليوم الرياضي، الرحلات، ومعارض العلوم) مباشرة في قسم "الرزنامة المدرسية" التفاعلي بالصفحة الرئيسية!';
+      } else if (qLower.includes('مدير') || qLower.includes('رامي') || qLower.includes('إدارة')) {
+        fallbackReply = '👨‍🏫 **إدارة المدرسة:**\nمدير مدرسة مشيرفة الابتدائية هو الأستاذ **رامي أبو فنة**، ويسعد الإدارة دوماً التواصل معكم عبر نموذج "اتصل بنا" أو زيارة المدرسة.';
+      } else if (qLower.includes('دستور') || qLower.includes('أنظمة') || qLower.includes('قوانين')) {
+        fallbackReply = '📜 **دستور المدرسة:**\nنركز في مدرسة مشيرفة على الاحترام المتبادل، الالتزام باللباس الموحد، الحضور المبكر، والمحافظة على ممتلكات البيئة التعليمية المتميزة.';
+      } else if (qLower.includes('تحدي') || qLower.includes('مسابقة') || qLower.includes('نجوم')) {
+        fallbackReply = '🏆 **قسم التحديات والنجوم:**\nادخل الآن قسم "🏆 التحديات والنجوم" في القائمة الرئيسية للحل لغز الأسبوع ودخول لوحة الشرف الرسمية للمدرسة!';
+      }
+
+      setMessages(prev => [...prev, { role: 'model', text: fallbackReply }]);
     } finally {
       setIsTyping(false);
     }
