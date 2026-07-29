@@ -30,6 +30,7 @@ import CustomPageView from './components/CustomPageView';
 import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import AiAssistant from './components/AiAssistant';
 import WeeklyChallenge from './components/WeeklyChallenge';
+import Worksheets from './components/Worksheets';
 import './App.css';
 
 
@@ -251,6 +252,9 @@ function App() {
 
           {/* AI Weekly Challenge & Wall of Fame */}
           <WeeklyChallenge />
+
+          {/* Worksheets & Educational Material Hub */}
+          <Worksheets />
 
           {/* Dynamic & Filterable Event Calendar */}
           <InteractiveCalendar />

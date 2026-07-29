@@ -97,6 +97,18 @@ const AdminDashboard = () => {
   const [uniforms, setUniforms] = useState([]);
   const [guideLetter, setGuideLetter] = useState({ title: '', salutation: '', content: '', valediction: '' });
 
+  const [worksheets, setWorksheets] = useState([]);
+  const [editingWsId, setEditingWsId] = useState(null);
+  const [newWs, setNewWs] = useState({
+    title: '',
+    subject: 'اللغة العربية',
+    grade: 'الصف الأول',
+    teacher: '',
+    fileUrl: '',
+    type: 'PDF',
+    notes: ''
+  });
+
   const [editingBookId, setEditingBookId] = useState(null);
   const [newBook, setNewBook] = useState({
     grade: '1',
@@ -1497,6 +1509,75 @@ const AdminDashboard = () => {
     }
   };
 
+  // ==================== WORKSHEET ACTIONS ====================
+  const handleCreateWorksheet = async (e) => {
+    e.preventDefault();
+    if (!newWs.title.trim() || !newWs.fileUrl.trim()) {
+      alert('يرجى كتابة عنوان ورقة العمل وإدراج رابط الملف!');
+      return;
+    }
+
+    const wsData = {
+      title: newWs.title.trim(),
+      subject: newWs.subject,
+      grade: newWs.grade,
+      teacher: newWs.teacher.trim() || 'طاقم المادة',
+      fileUrl: newWs.fileUrl.trim(),
+      type: newWs.type || 'PDF',
+      notes: newWs.notes.trim(),
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    if (isOfflineMode) {
+      let updated;
+      if (editingWsId) {
+        updated = worksheets.map(w => w.id === editingWsId ? { ...wsData, id: editingWsId } : w);
+      } else {
+        updated = [{ ...wsData, id: `ws-loc-${Date.now()}` }, ...worksheets];
+      }
+      localStorage.setItem('db_worksheets', JSON.stringify(updated));
+      setWorksheets(updated);
+      alert(editingWsId ? 'تم تعديل ورقة العمل محلياً بنجاح!' : 'تمت إضافة ورقة العمل محلياً بنجاح!');
+      setEditingWsId(null);
+      setNewWs({ title: '', subject: 'اللغة العربية', grade: 'الصف الأول', teacher: '', fileUrl: '', type: 'PDF', notes: '' });
+      return;
+    }
+
+    try {
+      if (editingWsId) {
+        await updateDoc(doc(db, 'worksheets', editingWsId), wsData);
+        alert('تم تعديل ورقة العمل بنجاح!');
+      } else {
+        await addDoc(collection(db, 'worksheets'), wsData);
+        alert('تمت إضافة ورقة العمل بنجاح!');
+      }
+      setEditingWsId(null);
+      setNewWs({ title: '', subject: 'اللغة العربية', grade: 'الصف الأول', teacher: '', fileUrl: '', type: 'PDF', notes: '' });
+      loadDashboardData();
+    } catch (error) {
+      alert('حدث خطأ أثناء حفظ ورقة العمل: ' + error.message);
+    }
+  };
+
+  const handleDeleteWorksheet = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف ورقة العمل هذه؟')) return;
+
+    if (isOfflineMode) {
+      const updated = worksheets.filter(w => w.id !== id);
+      localStorage.setItem('db_worksheets', JSON.stringify(updated));
+      setWorksheets(updated);
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'worksheets', id));
+      alert('تم حذف ورقة العمل بنجاح!');
+      loadDashboardData();
+    } catch (error) {
+      alert('حدث خطأ أثناء الحذف: ' + error.message);
+    }
+  };
+
   // ==================== MESSAGE ACTIONS ====================
   const handleDeleteMessage = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
@@ -1740,6 +1821,15 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-envelope-open-text" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               صندوق الرسائل ({messages.length})
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('worksheets')} 
+              className={`filter-chip ${activeTab === 'worksheets' ? 'active' : ''}`}
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
+            >
+              <i className="fas fa-folder-open" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              أوراق العمل والفعاليات
             </button>
 
             <button 
@@ -3342,6 +3432,181 @@ const AdminDashboard = () => {
                         <i className="fas fa-save"></i> حفظ وتعديل معلومات الاتصال
                       </button>
                     </form>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: WORKSHEETS MANAGER */}
+              {activeTab === 'worksheets' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة أوراق العمل والفعاليات والامتحانات</h2>
+                  
+                  {/* Form to Create/Edit Worksheet */}
+                  <div style={{ background: 'var(--bg-white)', padding: '2.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)', marginBottom: '3rem' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '1.5rem' }}>
+                      <i className="fas fa-plus-circle"></i> {editingWsId ? 'تعديل ورقة العمل' : 'إضافة ورقة عمل أو امتحان جديد'}
+                    </h3>
+                    
+                    <form onSubmit={handleCreateWorksheet}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>عنوان ورقة العمل / الامتحان *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={newWs.title}
+                            onChange={(e) => setNewWs({ ...newWs, title: e.target.value })}
+                            placeholder="مثال: ورقة عمل مراجعة في الرياضيات"
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>المادة الدراسية *</label>
+                          <select 
+                            className="form-input"
+                            value={newWs.subject}
+                            onChange={(e) => setNewWs({ ...newWs, subject: e.target.value })}
+                          >
+                            <option value="اللغة العربية">اللغة العربية</option>
+                            <option value="الرياضيات">الرياضيات</option>
+                            <option value="العلوم والتكنولوجيا">العلوم والتكنولوجيا</option>
+                            <option value="اللغة الإنجليزية">اللغة الإنجليزية</option>
+                            <option value="التربية الإسلامية">التربية الإسلامية</option>
+                            <option value="المهارات والاجتماعيات">المهارات والاجتماعيات</option>
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>الصف الدراسي *</label>
+                          <select 
+                            className="form-input"
+                            value={newWs.grade}
+                            onChange={(e) => setNewWs({ ...newWs, grade: e.target.value })}
+                          >
+                            <option value="الصف الأول">الصف الأول</option>
+                            <option value="الصف الثاني">الصف الثاني</option>
+                            <option value="الصف الثالث">الصف الثالث</option>
+                            <option value="الصف الرابع">الصف الرابع</option>
+                            <option value="الصف الخامس">الصف الخامس</option>
+                            <option value="الصف السادس">الصف السادس</option>
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>اسم المعلم /ة *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            value={newWs.teacher}
+                            onChange={(e) => setNewWs({ ...newWs, teacher: e.target.value })}
+                            placeholder="مثال: طاقم الرياضيات"
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>رابط الملف / المستند (URL) *</label>
+                          <input 
+                            type="url" 
+                            className="form-input" 
+                            required
+                            value={newWs.fileUrl}
+                            onChange={(e) => setNewWs({ ...newWs, fileUrl: e.target.value })}
+                            placeholder="https://drive.google.com/... أو رابط PDF"
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>نوع الملف</label>
+                          <select 
+                            className="form-input"
+                            value={newWs.type}
+                            onChange={(e) => setNewWs({ ...newWs, type: e.target.value })}
+                          >
+                            <option value="PDF">PDF document</option>
+                            <option value="Word">Word document</option>
+                            <option value="Image">صورة / مستند</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-group" style={{ marginTop: '1rem' }}>
+                        <label className="form-label" style={{ fontWeight: 700 }}>ملاحظات المعلم للطلاب</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={newWs.notes}
+                          onChange={(e) => setNewWs({ ...newWs, notes: e.target.value })}
+                          placeholder="ملاحظات توضيحية حول ورقة العمل..."
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
+                          <i className="fas fa-save"></i> {editingWsId ? 'حفظ التعديلات' : 'إضافة ورقة العمل'}
+                        </button>
+                        {editingWsId && (
+                          <button 
+                            type="button" 
+                            className="btn btn-outline"
+                            onClick={() => {
+                              setEditingWsId(null);
+                              setNewWs({ title: '', subject: 'اللغة العربية', grade: 'الصف الأول', teacher: '', fileUrl: '', type: 'PDF', notes: '' });
+                            }}
+                            style={{ color: 'var(--text-dark)', borderColor: 'var(--border-light)' }}
+                          >
+                            إلغاء التعديل
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* List of Existing Worksheets */}
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '1.5rem' }}>
+                    قائمة أوراق العمل والامتحانات المرفوعة ({worksheets.length})
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                    {worksheets.map(ws => (
+                      <div key={ws.id} style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
+                            {ws.subject}
+                          </span>
+                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
+                            {ws.grade}
+                          </span>
+                        </div>
+                        <h4 style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-dark)', marginBottom: '0.5rem' }}>{ws.title}</h4>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{ws.notes || 'لا توجد ملاحظات'}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                          <a href={ws.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
+                            <i className="fas fa-external-link-alt"></i> فتح الملف
+                          </a>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button 
+                              onClick={() => {
+                                setEditingWsId(ws.id);
+                                setNewWs(ws);
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '0.3rem' }}
+                              title="تعديل"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteWorksheet(ws.id)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.3rem' }}
+                              title="حذف"
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
