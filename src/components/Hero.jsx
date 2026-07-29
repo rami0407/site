@@ -112,6 +112,11 @@ const Hero = () => {
               {isLaunching ? 'جاري الإطلاق إلى الفضاء... 🌌' : 'إطلاق مركبة التميز 🚀'}
             </button>
 
+            <button onClick={() => window.location.hash = '#/worksheets'} className="btn btn-space-outline">
+              <i className="fas fa-folder-open"></i>
+              أوراق العمل والامتحانات
+            </button>
+
             <button onClick={() => scrollToSection('initiatives')} className="btn btn-space-outline">
               <i className="fas fa-magic"></i>
               مبادراتنا التربوية

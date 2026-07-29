@@ -288,3 +288,31 @@ const Worksheets = ({ isStandalone }) => {
 };
 
 export default Worksheets;
+
+// Homepage Banner Component for Worksheets
+export const WorksheetsBanner = () => {
+  return (
+    <section className="worksheets-banner-section" id="worksheets-banner">
+      <div className="container">
+        <div className="worksheets-banner-card">
+          <div className="wb-content">
+            <span className="wb-badge">
+              <i className="fas fa-folder-open"></i> بنك أوراق العمل والامتحانات
+            </span>
+            <h3>📑 أوراق العمل والفعاليات المدرسية حسب المواضيع</h3>
+            <p>تصفح وحمّل أوراق العمل والمراجعات المعتمدة لكافة المواد الدراسية والصفوف في صفحة واحدة مخصصة 📥</p>
+          </div>
+          <div className="wb-action">
+            <button 
+              onClick={() => window.location.hash = '#/worksheets'}
+              className="btn btn-wb-cta"
+            >
+              <i className="fas fa-download"></i>
+              دخول بنك أوراق العمل 📥
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
