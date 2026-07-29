@@ -29,6 +29,7 @@ import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideD
 import CustomPageView from './components/CustomPageView';
 import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import AiAssistant from './components/AiAssistant';
+import WeeklyChallenge from './components/WeeklyChallenge';
 import './App.css';
 
 
@@ -247,6 +248,9 @@ function App() {
 
           {/* School Pedagogical Initiatives */}
           <Initiatives />
+
+          {/* AI Weekly Challenge & Wall of Fame */}
+          <WeeklyChallenge />
 
           {/* Dynamic & Filterable Event Calendar */}
           <InteractiveCalendar />
