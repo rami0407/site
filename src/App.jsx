@@ -217,6 +217,7 @@ function App() {
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
+  const isWorksheetsView = currentHash.startsWith('#/worksheets') || currentHash.startsWith('#worksheets');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -239,6 +240,8 @@ function App() {
       {/* Main Sections */}
       {isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
+      ) : isWorksheetsView ? (
+        <Worksheets isStandalone={true} />
       ) : (
         <main>
           {/* Hero Banner */}

@@ -74,14 +74,14 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    if (item.type === 'custom_page') {
-      window.location.hash = `/page/${item.target}`;
+    if (item.type === 'page' || item.type === 'custom_page') {
+      window.location.hash = item.target === 'worksheets' ? `#/worksheets` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {
@@ -100,7 +100,9 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
-    if (item.type === 'custom_page') return `#/page/${item.target}`;
+    if (item.type === 'page' || item.type === 'custom_page') {
+      return item.target === 'worksheets' ? `#/worksheets` : `#/page/${item.target}`;
+    }
     return `#${item.target}`;
   };
 

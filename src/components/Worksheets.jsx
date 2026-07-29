@@ -91,7 +91,7 @@ const GRADES = [
   'الصف السادس'
 ];
 
-const Worksheets = () => {
+const Worksheets = ({ isStandalone }) => {
   const [worksheets, setWorksheets] = useState(DEFAULT_WORKSHEETS);
   const [selectedSubject, setSelectedSubject] = useState('جميع المواد');
   const [selectedGrade, setSelectedGrade] = useState('جميع الصفوف');
@@ -133,9 +133,22 @@ const Worksheets = () => {
   });
 
   return (
-    <section className="worksheets-section" id="worksheets">
+    <section className={`worksheets-section ${isStandalone ? 'standalone-page' : ''}`} id="worksheets" style={isStandalone ? { paddingTop: '120px', minHeight: '85vh' } : {}}>
       <div className="container">
         
+        {isStandalone && (
+          <div style={{ marginBottom: '2rem' }}>
+            <a 
+              href="#home" 
+              onClick={(e) => { e.preventDefault(); window.location.hash = '#home'; }}
+              className="btn btn-outline"
+              style={{ color: 'var(--primary)', borderColor: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, padding: '0.6rem 1.4rem' }}
+            >
+              <i className="fas fa-arrow-right"></i> العودة للصفحة الرئيسية
+            </a>
+          </div>
+        )}
+
         {/* Section Header */}
         <div className="section-header">
           <span className="worksheets-badge-pill">
