@@ -75,13 +75,13 @@ const Navbar = () => {
     e.preventDefault();
 
     if (item.type === 'page' || item.type === 'custom_page') {
-      window.location.hash = (item.target === 'worksheets' || item.target === 'astronomy') ? `#/${item.target}` : `#/page/${item.target}`;
+      window.location.hash = (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge') ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {
@@ -101,7 +101,7 @@ const Navbar = () => {
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
     if (item.type === 'page' || item.type === 'custom_page') {
-      return (item.target === 'worksheets' || item.target === 'astronomy') ? `#/${item.target}` : `#/page/${item.target}`;
+      return (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge') ? `#/${item.target}` : `#/page/${item.target}`;
     }
     return `#${item.target}`;
   };

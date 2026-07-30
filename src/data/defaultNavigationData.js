@@ -2,9 +2,9 @@
 export const defaultNavigation = [
   { id: "nav_1", label: "الرئيسية", type: "section", target: "home", order: 1 },
   { id: "nav_2", label: "المبادرات", type: "section", target: "initiatives", order: 2 },
-  { id: "nav_challenge", label: "🏆 التحديات والنجوم", type: "section", target: "challenge", order: 3 },
-  { id: "nav_worksheets", label: "📑 أوراق العمل والفعاليات", type: "page", target: "worksheets", order: 4 },
-  { id: "nav_astronomy", label: "🌌 الفلك والفضاء", type: "page", target: "astronomy", order: 5 },
+  { id: "nav_challenge", label: "🏆 التحدي الأسبوعي ولوحة أبطال مشيرفة", type: "page", target: "challenge", order: 3 },
+  { id: "nav_worksheets", label: "📑 أوراق العمل والفعاليات المدرسية", type: "page", target: "worksheets", order: 4 },
+  { id: "nav_astronomy", label: "🌌 مختبر الكون وصورة ناسا", type: "page", target: "astronomy", order: 5 },
   { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", order: 6 },
   { id: "nav_4", label: "الأخبار", type: "section", target: "news", order: 4 },
   { id: "nav_5", label: "كلمة المدير", type: "section", target: "principal", order: 5 },

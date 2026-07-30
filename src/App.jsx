@@ -29,7 +29,7 @@ import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideD
 import CustomPageView from './components/CustomPageView';
 import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import AiAssistant from './components/AiAssistant';
-import WeeklyChallenge from './components/WeeklyChallenge';
+import WeeklyChallenge, { WeeklyChallengeBanner } from './components/WeeklyChallenge';
 import Worksheets, { WorksheetsBanner } from './components/Worksheets';
 import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
 import './App.css';
@@ -220,6 +220,7 @@ function App() {
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
   const isWorksheetsView = currentHash.startsWith('#/worksheets') || currentHash.startsWith('#worksheets');
   const isAstronomyView = currentHash.startsWith('#/astronomy') || currentHash.startsWith('#astronomy');
+  const isChallengeView = currentHash.startsWith('#/challenge') || currentHash.startsWith('#challenge');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -246,6 +247,8 @@ function App() {
         <Worksheets isStandalone={true} />
       ) : isAstronomyView ? (
         <AstronomyPage isStandalone={true} />
+      ) : isChallengeView ? (
+        <WeeklyChallenge isStandalone={true} />
       ) : (
         <main>
           {/* Hero Banner */}
@@ -257,8 +260,8 @@ function App() {
           {/* School Pedagogical Initiatives */}
           <Initiatives />
 
-          {/* AI Weekly Challenge & Wall of Fame */}
-          <WeeklyChallenge />
+          {/* AI Weekly Challenge & Wall of Fame Call-to-Action Banner */}
+          <WeeklyChallengeBanner />
 
           {/* Worksheets & Educational Material Hub Call-to-Action Banner */}
           <WorksheetsBanner />

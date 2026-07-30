@@ -20,7 +20,7 @@ const DEFAULT_STARS = [
   { id: 'star-3', name: 'محمد يوسف ارفاعية', grade: 'الصف الرابع 1', badge: 'نجم التحدي 🏆', likes: 15, date: 'هذا الأسبوع' }
 ];
 
-const WeeklyChallenge = () => {
+const WeeklyChallenge = ({ isStandalone }) => {
   const [challenge, setChallenge] = useState(DEFAULT_CHALLENGE);
   const [starsList, setStarsList] = useState(DEFAULT_STARS);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -255,9 +255,22 @@ const WeeklyChallenge = () => {
   ];
 
   return (
-    <section className="weekly-challenge-section" id="challenge">
+    <section className={`weekly-challenge-section ${isStandalone ? 'standalone-page' : ''}`} id="challenge" style={isStandalone ? { paddingTop: '120px', minHeight: '85vh' } : {}}>
       <div className="container">
         
+        {isStandalone && (
+          <div style={{ marginBottom: '2rem' }}>
+            <a 
+              href="#home" 
+              onClick={(e) => { e.preventDefault(); window.location.hash = '#home'; }}
+              className="btn btn-outline"
+              style={{ color: 'var(--primary)', borderColor: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, padding: '0.6rem 1.4rem' }}
+            >
+              <i className="fas fa-arrow-right"></i> العودة للصفحة الرئيسية
+            </a>
+          </div>
+        )}
+
         {/* Section Header */}
         <div className="section-header">
           <span className="section-badge-pill">
@@ -411,3 +424,31 @@ const WeeklyChallenge = () => {
 };
 
 export default WeeklyChallenge;
+
+// Homepage Banner Component for Weekly Challenge
+export const WeeklyChallengeBanner = () => {
+  return (
+    <section className="challenge-banner-section" id="challenge-banner">
+      <div className="container">
+        <div className="challenge-banner-card">
+          <div className="cb-content">
+            <span className="cb-badge">
+              <i className="fas fa-trophy"></i> مسابقات مشيرفة
+            </span>
+            <h3>🏆 التحدي الأسبوعي ولوحة أبطال مشيرفة</h3>
+            <p>شارك في لغز الأسبوع، اختبر ذكاءك، وادخل لوحة الشرف الرسمية للمدرسة للحصول على أوسمة التميز! 🌟</p>
+          </div>
+          <div className="cb-action">
+            <button 
+              onClick={() => window.location.hash = '#/challenge'}
+              className="btn btn-cb-cta"
+            >
+              <i className="fas fa-medal"></i>
+              دخول التحديات ولوحة الأبطال 🏆
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
