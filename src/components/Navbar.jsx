@@ -18,10 +18,16 @@ const Navbar = () => {
         let items = defaultNavigation;
         if (!navSnap.empty) {
           const firestoreItems = navSnap.docs.map(doc => doc.data());
-          // Merge defaultNavigation with firestoreItems so new default items always display
+          // Merge defaultNavigation with firestoreItems and enforce clean short labels
           const itemMap = new Map();
-          defaultNavigation.forEach(item => itemMap.set(item.target || item.id, item));
-          firestoreItems.forEach(item => itemMap.set(item.target || item.id, item));
+          defaultNavigation.forEach(item => {
+            const fsItem = firestoreItems.find(f => (f.target || f.id) === (item.target || item.id));
+            if (fsItem) {
+              itemMap.set(item.target || item.id, { ...fsItem, label: item.label });
+            } else {
+              itemMap.set(item.target || item.id, item);
+            }
+          });
           items = Array.from(itemMap.values());
         }
         items.sort((a, b) => (a.order || 0) - (b.order || 0));
