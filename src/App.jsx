@@ -260,15 +260,6 @@ function App() {
           {/* School Pedagogical Initiatives */}
           <Initiatives />
 
-          {/* AI Weekly Challenge & Wall of Fame Call-to-Action Banner */}
-          <WeeklyChallengeBanner />
-
-          {/* Worksheets & Educational Material Hub Call-to-Action Banner */}
-          <WorksheetsBanner />
-
-          {/* Astronomy & NASA APOD Banner */}
-          <AstronomyBanner />
-
           {/* Dynamic & Filterable Event Calendar */}
           <InteractiveCalendar />
 
