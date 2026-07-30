@@ -1,8 +1,70 @@
 import React, { useState, useEffect } from 'react';
 
+const MOTIVATIONAL_QUOTES = [
+  // Arabic Quotes
+  {
+    lang: 'ar',
+    flag: '✨',
+    title: 'العربية',
+    text: 'العلمُ يَبني مَنازِلاً لا عِمادَ لَها.. بالتَّألُّقِ والإصْرارِ نُعانِقُ السَّحابَ ورُؤْيَةَ المَسْتَقْبَلِ! 🌟'
+  },
+  {
+    lang: 'ar',
+    flag: '🏆',
+    title: 'العربية',
+    text: 'مدرسة مشيرفة منبع التميز والإبداع، بطموح طلابنا نصل إلى القمة ونضيء المستقبل! 🚀'
+  },
+  {
+    lang: 'ar',
+    flag: '💡',
+    title: 'العربية',
+    text: 'لا حدّ لإبداعكم، بالقراءة والمعرفة تبتكرون الفكرة وتصنعون التغيير المشرق! 🎓'
+  },
+
+  // Hebrew Quotes
+  {
+    lang: 'he',
+    flag: '🌟',
+    title: 'עברית',
+    text: 'הדרך למצוינות מתחילה בסקרנות, שאיפה והתמדה. השמיים הם לא הגבול! 🚀'
+  },
+  {
+    lang: 'he',
+    flag: '✨',
+    title: 'עברית',
+    text: 'חינוך הוא המפתח לשינוי העולם, יחד נגיע לפסגות חדשות! 🌟'
+  },
+  {
+    lang: 'he',
+    flag: '💡',
+    title: 'עברית',
+    text: 'כל למידה היא הרפתקה חדשה, תאמינו בעצמכם ותמיד תשאפו למעלה! 🎓'
+  },
+
+  // English Quotes
+  {
+    lang: 'en',
+    flag: '🌟',
+    title: 'English',
+    text: 'Shoot for the stars! Excellence is not an act, but a habit of continuous learning. 🚀'
+  },
+  {
+    lang: 'en',
+    flag: '✨',
+    title: 'English',
+    text: 'Education is the passport to the future! Curiosity and hard work lead to greatness. 💡'
+  },
+  {
+    lang: 'en',
+    flag: '🎓',
+    title: 'English',
+    text: 'Dream big, work hard, and never stop exploring the infinite universe of knowledge! 🌌'
+  }
+];
+
 const Hero = () => {
   const [isLaunching, setIsLaunching] = useState(false);
-  const [launchCount, setLaunchCount] = useState(0);
+  const [currentQuote, setCurrentQuote] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [stars, setStars] = useState([]);
 
@@ -25,10 +87,13 @@ const Hero = () => {
     setIsLaunching(true);
     setShowCelebration(false);
 
+    // Randomize trilingual quote
+    const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+    setCurrentQuote(randomQuote);
+
     // Launch duration timeline
     setTimeout(() => {
       setIsLaunching(false);
-      setLaunchCount(prev => prev + 1);
       setShowCelebration(true);
     }, 4200);
   };
@@ -128,11 +193,18 @@ const Hero = () => {
             </button>
           </div>
 
-          {/* Launch Counter & Celebration Notice */}
-          {showCelebration && (
-            <div className="launch-celebration-toast">
-              <i className="fas fa-trophy gold-icon"></i>
-              <span>تم إطلاق مركبة التميز بنجاح إلى الفضاء! (عدد الإطلاقات: {launchCount}) 🎉</span>
+          {/* Launch Trilingual Celebration Quote */}
+          {showCelebration && currentQuote && (
+            <div 
+              className={`launch-celebration-toast lang-${currentQuote.lang}`}
+              dir={currentQuote.lang === 'en' ? 'ltr' : 'rtl'}
+            >
+              <div className="quote-header-badge">
+                <span className="quote-flag">{currentQuote.flag}</span>
+                <span className="quote-lang-name">{currentQuote.title}</span>
+                <span className="quote-badge-tag">عبارة التميز والتحفيز 🚀</span>
+              </div>
+              <p className="quote-text-body">{currentQuote.text}</p>
             </div>
           )}
         </div>

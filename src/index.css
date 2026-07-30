@@ -5360,6 +5360,77 @@ textarea.form-input {
   background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
 }
 
+/* Trilingual Rocket Launch Celebration Quote Toast */
+.launch-celebration-toast {
+  margin-top: 1.5rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  animation: toastFadeIn 0.5s ease-out forwards;
+}
+
+.launch-celebration-toast.lang-he {
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(2, 6, 23, 0.92);
+}
+
+.launch-celebration-toast.lang-en {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(15, 23, 42, 0.92);
+}
+
+.quote-header-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.quote-flag {
+  font-size: 1.2rem;
+}
+
+.quote-lang-name {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #fde047;
+  background: rgba(234, 179, 8, 0.15);
+  padding: 0.15rem 0.65rem;
+  border-radius: 12px;
+}
+
+.launch-celebration-toast.lang-he .quote-lang-name {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.launch-celebration-toast.lang-en .quote-lang-name {
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.15);
+}
+
+.quote-badge-tag {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.quote-text-body {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@keyframes toastFadeIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
 
 
 
