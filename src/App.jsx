@@ -31,6 +31,7 @@ import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import AiAssistant from './components/AiAssistant';
 import WeeklyChallenge from './components/WeeklyChallenge';
 import Worksheets, { WorksheetsBanner } from './components/Worksheets';
+import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
 import './App.css';
 
 
@@ -218,6 +219,7 @@ function App() {
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
   const isWorksheetsView = currentHash.startsWith('#/worksheets') || currentHash.startsWith('#worksheets');
+  const isAstronomyView = currentHash.startsWith('#/astronomy') || currentHash.startsWith('#astronomy');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -242,6 +244,8 @@ function App() {
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (
         <Worksheets isStandalone={true} />
+      ) : isAstronomyView ? (
+        <AstronomyPage isStandalone={true} />
       ) : (
         <main>
           {/* Hero Banner */}
@@ -258,6 +262,9 @@ function App() {
 
           {/* Worksheets & Educational Material Hub Call-to-Action Banner */}
           <WorksheetsBanner />
+
+          {/* Astronomy & NASA APOD Banner */}
+          <AstronomyBanner />
 
           {/* Dynamic & Filterable Event Calendar */}
           <InteractiveCalendar />
