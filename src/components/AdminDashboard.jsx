@@ -3188,6 +3188,7 @@ const AdminDashboard = () => {
                               }}
                             >
                               <option value="section">قسم في الصفحة الرئيسية (Home Section)</option>
+                              <option value="page">صفحة مستقلة (التحدي، أوراق العمل، الفلك)</option>
                               <option value="custom_page">صفحة مخصصة (Custom Page)</option>
                               <option value="external">رابط لموقع خارجي (External Link)</option>
                             </select>
@@ -3197,6 +3198,17 @@ const AdminDashboard = () => {
                         <div className="form-group-row">
                           <div className="form-group">
                             <label className="form-label">الهدف المستهدف (Target) *</label>
+                            {newNav.type === 'page' && (
+                              <select 
+                                className="form-input"
+                                value={newNav.target}
+                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                              >
+                                <option value="challenge">🏆 التحدي الأسبوعي (/#/challenge)</option>
+                                <option value="worksheets">📑 أوراق العمل والفعاليات (/#/worksheets)</option>
+                                <option value="astronomy">🌌 مختبر الفلك وصورة ناسا (/#/astronomy)</option>
+                              </select>
+                            )}
                             {newNav.type === 'section' && (
                               <select 
                                 className="form-input"

@@ -9,32 +9,33 @@ const Navbar = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [navItems, setNavItems] = useState([]);
 
-  // Fetch navigation links from Firestore (or fallback)
+  // Fetch navigation links from Firestore or LocalStorage
   useEffect(() => {
     const fetchNav = async () => {
       try {
         const navRef = collection(db, 'navigation');
         const navSnap = await getDocs(navRef);
-        let items = defaultNavigation;
+        let items = [];
         if (!navSnap.empty) {
-          const firestoreItems = navSnap.docs.map(doc => doc.data());
-          // Merge defaultNavigation with firestoreItems and enforce clean short labels
-          const itemMap = new Map();
-          defaultNavigation.forEach(item => {
-            const fsItem = firestoreItems.find(f => (f.target || f.id) === (item.target || item.id));
-            if (fsItem) {
-              itemMap.set(item.target || item.id, { ...fsItem, label: item.label });
-            } else {
-              itemMap.set(item.target || item.id, item);
-            }
-          });
-          items = Array.from(itemMap.values());
+          items = navSnap.docs.map(doc => doc.data());
+        } else {
+          const localNav = localStorage.getItem('db_navigation');
+          if (localNav) {
+            items = JSON.parse(localNav);
+          } else {
+            items = defaultNavigation;
+          }
         }
         items.sort((a, b) => (a.order || 0) - (b.order || 0));
         setNavItems(items);
       } catch (err) {
-        console.warn("Firestore navigation load failed, using fallback:", err.message);
-        setNavItems(defaultNavigation);
+        console.warn("Firestore navigation load failed, using local/default fallback:", err.message);
+        const localNav = localStorage.getItem('db_navigation');
+        if (localNav) {
+          setNavItems(JSON.parse(localNav));
+        } else {
+          setNavItems(defaultNavigation);
+        }
       }
     };
     fetchNav();
