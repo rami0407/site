@@ -157,8 +157,87 @@ const PLANETS_DATA = [
   }
 ];
 
+const MOON_PHASES = [
+  { id: 'new-moon', name: 'المحاق (New Moon)', age: 'اليوم 0 - 1', illum: '0%', icon: '🌑', desc: 'يقع القمر بين الأرض والشمس تماماً، ويكون وجهه المظلم مواجهاً للأرض فلا نراه في السماء.' },
+  { id: 'waxing-crescent', name: 'الهلال المتزايد (Waxing Crescent)', age: 'اليوم 2 - 6', illum: '15%', icon: '🌒', desc: 'يظهر قوس مضيء رقيق كالهلال في السماء الغربية بعد غروب الشمس مباشرة، ليعلن بداية الشهر القمري.' },
+  { id: 'first-quarter', name: 'الربع الأول (First Quarter)', age: 'اليوم 7 - 10', illum: '50%', icon: '🌓', desc: 'يكون نصف القمر الأيمن مضيئاً ونصفه الأيسر مظلماً، ويصل لارتفاع عالٍ في السماء عند غروب الشمس.' },
+  { id: 'waxing-gibbous', name: 'الأحدب المتزايد (Waxing Gibbous)', age: 'اليوم 11 - 13', illum: '75%', icon: '🌔', desc: 'يزداد الجزء المضيء من القمر ليتجاوز النصف ويبدو محدباً وهو يقترب من مرحلة الاكتنال.' },
+  { id: 'full-moon', name: 'البدر الكامل (Full Moon)', age: 'اليوم 14 - 15', illum: '100%', icon: '🌕', desc: 'تكون الأرض بين الشمس والقمر، فينعكس ضوء الشمس بالكامل على وجه القمر ليضيء الليل بنوره الباهر!' },
+  { id: 'waning-gibbous', name: 'الأحدب المتناقص (Waning Gibbous)', age: 'اليوم 16 - 20', illum: '75%', icon: '🌖', desc: 'يبدأ الإضاءة بالتناقص التدريجي بعد مرحلة البدر، ويشرق القمر في وقت متأخر من الليل.' },
+  { id: 'third-quarter', name: 'الربع الأخير (Third Quarter)', age: 'اليوم 21 - 24', illum: '50%', icon: '🌗', desc: 'يكون النصف الأيسر للقمر هو المضيء والنصف الأيمن مظلماً، ويُرى صباحاً في السماء.' },
+  { id: 'waning-crescent', name: 'الهلال المتناقص (Waning Crescent)', age: 'اليوم 25 - 28', illum: '15%', icon: '🌘', desc: 'يتبقى خيط ضيق من النور قبل أن يختفي القمر ويعود لمرحلة المحاق لبداية شهر جديد.' }
+];
+
+const COSMIC_EVENTS_LIST = [
+  {
+    id: 'perseids',
+    title: '☄️ زخة شهب البرشاويات (Perseids Meteor Shower)',
+    date: '12 - 13 أغسطس',
+    badge: 'حدث فلكي مميز',
+    desc: 'واحدة من أروع وأغزر الزخات الشهابية السنوية! يتساقط أكثر من 60 إلى 100 شهاب في الساعة في السماء المظلمة بعيداً عن أضواء المدينة.',
+    tip: 'أفضل وقت لرصدها بين الساعة 2:00 صباحاً وقبل الفجر باتجاه الأفق الشمالي الشرقي.'
+  },
+  {
+    id: 'lunar-eclipse',
+    title: '🌕 خسوف القمر الكلي (Total Lunar Eclipse)',
+    date: '7 سبتمبر',
+    badge: 'ظاهرة فلكية نادرة',
+    desc: 'تمر الأرض بين الشمس والقمر فيحجب ظلها نور الشمس عن القمر، ويتلون قرص القمر باللون الأحمر القرمزي الدافئ (قمر الدم).',
+    tip: 'يمكن مشاهدته بالعين المجردة بأمان تام دون الحاجة لنظارات خاصة.'
+  },
+  {
+    id: 'conjunction',
+    title: '🪐 اقتران كوكب المشتري والزهرة (Venus & Jupiter Conjunction)',
+    date: '25 أكتوبر',
+    badge: 'مشهد مبهر',
+    desc: 'اقتراب ظاهري شديد بين ألمع كوكبين في السماء (الزهرة والمشتري) ليظهرا كجواهر متلألئة بجانب بعضهما بعد غروب الشمس.',
+    tip: 'انظر باتجاه الغرب بعد 30 دقيقة من غروب الشمس تماماً.'
+  },
+  {
+    id: 'andromeda-view',
+    title: '🌌 رصد مجرة أندروميدا (Andromeda Galaxy Viewing)',
+    date: '15 نوفمبر',
+    badge: 'رصد عميق',
+    desc: 'أفضل ليلة في السنة لرصد مجرة أندروميدا (المرأة المسلسلة) وهي أبعد جرم كوني يمكن رؤيته بالعين المجردة (2.5 مليون سنة ضوئية).',
+    tip: 'استخدم منظاراً مزدوجاً (Binoculars) في ليلة صافية خالية من إضاءة القمر.'
+  }
+];
+
+const QUIZ_QUESTIONS = [
+  {
+    q: 'ما هو أكبر كواكب المجموعة الشمسية حجماً؟',
+    options: ['الأرض', 'المشتري', 'المريخ', 'زحل'],
+    answer: 1,
+    explanation: 'المشتري هو أكبر كواكب المنظومة الشمسية وحجمه يتسع لأكثر من 1300 كوكب مثل الأرض!'
+  },
+  {
+    q: 'ما هو أقرب كوكب إلى الشمس؟',
+    options: ['عطارد', 'الزهرة', 'الأرض', 'نبتون'],
+    answer: 0,
+    explanation: 'عطارد هو أقرب كوكب للشمس ويبعد عنها حوالي 57.9 مليون كم فقط.'
+  },
+  {
+    q: 'كم استغرق القمر ليدور دورة كاملة حول الأرض (الشهر القمري)؟',
+    options: ['7 أيام', '29.5 يوم تقريباً', '365 يوم', '24 ساعة'],
+    answer: 1,
+    explanation: 'يدور القمر حول الأرض في مدة تقارب 29.5 يوماً وتكتمل بها أطوار الشهر القمري.'
+  },
+  {
+    q: 'ما اسم الكوكب المعروف باسم "الكوكب الأحمر"؟',
+    options: ['الزهرة', 'المريخ', 'أورانوس', 'عطارد'],
+    answer: 1,
+    explanation: 'يُسمى المريخ بالكوكب الأحمر بسبب انتشارات أكسيد الحديد (الصدأ) على سطحه.'
+  },
+  {
+    q: 'ما الوكالة الفضائية الشهيرة التي تنشر صورة اليوم الفلكية (APOD)؟',
+    options: ['وكالة ناسا (NASA)', 'الخطوط الجوية', 'المركز الصحي', 'المعرض الفني'],
+    answer: 0,
+    explanation: 'وكالة ناسا الفضائية (NASA) تنشر صورة اليوم الفلكية يومياً بالتعاون مع تلسكوبات العالم.'
+  }
+];
+
 const AstronomyPage = ({ isStandalone = true }) => {
-  const [activeTab, setActiveTab] = useState('lab'); // 'lab' or 'apod'
+  const [activeTab, setActiveTab] = useState('lab'); // 'lab', 'apod', 'moon', 'events', 'quiz', 'sounds'
   
   // APOD State
   const [apodData, setApodData] = useState(null);
@@ -236,25 +315,49 @@ const AstronomyPage = ({ isStandalone = true }) => {
           <span className="space-badge-pill">
             <i className="fas fa-user-astronaut"></i> فضاء مشيرفة التعليمي والعلوم الكونية
           </span>
-          <h2 className="section-title space-title">🌌 الفلك ومختبر المنظومة الشمسية التفاعلي</h2>
+          <h2 className="section-title space-title">🌌 الفلك والعلوم الفضائية التفاعلية</h2>
           <p className="section-subtitle space-subtitle">
-            رحلة استكشافية افتراضية في عمق الفضاء: جرب حركة الكواكب، اختبر الجاذبية الكوكبية، وشاهد صورة ناسا اليومية 🚀
+            مركز العلوم الفلكية الشامل: محاكاة الكواكب، صور ناسا، حاسبة أطوار القمر، مسابقة رائد الفضاء، وأصوات الفضاء الكونية 🚀
           </p>
         </div>
 
-        {/* Space Main Sub-Tabs */}
+        {/* Space Main Sub-Tabs Nav */}
         <div className="space-tabs-nav">
           <button 
             className={`space-tab-btn ${activeTab === 'lab' ? 'active' : ''}`}
             onClick={() => setActiveTab('lab')}
           >
-            <i className="fas fa-microscope"></i> 🔭 مختبر الكون والمنظومة الشمسية
+            <i className="fas fa-microscope"></i> 🔭 مختبر الكواكب والجاذبية
           </button>
           <button 
             className={`space-tab-btn ${activeTab === 'apod' ? 'active' : ''}`}
             onClick={() => setActiveTab('apod')}
           >
-            <i className="fas fa-camera-retro"></i> 🪐 صورة اليوم الفلكية من NASA
+            <i className="fas fa-camera-retro"></i> 🪐 صورة ناسا اليومية
+          </button>
+          <button 
+            className={`space-tab-btn ${activeTab === 'moon' ? 'active' : ''}`}
+            onClick={() => setActiveTab('moon')}
+          >
+            <i className="fas fa-moon"></i> 🌒 أطوار القمر المباشرة
+          </button>
+          <button 
+            className={`space-tab-btn ${activeTab === 'events' ? 'active' : ''}`}
+            onClick={() => setActiveTab('events')}
+          >
+            <i className="fas fa-meteor"></i> ☄️ الأحداث الفلكية والشهب
+          </button>
+          <button 
+            className={`space-tab-btn ${activeTab === 'quiz' ? 'active' : ''}`}
+            onClick={() => setActiveTab('quiz')}
+          >
+            <i className="fas fa-user-ninja"></i> 👨‍🚀 وسام رائد الفضاء الصغير
+          </button>
+          <button 
+            className={`space-tab-btn ${activeTab === 'sounds' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sounds')}
+          >
+            <i className="fas fa-volume-up"></i> 🔊 أصوات مسبارات الفضاء
           </button>
         </div>
 
@@ -264,7 +367,6 @@ const AstronomyPage = ({ isStandalone = true }) => {
         {/* TAB 2: NASA APOD PICTURE OF THE DAY */}
         {activeTab === 'apod' && (
           <div>
-            {/* Date Selector & Archive Bar */}
             <div className="astronomy-archive-bar">
               <div className="archive-label">
                 <i className="fas fa-calendar-alt"></i> اختر تاريخ الصورة الفلكية:
@@ -291,7 +393,6 @@ const AstronomyPage = ({ isStandalone = true }) => {
               </div>
             </div>
 
-            {/* Loading Spinner */}
             {loading ? (
               <div className="space-loading-box">
                 <i className="fas fa-spinner fa-spin space-spinner"></i>
@@ -300,7 +401,6 @@ const AstronomyPage = ({ isStandalone = true }) => {
             ) : apodData ? (
               <div className="astronomy-display-card">
                 
-                {/* Image / Video Display Container */}
                 <div className="space-media-wrapper">
                   {apodData.media_type === 'video' ? (
                     <iframe 
@@ -319,7 +419,6 @@ const AstronomyPage = ({ isStandalone = true }) => {
                     </a>
                   )}
 
-                  {/* Copyright Tag Overlay */}
                   <div className="space-copyright-overlay">
                     <span className="cp-icon"><i className="fas fa-shield-alt"></i></span>
                     <span className="cp-text">
@@ -329,7 +428,6 @@ const AstronomyPage = ({ isStandalone = true }) => {
                   </div>
                 </div>
 
-                {/* Content Details Side */}
                 <div className="space-content-body">
                   <div className="space-meta-tags">
                     <span className="space-tag-date">
@@ -347,7 +445,6 @@ const AstronomyPage = ({ isStandalone = true }) => {
                     <p>{arabicExplanation}</p>
                   </div>
 
-                  {/* Action Buttons & Source Link */}
                   <div className="space-actions-row">
                     <a 
                       href={apodData.hdurl || apodData.url} 
@@ -375,24 +472,35 @@ const AstronomyPage = ({ isStandalone = true }) => {
           </div>
         )}
 
+        {/* TAB 3: MOON PHASES LAB */}
+        {activeTab === 'moon' && <MoonPhasesLab />}
+
+        {/* TAB 4: COSMIC EVENTS */}
+        {activeTab === 'events' && <CosmicEvents />}
+
+        {/* TAB 5: SPACE CADET QUIZ & BADGE */}
+        {activeTab === 'quiz' && <SpaceCadetQuiz />}
+
+        {/* TAB 6: SOUNDS OF SPACE */}
+        {activeTab === 'sounds' && <SpaceSounds />}
+
       </div>
     </section>
   );
 };
 
 // ==========================================================================
-// SUB-COMPONENT: INTERACTIVE COSMIC SIMULATOR LAB
+// SUB-COMPONENT 1: INTERACTIVE COSMIC SIMULATOR LAB
 // ==========================================================================
 const CosmicLab = () => {
   const [selectedPlanet, setSelectedPlanet] = useState(PLANETS_DATA[2]); // Earth default
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
-  const [earthWeight, setEarthWeight] = useState(35); // 35 kg student default weight
+  const [earthWeight, setEarthWeight] = useState(35);
 
   const canvasRef = useRef(null);
   const anglesRef = useRef(PLANETS_DATA.map(() => Math.random() * Math.PI * 2));
 
-  // Canvas Orbit Simulation Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -400,7 +508,6 @@ const CosmicLab = () => {
     let animationFrameId;
 
     const render = () => {
-      // Set resolution dynamically
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
       if (canvas.width !== width || canvas.height !== height) {
@@ -411,10 +518,8 @@ const CosmicLab = () => {
       const centerX = width / 2;
       const centerY = height / 2;
 
-      // Clear Canvas
       ctx.clearRect(0, 0, width, height);
 
-      // Draw Starfield Background Dots
       ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
       for (let i = 0; i < 40; i++) {
         const sx = (Math.sin(i * 99 + 1) * 0.5 + 0.5) * width;
@@ -422,7 +527,6 @@ const CosmicLab = () => {
         ctx.fillRect(sx, sy, 1.5, 1.5);
       }
 
-      // Draw Glowing Sun in Center
       const sunGlow = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, 38);
       sunGlow.addColorStop(0, '#fef08a');
       sunGlow.addColorStop(0.4, '#f59e0b');
@@ -438,15 +542,12 @@ const CosmicLab = () => {
       ctx.fillStyle = '#fbbf24';
       ctx.fill();
 
-      // Scale factor to fit orbit radiuses inside responsive canvas
       const maxOrbit = PLANETS_DATA[PLANETS_DATA.length - 1].orbitRadius;
       const scale = (Math.min(width, height) / 2 - 30) / maxOrbit;
 
-      // Render Orbits & Planets
       PLANETS_DATA.forEach((planet, idx) => {
         const r = planet.orbitRadius * scale;
 
-        // Draw Orbit Path Ring
         ctx.beginPath();
         ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
         ctx.strokeStyle = selectedPlanet.id === planet.id ? 'rgba(56, 189, 248, 0.6)' : 'rgba(255, 255, 255, 0.12)';
@@ -455,17 +556,14 @@ const CosmicLab = () => {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Update Angle
         if (!isPaused) {
           anglesRef.current[idx] += 0.005 * planet.speedFactor * speedMultiplier;
         }
         const angle = anglesRef.current[idx];
 
-        // Planet Position
         const px = centerX + Math.cos(angle) * r;
         const py = centerY + Math.sin(angle) * r;
 
-        // Draw Saturn's Ring if applicable
         if (planet.hasRings) {
           ctx.beginPath();
           ctx.ellipse(px, py, planet.size * scale * 1.8, planet.size * scale * 0.7, Math.PI / 4, 0, Math.PI * 2);
@@ -474,7 +572,6 @@ const CosmicLab = () => {
           ctx.stroke();
         }
 
-        // Draw Planet Body
         ctx.beginPath();
         ctx.arc(px, py, Math.max(3, planet.size * scale * 0.45), 0, Math.PI * 2);
         ctx.fillStyle = planet.color;
@@ -483,7 +580,6 @@ const CosmicLab = () => {
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Selection Ring Overlay
         if (selectedPlanet.id === planet.id) {
           ctx.beginPath();
           ctx.arc(px, py, Math.max(7, planet.size * scale * 0.45 + 5), 0, Math.PI * 2);
@@ -501,7 +597,6 @@ const CosmicLab = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [selectedPlanet, speedMultiplier, isPaused]);
 
-  // Planet Selection Handler via Canvas Click
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -516,7 +611,6 @@ const CosmicLab = () => {
     const maxOrbit = PLANETS_DATA[PLANETS_DATA.length - 1].orbitRadius;
     const scale = (Math.min(width, height) / 2 - 30) / maxOrbit;
 
-    // Check collision distance to each planet
     PLANETS_DATA.forEach((planet, idx) => {
       const r = planet.orbitRadius * scale;
       const angle = anglesRef.current[idx];
@@ -531,12 +625,11 @@ const CosmicLab = () => {
   };
 
   const calculatedWeight = (ratio) => (earthWeight * ratio).toFixed(1);
-  const calculatedJump = (ratio) => (1 / ratio).toFixed(2); // In meters (assuming 1m jump on Earth)
+  const calculatedJump = (ratio) => (1 / ratio).toFixed(2);
 
   return (
     <div className="cosmic-lab-wrapper">
       
-      {/* Interactive Controls Bar */}
       <div className="lab-controls-bar">
         <div className="lab-controls-group">
           <span className="ctrl-label"><i className="fas fa-tachometer-alt"></i> السرعة المدارية:</span>
@@ -575,10 +668,8 @@ const CosmicLab = () => {
         </button>
       </div>
 
-      {/* Main Orbit Stage & Inspector Grid */}
       <div className="cosmic-stage-grid">
         
-        {/* Left: Canvas Solar System View */}
         <div className="orbit-canvas-card">
           <div className="canvas-header-info">
             <span><i className="fas fa-sun gold-icon"></i> المركز: الشمس المتوهجة</span>
@@ -591,7 +682,6 @@ const CosmicLab = () => {
             onClick={handleCanvasClick}
           />
 
-          {/* Quick Planet Selector Chips */}
           <div className="planet-selector-chips">
             {PLANETS_DATA.map((planet) => (
               <button
@@ -607,7 +697,6 @@ const CosmicLab = () => {
           </div>
         </div>
 
-        {/* Right: Planet Inspector Box */}
         <div className="planet-inspector-card">
           <div className="inspector-header">
             <span className="badge-planet-tag" style={{ background: selectedPlanet.color + '33', color: selectedPlanet.color, border: `1px solid ${selectedPlanet.color}` }}>
@@ -659,7 +748,6 @@ const CosmicLab = () => {
 
       </div>
 
-      {/* VIRTUAL GRAVITY & WEIGHT JUMP CALCULATOR */}
       <div className="gravity-lab-container">
         <div className="gravity-header">
           <h3><i className="fas fa-weight-hanging"></i> 🧪 تجربة الجاذبية والأوزان والقفزات الافتراضية</h3>
@@ -682,7 +770,6 @@ const CosmicLab = () => {
 
         <div className="gravity-cards-grid">
           
-          {/* Moon */}
           <div className="gravity-card">
             <div className="g-card-top">
               <span className="g-icon">🌕</span>
@@ -695,7 +782,6 @@ const CosmicLab = () => {
             </div>
           </div>
 
-          {/* Mars */}
           <div className="gravity-card">
             <div className="g-card-top">
               <span className="g-icon">🔴</span>
@@ -708,7 +794,6 @@ const CosmicLab = () => {
             </div>
           </div>
 
-          {/* Jupiter */}
           <div className="gravity-card">
             <div className="g-card-top">
               <span className="g-icon">🪐</span>
@@ -721,7 +806,6 @@ const CosmicLab = () => {
             </div>
           </div>
 
-          {/* Saturn */}
           <div className="gravity-card">
             <div className="g-card-top">
               <span className="g-icon">✨</span>
@@ -741,6 +825,405 @@ const CosmicLab = () => {
   );
 };
 
+// ==========================================================================
+// SUB-COMPONENT 2: MOON PHASES LAB & CALCULATOR
+// ==========================================================================
+const MoonPhasesLab = () => {
+  const [selectedPhase, setSelectedPhase] = useState(MOON_PHASES[4]); // Full Moon default
+
+  return (
+    <div className="moon-phases-wrapper">
+      <div className="moon-header">
+        <h3><i className="fas fa-moon gold-icon"></i> 🌒 حاسبة ودليل أطوار القمر والتقويم الهجري</h3>
+        <p>استكشف أطوار القمر الثمانية، نسبة سطوعها، وشاهد كيف يتبدل هلال الشهر الهجري في السماء ليلاً!</p>
+      </div>
+
+      <div className="moon-phases-grid">
+        
+        {/* Left: Moon Phase Visual Display Card */}
+        <div className="moon-display-card">
+          <div className="moon-visual-circle">
+            <span className="moon-emoji">{selectedPhase.icon}</span>
+          </div>
+
+          <div className="moon-info-details">
+            <span className="moon-illum-badge">
+              <i className="fas fa-sun"></i> نسبة إضاءة القمر: <strong>{selectedPhase.illum}</strong>
+            </span>
+            <h3 className="moon-phase-name">{selectedPhase.name}</h3>
+            <p className="moon-phase-age"><i className="far fa-clock"></i> العمر في الشهر القمري: {selectedPhase.age}</p>
+            <div className="moon-desc-box">
+              <p>{selectedPhase.desc}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Phase Selector List */}
+        <div className="moon-selector-list">
+          <h4 className="list-title"><i className="fas fa-list-ul"></i> اختر طور القمر لمعاينته:</h4>
+          <div className="moon-chips-column">
+            {MOON_PHASES.map((phase) => (
+              <button 
+                key={phase.id}
+                className={`moon-chip-row ${selectedPhase.id === phase.id ? 'active' : ''}`}
+                onClick={() => setSelectedPhase(phase)}
+              >
+                <span className="chip-icon">{phase.icon}</span>
+                <span className="chip-name">{phase.name}</span>
+                <span className="chip-illum">{phase.illum}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+// ==========================================================================
+// SUB-COMPONENT 3: COSMIC EVENTS & METEOR SHOWERS
+// ==========================================================================
+const CosmicEvents = () => {
+  return (
+    <div className="cosmic-events-wrapper">
+      <div className="events-header">
+        <h3><i className="fas fa-meteor gold-icon"></i> ☄️ مفكرة الأحداث الفلكية والزخات الشهابية</h3>
+        <p>دليلك الفلكي للظواهر الكونية المرتقبة بالسماء هذا العام ومواعيد رصد الشهاب والكواكب 🌌</p>
+      </div>
+
+      <div className="events-cards-grid">
+        {COSMIC_EVENTS_LIST.map((evt) => (
+          <div key={evt.id} className="cosmic-event-card">
+            <div className="evt-card-header">
+              <span className="evt-badge">{evt.badge}</span>
+              <span className="evt-date"><i className="far fa-calendar-alt"></i> {evt.date}</span>
+            </div>
+            <h4 className="evt-title">{evt.title}</h4>
+            <p className="evt-desc">{evt.desc}</p>
+            <div className="evt-tip-box">
+              <strong><i className="fas fa-eye"></i> نصيحة الرصد:</strong> {evt.tip}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================================================
+// SUB-COMPONENT 4: SPACE CADET QUIZ & BADGE GENERATOR
+// ==========================================================================
+const SpaceCadetQuiz = () => {
+  const [currentQ, setCurrentQ] = useState(0);
+  const [selectedOpt, setSelectedOpt] = useState(null);
+  const [score, setScore] = useState(0);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [studentGrade, setStudentGrade] = useState('الصف الرابع');
+  const [badgeGenerated, setBadgeGenerated] = useState(false);
+
+  const handleSelectOption = (idx) => {
+    if (selectedOpt !== null) return;
+    setSelectedOpt(idx);
+    if (idx === QUIZ_QUESTIONS[currentQ].answer) {
+      setScore(prev => prev + 20);
+    }
+  };
+
+  const handleNextQ = () => {
+    setSelectedOpt(null);
+    if (currentQ < QUIZ_QUESTIONS.length - 1) {
+      setCurrentQ(prev => prev + 1);
+    } else {
+      setQuizFinished(true);
+    }
+  };
+
+  const handleGenerateBadge = (e) => {
+    e.preventDefault();
+    if (!studentName.trim()) {
+      alert('يرجى إدخال اسم الطالب لطباعة الوسام!');
+      return;
+    }
+    setBadgeGenerated(true);
+  };
+
+  const handleResetQuiz = () => {
+    setCurrentQ(0);
+    setSelectedOpt(null);
+    setScore(0);
+    setQuizFinished(false);
+    setBadgeGenerated(false);
+    setStudentName('');
+  };
+
+  return (
+    <div className="space-quiz-wrapper">
+      <div className="quiz-header">
+        <h3><i className="fas fa-user-ninja gold-icon"></i> 👨‍🚀 مسابقة واختبار وسام رائد الفضاء الصغير</h3>
+        <p>أجب على الأسئلة الفلكية الخمسة بنجاح لتحصل فوراً على وسام رائد فضاء مدرسة مشيرفة المطبوع باسمك! 🏅</p>
+      </div>
+
+      {!quizFinished ? (
+        <div className="quiz-box-card">
+          <div className="quiz-progress-bar">
+            <span>السؤال {currentQ + 1} من {QUIZ_QUESTIONS.length}</span>
+            <span className="quiz-score-badge">النقاط: {score} / 100</span>
+          </div>
+
+          <h4 className="quiz-question-text">{QUIZ_QUESTIONS[currentQ].q}</h4>
+
+          <div className="quiz-options-list">
+            {QUIZ_QUESTIONS[currentQ].options.map((opt, idx) => {
+              let btnClass = 'quiz-opt-btn';
+              if (selectedOpt !== null) {
+                if (idx === QUIZ_QUESTIONS[currentQ].answer) btnClass += ' correct';
+                else if (idx === selectedOpt) btnClass += ' wrong';
+              }
+
+              return (
+                <button
+                  key={idx}
+                  className={btnClass}
+                  onClick={() => handleSelectOption(idx)}
+                >
+                  <span className="opt-symbol">{String.fromCharCode(65 + idx)}</span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedOpt !== null && (
+            <div className="quiz-explanation-callout">
+              <p><strong>التفسير العلمي:</strong> {QUIZ_QUESTIONS[currentQ].explanation}</p>
+              <button className="btn btn-next-q" onClick={handleNextQ}>
+                السؤال التالي <i className="fas fa-arrow-left"></i>
+              </button>
+            </div>
+          )}
+        </div>
+      ) : !badgeGenerated ? (
+        <div className="quiz-result-card">
+          <div className="result-trophy-icon">🏆</div>
+          <h3>مبروك! أكملت الاختبار الفلكي بنجاح!</h3>
+          <p className="result-score-text">درجتك النهائية: <strong>{score} / 100</strong></p>
+          
+          <form onSubmit={handleGenerateBadge} className="badge-form">
+            <label htmlFor="studentNameInput">اكتب اسمك الكامل لإدراجه في وسام رائد الفضاء:</label>
+            <div className="form-row-badge">
+              <input 
+                id="studentNameInput"
+                type="text" 
+                className="badge-name-input"
+                required
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="مثال: الطالب أمير ارفاعية"
+              />
+              <select 
+                className="badge-grade-select"
+                value={studentGrade}
+                onChange={(e) => setStudentGrade(e.target.value)}
+              >
+                <option value="الصف الأول">الصف الأول</option>
+                <option value="الصف الثاني">الصف الثاني</option>
+                <option value="الصف الثالث">الصف الثالث</option>
+                <option value="الصف الرابع">الصف الرابع</option>
+                <option value="الصف الخامس">الصف الخامس</option>
+                <option value="الصف السادس">الصف السادس</option>
+              </select>
+            </div>
+            
+            <button type="submit" className="btn btn-generate-badge">
+              <i className="fas fa-award"></i> اصدار وتوليد وسام الفضاء الخاص بي 🎖️
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="official-space-badge-card" id="space-badge-printable">
+          <div className="badge-gold-border">
+            <div className="badge-top-brand">
+              <span>🚀 مدرسة مشيرفة الابتدائية - قسم العلوم الفلكية</span>
+              <span className="badge-id">Ref: ASTRO-{Math.floor(1000 + Math.random() * 9000)}</span>
+            </div>
+
+            <div className="badge-medal-graphic">🏅</div>
+            
+            <h2 className="badge-main-title">وسام رائد الفضاء الصغير</h2>
+            <p className="badge-subtitle">Junior Space Explorer Honor Award</p>
+
+            <div className="badge-recipient-name">
+              {studentName}
+            </div>
+            <p className="badge-recipient-grade">{studentGrade} - مدرسة مشيرفة</p>
+
+            <p className="badge-citation">
+              تمنح الإدارة وطاقم الفلك هذا الوسام التقديري تقديراً للشغف والتميز العلمي في علوم الفضاء واستكشاف أسرار الكون بنجاح.
+            </p>
+
+            <div className="badge-footer-signatures">
+              <div>
+                <span>مدير المدرسة</span>
+                <strong>أ. رامي ارفاعية</strong>
+              </div>
+              <div>
+                <span>تاريخ التوليد</span>
+                <strong>{new Date().toISOString().split('T')[0]}</strong>
+              </div>
+            </div>
+
+            <div className="badge-actions-row no-print">
+              <button onClick={() => window.print()} className="btn btn-print-badge">
+                <i className="fas fa-print"></i> طباعة الوسام 🖨️
+              </button>
+              <button onClick={handleResetQuiz} className="btn btn-reset-quiz">
+                إعادة المسابقة 🔄
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+// ==========================================================================
+// SUB-COMPONENT 5: SOUNDS OF SPACE & NASA AUDIO
+// ==========================================================================
+const SpaceSounds = () => {
+  const [playingId, setPlayingId] = useState(null);
+  const audioCtxRef = useRef(null);
+
+  const SOUND_PRESETS = [
+    {
+      id: 'mars-wind',
+      title: '🌬️ صوت الرياح على كوكب المريخ (Martian Winds)',
+      source: 'مسبار كوريوسيتي (Curiosity Rover)',
+      desc: 'تسجيل حقيقي لاهتزازات وحفيف الرياح القادمة من صحراء كوكب المريخ الحمراء.',
+      freq: 120,
+      type: 'sine'
+    },
+    {
+      id: 'pulsar-star',
+      title: '⚡ نبضات النجم النيوتروني (Pulsar Radio Beeps)',
+      source: 'تلسكوبات الراديو الفلكية',
+      desc: 'تسجيل للموجات الكهرومغناطيسية المنبعثة من نجم نيوتروني يدور مئات المرات في الثانية!',
+      freq: 440,
+      type: 'square'
+    },
+    {
+      id: 'jupiter-plasma',
+      title: '🪐 أمواج المشتري المغناطيسية (Juno Magnetosphere)',
+      source: 'مسبار جونو (Juno Spacecraft)',
+      desc: 'ترددات العواصف الكهرومغناطيسية العاتية في المجال المغناطيسي لعملاق الغاز المشتري.',
+      freq: 280,
+      type: 'triangle'
+    },
+    {
+      id: 'sun-rumble',
+      title: '☀️ اهتزازات الشمس الداخلية (SDO Solar Harmonics)',
+      source: 'مرصد ديناميكا الشمس (SDO)',
+      desc: 'صوت الموجات الصوتية الكونية الناتجة عن الحركة الانصهارية في قلب الشمس.',
+      freq: 85,
+      type: 'sawtooth'
+    }
+  ];
+
+  const handleTogglePlay = (sound) => {
+    if (playingId === sound.id) {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close();
+        audioCtxRef.current = null;
+      }
+      setPlayingId(null);
+      return;
+    }
+
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+    }
+
+    // Synthesize Cosmic Frequency Audio via Web Audio API
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = sound.type;
+      osc.frequency.setValueAtTime(sound.freq, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      setPlayingId(sound.id);
+    } catch (e) {
+      console.warn("Audio Context error:", e);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close();
+      }
+    };
+  }, []);
+
+  return (
+    <div className="space-sounds-wrapper">
+      <div className="sounds-header">
+        <h3><i className="fas fa-volume-up gold-icon"></i> 🔊 أصوات وموجات الفضاء ومسبارات ناسا</h3>
+        <p>استمع لترددات وتسجيلات كهرومغناطيسية حقيقية التقطتها مركبات الفضاء على المريخ والمشتري والنجوم! 🎧</p>
+      </div>
+
+      <div className="sounds-grid">
+        {SOUND_PRESETS.map((snd) => {
+          const isPlaying = playingId === snd.id;
+
+          return (
+            <div key={snd.id} className={`sound-card ${isPlaying ? 'playing' : ''}`}>
+              <div className="snd-card-top">
+                <button 
+                  className={`btn-play-sound ${isPlaying ? 'playing' : ''}`}
+                  onClick={() => handleTogglePlay(snd)}
+                >
+                  <i className={`fas ${isPlaying ? 'fa-stop' : 'fa-play'}`}></i>
+                </button>
+                <div className="snd-title-meta">
+                  <h4>{snd.title}</h4>
+                  <span className="snd-source-badge">{snd.source}</span>
+                </div>
+              </div>
+
+              <p className="snd-desc">{snd.desc}</p>
+
+              {isPlaying && (
+                <div className="sound-bars-animation">
+                  <span className="bar b1"></span>
+                  <span className="bar b2"></span>
+                  <span className="bar b3"></span>
+                  <span className="bar b4"></span>
+                  <span className="bar b5"></span>
+                  <span className="audio-playing-txt">جاري تشغيل الموجات الصوتية الفلكية...</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export default AstronomyPage;
 
 // Homepage Banner for Astronomy Page
@@ -753,8 +1236,8 @@ export const AstronomyBanner = () => {
             <span className="ab-badge">
               <i className="fas fa-user-astronaut"></i> علوم الفضاء والمحاكاة التفاعلية
             </span>
-            <h3>🌌 مختبر الكون التفاعلي وصورة اليوم من ناسا</h3>
-            <p>جرب محاكاة مدارات الكواكب والجاذبية الافتراضية، واستكشف صور ناسا الفلكية المشروحة بالعربية 🪐✨</p>
+            <h3>🌌 مركز العلوم الفلكية ومختبر ناسا لمدرسة مشيرفة</h3>
+            <p>محاكاة مدارات الكواكب، أطوار القمر، مفكرة الشهب، أصوات ناسا، ووسام رائد الفضاء المنسوب للطالب! 🪐✨</p>
           </div>
           <div className="ab-action">
             <button 
@@ -762,7 +1245,7 @@ export const AstronomyBanner = () => {
               className="btn btn-ab-cta"
             >
               <i className="fas fa-microscope"></i>
-              دخول مختبر الكون الفلكي 🚀
+              دخول قسم العلوم الفلكية 🚀
             </button>
           </div>
         </div>
