@@ -193,20 +193,6 @@ const Hero = () => {
             </button>
           </div>
 
-          {/* Launch Trilingual Celebration Quote */}
-          {showCelebration && currentQuote && (
-            <div 
-              className={`launch-celebration-toast lang-${currentQuote.lang}`}
-              dir={currentQuote.lang === 'en' ? 'ltr' : 'rtl'}
-            >
-              <div className="quote-header-badge">
-                <span className="quote-flag">{currentQuote.flag}</span>
-                <span className="quote-lang-name">{currentQuote.title}</span>
-                <span className="quote-badge-tag">عبارة التميز والتحفيز 🚀</span>
-              </div>
-              <p className="quote-text-body">{currentQuote.text}</p>
-            </div>
-          )}
         </div>
 
         {/* Hero Right/Rocket Visual Stage */}
@@ -303,6 +289,21 @@ const Hero = () => {
               </div>
             )}
           </div>
+
+          {/* Trilingual Celebration Motivational Quote Card right under the rocket stage */}
+          {showCelebration && currentQuote && (
+            <div 
+              className={`rocket-quote-stage-card lang-${currentQuote.lang}`}
+              dir={currentQuote.lang === 'en' ? 'ltr' : 'rtl'}
+            >
+              <div className="quote-header-badge">
+                <span className="quote-flag">{currentQuote.flag}</span>
+                <span className="quote-lang-name">{currentQuote.title}</span>
+                <span className="quote-badge-tag">رسالة الإلهام والتميز 🚀</span>
+              </div>
+              <p className="quote-text-body">{currentQuote.text}</p>
+            </div>
+          )}
         </div>
 
       </div>

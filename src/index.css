@@ -5430,6 +5430,46 @@ textarea.form-input {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Trilingual Rocket Launch Quote Card directly under Rocket Stage */
+.rocket-quote-stage-card {
+  margin-top: 1.5rem;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.95) 100%);
+  border: 2px solid #eab308;
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 10px 40px rgba(234, 179, 8, 0.35);
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  animation: quoteStagePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.rocket-quote-stage-card.lang-he {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 40px rgba(56, 189, 248, 0.35);
+  background: linear-gradient(135deg, rgba(2, 6, 23, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+}
+
+.rocket-quote-stage-card.lang-en {
+  border-color: #c084fc;
+  box-shadow: 0 10px 40px rgba(192, 132, 252, 0.35);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(45, 16, 85, 0.95) 100%);
+}
+
+.rocket-quote-stage-card .quote-header-badge {
+  justify-content: center;
+}
+
+@keyframes quoteStagePop {
+  0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+  70% { transform: translateY(-5px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
 
 
 
