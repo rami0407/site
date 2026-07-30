@@ -188,12 +188,11 @@ function App() {
         // 12. Seed Navigation Links
         const navigationRef = collection(db, 'navigation');
         const navigationSnap = await getDocs(navigationRef);
-        if (navigationSnap.empty) {
-          console.log("Firestore navigation collection is empty. Seeding defaults...");
-          for (const item of defaultNavigation) {
+        const existingIds = new Set(navigationSnap.docs.map(d => d.id));
+        for (const item of defaultNavigation) {
+          if (!existingIds.has(item.id)) {
             await setDoc(doc(db, 'navigation', item.id), item);
           }
-          console.log("Navigation successfully seeded!");
         }
 
         // 13. Seed Pages

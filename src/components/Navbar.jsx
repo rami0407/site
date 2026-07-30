@@ -15,13 +15,17 @@ const Navbar = () => {
       try {
         const navRef = collection(db, 'navigation');
         const navSnap = await getDocs(navRef);
+        let items = defaultNavigation;
         if (!navSnap.empty) {
-          const items = navSnap.docs.map(doc => doc.data());
-          items.sort((a, b) => (a.order || 0) - (b.order || 0));
-          setNavItems(items);
-        } else {
-          setNavItems(defaultNavigation);
+          const firestoreItems = navSnap.docs.map(doc => doc.data());
+          // Merge defaultNavigation with firestoreItems so new default items always display
+          const itemMap = new Map();
+          defaultNavigation.forEach(item => itemMap.set(item.target || item.id, item));
+          firestoreItems.forEach(item => itemMap.set(item.target || item.id, item));
+          items = Array.from(itemMap.values());
         }
+        items.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setNavItems(items);
       } catch (err) {
         console.warn("Firestore navigation load failed, using fallback:", err.message);
         setNavItems(defaultNavigation);
