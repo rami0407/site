@@ -269,6 +269,7 @@ const Worksheets = ({ isStandalone }) => {
                     href={ws.fileUrl || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
+                    download={ws.fileUrl && ws.fileUrl.startsWith('data:') ? `${ws.title}.${ws.type === 'Word' ? 'docx' : 'pdf'}` : undefined}
                     className="btn btn-download-ws"
                     title="تنزيل / فتح ورقة العمل"
                   >

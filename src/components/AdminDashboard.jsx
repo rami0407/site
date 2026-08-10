@@ -97,17 +97,49 @@ const AdminDashboard = () => {
   const [uniforms, setUniforms] = useState([]);
   const [guideLetter, setGuideLetter] = useState({ title: '', salutation: '', content: '', valediction: '' });
 
-  const [worksheets, setWorksheets] = useState([]);
-  const [editingWsId, setEditingWsId] = useState(null);
-  const [newWs, setNewWs] = useState({
-    title: '',
-    subject: 'اللغة العربية',
-    grade: 'الصف الأول',
-    teacher: '',
-    fileUrl: '',
-    type: 'PDF',
-    notes: ''
-  });
+  const [isUploadingWorksheet, setIsUploadingWorksheet] = useState(false);
+  const [uploadedWorksheetName, setUploadedWorksheetName] = useState('');
+
+  const handleWorksheetFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 15 ميغابايت.');
+      return;
+    }
+
+    setIsUploadingWorksheet(true);
+    setUploadedWorksheetName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target.result;
+      
+      let detectedType = 'PDF';
+      if (file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx')) {
+        detectedType = 'Word';
+      } else if (file.name.toLowerCase().endsWith('.png') || file.name.toLowerCase().endsWith('.jpg') || file.name.toLowerCase().endsWith('.jpeg')) {
+        detectedType = 'Image';
+      }
+
+      setNewWs(prev => ({
+        ...prev,
+        fileUrl: dataUrl,
+        type: detectedType,
+        title: prev.title || file.name.replace(/\.[^/.]+$/, '')
+      }));
+
+      setIsUploadingWorksheet(false);
+    };
+
+    reader.onerror = () => {
+      alert('حدث خطأ أثناء قراءة الملف من الجهاز.');
+      setIsUploadingWorksheet(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
 
   const [editingBookId, setEditingBookId] = useState(null);
   const [newBook, setNewBook] = useState({
@@ -3535,16 +3567,59 @@ const AdminDashboard = () => {
                           />
                         </div>
 
-                        <div className="form-group">
-                          <label className="form-label" style={{ fontWeight: 700 }}>رابط الملف / المستند (URL) *</label>
-                          <input 
-                            type="url" 
-                            className="form-input" 
-                            required
-                            value={newWs.fileUrl}
-                            onChange={(e) => setNewWs({ ...newWs, fileUrl: e.target.value })}
-                            placeholder="https://drive.google.com/... أو رابط PDF"
-                          />
+                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                          <label className="form-label" style={{ fontWeight: 700 }}>
+                            <i className="fas fa-file-upload" style={{ color: 'var(--primary)', marginLeft: '0.5rem' }}></i>
+                            إرفاق ورقة العمل / الامتحان * (رفع مباشر من جهازك أو رابط Google Drive)
+                          </label>
+                          
+                          <div style={{ background: 'var(--bg-light)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            
+                            {/* Direct File Picker Button */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                              <label 
+                                htmlFor="wsFileInput" 
+                                className="btn" 
+                                style={{ background: 'var(--primary)', color: 'white', cursor: 'pointer', padding: '0.65rem 1.35rem', fontSize: '0.92rem', fontWeight: 800, borderRadius: 'var(--radius-sm)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                              >
+                                <i className="fas fa-folder-open"></i> اختيار ملف من حاسوبك 📁
+                              </label>
+                              <input 
+                                id="wsFileInput"
+                                type="file" 
+                                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.ppt,.pptx"
+                                onChange={handleWorksheetFileUpload}
+                                style={{ display: 'none' }}
+                              />
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                (أو ادخل رابط درايف/مباشر أدناه)
+                              </span>
+                            </div>
+
+                            {isUploadingWorksheet && (
+                              <p style={{ color: 'var(--primary)', fontWeight: 700, margin: 0, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <i className="fas fa-spinner fa-spin"></i> جاري قراءة وتجهيز الملف...
+                              </p>
+                            )}
+
+                            {uploadedWorksheetName && !isUploadingWorksheet && (
+                              <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#047857', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.5rem 0.85rem', borderRadius: 'var(--radius-sm)', fontSize: '0.88rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <i className="fas fa-check-circle"></i> تم إرفاق الملف بنجاح من جهازك: <strong>{uploadedWorksheetName}</strong>
+                              </div>
+                            )}
+
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required
+                              value={newWs.fileUrl}
+                              onChange={(e) => {
+                                setNewWs({ ...newWs, fileUrl: e.target.value });
+                                setUploadedWorksheetName('');
+                              }}
+                              placeholder="أدخل رابط المستند هنا (https://drive.google.com/... أو اختر ملف من حاسوبك بالأعلى)"
+                            />
+                          </div>
                         </div>
 
                         <div className="form-group">
