@@ -142,29 +142,46 @@ const AiAssistant = () => {
         parts: [{ text: msg.text }]
       }));
 
-      // Call Gemini API via fetch REST request
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: contents,
-            systemInstruction: {
-              parts: [{ text: schoolContext || "أنت مساعد ذكي لمدرسة مشيرفة الابتدائية." }]
-            },
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 600
-            }
-          })
-        }
-      );
+      // Try gemini-2.0-flash then gemini-1.5-flash via v1beta endpoint
+      const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+      let response = null;
+      let lastError = null;
 
-      if (!response.ok) {
-        throw new Error(`API returned status ${response.status}`);
+      for (const model of modelsToTry) {
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: contents,
+                systemInstruction: {
+                  parts: [{ text: schoolContext || "أنت مساعد ذكي لمدرسة مشيرفة الابتدائية." }]
+                },
+                generationConfig: {
+                  temperature: 0.4,
+                  maxOutputTokens: 800
+                }
+              })
+            }
+          );
+
+          if (res.ok) {
+            response = res;
+            break;
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            console.warn(`Model ${model} status ${res.status}:`, errData);
+            lastError = new Error(`API returned status ${res.status}`);
+          }
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      if (!response) {
+        throw lastError || new Error("Failed connecting to Gemini API");
       }
 
       const data = await response.json();
