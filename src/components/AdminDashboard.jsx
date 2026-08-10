@@ -17,6 +17,7 @@ import {
 import { calendarEvents, newsData } from '../data/schoolData'; // defaults for seeding
 import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
 import { defaultNavigation, defaultPages } from '../data/defaultNavigationData';
+import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -1595,26 +1596,37 @@ const AdminDashboard = () => {
         date: new Date().toISOString().split('T')[0]
       };
 
-      // 1. Always save to LocalStorage cache first so it NEVER fails!
-      let updated;
+      // 1. Always save FULL file into IndexedDB (Unlimited browser quota)
       const targetId = editingWsId || `ws-loc-${Date.now()}`;
       const localDoc = { ...wsData, id: targetId };
+      await saveWorksheetIDB(localDoc);
 
+      // 2. Update state and safe LocalStorage lightweight cache
+      let updated;
       if (editingWsId) {
         updated = worksheets.map(w => w.id === editingWsId ? localDoc : w);
       } else {
         updated = [localDoc, ...worksheets];
       }
-
-      localStorage.setItem('db_worksheets', JSON.stringify(updated));
       setWorksheets(updated);
 
-      // 2. Sync to Firestore (Ensuring property length never exceeds Firestore's 1,048,487 bytes limit)
+      try {
+        const lightweightWorksheets = updated.map(item => {
+          if (item.fileUrl && item.fileUrl.startsWith('data:') && item.fileUrl.length > 50000) {
+            return { ...item, fileUrl: `idb-file:${item.id}` };
+          }
+          return item;
+        });
+        localStorage.setItem('db_worksheets', JSON.stringify(lightweightWorksheets));
+      } catch (lsErr) {
+        console.warn("LocalStorage save skipped, file safely saved in IndexedDB:", lsErr);
+      }
+
+      // 3. Sync to Firestore (Ensuring property length never exceeds Firestore's 1,048,487 bytes limit)
       if (!isOfflineMode) {
         try {
           let fsData = { ...wsData };
           if (fsData.fileUrl.startsWith('data:') && fsData.fileUrl.length > 800000) {
-            // Trim fileUrl for Firestore record to prevent 1048487 bytes property limit error
             fsData.fileUrl = `local-file:${targetId}`;
           }
 
@@ -1624,7 +1636,7 @@ const AdminDashboard = () => {
             await addDoc(collection(db, 'worksheets'), fsData);
           }
         } catch (fsErr) {
-          console.warn("Firestore sync fallback to local storage:", fsErr.message);
+          console.warn("Firestore sync fallback to IndexedDB:", fsErr.message);
         }
       }
 
@@ -1646,9 +1658,13 @@ const AdminDashboard = () => {
   const handleDeleteWorksheet = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف ورقة العمل هذه؟')) return;
 
+    await deleteWorksheetIDB(id);
+
     if (isOfflineMode) {
       const updated = worksheets.filter(w => w.id !== id);
-      localStorage.setItem('db_worksheets', JSON.stringify(updated));
+      try {
+        localStorage.setItem('db_worksheets', JSON.stringify(updated));
+      } catch (e) {}
       setWorksheets(updated);
       return;
     }

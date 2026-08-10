@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { getWorksheetsIDB } from '../utils/idbStore';
 
 const DEFAULT_WORKSHEETS = [
   {
@@ -97,9 +98,16 @@ const Worksheets = ({ isStandalone }) => {
   const [selectedGrade, setSelectedGrade] = useState('جميع الصفوف');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch worksheets from Firestore or LocalStorage
+  // Fetch worksheets from Firestore, IndexedDB, or LocalStorage
   useEffect(() => {
     const fetchWorksheets = async () => {
+      let idbItems = [];
+      try {
+        idbItems = await getWorksheetsIDB();
+      } catch (e) {
+        console.warn("IndexedDB load error:", e);
+      }
+
       let localItems = [];
       const localWS = localStorage.getItem('db_worksheets');
       if (localWS) {
@@ -113,21 +121,44 @@ const Worksheets = ({ isStandalone }) => {
           snap.forEach(docSnap => {
             const data = docSnap.data();
             const id = docSnap.id;
-            // If fileUrl is a local indicator token, match with LocalStorage full fileData
-            if (data.fileUrl && data.fileUrl.startsWith('local-file:')) {
-              const localMatch = localItems.find(item => item.id === id || item.title === data.title);
-              if (localMatch && localMatch.fileUrl && localMatch.fileUrl.startsWith('data:')) {
-                data.fileUrl = localMatch.fileUrl;
+            
+            // Resolve fileUrl from IndexedDB if it was trimmed
+            if (data.fileUrl && (data.fileUrl.startsWith('local-file:') || data.fileUrl.startsWith('idb-file:'))) {
+              const idbMatch = idbItems.find(item => item.id === id || item.title === data.title);
+              if (idbMatch && idbMatch.fileUrl && idbMatch.fileUrl.startsWith('data:')) {
+                data.fileUrl = idbMatch.fileUrl;
+              } else {
+                const localMatch = localItems.find(item => item.id === id || item.title === data.title);
+                if (localMatch && localMatch.fileUrl && localMatch.fileUrl.startsWith('data:')) {
+                  data.fileUrl = localMatch.fileUrl;
+                }
               }
             }
+
             fsList.push({ ...data, id });
           });
         }
 
-        // Merge local items that are newly added locally
+        // Merge IndexedDB items
         const combined = [...fsList];
+        idbItems.forEach(idbItem => {
+          const idx = combined.findIndex(c => c.id === idbItem.id || c.title === idbItem.title);
+          if (idx !== -1) {
+            if (idbItem.fileUrl && idbItem.fileUrl.startsWith('data:')) {
+              combined[idx].fileUrl = idbItem.fileUrl;
+            }
+          } else {
+            combined.unshift(idbItem);
+          }
+        });
+
+        // Merge localItems
         localItems.forEach(item => {
           if (!combined.some(existing => existing.id === item.id || existing.title === item.title)) {
+            if (item.fileUrl && item.fileUrl.startsWith('idb-file:')) {
+              const idbMatch = idbItems.find(i => i.id === item.id);
+              if (idbMatch && idbMatch.fileUrl) item.fileUrl = idbMatch.fileUrl;
+            }
             combined.unshift(item);
           }
         });
@@ -135,7 +166,8 @@ const Worksheets = ({ isStandalone }) => {
         setWorksheets(combined.length > 0 ? combined : DEFAULT_WORKSHEETS);
       } catch (e) {
         console.warn("Using offline worksheets fallback:", e);
-        setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
+        const fallback = idbItems.length > 0 ? idbItems : (localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
+        setWorksheets(fallback);
       }
     };
 
