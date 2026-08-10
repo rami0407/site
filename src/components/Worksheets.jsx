@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { getWorksheetsIDB } from '../utils/idbStore';
-import { downloadChunkedFile } from '../utils/chunkedStorage';
+import { downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 
 const DEFAULT_WORKSHEETS = [
   {
@@ -105,42 +105,47 @@ const Worksheets = ({ isStandalone }) => {
   const [downloadingId, setDownloadingId] = useState(null);
 
   const handleDownloadWorksheet = async (e, ws) => {
-    if (ws.fileUrl && (ws.fileUrl.startsWith('http://') || ws.fileUrl.startsWith('https://') || ws.fileUrl.startsWith('data:'))) {
+    // External URL link (e.g. Google Drive)
+    if (ws.fileUrl && (ws.fileUrl.startsWith('http://') || ws.fileUrl.startsWith('https://'))) {
+      window.open(ws.fileUrl, '_blank', 'noopener,noreferrer');
       return;
     }
 
-    if (ws.fileUrl && (ws.fileUrl.startsWith('chunked:') || ws.fileUrl.startsWith('local-file:'))) {
-      e.preventDefault();
-      const targetId = ws.fileUrl.replace(/^(chunked:|local-file:)/, '') || ws.id;
-      setDownloadingId(ws.id);
+    e.preventDefault();
+    setDownloadingId(ws.id);
+    const targetExtension = ws.type === 'Word' ? 'docx' : ws.type === 'Image' ? 'png' : 'pdf';
+    const filename = `${ws.title}.${targetExtension}`;
 
-      try {
-        let fullDataUrl = await downloadChunkedFile(targetId);
+    try {
+      let fullDataUrl = null;
 
-        if (!fullDataUrl) {
-          const idbItems = await getWorksheetsIDB();
-          const idbMatch = idbItems.find(i => i.id === ws.id || i.id === targetId || i.title === ws.title);
-          if (idbMatch && idbMatch.fileUrl && idbMatch.fileUrl.startsWith('data:')) {
-            fullDataUrl = idbMatch.fileUrl;
-          }
-        }
-
-        if (fullDataUrl) {
-          const a = document.createElement('a');
-          a.href = fullDataUrl;
-          a.download = `${ws.title}.${ws.type === 'Word' ? 'docx' : 'pdf'}`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else {
-          alert('تنبيه: هذا المستند تم رفعه سابقاً قبل التفعيل السحابي المباشر.\n\nيرجى فتح لوحة التحكم والضغط على "حفظ التعديلات" للمستند لتحديثه سحابياً ومتاحاً لجميع الهواتف والمتصفحات.');
-        }
-      } catch (err) {
-        console.error("Chunked download error:", err);
-        alert('حدث خطأ أثناء تنزيل الملف من السحابة.');
-      } finally {
-        setDownloadingId(null);
+      if (ws.fileUrl && ws.fileUrl.startsWith('data:')) {
+        fullDataUrl = ws.fileUrl;
       }
+
+      if (!fullDataUrl && ws.fileUrl && (ws.fileUrl.startsWith('chunked:') || ws.fileUrl.startsWith('local-file:'))) {
+        const targetId = ws.fileUrl.replace(/^(chunked:|local-file:)/, '') || ws.id;
+        fullDataUrl = await downloadChunkedFile(targetId);
+      }
+
+      if (!fullDataUrl) {
+        const idbItems = await getWorksheetsIDB();
+        const idbMatch = idbItems.find(i => i.id === ws.id || i.title === ws.title);
+        if (idbMatch && idbMatch.fileUrl && idbMatch.fileUrl.startsWith('data:')) {
+          fullDataUrl = idbMatch.fileUrl;
+        }
+      }
+
+      if (fullDataUrl && fullDataUrl.startsWith('data:')) {
+        downloadBase64OrBlob(fullDataUrl, filename);
+      } else {
+        alert('تنبيه: هذا المستند تم رفعه سابقاً قبل التفعيل السحابي المباشر.\n\nيرجى فتح لوحة التحكم والضغط على "حفظ التعديلات" للمستند لتحديثه سحابياً ومتاحاً لجميع الهواتف والمتصفحات.');
+      }
+    } catch (err) {
+      console.error("Chunked download error:", err);
+      alert('حدث خطأ أثناء تنزيل الملف من السحابة.');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
