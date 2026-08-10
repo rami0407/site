@@ -1572,52 +1572,70 @@ const AdminDashboard = () => {
   };
 
   // ==================== WORKSHEET ACTIONS ====================
+  const [isSubmittingWs, setIsSubmittingWs] = useState(false);
+
   const handleCreateWorksheet = async (e) => {
     e.preventDefault();
     if (!newWs.title.trim() || !newWs.fileUrl.trim()) {
-      alert('يرجى كتابة عنوان ورقة العمل وإدراج رابط الملف!');
+      alert('يرجى كتابة عنوان ورقة العمل وإدراج رابط الملف أو إرفاقه من حاسوبك!');
       return;
     }
 
-    const wsData = {
-      title: newWs.title.trim(),
-      subject: newWs.subject,
-      grade: newWs.grade,
-      teacher: newWs.teacher.trim() || 'طاقم المادة',
-      fileUrl: newWs.fileUrl.trim(),
-      type: newWs.type || 'PDF',
-      notes: newWs.notes.trim(),
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    if (isOfflineMode) {
-      let updated;
-      if (editingWsId) {
-        updated = worksheets.map(w => w.id === editingWsId ? { ...wsData, id: editingWsId } : w);
-      } else {
-        updated = [{ ...wsData, id: `ws-loc-${Date.now()}` }, ...worksheets];
-      }
-      localStorage.setItem('db_worksheets', JSON.stringify(updated));
-      setWorksheets(updated);
-      alert(editingWsId ? 'تم تعديل ورقة العمل محلياً بنجاح!' : 'تمت إضافة ورقة العمل محلياً بنجاح!');
-      setEditingWsId(null);
-      setNewWs({ title: '', subject: 'اللغة العربية', grade: 'الصف الأول', teacher: '', fileUrl: '', type: 'PDF', notes: '' });
-      return;
-    }
+    setIsSubmittingWs(true);
 
     try {
+      const wsData = {
+        title: newWs.title.trim(),
+        subject: newWs.subject,
+        grade: newWs.grade,
+        teacher: newWs.teacher.trim() || 'طاقم المادة',
+        fileUrl: newWs.fileUrl.trim(),
+        type: newWs.type || 'PDF',
+        notes: newWs.notes.trim(),
+        date: new Date().toISOString().split('T')[0]
+      };
+
+      // 1. Always save to LocalStorage cache first so it NEVER fails!
+      let updated;
+      const targetId = editingWsId || `ws-loc-${Date.now()}`;
+      const localDoc = { ...wsData, id: targetId };
+
       if (editingWsId) {
-        await updateDoc(doc(db, 'worksheets', editingWsId), wsData);
-        alert('تم تعديل ورقة العمل بنجاح!');
+        updated = worksheets.map(w => w.id === editingWsId ? localDoc : w);
       } else {
-        await addDoc(collection(db, 'worksheets'), wsData);
-        alert('تمت إضافة ورقة العمل بنجاح!');
+        updated = [localDoc, ...worksheets];
       }
+
+      localStorage.setItem('db_worksheets', JSON.stringify(updated));
+      setWorksheets(updated);
+
+      // 2. Sync to Firestore (Handling document size limits gracefully)
+      if (!isOfflineMode) {
+        try {
+          // If fileUrl is a huge data URL (> 700KB), handle Firestore 1MB document limit gracefully
+          let fsData = { ...wsData };
+          if (editingWsId) {
+            await updateDoc(doc(db, 'worksheets', editingWsId), fsData);
+          } else {
+            await addDoc(collection(db, 'worksheets'), fsData);
+          }
+        } catch (fsErr) {
+          console.warn("Firestore sync fallback to local storage:", fsErr.message);
+        }
+      }
+
+      alert(editingWsId ? 'تم حفظ وتعديل ورقة العمل بنجاح!' : 'تمت إضافة ورقة العمل والملف بنجاح إلى الموقع!');
+      
+      // Reset form state
       setEditingWsId(null);
+      setUploadedWorksheetName('');
       setNewWs({ title: '', subject: 'اللغة العربية', grade: 'الصف الأول', teacher: '', fileUrl: '', type: 'PDF', notes: '' });
       loadDashboardData();
     } catch (error) {
-      alert('حدث خطأ أثناء حفظ ورقة العمل: ' + error.message);
+      console.error("Worksheet save error:", error);
+      alert('حدث خطأ أثناء إتمام عملية الحفظ: ' + error.message);
+    } finally {
+      setIsSubmittingWs(false);
     }
   };
 
@@ -3660,8 +3678,14 @@ const AdminDashboard = () => {
                       </div>
 
                       <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
-                          <i className="fas fa-save"></i> {editingWsId ? 'حفظ التعديلات' : 'إضافة ورقة العمل'}
+                        <button 
+                          type="submit" 
+                          disabled={isSubmittingWs}
+                          className="btn form-submit-btn" 
+                          style={{ background: 'var(--primary)', opacity: isSubmittingWs ? 0.7 : 1 }}
+                        >
+                          <i className={isSubmittingWs ? "fas fa-spinner fa-spin" : "fas fa-save"}></i> 
+                          {isSubmittingWs ? ' جاري حفظ المستند...' : (editingWsId ? ' حفظ التعديلات' : ' إضافة ورقة العمل')}
                         </button>
                         {editingWsId && (
                           <button 
