@@ -1,18 +1,23 @@
 // Default navigation links for Musheirifa Elementary School
-export const defaultNavigation = [
-  { id: "nav_1", label: "الرئيسية", type: "section", target: "home", order: 1 },
-  { id: "nav_2", label: "المبادرات", type: "section", target: "initiatives", order: 2 },
-  { id: "nav_challenge", label: "🏆 التحدي الأسبوعي", type: "page", target: "challenge", order: 3 },
-  { id: "nav_worksheets", label: "📑 أوراق العمل", type: "page", target: "worksheets", order: 4 },
-  { id: "nav_astronomy", label: "🌌 مختبر الفلك", type: "page", target: "astronomy", order: 5 },
-  { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", order: 6 },
-  { id: "nav_4", label: "الأخبار", type: "section", target: "news", order: 4 },
-  { id: "nav_5", label: "كلمة المدير", type: "section", target: "principal", order: 5 },
-  { id: "nav_6", label: "روابط هامة", type: "section", target: "links", order: 6 },
-  { id: "nav_7", label: "الكتب واللباس الموحد", type: "section", target: "books", order: 7 },
-  { id: "nav_8", label: "المعرض", type: "section", target: "gallery", order: 8 },
-  { id: "nav_9", label: "اتصل بنا", type: "section", target: "contact", order: 9 }
+export const defaultTopNavigation = [
+  { id: "top_books", label: "📚 الكتب واللباس الموحد", type: "page", target: "books", category: "top", order: 1 },
+  { id: "top_links", label: "🔗 روابط هامة", type: "section", target: "links", category: "top", order: 2 },
+  { id: "top_gallery", label: "🖼️ المعرض", type: "section", target: "gallery", category: "top", order: 3 },
+  { id: "top_contact", label: "📞 اتصل بنا", type: "section", target: "contact", category: "top", order: 4 }
 ];
+
+export const defaultMainNavigation = [
+  { id: "nav_1", label: "الرئيسية", type: "section", target: "home", category: "main", order: 1 },
+  { id: "nav_2", label: "المبادرات", type: "section", target: "initiatives", category: "main", order: 2 },
+  { id: "nav_challenge", label: "🏆 التحدي الأسبوعي", type: "page", target: "challenge", category: "main", order: 3 },
+  { id: "nav_worksheets", label: "📑 أوراق العمل", type: "page", target: "worksheets", category: "main", order: 4 },
+  { id: "nav_astronomy", label: "🌌 مختبر الفلك", type: "page", target: "astronomy", category: "main", order: 5 },
+  { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", category: "main", order: 6 },
+  { id: "nav_4", label: "الأخبار", type: "section", target: "news", category: "main", order: 7 },
+  { id: "nav_5", label: "كلمة المدير", type: "section", target: "principal", category: "main", order: 8 }
+];
+
+export const defaultNavigation = [...defaultMainNavigation, ...defaultTopNavigation];
 
 export const defaultPages = [
   {

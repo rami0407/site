@@ -220,6 +220,7 @@ function App() {
   const isWorksheetsView = currentHash.startsWith('#/worksheets') || currentHash.startsWith('#worksheets');
   const isAstronomyView = currentHash.startsWith('#/astronomy') || currentHash.startsWith('#astronomy');
   const isChallengeView = currentHash.startsWith('#/challenge') || currentHash.startsWith('#challenge');
+  const isBooksView = currentHash.startsWith('#/books') || currentHash.startsWith('#books');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -248,6 +249,8 @@ function App() {
         <AstronomyPage isStandalone={true} />
       ) : isChallengeView ? (
         <WeeklyChallenge isStandalone={true} />
+      ) : isBooksView ? (
+        <BooksGuide isStandalone={true} />
       ) : (
         <main>
           {/* Hero Banner */}
@@ -273,9 +276,6 @@ function App() {
 
           {/* Fast Action Hyperlinks */}
           <ImportantLinks />
-
-          {/* Textbooks & Uniform Guide */}
-          <BooksGuide />
 
           {/* Responsive Activity Gallery */}
           <Gallery />

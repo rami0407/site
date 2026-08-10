@@ -12,7 +12,7 @@ const GRADES = [
   { id: '6', name: 'الصف السادس' }
 ];
 
-const BooksGuide = () => {
+const BooksGuide = ({ isStandalone }) => {
   const [activeSubTab, setActiveSubTab] = useState('books'); // 'books' or 'uniform'
   const [selectedGrade, setSelectedGrade] = useState('1');
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,8 +87,20 @@ const BooksGuide = () => {
     : null;
 
   return (
-    <section className="books-section" id="books">
+    <section className={`books-section ${isStandalone ? 'standalone-page' : ''}`} id="books" style={isStandalone ? { paddingTop: '120px', minHeight: '85vh' } : {}}>
       <div className="section-header container">
+        {isStandalone && (
+          <div style={{ marginBottom: '1.5rem', textAlign: 'right' }}>
+            <a 
+              href="#home" 
+              onClick={(e) => { e.preventDefault(); window.location.hash = '#home'; }}
+              className="btn btn-outline"
+              style={{ color: 'var(--primary)', borderColor: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, padding: '0.6rem 1.4rem' }}
+            >
+              <i className="fas fa-arrow-right"></i> العودة للصفحة الرئيسية 🏠
+            </a>
+          </div>
+        )}
         <span className="section-subtitle">التحضير للسنة الدراسية الجديدة</span>
         <h2 className="section-title">دليل الكتب المدرسية واللباس الموحد</h2>
         <div className="underline"><span></span></div>

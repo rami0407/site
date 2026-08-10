@@ -276,23 +276,107 @@ button, input, textarea, select {
   margin: 0 auto;
 }
 
-/* Navbar */
-.navbar {
+/* ==========================================================================
+   DUAL-TIER HEADER SYSTEM STYLING
+   ========================================================================== */
+.dual-header-wrapper {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   z-index: 10000;
   transition: var(--transition-smooth);
 }
 
-.navbar.scrolled {
-  box-shadow: var(--shadow-md);
-  background: rgba(255, 255, 255, 0.95);
+/* 1. Top Utility Sub-Bar */
+.top-utility-bar {
+  background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  color: #f8fafc;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.82rem;
+}
+
+.top-utility-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.top-bar-notice {
+  font-weight: 700;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-bar-notice .sparkle-icon {
+  color: #fde047;
+}
+
+.top-bar-menu {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.top-bar-menu a {
+  color: #e2e8f0;
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.top-bar-menu a:hover {
+  color: #38bdf8;
+}
+
+.top-admin-link {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047 !important;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  padding: 0.2rem 0.65rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+
+.top-admin-link:hover {
+  background: #eab308;
+  color: #020617 !important;
+}
+
+/* 2. Main Navigation Bar in Dual System */
+.navbar.main-nav-bar {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.dual-header-wrapper.scrolled .navbar.main-nav-bar {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Navbar container */
+.navbar {
+  transition: var(--transition-smooth);
 }
 
 .nav-container {
@@ -2190,18 +2274,19 @@ textarea.form-input {
 
   .nav-menu {
     position: fixed;
-    top: 76px;
+    top: 65px;
     right: -100%;
-    width: 280px;
-    height: calc(100vh - 76px);
-    background: var(--bg-white);
+    width: 290px;
+    height: calc(100vh - 65px);
+    background: #0f172a;
     flex-direction: column;
-    padding: 3rem 2rem;
-    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+    padding: 2rem 1.5rem;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.4);
     transition: var(--transition-smooth);
     align-items: flex-start;
-    gap: 2rem;
+    gap: 1.25rem;
     z-index: 9999;
+    overflow-y: auto;
   }
 
   .nav-menu.active {
@@ -2209,9 +2294,10 @@ textarea.form-input {
   }
 
   .nav-menu a {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     width: 100%;
     display: block;
+    color: #f1f5f9;
   }
   
   .lightbox-prev { right: 0px; top: auto; bottom: -60px; }
