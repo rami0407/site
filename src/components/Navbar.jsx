@@ -10,7 +10,7 @@ const Navbar = () => {
   const [topNavItems, setTopNavItems] = useState([]);
   const [mainNavItems, setMainNavItems] = useState([]);
 
-  // Fetch navigation links from Firestore or LocalStorage
+  // Fetch navigation links from Firestore or LocalStorage with instant event listeners
   useEffect(() => {
     const fetchNav = async () => {
       try {
@@ -19,6 +19,7 @@ const Navbar = () => {
         let items = [];
         if (!navSnap.empty) {
           items = navSnap.docs.map(doc => doc.data());
+          localStorage.setItem('db_navigation', JSON.stringify(items));
         } else {
           const localNav = localStorage.getItem('db_navigation');
           if (localNav) {
@@ -37,11 +38,32 @@ const Navbar = () => {
         setMainNavItems(main.length > 0 ? main : defaultMainNavigation);
       } catch (err) {
         console.warn("Firestore navigation load failed, using local/default fallback:", err.message);
-        setTopNavItems(defaultTopNavigation);
-        setMainNavItems(defaultMainNavigation);
+        const localNav = localStorage.getItem('db_navigation');
+        if (localNav) {
+          const items = JSON.parse(localNav);
+          const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
+          const main = items.filter(item => !top.includes(item));
+          setTopNavItems(top);
+          setMainNavItems(main);
+        } else {
+          setTopNavItems(defaultTopNavigation);
+          setMainNavItems(defaultMainNavigation);
+        }
       }
     };
+
     fetchNav();
+
+    const handleNavUpdate = () => fetchNav();
+    window.addEventListener('navigationUpdated', handleNavUpdate);
+    window.addEventListener('storage', handleNavUpdate);
+    window.addEventListener('hashchange', handleNavUpdate);
+
+    return () => {
+      window.removeEventListener('navigationUpdated', handleNavUpdate);
+      window.removeEventListener('storage', handleNavUpdate);
+      window.removeEventListener('hashchange', handleNavUpdate);
+    };
   }, []);
 
   useEffect(() => {

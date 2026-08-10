@@ -771,8 +771,10 @@ const AdminDashboard = () => {
       return;
     }
 
+    const isTopTarget = ['books', 'links', 'gallery', 'contact'].includes(newNav.target);
     const navData = { 
       ...newNav, 
+      category: isTopTarget ? 'top' : (newNav.category || 'main'),
       order: parseInt(newNav.order) || 1 
     };
 
@@ -785,15 +787,20 @@ const AdminDashboard = () => {
         setNavigation(updated);
         setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
         setEditingNavId(null);
+        window.dispatchEvent(new Event('navigationUpdated'));
+        alert('تم حفظ وتعديل العنوان بنجاح في القائمة العلوية!');
         return;
       }
 
       try {
         await setDoc(doc(db, 'navigation', editingNavId), navDocData);
         const updated = navigation.map(item => item.id === editingNavId ? navDocData : item).sort((a,b) => a.order - b.order);
+        localStorage.setItem('db_navigation', JSON.stringify(updated));
         setNavigation(updated);
         setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
         setEditingNavId(null);
+        window.dispatchEvent(new Event('navigationUpdated'));
+        alert('تم حفظ وتعديل العنوان بنجاح ومزامنته حياً مع الموقع!');
       } catch (err) {
         alert('حدث خطأ أثناء تعديل الرابط: ' + err.message);
       }
@@ -807,14 +814,19 @@ const AdminDashboard = () => {
         localStorage.setItem('db_navigation', JSON.stringify(updated));
         setNavigation(updated);
         setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
+        window.dispatchEvent(new Event('navigationUpdated'));
+        alert('تمت إضافة العنوان محلياً في القائمة العلوية!');
         return;
       }
 
       try {
         await setDoc(doc(db, 'navigation', generatedId), navDocData);
         const updated = [...navigation, navDocData].sort((a,b) => a.order - b.order);
+        localStorage.setItem('db_navigation', JSON.stringify(updated));
         setNavigation(updated);
         setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
+        window.dispatchEvent(new Event('navigationUpdated'));
+        alert('تمت إضافة العنوان بنجاح ومزامنته حياً مع الموقع!');
       } catch (err) {
         alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
       }
@@ -827,7 +839,8 @@ const AdminDashboard = () => {
       label: item.label,
       type: item.type,
       target: item.target,
-      order: item.order
+      order: item.order,
+      category: item.category || (['books', 'links', 'gallery', 'contact'].includes(item.target) ? 'top' : 'main')
     });
   };
 
@@ -843,12 +856,17 @@ const AdminDashboard = () => {
       const updated = navigation.filter(item => item.id !== id);
       localStorage.setItem('db_navigation', JSON.stringify(updated));
       setNavigation(updated);
+      window.dispatchEvent(new Event('navigationUpdated'));
       return;
     }
 
     try {
       await deleteDoc(doc(db, 'navigation', id));
-      setNavigation(navigation.filter(item => item.id !== id));
+      const updated = navigation.filter(item => item.id !== id);
+      localStorage.setItem('db_navigation', JSON.stringify(updated));
+      setNavigation(updated);
+      window.dispatchEvent(new Event('navigationUpdated'));
+      alert('تم حذف العنوان بنجاح ومزامنة القائمة حياً!');
     } catch (err) {
       alert('حدث خطأ أثناء حذف الرابط: ' + err.message);
     }
