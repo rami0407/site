@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { getWorksheetsIDB } from '../utils/idbStore';
+import { downloadChunkedFile } from '../utils/chunkedStorage';
 
 const DEFAULT_WORKSHEETS = [
   {
@@ -101,6 +102,33 @@ const Worksheets = ({ isStandalone }) => {
   const [selectedSubject, setSelectedSubject] = useState('جميع المواد');
   const [selectedGrade, setSelectedGrade] = useState('جميع الصفوف');
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDownloadWorksheet = async (e, ws) => {
+    if (ws.fileUrl && (ws.fileUrl.startsWith('chunked:') || ws.fileUrl.startsWith('local-file:'))) {
+      e.preventDefault();
+      const wsId = ws.id;
+      setDownloadingId(wsId);
+      try {
+        const fullDataUrl = await downloadChunkedFile(wsId);
+        if (fullDataUrl) {
+          const a = document.createElement('a');
+          a.href = fullDataUrl;
+          a.download = `${ws.title}.${ws.type === 'Word' ? 'docx' : 'pdf'}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          alert('تعذر تحميل الملف من السحابة حالياً، يرجى التأكد من الاتصال بإنترنت.');
+        }
+      } catch (err) {
+        console.error("Chunked download error:", err);
+        alert('حدث خطأ أثناء تنزيل الملف.');
+      } finally {
+        setDownloadingId(null);
+      }
+    }
+  };
 
   // Fetch worksheets from Firestore, IndexedDB, or LocalStorage
   useEffect(() => {
@@ -325,14 +353,15 @@ const Worksheets = ({ isStandalone }) => {
                   </span>
                   <a
                     href={ws.fileUrl || '#'}
+                    onClick={(e) => handleDownloadWorksheet(e, ws)}
                     target="_blank"
                     rel="noopener noreferrer"
                     download={ws.fileUrl && ws.fileUrl.startsWith('data:') ? `${ws.title}.${ws.type === 'Word' ? 'docx' : 'pdf'}` : undefined}
                     className="btn btn-download-ws"
                     title="تنزيل / فتح ورقة العمل"
                   >
-                    <i className="fas fa-download"></i>
-                    تنزيل ورقة العمل
+                    <i className={downloadingId === ws.id ? "fas fa-spinner fa-spin" : "fas fa-download"}></i>
+                    {downloadingId === ws.id ? ' جاري تحميل الملف...' : ' تنزيل ورقة العمل'}
                   </a>
                 </div>
 

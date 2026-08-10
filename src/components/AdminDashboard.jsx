@@ -18,6 +18,7 @@ import { calendarEvents, newsData } from '../data/schoolData'; // defaults for s
 import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
 import { defaultNavigation, defaultPages } from '../data/defaultNavigationData';
 import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
+import { uploadChunkedFile, deleteChunkedFile } from '../utils/chunkedStorage';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -1622,25 +1623,23 @@ const AdminDashboard = () => {
         console.warn("LocalStorage save skipped, file safely saved in IndexedDB:", lsErr);
       }
 
-      // 3. Sync to Firestore (Ensuring property length never exceeds Firestore's 1,048,487 bytes limit)
+      // 3. Sync to Firestore Cloud with Universal Chunking for All Devices & Browsers
       if (!isOfflineMode) {
         try {
           let fsData = { ...wsData };
-          if (fsData.fileUrl.startsWith('data:') && fsData.fileUrl.length > 800000) {
-            fsData.fileUrl = `local-file:${targetId}`;
+          if (fsData.fileUrl.startsWith('data:')) {
+            // Upload chunks to Firestore collection 'fileChunks' so ALL devices globally can download the file!
+            const chunkedRef = await uploadChunkedFile(targetId, fsData.fileUrl);
+            fsData.fileUrl = chunkedRef;
           }
 
-          if (editingWsId) {
-            await updateDoc(doc(db, 'worksheets', editingWsId), fsData);
-          } else {
-            await addDoc(collection(db, 'worksheets'), fsData);
-          }
+          await setDoc(doc(db, 'worksheets', targetId), fsData);
         } catch (fsErr) {
           console.warn("Firestore sync fallback to IndexedDB:", fsErr.message);
         }
       }
 
-      alert(editingWsId ? 'تم حفظ وتعديل ورقة العمل بنجاح!' : 'تمت إضافة ورقة العمل والملف بنجاح إلى الموقع!');
+      alert(editingWsId ? 'تم حفظ وتعديل ورقة العمل بنجاح!' : 'تمت إضافة ورقة العمل والملف بنجاح ومزامنتها مع كافة الأجهزة والمواقع!');
       
       // Reset form state
       setEditingWsId(null);
@@ -1659,6 +1658,7 @@ const AdminDashboard = () => {
     if (!window.confirm('هل أنت متأكد من حذف ورقة العمل هذه؟')) return;
 
     await deleteWorksheetIDB(id);
+    await deleteChunkedFile(id);
 
     if (isOfflineMode) {
       const updated = worksheets.filter(w => w.id !== id);
