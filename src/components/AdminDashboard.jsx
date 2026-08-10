@@ -3584,8 +3584,12 @@ const AdminDashboard = () => {
                             <option value="الرياضيات">الرياضيات</option>
                             <option value="العلوم والتكنولوجيا">العلوم والتكنولوجيا</option>
                             <option value="اللغة الإنجليزية">اللغة الإنجليزية</option>
+                            <option value="اللغة العبرية">اللغة العبرية</option>
+                            <option value="التاريخ">التاريخ</option>
+                            <option value="الجغرافيا">الجغرافيا</option>
                             <option value="التربية الإسلامية">التربية الإسلامية</option>
                             <option value="المهارات والاجتماعيات">المهارات والاجتماعيات</option>
+                            <option value="موضوع آخر">موضوع آخر</option>
                           </select>
                         </div>
 

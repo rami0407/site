@@ -78,8 +78,12 @@ const SUBJECTS = [
   { id: 'math', name: 'الرياضيات', icon: 'fa-calculator' },
   { id: 'science', name: 'العلوم والتكنولوجيا', icon: 'fa-flask' },
   { id: 'english', name: 'اللغة الإنجليزية', icon: 'fa-language' },
+  { id: 'hebrew', name: 'اللغة العبرية', icon: 'fa-font' },
+  { id: 'history', name: 'التاريخ', icon: 'fa-landmark' },
+  { id: 'geography', name: 'الجغرافيا', icon: 'fa-globe-asia' },
   { id: 'islamic', name: 'التربية الإسلامية', icon: 'fa-mosque' },
-  { id: 'skills', name: 'المهارات والاجتماعيات', icon: 'fa-hands-holding-child' }
+  { id: 'skills', name: 'المهارات والاجتماعيات', icon: 'fa-hands-holding-child' },
+  { id: 'other', name: 'موضوع آخر', icon: 'fa-folder-plus' }
 ];
 
 const GRADES = [
