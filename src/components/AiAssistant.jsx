@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_GEMINI_KEY = "AIzaSyDGENg8Aity9L2bHr-XAgebNEOf_4YFP8Y";
 
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +12,7 @@ const AiAssistant = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [schoolContext, setSchoolContext] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(DEFAULT_GEMINI_KEY);
   
   const chatEndRef = useRef(null);
 
@@ -103,8 +103,8 @@ const AiAssistant = () => {
     const fetchApiKey = async () => {
       try {
         const keyDoc = await getDoc(doc(db, 'schoolGuide', 'gemini'));
-        if (keyDoc.exists()) {
-          setApiKey(keyDoc.data().apiKey || '');
+        if (keyDoc.exists() && keyDoc.data().apiKey && keyDoc.data().apiKey.trim()) {
+          setApiKey(keyDoc.data().apiKey.trim());
         }
       } catch (e) {
         console.warn("Failed loading Gemini API key for AI context:", e);
