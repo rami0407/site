@@ -97,6 +97,18 @@ const AdminDashboard = () => {
   const [uniforms, setUniforms] = useState([]);
   const [guideLetter, setGuideLetter] = useState({ title: '', salutation: '', content: '', valediction: '' });
 
+  const [worksheets, setWorksheets] = useState([]);
+  const [editingWsId, setEditingWsId] = useState(null);
+  const [newWs, setNewWs] = useState({
+    title: '',
+    subject: 'اللغة العربية',
+    grade: 'الصف الأول',
+    teacher: '',
+    fileUrl: '',
+    type: 'PDF',
+    notes: ''
+  });
+
   const [isUploadingWorksheet, setIsUploadingWorksheet] = useState(false);
   const [uploadedWorksheetName, setUploadedWorksheetName] = useState('');
 
