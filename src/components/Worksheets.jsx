@@ -100,20 +100,42 @@ const Worksheets = ({ isStandalone }) => {
   // Fetch worksheets from Firestore or LocalStorage
   useEffect(() => {
     const fetchWorksheets = async () => {
+      let localItems = [];
+      const localWS = localStorage.getItem('db_worksheets');
+      if (localWS) {
+        try { localItems = JSON.parse(localWS); } catch (e) {}
+      }
+
       try {
         const snap = await getDocs(collection(db, 'worksheets'));
+        let fsList = [];
         if (!snap.empty) {
-          const list = [];
-          snap.forEach(docSnap => list.push({ ...docSnap.data(), id: docSnap.id }));
-          setWorksheets(list);
-        } else {
-          const localWS = localStorage.getItem('db_worksheets');
-          if (localWS) setWorksheets(JSON.parse(localWS));
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            // If fileUrl is a local indicator token, match with LocalStorage full fileData
+            if (data.fileUrl && data.fileUrl.startsWith('local-file:')) {
+              const localMatch = localItems.find(item => item.id === id || item.title === data.title);
+              if (localMatch && localMatch.fileUrl && localMatch.fileUrl.startsWith('data:')) {
+                data.fileUrl = localMatch.fileUrl;
+              }
+            }
+            fsList.push({ ...data, id });
+          });
         }
+
+        // Merge local items that are newly added locally
+        const combined = [...fsList];
+        localItems.forEach(item => {
+          if (!combined.some(existing => existing.id === item.id || existing.title === item.title)) {
+            combined.unshift(item);
+          }
+        });
+
+        setWorksheets(combined.length > 0 ? combined : DEFAULT_WORKSHEETS);
       } catch (e) {
         console.warn("Using offline worksheets fallback:", e);
-        const localWS = localStorage.getItem('db_worksheets');
-        if (localWS) setWorksheets(JSON.parse(localWS));
+        setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
       }
     };
 

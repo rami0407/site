@@ -1609,11 +1609,15 @@ const AdminDashboard = () => {
       localStorage.setItem('db_worksheets', JSON.stringify(updated));
       setWorksheets(updated);
 
-      // 2. Sync to Firestore (Handling document size limits gracefully)
+      // 2. Sync to Firestore (Ensuring property length never exceeds Firestore's 1,048,487 bytes limit)
       if (!isOfflineMode) {
         try {
-          // If fileUrl is a huge data URL (> 700KB), handle Firestore 1MB document limit gracefully
           let fsData = { ...wsData };
+          if (fsData.fileUrl.startsWith('data:') && fsData.fileUrl.length > 800000) {
+            // Trim fileUrl for Firestore record to prevent 1048487 bytes property limit error
+            fsData.fileUrl = `local-file:${targetId}`;
+          }
+
           if (editingWsId) {
             await updateDoc(doc(db, 'worksheets', editingWsId), fsData);
           } else {
