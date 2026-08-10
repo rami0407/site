@@ -175,10 +175,22 @@ const AiAssistant = () => {
       console.warn('Gemini API fallback to local smart assistant:', error);
       
       // Smart Local Assistant Response Fallback
-      let fallbackReply = 'أهلاً بك يا بطل! أنا مساعد مدرسة مشيرفة الابتدائية وموسوعتك التعليمية الذكية. أستطيع إجابتك عن شؤون المدرسة والكتب والرزنامة، وكذلك إجابتك عن الأسئلة العلمية والثقافية العامة. كيف يمكنني مساعدتك اليوم؟ 😊';
+      let fallbackReply = 'أهلاً بك يا بطل! أنا مساعد مدرسة مشيرفة الابتدائية وموسوعتك التعليمية الذكية. كيف يمكنني مساعدتك اليوم؟ 😊';
       const qLower = text.toLowerCase();
 
-      if (qLower.includes('كتب') || qLower.includes('كتاب') || qLower.includes('الأول') || qLower.includes('ثاني') || qLower.includes('ثالث')) {
+      if (qLower.includes('رياضيات') || qLower.includes('حساب') || qLower.includes('ضرب') || qLower.includes('جمع') || qLower.includes('قسمة') || qLower.includes('تمرين') || qLower.includes('مسألة')) {
+        fallbackReply = '🔢 **مساعدة في مادة الرياضيات:**\nأهلاً بك يا مبدع! أنا جاهز لمساعدتك في حل وتوضيح مسائل الرياضيات! اكتب لي التمرين أو المسألة الحسابية الآن (مثل: جدول الضرب، المساحة والمحيط، الكسور، أو المسائل الكلامية) وسأقوم بشرح الخطوات وحلها لك فوراً! 📐✨';
+      } else if (qLower.includes('علوم') || qLower.includes('تجربة') || qLower.includes('جسم') || qLower.includes('نبات') || qLower.includes('حيوان')) {
+        fallbackReply = '🔬 **مساعدة في مادة العلوم والتكنولوجيا:**\nمرحباً بك في مختبر العلوم! أستطيع إجابتك عن مفاهيم العلوم، الكائنات الحية، حالات المادة، جسم الإنسان، والتكنولوجيا. اكتب سؤالك العلمي المباشر وسأشرحه لك بأسلوب مبسط وشيق! 🧪🌱';
+      } else if (qLower.includes('عربي') || qLower.includes('لغة عربية') || qLower.includes('إعراب') || qLower.includes('قواعد') || qLower.includes('إملاء')) {
+        fallbackReply = '📖 **مساعدة في اللغة العربية:**\nأهلاً بك في لغة الضاد! أستطيع مساعدتك في شرح قواعد النحو، الإعراب، الإملاء، معاني الكلمات، والتنوين. أرسل الجملة أو الكلمة التي تريد فهمها وسأنير لك الطريق! ✍️📚';
+      } else if (qLower.includes('عبري') || qLower.includes('hebrew') || qLower.includes('עברית')) {
+        fallbackReply = '🔤 **مساعدة في اللغة العبرية:**\nשלום! أنا مساعدك في تعلم اللغة العبرية. يمكنك مفردات الكلمات، القواعد، أو الترجمة وسأشرحها لك ببساطة!';
+      } else if (qLower.includes('إنجليزية') || qLower.includes('انجليزي') || qLower.includes('english')) {
+        fallbackReply = '🇬🇧 **English Learning Support:**\nWelcome! I am ready to help you with English words, sentence structure, grammar, and translation. Ask me any English question!';
+      } else if (qLower.includes('تاريخ') || qLower.includes('جغرافيا') || qLower.includes('اجتماعيات')) {
+        fallbackReply = '🌍 **مساعدة في الاجتماعيات والجغرافيا والتاريخ:**\nأهلاً بك! يمكنك السؤال عن الخرائط، القارات، الأحداث التاريخية، المعالم، والمعلومات الجغرافية وسأوفر لك الإجابة الموسوعية الشاملة! 🏛️🗺️';
+      } else if (qLower.includes('كتب') || qLower.includes('كتاب') || qLower.includes('منهج')) {
         fallbackReply = '📚 **قائمة الكتب المدرسية:**\nتتوفر قائمة الكتب الكاملة لكل صف (من الصف الأول حتى السادس) في قسم "الكتب واللباس الموحد" بالموقع، وتشمل كتب العربية (الغيث)، الرياضيات (الوسام)، العلوم (الكنز)، وغيرها من المواد المعتمدة.';
       } else if (qLower.includes('لباس') || qLower.includes('زي') || qLower.includes('قميص') || qLower.includes('الموحد')) {
         fallbackReply = '👕 **اللباس المدرسي الموحد المعتمد:**\n- **الصفوف 1-2:** بلوزة كحلي/أزرق مع شعار المدرسة + بنطال كحلي/رمادي.\n- **الصفوف 3-4:** بلوزة كحلي/أزرق مع بنطال مريح.\n- **الصفوف 5-6:** اللباس الرسمي الموحد المعتمد في دستور المدرسة.';
@@ -192,6 +204,8 @@ const AiAssistant = () => {
         fallbackReply = '🏆 **قسم التحديات والنجوم:**\nادخل الآن قسم "🏆 التحديات والنجوم" في القائمة الرئيسية لعل لغز الأسبوع ودخول لوحة الشرف الرسمية للمدرسة!';
       } else if (qLower.includes('شمس') || qLower.includes('فضاء') || qLower.includes('كوكب') || qLower.includes('قمر') || qLower.includes('نجوم')) {
         fallbackReply = '🌌 **معلومة فلكية شيقة:**\nالمنظومة الشمسية تضم 8 كواكب تدور حول الشمس! أكبر كواكب المجموعة الشمسية هو كوكب المشتري. يمكنك تجربة "🌌 مختبر الفلك" في أعلى الموقع للاستكشاف التفاعلي!';
+      } else if (qLower.includes('مساعدة') || qLower.includes('ساعدني') || qLower.includes('استفسار')) {
+        fallbackReply = '🙋‍♂️ **مرحباً بك! كيف يمكنني مساعدتك اليوم؟**\nأنا جاهز لإجابتك وتوضيح أي شيء تحتاجه:\n- 🔢 حل وتوضيح تمارين الرياضيات والعلوم والعربية.\n- 📚 الاستفسار عن الكتب المدرسية واللباس والرزنامة.\n- 🌌 الإجابة عن الأسئلة العامة والمعلومات العلمية.\n\nاكتب سؤالك المباشر وسأجيبك فوراً!';
       }
 
       setMessages(prev => [...prev, { role: 'model', text: fallbackReply }]);
