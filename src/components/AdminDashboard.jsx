@@ -18,7 +18,7 @@ import { calendarEvents, newsData } from '../data/schoolData'; // defaults for s
 import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
 import { defaultNavigation, defaultPages } from '../data/defaultNavigationData';
 import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
-import { uploadChunkedFile, deleteChunkedFile } from '../utils/chunkedStorage';
+import { uploadChunkedFile, deleteChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -113,6 +113,8 @@ const AdminDashboard = () => {
 
   const [isUploadingWorksheet, setIsUploadingWorksheet] = useState(false);
   const [uploadedWorksheetName, setUploadedWorksheetName] = useState('');
+  const [selectedSubjectFolder, setSelectedSubjectFolder] = useState('all');
+  const [wsSearchAdmin, setWsSearchAdmin] = useState('');
 
   const handleWorksheetFileUpload = (e) => {
     const file = e.target.files[0];
@@ -624,6 +626,15 @@ const AdminDashboard = () => {
       if (geminiSnap.exists()) {
         setGeminiKey(geminiSnap.data().apiKey || '');
       }
+
+      // 16. Load Worksheets
+      const qWs = collection(db, 'worksheets');
+      const querySnapshotWs = await getDocs(qWs);
+      const fetchedWs = [];
+      querySnapshotWs.forEach((docSnap) => {
+        fetchedWs.push({ ...docSnap.data(), id: docSnap.id });
+      });
+      setWorksheets(fetchedWs);
 
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
@@ -1675,6 +1686,51 @@ const AdminDashboard = () => {
       loadDashboardData();
     } catch (error) {
       alert('حدث خطأ أثناء الحذف: ' + error.message);
+    }
+  };
+
+  const [adminDownloadingId, setAdminDownloadingId] = useState(null);
+
+  const handleAdminDownloadWorksheet = async (ws) => {
+    if (ws.fileUrl && (ws.fileUrl.startsWith('http://') || ws.fileUrl.startsWith('https://'))) {
+      window.open(ws.fileUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setAdminDownloadingId(ws.id);
+    const targetExtension = ws.type === 'Word' ? 'docx' : ws.type === 'Image' ? 'png' : 'pdf';
+    const filename = `${ws.title}.${targetExtension}`;
+
+    try {
+      let fullDataUrl = null;
+
+      if (ws.fileUrl && ws.fileUrl.startsWith('data:')) {
+        fullDataUrl = ws.fileUrl;
+      }
+
+      if (!fullDataUrl && ws.fileUrl && (ws.fileUrl.startsWith('chunked:') || ws.fileUrl.startsWith('local-file:'))) {
+        const targetId = ws.fileUrl.replace(/^(chunked:|local-file:)/, '') || ws.id;
+        fullDataUrl = await downloadChunkedFile(targetId);
+      }
+
+      if (!fullDataUrl) {
+        const idbItems = await getWorksheetsIDB();
+        const idbMatch = idbItems.find(i => i.id === ws.id || i.title === ws.title);
+        if (idbMatch && idbMatch.fileUrl && idbMatch.fileUrl.startsWith('data:')) {
+          fullDataUrl = idbMatch.fileUrl;
+        }
+      }
+
+      if (fullDataUrl && fullDataUrl.startsWith('data:')) {
+        downloadBase64OrBlob(fullDataUrl, filename);
+      } else {
+        alert('تعذر فتح الملف سحابياً. يرجى التأكد من إعادة رفع الملف أو حفظ التعديلات.');
+      }
+    } catch (err) {
+      console.error("Admin worksheet download error:", err);
+      alert('حدث خطأ أثناء فتح الملف.');
+    } finally {
+      setAdminDownloadingId(null);
     }
   };
 
@@ -3728,50 +3784,156 @@ const AdminDashboard = () => {
                     </form>
                   </div>
 
-                  {/* List of Existing Worksheets */}
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '1.5rem' }}>
-                    قائمة أوراق العمل والامتحانات المرفوعة ({worksheets.length})
-                  </h3>
+                  {/* Folder Library Management Section */}
+                  <div style={{ marginTop: '3rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                      <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <i className="fas fa-folder-open" style={{ color: 'var(--primary)' }}></i> مكتبات ومجلدات الامتحانات المرفوعة ({worksheets.length})
+                      </h3>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                    {worksheets.map(ws => (
-                      <div key={ws.id} style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
-                            {ws.subject}
-                          </span>
-                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
-                            {ws.grade}
-                          </span>
+                      {/* Search in Admin */}
+                      <input 
+                        type="text" 
+                        value={wsSearchAdmin}
+                        onChange={(e) => setWsSearchAdmin(e.target.value)}
+                        placeholder="🔍 ابحث في الامتحانات والصفوف..."
+                        style={{ padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', fontSize: '0.9rem', width: '280px', maxWidth: '100%' }}
+                      />
+                    </div>
+
+                    {/* Subject Folders Bar */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                      <div 
+                        onClick={() => setSelectedSubjectFolder('all')}
+                        style={{
+                          background: selectedSubjectFolder === 'all' ? 'var(--primary)' : 'white',
+                          color: selectedSubjectFolder === 'all' ? 'white' : 'var(--text-dark)',
+                          padding: '1.2rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: selectedSubjectFolder === 'all' ? 'none' : '1px solid var(--border-light)',
+                          boxShadow: 'var(--shadow-sm)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <i className="fas fa-layer-group" style={{ fontSize: '1.4rem' }}></i>
+                          <span style={{ fontWeight: 800, fontSize: '0.85rem', opacity: 0.9 }}>{worksheets.length} ملفات</span>
                         </div>
-                        <h4 style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-dark)', marginBottom: '0.5rem' }}>{ws.title}</h4>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{ws.notes || 'لا توجد ملاحظات'}</p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
-                          <a href={ws.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
-                            <i className="fas fa-external-link-alt"></i> فتح الملف
-                          </a>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button 
-                              onClick={() => {
-                                setEditingWsId(ws.id);
-                                setNewWs(ws);
-                              }}
-                              style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '0.3rem' }}
-                              title="تعديل"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteWorksheet(ws.id)}
-                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.3rem' }}
-                              title="حذف"
-                            >
-                              <i className="fas fa-trash-alt"></i>
-                            </button>
-                          </div>
-                        </div>
+                        <span style={{ fontWeight: 800, fontSize: '0.95rem', marginTop: '0.5rem' }}>جميع المكتبات</span>
                       </div>
-                    ))}
+
+                      {[
+                        { name: 'اللغة العربية', icon: 'fa-book-open', color: '#2563eb' },
+                        { name: 'الرياضيات', icon: 'fa-calculator', color: '#7c3aed' },
+                        { name: 'العلوم والتكنولوجيا', icon: 'fa-flask', color: '#059669' },
+                        { name: 'اللغة الإنجليزية', icon: 'fa-language', color: '#d97706' },
+                        { name: 'اللغة العبرية', icon: 'fa-font', color: '#db2777' },
+                        { name: 'التاريخ', icon: 'fa-landmark', color: '#9333ea' },
+                        { name: 'الجغرافيا', icon: 'fa-globe-asia', color: '#0284c7' },
+                        { name: 'التربية الإسلامية', icon: 'fa-mosque', color: '#16a34a' },
+                        { name: 'المهارات والاجتماعيات', icon: 'fa-hands-holding-child', color: '#ea580c' },
+                        { name: 'موضوع آخر', icon: 'fa-folder-plus', color: '#4b5563' }
+                      ].map(subj => {
+                        const count = worksheets.filter(w => w.subject === subj.name).length;
+                        const isSelected = selectedSubjectFolder === subj.name;
+                        return (
+                          <div 
+                            key={subj.name}
+                            onClick={() => setSelectedSubjectFolder(subj.name)}
+                            style={{
+                              background: isSelected ? subj.color : 'white',
+                              color: isSelected ? 'white' : 'var(--text-dark)',
+                              padding: '1.2rem',
+                              borderRadius: 'var(--radius-md)',
+                              border: isSelected ? 'none' : '1px solid var(--border-light)',
+                              boxShadow: 'var(--shadow-sm)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.3rem'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <i className={`fas ${subj.icon}`} style={{ fontSize: '1.3rem', color: isSelected ? 'white' : subj.color }}></i>
+                              <span style={{ fontWeight: 800, fontSize: '0.8rem', background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: isSelected ? 'white' : 'var(--text-muted)', padding: '0.15rem 0.5rem', borderRadius: '10px' }}>
+                                {count} ملفات
+                              </span>
+                            </div>
+                            <span style={{ fontWeight: 800, fontSize: '0.92rem', marginTop: '0.5rem' }}>مكتبة {subj.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Filtered Worksheets Grid inside selected folder */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                      {worksheets
+                        .filter(ws => selectedSubjectFolder === 'all' || ws.subject === selectedSubjectFolder)
+                        .filter(ws => !wsSearchAdmin.trim() || ws.title.includes(wsSearchAdmin) || (ws.notes && ws.notes.includes(wsSearchAdmin)) || ws.grade.includes(wsSearchAdmin) || ws.teacher.includes(wsSearchAdmin))
+                        .map(ws => (
+                          <div key={ws.id} style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
+                                  <i className="fas fa-book" style={{ marginLeft: '0.3rem' }}></i> {ws.subject}
+                                </span>
+                                <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
+                                  <i className="fas fa-user-graduate" style={{ marginLeft: '0.3rem' }}></i> {ws.grade}
+                                </span>
+                              </div>
+                              <h4 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-dark)', marginBottom: '0.6rem', lineHeight: '1.4' }}>{ws.title}</h4>
+                              <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', marginBottom: '1rem', background: '#f8fafc', padding: '0.6rem', borderRadius: '6px' }}>
+                                <i className="fas fa-info-circle" style={{ color: 'var(--primary)', marginLeft: '0.3rem' }}></i>
+                                {ws.notes || 'لا توجد ملاحظات إضافية'}
+                              </p>
+                            </div>
+
+                            <div style={{ paddingTop: '0.85rem', borderTop: '1px solid #f1f5f9' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+                                <span><i className="fas fa-user-tie"></i> {ws.teacher || 'طاقم المادة'}</span>
+                                <span style={{ background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 700, color: 'var(--text-dark)' }}>{ws.type || 'PDF'}</span>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                                <button 
+                                  onClick={() => handleAdminDownloadWorksheet(ws)}
+                                  disabled={adminDownloadingId === ws.id}
+                                  style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '0.5rem 0.9rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                                >
+                                  <i className={adminDownloadingId === ws.id ? "fas fa-spinner fa-spin" : "fas fa-download"}></i>
+                                  {adminDownloadingId === ws.id ? 'تحميل...' : 'فتح / تنزيل الملف'}
+                                </button>
+
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                  <button 
+                                    onClick={() => {
+                                      setEditingWsId(ws.id);
+                                      setNewWs(ws);
+                                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                                    }}
+                                    style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.45rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                    title="تعديل"
+                                  >
+                                    <i className="fas fa-edit"></i> تعديل
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteWorksheet(ws.id)}
+                                    style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '0.45rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                    title="حذف"
+                                  >
+                                    <i className="fas fa-trash-alt"></i> حذف
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
               )}
