@@ -627,13 +627,32 @@ const AdminDashboard = () => {
         setGeminiKey(geminiSnap.data().apiKey || '');
       }
 
-      // 16. Load Worksheets
+      // 16. Load Worksheets & Auto-sync missing cloud chunks from IndexedDB
       const qWs = collection(db, 'worksheets');
       const querySnapshotWs = await getDocs(qWs);
       const fetchedWs = [];
-      querySnapshotWs.forEach((docSnap) => {
-        fetchedWs.push({ ...docSnap.data(), id: docSnap.id });
-      });
+      let idbItems = [];
+      try { idbItems = await getWorksheetsIDB(); } catch (e) {}
+
+      for (const docSnap of querySnapshotWs.docs) {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        
+        // Auto-heal old items if local Data URL exists in IndexedDB
+        if (data.fileUrl && (data.fileUrl.startsWith('local-file:') || data.fileUrl.startsWith('idb-file:'))) {
+          const idbMatch = idbItems.find(i => i.id === id || i.title === data.title);
+          if (idbMatch && idbMatch.fileUrl && idbMatch.fileUrl.startsWith('data:')) {
+            try {
+              const chunkedRef = await uploadChunkedFile(id, idbMatch.fileUrl);
+              await updateDoc(doc(db, 'worksheets', id), { fileUrl: chunkedRef });
+              data.fileUrl = chunkedRef;
+            } catch (err) {
+              console.warn("Auto-sync chunk error for doc:", id, err);
+            }
+          }
+        }
+        fetchedWs.push({ ...data, id });
+      }
       setWorksheets(fetchedWs);
 
     } catch (error) {
