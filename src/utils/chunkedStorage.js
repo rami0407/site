@@ -5,30 +5,41 @@ const CHUNK_SIZE = 400000; // 400KB characters per chunk (safely under Firestore
 
 // Upload file Data URL in chunks to Firestore
 export const uploadChunkedFile = async (wsId, dataUrl) => {
+  const cleanWsId = wsId ? wsId.replace(/^(chunked:|local-file:)/, '') : `ws_${Date.now()}`;
   const totalChunks = Math.ceil(dataUrl.length / CHUNK_SIZE);
   
   for (let i = 0; i < totalChunks; i++) {
     const chunkStr = dataUrl.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-    const chunkDocId = `${wsId}_chunk_${i}`;
+    const chunkDocId = `${cleanWsId}_chunk_${i}`;
     await setDoc(doc(db, 'fileChunks', chunkDocId), {
-      wsId,
+      wsId: cleanWsId,
       chunkIndex: i,
       totalChunks,
       data: chunkStr,
       createdAt: new Date().toISOString()
     });
   }
-  return `chunked:${wsId}`;
+  return `chunked:${cleanWsId}`;
 };
 
 // Reconstruct full Data URL from Firestore chunks
-export const downloadChunkedFile = async (wsId) => {
+export const downloadChunkedFile = async (rawWsId) => {
   try {
-    const q = query(
+    const cleanWsId = rawWsId ? rawWsId.replace(/^(chunked:|local-file:)/, '') : '';
+    
+    // Try clean ID query first
+    let q = query(
       collection(db, 'fileChunks'),
-      where('wsId', '==', wsId)
+      where('wsId', '==', cleanWsId)
     );
-    const snap = await getDocs(q);
+    let snap = await getDocs(q);
+
+    // Fallback to raw ID query if empty
+    if (snap.empty && rawWsId !== cleanWsId) {
+      q = query(collection(db, 'fileChunks'), where('wsId', '==', rawWsId));
+      snap = await getDocs(q);
+    }
+
     if (snap.empty) return null;
 
     const chunks = [];
@@ -44,9 +55,10 @@ export const downloadChunkedFile = async (wsId) => {
 };
 
 // Delete chunks when a worksheet is deleted
-export const deleteChunkedFile = async (wsId) => {
+export const deleteChunkedFile = async (rawWsId) => {
   try {
-    const q = query(collection(db, 'fileChunks'), where('wsId', '==', wsId));
+    const cleanWsId = rawWsId ? rawWsId.replace(/^(chunked:|local-file:)/, '') : rawWsId;
+    const q = query(collection(db, 'fileChunks'), where('wsId', '==', cleanWsId));
     const snap = await getDocs(q);
     const deletePromises = [];
     snap.forEach(docSnap => deletePromises.push(deleteDoc(doc(db, 'fileChunks', docSnap.id))));

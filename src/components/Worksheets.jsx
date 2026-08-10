@@ -105,12 +105,26 @@ const Worksheets = ({ isStandalone }) => {
   const [downloadingId, setDownloadingId] = useState(null);
 
   const handleDownloadWorksheet = async (e, ws) => {
+    if (ws.fileUrl && (ws.fileUrl.startsWith('http://') || ws.fileUrl.startsWith('https://') || ws.fileUrl.startsWith('data:'))) {
+      return;
+    }
+
     if (ws.fileUrl && (ws.fileUrl.startsWith('chunked:') || ws.fileUrl.startsWith('local-file:'))) {
       e.preventDefault();
-      const wsId = ws.id;
-      setDownloadingId(wsId);
+      const targetId = ws.fileUrl.replace(/^(chunked:|local-file:)/, '') || ws.id;
+      setDownloadingId(ws.id);
+
       try {
-        const fullDataUrl = await downloadChunkedFile(wsId);
+        let fullDataUrl = await downloadChunkedFile(targetId);
+
+        if (!fullDataUrl) {
+          const idbItems = await getWorksheetsIDB();
+          const idbMatch = idbItems.find(i => i.id === ws.id || i.id === targetId || i.title === ws.title);
+          if (idbMatch && idbMatch.fileUrl && idbMatch.fileUrl.startsWith('data:')) {
+            fullDataUrl = idbMatch.fileUrl;
+          }
+        }
+
         if (fullDataUrl) {
           const a = document.createElement('a');
           a.href = fullDataUrl;
@@ -119,11 +133,11 @@ const Worksheets = ({ isStandalone }) => {
           a.click();
           document.body.removeChild(a);
         } else {
-          alert('تعذر تحميل الملف من السحابة حالياً، يرجى التأكد من الاتصال بإنترنت.');
+          alert('تنبيه: هذا المستند تم رفعه سابقاً قبل التفعيل السحابي المباشر.\n\nيرجى فتح لوحة التحكم والضغط على "حفظ التعديلات" للمستند لتحديثه سحابياً ومتاحاً لجميع الهواتف والمتصفحات.');
         }
       } catch (err) {
         console.error("Chunked download error:", err);
-        alert('حدث خطأ أثناء تنزيل الملف.');
+        alert('حدث خطأ أثناء تنزيل الملف من السحابة.');
       } finally {
         setDownloadingId(null);
       }
