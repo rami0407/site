@@ -75,6 +75,9 @@ try {
   console.log("Pushing to main branch...");
   execSync('git push origin main', { stdio: 'inherit' });
 
+  console.log("Pushing to gh-pages branch...");
+  execSync('git push origin main:gh-pages --force', { stdio: 'inherit' });
+
   console.log("✨ Radical deployment completed successfully! The site is now live on main branch root.");
 } catch (error) {
   console.error("❌ Deployment failed:", error);
