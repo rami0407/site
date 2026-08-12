@@ -186,7 +186,7 @@ function App() {
           console.log("School guide letter successfully seeded!");
         }
 
-        // 12. Seed Navigation Links
+        // 12. Seed Navigation Links & Ensure nav_excellence is present
         const navigationRef = collection(db, 'navigation');
         const navigationSnap = await getDocs(navigationRef);
         const existingIds = new Set(navigationSnap.docs.map(d => d.id));
@@ -195,8 +195,16 @@ function App() {
             await setDoc(doc(db, 'navigation', item.id), item);
           }
         }
+        await setDoc(doc(db, 'navigation', 'nav_excellence'), {
+          id: "nav_excellence",
+          label: "✨ عام التميز 2026-2027",
+          type: "page",
+          target: "excellence",
+          category: "main",
+          order: 2
+        });
 
-        // 13. Seed Pages
+        // 13. Seed Pages & Ensure excellence page exists
         const pagesRef = collection(db, 'pages');
         const pagesSnap = await getDocs(pagesRef);
         if (pagesSnap.empty) {
@@ -206,6 +214,12 @@ function App() {
           }
           console.log("Pages successfully seeded!");
         }
+        await setDoc(doc(db, 'pages', 'excellence'), {
+          id: "excellence",
+          title: "عام التميز 2026 / 2027 - رؤية مدرسة مشيرفة الابتدائية",
+          content: `عام التميز في مدرسة مشيرفة الابتدائية - 30.8.2026\nمن سفينة النجاة إلى سفينة الفضاء 🚀✨`,
+          createdAt: new Date().toISOString()
+        });
 
 
       } catch (error) {
