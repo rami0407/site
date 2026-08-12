@@ -1954,7 +1954,28 @@ const AdminDashboard = () => {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            type="button"
+            onClick={() => {
+              if ('caches' in window) {
+                caches.keys().then((names) => {
+                  names.forEach((name) => caches.delete(name));
+                });
+              }
+              if (navigator.serviceWorker) {
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                  registrations.forEach((r) => r.unregister());
+                });
+              }
+              window.location.href = window.location.origin + window.location.pathname + '?reload=' + Date.now() + window.location.hash;
+            }}
+            className="btn"
+            style={{ padding: '0.5rem 0.85rem', background: '#f59e0b', color: '#78350f', fontSize: '0.85rem', fontWeight: 800, border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            title="إعادة تحميل وتنشيط أحدث نسخة من الموقع ومسح التخزين المؤقت"
+          >
+            <i className="fas fa-sync-alt"></i> ⚡ تنشيط النسخة الحديثة
+          </button>
           <a href="#/" className="btn" style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: '0.88rem', boxShadow: 'none' }}>
             <i className="fas fa-eye"></i> عرض الموقع العام
           </a>

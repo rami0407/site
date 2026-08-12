@@ -10,11 +10,18 @@ try {
   console.log("1. Running Vite build...");
   execSync('npm run build', { stdio: 'inherit' });
 
-  console.log("2. Copying compiled assets to root assets folder...");
+  console.log("2. Cleaning old assets and copying compiled assets to root assets folder...");
   const assetsDistDir = path.join(distDir, 'assets');
   const assetsRootDir = path.join(rootDir, 'assets');
 
-  if (!fs.existsSync(assetsRootDir)) {
+  if (fs.existsSync(assetsRootDir)) {
+    const oldFiles = fs.readdirSync(assetsRootDir);
+    oldFiles.forEach(file => {
+      try {
+        fs.unlinkSync(path.join(assetsRootDir, file));
+      } catch (e) {}
+    });
+  } else {
     fs.mkdirSync(assetsRootDir);
   }
 
@@ -24,8 +31,20 @@ try {
     fs.copyFileSync(path.join(assetsDistDir, file), path.join(assetsRootDir, file));
   });
 
-  console.log("3. Copying built production index.html and other root assets to project root...");
-  fs.copyFileSync(path.join(distDir, 'index.html'), devHtmlPath);
+  console.log("3. Copying built production index.html and adding cache-busting query params...");
+  let compiledHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
+  const cacheBuster = Date.now();
+  compiledHtml = compiledHtml.replace(/\.js"/g, `.js?v=${cacheBuster}"`);
+  compiledHtml = compiledHtml.replace(/\.css"/g, `.css?v=${cacheBuster}"`);
+  
+  if (!compiledHtml.includes('Cache-Control')) {
+    compiledHtml = compiledHtml.replace(
+      '<head>',
+      `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
+    );
+  }
+  
+  fs.writeFileSync(devHtmlPath, compiledHtml, 'utf-8');
 
   // Copy other files in dist/ root (e.g. books_list.pdf, CNAME, favicon.svg, icons.svg) to root
   const distRootFiles = fs.readdirSync(distDir);
@@ -40,10 +59,10 @@ try {
     }
   });
 
-  console.log("4. Committing and pushing production build to GitHub main branch...");
-  execSync(`git add assets ${gitAddedFiles.join(' ')} CNAME`, { stdio: 'inherit' });
+  console.log("4. Committing and pushing all source code and production build to GitHub main branch...");
+  execSync('git add .', { stdio: 'inherit' });
   try {
-    execSync('git commit -m "Deploy production build to root of main branch"', { stdio: 'inherit' });
+    execSync('git commit -m "Deploy latest source code and production build to main branch"', { stdio: 'inherit' });
   } catch (commitErr) {
     console.log("No changes to commit in build files.");
   }
