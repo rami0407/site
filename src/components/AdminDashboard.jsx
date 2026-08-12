@@ -849,9 +849,15 @@ const AdminDashboard = () => {
       return;
     }
 
-    const isTopTarget = ['books', 'links', 'gallery', 'contact'].includes(newNav.target);
+    let cleanTarget = newNav.target ? newNav.target.trim() : '';
+    if (newNav.type === 'custom_page' && cleanTarget.includes('page/')) {
+      cleanTarget = cleanTarget.split('page/')[1].split('/')[0].split('?')[0].split('#')[0];
+    }
+
+    const isTopTarget = ['books', 'links', 'gallery', 'contact'].includes(cleanTarget);
     const navData = { 
       ...newNav, 
+      target: cleanTarget,
       category: isTopTarget ? 'top' : (newNav.category || 'main'),
       order: parseInt(newNav.order) || 1 
     };
@@ -1005,11 +1011,9 @@ const AdminDashboard = () => {
         localStorage.setItem('db_pages', JSON.stringify(updated));
         setPages(updated);
         setNewPage({ id: '', title: '', content: '' });
-        if (autoAddToNav) {
-          await handleQuickAddPageToNav(pageDocData);
-        } else {
-          alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
-        }
+        const pageUrl = `https://musherfe.com/#/page/${sanitizedId}`;
+        try { navigator.clipboard.writeText(pageUrl); } catch(e){}
+        alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح!\n\nرابط الصفحة المباشر:\n${pageUrl}\n\n(تم نسخ الرابط للحافظة. يمكنك الآن الانتقال لقسم "🔗 سطر العناوين" وإلصاقه هناك إذا رغبت بنشر الصفحة في الأعلى).`);
         return;
       }
 
@@ -1017,11 +1021,9 @@ const AdminDashboard = () => {
         await setDoc(doc(db, 'pages', sanitizedId), pageDocData);
         setPages([...pages, pageDocData]);
         setNewPage({ id: '', title: '', content: '' });
-        if (autoAddToNav) {
-          await handleQuickAddPageToNav(pageDocData);
-        } else {
-          alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح على السحابة!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
-        }
+        const pageUrl = `https://musherfe.com/#/page/${sanitizedId}`;
+        try { navigator.clipboard.writeText(pageUrl); } catch(e){}
+        alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح على السحابة!\n\nرابط الصفحة المباشر:\n${pageUrl}\n\n(تم نسخ الرابط للحافظة. يمكنك الآن الانتقال لقسم "🔗 سطر العناوين" وإلصاقه هناك إذا رغبت بنشر الصفحة في الأعلى).`);
       } catch (err) {
         alert('حدث خطأ أثناء إضافة الصفحة المخصصة: ' + err.message);
       }
