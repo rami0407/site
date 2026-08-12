@@ -951,13 +951,17 @@ const AdminDashboard = () => {
   // Custom Pages Handlers
   const handleAddPage = async (e) => {
     e.preventDefault();
-    if (!newPage.id || !newPage.title || !newPage.content) {
-      alert('يرجى ملء جميع الحقول للصفحة.');
+    if (!newPage.title || !newPage.content) {
+      alert('يرجى كتابة عنوان ومضمون الصفحة.');
       return;
     }
 
-    // Sanitize path id (only lowercase, letters, digits, and hyphens)
-    const sanitizedId = newPage.id.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '-');
+    // Auto-generate sanitized path ID if left blank
+    let sanitizedId = newPage.id ? newPage.id.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '-') : '';
+    if (!sanitizedId) {
+      sanitizedId = 'page-' + Date.now().toString(36);
+    }
+
     const pageDocData = {
       id: sanitizedId,
       title: newPage.title,
@@ -973,6 +977,7 @@ const AdminDashboard = () => {
         setPages(updated);
         setNewPage({ id: '', title: '', content: '' });
         setEditingPageId(null);
+        alert(`تم تعديل الصفحة "${pageDocData.title}" بنجاح!`);
         return;
       }
 
@@ -981,15 +986,15 @@ const AdminDashboard = () => {
         setPages(pages.map(p => p.id === editingPageId ? pageDocData : p));
         setNewPage({ id: '', title: '', content: '' });
         setEditingPageId(null);
+        alert(`تم تعديل الصفحة "${pageDocData.title}" بنجاح!`);
       } catch (err) {
         alert('حدث خطأ أثناء حفظ الصفحة المخصصة: ' + err.message);
       }
     } else {
       // Add mode
-      // Check if ID already exists
       const idExists = pages.some(p => p.id === sanitizedId);
       if (idExists) {
-        alert('المعرّف الخاص بالصفحة مستخدم بالفعل. يرجى اختيار معرّف فريد.');
+        alert('المعرّف الخاص بالصفحة مستخدم بالفعل. يرجى اختيار معرّف فريد أو ترك الخانة فارغة لإنشائه تلقائياً.');
         return;
       }
 
@@ -998,6 +1003,7 @@ const AdminDashboard = () => {
         localStorage.setItem('db_pages', JSON.stringify(updated));
         setPages(updated);
         setNewPage({ id: '', title: '', content: '' });
+        alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
         return;
       }
 
@@ -1005,6 +1011,7 @@ const AdminDashboard = () => {
         await setDoc(doc(db, 'pages', sanitizedId), pageDocData);
         setPages([...pages, pageDocData]);
         setNewPage({ id: '', title: '', content: '' });
+        alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح على السحابة!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
       } catch (err) {
         alert('حدث خطأ أثناء إضافة الصفحة المخصصة: ' + err.message);
       }
@@ -1040,6 +1047,51 @@ const AdminDashboard = () => {
       setPages(pages.filter(p => p.id !== id));
     } catch (err) {
       alert('حدث خطأ أثناء حذف الصفحة: ' + err.message);
+    }
+  };
+
+  const handleCopyPageLink = (pageId) => {
+    const fullUrl = `https://musherfe.com/#/page/${pageId}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        alert(`📋 تم نسخ رابط الصفحة المباشر بنجاح!\n\nالرابط: ${fullUrl}\n\nيمكنك الآن لصقه في أي مكان بالموقع كعنوان فرعي أو زر!`);
+      }).catch(() => {
+        prompt("رابط الصفحة المباشر (قم بنسخه):", fullUrl);
+      });
+    } else {
+      prompt("رابط الصفحة المباشر (قم بنسخه):", fullUrl);
+    }
+  };
+
+  const handleQuickAddPageToNav = async (page) => {
+    const navId = `nav_page_${page.id}`;
+    const newNavItem = {
+      id: navId,
+      label: page.title,
+      type: 'custom_page',
+      target: page.id,
+      category: 'main',
+      order: navigation.length + 1
+    };
+
+    if (isOfflineMode) {
+      const updated = [...navigation.filter(n => n.id !== navId), newNavItem].sort((a,b) => (a.order||0) - (b.order||0));
+      localStorage.setItem('db_navigation', JSON.stringify(updated));
+      setNavigation(updated);
+      window.dispatchEvent(new Event('navigationUpdated'));
+      alert(`✨ تم إضافة صفحة "${page.title}" إلى القائمة العلوية بالموقع بنجاح!`);
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'navigation', navId), newNavItem);
+      const updated = [...navigation.filter(n => n.id !== navId), newNavItem].sort((a,b) => (a.order||0) - (b.order||0));
+      setNavigation(updated);
+      localStorage.setItem('db_navigation', JSON.stringify(updated));
+      window.dispatchEvent(new Event('navigationUpdated'));
+      alert(`✨ تم نشر وإضافة صفحة "${page.title}" بنجاح إلى سطر العناوين الرئيسي في أعلى الموقع!`);
+    } catch (err) {
+      alert('حدث خطأ أثناء إضافة الصفحة للقائمة العلوية: ' + err.message);
     }
   };
 
@@ -3295,24 +3347,42 @@ const AdminDashboard = () => {
                                   <td style={{ padding: '0.75rem', fontWeight: 700 }}>{p.title}</td>
                                   <td style={{ padding: '0.75rem' }}><code>{p.id}</code></td>
                                   <td style={{ padding: '0.75rem' }}>
-                                    <a href={`#/page/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>
-                                      #/page/{p.id}
-                                    </a>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                      <a href={`#/page/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>
+                                        #/page/{p.id}
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPageLink(p.id)}
+                                        style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                        title="نسخ الرابط المباشر لاستخدامه كعنوان فرعي"
+                                      >
+                                        <i className="fas fa-copy"></i> نسخ الرابط
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuickAddPageToNav(p)}
+                                        style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                        title="إضافة هذه الصفحة فورياً كعنوان في سطر العناوين الرئيسي بنقرة واحدة"
+                                      >
+                                        <i className="fas fa-plus"></i> إضافة للقائمة العلوية
+                                      </button>
+                                    </div>
                                   </td>
                                   <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                                     <button 
                                       onClick={() => startEditPage(p)} 
-                                      style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1rem' }}
+                                      style={{ border: 'none', background: '#eff6ff', color: 'var(--primary)', padding: '0.35rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
                                       title="تعديل محتوى الصفحة"
                                     >
-                                      <i className="fas fa-edit"></i>
+                                      <i className="fas fa-edit"></i> تعديل
                                     </button>
                                     <button 
                                       onClick={() => handleDeletePage(p.id)} 
-                                      style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1rem' }}
+                                      style={{ border: 'none', background: '#fef2f2', color: 'var(--danger)', padding: '0.35rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
                                       title="حذف الصفحة"
                                     >
-                                      <i className="fas fa-trash"></i>
+                                      <i className="fas fa-trash"></i> حذف
                                     </button>
                                   </td>
                                 </tr>
