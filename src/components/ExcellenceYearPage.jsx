@@ -241,7 +241,7 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               transition: 'transform 0.3s ease'
             }}>
               <div style={{ fontSize: '2.2rem', marginBottom: '0.8rem' }}>🔄</div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight 800, color: '#c084fc', marginBottom: '0.6rem' }}>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#c084fc', marginBottom: '0.6rem' }}>
                 ماذا سنغيّر؟
               </h3>
               <p style={{ fontSize: '1.05rem', color: '#cbd5e1', lineHeight: '1.7', margin: 0 }}>
@@ -259,7 +259,7 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               transition: 'transform 0.3s ease'
             }}>
               <div style={{ fontSize: '2.2rem', marginBottom: '0.8rem' }}>💫</div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight 800, color: '#fb7185', marginBottom: '0.6rem' }}>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fb7185', marginBottom: '0.6rem' }}>
                 ما الأثر الذي سنتركه؟
               </h3>
               <p style={{ fontSize: '1.05rem', color: '#cbd5e1', lineHeight: '1.7', margin: 0 }}>
@@ -287,11 +287,11 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               من النجاح ➔ إلى التأثير ✨
             </span>
             <span style={{ color: '#64748b' }}>|</span>
-            <span style={{ fontSize: '1.1rem', fontWeight 800, color: '#c084fc' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#c084fc' }}>
               من الإنجاز ➔ إلى الأثر 🌱
             </span>
             <span style={{ color: '#64748b' }}>|</span>
-            <span style={{ fontSize: '1.1rem', fontWeight 800, color: '#f59e0b' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f59e0b' }}>
               من المحافظة على الموجود ➔ إلى صناعة الجديد 🚀
             </span>
           </div>

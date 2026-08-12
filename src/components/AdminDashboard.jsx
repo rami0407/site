@@ -3663,8 +3663,6 @@ const AdminDashboard = () => {
                         <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>لا توجد عناوين مضافة حالياً.</p>
                       )}
                     </div>
-
-                  </div>
                 </div>
               )}
 
