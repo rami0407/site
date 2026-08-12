@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { defaultPages } from '../data/defaultNavigationData';
+import ExcellenceYearPage from './ExcellenceYearPage';
 
 const CustomPageView = ({ pageId }) => {
   const [pageData, setPageData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  if (pageId === 'excellence') {
+    return <ExcellenceYearPage isStandalone={true} />;
+  }
 
   useEffect(() => {
     const fetchPage = async () => {
