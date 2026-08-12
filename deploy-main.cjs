@@ -37,11 +37,16 @@ try {
   compiledHtml = compiledHtml.replace(/\.js"/g, `.js?v=${cacheBuster}"`);
   compiledHtml = compiledHtml.replace(/\.css"/g, `.css?v=${cacheBuster}"`);
   
+  const versionTag = `v_${cacheBuster}`;
+  const forceReloadScript = `<script>(function(){if(!window.location.search.includes('${versionTag}')){var s=window.location.search?window.location.search+'&ver=${versionTag}':'?ver=${versionTag}';window.location.replace(window.location.pathname+s+window.location.hash);}})();</script>`;
+
   if (!compiledHtml.includes('Cache-Control')) {
     compiledHtml = compiledHtml.replace(
       '<head>',
-      `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
+      `<head>\n    ${forceReloadScript}\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
     );
+  } else {
+    compiledHtml = compiledHtml.replace('<head>', `<head>\n    ${forceReloadScript}`);
   }
   
   fs.writeFileSync(devHtmlPath, compiledHtml, 'utf-8');
