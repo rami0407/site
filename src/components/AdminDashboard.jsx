@@ -91,7 +91,7 @@ const AdminDashboard = () => {
 
   const [autoAddToNav, setAutoAddToNav] = useState(true);
 
-  const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages, books, navigation
+  const [activeTab, setActiveTab] = useState('add-page'); // default to add-page (Google Sites Page Builder)
 
   // Dashboard Data Lists
   const [events, setEvents] = useState([]);
@@ -1989,8 +1989,53 @@ const AdminDashboard = () => {
       <div style={{ display: 'flex', flexGrow: 1, flexWrap: 'wrap' }}>
         
         {/* Sidebar Nav */}
-        <aside style={{ width: '100%', maxWidth: '260px', background: 'var(--bg-white)', borderLeft: '1px solid var(--border-light)', padding: '2rem 1rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <aside style={{ width: '100%', maxWidth: '270px', background: 'var(--bg-white)', borderLeft: '1px solid var(--border-light)', padding: '1.5rem 1rem', maxHeight: 'calc(100vh - 70px)', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            
+            {/* TOP ITEM 1: ADD NEW PAGE (GOOGLE SITES STYLE) */}
+            <button 
+              onClick={() => setActiveTab('add-page')} 
+              className={`filter-chip ${activeTab === 'add-page' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'add-page' ? '#059669' : '#ecfdf5',
+                color: activeTab === 'add-page' ? 'white' : '#047857',
+                fontWeight: 800,
+                border: '2px solid #6ee7b7',
+                boxShadow: '0 2px 5px rgba(5,150,105,0.15)'
+              }}
+            >
+              <i className="fas fa-plus-circle" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              📄 إضافة صفحة جديدة ({pages.length})
+            </button>
+
+            {/* TOP ITEM 2: NAVBAR HEADER LINKS */}
+            <button 
+              onClick={() => setActiveTab('navigation')} 
+              className={`filter-chip ${activeTab === 'navigation' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'navigation' ? '#2563eb' : '#eff6ff',
+                color: activeTab === 'navigation' ? 'white' : '#1d4ed8',
+                fontWeight: 800,
+                border: '2px solid #93c5fd',
+                boxShadow: '0 2px 5px rgba(37,99,235,0.15)'
+              }}
+            >
+              <i className="fas fa-link" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🔗 سطر العناوين ({navigation.length})
+            </button>
+
+            <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
+
             <button 
               onClick={() => setActiveTab('calendar')} 
               className={`filter-chip ${activeTab === 'calendar' ? 'active' : ''}`}
@@ -2061,34 +2106,6 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-book-open" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               الكتب واللباس الموحد ({books.length})
-            </button>
-
-            <button 
-              onClick={() => setActiveTab('add-page')} 
-              className={`filter-chip ${activeTab === 'add-page' ? 'active' : ''}`}
-              style={{ 
-                width: '100%', 
-                justifyContent: 'flex-start', 
-                padding: '0.9rem 1.2rem', 
-                fontSize: '1rem', 
-                borderRadius: 'var(--radius-sm)',
-                background: activeTab === 'add-page' ? 'var(--primary)' : 'rgba(16, 185, 129, 0.08)',
-                color: activeTab === 'add-page' ? 'white' : '#059669',
-                fontWeight: 800,
-                border: '1px solid #a7f3d0'
-              }}
-            >
-              <i className="fas fa-plus-circle" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              📄 إضافة صفحة جديدة ({pages.length})
-            </button>
-
-            <button 
-              onClick={() => setActiveTab('navigation')} 
-              className={`filter-chip ${activeTab === 'navigation' ? 'active' : ''}`}
-              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
-            >
-              <i className="fas fa-link" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              🔗 إدارة سطر العناوين ({navigation.length})
             </button>
 
             <button 
