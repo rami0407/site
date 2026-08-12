@@ -32,6 +32,7 @@ import AiAssistant from './components/AiAssistant';
 import WeeklyChallenge, { WeeklyChallengeBanner } from './components/WeeklyChallenge';
 import Worksheets, { WorksheetsBanner } from './components/Worksheets';
 import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
+import ExcellenceYearPage from './components/ExcellenceYearPage';
 import './App.css';
 
 
@@ -221,6 +222,7 @@ function App() {
   const isAstronomyView = currentHash.startsWith('#/astronomy') || currentHash.startsWith('#astronomy');
   const isChallengeView = currentHash.startsWith('#/challenge') || currentHash.startsWith('#challenge');
   const isBooksView = currentHash.startsWith('#/books') || currentHash.startsWith('#books');
+  const isExcellenceView = currentHash.startsWith('#/excellence') || currentHash.startsWith('#excellence');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -251,6 +253,8 @@ function App() {
         <WeeklyChallenge isStandalone={true} />
       ) : isBooksView ? (
         <BooksGuide isStandalone={true} />
+      ) : isExcellenceView ? (
+        <ExcellenceYearPage isStandalone={true} />
       ) : (
         <main>
           {/* Hero Banner */}

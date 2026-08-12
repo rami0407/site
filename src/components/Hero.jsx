@@ -138,8 +138,13 @@ const Hero = () => {
 
         {/* Hero Left/Main Text Info */}
         <div className="hero-text-side">
-          {/* Glowing Badge for Year of Excellence */}
-          <div className="excellence-badge-glow">
+          {/* Glowing Clickable Badge for Year of Excellence */}
+          <div 
+            className="excellence-badge-glow"
+            onClick={() => window.location.hash = '#/excellence'}
+            style={{ cursor: 'pointer' }}
+            title="انقر لاكتشاف وثيقة ورؤية عام التميز 2026-2027"
+          >
             <span className="badge-sparkle">✨</span>
             <span className="badge-text">عام التميز 2026 / 2027</span>
             <span className="badge-rocket-mini">🚀</span>
