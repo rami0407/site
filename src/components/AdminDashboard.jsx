@@ -175,8 +175,8 @@ const AdminDashboard = () => {
   const [editingNavId, setEditingNavId] = useState(null);
   const [newNav, setNewNav] = useState({
     label: '',
-    type: 'section',
-    target: 'home',
+    type: 'custom_page',
+    target: '',
     order: 1
   });
 
@@ -3487,21 +3487,83 @@ const AdminDashboard = () => {
                             onChange={(e) => setNewNav({ ...newNav, label: e.target.value })}
                           />
                         </div>
+
                         <div className="form-group">
-                          <label className="form-label">نوع أو مصدر الرابط *</label>
+                          <label className="form-label">حقل إلصاق رابط الصفحة المنسوخ (Target / URL) *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            style={{ borderColor: 'var(--primary)', borderWidth: '2px', background: '#f0f9ff' }}
+                            placeholder="قم بإلصاق الرابط المنسوخ هنا (مثال: https://musherfe.com/#/page/math أو math)"
+                            value={newNav.target}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              let detectedType = 'custom_page';
+                              if (val.startsWith('#') || ['home','news','calendar','initiatives','principal','links','books','gallery','contact'].includes(val)) {
+                                detectedType = 'section';
+                              } else if (val.startsWith('http://') || val.startsWith('https://')) {
+                                if (val.includes('/#/page/')) {
+                                  detectedType = 'custom_page';
+                                } else {
+                                  detectedType = 'external';
+                                }
+                              }
+                              setNewNav({ ...newNav, target: val, type: detectedType });
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* QUICK PAGE PICKER CHIPS */}
+                      {pages.length > 0 && (
+                        <div style={{ background: '#ecfdf5', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid #a7f3d0', marginBottom: '1.5rem' }}>
+                          <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#047857', display: 'block', marginBottom: '0.5rem' }}>
+                            <i className="fas fa-magic" style={{ marginLeft: '0.4rem' }}></i>
+                            أو اختر بنقرة واحدة من الصفحات التي أنشأتها لإلصاق رابطها تلقائياً:
+                          </span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            {pages.map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  const fullUrl = `https://musherfe.com/#/page/${p.id}`;
+                                  setNewNav({
+                                    ...newNav,
+                                    label: newNav.label || p.title,
+                                    target: p.id,
+                                    type: 'custom_page'
+                                  });
+                                }}
+                                style={{
+                                  background: 'white',
+                                  color: '#065f46',
+                                  border: '1px solid #6ee7b7',
+                                  padding: '0.4rem 0.8rem',
+                                  borderRadius: '20px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem'
+                                }}
+                              >
+                                <i className="fas fa-plus-circle"></i> {p.title} (ID: {p.id})
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label className="form-label">نوع أو مصدر الرابط</label>
                           <select 
                             className="form-input"
                             value={newNav.type}
-                            onChange={(e) => {
-                              const newType = e.target.value;
-                              let defaultTarget = 'home';
-                              if (newType === 'custom_page') {
-                                defaultTarget = pages.length > 0 ? pages[0].id : '';
-                              } else if (newType === 'external') {
-                                defaultTarget = 'https://';
-                              }
-                              setNewNav({ ...newNav, type: newType, target: defaultTarget });
-                            }}
+                            onChange={(e) => setNewNav({ ...newNav, type: e.target.value })}
                           >
                             <option value="custom_page">📄 صفحة مخصصة (Custom Page)</option>
                             <option value="section">📌 قسم في الصفحة الرئيسية (#home, #news...)</option>
@@ -3509,75 +3571,7 @@ const AdminDashboard = () => {
                             <option value="external">🌐 رابط خارجي (External Link)</option>
                           </select>
                         </div>
-                      </div>
 
-                      <div className="form-group-row">
-                        <div className="form-group">
-                          <label className="form-label">حقل إلصاق رابط الصفحة المنسوخ (Target / URL) *</label>
-                          {newNav.type === 'custom_page' ? (
-                            <div>
-                              <input
-                                type="text"
-                                className="form-input"
-                                placeholder="قم بإلصاق الرابط الذي نسخته هنا (مثال: https://musherfe.com/#/page/math أو math)"
-                                value={newNav.target}
-                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                              />
-                              {pages.length > 0 && (
-                                <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.3rem', display: 'block' }}>
-                                  أو اختر من الصفحات الموجودة: 
-                                  <select 
-                                    style={{ marginRight: '0.5rem', padding: '0.2rem', borderRadius: '4px' }}
-                                    onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                                    value={newNav.target}
-                                  >
-                                    <option value="">-- اختر صفحة --</option>
-                                    {pages.map(p => (
-                                      <option key={p.id} value={p.id}>{p.title} (ID: {p.id})</option>
-                                    ))}
-                                  </select>
-                                </small>
-                              )}
-                            </div>
-                          ) : newNav.type === 'page' ? (
-                            <select 
-                              className="form-input"
-                              value={newNav.target}
-                              onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                            >
-                              <option value="excellence">✨ عام التميز 2026-2027 (/#/excellence)</option>
-                              <option value="challenge">🏆 التحدي الأسبوعي (/#/challenge)</option>
-                              <option value="worksheets">📑 أوراق العمل والفعاليات (/#/worksheets)</option>
-                              <option value="astronomy">🌌 مختبر الفلك وصورة ناسا (/#/astronomy)</option>
-                            </select>
-                          ) : newNav.type === 'section' ? (
-                            <select 
-                              className="form-input"
-                              value={newNav.target}
-                              onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                            >
-                              <option value="home">الرئيسية (#home)</option>
-                              <option value="initiatives">المبادرات (#initiatives)</option>
-                              <option value="calendar">الرزنامة (#calendar)</option>
-                              <option value="news">الأخبار (#news)</option>
-                              <option value="principal">كلمة المدير (#principal)</option>
-                              <option value="links">روابط هامة (#links)</option>
-                              <option value="books">الكتب واللباس الموحد (#books)</option>
-                              <option value="gallery">المعرض (#gallery)</option>
-                              <option value="contact">اتصل بنا (#contact)</option>
-                            </select>
-                          ) : (
-                            <input 
-                              type="text" 
-                              className="form-input" 
-                              required
-                              placeholder="مثال: https://edu.gov.il"
-                              value={newNav.target}
-                              onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                            />
-                          )}
-                        </div>
-                        
                         <div className="form-group">
                           <label className="form-label">رقم ترتيب الظهور في الشريط *</label>
                           <input 
