@@ -75,7 +75,7 @@ const Navbar = () => {
       }
 
       // Track active section on scroll if we are on the homepage
-      const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books');
+      const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
       if (!isOnCustomPage && mainNavItems.length > 0) {
         const sections = mainNavItems
           .filter(item => item.type === 'section')
@@ -110,13 +110,13 @@ const Navbar = () => {
     e.preventDefault();
 
     if (item.type === 'page' || item.type === 'custom_page') {
-      window.location.hash = (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge' || item.target === 'books') ? `#/${item.target}` : `#/page/${item.target}`;
+      window.location.hash = (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge' || item.target === 'books' || item.target === 'excellence') ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {
@@ -136,7 +136,7 @@ const Navbar = () => {
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
     if (item.type === 'page' || item.type === 'custom_page') {
-      return (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge' || item.target === 'books') ? `#/${item.target}` : `#/page/${item.target}`;
+      return (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge' || item.target === 'books' || item.target === 'excellence') ? `#/${item.target}` : `#/page/${item.target}`;
     }
     return `#${item.target}`;
   };
