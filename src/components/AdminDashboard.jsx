@@ -2043,12 +2043,31 @@ const AdminDashboard = () => {
             </button>
 
             <button 
+              onClick={() => setActiveTab('add-page')} 
+              className={`filter-chip ${activeTab === 'add-page' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.9rem 1.2rem', 
+                fontSize: '1rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'add-page' ? 'var(--primary)' : 'rgba(16, 185, 129, 0.08)',
+                color: activeTab === 'add-page' ? 'white' : '#059669',
+                fontWeight: 800,
+                border: '1px solid #a7f3d0'
+              }}
+            >
+              <i className="fas fa-plus-circle" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              📄 إضافة صفحة جديدة ({pages.length})
+            </button>
+
+            <button 
               onClick={() => setActiveTab('navigation')} 
               className={`filter-chip ${activeTab === 'navigation' ? 'active' : ''}`}
               style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
             >
-              <i className="fas fa-bars" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              العناوين والصفحات ({navigation.length})
+              <i className="fas fa-link" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              🔗 إدارة سطر العناوين ({navigation.length})
             </button>
 
             <button 
@@ -3269,287 +3288,284 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 8.7: NAVIGATION & CUSTOM PAGES EDITOR */}
-              {activeTab === 'navigation' && (
+              {/* TAB 8.7: ADD NEW PAGE BUILDER (GOOGLE SITES STYLE) */}
+              {activeTab === 'add-page' && (
                 <div>
-                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة روابط سطر العناوين والصفحات المخصصة</h2>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '1.5rem' }}>📄 إضافة صفحة جديدة للموقع (مصمم مثل Google Sites)</h2>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                  {/* STEP BY STEP GUIDANCE BANNER */}
+                  <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid #bfdbfe', marginBottom: '2rem' }}>
+                    <h4 style={{ fontWeight: 800, color: '#1e40af', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <i className="fas fa-lightbulb"></i>
+                      طريقة إنشاء صفحة جديدة وربطها بسطر العناوين:
+                    </h4>
+                    <ol style={{ margin: 0, paddingRight: '1.25rem', color: '#1e3a8a', lineHeight: '1.8', fontSize: '0.95rem' }}>
+                      <li>اكتب <strong>عنوان الصفحة والمحتوى</strong> واضغط على زر <strong>"إنشاء ونشر الصفحة"</strong> بالأسفل.</li>
+                      <li>اضغط على زر <strong>"📋 نسخ رابط الصفحة"</strong> بجانب الصفحة التي أنشأتها.</li>
+                      <li>انتقل إلى قسم <strong>"🔗 إدارة سطر العناوين"</strong> من القائمة الجانبية، وأضف عنواناً جديداً مع إلصاق الرابط المنسوخ!</li>
+                    </ol>
+                  </div>
+
+                  <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                      <i className="fas fa-magic" style={{ marginLeft: '0.5rem' }}></i>
+                      {editingPageId ? `تعديل الصفحة: ${editingPageId}` : 'تصميم وإنشاء صفحة جديدة'}
+                    </h3>
                     
-                    {/* SECTION 1: Dynamic Custom Pages */}
-                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
-                        <i className="fas fa-file-alt" style={{ marginLeft: '0.5rem' }}></i>
-                        {editingPageId ? `تعديل الصفحة المخصصة: ${editingPageId}` : 'إنشاء صفحة مخصصة جديدة'}
-                      </h3>
-                      
-                      <form onSubmit={handleAddPage}>
-                        <div className="form-group-row">
-                          <div className="form-group">
-                            <label className="form-label">معرّف الرابط الفريد (اختياري - ID بالإنجليزية)</label>
-                            <input 
-                              type="text" 
-                              className="form-input" 
-                              disabled={!!editingPageId}
-                              placeholder="مثال: school-charter (أو اتركه فارغاً وسيتم إنشاؤه تلقائياً)"
-                              value={newPage.id}
-                              onChange={(e) => setNewPage({ ...newPage, id: e.target.value })}
-                            />
-                            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
-                              اختياري: اتركه فارغاً لإنشائه تلقائياً، أو اكتب رمزاً بالإنجليزية بدون مسافات.
-                            </small>
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">عنوان الصفحة (بالعربية) *</label>
-                            <input 
-                              type="text" 
-                              className="form-input" 
-                              required
-                              placeholder="مثال: دستور ونظام المدرسة"
-                              value={newPage.title}
-                              onChange={(e) => setNewPage({ ...newPage, title: e.target.value })}
-                            />
-                          </div>
-                        </div>
-
+                    <form onSubmit={handleAddPage}>
+                      <div className="form-group-row">
                         <div className="form-group">
-                          <label className="form-label">مضمون ومحتوى الصفحة *</label>
-                          <textarea 
+                          <label className="form-label">عنوان الصفحة (بالعربية) *</label>
+                          <input 
+                            type="text" 
                             className="form-input" 
                             required
-                            style={{ minHeight: '200px', lineHeight: '1.7' }}
-                            placeholder="اكتب تفاصيل وموضوع الصفحة هنا. افصل بين الفقرات بسطر فارغ لتظهر بشكل منسق للزوار..."
-                            value={newPage.content}
-                            onChange={(e) => setNewPage({ ...newPage, content: e.target.value })}
-                          ></textarea>
+                            placeholder="مثال: مادة الرياضيات / رحلات المدرسة / رؤيتنا"
+                            value={newPage.title}
+                            onChange={(e) => setNewPage({ ...newPage, title: e.target.value })}
+                          />
                         </div>
+                        <div className="form-group">
+                          <label className="form-label">معرّف الرابط (اختياري - ID بالإنجليزية)</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            disabled={!!editingPageId}
+                            placeholder="مثال: math (أو اتركه فارغاً وسيتم توليده تلقائياً)"
+                            value={newPage.id}
+                            onChange={(e) => setNewPage({ ...newPage, id: e.target.value })}
+                          />
+                        </div>
+                      </div>
 
-                        {!editingPageId && (
-                          <div style={{ marginTop: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#ecfdf5', padding: '0.85rem 1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid #a7f3d0' }}>
-                            <input 
-                              type="checkbox" 
-                              id="autoAddToNav" 
-                              checked={autoAddToNav} 
-                              onChange={(e) => setAutoAddToNav(e.target.checked)}
-                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                            />
-                            <label htmlFor="autoAddToNav" style={{ fontWeight: 700, color: '#065f46', cursor: 'pointer', fontSize: '0.92rem' }}>
-                              ✨ إضافة وتفعيل هذه الصفحة تلقائياً إلى سطر العناوين الرئيسي في أعلى الموقع عند حفظها (Navbar)
-                            </label>
-                          </div>
-                        )}
+                      <div className="form-group">
+                        <label className="form-label">مضمون ومحتوى الصفحة التفصيلي *</label>
+                        <textarea 
+                          className="form-input" 
+                          required
+                          style={{ minHeight: '220px', lineHeight: '1.8' }}
+                          placeholder="اكتب تفاصيل الصفحة، المواد، الشرح والتعليمات هنا... (افصل الفقرات بسطر فارغ لتنسيق رائع)"
+                          value={newPage.content}
+                          onChange={(e) => setNewPage({ ...newPage, content: e.target.value })}
+                        ></textarea>
+                      </div>
 
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
-                            <i className={editingPageId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
-                            {editingPageId ? ' حفظ وتعديل الصفحة' : ' إنشاء ونشر الصفحة'}
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1, padding: '0.85rem' }}>
+                          <i className={editingPageId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                          {editingPageId ? ' حفظ وتعديل الصفحة' : ' إنشاء ونشر الصفحة'}
+                        </button>
+                        {editingPageId && (
+                          <button type="button" onClick={cancelEditPage} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                            إلغاء التعديل
                           </button>
-                          {editingPageId && (
-                            <button type="button" onClick={cancelEditPage} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-                              إلغاء
-                            </button>
-                          )}
-                        </div>
-                      </form>
+                        )}
+                      </div>
+                    </form>
 
-                      {/* Pages List */}
-                      <h4 style={{ fontWeight: 800, marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>الصفحات المخصصة المنشورة حالياً ({pages.length})</h4>
-                      {pages.length > 0 ? (
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
-                            <thead>
-                              <tr style={{ borderBottom: '2px solid var(--border-light)', background: 'var(--bg-light)' }}>
-                                <th style={{ padding: '0.75rem' }}>عنوان الصفحة</th>
-                                <th style={{ padding: '0.75rem' }}>معرّف الرابط (ID)</th>
-                                <th style={{ padding: '0.75rem' }}>الرابط المباشر للمشاهدة</th>
-                                <th style={{ padding: '0.75rem', width: '100px' }}>العمليات</th>
+                    {/* Pages List */}
+                    <h4 style={{ fontWeight: 800, marginTop: '2.5rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>الصفحات المنشورة حالياً ({pages.length})</h4>
+                    {pages.length > 0 ? (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '2px solid var(--border-light)', background: 'var(--bg-light)' }}>
+                              <th style={{ padding: '0.75rem' }}>عنوان الصفحة</th>
+                              <th style={{ padding: '0.75rem' }}>المعرف</th>
+                              <th style={{ padding: '0.75rem' }}>رابط الصفحة (انسخه لاستخدامه كعنوان)</th>
+                              <th style={{ padding: '0.75rem', width: '140px' }}>العمليات</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pages.map((p) => (
+                              <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                <td style={{ padding: '0.75rem', fontWeight: 700 }}>{p.title}</td>
+                                <td style={{ padding: '0.75rem' }}><code>{p.id}</code></td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <a href={`#/page/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>
+                                      #/page/{p.id}
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyPageLink(p.id)}
+                                      style={{ background: '#2563eb', color: 'white', border: 'none', padding: '0.35rem 0.8rem', borderRadius: '4px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
+                                    >
+                                      <i className="fas fa-copy"></i> 📋 نسخ رابط الصفحة
+                                    </button>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                                  <button 
+                                    onClick={() => startEditPage(p)} 
+                                    style={{ border: 'none', background: '#eff6ff', color: 'var(--primary)', padding: '0.35rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
+                                    title="تعديل محتوى الصفحة"
+                                  >
+                                    <i className="fas fa-edit"></i> تعديل
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeletePage(p.id)} 
+                                    style={{ border: 'none', background: '#fef2f2', color: 'var(--danger)', padding: '0.35rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
+                                    title="حذف الصفحة"
+                                  >
+                                    <i className="fas fa-trash"></i> حذف
+                                  </button>
+                                </td>
                               </tr>
-                            </thead>
-                            <tbody>
-                              {pages.map((p) => (
-                                <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                  <td style={{ padding: '0.75rem', fontWeight: 700 }}>{p.title}</td>
-                                  <td style={{ padding: '0.75rem' }}><code>{p.id}</code></td>
-                                  <td style={{ padding: '0.75rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                      <a href={`#/page/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>
-                                        #/page/{p.id}
-                                      </a>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCopyPageLink(p.id)}
-                                        style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                                        title="نسخ الرابط المباشر لاستخدامه كعنوان فرعي"
-                                      >
-                                        <i className="fas fa-copy"></i> نسخ الرابط
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleQuickAddPageToNav(p)}
-                                        style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                                        title="إضافة هذه الصفحة فورياً كعنوان في سطر العناوين الرئيسي بنقرة واحدة"
-                                      >
-                                        <i className="fas fa-plus"></i> إضافة للقائمة العلوية
-                                      </button>
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                                    <button 
-                                      onClick={() => startEditPage(p)} 
-                                      style={{ border: 'none', background: '#eff6ff', color: 'var(--primary)', padding: '0.35rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
-                                      title="تعديل محتوى الصفحة"
-                                    >
-                                      <i className="fas fa-edit"></i> تعديل
-                                    </button>
-                                    <button 
-                                      onClick={() => handleDeletePage(p.id)} 
-                                      style={{ border: 'none', background: '#fef2f2', color: 'var(--danger)', padding: '0.35rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
-                                      title="حذف الصفحة"
-                                    >
-                                      <i className="fas fa-trash"></i> حذف
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem', border: '1px dashed var(--border-light)' }}>لم تقم بإنشاء أي صفحات مخصصة حتى الآن.</p>
-                      )}
-                    </div>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem', border: '1px dashed var(--border-light)' }}>لم تقم بإنشاء أي صفحات حتى الآن.</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
-                    {/* SECTION 2: Navbar Links Manager */}
-                    <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
-                        <i className="fas fa-link" style={{ marginLeft: '0.5rem' }}></i>
-                        {editingNavId ? 'تعديل عنوان في القائمة العلوية' : 'إضافة عنوان/رابط جديد للقائمة العلوية'}
-                      </h3>
-                      
-                      <form onSubmit={handleAddNav}>
-                        <div className="form-group-row">
-                          <div className="form-group">
-                            <label className="form-label">اسم الزر/العنوان (بالعربية) *</label>
-                            <input 
-                              type="text" 
-                              className="form-input" 
-                              required
-                              placeholder="مثال: دستور المدرسة"
-                              value={newNav.label}
-                              onChange={(e) => setNewNav({ ...newNav, label: e.target.value })}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">نوع الرابط المستهدف *</label>
-                            <select 
-                              className="form-input"
-                              value={newNav.type}
-                              onChange={(e) => {
-                                const newType = e.target.value;
-                                // Reset target depending on type
-                                let defaultTarget = 'home';
-                                if (newType === 'custom_page') {
-                                  defaultTarget = pages.length > 0 ? pages[0].id : '';
-                                } else if (newType === 'external') {
-                                  defaultTarget = 'https://';
-                                }
-                                setNewNav({ ...newNav, type: newType, target: defaultTarget });
-                              }}
-                            >
-                              <option value="section">قسم في الصفحة الرئيسية (Home Section)</option>
-                              <option value="page">صفحة مستقلة (التحدي، أوراق العمل، الفلك)</option>
-                              <option value="custom_page">صفحة مخصصة (Custom Page)</option>
-                              <option value="external">رابط لموقع خارجي (External Link)</option>
-                            </select>
-                          </div>
-                        </div>
+              {/* TAB 8.8: NAVBAR HEADER LINKS MANAGER */}
+              {activeTab === 'navigation' && (
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '1.5rem' }}>🔗 إدارة سطر العناوين والشريط العلوي للموقع</h2>
 
-                        <div className="form-group-row">
-                          <div className="form-group">
-                            <label className="form-label">الهدف المستهدف (Target) *</label>
-                            {newNav.type === 'page' && (
-                              <select 
+                  <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)', borderBottom: '2px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                      <i className="fas fa-link" style={{ marginLeft: '0.5rem' }}></i>
+                      {editingNavId ? 'تعديل عنوان في القائمة العلوية' : 'إضافة عنوان جديد إلى سطر العناوين الرئيسي'}
+                    </h3>
+                    
+                    <form onSubmit={handleAddNav}>
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label className="form-label">اسم العنوان / الزر الذي سيظهر للزوار *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required
+                            placeholder="مثال: مادة الرياضيات / دستور المدرسة / الفعاليات"
+                            value={newNav.label}
+                            onChange={(e) => setNewNav({ ...newNav, label: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">نوع أو مصدر الرابط *</label>
+                          <select 
+                            className="form-input"
+                            value={newNav.type}
+                            onChange={(e) => {
+                              const newType = e.target.value;
+                              let defaultTarget = 'home';
+                              if (newType === 'custom_page') {
+                                defaultTarget = pages.length > 0 ? pages[0].id : '';
+                              } else if (newType === 'external') {
+                                defaultTarget = 'https://';
+                              }
+                              setNewNav({ ...newNav, type: newType, target: defaultTarget });
+                            }}
+                          >
+                            <option value="custom_page">📄 صفحة مخصصة (Custom Page)</option>
+                            <option value="section">📌 قسم في الصفحة الرئيسية (#home, #news...)</option>
+                            <option value="page">🌟 صفحة مستقلة (التحدي، أوراق العمل، الفلك)</option>
+                            <option value="external">🌐 رابط خارجي (External Link)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label className="form-label">حقل إلصاق رابط الصفحة المنسوخ (Target / URL) *</label>
+                          {newNav.type === 'custom_page' ? (
+                            <div>
+                              <input
+                                type="text"
                                 className="form-input"
-                                value={newNav.target}
-                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                              >
-                                <option value="challenge">🏆 التحدي الأسبوعي (/#/challenge)</option>
-                                <option value="worksheets">📑 أوراق العمل والفعاليات (/#/worksheets)</option>
-                                <option value="astronomy">🌌 مختبر الفلك وصورة ناسا (/#/astronomy)</option>
-                              </select>
-                            )}
-                            {newNav.type === 'section' && (
-                              <select 
-                                className="form-input"
-                                value={newNav.target}
-                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                              >
-                                <option value="home">الرئيسية (#home)</option>
-                                <option value="initiatives">المبادرات (#initiatives)</option>
-                                <option value="calendar">الرزنامة (#calendar)</option>
-                                <option value="news">الأخبار (#news)</option>
-                                <option value="principal">كلمة المدير (#principal)</option>
-                                <option value="links">روابط هامة (#links)</option>
-                                <option value="books">الكتب واللباس الموحد (#books)</option>
-                                <option value="gallery">المعرض (#gallery)</option>
-                                <option value="contact">اتصل بنا (#contact)</option>
-                              </select>
-                            )}
-                            {newNav.type === 'custom_page' && (
-                              <select 
-                                className="form-input"
-                                value={newNav.target}
-                                onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
-                              >
-                                {pages.length > 0 ? (
-                                  pages.map(p => (
-                                    <option key={p.id} value={p.id}>{p.title} ({p.id})</option>
-                                  ))
-                                ) : (
-                                  <option value="">(يرجى إنشاء صفحة مخصصة أولاً!)</option>
-                                )}
-                              </select>
-                            )}
-                            {newNav.type === 'external' && (
-                              <input 
-                                type="text" 
-                                className="form-input" 
-                                required
-                                placeholder="مثال: https://edu.gov.il"
+                                placeholder="قم بإلصاق الرابط الذي نسخته هنا (مثال: https://musherfe.com/#/page/math أو math)"
                                 value={newNav.target}
                                 onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
                               />
-                            )}
-                          </div>
-                          
-                          <div className="form-group">
-                            <label className="form-label">رقم ترتيب الظهور (رقم تسلسلي) *</label>
+                              {pages.length > 0 && (
+                                <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.3rem', display: 'block' }}>
+                                  أو اختر من الصفحات الموجودة: 
+                                  <select 
+                                    style={{ marginRight: '0.5rem', padding: '0.2rem', borderRadius: '4px' }}
+                                    onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                                    value={newNav.target}
+                                  >
+                                    <option value="">-- اختر صفحة --</option>
+                                    {pages.map(p => (
+                                      <option key={p.id} value={p.id}>{p.title} (ID: {p.id})</option>
+                                    ))}
+                                  </select>
+                                </small>
+                              )}
+                            </div>
+                          ) : newNav.type === 'page' ? (
+                            <select 
+                              className="form-input"
+                              value={newNav.target}
+                              onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                            >
+                              <option value="excellence">✨ عام التميز 2026-2027 (/#/excellence)</option>
+                              <option value="challenge">🏆 التحدي الأسبوعي (/#/challenge)</option>
+                              <option value="worksheets">📑 أوراق العمل والفعاليات (/#/worksheets)</option>
+                              <option value="astronomy">🌌 مختبر الفلك وصورة ناسا (/#/astronomy)</option>
+                            </select>
+                          ) : newNav.type === 'section' ? (
+                            <select 
+                              className="form-input"
+                              value={newNav.target}
+                              onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
+                            >
+                              <option value="home">الرئيسية (#home)</option>
+                              <option value="initiatives">المبادرات (#initiatives)</option>
+                              <option value="calendar">الرزنامة (#calendar)</option>
+                              <option value="news">الأخبار (#news)</option>
+                              <option value="principal">كلمة المدير (#principal)</option>
+                              <option value="links">روابط هامة (#links)</option>
+                              <option value="books">الكتب واللباس الموحد (#books)</option>
+                              <option value="gallery">المعرض (#gallery)</option>
+                              <option value="contact">اتصل بنا (#contact)</option>
+                            </select>
+                          ) : (
                             <input 
-                              type="number" 
+                              type="text" 
                               className="form-input" 
                               required
-                              min="1"
-                              value={newNav.order}
-                              onChange={(e) => setNewNav({ ...newNav, order: e.target.value })}
+                              placeholder="مثال: https://edu.gov.il"
+                              value={newNav.target}
+                              onChange={(e) => setNewNav({ ...newNav, target: e.target.value })}
                             />
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                          <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
-                            <i className={editingNavId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
-                            {editingNavId ? ' حفظ التغييرات' : ' إضافة لسطر العناوين'}
-                          </button>
-                          {editingNavId && (
-                            <button type="button" onClick={cancelEditNav} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-                              إلغاء التعديل
-                            </button>
                           )}
                         </div>
-                      </form>
+                        
+                        <div className="form-group">
+                          <label className="form-label">رقم ترتيب الظهور في الشريط *</label>
+                          <input 
+                            type="number" 
+                            className="form-input" 
+                            required
+                            min="1"
+                            value={newNav.order}
+                            onChange={(e) => setNewNav({ ...newNav, order: e.target.value })}
+                          />
+                        </div>
+                      </div>
 
-                      {/* Navbar Links List */}
-                      <h4 style={{ fontWeight: 800, marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>العناوين الحالية في القائمة العلوية ({navigation.length})</h4>
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1, padding: '0.85rem' }}>
+                          <i className={editingNavId ? "fas fa-save" : "fas fa-plus-circle"}></i> 
+                          {editingNavId ? ' حفظ وتعديل العنوان' : ' إضافة لسطر العناوين'}
+                        </button>
+                        {editingNavId && (
+                          <button type="button" onClick={cancelEditNav} className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                            إلغاء التعديل
+                          </button>
+                        )}
+                      </div>
+                    </form>
+
+                    {/* Navbar Links List */}
+                    <h4 style={{ fontWeight: 800, marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>العناوين الحالية في القائمة العلوية ({navigation.length})</h4>
                       {navigation.length > 0 ? (
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
