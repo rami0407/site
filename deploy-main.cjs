@@ -37,17 +37,16 @@ try {
   compiledHtml = compiledHtml.replace(/\.js"/g, `.js?v=${cacheBuster}"`);
   compiledHtml = compiledHtml.replace(/\.css"/g, `.css?v=${cacheBuster}"`);
   
+  // Remove existing auto-redirect scripts if present in source index.html
+  compiledHtml = compiledHtml.replace(/<script>\(function\(\)\{if\(!window\.location\.search\.includes[\s\S]*?<\/script>\s*/g, '');
+
   const versionTag = `v_${cacheBuster}`;
   const forceReloadScript = `<script>(function(){if(!window.location.search.includes('${versionTag}')){var s=window.location.search?window.location.search+'&ver=${versionTag}':'?ver=${versionTag}';window.location.replace(window.location.pathname+s+window.location.hash);}})();</script>`;
 
-  if (!compiledHtml.includes('Cache-Control')) {
-    compiledHtml = compiledHtml.replace(
-      '<head>',
-      `<head>\n    ${forceReloadScript}\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
-    );
-  } else {
-    compiledHtml = compiledHtml.replace('<head>', `<head>\n    ${forceReloadScript}`);
-  }
+  compiledHtml = compiledHtml.replace(
+    '<head>',
+    `<head>\n    ${forceReloadScript}\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
+  );
   
   fs.writeFileSync(devHtmlPath, compiledHtml, 'utf-8');
 
