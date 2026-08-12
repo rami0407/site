@@ -89,6 +89,8 @@ const AdminDashboard = () => {
     return () => window.removeEventListener('hashchange', checkSetupMode);
   }, []);
 
+  const [autoAddToNav, setAutoAddToNav] = useState(true);
+
   const [activeTab, setActiveTab] = useState('calendar'); // calendar, news, initiatives, values, principal, links, gallery, messages, books, navigation
 
   // Dashboard Data Lists
@@ -1003,7 +1005,11 @@ const AdminDashboard = () => {
         localStorage.setItem('db_pages', JSON.stringify(updated));
         setPages(updated);
         setNewPage({ id: '', title: '', content: '' });
-        alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
+        if (autoAddToNav) {
+          await handleQuickAddPageToNav(pageDocData);
+        } else {
+          alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
+        }
         return;
       }
 
@@ -1011,7 +1017,11 @@ const AdminDashboard = () => {
         await setDoc(doc(db, 'pages', sanitizedId), pageDocData);
         setPages([...pages, pageDocData]);
         setNewPage({ id: '', title: '', content: '' });
-        alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح على السحابة!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
+        if (autoAddToNav) {
+          await handleQuickAddPageToNav(pageDocData);
+        } else {
+          alert(`🎉 تم إنشاء ونشر الصفحة "${pageDocData.title}" بنجاح على السحابة!\n\nرابط الصفحة المباشر:\nhttps://musherfe.com/#/page/${sanitizedId}`);
+        }
       } catch (err) {
         alert('حدث خطأ أثناء إضافة الصفحة المخصصة: ' + err.message);
       }
@@ -3276,18 +3286,17 @@ const AdminDashboard = () => {
                       <form onSubmit={handleAddPage}>
                         <div className="form-group-row">
                           <div className="form-group">
-                            <label className="form-label">معرّف الرابط الفريد (ID بالإنجليزية فقط) *</label>
+                            <label className="form-label">معرّف الرابط الفريد (اختياري - ID بالإنجليزية)</label>
                             <input 
                               type="text" 
                               className="form-input" 
-                              required
                               disabled={!!editingPageId}
-                              placeholder="مثال: school-charter (سيصبح الرابط: #/page/school-charter)"
+                              placeholder="مثال: school-charter (أو اتركه فارغاً وسيتم إنشاؤه تلقائياً)"
                               value={newPage.id}
                               onChange={(e) => setNewPage({ ...newPage, id: e.target.value })}
                             />
                             <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
-                              يُستخدم كعنوان للرابط، لا تستخدم مسافات أو رموز خاصة (استخدم الشرطة - فقط للفصل).
+                              اختياري: اتركه فارغاً لإنشائه تلقائياً، أو اكتب رمزاً بالإنجليزية بدون مسافات.
                             </small>
                           </div>
                           <div className="form-group">
@@ -3314,6 +3323,21 @@ const AdminDashboard = () => {
                             onChange={(e) => setNewPage({ ...newPage, content: e.target.value })}
                           ></textarea>
                         </div>
+
+                        {!editingPageId && (
+                          <div style={{ marginTop: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#ecfdf5', padding: '0.85rem 1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid #a7f3d0' }}>
+                            <input 
+                              type="checkbox" 
+                              id="autoAddToNav" 
+                              checked={autoAddToNav} 
+                              onChange={(e) => setAutoAddToNav(e.target.checked)}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="autoAddToNav" style={{ fontWeight: 700, color: '#065f46', cursor: 'pointer', fontSize: '0.92rem' }}>
+                              ✨ إضافة وتفعيل هذه الصفحة تلقائياً إلى سطر العناوين الرئيسي في أعلى الموقع عند حفظها (Navbar)
+                            </label>
+                          </div>
+                        )}
 
                         <div style={{ display: 'flex', gap: '1rem' }}>
                           <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flexGrow: 1 }}>
