@@ -217,12 +217,12 @@ function App() {
   }, []);
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
+  const isExcellenceView = currentHash.includes('excellence');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
-  const isWorksheetsView = currentHash.startsWith('#/worksheets') || currentHash.startsWith('#worksheets');
-  const isAstronomyView = currentHash.startsWith('#/astronomy') || currentHash.startsWith('#astronomy');
-  const isChallengeView = currentHash.startsWith('#/challenge') || currentHash.startsWith('#challenge');
-  const isBooksView = currentHash.startsWith('#/books') || currentHash.startsWith('#books');
-  const isExcellenceView = currentHash.startsWith('#/excellence') || currentHash.startsWith('#excellence');
+  const isWorksheetsView = currentHash.includes('worksheets');
+  const isAstronomyView = currentHash.includes('astronomy');
+  const isChallengeView = currentHash.includes('challenge');
+  const isBooksView = currentHash.includes('books');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -243,7 +243,9 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isCustomPageView ? (
+      {isExcellenceView ? (
+        <ExcellenceYearPage isStandalone={true} />
+      ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (
         <Worksheets isStandalone={true} />
@@ -253,8 +255,6 @@ function App() {
         <WeeklyChallenge isStandalone={true} />
       ) : isBooksView ? (
         <BooksGuide isStandalone={true} />
-      ) : isExcellenceView ? (
-        <ExcellenceYearPage isStandalone={true} />
       ) : (
         <main>
           {/* Hero Banner */}
