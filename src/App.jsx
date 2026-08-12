@@ -39,15 +39,27 @@ import './App.css';
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
 
-  // Hash-based routing listener
+  // Hash-based routing listener with instant poller
   useEffect(() => {
     const handleHashChange = () => {
       setCurrentHash(window.location.hash);
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+    window.addEventListener('popstate', handleHashChange);
+
+    const interval = setInterval(() => {
+      if (window.location.hash !== currentHash) {
+        setCurrentHash(window.location.hash);
+      }
+    }, 200);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+      clearInterval(interval);
+    };
+  }, [currentHash]);
 
   // Firebase Auto-Seeding on application mount
   useEffect(() => {

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>مدرسة مشيرفة الابتدائية - تحويل تلقائي</title>
+    <script type="text/javascript">
+      // SPA Single Page App redirect for GitHub Pages & Custom Domain
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      
+      // Clean path and redirect to hash route
+      var cleanPath = path.replace(/^\/+/, '');
+      if (cleanPath) {
+        window.location.replace('https://musherfe.com/#/' + cleanPath + search + hash);
+      } else {
+        window.location.replace('https://musherfe.com/' + search + hash);
+      }
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
