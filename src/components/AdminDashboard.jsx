@@ -261,7 +261,9 @@ const RichTextEditor = ({ value, onChange }) => {
         <div
           ref={editorRef}
           contentEditable
+          suppressContentEditableWarning={true}
           onInput={handleInput}
+          onBlur={handleInput}
           style={{
             minHeight: '280px',
             padding: '1.5rem 2rem',
@@ -273,7 +275,6 @@ const RichTextEditor = ({ value, onChange }) => {
             color: '#1e293b',
             background: 'white'
           }}
-          placeholder="اكتب وتنسيق محتوى الصفحة هنا بسهولة مثل برنامج الوورد..."
         />
       )}
     </div>
