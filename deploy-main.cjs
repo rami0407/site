@@ -64,7 +64,7 @@ try {
   compiledHtml = compiledHtml.replace(/<script>\(function\(\)\{if\(!window\.location\.search\.includes[\s\S]*?<\/script>\s*/g, '');
 
   const versionTag = `v_${cacheBuster}`;
-  const forceReloadScript = `<script>(function(){if(!window.location.search.includes('${versionTag}')){var s=window.location.search?window.location.search+'&ver=${versionTag}':'?ver=${versionTag}';window.location.replace(window.location.pathname+s+window.location.hash);}})();</script>`;
+  const forceReloadScript = `<script>(function(){if(!window.location.search.includes('${versionTag}')){window.location.replace(window.location.pathname+'?ver=${versionTag}'+window.location.hash);}})();</script>`;
 
   compiledHtml = compiledHtml.replace(
     '<head>',
