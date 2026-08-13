@@ -67,34 +67,34 @@ const INITIATIVE_THEMES = [
 
 // Word-Style Rich Text Editor Component (Google Sites Style Editor)
 const RichTextEditor = ({ value, onChange }) => {
-  const editorRef = useRef(null);
+  const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [showHtml, setShowHtml] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
 
-  useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
-    }
-  }, [value]);
+  const insertTag = (openTag, closeTag = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
 
-  const exec = (command, arg = null) => {
-    document.execCommand(command, false, arg);
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-  };
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const currentVal = value || '';
 
-  const handleInput = () => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
+    const selectedText = currentVal.substring(start, end);
+    const replacement = `${openTag}${selectedText}${closeTag}`;
+    const newVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
+
+    onChange(newVal);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + openTag.length, end + openTag.length);
+    }, 50);
   };
 
   const handleInsertImagePrompt = () => {
-    const url = prompt('أدخل رابط الصورة (URL) أو ارفع صورة من جهازك بالأسفل:\nمثال: https://images.unsplash.com/photo-1546410531-bb4caa6b424d');
+    const url = prompt('أدخل رابط الصورة (URL):\nمثال: https://images.unsplash.com/photo-1546410531-bb4caa6b424d');
     if (url) {
-      const imgHtml = `<img src="${url}" style="max-width:100%; border-radius:10px; margin:1rem 0; display:block;" />`;
-      exec('insertHTML', imgHtml);
+      insertTag(`<img src="${url}" style="max-width:100%; border-radius:12px; margin:1.5rem 0; display:block; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="صورة الصفحة" />\n`);
     }
   };
 
@@ -104,8 +104,7 @@ const RichTextEditor = ({ value, onChange }) => {
       const reader = new FileReader();
       reader.onload = (evt) => {
         const base64Url = evt.target.result;
-        const imgHtml = `<img src="${base64Url}" style="max-width:100%; border-radius:10px; margin:1rem 0; display:block;" />`;
-        exec('insertHTML', imgHtml);
+        insertTag(`<img src="${base64Url}" style="max-width:100%; border-radius:12px; margin:1.5rem 0; display:block; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="صورة مرفقة" />\n`);
       };
       reader.readAsDataURL(file);
     }
@@ -114,96 +113,79 @@ const RichTextEditor = ({ value, onChange }) => {
   const handleInsertLink = () => {
     const url = prompt('أدخل رابط الموقع المطلوب (URL):', 'https://');
     if (url) {
-      exec('createLink', url);
+      insertTag(`<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb; font-weight:700; text-decoration:underline;">`, `</a>`);
     }
+  };
+
+  const handleColorChange = (color) => {
+    insertTag(`<span style="color:${color}; font-weight:700;">`, `</span>`);
+  };
+
+  const handleAlign = (align) => {
+    insertTag(`<div style="text-align:${align}; margin-bottom:1rem;">\n`, `\n</div>`);
   };
 
   return (
     <div style={{ border: '2px solid #cbd5e1', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
       
-      {/* WORD-STYLE TOOLBAR BAR */}
+      {/* WORD TOOLBAR */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', padding: '0.75rem 1rem', background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', alignItems: 'center' }}>
         
         {/* Formatting */}
-        <button type="button" onClick={() => exec('bold')} style={{ padding: '0.4rem 0.75rem', fontWeight: 900, background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="خط غامق (Bold)">
+        <button type="button" onClick={() => insertTag('<b>', '</b>')} style={{ padding: '0.4rem 0.75rem', fontWeight: 900, background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="خط عريض (Bold)">
           <i className="fas fa-bold"></i>
         </button>
 
-        <button type="button" onClick={() => exec('italic')} style={{ padding: '0.4rem 0.75rem', fontStyle: 'italic', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="خط مائل (Italic)">
+        <button type="button" onClick={() => insertTag('<i>', '</i>')} style={{ padding: '0.4rem 0.75rem', fontStyle: 'italic', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="خط مائل (Italic)">
           <i className="fas fa-italic"></i>
         </button>
 
-        <button type="button" onClick={() => exec('underline')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="تحته خط (Underline)">
+        <button type="button" onClick={() => insertTag('<u>', '</u>')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="تحته خط (Underline)">
           <i className="fas fa-underline"></i>
         </button>
 
-        <button type="button" onClick={() => exec('strikeThrough')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="يتوسطه خط (Strikethrough)">
+        <button type="button" onClick={() => insertTag('<s>', '</s>')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="شطب النص">
           <i className="fas fa-strikethrough"></i>
         </button>
 
         <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
 
         {/* Alignment */}
-        <button type="button" onClick={() => exec('justifyRight')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="محاذاة لليمين">
+        <button type="button" onClick={() => handleAlign('right')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="محاذاة لليمين">
           <i className="fas fa-align-right"></i>
         </button>
 
-        <button type="button" onClick={() => exec('justifyCenter')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="توسيط النص في المنتصف">
+        <button type="button" onClick={() => handleAlign('center')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="توسيط في المنتصف">
           <i className="fas fa-align-center"></i>
         </button>
 
-        <button type="button" onClick={() => exec('justifyLeft')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="محاذاة لليسار">
+        <button type="button" onClick={() => handleAlign('left')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="محاذاة لليسار">
           <i className="fas fa-align-left"></i>
-        </button>
-
-        <button type="button" onClick={() => exec('justifyFull')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="ضبط المحاذاة">
-          <i className="fas fa-align-justify"></i>
         </button>
 
         <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
 
-        {/* Font Family & Size */}
-        <select onChange={(e) => exec('fontName', e.target.value)} style={{ padding: '0.4rem 0.6rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.88rem', fontWeight: 700 }} title="نوع الخط">
-          <option value="Tajawal">خط تجوال (Tajawal)</option>
-          <option value="Cairo">خط القاهرة (Cairo)</option>
-          <option value="Amiri">خط أميري (Amiri)</option>
-          <option value="Arial">خط عادي (Arial)</option>
-        </select>
+        {/* Heading sizes */}
+        <button type="button" onClick={() => insertTag('<h2 style="color:var(--primary-dark); font-weight:900; margin:1.5rem 0 1rem 0;">', '</h2>\n')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem' }} title="عنوان رئيسي">
+          H1 عنوان كبير
+        </button>
 
-        <select onChange={(e) => exec('fontSize', e.target.value)} style={{ padding: '0.4rem 0.6rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.88rem', fontWeight: 700 }} title="حجم الخط">
-          <option value="3">عادي (16px)</option>
-          <option value="4">متوسط (18px)</option>
-          <option value="5">عنوان فرعي (24px)</option>
-          <option value="6">عنوان كبير جداً (32px)</option>
-        </select>
+        <button type="button" onClick={() => insertTag('<h3 style="color:var(--primary); font-weight:800; margin:1.25rem 0 0.75rem 0;">', '</h3>\n')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem' }} title="عنوان فرعي">
+          H2 عنوان فرعي
+        </button>
 
-        {/* Text Color */}
+        {/* Color picker */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'white', padding: '0.2rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}>
           <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>لون الخط:</span>
           <input 
             type="color" 
-            defaultValue="#1e293b"
-            onChange={(e) => exec('foreColor', e.target.value)} 
+            defaultValue="#2563eb"
+            onChange={(e) => handleColorChange(e.target.value)} 
             style={{ width: '28px', height: '26px', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} 
-            title="اختر لون النص"
+            title="لون النص المظلل"
           />
         </div>
-
-        <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
-
-        {/* Lists & Line */}
-        <button type="button" onClick={() => exec('insertUnorderedList')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="قائمة نقطية">
-          <i className="fas fa-list-ul"></i>
-        </button>
-
-        <button type="button" onClick={() => exec('insertOrderedList')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="قائمة رقمية">
-          <i className="fas fa-list-ol"></i>
-        </button>
-
-        <button type="button" onClick={() => exec('insertHorizontalRule')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="إدراج خط فاصل">
-          <i className="fas fa-minus"></i>
-        </button>
 
         <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
 
@@ -235,46 +217,42 @@ const RichTextEditor = ({ value, onChange }) => {
           <i className="fas fa-link"></i> 🔗 رابط
         </button>
 
-        <button type="button" onClick={() => exec('removeFormat')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="مسح التنسيق">
-          <i className="fas fa-eraser"></i>
-        </button>
-
         <button 
           type="button" 
-          onClick={() => setShowHtml(!showHtml)} 
-          style={{ padding: '0.4rem 0.75rem', background: showHtml ? '#2563eb' : '#f8fafc', color: showHtml ? 'white' : '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, marginRight: 'auto' }}
-          title="عرض مصدر HTML"
+          onClick={() => insertTag('<hr style="border:none; border-top:2px solid #e2e8f0; margin:2rem 0;" />\n')} 
+          style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} 
+          title="خط فاصل"
         >
-          <i className="fas fa-code"></i> {showHtml ? 'معاينة الوورد' : 'كود HTML'}
+          <i className="fas fa-minus"></i>
+        </button>
+
+        {/* Toggle Live Preview */}
+        <button 
+          type="button" 
+          onClick={() => setIsPreview(!isPreview)} 
+          style={{ padding: '0.4rem 0.85rem', background: isPreview ? '#0284c7' : '#f8fafc', color: isPreview ? 'white' : '#334155', border: '1px solid #0284c7', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800, marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          title="معاينة شكل الصفحة الحي"
+        >
+          <i className={isPreview ? "fas fa-edit" : "fas fa-eye"}></i> 
+          {isPreview ? 'محرر الكتابة' : '👁️ معاينة النتيجة الحية'}
         </button>
       </div>
 
-      {/* Editor Content Area */}
-      {showHtml ? (
-        <textarea
-          className="form-input"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: '100%', minHeight: '280px', padding: '1.25rem', fontFamily: 'monospace', fontSize: '0.95rem', border: 'none', resize: 'vertical' }}
+      {/* Editor or Live Preview Area */}
+      {isPreview ? (
+        <div 
+          className="rich-page-content"
+          style={{ minHeight: '280px', padding: '1.5rem 2rem', background: '#ffffff', direction: 'rtl', textAlign: 'right', lineHeight: '1.9', fontSize: '1.15rem' }}
+          dangerouslySetInnerHTML={{ __html: value || '<p style="color:#94a3b8; text-align:center;">المعاينة فارغة... اكتب نصاً بالداخل لمشاهدة المعاينة الحية!</p>' }}
         />
       ) : (
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning={true}
-          onInput={handleInput}
-          onBlur={handleInput}
-          style={{
-            minHeight: '280px',
-            padding: '1.5rem 2rem',
-            outline: 'none',
-            fontSize: '1.15rem',
-            lineHeight: '1.9',
-            direction: 'rtl',
-            textAlign: 'right',
-            color: '#1e293b',
-            background: 'white'
-          }}
+        <textarea
+          ref={textareaRef}
+          className="form-input"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ width: '100%', minHeight: '280px', padding: '1.5rem', fontSize: '1.15rem', lineHeight: '1.9', border: 'none', resize: 'vertical', fontFamily: 'inherit', background: 'white', direction: 'rtl', textAlign: 'right' }}
+          placeholder="اكتب تفاصيل ومحتوى الصفحة هنا، واستخدم شريط الأدوات بالأعلى لتغليظ الخط، إضافة الصور، والتنسيق بكل سهولة..."
         />
       )}
     </div>
@@ -3663,7 +3641,7 @@ const AdminDashboard = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {pages.map((p) => (
+                            {(Array.isArray(pages) ? pages : []).map((p) => (
                               <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                                 <td style={{ padding: '0.75rem', fontWeight: 700 }}>{p.title}</td>
                                 <td style={{ padding: '0.75rem' }}><code>{p.id}</code></td>
