@@ -281,6 +281,37 @@ const RichTextEditor = ({ value, onChange }) => {
   );
 };
 
+// Error Boundary wrapper for fail-safe rendering
+class SafeRichTextEditor extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(err) {
+    console.warn("RichTextEditor Error Boundary caught error:", err);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <textarea
+          className="form-input"
+          value={this.props.value || ''}
+          onChange={(e) => this.props.onChange(e.target.value)}
+          style={{ width: '100%', minHeight: '260px', padding: '1.25rem', fontSize: '1.1rem', lineHeight: '1.8' }}
+          placeholder="اكتب مضمون ومحتوى الصفحة التفصيلي هنا..."
+        />
+      );
+    }
+    return <RichTextEditor {...this.props} />;
+  }
+}
+
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -3599,8 +3630,8 @@ const AdminDashboard = () => {
                           <i className="fas fa-edit"></i>
                           مضمون ومحتوى الصفحة التفصيلي (مصمم التنسيق والصور مثل Word و Google Sites) *
                         </label>
-                        <RichTextEditor 
-                          value={newPage.content} 
+                        <SafeRichTextEditor 
+                          value={newPage.content || ''} 
                           onChange={(html) => setNewPage({ ...newPage, content: html })} 
                         />
                       </div>
@@ -3619,8 +3650,8 @@ const AdminDashboard = () => {
                     </form>
 
                     {/* Pages List */}
-                    <h4 style={{ fontWeight: 800, marginTop: '2.5rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>الصفحات المنشورة حالياً ({pages.length})</h4>
-                    {pages.length > 0 ? (
+                    <h4 style={{ fontWeight: 800, marginTop: '2.5rem', marginBottom: '1rem', color: 'var(--text-dark)' }}>الصفحات المنشورة حالياً ({(pages || []).length})</h4>
+                    {(pages || []).length > 0 ? (
                       <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
                           <thead>
