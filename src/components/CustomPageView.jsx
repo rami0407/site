@@ -112,14 +112,21 @@ const CustomPageView = ({ pageId }) => {
         </div>
         
         <div className="custom-page-body" style={{ padding: '3rem', fontSize: '1.15rem', lineHeight: '1.9', color: 'var(--text-dark)' }}>
-          {pageData.content.split('\n\n').map((paragraph, index) => {
-            if (!paragraph.trim()) return null;
-            return (
-              <p key={index} style={{ marginBottom: '1.5rem', whiteSpace: 'pre-line' }}>
-                {paragraph}
-              </p>
-            );
-          })}
+          {pageData.content && (pageData.content.includes('<') && pageData.content.includes('>')) ? (
+            <div 
+              className="rich-page-content" 
+              dangerouslySetInnerHTML={{ __html: pageData.content }} 
+            />
+          ) : (
+            (pageData.content || '').split('\n\n').map((paragraph, index) => {
+              if (!paragraph.trim()) return null;
+              return (
+                <p key={index} style={{ marginBottom: '1.5rem', whiteSpace: 'pre-line' }}>
+                  {paragraph}
+                </p>
+              );
+            })
+          )}
         </div>
       </article>
     </div>

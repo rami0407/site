@@ -65,6 +65,221 @@ const INITIATIVE_THEMES = [
   { value: 'cafe', label: 'مهارات القرن 21 (أخضر/ذهبي)' }
 ];
 
+// Word-Style Rich Text Editor Component (Google Sites Style Editor)
+const RichTextEditor = ({ value, onChange }) => {
+  const editorRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [showHtml, setShowHtml] = useState(false);
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const exec = (command, arg = null) => {
+    document.execCommand(command, false, arg);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleInsertImagePrompt = () => {
+    const url = prompt('أدخل رابط الصورة (URL) أو ارفع صورة من جهازك بالأسفل:\nمثال: https://images.unsplash.com/photo-1546410531-bb4caa6b424d');
+    if (url) {
+      const imgHtml = `<img src="${url}" style="max-width:100%; border-radius:10px; margin:1rem 0; display:block;" />`;
+      exec('insertHTML', imgHtml);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const base64Url = evt.target.result;
+        const imgHtml = `<img src="${base64Url}" style="max-width:100%; border-radius:10px; margin:1rem 0; display:block;" />`;
+        exec('insertHTML', imgHtml);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleInsertLink = () => {
+    const url = prompt('أدخل رابط الموقع المطلوب (URL):', 'https://');
+    if (url) {
+      exec('createLink', url);
+    }
+  };
+
+  return (
+    <div style={{ border: '2px solid #cbd5e1', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
+      
+      {/* WORD-STYLE TOOLBAR BAR */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', padding: '0.75rem 1rem', background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', alignItems: 'center' }}>
+        
+        {/* Formatting */}
+        <button type="button" onClick={() => exec('bold')} style={{ padding: '0.4rem 0.75rem', fontWeight: 900, background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="خط غامق (Bold)">
+          <i className="fas fa-bold"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('italic')} style={{ padding: '0.4rem 0.75rem', fontStyle: 'italic', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="خط مائل (Italic)">
+          <i className="fas fa-italic"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('underline')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="تحته خط (Underline)">
+          <i className="fas fa-underline"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('strikeThrough')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="يتوسطه خط (Strikethrough)">
+          <i className="fas fa-strikethrough"></i>
+        </button>
+
+        <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
+
+        {/* Alignment */}
+        <button type="button" onClick={() => exec('justifyRight')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="محاذاة لليمين">
+          <i className="fas fa-align-right"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('justifyCenter')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="توسيط النص في المنتصف">
+          <i className="fas fa-align-center"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('justifyLeft')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="محاذاة لليسار">
+          <i className="fas fa-align-left"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('justifyFull')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="ضبط المحاذاة">
+          <i className="fas fa-align-justify"></i>
+        </button>
+
+        <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
+
+        {/* Font Family & Size */}
+        <select onChange={(e) => exec('fontName', e.target.value)} style={{ padding: '0.4rem 0.6rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.88rem', fontWeight: 700 }} title="نوع الخط">
+          <option value="Tajawal">خط تجوال (Tajawal)</option>
+          <option value="Cairo">خط القاهرة (Cairo)</option>
+          <option value="Amiri">خط أميري (Amiri)</option>
+          <option value="Arial">خط عادي (Arial)</option>
+        </select>
+
+        <select onChange={(e) => exec('fontSize', e.target.value)} style={{ padding: '0.4rem 0.6rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.88rem', fontWeight: 700 }} title="حجم الخط">
+          <option value="3">عادي (16px)</option>
+          <option value="4">متوسط (18px)</option>
+          <option value="5">عنوان فرعي (24px)</option>
+          <option value="6">عنوان كبير جداً (32px)</option>
+        </select>
+
+        {/* Text Color */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'white', padding: '0.2rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>لون الخط:</span>
+          <input 
+            type="color" 
+            defaultValue="#1e293b"
+            onChange={(e) => exec('foreColor', e.target.value)} 
+            style={{ width: '28px', height: '26px', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} 
+            title="اختر لون النص"
+          />
+        </div>
+
+        <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
+
+        {/* Lists & Line */}
+        <button type="button" onClick={() => exec('insertUnorderedList')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="قائمة نقطية">
+          <i className="fas fa-list-ul"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('insertOrderedList')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="قائمة رقمية">
+          <i className="fas fa-list-ol"></i>
+        </button>
+
+        <button type="button" onClick={() => exec('insertHorizontalRule')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="إدراج خط فاصل">
+          <i className="fas fa-minus"></i>
+        </button>
+
+        <div style={{ width: '1px', height: '26px', background: '#cbd5e1', margin: '0 0.3rem' }}></div>
+
+        {/* Image & Link Upload Buttons */}
+        <button 
+          type="button" 
+          onClick={() => fileInputRef.current && fileInputRef.current.click()} 
+          style={{ padding: '0.4rem 0.85rem', background: '#059669', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(5,150,105,0.2)' }}
+          title="رفع صورة من الجهاز"
+        >
+          <i className="fas fa-upload"></i> 🖼️ رفع صورة
+        </button>
+
+        <button 
+          type="button" 
+          onClick={handleInsertImagePrompt} 
+          style={{ padding: '0.4rem 0.85rem', background: '#ecfdf5', color: '#047857', border: '1px solid #6ee7b7', borderRadius: '4px', cursor: 'pointer', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          title="إدراج رابط صورة web"
+        >
+          <i className="fas fa-image"></i> رابط صورة
+        </button>
+
+        <button 
+          type="button" 
+          onClick={handleInsertLink} 
+          style={{ padding: '0.4rem 0.85rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '4px', cursor: 'pointer', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          title="إدراج رابط موقع"
+        >
+          <i className="fas fa-link"></i> 🔗 رابط
+        </button>
+
+        <button type="button" onClick={() => exec('removeFormat')} style={{ padding: '0.4rem 0.75rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} title="مسح التنسيق">
+          <i className="fas fa-eraser"></i>
+        </button>
+
+        <button 
+          type="button" 
+          onClick={() => setShowHtml(!showHtml)} 
+          style={{ padding: '0.4rem 0.75rem', background: showHtml ? '#2563eb' : '#f8fafc', color: showHtml ? 'white' : '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, marginRight: 'auto' }}
+          title="عرض مصدر HTML"
+        >
+          <i className="fas fa-code"></i> {showHtml ? 'معاينة الوورد' : 'كود HTML'}
+        </button>
+      </div>
+
+      {/* Editor Content Area */}
+      {showHtml ? (
+        <textarea
+          className="form-input"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ width: '100%', minHeight: '280px', padding: '1.25rem', fontFamily: 'monospace', fontSize: '0.95rem', border: 'none', resize: 'vertical' }}
+        />
+      ) : (
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleInput}
+          style={{
+            minHeight: '280px',
+            padding: '1.5rem 2rem',
+            outline: 'none',
+            fontSize: '1.15rem',
+            lineHeight: '1.9',
+            direction: 'rtl',
+            textAlign: 'right',
+            color: '#1e293b',
+            background: 'white'
+          }}
+          placeholder="اكتب وتنسيق محتوى الصفحة هنا بسهولة مثل برنامج الوورد..."
+        />
+      )}
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -3379,15 +3594,14 @@ const AdminDashboard = () => {
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label">مضمون ومحتوى الصفحة التفصيلي *</label>
-                        <textarea 
-                          className="form-input" 
-                          required
-                          style={{ minHeight: '220px', lineHeight: '1.8' }}
-                          placeholder="اكتب تفاصيل الصفحة، المواد، الشرح والتعليمات هنا... (افصل الفقرات بسطر فارغ لتنسيق رائع)"
-                          value={newPage.content}
-                          onChange={(e) => setNewPage({ ...newPage, content: e.target.value })}
-                        ></textarea>
+                        <label className="form-label" style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          <i className="fas fa-edit"></i>
+                          مضمون ومحتوى الصفحة التفصيلي (مصمم التنسيق والصور مثل Word و Google Sites) *
+                        </label>
+                        <RichTextEditor 
+                          value={newPage.content} 
+                          onChange={(html) => setNewPage({ ...newPage, content: html })} 
+                        />
                       </div>
 
                       <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>

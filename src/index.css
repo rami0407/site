@@ -5555,6 +5555,39 @@ textarea.form-input {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Rich Text Page Content Styling */
+.rich-page-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: block;
+}
+
+.rich-page-content p {
+  margin-bottom: 1.25rem;
+  line-height: 1.9;
+}
+
+.rich-page-content ul, .rich-page-content ol {
+  padding-right: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.rich-page-content li {
+  margin-bottom: 0.5rem;
+}
+
+.rich-page-content blockquote {
+  border-right: 4px solid var(--primary);
+  background: #f0f9ff;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+
 
 
 
