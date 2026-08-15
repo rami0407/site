@@ -5,73 +5,10 @@ import { getWorksheetsIDB, saveWorksheetIDB, deleteWorksheetIDB } from '../utils
 import { downloadChunkedFile, downloadBase64OrBlob, uploadChunkedFile } from '../utils/chunkedStorage';
 
 export const DEFAULT_SCHOOL_TEACHERS = [
-  "أ. رامي محاميد", "أ. سارة عابد", "أ. محمد اغبارية", "أ. فاطمة جبارين",
-  "أ. خالد محاجنة", "أ. ياسمين كبها", "أ. عمر رفاعية", "أ. ريم محاميد",
-  "أ. محمود زيود", "أ. آمنة حمارشة", "أ. أحمد محاميد", "أ. هدى جبارين",
-  "أ. مصطفى اغبارية", "أ. ليلى عابد", "أ. علي كبها", "أ. مريم محاجنة"
+  "أ. رامي محاميد", "أ. سارة عابد", "أ. محمد اغبارية", "أ. فاطمة جبارين"
 ];
 
-const DEFAULT_WORKSHEETS = [
-  {
-    id: 'ws-1',
-    title: 'ورقة عمل مراجعة الشدة والتنوين',
-    subject: 'اللغة العربية',
-    grade: 'الصف الثاني',
-    teacher: 'أ. سارة عابد',
-    docCategory: 'worksheet',
-    date: '2026-07-20',
-    type: 'PDF',
-    likesCount: 18,
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    notes: 'يرجى حل التمرين وقراءته بتمعن قبل درس مراجعة القراءة.'
-  },
-  {
-    id: 'exam-1',
-    title: 'امتحان منتصف الفصل في الرياضيات والعمليات الحسابية',
-    subject: 'الرياضيات',
-    grade: 'الصف الثالث',
-    teacher: 'أ. رامي محاميد',
-    docCategory: 'exam',
-    date: '2026-07-22',
-    type: 'PDF',
-    likesCount: 25,
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    notes: 'امتحان رسمي تشخيصي لقياس مدى استيعاب جدول الضرب.'
-  },
-  {
-    id: 'ws-3',
-    title: 'بطاقة عمل في العلوم - حالات المادة والنظام الشمسي',
-    subject: 'العلوم والتكنولوجيا',
-    grade: 'الصف الرابع',
-    teacher: 'أ. فاطمة جبارين',
-    docCategory: 'worksheet',
-    date: '2026-07-25',
-    type: 'PDF',
-    likesCount: 14,
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    notes: 'ورقة إثراء وتجارب منزلية بسيطة حول حالات المادة الثلاث.'
-  },
-  {
-    id: 'exam-2',
-    title: 'English Grammar & Present Simple Final Exam',
-    subject: 'اللغة الإنجليزية',
-    grade: 'الصف الخامس',
-    teacher: 'أ. محمد اغبارية',
-    docCategory: 'exam',
-    date: '2026-07-26',
-    type: 'Word',
-    likesCount: 30,
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    notes: 'Official evaluation test for English grammar units 1-3.'
-  }
-];
-
-const INITIAL_TEACHER_SCORES = {
-  "أ. رامي محاميد": { stars: 12, trophies: 8, likes: 64, uploads: 20 },
-  "أ. سارة عابد": { stars: 15, trophies: 6, likes: 58, uploads: 21 },
-  "أ. محمد اغبارية": { stars: 10, trophies: 9, likes: 52, uploads: 19 },
-  "أ. فاطمة جبارين": { stars: 11, trophies: 5, likes: 45, uploads: 16 }
-};
+const DEFAULT_WORKSHEETS = [];
 
 const SUBJECTS = [
   { id: 'all', name: 'جميع المواد', icon: 'fa-layer-group' },
@@ -98,8 +35,8 @@ const GRADES = [
 ];
 
 const Worksheets = ({ isStandalone }) => {
-  const [worksheets, setWorksheets] = useState(DEFAULT_WORKSHEETS);
-  const [teacherScores, setTeacherScores] = useState(INITIAL_TEACHER_SCORES);
+  const [worksheets, setWorksheets] = useState([]);
+  const [rawTeacherScores, setRawTeacherScores] = useState({});
   const [approvedTeachers, setApprovedTeachers] = useState(DEFAULT_SCHOOL_TEACHERS);
   const [teachersData, setTeachersData] = useState([]);
   
@@ -171,10 +108,10 @@ const Worksheets = ({ isStandalone }) => {
           setWorksheets(fsList);
           localStorage.setItem('db_worksheets', JSON.stringify(fsList));
         } else {
-          setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
+          setWorksheets(localItems);
         }
       } catch (e) {
-        setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
+        setWorksheets(localItems);
       }
 
       // 2. Fetch Approved Teachers
@@ -207,7 +144,7 @@ const Worksheets = ({ isStandalone }) => {
           scoreSnap.forEach(d => {
             scores[d.id] = d.data();
           });
-          setTeacherScores(prev => ({ ...prev, ...scores }));
+          setRawTeacherScores(scores);
         }
       } catch (e) {
         console.warn("Teacher scores fetch fallback:", e.message);
@@ -216,6 +153,41 @@ const Worksheets = ({ isStandalone }) => {
 
     loadData();
   }, []);
+
+  // Compute 100% Real Dynamic Teacher Scores from actual uploaded worksheets
+  const computeRealTeacherScores = () => {
+    const scores = {};
+
+    worksheets.forEach(ws => {
+      const tName = ws.teacher;
+      if (!tName) return;
+      if (!scores[tName]) {
+        scores[tName] = { stars: 0, trophies: 0, likes: 0, uploads: 0 };
+      }
+      const isExam = ws.docCategory === 'exam';
+      scores[tName].uploads += 1;
+      scores[tName].likes += (ws.likesCount || 0);
+      if (isExam) {
+        scores[tName].trophies += 1;
+      } else {
+        scores[tName].stars += 1;
+      }
+    });
+
+    Object.entries(rawTeacherScores).forEach(([tName, fScore]) => {
+      if (scores[tName]) {
+        scores[tName].stars = Math.max(scores[tName].stars, fScore.stars || 0);
+        scores[tName].trophies = Math.max(scores[tName].trophies, fScore.trophies || 0);
+        scores[tName].likes = Math.max(scores[tName].likes, fScore.likes || 0);
+      } else if ((fScore.uploads || 0) > 0 || (fScore.stars || 0) > 0 || (fScore.trophies || 0) > 0 || (fScore.likes || 0) > 0) {
+        scores[tName] = { ...fScore };
+      }
+    });
+
+    return scores;
+  };
+
+  const dynamicTeacherScores = computeRealTeacherScores();
 
   // Teacher Registration Request Handler
   const handleRegisterTeacherSubmit = async (e) => {
@@ -293,30 +265,12 @@ const Worksheets = ({ isStandalone }) => {
   const handleTeacherDeleteOwnDoc = async (wsId) => {
     if (!window.confirm('هل أنت تأكد من حذف هذا المستند الخاص بك من بنك الأوراق؟')) return;
 
-    const targetDoc = worksheets.find(w => w.id === wsId);
     const updated = worksheets.filter(w => w.id !== wsId);
     setWorksheets(updated);
     localStorage.setItem('db_worksheets', JSON.stringify(updated));
 
     try { await deleteDoc(doc(db, 'worksheets', wsId)); } catch(e){}
     try { await deleteWorksheetIDB(wsId); } catch(e){}
-
-    // Update teacher scores
-    if (targetDoc && targetDoc.teacher) {
-      const isExam = targetDoc.docCategory === 'exam';
-      setTeacherScores(prev => {
-        const cur = prev[targetDoc.teacher] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
-        return {
-          ...prev,
-          [targetDoc.teacher]: {
-            ...cur,
-            stars: Math.max(0, cur.stars - (isExam ? 0 : 1)),
-            trophies: Math.max(0, cur.trophies - (isExam ? 1 : 0)),
-            uploads: Math.max(0, cur.uploads - 1)
-          }
-        };
-      });
-    }
 
     alert('تم حذف المستند بنجاح وتحديث إحصائياتك.');
   };
@@ -353,7 +307,7 @@ const Worksheets = ({ isStandalone }) => {
     setWorksheets(prev => prev.map(item => item.id === ws.id ? { ...item, likesCount: (item.likesCount || 0) + 1 } : item));
 
     const tName = ws.teacher || 'طاقم المادة';
-    setTeacherScores(prev => {
+    setRawTeacherScores(prev => {
       const current = prev[tName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
       return {
         ...prev,
@@ -482,7 +436,7 @@ const Worksheets = ({ isStandalone }) => {
     const rewardTypeStr = isExam ? '🏆 كأس جديد' : '⭐ نجمة جديدة';
 
     if (!editingDocId) {
-      setTeacherScores(prev => {
+      setRawTeacherScores(prev => {
         const current = prev[currentTeacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
         return {
           ...prev,
@@ -548,7 +502,7 @@ const Worksheets = ({ isStandalone }) => {
 
   // Filter logic for Teacher's personal dashboard
   const myTeacherDocs = activeTeacherSession ? worksheets.filter(w => w.teacher === activeTeacherSession.teacherName) : [];
-  const myTeacherScore = activeTeacherSession ? (teacherScores[activeTeacherSession.teacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 }) : null;
+  const myTeacherScore = activeTeacherSession ? (dynamicTeacherScores[activeTeacherSession.teacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 }) : null;
 
   return (
     <section className={`worksheets-section ${isStandalone ? 'standalone-page' : ''}`} id="worksheets" style={isStandalone ? { paddingTop: '120px', minHeight: '85vh' } : {}}>
@@ -716,7 +670,6 @@ const Worksheets = ({ isStandalone }) => {
         {activeTeacherSession && teacherViewTab === 'my_dashboard' && (
           <div style={{ background: '#ffffff', border: '2px solid #3b82f6', borderRadius: '24px', padding: '2rem', marginBottom: '2.5rem', boxShadow: '0 15px 40px rgba(59, 130, 246, 0.15)' }}>
             
-            {/* Header statistics bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.75rem', borderBottom: '2px solid #eff6ff', paddingBottom: '1.25rem' }}>
               <div>
                 <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
@@ -727,24 +680,22 @@ const Worksheets = ({ isStandalone }) => {
                 </h3>
               </div>
 
-              {/* Stats Counters */}
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <div style={{ background: '#fef3c7', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid #fde68a', textAlign: 'center' }}>
                   <span style={{ fontSize: '0.8rem', color: '#b45309', fontWeight: 800, display: 'block' }}>🏆 الكؤوس (امتحانات):</span>
-                  <strong style={{ fontSize: '1.3rem', color: '#92400e' }}>{myTeacherScore.trophies || 0}</strong>
+                  <strong style={{ fontSize: '1.3rem', color: '#92400e' }}>{myTeacherScore ? myTeacherScore.trophies : 0}</strong>
                 </div>
                 <div style={{ background: '#eff6ff', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid #bfdbfe', textAlign: 'center' }}>
                   <span style={{ fontSize: '0.8rem', color: '#1d4ed8', fontWeight: 800, display: 'block' }}>⭐ النجوم (أوراق عمل):</span>
-                  <strong style={{ fontSize: '1.3rem', color: '#1e40af' }}>{myTeacherScore.stars || 0}</strong>
+                  <strong style={{ fontSize: '1.3rem', color: '#1e40af' }}>{myTeacherScore ? myTeacherScore.stars : 0}</strong>
                 </div>
                 <div style={{ background: '#fef2f2', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid #fecaca', textAlign: 'center' }}>
                   <span style={{ fontSize: '0.8rem', color: '#b91c1c', fontWeight: 800, display: 'block' }}>👍 الإعجابات:</span>
-                  <strong style={{ fontSize: '1.3rem', color: '#991b1b' }}>{myTeacherScore.likes || 0}</strong>
+                  <strong style={{ fontSize: '1.3rem', color: '#991b1b' }}>{myTeacherScore ? myTeacherScore.likes : 0}</strong>
                 </div>
               </div>
             </div>
 
-            {/* List of Teacher's Own Uploaded Documents */}
             <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <i className="fas fa-folder-open" style={{ color: '#2563eb' }}></i>
               قائمة أوراق العمل والامتحانات التي رفعتها ({myTeacherDocs.length})
@@ -813,8 +764,8 @@ const Worksheets = ({ isStandalone }) => {
           </div>
         )}
 
-        {/* TEACHER HONOR ROLL & LEADERBOARD COMPONENT */}
-        <TeacherLeaderboard teacherScores={teacherScores} />
+        {/* DYNAMIC REAL TEACHER HONOR ROLL & LEADERBOARD COMPONENT */}
+        <TeacherLeaderboard teacherScores={dynamicTeacherScores} />
 
         {/* Filter Controls Bar */}
         <div className="worksheets-filter-card" style={{ marginTop: '2.5rem' }}>
@@ -1341,7 +1292,7 @@ const Worksheets = ({ isStandalone }) => {
 };
 
 // =========================================================================
-// TEACHER HONOR ROLL & LEADERBOARD COMPONENT
+// DYNAMIC REAL TEACHER HONOR ROLL & LEADERBOARD COMPONENT
 // =========================================================================
 const TeacherLeaderboard = ({ teacherScores }) => {
   const [showAllTeachers, setShowAllTeachers] = useState(false);
@@ -1358,6 +1309,28 @@ const TeacherLeaderboard = ({ teacherScores }) => {
   const topThree = rankedTeachers.slice(0, 3);
   const remainingTeachers = rankedTeachers.slice(3);
 
+  if (rankedTeachers.length === 0) {
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+        borderRadius: '24px',
+        padding: '1.75rem 2rem',
+        textAlign: 'center',
+        border: '2px solid #fde68a',
+        marginBottom: '2rem',
+        boxShadow: '0 8px 25px rgba(245, 158, 11, 0.12)'
+      }}>
+        <div style={{ fontSize: '2.2rem', marginBottom: '0.3rem' }}>🏆⭐</div>
+        <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.35rem', fontWeight: 900, color: '#b45309' }}>
+          لوحة شرف المعلمين المتميزين 🌟
+        </h3>
+        <p style={{ margin: 0, color: '#92400e', fontWeight: 700, fontSize: '0.95rem' }}>
+          لوحة الشرف جاهزة ومجهزة حياً على السيرفر! ارفع أول امتحان أو ورقة عمل لتتصدر المركز الأول في لوحة الشرف! 🚀
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       background: 'linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%)',
@@ -1369,7 +1342,7 @@ const TeacherLeaderboard = ({ teacherScores }) => {
     }}>
       <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
         <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
-          🏆 لوحة الشرف والتكريم
+          🏆 لوحة الشرف والتكريم الحقيقية
         </span>
         <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#1e293b', margin: '0.4rem 0' }}>
           لوحة شرف المعلمين المتميزين 🌟
