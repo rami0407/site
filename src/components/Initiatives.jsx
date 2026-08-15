@@ -3,10 +3,22 @@ import { db } from '../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { initiativesData as fallbackInitiatives } from '../data/schoolData';
 
+const parseGradeAndSection = (fullClassString) => {
+  if (!fullClassString) return { grade: 'الصف الخامس', section: 'أ' };
+  const match = fullClassString.match(/(الصف\s+[^(]+)\s*\(([^)]+)\)/);
+  if (match) {
+    return { grade: match[1].trim(), section: match[2].trim() };
+  }
+  return { grade: 'الصف الخامس', section: 'أ' };
+};
+
 const Initiatives = () => {
   const [initiatives, setInitiatives] = useState([]);
   const [studentName, setStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
-  const [studentClass, setStudentClass] = useState(localStorage.getItem('school_unified_student_class') || 'الصف الخامس (أ)');
+  const initialParsed = parseGradeAndSection(localStorage.getItem('school_unified_student_class'));
+  const [selectedGrade, setSelectedGrade] = useState(initialParsed.grade);
+  const [selectedSection, setSelectedSection] = useState(initialParsed.section);
+  const [studentClass, setStudentClass] = useState(localStorage.getItem('school_unified_student_class') || `${initialParsed.grade} (${initialParsed.section})`);
   const [studentPassword, setStudentPassword] = useState(localStorage.getItem('school_unified_student_password') || '');
   const [isEditingProfile, setIsEditingProfile] = useState(!studentName);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -41,8 +53,10 @@ const Initiatives = () => {
       alert('يرجى كتابة اسم الطالب رباعياً لتوحيد الدخول في كل المشاريع.');
       return;
     }
+    const combinedClass = `${selectedGrade} (${selectedSection})`;
+    setStudentClass(combinedClass);
     localStorage.setItem('school_unified_student_name', studentName.trim());
-    localStorage.setItem('school_unified_student_class', studentClass);
+    localStorage.setItem('school_unified_student_class', combinedClass);
     if (studentPassword) {
       localStorage.setItem('school_unified_student_password', studentPassword.trim());
     }
@@ -134,24 +148,39 @@ const Initiatives = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>الصف والشعبة:</label>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>الصف الدراسي:</label>
                   <select 
-                    value={studentClass}
-                    onChange={(e) => setStudentClass(e.target.value)}
+                    value={selectedGrade}
+                    onChange={(e) => {
+                      const newGrade = e.target.value;
+                      setSelectedGrade(newGrade);
+                      if (newGrade !== 'الصف الخامس' && selectedSection === 'د') {
+                        setSelectedSection('أ');
+                      }
+                    }}
                     style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: 'none', fontWeight: 700, background: 'white' }}
                   >
-                    <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-                    <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-                    <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-                    <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-                    <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-                    <option value="الصف الثالث (ب)">الصف الثالث (ب)</option>
-                    <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-                    <option value="الصف الرابع (ب)">الصف الرابع (ب)</option>
-                    <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-                    <option value="الصف الخامس (ب)">الصف الخامس (ب)</option>
-                    <option value="الصف السادس (أ)">الصف السادس (أ)</option>
-                    <option value="الصف السادس (ب)">الصف السادس (ب)</option>
+                    <option value="الصف الأول">الصف الأول</option>
+                    <option value="الصف الثاني">الصف الثاني</option>
+                    <option value="الصف الثالث">الصف الثالث</option>
+                    <option value="الصف الرابع">الصف الرابع</option>
+                    <option value="الصف الخامس">الصف الخامس</option>
+                    <option value="الصف السادس">الصف السادس</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>الشعبة:</label>
+                  <select 
+                    value={selectedSection}
+                    onChange={(e) => setSelectedSection(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: 'none', fontWeight: 700, background: 'white' }}
+                  >
+                    <option value="أ">الشعبة (أ)</option>
+                    <option value="ب">الشعبة (ب)</option>
+                    <option value="ج">الشعبة (ج)</option>
+                    {selectedGrade === 'الصف الخامس' && (
+                      <option value="د">الشعبة (د)</option>
+                    )}
                   </select>
                 </div>
                 <div>

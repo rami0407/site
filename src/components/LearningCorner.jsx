@@ -29,6 +29,21 @@ const DEFAULT_MULTIPLICATION_STAGES = [
 
 const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
+const parseGradeAndSectionLC = (fullClassString) => {
+  if (!fullClassString) return { grade: 'الصف الخامس', section: 'أ' };
+  const match = fullClassString.match(/(الصف\s+[^(]+)\s*\(([^)]+)\)/);
+  if (match) {
+    return { grade: match[1].trim(), section: match[2].trim() };
+  }
+  if (fullClassString.includes('الأول')) return { grade: 'الصف الأول', section: 'أ' };
+  if (fullClassString.includes('الثاني')) return { grade: 'الصف الثاني', section: 'أ' };
+  if (fullClassString.includes('الثالث')) return { grade: 'الصف الثالث', section: 'أ' };
+  if (fullClassString.includes('الرابع')) return { grade: 'الصف الرابع', section: 'أ' };
+  if (fullClassString.includes('الخامس')) return { grade: 'الصف الخامس', section: 'أ' };
+  if (fullClassString.includes('السادس')) return { grade: 'الصف السادس', section: 'أ' };
+  return { grade: 'الصف الخامس', section: 'أ' };
+};
+
 const LearningCorner = () => {
   // Navigation tabs: 'hub' | 'multiplication' | 'english_vocab'
   const [activeTab, setActiveTab] = useState('hub');
@@ -36,12 +51,14 @@ const LearningCorner = () => {
   // =========================================================================
   // UNIFIED STUDENT PROFILE STATE (Common across ALL Learning Corner Games!)
   // =========================================================================
+  const initialParsedLC = parseGradeAndSectionLC(localStorage.getItem('school_unified_student_class'));
+  const [selectedGrade, setSelectedGrade] = useState(initialParsedLC.grade);
+  const [selectedSection, setSelectedSection] = useState(initialParsedLC.section);
   const [profileName, setProfileName] = useState(() => localStorage.getItem('school_unified_student_name') || '');
-  const [profileClass, setProfileClass] = useState(() => localStorage.getItem('school_unified_student_class') || '');
+  const [profileClass, setProfileClass] = useState(() => localStorage.getItem('school_unified_student_class') || `${initialParsedLC.grade} (${initialParsedLC.section})`);
   const [isEditingProfile, setIsEditingProfile] = useState(!localStorage.getItem('school_unified_student_name'));
 
   const [inputProfileName, setInputProfileName] = useState(profileName);
-  const [inputProfileClass, setInputProfileClass] = useState(profileClass);
 
   const handleSaveProfile = (e) => {
     if (e) e.preventDefault();
@@ -50,14 +67,11 @@ const LearningCorner = () => {
       alert('من فضلك أدخل اسم الطالب! 😊');
       return;
     }
-    if (!inputProfileClass) {
-      alert('من فضلك اختر الصف الدراسي! 🏫');
-      return;
-    }
+    const combinedClass = `${selectedGrade} (${selectedSection})`;
     setProfileName(trimmed);
-    setProfileClass(inputProfileClass);
+    setProfileClass(combinedClass);
     localStorage.setItem('school_unified_student_name', trimmed);
-    localStorage.setItem('school_unified_student_class', inputProfileClass);
+    localStorage.setItem('school_unified_student_class', combinedClass);
     setIsEditingProfile(false);
   };
 
@@ -647,32 +661,65 @@ const LearningCorner = () => {
                 />
               </div>
 
-              <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '1rem', fontWeight: 800, color: '#334155', marginBottom: '0.4rem' }}>
-                  🏫 الصف الدراسي:
-                </label>
-                <select
-                  value={inputProfileClass}
-                  onChange={(e) => setInputProfileClass(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontSize: '1.05rem',
-                    border: '2px solid #6366f1',
-                    borderRadius: '12px',
-                    textAlign: 'right',
-                    outline: 'none',
-                    background: '#ffffff'
-                  }}
-                >
-                  <option value="">اختر الصف</option>
-                  <option value="الأول">الصف الأول</option>
-                  <option value="الثاني">الصف الثاني</option>
-                  <option value="الثالث">الصف الثالث</option>
-                  <option value="الرابع">الصف الرابع</option>
-                  <option value="الخامس">الصف الخامس</option>
-                  <option value="السادس">الصف السادس</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', textAlign: 'right', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '1rem', fontWeight: 800, color: '#334155', marginBottom: '0.4rem' }}>
+                    🏫 الصف الدراسي:
+                  </label>
+                  <select
+                    value={selectedGrade}
+                    onChange={(e) => {
+                      const newGrade = e.target.value;
+                      setSelectedGrade(newGrade);
+                      if (newGrade !== 'الصف الخامس' && selectedSection === 'د') {
+                        setSelectedSection('أ');
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '1.05rem',
+                      border: '2px solid #6366f1',
+                      borderRadius: '12px',
+                      textAlign: 'right',
+                      outline: 'none',
+                      background: '#ffffff'
+                    }}
+                  >
+                    <option value="الصف الأول">الصف الأول</option>
+                    <option value="الصف الثاني">الصف الثاني</option>
+                    <option value="الصف الثالث">الصف الثالث</option>
+                    <option value="الصف الرابع">الصف الرابع</option>
+                    <option value="الصف الخامس">الصف الخامس</option>
+                    <option value="الصف السادس">الصف السادس</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '1rem', fontWeight: 800, color: '#334155', marginBottom: '0.4rem' }}>
+                    📌 الشعبة:
+                  </label>
+                  <select
+                    value={selectedSection}
+                    onChange={(e) => setSelectedSection(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '1.05rem',
+                      border: '2px solid #6366f1',
+                      borderRadius: '12px',
+                      textAlign: 'right',
+                      outline: 'none',
+                      background: '#ffffff'
+                    }}
+                  >
+                    <option value="أ">الشعبة (أ)</option>
+                    <option value="ب">الشعبة (ب)</option>
+                    <option value="ج">الشعبة (ج)</option>
+                    {selectedGrade === 'الصف الخامس' && (
+                      <option value="د">الشعبة (د)</option>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <button 
