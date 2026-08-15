@@ -226,7 +226,7 @@ const Worksheets = ({ isStandalone }) => {
     setModalTab('login');
   };
 
-  // Teacher Login Handler
+  // Teacher Login Handler -> Closes Modal Immediately & Navigates Direct to Personal Workspace!
   const handleTeacherLoginSubmit = (e) => {
     e.preventDefault();
     const tName = loginForm.teacherName.trim();
@@ -248,9 +248,11 @@ const Worksheets = ({ isStandalone }) => {
     const session = { teacherName: tName, loggedInAt: new Date().toISOString() };
     setActiveTeacherSession(session);
     localStorage.setItem('active_teacher_session', JSON.stringify(session));
-    setModalTab('upload');
+    
+    // 🌟 Close modal and land directly in Teacher's Personal Workspace
+    setIsUploadModalOpen(false);
     setTeacherViewTab('my_dashboard');
-    alert(`🎉 مرحباً بك يا ${tName}! تم توثيق دخولك كمعلم مفوض في بنك الأوراق والامتحانات.`);
+    alert(`🎉 مرحباً بك يا ${tName}! تم توثيق دخولك وافتتاح مساحتك الشخصية بنجاح.`);
   };
 
   const handleTeacherLogout = () => {
@@ -469,7 +471,7 @@ const Worksheets = ({ isStandalone }) => {
     setIsUploading(false);
     setIsUploadModalOpen(false);
     setEditingDocId(null);
-    setUploadSuccessMsg(editingDocId ? '✅ تم تحديث مستندك بنجاح!' : `🎉 تهانينا للمعلم/ة ${currentTeacherName}! تم رفع المستند وحصولك على [${rewardTypeStr}] واحتسابها في لوحة الشرف! 🌟`);
+    setUploadSuccessMsg(editingDocId ? '✅ تم تحديث مستندك بنجاح!' : `🎉 تهانينا للمعلم/ة ${currentTeacherName}! تم رفع المستند وحصولك على [${rewardTypeStr}] واحتسابها في مساحتك الشخصية! 🌟`);
     setTimeout(() => setUploadSuccessMsg(''), 7000);
 
     setNewDoc({
@@ -498,6 +500,16 @@ const Worksheets = ({ isStandalone }) => {
       (item.teacher && item.teacher.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return matchSubject && matchGrade && matchCategory && matchQuery;
+  });
+
+  // Group Worksheets by Subject for clean visitor organization
+  const groupedWorksheets = {};
+  filteredWorksheets.forEach(ws => {
+    const subj = ws.subject || 'موضوع آخر';
+    if (!groupedWorksheets[subj]) {
+      groupedWorksheets[subj] = [];
+    }
+    groupedWorksheets[subj].push(ws);
   });
 
   // Filter logic for Teacher's personal dashboard
@@ -551,11 +563,11 @@ const Worksheets = ({ isStandalone }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '1.4rem' }}>👨‍🏫</span>
               <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#f8fafc' }}>
-                {activeTeacherSession ? `مرحباً بك يا ${activeTeacherSession.teacherName} (معلم معتمد)` : 'بوابة رفع المعلمين وتكريم الإنجازات'}
+                {activeTeacherSession ? `مرحباً بك يا ${activeTeacherSession.teacherName} (في المساحة الشخصية للمعلم)` : 'بوابة المعلمين وإدارة الامتحانات والمواد'}
               </h3>
             </div>
             <p style={{ margin: 0, fontSize: '0.92rem', color: '#94a3b8' }}>
-              {activeTeacherSession ? 'يمكنك إدارة امتحاناتك وأوراق عملك مباشرة أو رفع مستند جديد لاكتساب النجوم والكؤوس!' : 'سجل كمعلم معتمد بموافقة مدير المدرسة لرفع امتحاناتك واكتساب النجوم والكؤوس!'}
+              {activeTeacherSession ? 'أهلاً بك في مساحتك الشخصية! يمكنك هنا إدارة امتحاناتك، تعديل مستنداتك، أو إضافة مواد جديدة.' : 'قم بتسجيل الدخول للوصول إلى مساحتك الشخصية وإدارة امتحاناتك وأوراق عملك بسهولة!'}
             </p>
           </div>
 
@@ -580,7 +592,7 @@ const Worksheets = ({ isStandalone }) => {
                   }}
                 >
                   <i className="fas fa-user-circle"></i>
-                  {teacherViewTab === 'my_dashboard' ? 'عرض جميع المكتبات 🌐' : `داشبورد مستنداتي (${myTeacherDocs.length}) 📋`}
+                  {teacherViewTab === 'my_dashboard' ? 'عرض المكتبة العامة للطلاب 🌐' : `مساحتي الشخصية ومستنداتي (${myTeacherDocs.length}) 📋`}
                 </button>
 
                 <button 
@@ -653,7 +665,7 @@ const Worksheets = ({ isStandalone }) => {
                   gap: '0.6rem'
                 }}
               >
-                <i className="fas fa-key"></i> دخول / تسجيل المعلمين للرفع 🔑
+                <i className="fas fa-key"></i> دخول المعلم إلى مساحته الشخصية 🔑
               </button>
             )}
           </div>
@@ -666,17 +678,17 @@ const Worksheets = ({ isStandalone }) => {
           </div>
         )}
 
-        {/* TEACHER PERSONAL DASHBOARD SECTION (When logged in & tab is my_dashboard) */}
+        {/* TEACHER PERSONAL WORKSPACE / DASHBOARD SECTION (When logged in & tab is my_dashboard) */}
         {activeTeacherSession && teacherViewTab === 'my_dashboard' && (
           <div style={{ background: '#ffffff', border: '2px solid #3b82f6', borderRadius: '24px', padding: '2rem', marginBottom: '2.5rem', boxShadow: '0 15px 40px rgba(59, 130, 246, 0.15)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.75rem', borderBottom: '2px solid #eff6ff', paddingBottom: '1.25rem' }}>
               <div>
                 <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
-                  📋 لوحة تحكم المعلم الشخصية
+                  📋 المساحة الشخصية للمعلم
                 </span>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: '0.4rem 0 0 0' }}>
-                  مستنداتي وإنجازاتي المرفوعة: {activeTeacherSession.teacherName}
+                  مساحة إدارة المستندات: {activeTeacherSession.teacherName}
                 </h3>
               </div>
 
@@ -696,16 +708,31 @@ const Worksheets = ({ isStandalone }) => {
               </div>
             </div>
 
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <i className="fas fa-folder-open" style={{ color: '#2563eb' }}></i>
-              قائمة أوراق العمل والامتحانات التي رفعتها ({myTeacherDocs.length})
-            </h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <i className="fas fa-folder-open" style={{ color: '#2563eb' }}></i>
+                مستنداتي المرفوعة ويمكنني تعديلها أو حذفها ({myTeacherDocs.length})
+              </h4>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDocId(null);
+                  setModalTab('upload');
+                  setIsUploadModalOpen(true);
+                }}
+                className="btn"
+                style={{ background: '#10b981', color: 'white', fontWeight: 800, borderRadius: '12px', padding: '0.6rem 1.2rem' }}
+              >
+                <i className="fas fa-plus-circle"></i> ➕ رفع مستند جديد الآن
+              </button>
+            </div>
 
             {myTeacherDocs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#f8fafc', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📑</div>
-                <h4 style={{ margin: '0 0 0.4rem 0', fontWeight: 800, color: '#475569' }}>لم تقم برفع أي امتحانات أو أوراق عمل حتى الآن</h4>
-                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.25rem' }}>اضغط على زر "رفع مستند جديد" بالكتل بالأعلى لبدء رفع موادك واكتساب النجوم والكؤوس!</p>
+                <h4 style={{ margin: '0 0 0.4rem 0', fontWeight: 800, color: '#475569' }}>أهلاً بك في مساحتك الشخصية! لم تقم برفع أي مستندات حتى الآن</h4>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.25rem' }}>يمكنك إدراج امتحاناتك وأوراق عملك في أي موضوع تدّرسه بضغط زر "رفع مستند جديد"!</p>
                 <button
                   onClick={() => {
                     setEditingDocId(null);
@@ -761,7 +788,7 @@ const Worksheets = ({ isStandalone }) => {
               </div>
             )}
 
-            {/* PRIVATE TEACHER HONOR ROLL (VISIBLE ONLY TO LOGGED-IN TEACHERS) */}
+            {/* PRIVATE TEACHER HONOR ROLL & LEADERBOARD (CONFIDENTIAL FOR TEACHERS ONLY) */}
             <div style={{ marginTop: '2.5rem' }}>
               <TeacherLeaderboard teacherScores={dynamicTeacherScores} />
             </div>
@@ -846,7 +873,7 @@ const Worksheets = ({ isStandalone }) => {
           </div>
         </div>
 
-        {/* Worksheets & Exams Grid Display */}
+        {/* Worksheets & Exams Grid Display (ORGANIZED BY SUBJECT HEADERS FOR VISITORS & STUDENTS) */}
         {filteredWorksheets.length === 0 ? (
           <div className="worksheets-empty-state">
             <div className="empty-icon"><i className="fas fa-folder-minus"></i></div>
@@ -860,98 +887,127 @@ const Worksheets = ({ isStandalone }) => {
             </button>
           </div>
         ) : (
-          <div className="worksheets-cards-grid">
-            {filteredWorksheets.map((ws) => {
-              const isLiked = likedDocIds.includes(ws.id);
-              const isExam = ws.docCategory === 'exam';
-              return (
-                <div key={ws.id} className="worksheet-card" style={isExam ? { borderTop: '4px solid #f59e0b' } : {}}>
-                  
-                  {/* Top Tags Header */}
-                  <div className="ws-card-tags">
-                    <span className="ws-subject-tag">
-                      <i className="fas fa-book"></i> {ws.subject}
-                    </span>
-                    <span className="ws-grade-tag">
-                      <i className="fas fa-user-graduate"></i> {ws.grade}
-                    </span>
-                    <span style={{
-                      background: isExam ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                      color: isExam ? '#d97706' : '#2563eb',
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '8px',
-                      fontSize: '0.78rem',
-                      fontWeight: 800
-                    }}>
-                      {isExam ? '🏆 امتحان رسمى' : '⭐ ورقة عمل'}
-                    </span>
-                  </div>
-
-                  {/* Card Main Title */}
-                  <h3 className="ws-card-title">{ws.title}</h3>
-
-                  {/* Notes/Instructions */}
-                  {ws.notes && (
-                    <p className="ws-card-notes">
-                      <i className="fas fa-info-circle"></i> {ws.notes}
-                    </p>
-                  )}
-
-                  {/* Metadata Row */}
-                  <div className="ws-card-meta">
-                    <span><i className="fas fa-chalkboard-teacher"></i> {ws.teacher || 'طاقم المادة'}</span>
-                    <span><i className="far fa-calendar-alt"></i> {ws.date || 'متاح مؤخراً'}</span>
-                  </div>
-
-                  {/* Likes and Download Footer Action */}
-                  <div className="ws-card-footer" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span className="file-type-badge">
-                        <i className={ws.type === 'Word' ? "far fa-file-word word-icon" : "far fa-file-pdf pdf-icon"}></i>
-                        {ws.type || 'PDF'}
-                      </span>
-
-                      {/* Student & Parent Like Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleLikeDoc(e, ws)}
-                        style={{
-                          background: isLiked ? '#ef4444' : 'rgba(239, 68, 68, 0.1)',
-                          color: isLiked ? 'white' : '#ef4444',
-                          border: '1px solid #ef4444',
-                          borderRadius: '10px',
-                          padding: '0.35rem 0.75rem',
-                          fontSize: '0.85rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          transition: 'all 0.2s ease'
-                        }}
-                        title="إعجاب وتقييم المعلم صاحب المستند"
-                      >
-                        <i className={isLiked ? "fas fa-heart" : "far fa-heart"}></i>
-                        <span>{ws.likesCount || 0}</span>
-                      </button>
-                    </div>
-
-                    <a
-                      href={ws.fileUrl || '#'}
-                      onClick={(e) => handleDownloadWorksheet(e, ws)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-download-ws"
-                      title="تنزيل / فتح المستند"
-                    >
-                      <i className={downloadingId === ws.id ? "fas fa-spinner fa-spin" : "fas fa-download"}></i>
-                      {downloadingId === ws.id ? ' جاري التحميل...' : ' تنزيل المستند'}
-                    </a>
-                  </div>
-
+          <div>
+            {Object.entries(groupedWorksheets).map(([subjectName, docsList]) => (
+              <div key={subjectName} style={{ marginBottom: '2.5rem' }}>
+                
+                {/* Subject Group Section Header */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: '16px',
+                  padding: '0.8rem 1.5rem',
+                  marginBottom: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderRight: '5px solid #2563eb',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <i className="fas fa-book-open" style={{ color: '#2563eb' }}></i>
+                    مكتبة {subjectName}
+                  </h3>
+                  <span style={{ background: '#2563eb', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 800 }}>
+                    {docsList.length} مستندات واختبارات 📚
+                  </span>
                 </div>
-              );
-            })}
+
+                {/* Cards Grid for this subject */}
+                <div className="worksheets-cards-grid">
+                  {docsList.map((ws) => {
+                    const isLiked = likedDocIds.includes(ws.id);
+                    const isExam = ws.docCategory === 'exam';
+                    return (
+                      <div key={ws.id} className="worksheet-card" style={isExam ? { borderTop: '4px solid #f59e0b' } : {}}>
+                        
+                        {/* Top Tags Header */}
+                        <div className="ws-card-tags">
+                          <span className="ws-subject-tag">
+                            <i className="fas fa-book"></i> {ws.subject}
+                          </span>
+                          <span className="ws-grade-tag">
+                            <i className="fas fa-user-graduate"></i> {ws.grade}
+                          </span>
+                          <span style={{
+                            background: isExam ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: isExam ? '#d97706' : '#2563eb',
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '8px',
+                            fontSize: '0.78rem',
+                            fontWeight: 800
+                          }}>
+                            {isExam ? '🏆 امتحان رسمى' : '⭐ ورقة عمل'}
+                          </span>
+                        </div>
+
+                        {/* Card Main Title */}
+                        <h3 className="ws-card-title">{ws.title}</h3>
+
+                        {/* Notes/Instructions */}
+                        {ws.notes && (
+                          <p className="ws-card-notes">
+                            <i className="fas fa-info-circle"></i> {ws.notes}
+                          </p>
+                        )}
+
+                        {/* Metadata Row */}
+                        <div className="ws-card-meta">
+                          <span><i className="fas fa-chalkboard-teacher"></i> {ws.teacher || 'طاقم المادة'}</span>
+                          <span><i className="far fa-calendar-alt"></i> {ws.date || 'متاح مؤخراً'}</span>
+                        </div>
+
+                        {/* Likes and Download Footer Action */}
+                        <div className="ws-card-footer" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span className="file-type-badge">
+                              <i className={ws.type === 'Word' ? "far fa-file-word word-icon" : "far fa-file-pdf pdf-icon"}></i>
+                              {ws.type || 'PDF'}
+                            </span>
+
+                            {/* Student & Parent Like Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleLikeDoc(e, ws)}
+                              style={{
+                                background: isLiked ? '#ef4444' : 'rgba(239, 68, 68, 0.1)',
+                                color: isLiked ? 'white' : '#ef4444',
+                                border: '1px solid #ef4444',
+                                borderRadius: '10px',
+                                padding: '0.35rem 0.75rem',
+                                fontSize: '0.85rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                transition: 'all 0.2s ease'
+                              }}
+                              title="إعجاب وتقييم المعلم صاحب المستند"
+                            >
+                              <i className={isLiked ? "fas fa-heart" : "far fa-heart"}></i>
+                              <span>{ws.likesCount || 0}</span>
+                            </button>
+                          </div>
+
+                          <a
+                            href={ws.fileUrl || '#'}
+                            onClick={(e) => handleDownloadWorksheet(e, ws)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-download-ws"
+                            title="تنزيل / فتح المستند"
+                          >
+                            <i className={downloadingId === ws.id ? "fas fa-spinner fa-spin" : "fas fa-download"}></i>
+                            {downloadingId === ws.id ? ' جاري التحميل...' : ' تنزيل المستند'}
+                          </a>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -1096,7 +1152,7 @@ const Worksheets = ({ isStandalone }) => {
 
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                    المادة / التخصص:
+                    المادة / التخصص الرئيسية:
                   </label>
                   <select
                     value={registerForm.subject}
@@ -1183,7 +1239,7 @@ const Worksheets = ({ isStandalone }) => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>الموضوع الدراسى:</label>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>الموضوع الدراسى (المادة):</label>
                     <select
                       value={newDoc.subject}
                       onChange={(e) => setNewDoc({ ...newDoc, subject: e.target.value })}
@@ -1294,7 +1350,7 @@ const Worksheets = ({ isStandalone }) => {
 };
 
 // =========================================================================
-// ALWAYS TOP 3 TEACHERS HONOR ROLL & LEADERBOARD COMPONENT
+// ALWAYS TOP 3 TEACHERS HONOR ROLL & LEADERBOARD COMPONENT (PRIVATE VIEW)
 // =========================================================================
 const TeacherLeaderboard = ({ teacherScores }) => {
   const [showAllTeachers, setShowAllTeachers] = useState(false);
