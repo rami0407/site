@@ -20,6 +20,7 @@ import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuide
 import { defaultNavigation, defaultPages } from '../data/defaultNavigationData';
 import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
 import { uploadChunkedFile, deleteChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
+import ScientificArticles from './ScientificArticles';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -2404,6 +2405,25 @@ const AdminDashboard = () => {
             </button>
 
             <button 
+              onClick={() => setActiveTab('scientific-articles')} 
+              className={`filter-chip ${activeTab === 'scientific-articles' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.9rem 1.2rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'scientific-articles' ? '#0284c7' : '#f0f9ff',
+                color: activeTab === 'scientific-articles' ? 'white' : '#0369a1',
+                fontWeight: 800,
+                border: '2px solid #bae6fd'
+              }}
+            >
+              <i className="fas fa-book-reader" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              📚 المقالات والمجلات العلمية
+            </button>
+
+            <button 
               onClick={() => setActiveTab('teachers')} 
               className={`filter-chip ${activeTab === 'teachers' ? 'active' : ''}`}
               style={{
@@ -4389,6 +4409,13 @@ const AdminDashboard = () => {
                         ))}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* TAB 10.5: SCIENTIFIC ARTICLES & FLIPBOOKS MANAGEMENT */}
+              {activeTab === 'scientific-articles' && (
+                <div>
+                  <ScientificArticles isStandalone={false} />
                 </div>
               )}
 
