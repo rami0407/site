@@ -187,6 +187,11 @@ const Hero = () => {
               أوراق العمل والامتحانات
             </button>
 
+            <button onClick={() => window.location.hash = '#/articles'} className="btn btn-space-outline" style={{ borderColor: '#38bdf8', color: '#38bdf8' }}>
+              <i className="fas fa-book-reader"></i>
+              مقالات علمية 📚
+            </button>
+
             <button onClick={() => window.location.hash = '#/learning-corner'} className="btn btn-space-outline">
               <i className="fas fa-gamepad"></i>
               ركن التعلم

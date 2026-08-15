@@ -18,6 +18,19 @@ const Navbar = () => {
       let items = [...rawItems];
       // Filter out any lingering nav_excellence if deleted
       items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence');
+
+      // 🌟 GUARANTEE: Ensure nav_articles always exists in main navigation!
+      if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
+        items.push({
+          id: "nav_articles",
+          label: "📚 مقالات علمية",
+          type: "page",
+          target: "articles",
+          category: "main",
+          order: 6
+        });
+      }
+
       items.sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));

@@ -325,6 +325,12 @@ function App() {
           {/* School Pedagogical Initiatives */}
           <Initiatives />
 
+          {/* Scientific Articles Interactive Banner */}
+          <ScientificArticlesBanner />
+
+          {/* Worksheets Interactive Banner */}
+          <WorksheetsBanner />
+
           {/* Dynamic & Filterable Event Calendar */}
           <InteractiveCalendar />
 
