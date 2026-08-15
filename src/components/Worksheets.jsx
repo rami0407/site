@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, doc, setDoc, updateDoc, increment } from 'firebase/firestore';
-import { getWorksheetsIDB, saveWorksheetIDB } from '../utils/idbStore';
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, increment } from 'firebase/firestore';
+import { getWorksheetsIDB, saveWorksheetIDB, deleteWorksheetIDB } from '../utils/idbStore';
 import { downloadChunkedFile, downloadBase64OrBlob, uploadChunkedFile } from '../utils/chunkedStorage';
 
 export const DEFAULT_SCHOOL_TEACHERS = [
@@ -115,8 +115,12 @@ const Worksheets = ({ isStandalone }) => {
     try { return JSON.parse(localStorage.getItem('active_teacher_session')); } catch (e) { return null; }
   });
 
+  // Teacher Dashboard View Toggle Mode: 'all' | 'my_dashboard'
+  const [teacherViewTab, setTeacherViewTab] = useState('all');
+
   // Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [editingDocId, setEditingDocId] = useState(null);
   const [modalTab, setModalTab] = useState('upload'); // 'upload' | 'login' | 'register'
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -134,7 +138,7 @@ const Worksheets = ({ isStandalone }) => {
     passcode: ''
   });
 
-  // Upload Form State
+  // Upload/Edit Form State
   const [newDoc, setNewDoc] = useState({
     title: '',
     subject: 'اللغة العربية',
@@ -216,7 +220,7 @@ const Worksheets = ({ isStandalone }) => {
     loadData();
   }, []);
 
-  // Teacher Registration Request Handler (Submitted for Admin Approval)
+  // Teacher Registration Request Handler
   const handleRegisterTeacherSubmit = async (e) => {
     e.preventDefault();
     if (!registerForm.name.trim() || !registerForm.passcode.trim()) {
@@ -241,7 +245,6 @@ const Worksheets = ({ isStandalone }) => {
       console.warn("Firestore teacher register warning:", err.message);
     }
 
-    // Save to local storage db_teachers array for immediate dashboard visibility
     try {
       const localT = JSON.parse(localStorage.getItem('db_teachers') || '[]');
       localT.unshift(teacherDoc);
@@ -265,7 +268,6 @@ const Worksheets = ({ isStandalone }) => {
       return;
     }
 
-    // Match teacher doc or default
     const matched = teachersData.find(t => t.name === tName && t.status === 'approved');
     if (matched) {
       if (matched.passcode !== pin) {
@@ -274,17 +276,69 @@ const Worksheets = ({ isStandalone }) => {
       }
     }
 
-    // Login Success
     const session = { teacherName: tName, loggedInAt: new Date().toISOString() };
     setActiveTeacherSession(session);
     localStorage.setItem('active_teacher_session', JSON.stringify(session));
     setModalTab('upload');
+    setTeacherViewTab('my_dashboard');
     alert(`🎉 مرحباً بك يا ${tName}! تم توثيق دخولك كمعلم مفوض في بنك الأوراق والامتحانات.`);
   };
 
   const handleTeacherLogout = () => {
-    setActiveTeacherSession(null);
-    localStorage.removeItem('active_teacher_session');
+    if (window.confirm('هل تود تسجيل الخروج من حساب المعلم الحالي والتبديل لمعلم آخر؟')) {
+      setActiveTeacherSession(null);
+      localStorage.removeItem('active_teacher_session');
+      setTeacherViewTab('all');
+    }
+  };
+
+  // Handle Teacher Delete Own Document
+  const handleTeacherDeleteOwnDoc = async (wsId) => {
+    if (!window.confirm('هل أنت تأكد من حذف هذا المستند الخاص بك من بنك الأوراق؟')) return;
+
+    const targetDoc = worksheets.find(w => w.id === wsId);
+    const updated = worksheets.filter(w => w.id !== wsId);
+    setWorksheets(updated);
+    localStorage.setItem('db_worksheets', JSON.stringify(updated));
+
+    try { await deleteDoc(doc(db, 'worksheets', wsId)); } catch(e){}
+    try { await deleteWorksheetIDB(wsId); } catch(e){}
+
+    // Update teacher scores
+    if (targetDoc && targetDoc.teacher) {
+      const isExam = targetDoc.docCategory === 'exam';
+      setTeacherScores(prev => {
+        const cur = prev[targetDoc.teacher] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
+        return {
+          ...prev,
+          [targetDoc.teacher]: {
+            ...cur,
+            stars: Math.max(0, cur.stars - (isExam ? 0 : 1)),
+            trophies: Math.max(0, cur.trophies - (isExam ? 1 : 0)),
+            uploads: Math.max(0, cur.uploads - 1)
+          }
+        };
+      });
+    }
+
+    alert('تم حذف المستند بنجاح وتحديث إحصائياتك.');
+  };
+
+  // Handle Teacher Edit Own Document
+  const handleTeacherStartEditDoc = (wsObj) => {
+    setEditingDocId(wsObj.id);
+    setNewDoc({
+      title: wsObj.title || '',
+      subject: wsObj.subject || 'اللغة العربية',
+      grade: wsObj.grade || 'الصف الأول',
+      docCategory: wsObj.docCategory || 'worksheet',
+      fileType: wsObj.type || 'PDF',
+      fileUrl: wsObj.fileUrl || '',
+      notes: wsObj.notes || '',
+      rawFile: null
+    });
+    setModalTab('upload');
+    setIsUploadModalOpen(true);
   };
 
   // Handle Likes for a Document
@@ -360,7 +414,7 @@ const Worksheets = ({ isStandalone }) => {
     }
   };
 
-  // Handle Document Upload Submission by Logged In Teacher
+  // Handle Document Upload / Edit Submission by Logged In Teacher
   const handleTeacherSubmitDoc = async (e) => {
     e.preventDefault();
     if (!activeTeacherSession || !activeTeacherSession.teacherName) {
@@ -375,9 +429,9 @@ const Worksheets = ({ isStandalone }) => {
     }
 
     const currentTeacherName = activeTeacherSession.teacherName;
-
     setIsUploading(true);
-    const generatedId = `ws_t_${Date.now()}`;
+
+    const targetDocId = editingDocId || `ws_t_${Date.now()}`;
     let finalFileUrl = newDoc.fileUrl.trim();
 
     if (newDoc.rawFile) {
@@ -389,7 +443,7 @@ const Worksheets = ({ isStandalone }) => {
         });
         const base64Data = await readPromise;
         if (base64Data && base64Data.length > 500000) {
-          finalFileUrl = await uploadChunkedFile(generatedId, base64Data);
+          finalFileUrl = await uploadChunkedFile(targetDocId, base64Data);
         } else {
           finalFileUrl = base64Data;
         }
@@ -403,7 +457,7 @@ const Worksheets = ({ isStandalone }) => {
     }
 
     const docObj = {
-      id: generatedId,
+      id: targetDocId,
       title: newDoc.title.trim(),
       subject: newDoc.subject,
       grade: newDoc.grade,
@@ -413,10 +467,16 @@ const Worksheets = ({ isStandalone }) => {
       type: newDoc.fileType,
       fileUrl: finalFileUrl,
       notes: newDoc.notes.trim(),
-      likesCount: 0
+      likesCount: editingDocId ? (worksheets.find(w => w.id === editingDocId)?.likesCount || 0) : 0
     };
 
-    const updatedWorksheets = [docObj, ...worksheets];
+    let updatedWorksheets = [];
+    if (editingDocId) {
+      updatedWorksheets = worksheets.map(w => w.id === editingDocId ? docObj : w);
+    } else {
+      updatedWorksheets = [docObj, ...worksheets];
+    }
+
     setWorksheets(updatedWorksheets);
     localStorage.setItem('db_worksheets', JSON.stringify(updatedWorksheets));
     try { await saveWorksheetIDB(docObj); } catch(e){}
@@ -424,34 +484,41 @@ const Worksheets = ({ isStandalone }) => {
     const isExam = newDoc.docCategory === 'exam';
     const rewardTypeStr = isExam ? '🏆 كأس جديد' : '⭐ نجمة جديدة';
 
-    setTeacherScores(prev => {
-      const current = prev[currentTeacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
-      return {
-        ...prev,
-        [currentTeacherName]: {
-          stars: current.stars + (isExam ? 0 : 1),
-          trophies: current.trophies + (isExam ? 1 : 0),
-          likes: current.likes || 0,
-          uploads: (current.uploads || 0) + 1
-        }
-      };
-    });
+    if (!editingDocId) {
+      setTeacherScores(prev => {
+        const current = prev[currentTeacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
+        return {
+          ...prev,
+          [currentTeacherName]: {
+            stars: current.stars + (isExam ? 0 : 1),
+            trophies: current.trophies + (isExam ? 1 : 0),
+            likes: current.likes || 0,
+            uploads: (current.uploads || 0) + 1
+          }
+        };
+      });
 
-    try {
-      await setDoc(doc(db, 'worksheets', generatedId), docObj);
-      await setDoc(doc(db, 'teacher_scores', currentTeacherName), {
-        teacherName: currentTeacherName,
-        stars: increment(isExam ? 0 : 1),
-        trophies: increment(isExam ? 1 : 0),
-        uploads: increment(1)
-      }, { merge: true });
-    } catch (err) {
-      console.warn("Firestore doc upload warning:", err.message);
+      try {
+        await setDoc(doc(db, 'worksheets', targetDocId), docObj);
+        await setDoc(doc(db, 'teacher_scores', currentTeacherName), {
+          teacherName: currentTeacherName,
+          stars: increment(isExam ? 0 : 1),
+          trophies: increment(isExam ? 1 : 0),
+          uploads: increment(1)
+        }, { merge: true });
+      } catch (err) {
+        console.warn("Firestore doc upload warning:", err.message);
+      }
+    } else {
+      try {
+        await setDoc(doc(db, 'worksheets', targetDocId), docObj, { merge: true });
+      } catch(e){}
     }
 
     setIsUploading(false);
     setIsUploadModalOpen(false);
-    setUploadSuccessMsg(`🎉 تهانينا للمعلم/ة ${currentTeacherName}! تم رفع المستند وحصولك على [${rewardTypeStr}] واحتسابها في لوحة الشرف! 🌟`);
+    setEditingDocId(null);
+    setUploadSuccessMsg(editingDocId ? '✅ تم تحديث مستندك بنجاح!' : `🎉 تهانينا للمعلم/ة ${currentTeacherName}! تم رفع المستند وحصولك على [${rewardTypeStr}] واحتسابها في لوحة الشرف! 🌟`);
     setTimeout(() => setUploadSuccessMsg(''), 7000);
 
     setNewDoc({
@@ -466,7 +533,7 @@ const Worksheets = ({ isStandalone }) => {
     });
   };
 
-  // Filter logic
+  // Filter logic for main worksheets view
   const filteredWorksheets = worksheets.filter(item => {
     const matchSubject = selectedSubject === 'جميع المواد' || item.subject === selectedSubject;
     const matchGrade = selectedGrade === 'جميع الصفوف' || item.grade === selectedGrade;
@@ -481,6 +548,10 @@ const Worksheets = ({ isStandalone }) => {
 
     return matchSubject && matchGrade && matchCategory && matchQuery;
   });
+
+  // Filter logic for Teacher's personal dashboard
+  const myTeacherDocs = activeTeacherSession ? worksheets.filter(w => w.teacher === activeTeacherSession.teacherName) : [];
+  const myTeacherScore = activeTeacherSession ? (teacherScores[activeTeacherSession.teacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 }) : null;
 
   return (
     <section className={`worksheets-section ${isStandalone ? 'standalone-page' : ''}`} id="worksheets" style={isStandalone ? { paddingTop: '120px', minHeight: '85vh' } : {}}>
@@ -533,50 +604,107 @@ const Worksheets = ({ isStandalone }) => {
               </h3>
             </div>
             <p style={{ margin: 0, fontSize: '0.92rem', color: '#94a3b8' }}>
-              {activeTeacherSession ? 'ارفع امتحاناتك وأوراق عملك مباشرة لاكتساب النجوم والكؤوس في لوحة الشرف!' : 'سجل كمعلم معتمد بموافقة مدير المدرسة لرفع امتحاناتك واكتساب النجوم والكؤوس!'}
+              {activeTeacherSession ? 'يمكنك إدارة امتحاناتك وأوراق عملك مباشرة أو رفع مستند جديد لاكتساب النجوم والكؤوس!' : 'سجل كمعلم معتمد بموافقة مدير المدرسة لرفع امتحاناتك واكتساب النجوم والكؤوس!'}
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            {activeTeacherSession && (
-              <button
+            {activeTeacherSession ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setTeacherViewTab(teacherViewTab === 'my_dashboard' ? 'all' : 'my_dashboard')}
+                  style={{
+                    background: teacherViewTab === 'my_dashboard' ? '#3b82f6' : 'rgba(255,255,255,0.15)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    padding: '0.7rem 1.2rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <i className="fas fa-user-circle"></i>
+                  {teacherViewTab === 'my_dashboard' ? 'عرض جميع المكتبات 🌐' : `داشبورد مستنداتي (${myTeacherDocs.length}) 📋`}
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setEditingDocId(null);
+                    setModalTab('upload');
+                    setIsUploadModalOpen(true);
+                  }}
+                  className="btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#ffffff',
+                    padding: '0.7rem 1.4rem',
+                    fontWeight: 900,
+                    fontSize: '0.95rem',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 20px rgba(245, 158, 11, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <i className="fas fa-plus-circle"></i> رفع مستند جديد (⭐/🏆)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTeacherLogout}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    color: '#fca5a5',
+                    border: '1px solid #ef4444',
+                    padding: '0.7rem 1.2rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  title="تسجيل الخروج والتبديل لمعلم آخر"
+                >
+                  <i className="fas fa-sign-out-alt"></i> خروج وتغيير المعلم 🔄
+                </button>
+              </>
+            ) : (
+              <button 
                 type="button"
-                onClick={handleTeacherLogout}
-                style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid #ef4444', padding: '0.6rem 1rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem' }}
+                onClick={() => {
+                  setModalTab('login');
+                  setIsUploadModalOpen(true);
+                }}
+                className="btn"
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#ffffff',
+                  padding: '0.85rem 1.6rem',
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  borderRadius: '14px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(245, 158, 11, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem'
+                }}
               >
-                خروج ({activeTeacherSession.teacherName})
+                <i className="fas fa-key"></i> دخول / تسجيل المعلمين للرفع 🔑
               </button>
             )}
-
-            <button 
-              type="button"
-              onClick={() => {
-                if (activeTeacherSession) {
-                  setModalTab('upload');
-                } else {
-                  setModalTab('login');
-                }
-                setIsUploadModalOpen(true);
-              }}
-              className="btn"
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#ffffff',
-                padding: '0.85rem 1.6rem',
-                fontWeight: 900,
-                fontSize: '1rem',
-                borderRadius: '14px',
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px rgba(245, 158, 11, 0.35)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.6rem'
-              }}
-            >
-              <i className="fas fa-cloud-upload-alt" style={{ fontSize: '1.2rem' }}></i>
-              {activeTeacherSession ? 'رفع مستند جديد (احصل على ⭐ أو 🏆)' : 'دخول / تسجيل المعلمين للرفع 🔑'}
-            </button>
           </div>
         </div>
 
@@ -584,6 +712,107 @@ const Worksheets = ({ isStandalone }) => {
           <div style={{ background: '#10b981', color: 'white', padding: '1rem 1.5rem', borderRadius: '16px', marginBottom: '2rem', fontWeight: 800, fontSize: '1.05rem', boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <i className="fas fa-award" style={{ fontSize: '1.5rem' }}></i>
             {uploadSuccessMsg}
+          </div>
+        )}
+
+        {/* TEACHER PERSONAL DASHBOARD SECTION (When logged in & tab is my_dashboard) */}
+        {activeTeacherSession && teacherViewTab === 'my_dashboard' && (
+          <div style={{ background: '#ffffff', border: '2px solid #3b82f6', borderRadius: '24px', padding: '2rem', marginBottom: '2.5rem', boxShadow: '0 15px 40px rgba(59, 130, 246, 0.15)' }}>
+            
+            {/* Header statistics bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.75rem', borderBottom: '2px solid #eff6ff', paddingBottom: '1.25rem' }}>
+              <div>
+                <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
+                  📋 لوحة تحكم المعلم الشخصية
+                </span>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: '0.4rem 0 0 0' }}>
+                  مستنداتي وإنجازاتي المرفوعة: {activeTeacherSession.teacherName}
+                </h3>
+              </div>
+
+              {/* Stats Counters */}
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ background: '#fef3c7', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid #fde68a', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#b45309', fontWeight: 800, display: 'block' }}>🏆 الكؤوس (امتحانات):</span>
+                  <strong style={{ fontSize: '1.3rem', color: '#92400e' }}>{myTeacherScore.trophies || 0}</strong>
+                </div>
+                <div style={{ background: '#eff6ff', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid #bfdbfe', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#1d4ed8', fontWeight: 800, display: 'block' }}>⭐ النجوم (أوراق عمل):</span>
+                  <strong style={{ fontSize: '1.3rem', color: '#1e40af' }}>{myTeacherScore.stars || 0}</strong>
+                </div>
+                <div style={{ background: '#fef2f2', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid #fecaca', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#b91c1c', fontWeight: 800, display: 'block' }}>👍 الإعجابات:</span>
+                  <strong style={{ fontSize: '1.3rem', color: '#991b1b' }}>{myTeacherScore.likes || 0}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* List of Teacher's Own Uploaded Documents */}
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <i className="fas fa-folder-open" style={{ color: '#2563eb' }}></i>
+              قائمة أوراق العمل والامتحانات التي رفعتها ({myTeacherDocs.length})
+            </h4>
+
+            {myTeacherDocs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#f8fafc', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📑</div>
+                <h4 style={{ margin: '0 0 0.4rem 0', fontWeight: 800, color: '#475569' }}>لم تقم برفع أي امتحانات أو أوراق عمل حتى الآن</h4>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.25rem' }}>اضغط على زر "رفع مستند جديد" بالكتل بالأعلى لبدء رفع موادك واكتساب النجوم والكؤوس!</p>
+                <button
+                  onClick={() => {
+                    setEditingDocId(null);
+                    setModalTab('upload');
+                    setIsUploadModalOpen(true);
+                  }}
+                  className="btn btn-primary"
+                  style={{ borderRadius: '12px', fontWeight: 800 }}
+                >
+                  🚀 رفع أول مستند لك الآن
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                {myTeacherDocs.map((ws) => {
+                  const isExam = ws.docCategory === 'exam';
+                  return (
+                    <div key={ws.id} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: `2px solid ${isExam ? '#f59e0b' : '#3b82f6'}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                          <span style={{ background: isExam ? '#fffbeb' : '#eff6ff', color: isExam ? '#b45309' : '#1d4ed8', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                            {isExam ? '🏆 امتحان رسمى' : '⭐ ورقة عمل'}
+                          </span>
+                          <span style={{ background: '#e2e8f0', color: '#334155', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                            {ws.grade}
+                          </span>
+                        </div>
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>{ws.title}</h4>
+                        <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 0.85rem 0' }}>
+                          📚 {ws.subject} | 📅 {ws.date} | 👍 {ws.likesCount || 0} إعجابات
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.85rem', borderTop: '1px solid #e2e8f0' }}>
+                        <button
+                          onClick={() => handleTeacherStartEditDoc(ws)}
+                          style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.55rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                        >
+                          <i className="fas fa-edit"></i> تعديل
+                        </button>
+
+                        <button
+                          onClick={() => handleTeacherDeleteOwnDoc(ws.id)}
+                          style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '0.55rem 0.8rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}
+                          title="حذف المستند"
+                        >
+                          <i className="fas fa-trash-alt"></i> حذف
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
           </div>
         )}
 
@@ -808,12 +1037,15 @@ const Worksheets = ({ isStandalone }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <span style={{ fontSize: '1.6rem' }}>🔑</span>
                 <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#1e293b' }}>
-                  {modalTab === 'upload' ? 'رفع المستندات واكتساب النقاط' : modalTab === 'login' ? 'تسجيل دخول معلم معتمد' : 'طلب تسجيل معلم جديد (بانتظار الموافقة)'}
+                  {modalTab === 'upload' ? (editingDocId ? 'تعديل المستند الحالي' : 'رفع مستند جديد واكتساب النقاط') : modalTab === 'login' ? 'تسجيل دخول معلم معتمد' : 'طلب تسجيل معلم جديد (بانتظار الموافقة)'}
                 </h3>
               </div>
               <button 
                 type="button"
-                onClick={() => setIsUploadModalOpen(false)}
+                onClick={() => {
+                  setIsUploadModalOpen(false);
+                  setEditingDocId(null);
+                }}
                 style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', fontSize: '1.1rem', cursor: 'pointer' }}
               >
                 ✕
@@ -828,7 +1060,7 @@ const Worksheets = ({ isStandalone }) => {
                   onClick={() => setModalTab('upload')}
                   style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: 'none', fontWeight: 800, cursor: 'pointer', background: modalTab === 'upload' ? '#f59e0b' : 'transparent', color: modalTab === 'upload' ? 'white' : '#475569' }}
                 >
-                  📤 رفع مستند كـ ({activeTeacherSession.teacherName})
+                  📤 {editingDocId ? 'تعديل المستند' : `رفع كـ (${activeTeacherSession.teacherName})`}
                 </button>
               )}
               <button
@@ -836,7 +1068,7 @@ const Worksheets = ({ isStandalone }) => {
                 onClick={() => setModalTab('login')}
                 style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: 'none', fontWeight: 800, cursor: 'pointer', background: modalTab === 'login' ? '#2563eb' : 'transparent', color: modalTab === 'login' ? 'white' : '#475569' }}
               >
-                🔑 دخول معلم معتمد
+                🔑 دخول / تبديل المعلم
               </button>
               <button
                 type="button"
@@ -952,7 +1184,7 @@ const Worksheets = ({ isStandalone }) => {
               </form>
             )}
 
-            {/* TAB 3: UPLOAD DOCUMENT FORM */}
+            {/* TAB 3: UPLOAD / EDIT DOCUMENT FORM */}
             {modalTab === 'upload' && (
               <form onSubmit={handleTeacherSubmitDoc}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
@@ -1081,7 +1313,10 @@ const Worksheets = ({ isStandalone }) => {
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                   <button 
                     type="button" 
-                    onClick={() => setIsUploadModalOpen(false)}
+                    onClick={() => {
+                      setIsUploadModalOpen(false);
+                      setEditingDocId(null);
+                    }}
                     className="btn"
                     style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800, borderRadius: '10px', padding: '0.75rem 1.4rem', border: 'none' }}
                   >
@@ -1094,7 +1329,7 @@ const Worksheets = ({ isStandalone }) => {
                     className="btn"
                     style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 900, borderRadius: '10px', padding: '0.75rem 1.6rem', border: 'none', cursor: 'pointer' }}
                   >
-                    {isUploading ? 'جاري رفع المستند وحساب النقاط...' : '🚀 اعتماد المستند وحساب النقاط'}
+                    {isUploading ? 'جاري حفظ التعديلات...' : (editingDocId ? '💾 حفظ تعديلات المستند' : '🚀 اعتماد المستند وحساب النقاط')}
                   </button>
                 </div>
 
