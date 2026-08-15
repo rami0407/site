@@ -148,21 +148,47 @@ const ScientificArticles = ({ isStandalone }) => {
     } catch(e){}
   };
 
+  // State for resolved PDF URL when opening chunked files
+  const [resolvedPdfUrl, setResolvedPdfUrl] = useState('');
+  const [isResolvingPdf, setIsResolvingPdf] = useState(false);
+
   // Open Interactive Flipbook Reader
-  const handleOpenFlipbook = (art) => {
+  const handleOpenFlipbook = async (art) => {
     setActiveFlipbook(art);
     setZoomLevel(100);
     setIsFullScreen(false);
+    setResolvedPdfUrl('');
 
     // Increment Views Count
     setArticles(prev => prev.map(item => item.id === art.id ? { ...item, viewsCount: (item.viewsCount || 0) + 1 } : item));
     try {
       updateDoc(doc(db, 'scientific_articles', art.id), { viewsCount: increment(1) });
     } catch(e){}
+
+    // Resolve PDF URL if chunked or local-file
+    if (art.pdfUrl && (art.pdfUrl.startsWith('chunked:') || art.pdfUrl.startsWith('local-file:'))) {
+      setIsResolvingPdf(true);
+      try {
+        const targetId = art.pdfUrl.replace(/^(chunked:|local-file:)/, '') || art.id;
+        const fullBase64 = await downloadChunkedFile(targetId);
+        if (fullBase64) {
+          setResolvedPdfUrl(fullBase64);
+        } else {
+          setResolvedPdfUrl(art.pdfUrl);
+        }
+      } catch (err) {
+        console.warn("Chunked PDF resolve warning:", err);
+        setResolvedPdfUrl(art.pdfUrl);
+      } finally {
+        setIsResolvingPdf(false);
+      }
+    } else {
+      setResolvedPdfUrl(art.pdfUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+    }
   };
 
   // Handle Download Article PDF
-  const handleDownloadPDF = (e, art) => {
+  const handleDownloadPDF = async (e, art) => {
     e.stopPropagation();
     if (art.pdfUrl && (art.pdfUrl.startsWith('http://') || art.pdfUrl.startsWith('https://'))) {
       window.open(art.pdfUrl, '_blank', 'noopener,noreferrer');
@@ -170,8 +196,17 @@ const ScientificArticles = ({ isStandalone }) => {
     }
 
     const filename = `${art.title}.pdf`;
-    if (art.pdfUrl && art.pdfUrl.startsWith('data:')) {
-      downloadBase64OrBlob(art.pdfUrl, filename);
+    let base64Data = art.pdfUrl;
+
+    if (art.pdfUrl && (art.pdfUrl.startsWith('chunked:') || art.pdfUrl.startsWith('local-file:'))) {
+      try {
+        const targetId = art.pdfUrl.replace(/^(chunked:|local-file:)/, '') || art.id;
+        base64Data = await downloadChunkedFile(targetId);
+      } catch(err){}
+    }
+
+    if (base64Data && base64Data.startsWith('data:')) {
+      downloadBase64OrBlob(base64Data, filename);
     } else {
       alert('تنبيه: يمكنك قراءة المقالة كاملاً عبر القارئ التفاعلي المباشر!');
     }
@@ -576,11 +611,18 @@ const ScientificArticles = ({ isStandalone }) => {
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <iframe
-                src={activeFlipbook.pdfUrl && activeFlipbook.pdfUrl.startsWith('http') ? activeFlipbook.pdfUrl : activeFlipbook.pdfUrl}
-                title={activeFlipbook.title}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-              />
+              {isResolvingPdf ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#0284c7', background: '#f8fafc' }}>
+                  <i className="fas fa-spinner fa-spin" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}></i>
+                  <h4 style={{ margin: 0, fontWeight: 800, color: '#334155' }}>جاري تجهيز المجلة والملف التفاعلي... 📖</h4>
+                </div>
+              ) : (
+                <iframe
+                  src={resolvedPdfUrl}
+                  title={activeFlipbook.title}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              )}
             </div>
           </div>
 
