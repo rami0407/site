@@ -32,23 +32,7 @@ const StatNumber = ({ target }) => {
 };
 
 const Stats = () => {
-  return (
-    <section className="stats">
-      <div className="stats-container">
-        {statsData.map((stat) => (
-          <div className="stat-item" key={stat.id}>
-            <div className="stat-icon">
-              <i className={`fas ${stat.icon}`}></i>
-            </div>
-            <div className="stat-number">
-              <StatNumber target={stat.target} />
-            </div>
-            <div className="stat-label">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  return null;
 };
 
 export default Stats;

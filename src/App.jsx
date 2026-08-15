@@ -286,9 +286,6 @@ function App() {
           {/* Hero Banner */}
           <Hero />
 
-          {/* Counter Statistics */}
-          <Stats />
-
           {/* School Pedagogical Initiatives */}
           <Initiatives />
 
