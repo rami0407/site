@@ -305,12 +305,12 @@ function App() {
         <ExcellenceYearPage isStandalone={true} />
       ) : isLearningCornerView ? (
         <LearningCorner isStandalone={true} />
+      ) : isArticlesView ? (
+        <ScientificArticles isStandalone={true} />
       ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (
         <Worksheets isStandalone={true} />
-      ) : isArticlesView ? (
-        <ScientificArticles isStandalone={true} />
       ) : isAstronomyView ? (
         <AstronomyPage isStandalone={true} />
       ) : isChallengeView ? (

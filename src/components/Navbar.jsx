@@ -128,13 +128,14 @@ const Navbar = () => {
     e.preventDefault();
 
     if (item.type === 'page' || item.type === 'custom_page') {
-      window.location.hash = (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge' || item.target === 'books' || item.target === 'excellence') ? `#/${item.target}` : `#/page/${item.target}`;
+      const isSystemPage = ['worksheets', 'articles', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
+      window.location.hash = isSystemPage ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {
