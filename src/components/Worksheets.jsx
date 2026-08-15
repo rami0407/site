@@ -761,11 +761,13 @@ const Worksheets = ({ isStandalone }) => {
               </div>
             )}
 
+            {/* PRIVATE TEACHER HONOR ROLL (VISIBLE ONLY TO LOGGED-IN TEACHERS) */}
+            <div style={{ marginTop: '2.5rem' }}>
+              <TeacherLeaderboard teacherScores={dynamicTeacherScores} />
+            </div>
+
           </div>
         )}
-
-        {/* DYNAMIC REAL TEACHER HONOR ROLL & LEADERBOARD COMPONENT */}
-        <TeacherLeaderboard teacherScores={dynamicTeacherScores} />
 
         {/* Filter Controls Bar */}
         <div className="worksheets-filter-card" style={{ marginTop: '2.5rem' }}>
@@ -1342,14 +1344,14 @@ const TeacherLeaderboard = ({ teacherScores }) => {
       marginBottom: '2rem'
     }}>
       <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-        <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
-          🏆 لوحة شرف أفضل 3 معلمين متميزين
+        <span style={{ background: '#dbeafe', color: '#1e40af', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
+          🔒 لوحة التكريم والتقدير الخاصة بكادر المعلمين (خاصة بالمعلمين فقط)
         </span>
         <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#1e293b', margin: '0.4rem 0' }}>
-          لوحة شرف المعلمين المتميزين 🌟
+          إحصائيات إنجازات وتكريم كادر المعلمين 🌟
         </h3>
         <p style={{ color: '#64748b', margin: 0, fontSize: '0.92rem' }}>
-          تكريم مستمر لأفضل 3 معلمين حققوا أعلى نسبة رفع للامتحانات (🏆 كؤوس) وأوراق العمل (⭐ نجوم) والإعجابات (👍)
+          مساحة خاصة وداخلية للمعلمين المعتمدين لمتابعة مستوى التفاعل والرفع (🏆 كؤوس، ⭐ نجوم، 👍 إعجابات)
         </p>
       </div>
 
