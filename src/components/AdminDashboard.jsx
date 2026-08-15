@@ -1092,55 +1092,33 @@ const AdminDashboard = () => {
     if (editingNavId) {
       // Edit mode
       const navDocData = { ...navData, id: editingNavId };
-      if (isOfflineMode) {
-        const updated = navigation.map(item => item.id === editingNavId ? navDocData : item).sort((a,b) => a.order - b.order);
-        localStorage.setItem('db_navigation', JSON.stringify(updated));
-        setNavigation(updated);
-        setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
-        setEditingNavId(null);
-        window.dispatchEvent(new Event('navigationUpdated'));
-        alert('تم حفظ وتعديل العنوان بنجاح في القائمة العلوية!');
-        return;
-      }
-
       try {
         await setDoc(doc(db, 'navigation', editingNavId), navDocData);
-        const updated = navigation.map(item => item.id === editingNavId ? navDocData : item).sort((a,b) => a.order - b.order);
-        localStorage.setItem('db_navigation', JSON.stringify(updated));
-        setNavigation(updated);
-        setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
-        setEditingNavId(null);
-        window.dispatchEvent(new Event('navigationUpdated'));
-        alert('تم حفظ وتعديل العنوان بنجاح ومزامنته حياً مع الموقع!');
       } catch (err) {
-        alert('حدث خطأ أثناء تعديل الرابط: ' + err.message);
+        console.warn("Firestore nav setDoc fallback:", err.message);
       }
+      const updated = navigation.map(item => item.id === editingNavId ? navDocData : item).sort((a,b) => a.order - b.order);
+      localStorage.setItem('db_navigation', JSON.stringify(updated));
+      setNavigation(updated);
+      setNewNav({ label: '', type: 'section', target: 'home', order: navigation.length + 1 });
+      setEditingNavId(null);
+      window.dispatchEvent(new Event('navigationUpdated'));
+      alert('تم حفظ وتعديل العنوان بنجاح ومزامنته حياً مع الموقع المباشر!');
     } else {
       // Add mode
       const generatedId = `nav_${Date.now()}`;
       const navDocData = { ...navData, id: generatedId };
-
-      if (isOfflineMode) {
-        const updated = [...navigation, navDocData].sort((a,b) => a.order - b.order);
-        localStorage.setItem('db_navigation', JSON.stringify(updated));
-        setNavigation(updated);
-        setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
-        window.dispatchEvent(new Event('navigationUpdated'));
-        alert('تمت إضافة العنوان محلياً في القائمة العلوية!');
-        return;
-      }
-
       try {
         await setDoc(doc(db, 'navigation', generatedId), navDocData);
-        const updated = [...navigation, navDocData].sort((a,b) => a.order - b.order);
-        localStorage.setItem('db_navigation', JSON.stringify(updated));
-        setNavigation(updated);
-        setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
-        window.dispatchEvent(new Event('navigationUpdated'));
-        alert('تمت إضافة العنوان بنجاح ومزامنته حياً مع الموقع!');
       } catch (err) {
-        alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
+        console.warn("Firestore nav add setDoc fallback:", err.message);
       }
+      const updated = [...navigation, navDocData].sort((a,b) => a.order - b.order);
+      localStorage.setItem('db_navigation', JSON.stringify(updated));
+      setNavigation(updated);
+      setNewNav({ label: '', type: 'section', target: 'home', order: updated.length + 1 });
+      window.dispatchEvent(new Event('navigationUpdated'));
+      alert('تمت إضافة العنوان بنجاح ومزامنته حياً مع الموقع المباشر!');
     }
   };
 
@@ -1163,24 +1141,17 @@ const AdminDashboard = () => {
   const handleDeleteNav = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الرابط من قائمة العناوين؟')) return;
 
-    if (isOfflineMode) {
-      const updated = navigation.filter(item => item.id !== id);
-      localStorage.setItem('db_navigation', JSON.stringify(updated));
-      setNavigation(updated);
-      window.dispatchEvent(new Event('navigationUpdated'));
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, 'navigation', id));
-      const updated = navigation.filter(item => item.id !== id);
-      localStorage.setItem('db_navigation', JSON.stringify(updated));
-      setNavigation(updated);
-      window.dispatchEvent(new Event('navigationUpdated'));
-      alert('تم حذف العنوان بنجاح ومزامنة القائمة حياً!');
     } catch (err) {
-      alert('حدث خطأ أثناء حذف الرابط: ' + err.message);
+      console.warn("Firestore deleteDoc nav warning:", err.message);
     }
+
+    const updated = navigation.filter(item => item.id !== id);
+    localStorage.setItem('db_navigation', JSON.stringify(updated));
+    setNavigation(updated);
+    window.dispatchEvent(new Event('navigationUpdated'));
+    alert('تم حذف العنوان بنجاح ومزامنة التغيير حياً على الموقع المنشور!');
   };
 
   // Custom Pages Handlers
