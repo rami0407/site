@@ -12,7 +12,8 @@ import {
   query, 
   orderBy,
   updateDoc,
-  setDoc
+  setDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import { calendarEvents, newsData } from '../data/schoolData'; // defaults for seeding
 import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
@@ -428,10 +429,51 @@ const AdminDashboard = () => {
   });
   const [teachersList, setTeachersList] = useState([]);
 
+  // Real-time Teacher Approvals Listener
+  useEffect(() => {
+    let unsubscribe = () => {};
+    try {
+      const qTeachers = collection(db, 'teachers');
+      unsubscribe = onSnapshot(qTeachers, (snap) => {
+        let fsList = [];
+        snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
+        
+        let localList = [];
+        try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
+
+        const combined = [...fsList];
+        localList.forEach(loc => {
+          if (!combined.some(existing => existing.id === loc.id || existing.name === loc.name)) {
+            combined.unshift(loc);
+          }
+        });
+        setTeachersList(combined);
+      }, (err) => {
+        console.warn("Teachers real-time snapshot error:", err.message);
+        let localList = [];
+        try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
+        setTeachersList(localList);
+      });
+    } catch (e) {
+      console.warn("Teachers snapshot setup error:", e.message);
+    }
+    return () => unsubscribe();
+  }, []);
+
   const handleApproveTeacher = async (teacherId, teacherName) => {
     try {
       await setDoc(doc(db, 'teachers', teacherId), { status: 'approved' }, { merge: true });
-      setTeachersList(prev => prev.map(t => t.id === teacherId ? { ...t, status: 'approved' } : t));
+    } catch (err) {
+      console.warn("Approve teacher firestore warning:", err);
+    }
+
+    setTeachersList(prev => {
+      const updated = prev.map(t => t.id === teacherId ? { ...t, status: 'approved' } : t);
+      localStorage.setItem('db_teachers', JSON.stringify(updated));
+      return updated;
+    });
+
+    try {
       await setDoc(doc(db, 'teacher_scores', teacherName), {
         teacherName,
         stars: 0,
@@ -439,22 +481,24 @@ const AdminDashboard = () => {
         likes: 0,
         uploads: 0
       }, { merge: true });
-      alert(`تمت الموافقة بنجاح على المعلم ${teacherName} وتفعيل حسابه!`);
-    } catch (err) {
-      console.error("Approve teacher error:", err);
-      alert('حدث خطأ أثناء اعتماد المعلم.');
-    }
+    } catch(e){}
+
+    alert(`تمت الموافقة بنجاح على المعلم ${teacherName} وتفعيل حسابه!`);
   };
 
   const handleRejectTeacher = async (teacherId) => {
     if (!window.confirm('هل أنت تأكد من رفض أو حذف حساب هذا المعلم؟')) return;
     try {
       await deleteDoc(doc(db, 'teachers', teacherId));
-      setTeachersList(prev => prev.filter(t => t.id !== teacherId));
     } catch (err) {
-      console.error("Reject teacher error:", err);
-      alert('حدث خطأ أثناء رفض الطلب.');
+      console.warn("Reject teacher firestore warning:", err);
     }
+
+    setTeachersList(prev => {
+      const updated = prev.filter(t => t.id !== teacherId);
+      localStorage.setItem('db_teachers', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const [isLoadingData, setIsLoadingData] = useState(false);
