@@ -168,14 +168,11 @@ const Worksheets = ({ isStandalone }) => {
           snap.forEach(docSnap => {
             fsList.push({ ...docSnap.data(), id: docSnap.id });
           });
+          setWorksheets(fsList);
+          localStorage.setItem('db_worksheets', JSON.stringify(fsList));
+        } else {
+          setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
         }
-        const combined = [...fsList];
-        localItems.forEach(item => {
-          if (!combined.some(existing => existing.id === item.id || existing.title === item.title)) {
-            combined.unshift(item);
-          }
-        });
-        setWorksheets(combined.length > 0 ? combined : DEFAULT_WORKSHEETS);
       } catch (e) {
         setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
       }

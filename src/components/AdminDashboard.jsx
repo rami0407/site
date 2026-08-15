@@ -2040,21 +2040,20 @@ const AdminDashboard = () => {
     await deleteWorksheetIDB(id);
     await deleteChunkedFile(id);
 
-    if (isOfflineMode) {
-      const updated = worksheets.filter(w => w.id !== id);
-      try {
-        localStorage.setItem('db_worksheets', JSON.stringify(updated));
-      } catch (e) {}
-      setWorksheets(updated);
-      return;
-    }
-
+    const updated = worksheets.filter(w => w.id !== id);
     try {
-      await deleteDoc(doc(db, 'worksheets', id));
-      alert('تم حذف ورقة العمل بنجاح!');
-      loadDashboardData();
-    } catch (error) {
-      alert('حدث خطأ أثناء الحذف: ' + error.message);
+      localStorage.setItem('db_worksheets', JSON.stringify(updated));
+    } catch (e) {}
+    setWorksheets(updated);
+
+    if (!isOfflineMode) {
+      try {
+        await deleteDoc(doc(db, 'worksheets', id));
+        alert('تم حذف المستند بنجاح من السحابة والموقع!');
+        loadDashboardData();
+      } catch (error) {
+        alert('حدث خطأ أثناء الحذف من السحابة: ' + error.message);
+      }
     }
   };
 
