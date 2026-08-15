@@ -68,9 +68,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Worksheets collection: Public read & likes/teacher uploads, delete restricted to Admin
     match /worksheets/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // Teacher Scores & Honor Roll: Public read & score updates, delete restricted to Admin
+    match /teacher_scores/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
     }
 
     match /astronomy/{docId} {
