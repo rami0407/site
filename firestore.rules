@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // Public read-only collections (Managed strictly by Admin)
+    match /events/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /news/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /values/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /principal/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /initiatives/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /links/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gallery/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /books/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /uniform/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /schoolGuide/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /navigation/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pages/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /worksheets/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /astronomy/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /challenge/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /contactDetails/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Messages collection: Visitors can CREATE messages, only Admin can READ and DELETE
+    match /messages/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Student Progress & Games: Students can read/write their own progress, admin has full access
+    match /students/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /vocab_students/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
+    }
+  }
+}

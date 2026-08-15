@@ -2112,20 +2112,10 @@ const AdminDashboard = () => {
           )}
 
           <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
-            {showSetup && (
-              <>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>أو لاختبار لوحة الإدارة أوفلاين:</span>
-                <button 
-                  type="button" 
-                  onClick={handleOfflineLogin} 
-                  className="btn btn-outline" 
-                  style={{ width: '100%', borderColor: 'var(--primary)', color: 'var(--primary)', padding: '0.6rem', fontSize: '0.95rem', marginBottom: '0.5rem' }}
-                >
-                  <i className="fas fa-laptop"></i>
-                  دخول تجريبي (بدون قاعدة بيانات)
-                </button>
-              </>
-            )}
+            <div style={{ background: '#ecfdf5', color: '#047857', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', width: '100%' }}>
+              <i className="fas fa-shield-alt" style={{ marginLeft: '0.4rem' }}></i>
+              نظام محمي ومشفر بسيرفر التوثيق السحابي (Firebase Auth)
+            </div>
             <a href="#/" style={{ color: 'var(--text-muted)', fontSize: '0.88rem', textDecoration: 'none', fontWeight: 700, marginTop: '0.5rem' }}>
               <i className="fas fa-arrow-right" style={{ marginLeft: '0.5rem' }}></i> العودة للموقع العام
             </a>

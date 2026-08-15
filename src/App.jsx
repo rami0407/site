@@ -239,6 +239,38 @@ function App() {
     seedFirebaseIfEmpty();
   }, []);
 
+  // Security Hardening: Anti-inspection listener
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      // Disable context menu on site elements to prevent casual inspect element
+      if (window.location.hash.indexOf('admin') === -1) {
+        e.preventDefault();
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) ||
+        (e.ctrlKey && (e.key === 'U' || e.key === 'u'))
+      ) {
+        if (!e.altKey) {
+          e.preventDefault();
+          return false;
+        }
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isExcellenceView = currentHash.includes('excellence');
   const isLearningCornerView = currentHash.includes('learning-corner');
