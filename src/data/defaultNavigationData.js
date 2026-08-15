@@ -12,7 +12,8 @@ export const defaultMainNavigation = [
   { id: "nav_2", label: "المبادرات", type: "section", target: "initiatives", category: "main", order: 3 },
   { id: "nav_challenge", label: "🏆 التحدي الأسبوعي", type: "page", target: "challenge", category: "main", order: 4 },
   { id: "nav_worksheets", label: "📑 أوراق العمل", type: "page", target: "worksheets", category: "main", order: 5 },
-  { id: "nav_astronomy", label: "🌌 مختبر الفلك", type: "page", target: "astronomy", category: "main", order: 6 },
+  { id: "nav_articles", label: "📚 مقالات علمية", type: "page", target: "articles", category: "main", order: 6 },
+  { id: "nav_astronomy", label: "🌌 مختبر الفلك", type: "page", target: "astronomy", category: "main", order: 7 },
   { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", category: "main", order: 7 },
   { id: "nav_4", label: "الأخبار", type: "section", target: "news", category: "main", order: 8 },
   { id: "nav_5", label: "كلمة المدير", type: "section", target: "principal", category: "main", order: 9 }
