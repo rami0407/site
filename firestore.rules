@@ -80,6 +80,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Teachers Registration & Approvals: Public can create pending registrations & read approved, Admin has full write/delete
+    match /teachers/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
     match /astronomy/{docId} {
       allow read: if true;
       allow write: if isAdmin();

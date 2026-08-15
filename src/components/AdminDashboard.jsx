@@ -426,6 +426,37 @@ const AdminDashboard = () => {
     instagram: '',
     youtube: ''
   });
+  const [teachersList, setTeachersList] = useState([]);
+
+  const handleApproveTeacher = async (teacherId, teacherName) => {
+    try {
+      await setDoc(doc(db, 'teachers', teacherId), { status: 'approved' }, { merge: true });
+      setTeachersList(prev => prev.map(t => t.id === teacherId ? { ...t, status: 'approved' } : t));
+      await setDoc(doc(db, 'teacher_scores', teacherName), {
+        teacherName,
+        stars: 0,
+        trophies: 0,
+        likes: 0,
+        uploads: 0
+      }, { merge: true });
+      alert(`تمت الموافقة بنجاح على المعلم ${teacherName} وتفعيل حسابه!`);
+    } catch (err) {
+      console.error("Approve teacher error:", err);
+      alert('حدث خطأ أثناء اعتماد المعلم.');
+    }
+  };
+
+  const handleRejectTeacher = async (teacherId) => {
+    if (!window.confirm('هل أنت تأكد من رفض أو حذف حساب هذا المعلم؟')) return;
+    try {
+      await deleteDoc(doc(db, 'teachers', teacherId));
+      setTeachersList(prev => prev.filter(t => t.id !== teacherId));
+    } catch (err) {
+      console.error("Reject teacher error:", err);
+      alert('حدث خطأ أثناء رفض الطلب.');
+    }
+  };
+
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [geminiKey, setGeminiKey] = useState('');
   const [isSavingGeminiKey, setIsSavingGeminiKey] = useState(false);
@@ -2314,6 +2345,25 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-folder-open" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               أوراق العمل والفعاليات
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('teachers')} 
+              className={`filter-chip ${activeTab === 'teachers' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.9rem 1.2rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'teachers' ? '#f59e0b' : '#fffbeb',
+                color: activeTab === 'teachers' ? 'white' : '#b45309',
+                fontWeight: 800,
+                border: '2px solid #fde68a'
+              }}
+            >
+              <i className="fas fa-chalkboard-teacher" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              👨‍🏫 تراخيص المعلمين ({teachersList.filter(t => t.status === 'pending').length} معلّق)
             </button>
 
             <button 
@@ -4283,6 +4333,106 @@ const AdminDashboard = () => {
                         ))}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* TAB 11: TEACHERS APPROVALS AND ACCOUNTS */}
+              {activeTab === 'teachers' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>
+                        👨‍🏫 إدارة تراخيص وحسابات المعلمين ({teachersList.length})
+                      </h3>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.2rem 0 0 0', fontSize: '0.9rem' }}>
+                        الموافقة على طلبات المعلمين الجدد وتفعيل تراخيصهم لرفع الامتحانات وأوراق العمل واكتساب النجوم والكؤوس.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PENDING APPROVALS SECTION */}
+                  <div style={{ background: '#fffbeb', border: '2px solid #fde68a', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
+                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', fontWeight: 900, color: '#b45309', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      ⏳ طلبات الانضمام المعلقة ({teachersList.filter(t => t.status === 'pending').length})
+                    </h4>
+
+                    {teachersList.filter(t => t.status === 'pending').length === 0 ? (
+                      <p style={{ margin: 0, color: '#92400e', fontWeight: 700 }}>لا توجد طلبات انضمام معلقة حالياً. جميع حسابات المعلمين معتمدة ومفعلة.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                        {teachersList.filter(t => t.status === 'pending').map(t => (
+                          <div key={t.id} style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #fcd34d', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+                            <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>{t.name}</h4>
+                            <p style={{ margin: '0 0 0.8rem 0', fontSize: '0.88rem', color: '#64748b', fontWeight: 700 }}>
+                              📚 المادة: {t.subject} | 🔐 الرمز السري: ({t.passcode})
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handleApproveTeacher(t.id, t.name)}
+                                style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', padding: '0.6rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                              >
+                                موافقة وتفعيل ✅
+                              </button>
+                              <button
+                                onClick={() => handleRejectTeacher(t.id)}
+                                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.6rem 0.8rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                              >
+                                رفض ❌
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* APPROVED TEACHERS LIST */}
+                  <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid var(--border-light)' }}>
+                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', fontWeight: 900, color: '#047857' }}>
+                      ✅ المعلمون المعتمدون والمفوضون للرفع ({teachersList.filter(t => t.status === 'approved').length})
+                    </h4>
+
+                    {teachersList.filter(t => t.status === 'approved').length === 0 ? (
+                      <p style={{ margin: 0, color: '#64748b' }}>لا يوجد معلمون معتمدون بعد. يمكنك الموافقة على الطلبات المعلقة أعلاه.</p>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.92rem' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'right', color: '#475569' }}>
+                              <th style={{ padding: '0.75rem' }}>اسم المعلم</th>
+                              <th style={{ padding: '0.75rem' }}>المادة والتخصص</th>
+                              <th style={{ padding: '0.75rem' }}>الرمز السري</th>
+                              <th style={{ padding: '0.75rem' }}>حالة الحساب</th>
+                              <th style={{ padding: '0.75rem' }}>الإجراءات</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {teachersList.filter(t => t.status === 'approved').map(t => (
+                              <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '0.75rem', fontWeight: 900, color: '#0f172a' }}>{t.name}</td>
+                                <td style={{ padding: '0.75rem', fontWeight: 700, color: '#2563eb' }}>{t.subject}</td>
+                                <td style={{ padding: '0.75rem', fontWeight: 800, color: '#64748b' }}>🔐 {t.passcode}</td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  <span style={{ background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                    مفعل ومطابق ✅
+                                  </span>
+                                </td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  <button
+                                    onClick={() => handleRejectTeacher(t.id)}
+                                    style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '0.4rem 0.8rem', borderRadius: '6px', fontWeight: 800, cursor: 'pointer', fontSize: '0.82rem' }}
+                                  >
+                                    إلغاء الترخيص
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
 

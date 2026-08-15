@@ -4,16 +4,11 @@ import { collection, getDocs, doc, setDoc, updateDoc, increment } from 'firebase
 import { getWorksheetsIDB, saveWorksheetIDB } from '../utils/idbStore';
 import { downloadChunkedFile, downloadBase64OrBlob, uploadChunkedFile } from '../utils/chunkedStorage';
 
-export const SCHOOL_TEACHERS = [
+export const DEFAULT_SCHOOL_TEACHERS = [
   "أ. رامي محاميد", "أ. سارة عابد", "أ. محمد اغبارية", "أ. فاطمة جبارين",
   "أ. خالد محاجنة", "أ. ياسمين كبها", "أ. عمر رفاعية", "أ. ريم محاميد",
   "أ. محمود زيود", "أ. آمنة حمارشة", "أ. أحمد محاميد", "أ. هدى جبارين",
-  "أ. مصطفى اغبارية", "أ. ليلى عابد", "أ. علي كبها", "أ. مريم محاجنة",
-  "أ. إبراهيم زيود", "أ. نادين رفاعية", "أ. حسن محاميد", "أ. خديجة جبارين",
-  "أ. يوسف اغبارية", "أ. سميرة عابد", "أ. طارق كبها", "أ. نورة محاجنة",
-  "أ. بلال زيود", "أ. أمل رفاعية", "أ. صلاح محاميد", "أ. هناء جبارين",
-  "أ. ماهر اغبارية", "أ. دلال عابد", "أ. وليد كبها", "أ. سناء محاجنة",
-  "أ. سامي زيود", "أ. عبير رفاعية", "أ. زياد محاميد"
+  "أ. مصطفى اغبارية", "أ. ليلى عابد", "أ. علي كبها", "أ. مريم محاجنة"
 ];
 
 const DEFAULT_WORKSHEETS = [
@@ -68,32 +63,6 @@ const DEFAULT_WORKSHEETS = [
     likesCount: 30,
     fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
     notes: 'Official evaluation test for English grammar units 1-3.'
-  },
-  {
-    id: 'ws-5',
-    title: 'ورقة عمل التربية الإسلامية - أركان الإيمان والإحسان',
-    subject: 'التربية الإسلامية',
-    grade: 'الصف الأول',
-    teacher: 'أ. آمنة حمارشة',
-    docCategory: 'worksheet',
-    date: '2026-07-27',
-    type: 'PDF',
-    likesCount: 21,
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    notes: 'نشاط تلوين وفهم لأركان الإيمان الستة.'
-  },
-  {
-    id: 'ws-6',
-    title: 'تحدي المسائل الكلامية في الهندسة والقياس',
-    subject: 'الرياضيات',
-    grade: 'الصف السادس',
-    teacher: 'أ. رامي محاميد',
-    docCategory: 'worksheet',
-    date: '2026-07-28',
-    type: 'PDF',
-    likesCount: 19,
-    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    notes: 'مسائل كلامية تفاعلية لتحفيز التفكير المنطقي والهندسي.'
   }
 ];
 
@@ -101,10 +70,7 @@ const INITIAL_TEACHER_SCORES = {
   "أ. رامي محاميد": { stars: 12, trophies: 8, likes: 64, uploads: 20 },
   "أ. سارة عابد": { stars: 15, trophies: 6, likes: 58, uploads: 21 },
   "أ. محمد اغبارية": { stars: 10, trophies: 9, likes: 52, uploads: 19 },
-  "أ. فاطمة جبارين": { stars: 11, trophies: 5, likes: 45, uploads: 16 },
-  "أ. خالد محاجنة": { stars: 9, trophies: 4, likes: 38, uploads: 13 },
-  "أ. ياسمين كبها": { stars: 8, trophies: 5, likes: 35, uploads: 13 },
-  "أ. آمنة حمارشة": { stars: 10, trophies: 3, likes: 40, uploads: 13 }
+  "أ. فاطمة جبارين": { stars: 11, trophies: 5, likes: 45, uploads: 16 }
 };
 
 const SUBJECTS = [
@@ -134,31 +100,53 @@ const GRADES = [
 const Worksheets = ({ isStandalone }) => {
   const [worksheets, setWorksheets] = useState(DEFAULT_WORKSHEETS);
   const [teacherScores, setTeacherScores] = useState(INITIAL_TEACHER_SCORES);
+  const [approvedTeachers, setApprovedTeachers] = useState(DEFAULT_SCHOOL_TEACHERS);
+  const [teachersData, setTeachersData] = useState([]);
+  
   const [selectedSubject, setSelectedSubject] = useState('جميع المواد');
   const [selectedGrade, setSelectedGrade] = useState('جميع الصفوف');
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all'); // 'all' | 'worksheet' | 'exam'
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadingId, setDownloadingId] = useState(null);
   const [likedDocIds, setLikedDocIds] = useState(() => JSON.parse(localStorage.getItem('liked_worksheets') || '[]'));
   
-  // Teacher Upload Modal State
+  // Active Logged In Teacher Session
+  const [activeTeacherSession, setActiveTeacherSession] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('active_teacher_session')); } catch (e) { return null; }
+  });
+
+  // Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState('upload'); // 'upload' | 'login' | 'register'
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // New Teacher Registration Form State
+  const [registerForm, setRegisterForm] = useState({
+    name: '',
+    subject: 'اللغة العربية',
+    passcode: ''
+  });
+
+  // Teacher Login Form State
+  const [loginForm, setLoginForm] = useState({
+    teacherName: '',
+    passcode: ''
+  });
+
+  // Upload Form State
   const [newDoc, setNewDoc] = useState({
-    teacher: SCHOOL_TEACHERS[0],
-    customTeacher: '',
     title: '',
     subject: 'اللغة العربية',
     grade: 'الصف الأول',
-    docCategory: 'worksheet', // 'worksheet' (⭐ star) or 'exam' (🏆 trophy)
+    docCategory: 'worksheet',
     fileType: 'PDF',
     fileUrl: '',
     notes: '',
     rawFile: null
   });
 
-  // Fetch Worksheets and Teacher Scores from Firestore
+  // Fetch Worksheets, Approved Teachers, and Scores
   useEffect(() => {
     const loadData = async () => {
       let idbItems = [];
@@ -174,8 +162,7 @@ const Worksheets = ({ isStandalone }) => {
         let fsList = [];
         if (!snap.empty) {
           snap.forEach(docSnap => {
-            const data = docSnap.data();
-            fsList.push({ ...data, id: docSnap.id });
+            fsList.push({ ...docSnap.data(), id: docSnap.id });
           });
         }
         const combined = [...fsList];
@@ -189,7 +176,29 @@ const Worksheets = ({ isStandalone }) => {
         setWorksheets(localItems.length > 0 ? localItems : DEFAULT_WORKSHEETS);
       }
 
-      // 2. Fetch Teacher Scores
+      // 2. Fetch Approved Teachers
+      try {
+        const tSnap = await getDocs(collection(db, 'teachers'));
+        if (!tSnap.empty) {
+          const list = [];
+          const names = [];
+          tSnap.forEach(d => {
+            const data = { ...d.data(), id: d.id };
+            list.push(data);
+            if (data.status === 'approved') {
+              names.push(data.name);
+            }
+          });
+          setTeachersData(list);
+          if (names.length > 0) {
+            setApprovedTeachers(names);
+          }
+        }
+      } catch (e) {
+        console.warn("Teachers fetch fallback:", e.message);
+      }
+
+      // 3. Fetch Teacher Scores
       try {
         const scoreSnap = await getDocs(collection(db, 'teacher_scores'));
         if (!scoreSnap.empty) {
@@ -207,6 +216,71 @@ const Worksheets = ({ isStandalone }) => {
     loadData();
   }, []);
 
+  // Teacher Registration Request Handler (Submitted for Admin Approval)
+  const handleRegisterTeacherSubmit = async (e) => {
+    e.preventDefault();
+    if (!registerForm.name.trim() || !registerForm.passcode.trim()) {
+      alert('يرجى ملء جميع الحقول المطلوبة واختيار رمز سري للحساب.');
+      return;
+    }
+
+    setIsUploading(true);
+    const teacherId = `teacher_${Date.now()}`;
+    const teacherDoc = {
+      id: teacherId,
+      name: registerForm.name.trim(),
+      subject: registerForm.subject,
+      passcode: registerForm.passcode.trim(),
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'teachers', teacherId), teacherDoc);
+      setIsUploading(false);
+      alert('✅ تم إرسال طلب انضمامك بنجاح كمعلم في مدرسة مشيرفة!\n\nطلبك الآن بانتظار موافقة مدير المدرسة في لوحة التحكم لتفعيل الحساب وإتاحة الرفع.');
+      setRegisterForm({ name: '', subject: 'اللغة العربية', passcode: '' });
+      setModalTab('login');
+    } catch (err) {
+      console.error("Register teacher error:", err);
+      setIsUploading(false);
+      alert('حدث خطأ أثناء إرسال طلب الانضمام.');
+    }
+  };
+
+  // Teacher Login Handler
+  const handleTeacherLoginSubmit = (e) => {
+    e.preventDefault();
+    const tName = loginForm.teacherName.trim();
+    const pin = loginForm.passcode.trim();
+
+    if (!tName || !pin) {
+      alert('يرجى اختيار اسم المعلم وإدخال الرمز السري.');
+      return;
+    }
+
+    // Match teacher doc or default
+    const matched = teachersData.find(t => t.name === tName && t.status === 'approved');
+    if (matched) {
+      if (matched.passcode !== pin) {
+        alert('❌ الرمز السري غير صحيح. يرجى التأكد من الرمز الخاص بك.');
+        return;
+      }
+    }
+
+    // Login Success
+    const session = { teacherName: tName, loggedInAt: new Date().toISOString() };
+    setActiveTeacherSession(session);
+    localStorage.setItem('active_teacher_session', JSON.stringify(session));
+    setModalTab('upload');
+    alert(`🎉 مرحباً بك يا ${tName}! تم توثيق دخولك كمعلم مفوض في بنك الأوراق والامتحانات.`);
+  };
+
+  const handleTeacherLogout = () => {
+    setActiveTeacherSession(null);
+    localStorage.removeItem('active_teacher_session');
+  };
+
   // Handle Likes for a Document
   const handleLikeDoc = async (e, ws) => {
     e.stopPropagation();
@@ -219,10 +293,8 @@ const Worksheets = ({ isStandalone }) => {
     setLikedDocIds(updatedLiked);
     localStorage.setItem('liked_worksheets', JSON.stringify(updatedLiked));
 
-    // 1. Update local worksheet state
     setWorksheets(prev => prev.map(item => item.id === ws.id ? { ...item, likesCount: (item.likesCount || 0) + 1 } : item));
 
-    // 2. Update Teacher Score state
     const tName = ws.teacher || 'طاقم المادة';
     setTeacherScores(prev => {
       const current = prev[tName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
@@ -232,7 +304,6 @@ const Worksheets = ({ isStandalone }) => {
       };
     });
 
-    // 3. Firestore Sync
     try {
       await updateDoc(doc(db, 'worksheets', ws.id), {
         likesCount: increment(1)
@@ -283,25 +354,26 @@ const Worksheets = ({ isStandalone }) => {
     }
   };
 
-  // Handle Teacher Upload Form Submission
+  // Handle Document Upload Submission by Logged In Teacher
   const handleTeacherSubmitDoc = async (e) => {
     e.preventDefault();
+    if (!activeTeacherSession || !activeTeacherSession.teacherName) {
+      alert('يرجى تسجيل دخول المعلم أولاً لرفع الأوراق واكتساب النقاط.');
+      setModalTab('login');
+      return;
+    }
+
     if (!newDoc.title.trim()) {
       alert('يرجى كتابة عنوان ورقة العمل أو الامتحان.');
       return;
     }
 
-    const finalTeacherName = newDoc.customTeacher.trim() || newDoc.teacher;
-    if (!finalTeacherName) {
-      alert('يرجى اختيار أو كتابة اسم المعلم صاحب المستند.');
-      return;
-    }
+    const currentTeacherName = activeTeacherSession.teacherName;
 
     setIsUploading(true);
     const generatedId = `ws_t_${Date.now()}`;
     let finalFileUrl = newDoc.fileUrl.trim();
 
-    // Process direct file attachment if provided
     if (newDoc.rawFile) {
       try {
         const reader = new FileReader();
@@ -329,8 +401,8 @@ const Worksheets = ({ isStandalone }) => {
       title: newDoc.title.trim(),
       subject: newDoc.subject,
       grade: newDoc.grade,
-      teacher: finalTeacherName,
-      docCategory: newDoc.docCategory, // 'worksheet' | 'exam'
+      teacher: currentTeacherName,
+      docCategory: newDoc.docCategory,
       date: new Date().toISOString().split('T')[0],
       type: newDoc.fileType,
       fileUrl: finalFileUrl,
@@ -338,21 +410,19 @@ const Worksheets = ({ isStandalone }) => {
       likesCount: 0
     };
 
-    // 1. Update Worksheets State
     const updatedWorksheets = [docObj, ...worksheets];
     setWorksheets(updatedWorksheets);
     localStorage.setItem('db_worksheets', JSON.stringify(updatedWorksheets));
     try { await saveWorksheetIDB(docObj); } catch(e){}
 
-    // 2. Award Stars ⭐ or Trophies 🏆 to Teacher
     const isExam = newDoc.docCategory === 'exam';
     const rewardTypeStr = isExam ? '🏆 كأس جديد' : '⭐ نجمة جديدة';
 
     setTeacherScores(prev => {
-      const current = prev[finalTeacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
+      const current = prev[currentTeacherName] || { stars: 0, trophies: 0, likes: 0, uploads: 0 };
       return {
         ...prev,
-        [finalTeacherName]: {
+        [currentTeacherName]: {
           stars: current.stars + (isExam ? 0 : 1),
           trophies: current.trophies + (isExam ? 1 : 0),
           likes: current.likes || 0,
@@ -361,11 +431,10 @@ const Worksheets = ({ isStandalone }) => {
       };
     });
 
-    // 3. Firestore Sync
     try {
       await setDoc(doc(db, 'worksheets', generatedId), docObj);
-      await setDoc(doc(db, 'teacher_scores', finalTeacherName), {
-        teacherName: finalTeacherName,
+      await setDoc(doc(db, 'teacher_scores', currentTeacherName), {
+        teacherName: currentTeacherName,
         stars: increment(isExam ? 0 : 1),
         trophies: increment(isExam ? 1 : 0),
         uploads: increment(1)
@@ -376,13 +445,10 @@ const Worksheets = ({ isStandalone }) => {
 
     setIsUploading(false);
     setIsUploadModalOpen(false);
-    setUploadSuccessMsg(`🎉 تهانينا للمعلم/ة ${finalTeacherName}! تم رفع المستند وحصولك على [${rewardTypeStr}] واحتسابها في لوحة الشرف! 🌟`);
+    setUploadSuccessMsg(`🎉 تهانينا للمعلم/ة ${currentTeacherName}! تم رفع المستند وحصولك على [${rewardTypeStr}] واحتسابها في لوحة الشرف! 🌟`);
     setTimeout(() => setUploadSuccessMsg(''), 7000);
 
-    // Reset form
     setNewDoc({
-      teacher: SCHOOL_TEACHERS[0],
-      customTeacher: '',
       title: '',
       subject: 'اللغة العربية',
       grade: 'الصف الأول',
@@ -457,36 +523,55 @@ const Worksheets = ({ isStandalone }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
               <span style={{ fontSize: '1.4rem' }}>👨‍🏫</span>
               <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#f8fafc' }}>
-                بوابة المعلمين للرفع والتكريم (35 معلماً)
+                {activeTeacherSession ? `مرحباً بك يا ${activeTeacherSession.teacherName} (معلم معتمد)` : 'بوابة رفع المعلمين وتكريم الإنجازات'}
               </h3>
             </div>
             <p style={{ margin: 0, fontSize: '0.92rem', color: '#94a3b8' }}>
-              ارفع أوراق العمل لتحصل على **⭐ نجوم** وارفع الامتحانات لتحصل على **🏆 كؤوس** وتسجّل إنجازاتك في لوحة الشرف!
+              {activeTeacherSession ? 'ارفع امتحاناتك وأوراق عملك مباشرة لاكتساب النجوم والكؤوس في لوحة الشرف!' : 'سجل كمعلم معتمد بموافقة مدير المدرسة لرفع امتحاناتك واكتساب النجوم والكؤوس!'}
             </p>
           </div>
 
-          <button 
-            type="button"
-            onClick={() => setIsUploadModalOpen(true)}
-            className="btn"
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              color: '#ffffff',
-              padding: '0.85rem 1.6rem',
-              fontWeight: 900,
-              fontSize: '1rem',
-              borderRadius: '14px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 8px 20px rgba(245, 158, 11, 0.35)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.6rem'
-            }}
-          >
-            <i className="fas fa-cloud-upload-alt" style={{ fontSize: '1.2rem' }}></i>
-            رفع مستند جديد (احصل على ⭐ أو 🏆)
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {activeTeacherSession && (
+              <button
+                type="button"
+                onClick={handleTeacherLogout}
+                style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid #ef4444', padding: '0.6rem 1rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem' }}
+              >
+                خروج ({activeTeacherSession.teacherName})
+              </button>
+            )}
+
+            <button 
+              type="button"
+              onClick={() => {
+                if (activeTeacherSession) {
+                  setModalTab('upload');
+                } else {
+                  setModalTab('login');
+                }
+                setIsUploadModalOpen(true);
+              }}
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#ffffff',
+                padding: '0.85rem 1.6rem',
+                fontWeight: 900,
+                fontSize: '1rem',
+                borderRadius: '14px',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 8px 20px rgba(245, 158, 11, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem'
+              }}
+            >
+              <i className="fas fa-cloud-upload-alt" style={{ fontSize: '1.2rem' }}></i>
+              {activeTeacherSession ? 'رفع مستند جديد (احصل على ⭐ أو 🏆)' : 'دخول / تسجيل المعلمين للرفع 🔑'}
+            </button>
+          </div>
         </div>
 
         {uploadSuccessMsg && (
@@ -687,7 +772,7 @@ const Worksheets = ({ isStandalone }) => {
 
       </div>
 
-      {/* TEACHER UPLOAD MODAL */}
+      {/* TEACHER UPLOAD & REGISTRATION MODAL */}
       {isUploadModalOpen && (
         <div style={{
           position: 'fixed',
@@ -715,9 +800,9 @@ const Worksheets = ({ isStandalone }) => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '1.6rem' }}>📤</span>
+                <span style={{ fontSize: '1.6rem' }}>🔑</span>
                 <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#1e293b' }}>
-                  بوابة رفع المعلمين وتجميع النقاط
+                  {modalTab === 'upload' ? 'رفع المستندات واكتساب النقاط' : modalTab === 'login' ? 'تسجيل دخول معلم معتمد' : 'طلب تسجيل معلم جديد (بانتظار الموافقة)'}
                 </h3>
               </div>
               <button 
@@ -729,80 +814,106 @@ const Worksheets = ({ isStandalone }) => {
               </button>
             </div>
 
-            <form onSubmit={handleTeacherSubmitDoc}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                
-                {/* Teacher Selection */}
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                    👨‍🏫 اختر اسم المعلم (35 معلماً):
+            {/* Modal Tabs Navigation */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '0.4rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              {activeTeacherSession && (
+                <button
+                  type="button"
+                  onClick={() => setModalTab('upload')}
+                  style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: 'none', fontWeight: 800, cursor: 'pointer', background: modalTab === 'upload' ? '#f59e0b' : 'transparent', color: modalTab === 'upload' ? 'white' : '#475569' }}
+                >
+                  📤 رفع مستند كـ ({activeTeacherSession.teacherName})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setModalTab('login')}
+                style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: 'none', fontWeight: 800, cursor: 'pointer', background: modalTab === 'login' ? '#2563eb' : 'transparent', color: modalTab === 'login' ? 'white' : '#475569' }}
+              >
+                🔑 دخول معلم معتمد
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalTab('register')}
+                style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: 'none', fontWeight: 800, cursor: 'pointer', background: modalTab === 'register' ? '#059669' : 'transparent', color: modalTab === 'register' ? 'white' : '#475569' }}
+              >
+                📝 طلب تسجيل معلم جديد
+              </button>
+            </div>
+
+            {/* TAB 1: TEACHER LOGIN */}
+            {modalTab === 'login' && (
+              <form onSubmit={handleTeacherLoginSubmit}>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.95rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    👨‍🏫 اختر اسم المعلم المعتمد:
                   </label>
                   <select
-                    value={newDoc.teacher}
-                    onChange={(e) => setNewDoc({ ...newDoc, teacher: e.target.value })}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                    value={loginForm.teacherName}
+                    onChange={(e) => setLoginForm({ ...loginForm, teacherName: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 800, background: 'white' }}
                   >
-                    {SCHOOL_TEACHERS.map((t, idx) => (
+                    <option value="">اختر اسم المعلم من القائمة...</option>
+                    {approvedTeachers.map((t, idx) => (
                       <option key={idx} value={t}>{t}</option>
                     ))}
-                    <option value="custom">✏️ اسم معلم جديد...</option>
                   </select>
                 </div>
 
-                {newDoc.teacher === 'custom' && (
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                      اكتب اسم المعلم الجديد:
-                    </label>
-                    <input 
-                      type="text"
-                      required
-                      placeholder="مثال: أ. يوسف جبارين"
-                      value={newDoc.customTeacher}
-                      onChange={(e) => setNewDoc({ ...newDoc, customTeacher: e.target.value })}
-                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                    />
-                  </div>
-                )}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.95rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    🔐 الرمز السري الخاص بك:
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="أدخل رمز المرور السري (مثل 1234)"
+                    value={loginForm.passcode}
+                    onChange={(e) => setLoginForm({ ...loginForm, passcode: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 800 }}
+                  />
+                </div>
 
-                {/* Doc Category (Worksheet vs Exam) */}
-                <div>
+                <button
+                  type="submit"
+                  className="btn"
+                  style={{ width: '100%', padding: '0.85rem', background: '#2563eb', color: 'white', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '1.05rem' }}
+                >
+                  🚀 دخول وتوثيق الحساب
+                </button>
+              </form>
+            )}
+
+            {/* TAB 2: REGISTER NEW TEACHER (REQUEST PENDING ADMIN APPROVAL) */}
+            {modalTab === 'register' && (
+              <form onSubmit={handleRegisterTeacherSubmit}>
+                <div style={{ background: '#ecfdf5', color: '#047857', padding: '0.85rem 1rem', borderRadius: '12px', fontSize: '0.88rem', fontWeight: 700, marginBottom: '1.25rem' }}>
+                  <i className="fas fa-shield-alt" style={{ marginLeft: '0.4rem' }}></i>
+                  سيتم إرسال طلب انضمامك لمدير المدرسة للموافقة والتفعيل كمعلم معتمد في بنك الأوراق.
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                    🎯 نوع المستند والمكافأة:
+                    اسم المعلم الكامل (رباعي):
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="مثال: أ. يوسف محمد جبارين"
+                    value={registerForm.name}
+                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    المادة / التخصص:
                   </label>
                   <select
-                    value={newDoc.docCategory}
-                    onChange={(e) => setNewDoc({ ...newDoc, docCategory: e.target.value })}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #f59e0b', fontWeight: 800, background: '#fffbeb', color: '#b45309' }}
-                  >
-                    <option value="worksheet">⭐ ورقة عمل / مراجعة (+1 نجمة)</option>
-                    <option value="exam">🏆 امتحان / اختبار رسمي (+1 كأس)</option>
-                  </select>
-                </div>
-
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                  📝 عنوان ورقة العمل أو الامتحان:
-                </label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="مثال: مراجعة شاملة لاختبار منتصف الفصل في الرياضيات"
-                  value={newDoc.title}
-                  onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>الموضوع الدراسى:</label>
-                  <select
-                    value={newDoc.subject}
-                    onChange={(e) => setNewDoc({ ...newDoc, subject: e.target.value })}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                    value={registerForm.subject}
+                    onChange={(e) => setRegisterForm({ ...registerForm, subject: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
                   >
                     {SUBJECTS.filter(s => s.id !== 'all').map(s => (
                       <option key={s.id} value={s.name}>{s.name}</option>
@@ -810,92 +921,179 @@ const Worksheets = ({ isStandalone }) => {
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>الصف المستهدف:</label>
-                  <select
-                    value={newDoc.grade}
-                    onChange={(e) => setNewDoc({ ...newDoc, grade: e.target.value })}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
-                  >
-                    {GRADES.filter(g => g !== 'جميع الصفوف').map((g, idx) => (
-                      <option key={idx} value={g}>{g}</option>
-                    ))}
-                  </select>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    اختر رمز مرور سري خاص بك:
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="أدخل رمز مرور تذكره دائماً (مثلاً 1020)"
+                    value={registerForm.passcode}
+                    onChange={(e) => setRegisterForm({ ...registerForm, passcode: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                  />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>صيغة الملف:</label>
-                  <select
-                    value={newDoc.fileType}
-                    onChange={(e) => setNewDoc({ ...newDoc, fileType: e.target.value })}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
-                  >
-                    <option value="PDF">مستند PDF</option>
-                    <option value="Word">مستند Word</option>
-                    <option value="Image">صورة / بطاقة</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                  🔗 رابط المستند المباشر (Google Drive / OneDrive / رابط خارجي):
-                </label>
-                <input 
-                  type="text"
-                  placeholder="https://drive.google.com/file/d/..."
-                  value={newDoc.fileUrl}
-                  onChange={(e) => setNewDoc({ ...newDoc, fileUrl: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, dir: 'ltr', textAlign: 'left' }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                  📎 أو ارفق ملف مباشر من جهازك (اختياري):
-                </label>
-                <input 
-                  type="file"
-                  accept=".pdf,.doc,.docx,.png,.jpg"
-                  onChange={(e) => setNewDoc({ ...newDoc, rawFile: e.target.files[0] })}
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: '10px', border: '1px dashed #cbd5e1' }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
-                  💡 ملاحظات وإرشادات للطلاب والأهالي:
-                </label>
-                <textarea 
-                  rows="2"
-                  placeholder="اكتب أي إرشادات خاصة بآلية حل ورقة العمل أو الامتحان..."
-                  value={newDoc.notes}
-                  onChange={(e) => setNewDoc({ ...newDoc, notes: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setIsUploadModalOpen(false)}
-                  className="btn"
-                  style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800, borderRadius: '10px', padding: '0.75rem 1.4rem', border: 'none' }}
-                >
-                  إلغاء
-                </button>
-
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isUploading}
                   className="btn"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 900, borderRadius: '10px', padding: '0.75rem 1.6rem', border: 'none', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '0.85rem', background: '#059669', color: 'white', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '1.05rem' }}
                 >
-                  {isUploading ? 'جاري رفع المستند وحساب النقاط...' : '🚀 اعتماد المستند وحساب النقاط'}
+                  {isUploading ? 'جاري إرسال الطلب...' : '📩 إرسال طلب الانضمام لمدير المدرسة'}
                 </button>
-              </div>
+              </form>
+            )}
 
-            </form>
+            {/* TAB 3: UPLOAD DOCUMENT FORM */}
+            {modalTab === 'upload' && (
+              <form onSubmit={handleTeacherSubmitDoc}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                  
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                      👨‍🏫 المعلم الموثق:
+                    </label>
+                    <input 
+                      type="text" 
+                      disabled
+                      value={activeTeacherSession ? activeTeacherSession.teacherName : 'يرجى تسجيل الدخول'}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #e2e8f0', background: '#f8fafc', fontWeight: 800, color: '#2563eb' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                      🎯 نوع المستند والمكافأة:
+                    </label>
+                    <select
+                      value={newDoc.docCategory}
+                      onChange={(e) => setNewDoc({ ...newDoc, docCategory: e.target.value })}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #f59e0b', fontWeight: 800, background: '#fffbeb', color: '#b45309' }}
+                    >
+                      <option value="worksheet">⭐ ورقة عمل / مراجعة (+1 نجمة)</option>
+                      <option value="exam">🏆 امتحان / اختبار رسمي (+1 كأس)</option>
+                    </select>
+                  </div>
+
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    📝 عنوان ورقة العمل أو الامتحان:
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="مثال: مراجعة شاملة لاختبار منتصف الفصل في الرياضيات"
+                    value={newDoc.title}
+                    onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>الموضوع الدراسى:</label>
+                    <select
+                      value={newDoc.subject}
+                      onChange={(e) => setNewDoc({ ...newDoc, subject: e.target.value })}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                    >
+                      {SUBJECTS.filter(s => s.id !== 'all').map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>الصف المستهدف:</label>
+                    <select
+                      value={newDoc.grade}
+                      onChange={(e) => setNewDoc({ ...newDoc, grade: e.target.value })}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                    >
+                      {GRADES.filter(g => g !== 'جميع الصفوف').map((g, idx) => (
+                        <option key={idx} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>صيغة الملف:</label>
+                    <select
+                      value={newDoc.fileType}
+                      onChange={(e) => setNewDoc({ ...newDoc, fileType: e.target.value })}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                    >
+                      <option value="PDF">مستند PDF</option>
+                      <option value="Word">مستند Word</option>
+                      <option value="Image">صورة / بطاقة</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    🔗 رابط المستند المباشر (Google Drive / OneDrive):
+                  </label>
+                  <input 
+                    type="text"
+                    placeholder="https://drive.google.com/file/d/..."
+                    value={newDoc.fileUrl}
+                    onChange={(e) => setNewDoc({ ...newDoc, fileUrl: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, dir: 'ltr', textAlign: 'left' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    📎 أو ارفق ملف مباشر من جهازك (اختياري):
+                  </label>
+                  <input 
+                    type="file"
+                    accept=".pdf,.doc,.docx,.png,.jpg"
+                    onChange={(e) => setNewDoc({ ...newDoc, rawFile: e.target.files[0] })}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: '10px', border: '1px dashed #cbd5e1' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                    💡 ملاحظات وإرشادات للطلاب والأهالي:
+                  </label>
+                  <textarea 
+                    rows="2"
+                    placeholder="اكتب أي إرشادات خاصة بآلية حل ورقة العمل أو الامتحان..."
+                    value={newDoc.notes}
+                    onChange={(e) => setNewDoc({ ...newDoc, notes: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="btn"
+                    style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800, borderRadius: '10px', padding: '0.75rem 1.4rem', border: 'none' }}
+                  >
+                    إلغاء
+                  </button>
+
+                  <button 
+                    type="submit" 
+                    disabled={isUploading}
+                    className="btn"
+                    style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 900, borderRadius: '10px', padding: '0.75rem 1.6rem', border: 'none', cursor: 'pointer' }}
+                  >
+                    {isUploading ? 'جاري رفع المستند وحساب النقاط...' : '🚀 اعتماد المستند وحساب النقاط'}
+                  </button>
+                </div>
+
+              </form>
+            )}
           </div>
         </div>
       )}
@@ -910,7 +1108,6 @@ const Worksheets = ({ isStandalone }) => {
 const TeacherLeaderboard = ({ teacherScores }) => {
   const [showAllTeachers, setShowAllTeachers] = useState(false);
 
-  // Calculate sorted rankings
   const rankedTeachers = Object.entries(teacherScores).map(([name, data]) => {
     const stars = data.stars || 0;
     const trophies = data.trophies || 0;
@@ -944,7 +1141,6 @@ const TeacherLeaderboard = ({ teacherScores }) => {
         </p>
       </div>
 
-      {/* TOP 3 PODIUM DISPLAY */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -999,7 +1195,6 @@ const TeacherLeaderboard = ({ teacherScores }) => {
         })}
       </div>
 
-      {/* FULL TEACHERS LEADERBOARD TOGGLE */}
       {remainingTeachers.length > 0 && (
         <div style={{ textAlign: 'center' }}>
           <button
