@@ -187,9 +187,9 @@ const Hero = () => {
               أوراق العمل والامتحانات
             </button>
 
-            <button onClick={() => scrollToSection('initiatives')} className="btn btn-space-outline">
-              <i className="fas fa-magic"></i>
-              مبادراتنا التربوية
+            <button onClick={() => window.location.hash = '#/learning-corner'} className="btn btn-space-outline">
+              <i className="fas fa-gamepad"></i>
+              ركن التعلم
             </button>
 
             <button onClick={() => scrollToSection('contact')} className="btn btn-space-outline">

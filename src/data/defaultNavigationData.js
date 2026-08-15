@@ -8,7 +8,7 @@ export const defaultTopNavigation = [
 
 export const defaultMainNavigation = [
   { id: "nav_1", label: "الرئيسية", type: "section", target: "home", category: "main", order: 1 },
-  { id: "nav_excellence", label: "✨ عام التميز 2026-2027", type: "page", target: "excellence", category: "main", order: 2 },
+  { id: "nav_learning_corner", label: "🎮 ركن التعلم", type: "page", target: "learning-corner", category: "main", order: 2 },
   { id: "nav_2", label: "المبادرات", type: "section", target: "initiatives", category: "main", order: 3 },
   { id: "nav_challenge", label: "🏆 التحدي الأسبوعي", type: "page", target: "challenge", category: "main", order: 4 },
   { id: "nav_worksheets", label: "📑 أوراق العمل", type: "page", target: "worksheets", category: "main", order: 5 },

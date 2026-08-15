@@ -33,6 +33,7 @@ import WeeklyChallenge, { WeeklyChallengeBanner } from './components/WeeklyChall
 import Worksheets, { WorksheetsBanner } from './components/Worksheets';
 import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
 import ExcellenceYearPage from './components/ExcellenceYearPage';
+import LearningCorner from './components/LearningCorner';
 import './App.css';
 
 
@@ -198,23 +199,19 @@ function App() {
           console.log("School guide letter successfully seeded!");
         }
 
-        // 12. Seed Navigation Links & Ensure nav_excellence is present
+        // 12. Seed Navigation Links (Only seed once on initial setup)
         const navigationRef = collection(db, 'navigation');
         const navigationSnap = await getDocs(navigationRef);
-        const existingIds = new Set(navigationSnap.docs.map(d => d.id));
-        for (const item of defaultNavigation) {
-          if (!existingIds.has(item.id)) {
+        if (navigationSnap.empty && localStorage.getItem('db_nav_seeded') !== 'true') {
+          console.log("Firestore navigation collection is empty. Seeding defaults once...");
+          for (const item of defaultNavigation) {
             await setDoc(doc(db, 'navigation', item.id), item);
           }
+          localStorage.setItem('db_nav_seeded', 'true');
+          console.log("Navigation links successfully seeded!");
+        } else if (!navigationSnap.empty) {
+          localStorage.setItem('db_nav_seeded', 'true');
         }
-        await setDoc(doc(db, 'navigation', 'nav_excellence'), {
-          id: "nav_excellence",
-          label: "✨ عام التميز 2026-2027",
-          type: "page",
-          target: "excellence",
-          category: "main",
-          order: 2
-        });
 
         // 13. Seed Pages & Ensure excellence page exists
         const pagesRef = collection(db, 'pages');
@@ -244,6 +241,7 @@ function App() {
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isExcellenceView = currentHash.includes('excellence');
+  const isLearningCornerView = currentHash.includes('learning-corner');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
   const isWorksheetsView = currentHash.includes('worksheets');
   const isAstronomyView = currentHash.includes('astronomy');
@@ -271,6 +269,8 @@ function App() {
       {/* Main Sections */}
       {isExcellenceView ? (
         <ExcellenceYearPage isStandalone={true} />
+      ) : isLearningCornerView ? (
+        <LearningCorner isStandalone={true} />
       ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (

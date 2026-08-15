@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { defaultNavigation, defaultTopNavigation, defaultMainNavigation } from '../data/defaultNavigationData';
 
 const Navbar = () => {
@@ -10,56 +10,61 @@ const Navbar = () => {
   const [topNavItems, setTopNavItems] = useState([]);
   const [mainNavItems, setMainNavItems] = useState([]);
 
-  // Fetch navigation links from Firestore or LocalStorage with instant event listeners
+  // Real-time navigation links listener from Firestore & LocalStorage for INSTANT zero-delay updates
   useEffect(() => {
-    const fetchNav = async () => {
-      try {
-        const navRef = collection(db, 'navigation');
-        const navSnap = await getDocs(navRef);
-        let items = [];
-        if (!navSnap.empty) {
-          items = navSnap.docs.map(doc => doc.data());
-          localStorage.setItem('db_navigation', JSON.stringify(items));
-        } else {
-          const localNav = localStorage.getItem('db_navigation');
-          if (localNav) {
-            items = JSON.parse(localNav);
-          } else {
-            items = defaultNavigation;
-          }
-        }
-        items.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const navRef = collection(db, 'navigation');
 
-        // Filter into Top Bar and Main Bar items
-        const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
-        const main = items.filter(item => !top.includes(item));
+    const updateNavState = (rawItems) => {
+      let items = [...rawItems];
+      // Filter out any lingering nav_excellence if deleted
+      items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence');
+      items.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-        setTopNavItems(top.length > 0 ? top : defaultTopNavigation);
-        setMainNavItems(main.length > 0 ? main : defaultMainNavigation);
-      } catch (err) {
-        console.warn("Firestore navigation load failed, using local/default fallback:", err.message);
+      const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
+      const main = items.filter(item => !top.includes(item));
+
+      setTopNavItems(top);
+      setMainNavItems(main);
+    };
+
+    // 1. Instant Real-time Firestore Listener
+    const unsubscribe = onSnapshot(navRef, (navSnap) => {
+      if (!navSnap.empty) {
+        const items = navSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        localStorage.setItem('db_navigation', JSON.stringify(items));
+        updateNavState(items);
+      } else {
         const localNav = localStorage.getItem('db_navigation');
-        if (localNav) {
-          const items = JSON.parse(localNav);
-          const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
-          const main = items.filter(item => !top.includes(item));
-          setTopNavItems(top);
-          setMainNavItems(main);
+        if (localNav !== null) {
+          updateNavState(JSON.parse(localNav));
         } else {
-          setTopNavItems(defaultTopNavigation);
-          setMainNavItems(defaultMainNavigation);
+          updateNavState([]);
         }
+      }
+    }, (err) => {
+      console.warn("Firestore real-time nav listener fallback:", err.message);
+      const localNav = localStorage.getItem('db_navigation');
+      if (localNav !== null) {
+        updateNavState(JSON.parse(localNav));
+      } else {
+        updateNavState(defaultNavigation);
+      }
+    });
+
+    // 2. Event listener for local admin dashboard changes
+    const handleNavUpdate = () => {
+      const localNav = localStorage.getItem('db_navigation');
+      if (localNav) {
+        updateNavState(JSON.parse(localNav));
       }
     };
 
-    fetchNav();
-
-    const handleNavUpdate = () => fetchNav();
     window.addEventListener('navigationUpdated', handleNavUpdate);
     window.addEventListener('storage', handleNavUpdate);
     window.addEventListener('hashchange', handleNavUpdate);
 
     return () => {
+      unsubscribe();
       window.removeEventListener('navigationUpdated', handleNavUpdate);
       window.removeEventListener('storage', handleNavUpdate);
       window.removeEventListener('hashchange', handleNavUpdate);

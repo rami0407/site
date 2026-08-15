@@ -714,7 +714,8 @@ const AdminDashboard = () => {
       setBooks(JSON.parse(localStorage.getItem('db_books') || JSON.stringify(defaultBooks)));
       setUniforms(JSON.parse(localStorage.getItem('db_uniforms') || JSON.stringify(defaultUniform)));
       setGuideLetter(JSON.parse(localStorage.getItem('db_guide_letter') || JSON.stringify(defaultLetter)));
-      setNavigation(JSON.parse(localStorage.getItem('db_navigation') || JSON.stringify(defaultNavigation)));
+      const storedNav = localStorage.getItem('db_navigation');
+      setNavigation(storedNav !== null ? JSON.parse(storedNav) : defaultNavigation);
       setPages(JSON.parse(localStorage.getItem('db_pages') || JSON.stringify(defaultPages)));
       setGeminiKey(localStorage.getItem('db_gemini_key') || '');
 
@@ -837,6 +838,7 @@ const AdminDashboard = () => {
       });
       fetchedNav.sort((a, b) => (a.order || 0) - (b.order || 0));
       setNavigation(fetchedNav);
+      localStorage.setItem('db_navigation', JSON.stringify(fetchedNav));
 
       // 14. Load Pages
       const qPages = collection(db, 'pages');
