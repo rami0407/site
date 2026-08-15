@@ -1292,7 +1292,7 @@ const Worksheets = ({ isStandalone }) => {
 };
 
 // =========================================================================
-// DYNAMIC REAL TEACHER HONOR ROLL & LEADERBOARD COMPONENT
+// ALWAYS TOP 3 TEACHERS HONOR ROLL & LEADERBOARD COMPONENT
 // =========================================================================
 const TeacherLeaderboard = ({ teacherScores }) => {
   const [showAllTeachers, setShowAllTeachers] = useState(false);
@@ -1302,34 +1302,35 @@ const TeacherLeaderboard = ({ teacherScores }) => {
     const trophies = data.trophies || 0;
     const likes = data.likes || 0;
     const uploads = data.uploads || (stars + trophies);
-    const score = (trophies * 10) + (stars * 5) + (likes * 2) + uploads;
-    return { name, stars, trophies, likes, uploads, score };
-  }).sort((a, b) => b.score - a.score);
+    const score = (trophies * 20) + (stars * 10) + (uploads * 5) + (likes * 2);
+    return { name, stars, trophies, likes, uploads, score, isPlaceholder: false };
+  }).sort((a, b) => b.score - a.score || b.trophies - a.trophies || b.stars - a.stars);
 
-  const topThree = rankedTeachers.slice(0, 3);
+  // Always build top 3 podium slots
+  const podiumSlots = [
+    { title: '🥇 المعلم الأكثر تميزاً', medal: '🥇', defaultName: 'أفضل معلم محقق لأعلى الكؤوس والنجوم' },
+    { title: '🥈 المعلم المبدع', medal: '🥈', defaultName: 'مقعد المعلم المبدع (بانتظار المنافسة والرفع 🚀)' },
+    { title: '🥉 المعلم النشيط', medal: '🥉', defaultName: 'مقعد المعلم النشيط (بانتظار المنافسة والرفع 🌟)' }
+  ];
+
+  const topThree = podiumSlots.map((slot, idx) => {
+    if (rankedTeachers[idx]) {
+      return { ...rankedTeachers[idx], slotTitle: slot.title, slotMedal: slot.medal };
+    }
+    return {
+      name: slot.defaultName,
+      stars: 0,
+      trophies: 0,
+      likes: 0,
+      uploads: 0,
+      score: 0,
+      isPlaceholder: true,
+      slotTitle: slot.title,
+      slotMedal: slot.medal
+    };
+  });
+
   const remainingTeachers = rankedTeachers.slice(3);
-
-  if (rankedTeachers.length === 0) {
-    return (
-      <div style={{
-        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-        borderRadius: '24px',
-        padding: '1.75rem 2rem',
-        textAlign: 'center',
-        border: '2px solid #fde68a',
-        marginBottom: '2rem',
-        boxShadow: '0 8px 25px rgba(245, 158, 11, 0.12)'
-      }}>
-        <div style={{ fontSize: '2.2rem', marginBottom: '0.3rem' }}>🏆⭐</div>
-        <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.35rem', fontWeight: 900, color: '#b45309' }}>
-          لوحة شرف المعلمين المتميزين 🌟
-        </h3>
-        <p style={{ margin: 0, color: '#92400e', fontWeight: 700, fontSize: '0.95rem' }}>
-          لوحة الشرف جاهزة ومجهزة حياً على السيرفر! ارفع أول امتحان أو ورقة عمل لتتصدر المركز الأول في لوحة الشرف! 🚀
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div style={{
@@ -1342,13 +1343,13 @@ const TeacherLeaderboard = ({ teacherScores }) => {
     }}>
       <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
         <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.3rem 0.8rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
-          🏆 لوحة الشرف والتكريم الحقيقية
+          🏆 لوحة شرف أفضل 3 معلمين متميزين
         </span>
         <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#1e293b', margin: '0.4rem 0' }}>
           لوحة شرف المعلمين المتميزين 🌟
         </h3>
         <p style={{ color: '#64748b', margin: 0, fontSize: '0.92rem' }}>
-          تكريم المعلمين الأكثر رفعاً للامتحانات (🏆 كؤوس) وأوراق العمل (⭐ نجوم) والأعلى تفاعلاً وإعجاباً من الأهالي والطلاب (👍)
+          تكريم مستمر لأفضل 3 معلمين حققوا أعلى نسبة رفع للامتحانات (🏆 كؤوس) وأوراق العمل (⭐ نجوم) والإعجابات (👍)
         </p>
       </div>
 
@@ -1359,7 +1360,6 @@ const TeacherLeaderboard = ({ teacherScores }) => {
         marginBottom: '1.75rem'
       }}>
         {topThree.map((teacher, idx) => {
-          const medals = ['🥇 المعلم الأكثر تميزاً', '🥈 المعلم المبدع', '🥉 المعلم النشيط'];
           const bgColors = [
             'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
             'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -1371,36 +1371,43 @@ const TeacherLeaderboard = ({ teacherScores }) => {
             <div 
               key={idx}
               style={{
-                background: bgColors[idx] || '#ffffff',
-                border: `2px solid ${borderColors[idx] || '#cbd5e1'}`,
+                background: teacher.isPlaceholder ? '#ffffff' : bgColors[idx] || '#ffffff',
+                border: `2px ${teacher.isPlaceholder ? 'dashed' : 'solid'} ${borderColors[idx] || '#cbd5e1'}`,
                 borderRadius: '20px',
                 padding: '1.25rem',
                 textAlign: 'center',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.05)',
+                boxShadow: teacher.isPlaceholder ? 'none' : '0 8px 20px rgba(0,0,0,0.05)',
+                opacity: teacher.isPlaceholder ? 0.8 : 1,
                 position: 'relative'
               }}
             >
               <div style={{ fontSize: '1.8rem', marginBottom: '0.3rem' }}>
-                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                {teacher.slotMedal}
               </div>
               <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: borderColors[idx], marginBottom: '0.4rem' }}>
-                {medals[idx]}
+                {teacher.slotTitle}
               </span>
-              <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+              <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: teacher.isPlaceholder ? '#64748b' : '#0f172a' }}>
                 {teacher.name}
               </h4>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
-                <span style={{ background: '#fff', padding: '0.3rem 0.6rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, border: '1px solid #e2e8f0' }}>
-                  🏆 {teacher.trophies} كؤوس
-                </span>
-                <span style={{ background: '#fff', padding: '0.3rem 0.6rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, border: '1px solid #e2e8f0' }}>
-                  ⭐ {teacher.stars} نجوم
-                </span>
-                <span style={{ background: '#fff', padding: '0.3rem 0.6rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, border: '1px solid #e2e8f0', color: '#ef4444' }}>
-                  👍 {teacher.likes} إعجاب
-                </span>
-              </div>
+              {teacher.isPlaceholder ? (
+                <p style={{ margin: '0.85rem 0 0 0', fontSize: '0.82rem', color: '#94a3b8', fontWeight: 700 }}>
+                  🚀 شارك برفع موادك للتنافس واحتلال هذا المقعد!
+                </p>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
+                  <span style={{ background: '#fff', padding: '0.3rem 0.6rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, border: '1px solid #e2e8f0', color: '#d97706' }}>
+                    🏆 {teacher.trophies} كؤوس
+                  </span>
+                  <span style={{ background: '#fff', padding: '0.3rem 0.6rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, border: '1px solid #e2e8f0', color: '#2563eb' }}>
+                    ⭐ {teacher.stars} نجوم
+                  </span>
+                  <span style={{ background: '#fff', padding: '0.3rem 0.6rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, border: '1px solid #e2e8f0', color: '#ef4444' }}>
+                    👍 {teacher.likes} إعجاب
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}
@@ -1419,7 +1426,7 @@ const TeacherLeaderboard = ({ teacherScores }) => {
         </div>
       )}
 
-      {showAllTeachers && (
+      {showAllTeachers && remainingTeachers.length > 0 && (
         <div style={{ marginTop: '1.5rem', background: 'white', borderRadius: '16px', padding: '1rem', border: '1px solid #e2e8f0' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
