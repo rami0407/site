@@ -429,36 +429,49 @@ const AdminDashboard = () => {
   });
   const [teachersList, setTeachersList] = useState([]);
 
-  // Real-time Teacher Approvals Listener
+  const fetchTeachersData = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'teachers'));
+      let fsList = [];
+      if (!snap.empty) {
+        snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
+      }
+      let localList = [];
+      try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
+
+      const combined = [...fsList];
+      localList.forEach(loc => {
+        if (!combined.some(existing => existing.id === loc.id || existing.name === loc.name)) {
+          combined.unshift(loc);
+        }
+      });
+      setTeachersList(combined);
+    } catch (err) {
+      console.warn("Fetch teachers error:", err.message);
+      let localList = [];
+      try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
+      setTeachersList(localList);
+    }
+  };
+
   useEffect(() => {
+    fetchTeachersData();
+
     let unsubscribe = () => {};
     try {
       const qTeachers = collection(db, 'teachers');
       unsubscribe = onSnapshot(qTeachers, (snap) => {
         let fsList = [];
         snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
-        
-        let localList = [];
-        try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
-
-        const combined = [...fsList];
-        localList.forEach(loc => {
-          if (!combined.some(existing => existing.id === loc.id || existing.name === loc.name)) {
-            combined.unshift(loc);
-          }
-        });
-        setTeachersList(combined);
+        if (fsList.length > 0) {
+          setTeachersList(fsList);
+        }
       }, (err) => {
-        console.warn("Teachers real-time snapshot error:", err.message);
-        let localList = [];
-        try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
-        setTeachersList(localList);
+        console.warn("Teachers snapshot warning:", err.message);
       });
-    } catch (e) {
-      console.warn("Teachers snapshot setup error:", e.message);
-    }
+    } catch (e) {}
     return () => unsubscribe();
-  }, []);
+  }, [activeTab]);
 
   const handleApproveTeacher = async (teacherId, teacherName) => {
     try {
