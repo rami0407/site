@@ -5,6 +5,8 @@ export const defaultSchoolTeachers = [
     nameHe: "אגבאריה אימאן",
     nameAr: "إيمان اغبارية",
     role: "معلمة ومربية صف",
+    phone: "050-1234567",
+    email: "eman.agbariya@school.edu.hl",
     receptionSchedule: [
       { day: "Sunday", dayAr: "الأحد", startTime: "08:30", endTime: "13:30" },
       { day: "Tuesday", dayAr: "الثلاثاء", startTime: "08:30", endTime: "13:30" }
@@ -15,6 +17,8 @@ export const defaultSchoolTeachers = [
     nameHe: "אגבאריה ג'יהאן",
     nameAr: "جيهان اغبارية",
     role: "معلمة ومربية صف",
+    phone: "050-1234567",
+    email: "eman.agbariya@school.edu.hl",
     receptionSchedule: [
       { day: "Monday", dayAr: "الإثنين", startTime: "08:30", endTime: "13:30" },
       { day: "Wednesday", dayAr: "الأربعاء", startTime: "08:30", endTime: "13:30" }
