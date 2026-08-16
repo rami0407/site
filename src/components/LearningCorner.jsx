@@ -96,6 +96,154 @@ const LearningCorner = () => {
   };
 
   // =========================================================================
+  // MEMORY MATCHING GAME LOGIC
+  // =========================================================================
+  const MEMORY_THEMES = {
+    fruits: [
+      { pairId: 1, icon: '🍎', text: 'تفاحة' },
+      { pairId: 2, icon: '🍌', text: 'موز' },
+      { pairId: 3, icon: '🍇', text: 'عنب' },
+      { pairId: 4, icon: '🍓', text: 'فراولة' },
+      { pairId: 5, icon: '🍊', text: 'برتقال' },
+      { pairId: 6, icon: '🍒', text: 'كرز' }
+    ],
+    animals: [
+      { pairId: 1, icon: '🦁', text: 'أسد' },
+      { pairId: 2, icon: '🐱', text: 'قطة' },
+      { pairId: 3, icon: '🐶', text: 'كلب' },
+      { pairId: 4, icon: '🐰', text: 'أرنب' },
+      { pairId: 5, icon: '🐦', text: 'عصفور' },
+      { pairId: 6, icon: '🐘', text: 'فيل' }
+    ],
+    space: [
+      { pairId: 1, icon: '🚀', text: 'صاروخ' },
+      { pairId: 2, icon: '🪐', text: 'كوكب' },
+      { pairId: 3, icon: '☀️', text: 'شمس' },
+      { pairId: 4, icon: '🌙', text: 'قمر' },
+      { pairId: 5, icon: '⭐', text: 'نجمة' },
+      { pairId: 6, icon: '🔭', text: 'تلسكوب' }
+    ]
+  };
+
+  const [memoryCards, setMemoryCards] = useState([]);
+  const [flippedCards, setFlippedCards] = useState([]);
+  const [memoryMoves, setMemoryMoves] = useState(0);
+  const [memoryMatches, setMemoryMatches] = useState(0);
+  const [selectedTheme, setSelectedTheme] = useState('fruits');
+  const [isMemoryWin, setIsMemoryWin] = useState(false);
+
+  const startMemoryGame = (theme = selectedTheme) => {
+    setSelectedTheme(theme);
+    const rawList = MEMORY_THEMES[theme];
+    let cards = [];
+    rawList.forEach((item, idx) => {
+      cards.push({ id: `c_${idx}_1`, pairId: item.pairId, icon: item.icon, text: item.text, flipped: false, matched: false });
+      cards.push({ id: `c_${idx}_2`, pairId: item.pairId, icon: item.icon, text: item.text, flipped: false, matched: false });
+    });
+    cards = cards.sort(() => Math.random() - 0.5);
+    setMemoryCards(cards);
+    setFlippedCards([]);
+    setMemoryMoves(0);
+    setMemoryMatches(0);
+    setIsMemoryWin(false);
+  };
+
+  const handleCardClick = (index) => {
+    if (flippedCards.length === 2 || memoryCards[index].flipped || memoryCards[index].matched) return;
+
+    const newCards = [...memoryCards];
+    newCards[index].flipped = true;
+    setMemoryCards(newCards);
+
+    const newFlipped = [...flippedCards, index];
+    setFlippedCards(newFlipped);
+
+    if (newFlipped.length === 2) {
+      setMemoryMoves(prev => prev + 1);
+      const [idx1, idx2] = newFlipped;
+      if (newCards[idx1].pairId === newCards[idx2].pairId) {
+        newCards[idx1].matched = true;
+        newCards[idx2].matched = true;
+        setMemoryCards(newCards);
+        setFlippedCards([]);
+        setMemoryMatches(prev => {
+          const nextVal = prev + 1;
+          if (nextVal === MEMORY_THEMES[selectedTheme].length) {
+            setIsMemoryWin(true);
+          }
+          return nextVal;
+        });
+      } else {
+        setTimeout(() => {
+          newCards[idx1].flipped = false;
+          newCards[idx2].flipped = false;
+          setMemoryCards(newCards);
+          setFlippedCards([]);
+        }, 900);
+      }
+    }
+  };
+
+  // =========================================================================
+  // ARABIC SPELLING & WORD BUILDER LOGIC
+  // =========================================================================
+  const SPELLING_WORDS = [
+    { id: 'w1', word: 'صاروخ', icon: '🚀', clue: 'مركبة فضائية تطير للفضاء' },
+    { id: 'w2', word: 'كتاب', icon: '📖', clue: 'نقرأ فيه العلوم والمعرفة' },
+    { id: 'w3', word: 'تفاحة', icon: '🍎', clue: 'فاكهة حمراء ولذيذة' },
+    { id: 'w4', word: 'مدرسة', icon: '🏫', clue: 'المكان الذي نتعلم فيه مع أصدقائنا' },
+    { id: 'w5', word: 'شمس', icon: '☀️', clue: 'تعطينا الضوء والدفء كل صباح' }
+  ];
+
+  const [spellingIndex, setSpellingIndex] = useState(0);
+  const [spellingUserLetters, setSpellingUserLetters] = useState([]);
+  const [spellingPool, setSpellingPool] = useState([]);
+  const [spellingScore, setSpellingScore] = useState(0);
+  const [isSpellingWin, setIsSpellingWin] = useState(false);
+
+  const startSpellingGame = () => {
+    setSpellingIndex(0);
+    setSpellingScore(0);
+    setIsSpellingWin(false);
+    loadSpellingQuestion(0);
+  };
+
+  const loadSpellingQuestion = (idx) => {
+    const q = SPELLING_WORDS[idx];
+    const letters = q.word.split('');
+    const distractors = ['ب', 'ت', 'م', 'ر', 'ل'].filter(l => !letters.includes(l)).slice(0, 2);
+    const pool = [...letters, ...distractors].sort(() => Math.random() - 0.5);
+    setSpellingPool(pool);
+    setSpellingUserLetters([]);
+  };
+
+  const handlePickSpellingLetter = (letter, pIdx) => {
+    const currentQ = SPELLING_WORDS[spellingIndex];
+    const targetWord = currentQ.word;
+    const nextUserLetters = [...spellingUserLetters, { letter, pIdx }];
+    setSpellingUserLetters(nextUserLetters);
+    setSpellingPool(prev => prev.map((l, i) => i === pIdx ? null : l));
+
+    const formedWord = nextUserLetters.map(u => u.letter).join('');
+    if (formedWord === targetWord) {
+      setTimeout(() => {
+        setSpellingScore(prev => prev + 10);
+        if (spellingIndex + 1 < SPELLING_WORDS.length) {
+          setSpellingIndex(prev => prev + 1);
+          loadSpellingQuestion(spellingIndex + 1);
+        } else {
+          setIsSpellingWin(true);
+        }
+      }, 500);
+    }
+  };
+
+  const handleRemoveSpellingLetter = (item, uIdx) => {
+    setSpellingUserLetters(prev => prev.filter((_, i) => i !== uIdx));
+    setSpellingPool(prev => prev.map((l, i) => i === item.pIdx ? item.letter : l));
+  };
+
+  // =========================================================================
   // 1. MULTIPLICATION GAME STATE
   // =========================================================================
   const [multGameState, setMultGameState] = useState('stages'); // 'loading' | 'stages' | 'playing' | 'complete'
@@ -1143,6 +1291,194 @@ const LearningCorner = () => {
               </button>
             </div>
 
+            {/* Game 5: Smart Memory Matching Game */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
+              borderRadius: '24px',
+              border: '2px solid rgba(236, 72, 153, 0.4)',
+              padding: '2rem',
+              boxShadow: '0 15px 35px rgba(236, 72, 153, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justify: 'space-between'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                background: 'linear-gradient(135deg, #ec4899, #be185d)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.85rem',
+                fontWeight: 800
+              }}>
+                تحدي الذاكرة 🧠
+              </div>
+
+              <div>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  🧠🃏✨
+                </div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  مطابقة الذاكرة الذكية
+                </h3>
+                <p style={{ color: '#cbd5e1', fontSize: '0.98rem', lineHeight: '1.7', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  لعبة مطابقة كروت الذاكرة لربط الصور بالكلمات والفواكه والحيوانات والفلك بأقل حركات ممكنة!
+                </p>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: '0.9rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justify: 'space-around',
+                  textAlign: 'center'
+                }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🍎</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>الفواكه</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🦁</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>الحيوانات</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🚀</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>الفضاء</span>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (!profileName || !profileClass) {
+                    setIsEditingProfile(true);
+                    return;
+                  }
+                  startMemoryGame('fruits');
+                  setActiveTab('memory_game');
+                }}
+                className="btn"
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(236, 72, 153, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: '0.75rem'
+                }}
+              >
+                <span>دخول لعبة الذاكرة 🧠</span>
+                <i className="fas fa-play"></i>
+              </button>
+            </div>
+
+            {/* Game 6: Arabic Word Builder & Spelling Bee */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
+              borderRadius: '24px',
+              border: '2px solid rgba(245, 158, 11, 0.4)',
+              padding: '2rem',
+              boxShadow: '0 15px 35px rgba(245, 158, 11, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justify: 'space-between'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.85rem',
+                fontWeight: 800
+              }}>
+                تركيب الكلمات ✍️
+              </div>
+
+              <div>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  ✍️🧩🏆
+                </div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  تحدي الإملاء وتركيب الحروف
+                </h3>
+                <p style={{ color: '#cbd5e1', fontSize: '0.98rem', lineHeight: '1.7', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  سحب وتركيب فقاعات الحروف لتشكيل الكلمات العربية الصحيحة وفقاً للصور والتلميحات!
+                </p>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: '0.9rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justify: 'space-around',
+                  textAlign: 'center'
+                }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>✍️</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>تركيب إملائي</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>💡</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>تلميحات ذكية</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🏆</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>نقاط ونجوم</span>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (!profileName || !profileClass) {
+                    setIsEditingProfile(true);
+                    return;
+                  }
+                  startSpellingGame();
+                  setActiveTab('spelling_game');
+                }}
+                className="btn"
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(245, 158, 11, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: '0.75rem'
+                }}
+              >
+                <span>دخول تحدي التركيب ✍️</span>
+                <i className="fas fa-play"></i>
+              </button>
+            </div>
+
           </div>
         </div>
       )}
@@ -1828,6 +2164,206 @@ const LearningCorner = () => {
       {activeTab === 'astronomy' && (
         <div>
           <AstronomyPage isStandalone={false} />
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB 6: SMART MEMORY MATCHING GAME                        */}
+      {/* -------------------------------------------------------- */}
+      {activeTab === 'memory_game' && (
+        <div className="container" style={{ paddingBottom: '4rem', maxWidth: '850px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', color: '#1e293b', textAlign: 'center' }}>
+            
+            {/* Header */}
+            <span style={{ background: '#fce7f3', color: '#be185d', padding: '0.5rem 1.4rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.8rem' }}>
+              🧠 مطابقة الذاكرة الذكية
+            </span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+              تحدي الذاكرة السريعة يا {profileName}! 🃏✨
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600, marginBottom: '1.5rem' }}>
+              اقلب الكروت واكتشف الأزواج المتطابقة بأقل عدد من الحركات!
+            </p>
+
+            {/* Theme Selector Bar */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+              <button onClick={() => startMemoryGame('fruits')} style={{ background: selectedTheme === 'fruits' ? '#ec4899' : '#f1f5f9', color: selectedTheme === 'fruits' ? 'white' : '#475569', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}>🍎 الفواكه والأطعمة</button>
+              <button onClick={() => startMemoryGame('animals')} style={{ background: selectedTheme === 'animals' ? '#ec4899' : '#f1f5f9', color: selectedTheme === 'animals' ? 'white' : '#475569', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}>🦁 الحيوانات والطيور</button>
+              <button onClick={() => startMemoryGame('space')} style={{ background: selectedTheme === 'space' ? '#ec4899' : '#f1f5f9', color: selectedTheme === 'space' ? 'white' : '#475569', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}>🚀 الفضاء والكون</button>
+            </div>
+
+            {/* Stats Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '2rem', fontWeight: 800 }}>
+              <div>حركاتك: <strong style={{ color: '#ec4899', fontSize: '1.2rem' }}>{memoryMoves}</strong></div>
+              <div>الأزواج المكتملة: <strong style={{ color: '#10b981', fontSize: '1.2rem' }}>{memoryMatches} / {MEMORY_THEMES[selectedTheme].length}</strong></div>
+            </div>
+
+            {/* Memory Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
+              {memoryCards.map((card, idx) => (
+                <div
+                  key={card.id}
+                  onClick={() => handleCardClick(idx)}
+                  style={{
+                    height: '110px',
+                    background: card.flipped || card.matched ? '#ffffff' : 'linear-gradient(135deg, #ec4899, #be185d)',
+                    border: `3px solid ${card.matched ? '#10b981' : (card.flipped ? '#ec4899' : '#ffffff')}`,
+                    borderRadius: '18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justify: 'center',
+                    cursor: card.matched ? 'default' : 'pointer',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                    transform: card.flipped || card.matched ? 'rotateY(180deg)' : 'none',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
+                  {(card.flipped || card.matched) ? (
+                    <div style={{ transform: 'rotateY(180deg)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2.5rem' }}>{card.icon}</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#1e293b' }}>{card.text}</div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '2rem', color: 'white', fontWeight: 900 }}>❓</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* WIN Banner */}
+            {isMemoryWin && (
+              <div style={{ background: '#ecfdf5', border: '2px solid #10b981', borderRadius: '20px', padding: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉🏆⭐</div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#047857', margin: '0 0 0.5rem 0' }}>
+                  أنت مذهل يا {profileName}! أتممت المطابقة بنجاح في {memoryMoves} حركة!
+                </h3>
+                <button onClick={() => startMemoryGame(selectedTheme)} className="btn" style={{ background: '#10b981', color: 'white', fontWeight: 900, padding: '0.75rem 1.6rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                  🔄 لعب جولة جديدة
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => setActiveTab('hub')} className="btn" style={{ background: '#64748b', color: 'white', fontWeight: 800, padding: '0.65rem 1.4rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+              ↩️ العودة لقائمة الألعاب
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB 7: ARABIC WORD BUILDER & SPELLING GAME               */}
+      {/* -------------------------------------------------------- */}
+      {activeTab === 'spelling_game' && (
+        <div className="container" style={{ paddingBottom: '4rem', maxWidth: '750px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', color: '#1e293b', textAlign: 'center' }}>
+            
+            {/* Header */}
+            <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.5rem 1.4rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.8rem' }}>
+              ✍️ تحدي الإملاء وتركيب الحروف
+            </span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+              رّتب الحروف لتشكيل الكلمة يا {profileName}! ✍️✨
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600, marginBottom: '1.5rem' }}>
+              السؤال {spellingIndex + 1} من {SPELLING_WORDS.length} | مجموع نقاطك: <strong style={{ color: '#f59e0b', fontSize: '1.1rem' }}>{spellingScore} 🪙</strong>
+            </p>
+
+            {!isSpellingWin ? (
+              <div>
+                {/* Visual Clue Card */}
+                <div style={{ background: '#fffbeb', border: '2px solid #fde68a', borderRadius: '20px', padding: '1.5rem', marginBottom: '2rem' }}>
+                  <div style={{ fontSize: '4.5rem', marginBottom: '0.5rem' }}>{SPELLING_WORDS[spellingIndex].icon}</div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#b45309', margin: 0 }}>
+                    💡 التلميح: {SPELLING_WORDS[spellingIndex].clue}
+                  </h3>
+                </div>
+
+                {/* Formed Word Bubbles */}
+                <div style={{ marginBottom: '2rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>الكلمة المُشكّلة:</label>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', minHeight: '65px', background: '#f8fafc', padding: '0.75rem', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
+                    {spellingUserLetters.length === 0 ? (
+                      <span style={{ color: '#94a3b8', fontWeight: 700, alignSelf: 'center' }}>اضغط على الحروف بالأصل لتركيب الكلمة...</span>
+                    ) : (
+                      spellingUserLetters.map((item, uIdx) => (
+                        <div
+                          key={uIdx}
+                          onClick={() => handleRemoveSpellingLetter(item, uIdx)}
+                          style={{
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '14px',
+                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                            color: 'white',
+                            fontSize: '1.5rem',
+                            fontWeight: 900,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justify: 'center',
+                            cursor: 'pointer',
+                            boxShadow: '0 6px 14px rgba(245, 158, 11, 0.4)'
+                          }}
+                        >
+                          {item.letter}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Scrambled Letter Pool */}
+                <div style={{ marginBottom: '2.5rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>الحروف المتاحة:</label>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {spellingPool.map((letter, pIdx) => letter ? (
+                      <div
+                        key={pIdx}
+                        onClick={() => handlePickSpellingLetter(letter, pIdx)}
+                        style={{
+                          width: '52px',
+                          height: '52px',
+                          borderRadius: '14px',
+                          background: '#ffffff',
+                          border: '2px solid #cbd5e1',
+                          color: '#0f172a',
+                          fontSize: '1.5rem',
+                          fontWeight: 900,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justify: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+                        }}
+                      >
+                        {letter}
+                      </div>
+                    ) : (
+                      <div key={pIdx} style={{ width: '52px', height: '52px', opacity: 0.1 }} />
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div style={{ background: '#ecfdf5', border: '2px solid #10b981', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>🎉🏆⭐</div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#047857', margin: '0 0 0.5rem 0' }}>
+                  أنت عبقري الإملاء يا {profileName}!
+                </h3>
+                <p style={{ fontSize: '1.1rem', color: '#065f46', fontWeight: 800, marginBottom: '1.5rem' }}>
+                  جمعت {spellingScore} نقطة ونشلت جميع الكلمات العربية بنجاح تام!
+                </p>
+                <button onClick={startSpellingGame} className="btn" style={{ background: '#10b981', color: 'white', fontWeight: 900, padding: '0.75rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                  🔄 إعادة التحدي من جديد
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => setActiveTab('hub')} className="btn" style={{ background: '#64748b', color: 'white', fontWeight: 800, padding: '0.65rem 1.4rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+              ↩️ العودة لقائمة الألعاب
+            </button>
+          </div>
         </div>
       )}
 
