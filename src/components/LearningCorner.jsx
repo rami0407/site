@@ -12,6 +12,7 @@ import {
   limit 
 } from 'firebase/firestore';
 import { STATION_NAMES, VOCABULARY_DATA } from '../data/englishVocabData';
+import { HEBREW_STATION_NAMES, HEBREW_VOCAB_DATA } from '../data/hebrewVocabData';
 
 const DEFAULT_MULTIPLICATION_STAGES = [
   { number: 1, title: 'جدول 1', multiplier: 1, completed: false, stars: 0 },
@@ -45,8 +46,21 @@ const parseGradeAndSectionLC = (fullClassString) => {
 };
 
 const LearningCorner = () => {
-  // Navigation tabs: 'hub' | 'multiplication' | 'english_vocab'
+  // Navigation tabs: 'hub' | 'multiplication' | 'hebrew_vocab' | 'english_vocab'
   const [activeTab, setActiveTab] = useState('hub');
+  const [selectedHebrewStation, setSelectedHebrewStation] = useState('school');
+
+  const speakHebrew = (text) => {
+    if (!('speechSynthesis' in window)) {
+      alert('المتصفح لديك لا يدعم النطق الصوتي المباشر.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'he-IL';
+    utterance.rate = 0.82;
+    window.speechSynthesis.speak(utterance);
+  };
 
   // =========================================================================
   // UNIFIED STUDENT PROFILE STATE (Common across ALL Learning Corner Games!)
@@ -942,60 +956,96 @@ const LearningCorner = () => {
               </button>
             </div>
 
-            {/* Game 3: Upcoming Placeholder Card */}
+            {/* Game 3: Hebrew Vocabulary Journey */}
             <div style={{
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.5))',
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
               borderRadius: '24px',
-              border: '2px dashed rgba(255, 255, 255, 0.15)',
+              border: '2px solid rgba(16, 185, 129, 0.4)',
               padding: '2rem',
+              boxShadow: '0 15px 35px rgba(16, 185, 129, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              justify: 'space-between',
-              position: 'relative'
+              justify: 'space-between'
             }}>
               <div style={{
                 position: 'absolute',
                 top: '15px',
                 left: '15px',
-                background: 'rgba(245, 158, 11, 0.2)',
-                color: '#fef08a',
-                border: '1px solid #f59e0b',
+                background: 'linear-gradient(135deg, #10b981, #047857)',
+                color: 'white',
                 padding: '4px 12px',
                 borderRadius: '20px',
                 fontSize: '0.85rem',
                 fontWeight: 800
               }}>
-                قريباً ✨
+                متاحة للعب 🇮🇱
               </div>
 
-              <div style={{ textAlign: 'center', paddingTop: '1.5rem' }}>
-                <div style={{ fontSize: '4rem', opacity: 0.6, marginBottom: '1rem' }}>
-                  🧩🧠🚀
+              <div>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  🇮🇱🔊📖
                 </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#94a3b8', marginBottom: '0.75rem' }}>
-                  التحدي التفاعلي القادم
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  محطات الثروة اللغوية العبرية
                 </h3>
-                <p style={{ color: '#64748b', fontSize: '0.98rem', lineHeight: '1.7' }}>
-                  نستعد لإضافة المزيد من الألعاب التفاعلية الممتعة لحسابات طلابنا الموحدة!
+                <p style={{ color: '#cbd5e1', fontSize: '0.98rem', lineHeight: '1.7', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  محطات تفاعلية لتعلم مفردات العبرية بالصوت والصور والترجمة وطريقة النطق بالعربية وحفظ الكلمات بسهولة!
                 </p>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: '0.9rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justify: 'space-around',
+                  textAlign: 'center'
+                }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🇮🇱</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>6 محطات</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🔊</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>نطق عبري ناطق</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🖼️</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>بطاقات مصورة</span>
+                  </div>
+                </div>
               </div>
 
               <button 
-                disabled
+                onClick={() => {
+                  if (!profileName || !profileClass) {
+                    setIsEditingProfile(true);
+                    return;
+                  }
+                  setActiveTab('hebrew_vocab');
+                }}
+                className="btn"
                 style={{
                   width: '100%',
-                  padding: '0.9rem',
-                  fontSize: '1rem',
-                  fontWeight: 700,
+                  padding: '1rem',
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
                   borderRadius: '16px',
                   border: 'none',
-                  background: 'rgba(255,255,255,0.08)',
-                  color: '#64748b',
-                  cursor: 'not-allowed',
-                  marginTop: '1.5rem'
+                  background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(16, 185, 129, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: '0.75rem'
                 }}
               >
-                انتظرونا 🌟
+                <span>دخول محطات العبرية 🇮🇱</span>
+                <i className="fas fa-play"></i>
               </button>
             </div>
 
@@ -1534,6 +1584,147 @@ const LearningCorner = () => {
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB 4: HEBREW VOCABULARY STATIONS                        */}
+      {/* -------------------------------------------------------- */}
+      {activeTab === 'hebrew_vocab' && (
+        <div className="container" style={{ paddingBottom: '4rem' }}>
+          <div style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', color: '#1e293b' }}>
+            
+            {/* Hebrew Header */}
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+              <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.5rem 1.4rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.8rem' }}>
+                🇮🇱 תחנת השפה העברית | الثروة اللغوية العبرية
+              </span>
+              <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+                محطات الثروة اللغوية العبرية بالصوت والصور 🇮🇱🔊🖼️
+              </h2>
+              <p style={{ color: '#64748b', fontSize: '1.05rem', fontWeight: 600, maxWidth: '700px', margin: '0 auto' }}>
+                انقر على أي محطة تود مراجعتها، واضغط على الكلمة للاستماع إلى النطق العبري الناطق 🔊 ومراجعة المعنى وطريقة النطق بالعربية!
+              </p>
+            </div>
+
+            {/* Hebrew Stations Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', marginBottom: '3rem' }}>
+              {HEBREW_STATION_NAMES.map((st) => {
+                const isSelected = selectedHebrewStation === st.id;
+                const count = (HEBREW_VOCAB_DATA[st.id] || []).length;
+                return (
+                  <div
+                    key={st.id}
+                    onClick={() => setSelectedHebrewStation(st.id)}
+                    style={{
+                      background: isSelected ? st.color : '#f8fafc',
+                      color: isSelected ? 'white' : '#1e293b',
+                      borderRadius: '22px',
+                      padding: '1.5rem',
+                      cursor: 'pointer',
+                      border: `3px solid ${st.color}`,
+                      boxShadow: isSelected ? `0 12px 30px ${st.color}55` : '0 4px 12px rgba(0,0,0,0.04)',
+                      transform: isSelected ? 'scale(1.03)' : 'none',
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{st.icon}</div>
+                    <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.15rem', fontWeight: 900 }}>{st.title}</h4>
+                    <span style={{ fontSize: '0.88rem', opacity: isSelected ? 0.95 : 0.7, fontWeight: 800 }}>
+                      ({count} كلمات ناطقة ومصورة)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Selected Hebrew Station Words Flashcards */}
+            {selectedHebrewStation && (
+              <div style={{ borderTop: '2px solid #f1f5f9', paddingTop: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0284c7', margin: 0 }}>
+                    📖 كلمات محطة: {HEBREW_STATION_NAMES.find(s => s.id === selectedHebrewStation)?.title}
+                  </h3>
+
+                  <button
+                    onClick={() => {
+                      const words = HEBREW_VOCAB_DATA[selectedHebrewStation] || [];
+                      if (words.length > 0) {
+                        speakHebrew(words.map(w => w.hebrew).join(', '));
+                      }
+                    }}
+                    className="btn"
+                    style={{ background: 'linear-gradient(135deg, #10b981, #047857)', color: 'white', fontWeight: 900, padding: '0.65rem 1.4rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+                  >
+                    🔊 تشغيل القراءة النطقية لجميع كلمات المحطة
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '1.75rem' }}>
+                  {(HEBREW_VOCAB_DATA[selectedHebrewStation] || []).map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        border: '2px solid #bae6fd',
+                        boxShadow: '0 10px 25px rgba(2, 132, 199, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justify: 'space-between',
+                        transition: 'transform 0.3s ease'
+                      }}
+                    >
+                      <div style={{ position: 'relative', height: '190px', overflow: 'hidden', background: '#0f172a' }}>
+                        <img src={item.imageUrl} alt={item.hebrew} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button
+                          onClick={() => speakHebrew(item.hebrew)}
+                          style={{
+                            position: 'absolute',
+                            bottom: '12px',
+                            left: '12px',
+                            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.55rem 1.1rem',
+                            borderRadius: '14px',
+                            fontWeight: 900,
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem'
+                          }}
+                        >
+                          🔊 استمع للنطق 🇮🇱
+                        </button>
+                      </div>
+
+                      <div style={{ padding: '1.4rem', textAlign: 'center' }}>
+                        <h2 style={{ margin: '0 0 0.3rem 0', fontSize: '2.1rem', fontWeight: 900, color: '#0f172a', dir: 'rtl' }}>
+                          {item.hebrew}
+                        </h2>
+                        <div style={{ fontSize: '0.95rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.6rem' }}>
+                          🗣️ النطق بالعربية: <strong style={{ color: '#0369a1', fontSize: '1.05rem' }}>({item.transliteration})</strong>
+                        </div>
+                        <div style={{ fontSize: '1.15rem', color: '#10b981', fontWeight: 900, marginBottom: '1rem', background: '#ecfdf5', padding: '0.5rem', borderRadius: '12px' }}>
+                          💡 المعنى: {item.arabic}
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '14px', borderRight: '5px solid #0284c7', textAlign: 'right', fontSize: '0.88rem' }}>
+                          <div style={{ color: '#0f172a', fontWeight: 800, dir: 'rtl', marginBottom: '0.25rem' }}>💬 {item.exampleHebrew}</div>
+                          <div style={{ color: '#64748b', fontWeight: 700 }}>({item.exampleArabic})</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       )}
 
