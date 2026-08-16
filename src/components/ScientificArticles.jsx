@@ -118,8 +118,9 @@ const ScientificArticles = ({ isStandalone }) => {
   const [resolvedPdfUrl, setResolvedPdfUrl] = useState('');
   const [isResolvingPdf, setIsResolvingPdf] = useState(false);
 
-  // Upload/Create Article Modal State
+  // Upload/Create/Edit Article Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [editingArticleId, setEditingArticleId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(false);
 
@@ -135,6 +136,25 @@ const ScientificArticles = ({ isStandalone }) => {
     content: '',
     rawFile: null
   });
+
+  // Start Editing Article
+  const handleStartEditArticle = (art) => {
+    setEditingArticleId(art.id);
+    setNewArticle({
+      type: art.type || 'written',
+      title: art.title || '',
+      category: art.category || 'العلوم والفلك',
+      author: art.author || '',
+      readTime: art.readTime || '5 دقائق',
+      coverUrl: art.coverUrl || '',
+      pdfUrl: art.pdfUrl || '',
+      summary: art.summary || '',
+      content: art.content || '',
+      rawFile: null
+    });
+    setShowLivePreview(false);
+    setIsUploadModalOpen(true);
+  };
 
   const contentTextareaRef = useRef(null);
 
@@ -329,7 +349,7 @@ const ScientificArticles = ({ isStandalone }) => {
     }
 
     setIsUploading(true);
-    const generatedId = `art_${Date.now()}`;
+    const targetId = editingArticleId || `art_${Date.now()}`;
     let finalPdfUrl = newArticle.pdfUrl.trim();
 
     if (newArticle.type === 'pdf' && newArticle.rawFile) {
@@ -341,7 +361,7 @@ const ScientificArticles = ({ isStandalone }) => {
         });
         const base64Data = await readPromise;
         if (base64Data && base64Data.length > 500000) {
-          finalPdfUrl = await uploadChunkedFile(generatedId, base64Data);
+          finalPdfUrl = await uploadChunkedFile(targetId, base64Data);
         } else {
           finalPdfUrl = base64Data;
         }
@@ -354,35 +374,44 @@ const ScientificArticles = ({ isStandalone }) => {
       finalPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
     }
 
+    const existingArt = articles.find(a => a.id === targetId);
+
     const articleObj = {
-      id: generatedId,
+      id: targetId,
       type: newArticle.type,
       title: newArticle.title.trim(),
       category: newArticle.category,
       author: newArticle.author.trim() || (activeTeacherSession ? activeTeacherSession.teacherName : 'إدارة مدرسة مشيرفة'),
-      date: new Date().toISOString().split('T')[0],
+      date: existingArt?.date || new Date().toISOString().split('T')[0],
       readTime: newArticle.readTime,
-      viewsCount: 0,
-      likesCount: 0,
+      viewsCount: existingArt?.viewsCount || 0,
+      likesCount: existingArt?.likesCount || 0,
       coverUrl: newArticle.coverUrl.trim() || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
       pdfUrl: newArticle.type === 'pdf' ? finalPdfUrl : '',
       summary: newArticle.summary.trim(),
       content: newArticle.type === 'written' ? newArticle.content.trim() : ''
     };
 
-    const updatedArticles = [articleObj, ...articles];
+    let updatedArticles = [];
+    if (editingArticleId) {
+      updatedArticles = articles.map(a => a.id === editingArticleId ? articleObj : a);
+    } else {
+      updatedArticles = [articleObj, ...articles];
+    }
+
     setArticles(updatedArticles);
     localStorage.setItem('db_scientific_articles', JSON.stringify(updatedArticles));
 
     try {
-      await setDoc(doc(db, 'scientific_articles', generatedId), articleObj);
+      await setDoc(doc(db, 'scientific_articles', targetId), articleObj, { merge: true });
     } catch(err) {
       console.warn("Firestore save article warning:", err.message);
     }
 
     setIsUploading(false);
     setIsUploadModalOpen(false);
-    alert(newArticle.type === 'written' ? '🎉 تم نشر المقالة المكتوبة المنسقة بنجاح وتوفيرها للزوار والطلاب!' : '🎉 تم نشر المجلة العلمية PDF بنجاح كمجلة تفاعلية!');
+    setEditingArticleId(null);
+    alert(editingArticleId ? '✅ تم تحديث وتعديل المقالة العلمية بنجاح!' : (newArticle.type === 'written' ? '🎉 تم نشر المقالة المكتوبة المنسقة بنجاح وتوفيرها للزوار والطلاب!' : '🎉 تم نشر المجلة العلمية PDF بنجاح كمجلة تفاعلية!'));
     setNewArticle({
       type: 'written',
       title: '',
@@ -623,13 +652,23 @@ const ScientificArticles = ({ isStandalone }) => {
                     )}
 
                     {(isAdminLoggedIn || activeTeacherSession) && (
-                      <button
-                        onClick={() => handleDeleteArticle(art.id)}
-                        style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.65rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
-                        title="حذف المقالة"
-                      >
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleStartEditArticle(art)}
+                          style={{ background: '#eff6ff', color: '#0284c7', border: '1px solid #bae6fd', padding: '0.65rem 0.85rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                          title="تعديل المقالة"
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteArticle(art.id)}
+                          style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.65rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                          title="حذف المقالة"
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </>
                     )}
                   </div>
 
