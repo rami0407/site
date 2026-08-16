@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { STATION_NAMES, VOCABULARY_DATA } from '../data/englishVocabData';
 import { HEBREW_STATION_NAMES, HEBREW_VOCAB_DATA } from '../data/hebrewVocabData';
+import AstronomyPage from './AstronomyPage';
 
 const DEFAULT_MULTIPLICATION_STAGES = [
   { number: 1, title: 'جدول 1', multiplier: 1, completed: false, stars: 0 },
@@ -1049,6 +1050,99 @@ const LearningCorner = () => {
               </button>
             </div>
 
+            {/* Game 4: Astronomy & Space Observatory */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
+              borderRadius: '24px',
+              border: '2px solid rgba(56, 189, 248, 0.4)',
+              padding: '2rem',
+              boxShadow: '0 15px 35px rgba(56, 189, 248, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justify: 'space-between'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.85rem',
+                fontWeight: 800
+              }}>
+                مستكشف الفضاء 🌌
+              </div>
+
+              <div>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  🪐🌌🔭
+                </div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  مختبر الفلك والكون
+                </h3>
+                <p style={{ color: '#cbd5e1', fontSize: '0.98rem', lineHeight: '1.7', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  محاكاة تفاعلية ثلاثية الأبعاد للمجموعات الشمسية والمجرات وخسوف القمر واختبارات رواد الفضاء!
+                </p>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: '0.9rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justify: 'space-around',
+                  textAlign: 'center'
+                }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🪐</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>محاكاة الكواكب</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🔭</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>مرصد تفاعلي</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🚀</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>تحدي الفضاء</span>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (!profileName || !profileClass) {
+                    setIsEditingProfile(true);
+                    return;
+                  }
+                  setActiveTab('astronomy');
+                }}
+                className="btn"
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(2, 132, 199, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: '0.75rem'
+                }}
+              >
+                <span>دخول مختبر الفلك 🌌</span>
+                <i className="fas fa-play"></i>
+              </button>
+            </div>
+
           </div>
         </div>
       )}
@@ -1725,6 +1819,15 @@ const LearningCorner = () => {
             )}
 
           </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB 5: ASTRONOMY OBSERVATORY & LAB                       */}
+      {/* -------------------------------------------------------- */}
+      {activeTab === 'astronomy' && (
+        <div>
+          <AstronomyPage isStandalone={false} />
         </div>
       )}
 
