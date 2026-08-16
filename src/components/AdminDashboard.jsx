@@ -475,6 +475,10 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchTeachersData = async () => {
+    await loadTeachersList();
+  };
+
   const handleSaveTeacher = async (teacherObj) => {
     try {
       await setDoc(doc(db, 'school_teachers', teacherObj.id), teacherObj);
