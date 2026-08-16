@@ -574,6 +574,93 @@ const AdminDashboard = () => {
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [isUploadingPrincipal, setIsUploadingPrincipal] = useState(false);
 
+  // Parent Polls Admin State
+  const [adminPolls, setAdminPolls] = useState([]);
+  const [newPollForm, setNewPollForm] = useState({
+    question: '',
+    description: '',
+    category: 'الأنشطة والفعاليات',
+    option1: '',
+    option2: '',
+    option3: '',
+    option4: ''
+  });
+
+  const handleAddPollSubmit = async (e) => {
+    e.preventDefault();
+    if (!newPollForm.question.trim() || !newPollForm.option1.trim() || !newPollForm.option2.trim()) {
+      alert('يرجى كتابة سؤال الاستطلاع وخيارين على الأقل للتصويت.');
+      return;
+    }
+
+    const options = [
+      { id: 'opt-1', text: newPollForm.option1.trim(), votes: 0, color: '#0284c7' },
+      { id: 'opt-2', text: newPollForm.option2.trim(), votes: 0, color: '#7c3aed' }
+    ];
+
+    if (newPollForm.option3.trim()) {
+      options.push({ id: 'opt-3', text: newPollForm.option3.trim(), votes: 0, color: '#ec4899' });
+    }
+    if (newPollForm.option4.trim()) {
+      options.push({ id: 'opt-4', text: newPollForm.option4.trim(), votes: 0, color: '#16a34a' });
+    }
+
+    const pollId = `poll_${Date.now()}`;
+    const pollObj = {
+      id: pollId,
+      question: newPollForm.question.trim(),
+      description: newPollForm.description.trim() || 'شارك بصوتك ورأيك بنقرة واحدة في القرار المدرسي.',
+      category: newPollForm.category,
+      status: 'active',
+      totalVotes: 0,
+      options: options,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    const updated = [pollObj, ...adminPolls];
+    setAdminPolls(updated);
+    localStorage.setItem('db_parent_polls', JSON.stringify(updated));
+
+    try {
+      await setDoc(doc(db, 'parent_polls', pollId), pollObj);
+    } catch(err) {
+      console.warn("Firestore poll create warning:", err);
+    }
+
+    alert('🎉 تم إنشاء ونشر الاستطلاع الجديد للأهالي بنجاح!');
+    setNewPollForm({
+      question: '',
+      description: '',
+      category: 'الأنشطة والفعاليات',
+      option1: '',
+      option2: '',
+      option3: '',
+      option4: ''
+    });
+  };
+
+  const handleDeletePoll = async (pollId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الاستطلاع نهائياً؟')) return;
+
+    const updated = adminPolls.filter(p => p.id !== pollId);
+    setAdminPolls(updated);
+    localStorage.setItem('db_parent_polls', JSON.stringify(updated));
+
+    try { await deleteDoc(doc(db, 'parent_polls', pollId)); } catch(e){}
+    alert('تم حذف الاستطلاع بنجاح.');
+  };
+
+  const handleTogglePollStatus = async (pollObj) => {
+    const newStatus = pollObj.status === 'active' ? 'closed' : 'active';
+    const updated = adminPolls.map(p => p.id === pollObj.id ? { ...p, status: newStatus } : p);
+    setAdminPolls(updated);
+    localStorage.setItem('db_parent_polls', JSON.stringify(updated));
+
+    try {
+      await updateDoc(doc(db, 'parent_polls', pollObj.id), { status: newStatus });
+    } catch(e){}
+  };
+
   // Compress and Upload Image helper (Client-side resizing to max 1200px and JPEG quality 82%)
   const compressAndUploadImage = (file, folderPath) => {
     return new Promise((resolve, reject) => {
@@ -972,6 +1059,19 @@ const AdminDashboard = () => {
         fetchedWs.push({ ...data, id });
       }
       setWorksheets(fetchedWs);
+
+      // 17. Load Parent Polls
+      try {
+        const snapPolls = await getDocs(collection(db, 'parent_polls'));
+        const listPolls = [];
+        if (!snapPolls.empty) {
+          snapPolls.forEach(d => listPolls.push({ ...d.data(), id: d.id }));
+          setAdminPolls(listPolls);
+        } else {
+          const localP = localStorage.getItem('db_parent_polls');
+          if (localP) setAdminPolls(JSON.parse(localP));
+        }
+      } catch(e){}
 
     } catch (error) {
       console.error("Error loading Firestore data: ", error);
@@ -2421,6 +2521,25 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-book-reader" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               📚 المقالات والمجلات العلمية
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('parent-polls')} 
+              className={`filter-chip ${activeTab === 'parent-polls' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.9rem 1.2rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'parent-polls' ? '#10b981' : '#ecfdf5',
+                color: activeTab === 'parent-polls' ? 'white' : '#047857',
+                fontWeight: 800,
+                border: '2px solid #a7f3d0'
+              }}
+            >
+              <i className="fas fa-poll" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              📊 إدارة تصويت واستطلاعات الأهالي
             </button>
 
             <button 
@@ -4416,6 +4535,167 @@ const AdminDashboard = () => {
               {activeTab === 'scientific-articles' && (
                 <div>
                   <ScientificArticles isStandalone={false} />
+                </div>
+              )}
+
+              {/* TAB 10.8: PARENT POLLS MANAGEMENT */}
+              {activeTab === 'parent-polls' && (
+                <div>
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.6rem' }}>📊</span>
+                      <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
+                        إضافة وإنشاء استطلاع تصويت جديد للأهالي
+                      </h3>
+                    </div>
+
+                    <form onSubmit={handleAddPollSubmit}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>
+                          ❓ سؤال أو موضوع الاستطلاع:
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="مثال: ما هي الفعالية أو المبادرة الأكثر أهمية لأبنائكم في الفصل القادم؟"
+                          value={newPollForm.question}
+                          onChange={(e) => setNewPollForm({ ...newPollForm, question: e.target.value })}
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>التصنيف / المجال:</label>
+                          <select
+                            value={newPollForm.category}
+                            onChange={(e) => setNewPollForm({ ...newPollForm, category: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                          >
+                            <option value="الأنشطة والفعاليات">الأنشطة والفعاليات</option>
+                            <option value="التقييم الجودة">التقييم والجودة</option>
+                            <option value="التواصل والخدمات">التواصل والخدمات</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>توضيح للموضوع (اختياري):</label>
+                          <input
+                            type="text"
+                            placeholder="وصف مختصر يوضح الهدف من الاستطلاع..."
+                            value={newPollForm.description}
+                            onChange={(e) => setNewPollForm({ ...newPollForm, description: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #cbd5e1', marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', fontWeight: 900, fontSize: '0.95rem', marginBottom: '0.85rem', color: '#047857' }}>
+                          🎯 الخيارات المتاحة لأولياء الأمور للتصويت (خياران على الأقل):
+                        </label>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الأول (مطلوب):</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="الخيار رقم 1..."
+                              value={newPollForm.option1}
+                              onChange={(e) => setNewPollForm({ ...newPollForm, option1: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الثاني (مطلوب):</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="الخيار رقم 2..."
+                              value={newPollForm.option2}
+                              onChange={(e) => setNewPollForm({ ...newPollForm, option2: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الثالث (اختياري):</label>
+                            <input
+                              type="text"
+                              placeholder="الخيار رقم 3..."
+                              value={newPollForm.option3}
+                              onChange={(e) => setNewPollForm({ ...newPollForm, option3: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الرابع (اختياري):</label>
+                            <input
+                              type="text"
+                              placeholder="الخيار رقم 4..."
+                              value={newPollForm.option4}
+                              onChange={(e) => setNewPollForm({ ...newPollForm, option4: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn"
+                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', fontWeight: 900, padding: '0.85rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem' }}
+                      >
+                        <i className="fas fa-plus-circle"></i> 🚀 نشر الاستطلاع فورياً للأهالي
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* List of Active Admin Polls */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1' }}>
+                    <h3 style={{ margin: '0 0 1.25rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.25rem' }}>
+                      📋 قائمة الاستطلاعات والاستمارات الحالية ({adminPolls.length}):
+                    </h3>
+
+                    {adminPolls.length === 0 ? (
+                      <p style={{ color: '#64748b', fontWeight: 700 }}>لا توجد استطلاعات حالية. يمكنك إنشاء أول استطلاع بالأعلى!</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {adminPolls.map((poll) => (
+                          <div key={poll.id} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                              <span style={{ background: '#d1fae5', color: '#047857', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>{poll.category}</span>
+                              <span style={{ background: poll.status === 'active' ? '#dbeafe' : '#fef3c7', color: poll.status === 'active' ? '#1d4ed8' : '#b45309', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                {poll.status === 'active' ? 'مفتوح للتصويت' : 'مغلق'}
+                              </span>
+                            </div>
+
+                            <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a' }}>{poll.question}</h4>
+                            <p style={{ margin: '0 0 1rem 0', fontSize: '0.82rem', color: '#64748b' }}>إجمالي الأصوات: <strong>{poll.totalVotes || 0}</strong> ولي أمر</p>
+
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handleTogglePollStatus(poll)}
+                                style={{ flex: 1, background: poll.status === 'active' ? '#fef3c7' : '#dbeafe', color: poll.status === 'active' ? '#b45309' : '#1d4ed8', border: 'none', padding: '0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                              >
+                                {poll.status === 'active' ? 'إغلاق التصويت 🔒' : 'إعادة فتح التصويت 🔓'}
+                              </button>
+
+                              <button
+                                onClick={() => handleDeletePoll(poll.id)}
+                                style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.5rem 0.8rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                              >
+                                حذف 🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
