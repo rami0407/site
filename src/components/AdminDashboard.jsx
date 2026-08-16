@@ -5197,6 +5197,17 @@ const AdminDashboard = () => {
 
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                       <button
+                        onClick={() => {
+                          loadTeachersList();
+                          setActiveTab('teachers-management');
+                        }}
+                        className="btn"
+                        style={{ background: '#0284c7', color: 'white', fontWeight: 800, padding: '0.65rem 1.2rem', borderRadius: '10px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
+                      >
+                        👉 👨‍🏫 التعديل على المعلمين والهواتف والإيميلات
+                      </button>
+
+                      <button
                         onClick={loadBookedAppointments}
                         className="btn"
                         style={{ background: '#0284c7', color: 'white', fontWeight: 800, padding: '0.65rem 1.2rem', borderRadius: '10px' }}
