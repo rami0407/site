@@ -16,8 +16,8 @@ const Navbar = () => {
 
     const updateNavState = (rawItems) => {
       let items = [...rawItems];
-      // Filter out any lingering nav_excellence if deleted
-      items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence');
+      // Filter out any lingering nav_excellence or nav_astronomy if deleted or moved
+      items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy');
 
       // 🌟 GUARANTEE: Ensure nav_articles and nav_parent_polls always exist in main navigation!
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
