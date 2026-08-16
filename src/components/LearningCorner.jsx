@@ -96,6 +96,78 @@ const LearningCorner = () => {
   };
 
   // =========================================================================
+  // UNIFIED GAMIFICATION & REWARDS ENGINE (Synced with Firestore & LocalStorage)
+  // =========================================================================
+  const [unifiedStars, setUnifiedStars] = useState(() => parseInt(localStorage.getItem('lc_unified_stars') || '0', 10));
+  const [unifiedTrophies, setUnifiedTrophies] = useState(() => parseInt(localStorage.getItem('lc_unified_trophies') || '0', 10));
+  const [unifiedDiamonds, setUnifiedDiamonds] = useState(() => parseInt(localStorage.getItem('lc_unified_diamonds') || '0', 10));
+  const [unifiedXP, setUnifiedXP] = useState(() => parseInt(localStorage.getItem('lc_unified_xp') || '0', 10));
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+  const getRankBadge = (xp) => {
+    if (xp >= 300) return { title: '👑 وسام عالم المستقبل', color: '#8b5cf6', bg: '#f3e8ff' };
+    if (xp >= 150) return { title: '🏆 عبقري مدرسة مصمص', color: '#f59e0b', bg: '#fef3c7' };
+    if (xp >= 50) return { title: '⭐ بطل المعرفة', color: '#10b981', bg: '#d1fae5' };
+    return { title: '🌱 مستكشف نَشِط', color: '#0284c7', bg: '#e0f2fe' };
+  };
+
+  const addUnifiedReward = async ({ stars = 0, trophies = 0, diamonds = 0, xp = 0 }) => {
+    const nextStars = unifiedStars + stars;
+    const nextTrophies = unifiedTrophies + trophies;
+    const nextDiamonds = unifiedDiamonds + diamonds;
+    const nextXP = unifiedXP + xp;
+
+    setUnifiedStars(nextStars);
+    setUnifiedTrophies(nextTrophies);
+    setUnifiedDiamonds(nextDiamonds);
+    setUnifiedXP(nextXP);
+
+    localStorage.setItem('lc_unified_stars', nextStars.toString());
+    localStorage.setItem('lc_unified_trophies', nextTrophies.toString());
+    localStorage.setItem('lc_unified_diamonds', nextDiamonds.toString());
+    localStorage.setItem('lc_unified_xp', nextXP.toString());
+
+    // Sync to Firestore
+    const studentId = getStudentId();
+    if (studentId) {
+      try {
+        const studentRef = doc(db, 'learning_corner_students', studentId);
+        await setDoc(studentRef, {
+          name: profileName,
+          class: profileClass,
+          grade: selectedGrade,
+          section: selectedSection,
+          stars: nextStars,
+          trophies: nextTrophies,
+          diamonds: nextDiamonds,
+          xp: nextXP,
+          rankTitle: getRankBadge(nextXP).title,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.error('Error syncing student rewards to Firestore:', err);
+      }
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    setLoadingLeaderboard(true);
+    try {
+      const q = query(collection(db, 'learning_corner_students'), orderBy('xp', 'desc'), limit(15));
+      const snap = await getDocs(q);
+      const list = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+      setLeaderboardData(list);
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
+  // =========================================================================
   // MEMORY MATCHING GAME LOGIC
   // =========================================================================
   const MEMORY_THEMES = {
@@ -170,6 +242,7 @@ const LearningCorner = () => {
           const nextVal = prev + 1;
           if (nextVal === MEMORY_THEMES[selectedTheme].length) {
             setIsMemoryWin(true);
+            addUnifiedReward({ stars: 10, trophies: 1, diamonds: 1, xp: 30 });
           }
           return nextVal;
         });
@@ -233,6 +306,7 @@ const LearningCorner = () => {
           loadSpellingQuestion(spellingIndex + 1);
         } else {
           setIsSpellingWin(true);
+          addUnifiedReward({ stars: 15, trophies: 1, xp: 40 });
         }
       }, 500);
     }
@@ -308,6 +382,7 @@ const LearningCorner = () => {
     if (choice === speedMathQuestion.ans) {
       setSpeedMathScore(prev => prev + 15);
       setSpeedMathStreak(prev => prev + 1);
+      addUnifiedReward({ stars: 2, xp: 10 });
       generateSpeedMathQuestion();
     } else {
       setIsSpeedMathActive(false);
@@ -383,6 +458,7 @@ const LearningCorner = () => {
         setSelectedGeoChoice(null);
       } else {
         setIsGeoWin(true);
+        addUnifiedReward({ stars: 20, trophies: 1, xp: 50 });
       }
     }, 1500);
   };
@@ -543,6 +619,7 @@ const LearningCorner = () => {
       const newTotalDiamonds = multDiamonds + diamondsEarned;
       setMultStars(newTotalStars);
       setMultDiamonds(newTotalDiamonds);
+      addUnifiedReward({ stars: starsEarned, diamonds: diamondsEarned, xp: starsEarned * 5 });
 
       const msgs = ['رائع! 🎉', 'ممتاز جداً! ⭐', 'أحسنت! 🌟', 'عظيم! 🚀', 'مذهل! 💫', 'برافو! 👏'];
       let msg = msgs[Math.floor(Math.random() * msgs.length)];
@@ -829,38 +906,77 @@ const LearningCorner = () => {
             </p>
           </div>
 
-          {/* Student Profile Card / Switcher */}
+          {/* Student Profile & Unified Rewards Dashboard Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             {profileName && profileClass && !isEditingProfile ? (
               <div style={{
-                background: 'rgba(255, 255, 255, 0.07)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
+                border: '2px solid rgba(56, 189, 248, 0.4)',
+                padding: '0.8rem 1.4rem',
+                borderRadius: '20px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '1rem'
+                gap: '1.25rem',
+                flexWrap: 'wrap',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
               }}>
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'block' }}>الطالب الحالي:</span>
-                  <strong style={{ fontSize: '1.05rem', color: '#38bdf8' }}>👤 {profileName} ({profileClass})</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '1.15rem', color: '#38bdf8' }}>👤 {profileName}</strong>
+                    <span style={{ fontSize: '0.85rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '10px' }}>({profileClass})</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 900, background: getRankBadge(unifiedXP).bg, color: getRankBadge(unifiedXP).color, padding: '2px 10px', borderRadius: '12px' }}>
+                      {getRankBadge(unifiedXP).title}
+                    </span>
+                  </div>
+
+                  {/* Unified Live Counters Across ALL Games */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', fontSize: '0.92rem', fontWeight: 800, flexWrap: 'wrap' }}>
+                    <span style={{ color: '#f59e0b' }}>⭐ {unifiedStars} نجمة</span>
+                    <span style={{ color: '#eab308' }}>🏆 {unifiedTrophies} كأس</span>
+                    <span style={{ color: '#ec4899' }}>💎 {unifiedDiamonds} ألماسة</span>
+                    <span style={{ color: '#10b981' }}>🪙 {unifiedXP} XP</span>
+                  </div>
                 </div>
-                <button 
-                  onClick={() => setIsEditingProfile(true)}
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    color: '#fca5a5',
-                    border: '1px solid #ef4444',
-                    borderRadius: '10px',
-                    padding: '4px 10px',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                  title="تغيير اسم الطالب أو الصف"
-                >
-                  تغيير 🔄
-                </button>
+
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => {
+                      fetchLeaderboard();
+                      setShowLeaderboard(true);
+                    }}
+                    className="btn"
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
+                    }}
+                  >
+                    🏆 أبطال المدرسة
+                  </button>
+
+                  <button 
+                    onClick={() => setIsEditingProfile(true)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.2)',
+                      color: '#fca5a5',
+                      border: '1px solid #ef4444',
+                      borderRadius: '12px',
+                      padding: '0.5rem 0.8rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                    title="تغيير اسم الطالب أو الصف"
+                  >
+                    🔄 تغيير
+                  </button>
+                </div>
               </div>
             ) : (
               <button 
@@ -2891,6 +3007,121 @@ const LearningCorner = () => {
             <button onClick={() => setActiveTab('hub')} className="btn" style={{ background: '#64748b', color: 'white', fontWeight: 800, padding: '0.65rem 1.4rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
               ↩️ العودة لقائمة الألعاب
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🏆 SCHOOL LEADERBOARD MODAL */}
+      {showLeaderboard && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '28px',
+            maxWidth: '650px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '2rem',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+            color: '#1e293b',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowLeaderboard(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                left: '20px',
+                background: '#f1f5f9',
+                border: 'none',
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                fontWeight: 900,
+                cursor: 'pointer'
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.5rem' }}>
+                🏆 لوحة شرف ركن التعلم الموحد
+              </span>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                أبطال مدرسة مشيرفة الابتدائية 🌟
+              </h2>
+            </div>
+
+            {loadingLeaderboard ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: '#6366f1' }}>
+                <i className="fas fa-spinner fa-spin" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}></i>
+                <h3>جاري تحميل لوحة الأبطال...</h3>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {leaderboardData.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#64748b' }}>لا يوجد أبطال مسجلون بعد. كن أول بطل يلعب!</p>
+                ) : (
+                  leaderboardData.map((st, idx) => (
+                    <div
+                      key={st.id || idx}
+                      style={{
+                        background: idx === 0 ? 'linear-gradient(135deg, #fffbeb, #fef3c7)' : (idx === 1 ? '#f8fafc' : '#ffffff'),
+                        border: idx === 0 ? '2px solid #f59e0b' : '1px solid #e2e8f0',
+                        borderRadius: '18px',
+                        padding: '1rem 1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'space-between',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '50%',
+                          background: idx === 0 ? '#f59e0b' : (idx === 1 ? '#94a3b8' : (idx === 2 ? '#b45309' : '#e2e8f0')),
+                          color: 'white',
+                          fontWeight: 900,
+                          fontSize: '1.2rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justify: 'center'
+                        }}>
+                          {idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx + 1))}
+                        </div>
+
+                        <div>
+                          <strong style={{ fontSize: '1.1rem', color: '#0f172a', display: 'block' }}>{st.name}</strong>
+                          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>{st.class} | {st.rankTitle || 'بطل المعرفة'}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 900 }}>
+                        <span style={{ color: '#f59e0b' }}>⭐ {st.stars || 0}</span>
+                        <span style={{ color: '#eab308' }}>🏆 {st.trophies || 0}</span>
+                        <span style={{ color: '#10b981', background: '#ecfdf5', padding: '0.3rem 0.8rem', borderRadius: '12px' }}>{st.xp || 0} XP</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
