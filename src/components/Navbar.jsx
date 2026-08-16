@@ -42,6 +42,17 @@ const Navbar = () => {
         });
       }
 
+      if (!items.some(item => item.id === 'nav_appointments' || item.target === 'appointments')) {
+        items.push({
+          id: "nav_appointments",
+          label: "📅 حجز لقاء مع المعلم",
+          type: "page",
+          target: "appointments",
+          category: "main",
+          order: 8
+        });
+      }
+
       items.sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
@@ -139,14 +150,14 @@ const Navbar = () => {
     e.preventDefault();
 
     if (item.type === 'page' || item.type === 'custom_page') {
-      const isSystemPage = ['worksheets', 'articles', 'parent-polls', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
+      const isSystemPage = ['worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
       window.location.hash = isSystemPage ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('parent-polls') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('parent-polls') || window.location.hash.includes('appointments') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {

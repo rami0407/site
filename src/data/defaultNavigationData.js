@@ -14,7 +14,8 @@ export const defaultMainNavigation = [
   { id: "nav_worksheets", label: "📑 أوراق العمل", type: "page", target: "worksheets", category: "main", order: 5 },
   { id: "nav_articles", label: "📚 مقالات علمية", type: "page", target: "articles", category: "main", order: 6 },
   { id: "nav_parent_polls", label: "📊 تصويت الأهالي", type: "page", target: "parent-polls", category: "main", order: 7 },
-  { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", category: "main", order: 8 },
+  { id: "nav_appointments", label: "📅 حجز لقاء مع المعلم", type: "page", target: "appointments", category: "main", order: 8 },
+  { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", category: "main", order: 9 },
   { id: "nav_4", label: "الأخبار", type: "section", target: "news", category: "main", order: 8 },
   { id: "nav_5", label: "كلمة المدير", type: "section", target: "principal", category: "main", order: 9 }
 ];

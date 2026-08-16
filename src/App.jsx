@@ -34,6 +34,7 @@ import Worksheets, { WorksheetsBanner } from './components/Worksheets';
 import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
 import ScientificArticles, { ScientificArticlesBanner } from './components/ScientificArticles';
 import ParentPolls from './components/ParentPolls';
+import AppointmentBooking from './components/AppointmentBooking';
 import ExcellenceYearPage from './components/ExcellenceYearPage';
 import LearningCorner from './components/LearningCorner';
 import './App.css';
@@ -280,6 +281,7 @@ function App() {
   const isWorksheetsView = currentHash.includes('worksheets');
   const isArticlesView = currentHash.includes('articles');
   const isParentPollsView = currentHash.includes('parent-polls');
+  const isAppointmentsView = currentHash.includes('appointments');
   const isAstronomyView = currentHash.includes('astronomy');
   const isChallengeView = currentHash.includes('challenge');
   const isBooksView = currentHash.includes('books');
@@ -311,6 +313,8 @@ function App() {
         <ScientificArticles isStandalone={true} />
       ) : isParentPollsView ? (
         <ParentPolls isStandalone={true} />
+      ) : isAppointmentsView ? (
+        <AppointmentBooking isStandalone={true} />
       ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (
