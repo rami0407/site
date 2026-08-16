@@ -508,12 +508,16 @@ const AdminDashboard = () => {
     if (!nameAr || !nameAr.trim()) return;
     const nameHe = prompt('أدخل اسم المعلم باللغة العبرية (اختياري):') || '';
     const role = prompt('صفة المعلم (مثال: معلم ومربي صف):') || 'معلم ومربي';
+    const phone = prompt('رقم الهاتف الشخصي للمعلم (لنواتساب):') || '';
+    const email = prompt('البريد الإلكتروني للمعلم (الإيميل):') || '';
 
     const newTch = {
       id: `tch_${Date.now()}`,
       nameAr: nameAr.trim(),
       nameHe: nameHe.trim(),
       role: role.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
       receptionSchedule: [
         { day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '13:30' },
         { day: 'Tuesday', dayAr: 'الثلاثاء', startTime: '08:30', endTime: '13:30' }
@@ -5026,6 +5030,11 @@ const AdminDashboard = () => {
                                 </div>
                               </div>
 
+                              <div style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <span>📱 <strong>الهاتف الشخصي:</strong> {tch.phone || 'غير مدخل'}</span>
+                                <span>✉️ <strong>البريد الإلكتروني:</strong> {tch.email || 'غير مدخل'}</span>
+                              </div>
+
                               <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '14px', borderRight: '4px solid #0284c7' }}>
                                 <div style={{ fontWeight: 800, color: '#475569', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                                   🗓️ جدول أيام وساعات الاستقبال:
@@ -5077,6 +5086,17 @@ const AdminDashboard = () => {
                                   placeholder="مثال: 0501234567"
                                   value={activeData.phone || ''}
                                   onChange={(e) => setEditingTeacherData({ ...activeData, phone: e.target.value })}
+                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                />
+                              </div>
+
+                              <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>✉️ البريد الإلكتروني للمعلم (الإيميل لتلقي الإشعارات):</label>
+                                <input
+                                  type="email"
+                                  placeholder="مثال: teacher@school.com"
+                                  value={activeData.email || ''}
+                                  onChange={(e) => setEditingTeacherData({ ...activeData, email: e.target.value })}
                                   style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
                                 />
                               </div>

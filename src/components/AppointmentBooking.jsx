@@ -176,6 +176,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     const ticketCode = `MUSH-BK-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const teacherPhone = selectedTeacher.phone || '';
+    const teacherEmail = selectedTeacher.email || '';
     const newAppointment = {
       ticketCode,
       teacherId: selectedTeacher.id,
@@ -183,6 +184,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       teacherNameHe: selectedTeacher.nameHe || '',
       teacherRole: selectedTeacher.role || 'معلم ومربي',
       teacherPhone: teacherPhone,
+      teacherEmail: teacherEmail,
       date: selectedDate,
       dayAr: WEEKDAYS_AR[dayNameEn] || '',
       timeSlot: selectedSlot,
@@ -234,6 +236,29 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     } else {
       window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
     }
+  };
+
+  const handleSendEmailToTeacher = () => {
+    if (!bookingTicket) return;
+    const targetEmail = bookingTicket.teacherEmail || 'musheirifa.primary@gmail.com';
+    const subject = encodeURIComponent(`حجز موعد لقاء جديد - مدرسة مشيرفة (تذكرة ${bookingTicket.ticketCode})`);
+    const body = encodeURIComponent(`تحية طيبة وبعد،
+
+تم حجز موعد لقاء جديد بمدرسة مشيرفة الابتدائية حسب التفاصيل التالية:
+
+👨‍🏫 المعلم / الجهة: ${bookingTicket.teacherNameAr} (${bookingTicket.teacherNameHe || ''})
+👤 ولي الأمر: ${bookingTicket.parentName}
+📞 رقم هاتف ولي الأمر: ${bookingTicket.parentPhone}
+🎓 الطالب والصف: ${bookingTicket.studentName} - ${bookingTicket.studentClass}
+🗓️ التاريخ والوقت: ${bookingTicket.dayAr} ${bookingTicket.date} عند الساعة ${bookingTicket.timeSlot}
+📍 نوع اللقاء: ${bookingTicket.meetingType}
+📝 سبب وموضوع اللقاء: ${bookingTicket.meetingTopic}
+🎟️ رمز التذكرة: ${bookingTicket.ticketCode}
+
+نتمنى لكم لقاءً مثمراً وموفقاً!
+إدارة مدرسة مشيرفة الابتدائية`);
+
+    window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
   };
 
   const filteredTeachers = teachersList.filter(t => 
@@ -671,6 +696,14 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                 style={{ background: '#25D366', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}
               >
                 <i className="fab fa-whatsapp" style={{ fontSize: '1.3rem' }}></i> 📲 إرسال إشعار للمدرس عبر واتساب
+              </button>
+
+              <button
+                onClick={handleSendEmailToTeacher}
+                className="btn"
+                style={{ background: '#ea4335', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}
+              >
+                <i className="fas fa-envelope" style={{ fontSize: '1.2rem' }}></i> ✉️ إرسال تأكيد عبر البريد الإلكتروني
               </button>
 
               <button
