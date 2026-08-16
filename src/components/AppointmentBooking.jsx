@@ -29,6 +29,12 @@ const WEEKDAYS_AR = {
   'Saturday': 'السبت'
 };
 
+const STAFF_CATEGORIES = [
+  { id: 'st_principal', name: 'إدارة المدرسة', role: 'مدير المدرسة والإدارة العامة', icon: '🏛️', color: '#0284c7' },
+  { id: 'st_counselor', name: 'الاستشارة التربوية', role: 'المستشار التربوي والدعم النفسي', icon: '💡', color: '#8b5cf6' },
+  { id: 'st_teachers', name: 'أصحاب الوظائف والمعلمين', role: 'طاقم المعلمين وأصحاب الوظائف (33 معلماً)', icon: '👨‍🏫', color: '#10b981' }
+];
+
 // Helper generator for time slots based on start/end hours (20-minute interval slots)
 const generateTimeSlotsForSchedule = (startTime = '08:30', endTime = '13:30') => {
   const slots = [];
@@ -53,7 +59,8 @@ const generateTimeSlotsForSchedule = (startTime = '08:30', endTime = '13:30') =>
 };
 
 const AppointmentBooking = ({ isStandalone = true }) => {
-  // Teachers Roster State
+  // Category & Teachers State
+  const [activeCategory, setActiveCategory] = useState('st_teachers');
   const [teachersList, setTeachersList] = useState(defaultSchoolTeachers);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState(defaultSchoolTeachers[0].id);
@@ -103,7 +110,11 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   }, []);
 
   // Selected Teacher Object
-  const selectedTeacher = teachersList.find(t => t.id === selectedTeacherId) || teachersList[0];
+  const selectedTeacher = activeCategory === 'st_principal' 
+    ? { id: 'st_principal', nameAr: 'إدارة المدرسة', nameHe: 'הנהלת בית הספר', role: 'مدير المدرسة والإدارة العامة', receptionSchedule: [{ day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '14:00' }, { day: 'Tuesday', dayAr: 'الثلاثاء', startTime: '08:30', endTime: '14:00' }, { day: 'Thursday', dayAr: 'الخميس', startTime: '08:30', endTime: '13:00' }] }
+    : activeCategory === 'st_counselor'
+    ? { id: 'st_counselor', nameAr: 'الاستشارة التربوية', nameHe: 'ייעוץ חינוכי', role: 'المستشار التربوي والدعم النفسي', receptionSchedule: [{ day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '13:30' }, { day: 'Wednesday', dayAr: 'الأربعاء', startTime: '08:30', endTime: '13:30' }] }
+    : (teachersList.find(t => t.id === selectedTeacherId) || teachersList[0]);
 
   // Calculate current date's day of week & matching schedule for selected teacher
   const dateObj = new Date(selectedDate);
@@ -118,12 +129,13 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   // Fetch booked slots whenever teacher or date changes
   useEffect(() => {
     const fetchOccupiedSlots = async () => {
-      if (!selectedTeacherId || !selectedDate) return;
+      const targetId = selectedTeacher?.id || selectedTeacherId;
+      if (!targetId || !selectedDate) return;
       setIsLoadingSlots(true);
       try {
         const q = query(
           collection(db, 'teacher_appointments'),
-          where('teacherId', '==', selectedTeacherId),
+          where('teacherId', '==', targetId),
           where('date', '==', selectedDate)
         );
         const snap = await getDocs(q);
@@ -143,7 +155,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     };
 
     fetchOccupiedSlots();
-  }, [selectedTeacherId, selectedDate]);
+  }, [selectedTeacher, selectedTeacherId, selectedDate]);
 
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
@@ -156,7 +168,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       return;
     }
     if (!currentDaySchedule) {
-      alert('المعلم لا يستقبل مواعيد في هذا اليوم المحدد. يرجى اختيار تاريخ ضمن أيام الاستقبال!');
+      alert('الجهة المختارة لا تستقبل مواعيد في هذا اليوم المحدد. يرجى اختيار تاريخ ضمن أيام الاستقبال!');
       return;
     }
 
@@ -224,13 +236,13 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             display: 'inline-block',
             marginBottom: '1rem'
           }}>
-            📅 خدمة حجز مواعيد المعلمين | مدرسة مشيرفة الابتدائية
+            📅 خدمة حجز مواعيد المعلمين والإدارة | مدرسة مشيرفة الابتدائية
           </span>
           <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 900, margin: '0 0 0.75rem 0' }}>
-            نظام حجز اللقاءات مع طاقم المعلمين 🤝🏫
+            نظام حجز اللقاءات والمواعيد الرسمية 🤝🏫
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '700px', margin: '0 auto', fontWeight: 500 }}>
-            اختر المعلم من القائمة المنسدلة للتعرف على أيام وساعات استقباله الخاصة، وحجز موعد لقاء رسمي بكل سهولة وشفافية!
+            اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!
           </p>
         </div>
 
@@ -238,61 +250,101 @@ const AppointmentBooking = ({ isStandalone = true }) => {
           /* BOOKING FORM STEPS */
           <form onSubmit={handleSubmitBooking} style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', color: '#1e293b' }}>
             
-            {/* STEP 1: Dropdown Selection for Teachers */}
+            {/* STEP 1: Staff Category Cards (Only 3 Main Cards: Admin, Counseling, Teachers) */}
             <div style={{ marginBottom: '2.5rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <span>1️⃣</span> اختر المعلم المراد تحديد اللقاء معه (من بين 33 معلماً معتمدين):
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <span>1️⃣</span> اختر الكادر الإداري أو التربوي المراد لقاؤه:
               </h3>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.4rem' }}>القائمة المنسدلة للمعلمين:</label>
-                  <select
-                    value={selectedTeacherId}
-                    onChange={(e) => {
-                      setSelectedTeacherId(e.target.value);
-                      setSelectedSlot('');
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '0.9rem 1.2rem',
-                      borderRadius: '16px',
-                      border: '3px solid #0284c7',
-                      fontSize: '1.1rem',
-                      fontWeight: 900,
-                      color: '#0f172a',
-                      background: '#f0f9ff',
-                      outline: 'none'
-                    }}
-                  >
-                    {teachersList.map((t, idx) => (
-                      <option key={t.id || idx} value={t.id}>
-                        👨‍🏫 {t.nameAr} ({t.nameHe}) - {t.role || 'معلم ومربي'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.4rem' }}>🔍 البحث باسم المعلم:</label>
-                  <input
-                    type="text"
-                    placeholder="اكتب اسم المعلم للبحث السريع..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1.2rem',
-                      borderRadius: '16px',
-                      border: '2px solid #cbd5e1',
-                      fontSize: '1rem',
-                      fontWeight: 700
-                    }}
-                  />
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                {STAFF_CATEGORIES.map(cat => {
+                  const isSelected = activeCategory === cat.id;
+                  return (
+                    <div
+                      key={cat.id}
+                      onClick={() => {
+                        setActiveCategory(cat.id);
+                        setSelectedSlot('');
+                      }}
+                      style={{
+                        background: isSelected ? '#f0f9ff' : '#ffffff',
+                        border: `3px solid ${isSelected ? cat.color : '#e2e8f0'}`,
+                        borderRadius: '22px',
+                        padding: '1.4rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.25s ease',
+                        boxShadow: isSelected ? `0 12px 30px ${cat.color}30` : '0 4px 12px rgba(0,0,0,0.03)',
+                        transform: isSelected ? 'scale(1.02)' : 'none',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{cat.icon}</div>
+                      <strong style={{ fontSize: '1.2rem', color: '#0f172a', display: 'block', marginBottom: '0.25rem' }}>{cat.name}</strong>
+                      <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>{cat.role}</span>
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Selected Teacher Reception Info Badge */}
+              {/* If Teachers Category Selected: Show Teachers Dropdown */}
+              {activeCategory === 'st_teachers' && (
+                <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <h4 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontWeight: 900, fontSize: '1.1rem' }}>
+                    👨‍🏫 اختر المعلم / المعلمة من القائمة (33 معلماً معتمدين):
+                  </h4>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.4rem' }}>القائمة المنسدلة للمعلمين:</label>
+                      <select
+                        value={selectedTeacherId}
+                        onChange={(e) => {
+                          setSelectedTeacherId(e.target.value);
+                          setSelectedSlot('');
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '0.9rem 1.2rem',
+                          borderRadius: '16px',
+                          border: '3px solid #0284c7',
+                          fontSize: '1.1rem',
+                          fontWeight: 900,
+                          color: '#0f172a',
+                          background: '#ffffff',
+                          outline: 'none'
+                        }}
+                      >
+                        {filteredTeachers.map((t, idx) => (
+                          <option key={t.id || idx} value={t.id}>
+                            👨‍🏫 {t.nameAr} ({t.nameHe}) - {t.role || 'معلم ومربي'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.4rem' }}>🔍 البحث باسم المعلم:</label>
+                      <input
+                        type="text"
+                        placeholder="اكتب اسم المعلم للبحث السريع..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.85rem 1.2rem',
+                          borderRadius: '16px',
+                          border: '2px solid #cbd5e1',
+                          fontSize: '1rem',
+                          fontWeight: 700,
+                          background: '#ffffff'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Teacher / Admin Reception Info Badge */}
               {selectedTeacher && (
                 <div style={{
                   background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
@@ -304,13 +356,15 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                   gap: '1.25rem',
                   flexWrap: 'wrap'
                 }}>
-                  <div style={{ fontSize: '3rem' }}>👨‍🏫</div>
+                  <div style={{ fontSize: '3rem' }}>
+                    {activeCategory === 'st_principal' ? '🏛️' : activeCategory === 'st_counselor' ? '💡' : '👨‍🏫'}
+                  </div>
                   <div>
                     <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
-                      المعلم المحدد: {selectedTeacher.nameAr} ({selectedTeacher.nameHe})
+                      الجهة / المعلم المحدد: {selectedTeacher.nameAr} {selectedTeacher.nameHe ? `(${selectedTeacher.nameHe})` : ''}
                     </h4>
                     <div style={{ fontSize: '0.95rem', color: '#0f172a', fontWeight: 800 }}>
-                      🗓️ أيام وساعات الاستقبال الرسمية للمعلم:
+                      🗓️ أيام وساعات الاستقبال الرسمية:
                     </div>
                     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                       {(selectedTeacher.receptionSchedule || []).length === 0 ? (
@@ -333,7 +387,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             {/* STEP 2: Select Date & Time Slot */}
             <div style={{ marginBottom: '2.5rem', borderTop: '2px dashed #e2e8f0', paddingTop: '2rem' }}>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <span>2️⃣</span> حدد تاريخ وساعة اللقاء المتاحة للمعلم:
+                <span>2️⃣</span> حدد تاريخ وساعة اللقاء المتاحة:
               </h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
@@ -358,7 +412,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                     }}
                   />
                   <span style={{ fontSize: '0.85rem', color: currentDaySchedule ? '#10b981' : '#ef4444', fontWeight: 800, display: 'block', marginTop: '0.4rem' }}>
-                    {WEEKDAYS_AR[dayNameEn]} - {currentDaySchedule ? `متاح للاستقبال من ${currentDaySchedule.startTime} إلى ${currentDaySchedule.endTime}` : '⚠️ المعلم لا يستقبل لقاءات في هذا اليوم'}
+                    {WEEKDAYS_AR[dayNameEn]} - {currentDaySchedule ? `متاح للاستقبال من ${currentDaySchedule.startTime} إلى ${currentDaySchedule.endTime}` : '⚠️ لا يوجد استقبال في هذا اليوم'}
                   </span>
                 </div>
 
@@ -386,14 +440,14 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               </div>
 
               {/* Time Slots Grid */}
-              <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>الساعات المتاحة للمعلم لهذا اليوم:</label>
+              <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>الساعات المتاحة لهذا اليوم:</label>
               {isLoadingSlots ? (
                 <div style={{ color: '#0284c7', fontWeight: 700, padding: '1rem' }}>
-                  <i className="fas fa-spinner fa-spin" style={{ marginLeft: '0.5rem' }}></i> جاري فحص مواعيد المعلم...
+                  <i className="fas fa-spinner fa-spin" style={{ marginLeft: '0.5rem' }}></i> جاري فحص المواعيد المتاحة...
                 </div>
               ) : availableSlotsForDay.length === 0 ? (
                 <div style={{ background: '#fef2f2', border: '2px solid #fca5a5', color: '#991b1b', padding: '1.25rem', borderRadius: '16px', fontWeight: 800 }}>
-                  🚫 عذراً! المعلم لا يملك ساعات استقبال مجهزة في يوم ({WEEKDAYS_AR[dayNameEn]}). يرجى اختيار تاريخ موافق لأيام استقبال المعلم أعلاه!
+                  🚫 عذراً! لا تتوفر ساعات استقبال مجهزة في يوم ({WEEKDAYS_AR[dayNameEn]}). يرجى اختيار تاريخ موافق لأيام الاستقبال أعلاه!
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.85rem' }}>
@@ -552,8 +606,8 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>المعلم / الكادر:</span>
-                  <strong style={{ display: 'block', fontSize: '1.1rem', color: '#0f172a' }}>{bookingTicket.teacherNameAr} ({bookingTicket.teacherNameHe})</strong>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>المعلم / الجهة:</span>
+                  <strong style={{ display: 'block', fontSize: '1.1rem', color: '#0f172a' }}>{bookingTicket.teacherNameAr} {bookingTicket.teacherNameHe ? `(${bookingTicket.teacherNameHe})` : ''}</strong>
                 </div>
 
                 <div>
