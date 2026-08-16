@@ -175,12 +175,14 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     setIsSubmitting(true);
     const ticketCode = `MUSH-BK-${Math.floor(10000 + Math.random() * 90000)}`;
 
+    const teacherPhone = selectedTeacher.phone || '';
     const newAppointment = {
       ticketCode,
       teacherId: selectedTeacher.id,
       teacherNameAr: selectedTeacher.nameAr,
       teacherNameHe: selectedTeacher.nameHe || '',
       teacherRole: selectedTeacher.role || 'معلم ومربي',
+      teacherPhone: teacherPhone,
       date: selectedDate,
       dayAr: WEEKDAYS_AR[dayNameEn] || '',
       timeSlot: selectedSlot,
@@ -222,7 +224,16 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 يرجى الحضور في الموعد المحدد. شكراً لكم!`;
 
     const encodedMsg = encodeURIComponent(msg);
-    window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+    let rawPhone = (bookingTicket.teacherPhone || '').replace(/\D/g, '');
+    if (rawPhone.startsWith('0')) {
+      rawPhone = '972' + rawPhone.slice(1);
+    }
+
+    if (rawPhone && rawPhone.length >= 9) {
+      window.open(`https://api.whatsapp.com/send?phone=${rawPhone}&text=${encodedMsg}`, '_blank');
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+    }
   };
 
   const filteredTeachers = teachersList.filter(t => 

@@ -5066,6 +5066,17 @@ const AdminDashboard = () => {
                                 />
                               </div>
 
+                              <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>📱 رقم الهاتف الشخصي للمعلم (لتوجيه الواتساب إليه المباشرة):</label>
+                                <input
+                                  type="tel"
+                                  placeholder="مثال: 0501234567"
+                                  value={activeData.phone || ''}
+                                  onChange={(e) => setEditingTeacherData({ ...activeData, phone: e.target.value })}
+                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                />
+                              </div>
+
                               <div style={{ marginBottom: '1.25rem' }}>
                                 <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.5rem' }}>
                                   🗓️ الأيام والساعات المتاحة للاستقبال:
