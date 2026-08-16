@@ -152,8 +152,27 @@ const ContactForm = () => {
     <section className="section contact-section" id="contact">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">اتصل بنا</h2>
+          <h2 className="section-title">اتصل بنا وتواصل معنا</h2>
           <p className="section-subtitle">نسعد بالإجابة على استفساراتكم واقتراحاتكم. تواصلوا معنا مباشرة</p>
+          <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => window.location.hash = '#/appointments'}
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: 'white',
+                fontWeight: 900,
+                padding: '0.85rem 1.8rem',
+                borderRadius: '16px',
+                border: 'none',
+                boxShadow: '0 8px 20px rgba(2, 132, 199, 0.3)',
+                fontSize: '1.1rem',
+                cursor: 'pointer'
+              }}
+            >
+              📅 حجز لقاء مع المعلمين والإدارة 🤝
+            </button>
+          </div>
         </div>
 
         <div className="contact-grid">

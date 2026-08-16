@@ -42,21 +42,11 @@ const Navbar = () => {
         });
       }
 
-      if (!items.some(item => item.id === 'nav_appointments' || item.target === 'appointments')) {
-        items.push({
-          id: "nav_appointments",
-          label: "📅 حجز لقاء مع المعلم",
-          type: "page",
-          target: "appointments",
-          category: "main",
-          order: 8
-        });
-      }
+      const filteredItems = items.filter(item => item.id !== 'nav_appointments' && item.target !== 'appointments');
+      filteredItems.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      items.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      const top = items.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
-      const main = items.filter(item => !top.includes(item));
+      const top = filteredItems.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
+      const main = filteredItems.filter(item => !top.includes(item));
 
       setTopNavItems(top);
       setMainNavItems(main);

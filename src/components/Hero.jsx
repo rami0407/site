@@ -191,6 +191,27 @@ const Hero = () => {
               <i className="fas fa-paper-plane"></i>
               تواصل معنا
             </button>
+
+            <button 
+              onClick={() => window.location.hash = '#/appointments'} 
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 900,
+                padding: '0.85rem 1.4rem',
+                borderRadius: '16px',
+                boxShadow: '0 8px 20px rgba(2, 132, 199, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="fas fa-calendar-check" style={{ fontSize: '1.1rem' }}></i>
+              📅 حجز لقاء مع المعلم
+            </button>
           </div>
 
         </div>
