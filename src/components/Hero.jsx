@@ -182,16 +182,6 @@ const Hero = () => {
               {isLaunching ? 'جاري الإطلاق إلى الفضاء... 🌌' : 'إطلاق مركبة التميز 🚀'}
             </button>
 
-            <button onClick={() => window.location.hash = '#/worksheets'} className="btn btn-space-outline">
-              <i className="fas fa-folder-open"></i>
-              أوراق العمل والامتحانات
-            </button>
-
-            <button onClick={() => window.location.hash = '#/articles'} className="btn btn-space-outline" style={{ borderColor: '#38bdf8', color: '#38bdf8' }}>
-              <i className="fas fa-book-reader"></i>
-              مقالات علمية 📚
-            </button>
-
             <button onClick={() => window.location.hash = '#/learning-corner'} className="btn btn-space-outline">
               <i className="fas fa-gamepad"></i>
               ركن التعلم
