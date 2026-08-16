@@ -244,6 +244,150 @@ const LearningCorner = () => {
   };
 
   // =========================================================================
+  // SPEED MATH CHALLENGE LOGIC
+  // =========================================================================
+  const [speedMathScore, setSpeedMathScore] = useState(0);
+  const [speedMathStreak, setSpeedMathStreak] = useState(0);
+  const [speedMathTime, setSpeedMathTime] = useState(10);
+  const [speedMathQuestion, setSpeedMathQuestion] = useState(null);
+  const [isSpeedMathActive, setIsSpeedMathActive] = useState(false);
+  const [isSpeedMathWin, setIsSpeedMathWin] = useState(false);
+
+  const startSpeedMathGame = () => {
+    setSpeedMathScore(0);
+    setSpeedMathStreak(0);
+    setIsSpeedMathWin(false);
+    setIsSpeedMathActive(true);
+    generateSpeedMathQuestion();
+  };
+
+  const generateSpeedMathQuestion = () => {
+    const ops = ['+', '-', '×'];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let num1 = Math.floor(Math.random() * 12) + 1;
+    let num2 = Math.floor(Math.random() * 12) + 1;
+    if (op === '-' && num1 < num2) {
+      const temp = num1; num1 = num2; num2 = temp;
+    }
+    let ans = 0;
+    if (op === '+') ans = num1 + num2;
+    if (op === '-') ans = num1 - num2;
+    if (op === '×') ans = num1 * num2;
+
+    const choicesSet = new Set([ans]);
+    while (choicesSet.size < 4) {
+      const wrong = ans + (Math.floor(Math.random() * 10) - 5);
+      if (wrong >= 0 && wrong !== ans) choicesSet.add(wrong);
+    }
+    const choices = Array.from(choicesSet).sort(() => Math.random() - 0.5);
+
+    setSpeedMathQuestion({ num1, num2, op, ans, choices });
+    setSpeedMathTime(10);
+  };
+
+  useEffect(() => {
+    let timer = null;
+    if (isSpeedMathActive && speedMathTime > 0) {
+      timer = setInterval(() => {
+        setSpeedMathTime(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setIsSpeedMathActive(false);
+            setIsSpeedMathWin(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isSpeedMathActive, speedMathTime]);
+
+  const handleSpeedMathAnswer = (choice) => {
+    if (!speedMathQuestion) return;
+    if (choice === speedMathQuestion.ans) {
+      setSpeedMathScore(prev => prev + 15);
+      setSpeedMathStreak(prev => prev + 1);
+      generateSpeedMathQuestion();
+    } else {
+      setIsSpeedMathActive(false);
+      setIsSpeedMathWin(true);
+    }
+  };
+
+  // =========================================================================
+  // WORLD EXPLORER & GEOGRAPHY QUIZ LOGIC
+  // =========================================================================
+  const GEO_QUESTIONS = [
+    {
+      id: 'g1',
+      question: 'ما هي عاصمة القدس الشريف ومكان وجود المسجد الأقصى المبارك؟',
+      icon: '🕌',
+      imageUrl: 'https://images.unsplash.com/photo-1544971587-b842c27f8c14?auto=format&fit=crop&w=600&q=80',
+      choices: ['فلسطين 🇵🇸', 'الأردن 🇯🇴', 'مصر 🇪🇬', 'لبنان 🇱🇧'],
+      correctIndex: 0,
+      fact: 'القدس هي زهرة المدائن وعاصمة فلسطين التاريخية والدينية الخالدة.'
+    },
+    {
+      id: 'g2',
+      question: 'ما هو أكبر كواكب المجموعة الشمسية حجماً؟',
+      icon: '🪐',
+      imageUrl: 'https://images.unsplash.com/photo-1614732414444-096e5f1122d5?auto=format&fit=crop&w=600&q=80',
+      choices: ['كوكب المشتري 🪐', 'كوكب الأرض 🌍', 'كوكب المريخ 🔴', 'كوكب عطارد 🌑'],
+      correctIndex: 0,
+      fact: 'المشتري كوكب غازي ضخم يتسع لأكثر من 1300 كوكب بحجم الأرض!'
+    },
+    {
+      id: 'g3',
+      question: 'ما هو الحيوان الملقب بسفينة الصحراء لقدرته العالية على تحمل العطش؟',
+      icon: '🐪',
+      imageUrl: 'https://images.unsplash.com/photo-1565128930784-0b5c90b633ec?auto=format&fit=crop&w=600&q=80',
+      choices: ['الجمل 🐪', 'الحصان 🐎', 'الفيل 🐘', 'الأسد 🦁'],
+      correctIndex: 0,
+      fact: 'يخزن الجمل الدهون في سنامه ليستعين بها كمصدر طاقة وماء خلال رحلات الصحراء.'
+    },
+    {
+      id: 'g4',
+      question: 'ما هو المحيط الأكبر مساحة على كوكب الأرض؟',
+      icon: '🌊',
+      imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+      choices: ['المحيط الهادئ 🌊', 'المحيط الأطلسي ⚓', 'المحيط الهندي 🚢', 'المحيط المتجمد ❄️'],
+      correctIndex: 0,
+      fact: 'المحيط الهادئ يغطي ثلث مساحة الكرة الأرضية بالكامل!'
+    }
+  ];
+
+  const [geoIndex, setGeoIndex] = useState(0);
+  const [geoScore, setGeoScore] = useState(0);
+  const [isGeoWin, setIsGeoWin] = useState(false);
+  const [selectedGeoChoice, setSelectedGeoChoice] = useState(null);
+
+  const startWorldExplorerGame = () => {
+    setGeoIndex(0);
+    setGeoScore(0);
+    setIsGeoWin(false);
+    setSelectedGeoChoice(null);
+  };
+
+  const handleGeoAnswer = (idx) => {
+    if (selectedGeoChoice !== null) return;
+    setSelectedGeoChoice(idx);
+    const q = GEO_QUESTIONS[geoIndex];
+    if (idx === q.correctIndex) {
+      setGeoScore(prev => prev + 25);
+    }
+
+    setTimeout(() => {
+      if (geoIndex + 1 < GEO_QUESTIONS.length) {
+        setGeoIndex(prev => prev + 1);
+        setSelectedGeoChoice(null);
+      } else {
+        setIsGeoWin(true);
+      }
+    }, 1500);
+  };
+
+  // =========================================================================
   // 1. MULTIPLICATION GAME STATE
   // =========================================================================
   const [multGameState, setMultGameState] = useState('stages'); // 'loading' | 'stages' | 'playing' | 'complete'
@@ -1479,6 +1623,194 @@ const LearningCorner = () => {
               </button>
             </div>
 
+            {/* Game 7: Speed Math Challenge */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
+              borderRadius: '24px',
+              border: '2px solid rgba(16, 185, 129, 0.4)',
+              padding: '2rem',
+              boxShadow: '0 15px 35px rgba(16, 185, 129, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justify: 'space-between'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                background: 'linear-gradient(135deg, #10b981, #047857)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.85rem',
+                fontWeight: 800
+              }}>
+                سرعة ذهنية ⚡
+              </div>
+
+              <div>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  🔢⚡🏆
+                </div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  عبقري الحساب السريع
+                </h3>
+                <p style={{ color: '#cbd5e1', fontSize: '0.98rem', lineHeight: '1.7', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  تحدي السرعة في حل العمليات الحسابية بأقل من 10 ثوانٍ! كم تتابعاً تستطيع تحقيقه؟
+                </p>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: '0.9rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justify: 'space-around',
+                  textAlign: 'center'
+                }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>⚡</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>سرعة 10 ثوانٍ</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🔢</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>جمع وطرح وضرب</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🔥</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>سلسلة متتابعة</span>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (!profileName || !profileClass) {
+                    setIsEditingProfile(true);
+                    return;
+                  }
+                  startSpeedMathGame();
+                  setActiveTab('speed_math');
+                }}
+                className="btn"
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(16, 185, 129, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: '0.75rem'
+                }}
+              >
+                <span>دخول الحساب السريع ⚡</span>
+                <i className="fas fa-play"></i>
+              </button>
+            </div>
+
+            {/* Game 8: World Explorer & Geography Quiz */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9))',
+              borderRadius: '24px',
+              border: '2px solid rgba(99, 102, 241, 0.4)',
+              padding: '2rem',
+              boxShadow: '0 15px 35px rgba(99, 102, 241, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justify: 'space-between'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                background: 'linear-gradient(135deg, #6366f1, #4338ca)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.85rem',
+                fontWeight: 800
+              }}>
+                جغرافيا واستكشاف 🌍
+              </div>
+
+              <div>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  🌍🧭🕌
+                </div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  مكتشف العالم والجغرافيا
+                </h3>
+                <p style={{ color: '#cbd5e1', fontSize: '0.98rem', lineHeight: '1.7', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  مسابقة ثقافة عامة وجغرافيا تفاعلية بالصور والمعلومات الشيقة عن معالم العالم والكواكب!
+                </p>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: '0.9rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justify: 'space-around',
+                  textAlign: 'center'
+                }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🇵🇸</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>معالم وعواصم</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>🖼️</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>صور توضيحية</span>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '1.2rem' }}>💡</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>حقائق مذهلة</span>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (!profileName || !profileClass) {
+                    setIsEditingProfile(true);
+                    return;
+                  }
+                  startWorldExplorerGame();
+                  setActiveTab('world_explorer');
+                }}
+                className="btn"
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(99, 102, 241, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: '0.75rem'
+                }}
+              >
+                <span>دخول مكتشف العالم 🌍</span>
+                <i className="fas fa-play"></i>
+              </button>
+            </div>
+
           </div>
         </div>
       )}
@@ -2356,6 +2688,202 @@ const LearningCorner = () => {
                 </p>
                 <button onClick={startSpellingGame} className="btn" style={{ background: '#10b981', color: 'white', fontWeight: 900, padding: '0.75rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
                   🔄 إعادة التحدي من جديد
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => setActiveTab('hub')} className="btn" style={{ background: '#64748b', color: 'white', fontWeight: 800, padding: '0.65rem 1.4rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+              ↩️ العودة لقائمة الألعاب
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB 8: SPEED MATH CHALLENGE                              */}
+      {/* -------------------------------------------------------- */}
+      {activeTab === 'speed_math' && (
+        <div className="container" style={{ paddingBottom: '4rem', maxWidth: '750px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', color: '#1e293b', textAlign: 'center' }}>
+            
+            {/* Header */}
+            <span style={{ background: '#d1fae5', color: '#047857', padding: '0.5rem 1.4rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.8rem' }}>
+              🔢 عبقري الحساب السريع
+            </span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+              تحدي الحساب والسرعة يا {profileName}! ⚡🏆
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600, marginBottom: '1.5rem' }}>
+              حل المعالجة الحسابية في أقل من 10 ثوانٍ!
+            </p>
+
+            {/* Timer & Stats */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '2rem', fontWeight: 800 }}>
+              <div>نقاطك: <strong style={{ color: '#10b981', fontSize: '1.2rem' }}>{speedMathScore} 🪙</strong></div>
+              <div style={{ background: speedMathTime <= 3 ? '#fee2e2' : '#e0f2fe', color: speedMathTime <= 3 ? '#ef4444' : '#0284c7', padding: '0.4rem 1rem', borderRadius: '12px', fontSize: '1.2rem', fontWeight: 900 }}>
+                ⏳ المتبقي: {speedMathTime} ثوانٍ
+              </div>
+              <div>سلسلتك: <strong style={{ color: '#f59e0b', fontSize: '1.2rem' }}>🔥 {speedMathStreak}</strong></div>
+            </div>
+
+            {isSpeedMathActive && speedMathQuestion ? (
+              <div>
+                {/* Question Card */}
+                <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)', borderRadius: '24px', padding: '2.5rem', marginBottom: '2rem', boxShadow: '0 15px 35px rgba(0,0,0,0.2)' }}>
+                  <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '4px' }}>
+                    {speedMathQuestion.num1} {speedMathQuestion.op} {speedMathQuestion.num2} = ❓
+                  </div>
+                </div>
+
+                {/* Answer Choices Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
+                  {speedMathQuestion.choices.map((choice, cIdx) => (
+                    <button
+                      key={cIdx}
+                      onClick={() => handleSpeedMathAnswer(choice)}
+                      className="btn"
+                      style={{
+                        background: '#ffffff',
+                        border: '3px solid #cbd5e1',
+                        color: '#0f172a',
+                        fontSize: '2rem',
+                        fontWeight: 900,
+                        padding: '1.25rem',
+                        borderRadius: '20px',
+                        cursor: 'pointer',
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.06)'
+                      }}
+                    >
+                      {choice}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : isSpeedMathWin && (
+              <div style={{ background: '#fef2f2', border: '2px solid #ef4444', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>⏱️🏁💥</div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#991b1b', margin: '0 0 0.5rem 0' }}>
+                  انتهى الوقت أو محاولة خاطئة يا {profileName}!
+                </h3>
+                <p style={{ fontSize: '1.1rem', color: '#7f1d1d', fontWeight: 800, marginBottom: '1.5rem' }}>
+                  جمعت {speedMathScore} نقطة ورصيد سلسلة 🔥 {speedMathStreak} إجابات صحيحة متتالية!
+                </p>
+                <button onClick={startSpeedMathGame} className="btn" style={{ background: '#10b981', color: 'white', fontWeight: 900, padding: '0.75rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                  🔄 إعادة التحدي من جديد
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => setActiveTab('hub')} className="btn" style={{ background: '#64748b', color: 'white', fontWeight: 800, padding: '0.65rem 1.4rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+              ↩️ العودة لقائمة الألعاب
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB 9: WORLD EXPLORER & GEOGRAPHY QUIZ                   */}
+      {/* -------------------------------------------------------- */}
+      {activeTab === 'world_explorer' && (
+        <div className="container" style={{ paddingBottom: '4rem', maxWidth: '800px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', color: '#1e293b', textAlign: 'center' }}>
+            
+            {/* Header */}
+            <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '0.5rem 1.4rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.8rem' }}>
+              🌍 مكتشف العالم والجغرافيا
+            </span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+              رحلة استكشاف العالم يا {profileName}! 🧭✨
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600, marginBottom: '1.5rem' }}>
+              السؤال {geoIndex + 1} من {GEO_QUESTIONS.length} | مجموع نقاطك: <strong style={{ color: '#6366f1', fontSize: '1.1rem' }}>{geoScore} 🪙</strong>
+            </p>
+
+            {!isGeoWin ? (
+              <div>
+                {/* Visual Image & Question Card */}
+                <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '24px', overflow: 'hidden', marginBottom: '2rem' }}>
+                  <div style={{ height: '220px', width: '100%', overflow: 'hidden', position: 'relative' }}>
+                    <img src={GEO_QUESTIONS[geoIndex].imageUrl} alt="Geography" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '1.5rem' }}>
+                      {GEO_QUESTIONS[geoIndex].icon}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+                      {GEO_QUESTIONS[geoIndex].question}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Choices Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  {GEO_QUESTIONS[geoIndex].choices.map((choice, cIdx) => {
+                    const isSelected = selectedGeoChoice === cIdx;
+                    const isCorrect = cIdx === GEO_QUESTIONS[geoIndex].correctIndex;
+                    let bgColor = '#ffffff';
+                    let borderColor = '#cbd5e1';
+                    let textColor = '#0f172a';
+
+                    if (selectedGeoChoice !== null) {
+                      if (isCorrect) {
+                        bgColor = '#ecfdf5';
+                        borderColor = '#10b981';
+                        textColor = '#047857';
+                      } else if (isSelected) {
+                        bgColor = '#fef2f2';
+                        borderColor = '#ef4444';
+                        textColor = '#991b1b';
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={cIdx}
+                        onClick={() => handleGeoAnswer(cIdx)}
+                        className="btn"
+                        style={{
+                          background: bgColor,
+                          border: `3px solid ${borderColor}`,
+                          color: textColor,
+                          fontSize: '1.15rem',
+                          fontWeight: 900,
+                          padding: '1.1rem',
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 14px rgba(0,0,0,0.05)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {choice}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Educational Fact Box */}
+                {selectedGeoChoice !== null && (
+                  <div style={{ background: '#eef2ff', borderRight: '5px solid #6366f1', borderRadius: '16px', padding: '1rem 1.25rem', textAlign: 'right', marginBottom: '2rem' }}>
+                    <div style={{ fontWeight: 900, color: '#3730a3', marginBottom: '0.3rem' }}>💡 هل تعلم؟</div>
+                    <div style={{ color: '#1e1b4b', fontWeight: 700, fontSize: '0.95rem' }}>
+                      {GEO_QUESTIONS[geoIndex].fact}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            ) : (
+              <div style={{ background: '#ecfdf5', border: '2px solid #10b981', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>🎉🌍🏆</div>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#047857', margin: '0 0 0.5rem 0' }}>
+                  أنت مستكشف جغرافي عالمي يا {profileName}!
+                </h3>
+                <p style={{ fontSize: '1.1rem', color: '#065f46', fontWeight: 800, marginBottom: '1.5rem' }}>
+                  جمعت {geoScore} نقطة واجتزت جميع أسئلة وثقافة العالم بنجاح مذهل!
+                </p>
+                <button onClick={startWorldExplorerGame} className="btn" style={{ background: '#10b981', color: 'white', fontWeight: 900, padding: '0.75rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                  🔄 إعادة الاستكشاف من جديد
                 </button>
               </div>
             )}
