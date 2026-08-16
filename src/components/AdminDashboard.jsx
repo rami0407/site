@@ -18,6 +18,7 @@ import {
 import { calendarEvents, newsData } from '../data/schoolData'; // defaults for seeding
 import { defaultBooks, defaultUniform, defaultLetter } from '../data/schoolGuideData';
 import { defaultNavigation, defaultPages } from '../data/defaultNavigationData';
+import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
 import { uploadChunkedFile, deleteChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 import ScientificArticles from './ScientificArticles';
@@ -429,29 +430,71 @@ const AdminDashboard = () => {
     youtube: ''
   });
   const [teachersList, setTeachersList] = useState([]);
+  const [editingTeacherId, setEditingTeacherId] = useState(null);
+  const [editingTeacherData, setEditingTeacherData] = useState(null);
 
-  const fetchTeachersData = async () => {
+  const loadTeachersList = async () => {
     try {
-      const snap = await getDocs(collection(db, 'teachers'));
-      let fsList = [];
+      const snap = await getDocs(collection(db, 'school_teachers'));
       if (!snap.empty) {
-        snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        setTeachersList(list);
+      } else {
+        setTeachersList(defaultSchoolTeachers);
       }
-      let localList = [];
-      try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
-
-      const combined = [...fsList];
-      localList.forEach(loc => {
-        if (!combined.some(existing => existing.id === loc.id || existing.name === loc.name)) {
-          combined.unshift(loc);
-        }
-      });
-      setTeachersList(combined);
     } catch (err) {
-      console.warn("Fetch teachers error:", err.message);
-      let localList = [];
-      try { localList = JSON.parse(localStorage.getItem('db_teachers') || '[]'); } catch(e){}
-      setTeachersList(localList);
+      setTeachersList(defaultSchoolTeachers);
+    }
+  };
+
+  const handleSaveTeacher = async (teacherObj) => {
+    try {
+      await setDoc(doc(db, 'school_teachers', teacherObj.id), teacherObj);
+      const updated = teachersList.map(t => t.id === teacherObj.id ? teacherObj : t);
+      setTeachersList(updated);
+      setEditingTeacherId(null);
+      setEditingTeacherData(null);
+      alert(`تم حفظ وتحديث أيام استقبال المعلم (${teacherObj.nameAr}) بنجاح!`);
+    } catch (err) {
+      alert('حدث خطأ أثناء الحفظ: ' + err.message);
+    }
+  };
+
+  const handleDeleteTeacher = async (id, nameAr) => {
+    if (!window.confirm(`هل أنت متأكد من حذف المعلم (${nameAr}) من قائمة المواعيد؟`)) return;
+    try {
+      await deleteDoc(doc(db, 'school_teachers', id));
+      setTeachersList(prev => prev.filter(t => t.id !== id));
+      alert('تم حذف المعلم بنجاح.');
+    } catch (err) {
+      alert('حدث خطأ أثناء الحذف: ' + err.message);
+    }
+  };
+
+  const handleAddNewTeacher = async () => {
+    const nameAr = prompt('أدخل اسم المعلم بالعربية:');
+    if (!nameAr || !nameAr.trim()) return;
+    const nameHe = prompt('أدخل اسم المعلم باللغة العبرية (اختياري):') || '';
+    const role = prompt('صفة المعلم (مثال: معلم ومربي صف):') || 'معلم ومربي';
+
+    const newTch = {
+      id: `tch_${Date.now()}`,
+      nameAr: nameAr.trim(),
+      nameHe: nameHe.trim(),
+      role: role.trim(),
+      receptionSchedule: [
+        { day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '13:30' },
+        { day: 'Tuesday', dayAr: 'الثلاثاء', startTime: '08:30', endTime: '13:30' }
+      ]
+    };
+
+    try {
+      await setDoc(doc(db, 'school_teachers', newTch.id), newTch);
+      setTeachersList(prev => [newTch, ...prev]);
+      alert(`تمت إضافة المعلم (${newTch.nameAr}) بنجاح!`);
+    } catch (err) {
+      alert('حدث خطأ أثناء إضافة المعلم: ' + err.message);
     }
   };
 
@@ -4833,6 +4876,200 @@ const AdminDashboard = () => {
                         <i className="fas fa-save"></i> {isSavingGeminiKey ? ' جاري الحفظ والتفعيل...' : ' حفظ وتفعيل المساعد الذكي'}
                       </button>
                     </form>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 11: TEACHERS & RECEPTION SCHEDULE MANAGEMENT */}
+              {activeTab === 'teachers-management' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>
+                        👨‍🏫 إدارة قائمة المعلمين وتحديد أيام الاستقبال
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                        إجمالي المعلمين المعرفين للنظام: <strong>({teachersList.length}) معلماً</strong>
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleAddNewTeacher}
+                      className="btn"
+                      style={{ background: '#10b981', color: 'white', fontWeight: 800, padding: '0.75rem 1.4rem', borderRadius: '12px' }}
+                    >
+                      ➕ إضافة معلم جديد
+                    </button>
+                  </div>
+
+                  {/* Teachers Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                    {teachersList.map((tch) => {
+                      const isEditing = editingTeacherId === tch.id;
+                      const activeData = isEditing ? editingTeacherData : tch;
+
+                      return (
+                        <div
+                          key={tch.id}
+                          style={{
+                            background: 'white',
+                            borderRadius: '20px',
+                            border: '2px solid #e2e8f0',
+                            padding: '1.5rem',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
+                          }}
+                        >
+                          {!isEditing ? (
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <div>
+                                  <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
+                                    👨‍🏫 {tch.nameAr} ({tch.nameHe})
+                                  </h3>
+                                  <span style={{ fontSize: '0.88rem', color: '#0284c7', fontWeight: 700 }}>{tch.role || 'معلم ومربي صف'}</span>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => {
+                                      setEditingTeacherId(tch.id);
+                                      setEditingTeacherData(JSON.parse(JSON.stringify(tch)));
+                                    }}
+                                    style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                                  >
+                                    ✏️ تعديل الأيام
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteTeacher(tch.id, tch.nameAr)}
+                                    style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '6px 10px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                                  >
+                                    🗑️ حذف
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '14px', borderRight: '4px solid #0284c7' }}>
+                                <div style={{ fontWeight: 800, color: '#475569', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                  🗓️ جدول أيام وساعات الاستقبال:
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                  {(tch.receptionSchedule || []).length === 0 ? (
+                                    <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>لم يتم تحديد مواعيد مخصصة (تلقائي من الأحد للخميس)</span>
+                                  ) : (
+                                    tch.receptionSchedule.map((s, sIdx) => (
+                                      <div key={sIdx} style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                                        🔹 <strong>{s.dayAr}:</strong> من الساعة {s.startTime} حتى الساعة {s.endTime}
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            /* EDIT TEACHER SCHEDULE FORM */
+                            <div>
+                              <h4 style={{ margin: '0 0 1rem 0', color: '#0284c7', fontWeight: 900 }}>
+                                ✏️ تعديل مواعيد استقبال المعلم: {activeData.nameAr}
+                              </h4>
+
+                              <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>اسم المعلم بالعربية:</label>
+                                <input
+                                  type="text"
+                                  value={activeData.nameAr}
+                                  onChange={(e) => setEditingTeacherData({ ...activeData, nameAr: e.target.value })}
+                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                />
+                              </div>
+
+                              <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>الوظيفة / التخصص:</label>
+                                <input
+                                  type="text"
+                                  value={activeData.role || ''}
+                                  onChange={(e) => setEditingTeacherData({ ...activeData, role: e.target.value })}
+                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                />
+                              </div>
+
+                              <div style={{ marginBottom: '1.25rem' }}>
+                                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.5rem' }}>
+                                  🗓️ الأيام والساعات المتاحة للاستقبال:
+                                </div>
+
+                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'].map((dayKey) => {
+                                  const dayNames = { Sunday: 'الأحد', Monday: 'الإثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس' };
+                                  const existing = (activeData.receptionSchedule || []).find(s => s.day === dayKey);
+                                  const isChecked = Boolean(existing);
+
+                                  return (
+                                    <div key={dayKey} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          let current = [...(activeData.receptionSchedule || [])];
+                                          if (e.target.checked) {
+                                            current.push({ day: dayKey, dayAr: dayNames[dayKey], startTime: '08:00', endTime: '13:00' });
+                                          } else {
+                                            current = current.filter(s => s.day !== dayKey);
+                                          }
+                                          setEditingTeacherData({ ...activeData, receptionSchedule: current });
+                                        }}
+                                      />
+                                      <span style={{ fontWeight: 800, width: '70px', fontSize: '0.9rem' }}>{dayNames[dayKey]}</span>
+
+                                      {isChecked && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem' }}>
+                                          <input
+                                            type="time"
+                                            value={existing.startTime || '08:00'}
+                                            onChange={(ev) => {
+                                              const updatedSched = activeData.receptionSchedule.map(s => s.day === dayKey ? { ...s, startTime: ev.target.value } : s);
+                                              setEditingTeacherData({ ...activeData, receptionSchedule: updatedSched });
+                                            }}
+                                            style={{ padding: '2px 6px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                          />
+                                          <span>إلى</span>
+                                          <input
+                                            type="time"
+                                            value={existing.endTime || '13:00'}
+                                            onChange={(ev) => {
+                                              const updatedSched = activeData.receptionSchedule.map(s => s.day === dayKey ? { ...s, endTime: ev.target.value } : s);
+                                              setEditingTeacherData({ ...activeData, receptionSchedule: updatedSched });
+                                            }}
+                                            style={{ padding: '2px 6px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  onClick={() => handleSaveTeacher(activeData)}
+                                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', flex: 1 }}
+                                >
+                                  💾 حفظ التعديلات
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingTeacherId(null);
+                                    setEditingTeacherData(null);
+                                  }}
+                                  style={{ background: '#64748b', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                                >
+                                  إلغاء
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
