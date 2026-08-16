@@ -206,6 +206,25 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     }
   };
 
+  const handleSendWhatsAppToTeacher = () => {
+    if (!bookingTicket) return;
+    const msg = `مدرسة مشيرفة الابتدائية - حجز موعد جديد 🏫✨
+--------------------------------------
+👨‍🏫 إلى المعلم / الجهة: ${bookingTicket.teacherNameAr} ${bookingTicket.teacherNameHe ? `(${bookingTicket.teacherNameHe})` : ''}
+👤 ولي الأمر: ${bookingTicket.parentName}
+📞 رقم الهاتف: ${bookingTicket.parentPhone}
+🎓 الطالب والصف: ${bookingTicket.studentName} (${bookingTicket.studentClass})
+🗓️ موعد اللقاء: ${bookingTicket.dayAr} ${bookingTicket.date} | ${bookingTicket.timeSlot}
+📍 نوع اللقاء: ${bookingTicket.meetingType}
+📝 سبب اللقاء: ${bookingTicket.meetingTopic}
+🎟️ رقم التذكرة: ${bookingTicket.ticketCode}
+
+يرجى الحضور في الموعد المحدد. شكراً لكم!`;
+
+    const encodedMsg = encodeURIComponent(msg);
+    window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+  };
+
   const filteredTeachers = teachersList.filter(t => 
     t.nameAr?.includes(searchQuery) || t.nameHe?.includes(searchQuery)
   );
@@ -635,6 +654,14 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleSendWhatsAppToTeacher}
+                className="btn"
+                style={{ background: '#25D366', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}
+              >
+                <i className="fab fa-whatsapp" style={{ fontSize: '1.3rem' }}></i> 📲 إرسال إشعار للمدرس عبر واتساب
+              </button>
+
               <button
                 onClick={() => window.print()}
                 className="btn"

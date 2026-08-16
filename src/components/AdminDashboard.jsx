@@ -433,6 +433,33 @@ const AdminDashboard = () => {
   const [editingTeacherId, setEditingTeacherId] = useState(null);
   const [editingTeacherData, setEditingTeacherData] = useState(null);
 
+  const [bookedAppointments, setBookedAppointments] = useState([]);
+  const [filterAppDate, setFilterAppDate] = useState('');
+  const [searchAppParent, setSearchAppParent] = useState('');
+
+  const loadBookedAppointments = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'teacher_appointments'));
+      const list = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setBookedAppointments(list);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+    }
+  };
+
+  const handleDeleteAppointment = async (id, ticketCode) => {
+    if (!window.confirm(`هل أنت متأكد من إلغاء الحجز رقم (${ticketCode})؟`)) return;
+    try {
+      await deleteDoc(doc(db, 'teacher_appointments', id));
+      setBookedAppointments(prev => prev.filter(a => a.id !== id));
+      alert('تم إلغاء وتفريغ الموعد بنجاح.');
+    } catch (err) {
+      alert('حدث خطأ أثناء إلغاء الموعد: ' + err.message);
+    }
+  };
+
   const loadTeachersList = async () => {
     try {
       const snap = await getDocs(collection(db, 'school_teachers'));
@@ -2464,6 +2491,52 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-calendar-alt" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               إدارة الرزنامة ({events.length})
+            </button>
+
+            {/* BOOKED APPOINTMENTS TAB */}
+            <button 
+              onClick={() => {
+                loadBookedAppointments();
+                setActiveTab('booked-appointments');
+              }} 
+              className={`filter-chip ${activeTab === 'booked-appointments' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.85rem 1.2rem', 
+                fontSize: '1rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'booked-appointments' ? '#10b981' : '#ecfdf5',
+                color: activeTab === 'booked-appointments' ? 'white' : '#047857',
+                fontWeight: 800,
+                border: '2px solid #a7f3d0'
+              }}
+            >
+              <i className="fas fa-calendar-check" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              📅 مواعيد الأهالي المحجوزة ({bookedAppointments.length})
+            </button>
+
+            {/* TEACHERS MANAGEMENT TAB */}
+            <button 
+              onClick={() => {
+                loadTeachersList();
+                setActiveTab('teachers-management');
+              }} 
+              className={`filter-chip ${activeTab === 'teachers-management' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.85rem 1.2rem', 
+                fontSize: '1rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'teachers-management' ? '#0284c7' : '#f0f9ff',
+                color: activeTab === 'teachers-management' ? 'white' : '#0369a1',
+                fontWeight: 800,
+                border: '2px solid #bae6fd'
+              }}
+            >
+              <i className="fas fa-user-tie" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              👨‍🏫 أيام وساعات المعلمين ({teachersList.length})
             </button>
 
             <button 
@@ -5070,6 +5143,136 @@ const AdminDashboard = () => {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 12: BOOKED APPOINTMENTS LIST */}
+              {activeTab === 'booked-appointments' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>
+                        📅 جدول مواعيد ولقاءات الأهالي المحجوزة
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                        إجمالي الحجوزات المسجلة بالسيرفر: <strong>({bookedAppointments.length}) حجزاً</strong>
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={loadBookedAppointments}
+                        className="btn"
+                        style={{ background: '#0284c7', color: 'white', fontWeight: 800, padding: '0.65rem 1.2rem', borderRadius: '10px' }}
+                      >
+                        🔄 تحديث الحجوزات
+                      </button>
+
+                      <button
+                        onClick={() => window.print()}
+                        className="btn"
+                        style={{ background: '#10b981', color: 'white', fontWeight: 800, padding: '0.65rem 1.2rem', borderRadius: '10px' }}
+                      >
+                        🖨️ طباعة جدول اللقاءات
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filters Bar */}
+                  <div style={{ background: 'white', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '220px' }}>
+                      <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem', color: '#475569' }}>🔍 البحث باسم ولي الأمر أو المعلم:</label>
+                      <input
+                        type="text"
+                        placeholder="ابحث بالاسم أو رقم الهاتف..."
+                        value={searchAppParent}
+                        onChange={(e) => setSearchAppParent(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem 0.9rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                      />
+                    </div>
+
+                    <div style={{ minWidth: '180px' }}>
+                      <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem', color: '#475569' }}>📅 تصفية بالتاريخ:</label>
+                      <input
+                        type="date"
+                        value={filterAppDate}
+                        onChange={(e) => setFilterAppDate(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem 0.9rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Appointments Grid / Cards */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {bookedAppointments.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b', background: 'white', borderRadius: '20px' }}>
+                        📅 لا توجد حجوزات مسجلة بعد.
+                      </div>
+                    ) : (
+                      bookedAppointments
+                        .filter(app => {
+                          const matchQuery = !searchAppParent || (app.parentName?.includes(searchAppParent) || app.teacherNameAr?.includes(searchAppParent) || app.parentPhone?.includes(searchAppParent) || app.studentName?.includes(searchAppParent));
+                          const matchDate = !filterAppDate || app.date === filterAppDate;
+                          return matchQuery && matchDate;
+                        })
+                        .map((app) => (
+                          <div
+                            key={app.id}
+                            style={{
+                              background: 'white',
+                              borderRadius: '18px',
+                              border: '1px solid #e2e8f0',
+                              padding: '1.25rem 1.5rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justify: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: '1rem',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '4px 10px', borderRadius: '8px', fontWeight: 900, fontSize: '0.85rem' }}>
+                                  🎟️ {app.ticketCode}
+                                </span>
+                                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                                  👨‍🏫 {app.teacherNameAr}
+                                </h3>
+                              </div>
+
+                              <div style={{ color: '#475569', fontSize: '0.95rem', fontWeight: 700, display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                <span>👤 <strong>ولي الأمر:</strong> {app.parentName} ({app.parentPhone})</span>
+                                <span>🎓 <strong>الطالب:</strong> {app.studentName} - {app.studentClass}</span>
+                              </div>
+
+                              <div style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.3rem', fontWeight: 600 }}>
+                                🗓️ <strong>الموعد:</strong> {app.dayAr} {app.date} عند الساعة ({app.timeSlot}) | 📍 {app.meetingType} ({app.meetingTopic})
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <button
+                                onClick={() => {
+                                  const msg = encodeURIComponent(`مرحباً ولي الأمر ${app.parentName}، تذكير بموعد لقائك مع المعلم (${app.teacherNameAr}) بمدرسة مشيرفة الابتدائية بتاريخ ${app.date} الساعة ${app.timeSlot}. نتطلع للقائكم!`);
+                                  window.open(`https://api.whatsapp.com/send?phone=${app.parentPhone}&text=${msg}`, '_blank');
+                                }}
+                                style={{ background: '#25D366', color: 'white', border: 'none', padding: '0.55rem 1rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                              >
+                                <i className="fab fa-whatsapp"></i> مراسلة ولي الأمر
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteAppointment(app.id, app.ticketCode)}
+                                style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.55rem 1rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}
+                              >
+                                🗑️ إلغاء
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                    )}
                   </div>
                 </div>
               )}
