@@ -19,7 +19,7 @@ const Navbar = () => {
       // Filter out any lingering nav_excellence if deleted
       items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence');
 
-      // 🌟 GUARANTEE: Ensure nav_articles always exists in main navigation!
+      // 🌟 GUARANTEE: Ensure nav_articles and nav_parent_polls always exist in main navigation!
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
         items.push({
           id: "nav_articles",
@@ -28,6 +28,17 @@ const Navbar = () => {
           target: "articles",
           category: "main",
           order: 6
+        });
+      }
+
+      if (!items.some(item => item.id === 'nav_parent_polls' || item.target === 'parent-polls')) {
+        items.push({
+          id: "nav_parent_polls",
+          label: "📊 تصويت الأهالي",
+          type: "page",
+          target: "parent-polls",
+          category: "main",
+          order: 7
         });
       }
 
@@ -128,14 +139,14 @@ const Navbar = () => {
     e.preventDefault();
 
     if (item.type === 'page' || item.type === 'custom_page') {
-      const isSystemPage = ['worksheets', 'articles', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
+      const isSystemPage = ['worksheets', 'articles', 'parent-polls', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
       window.location.hash = isSystemPage ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('parent-polls') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {

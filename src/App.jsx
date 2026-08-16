@@ -33,6 +33,7 @@ import WeeklyChallenge, { WeeklyChallengeBanner } from './components/WeeklyChall
 import Worksheets, { WorksheetsBanner } from './components/Worksheets';
 import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
 import ScientificArticles, { ScientificArticlesBanner } from './components/ScientificArticles';
+import ParentPolls from './components/ParentPolls';
 import ExcellenceYearPage from './components/ExcellenceYearPage';
 import LearningCorner from './components/LearningCorner';
 import './App.css';
@@ -278,6 +279,7 @@ function App() {
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
   const isWorksheetsView = currentHash.includes('worksheets');
   const isArticlesView = currentHash.includes('articles');
+  const isParentPollsView = currentHash.includes('parent-polls');
   const isAstronomyView = currentHash.includes('astronomy');
   const isChallengeView = currentHash.includes('challenge');
   const isBooksView = currentHash.includes('books');
@@ -307,6 +309,8 @@ function App() {
         <LearningCorner isStandalone={true} />
       ) : isArticlesView ? (
         <ScientificArticles isStandalone={true} />
+      ) : isParentPollsView ? (
+        <ParentPolls isStandalone={true} />
       ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (
