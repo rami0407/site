@@ -184,6 +184,30 @@ const AiAssistant = () => {
       }
 
       if (!response) {
+        // Fallback to Pollinations AI Free Model (100% Free, No Key Required)
+        try {
+          const pollRes = await fetch("https://text.pollinations.ai/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [
+                { role: "system", content: schoolContext || "أنت المساعد التعليمي الرقمي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بوضوح وبأسلوب تربوي مشجع باللغة العربية." },
+                ...filteredMessages.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }))
+              ],
+              model: "openai"
+            })
+          });
+
+          if (pollRes.ok) {
+            const pollText = await pollRes.text();
+            if (pollText && pollText.trim()) {
+              setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
+              return;
+            }
+          }
+        } catch (pollErr) {
+          console.warn("Pollinations AI Free model error:", pollErr);
+        }
         throw lastError || new Error("Failed connecting to Gemini API");
       }
 
