@@ -463,15 +463,38 @@ const AdminDashboard = () => {
   const loadTeachersList = async () => {
     try {
       const snap = await getDocs(collection(db, 'school_teachers'));
+      const dbList = [];
       if (!snap.empty) {
-        const list = [];
-        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-        setTeachersList(list);
-      } else {
-        setTeachersList(defaultSchoolTeachers);
+        snap.forEach(d => dbList.push({ id: d.id, ...d.data() }));
       }
+
+      const dbMap = new Map(dbList.map(t => [t.id, t]));
+      const mergedList = [...dbList];
+
+      for (const defTch of defaultSchoolTeachers) {
+        if (!dbMap.has(defTch.id)) {
+          mergedList.push(defTch);
+        }
+      }
+      setTeachersList(mergedList);
     } catch (err) {
       setTeachersList(defaultSchoolTeachers);
+    }
+  };
+
+  const handleRestoreAll33Teachers = async () => {
+    if (!window.confirm('هل ترغب في حفظ واستعادة القائمة الكاملة لجميع المعلمين الـ 33 في قاعدة البيانات للتعديل المباشر عليهم؟')) return;
+    try {
+      setIsLoadingData(true);
+      for (const tch of defaultSchoolTeachers) {
+        await setDoc(doc(db, 'school_teachers', tch.id), tch, { merge: true });
+      }
+      await loadTeachersList();
+      alert('تم استعادة وحفظ جميع المعلمين الـ 33 بنجاح في قاعدة البيانات! يمكنك الآن تعديل بيانات أي معلم بسهولة.');
+    } catch (err) {
+      alert('حدث خطأ أثناء استعادة المعلمين: ' + err.message);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -4974,13 +4997,23 @@ const AdminDashboard = () => {
                       </p>
                     </div>
 
-                    <button
-                      onClick={handleAddNewTeacher}
-                      className="btn"
-                      style={{ background: '#10b981', color: 'white', fontWeight: 800, padding: '0.75rem 1.4rem', borderRadius: '12px' }}
-                    >
-                      ➕ إضافة معلم جديد
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={handleRestoreAll33Teachers}
+                        className="btn"
+                        style={{ background: '#0284c7', color: 'white', fontWeight: 900, padding: '0.75rem 1.4rem', borderRadius: '12px', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)' }}
+                      >
+                        ⚡ 🔄 استعادة القائمة الكاملة (33 معلماً)
+                      </button>
+
+                      <button
+                        onClick={handleAddNewTeacher}
+                        className="btn"
+                        style={{ background: '#10b981', color: 'white', fontWeight: 800, padding: '0.75rem 1.4rem', borderRadius: '12px' }}
+                      >
+                        ➕ إضافة معلم جديد
+                      </button>
+                    </div>
                   </div>
 
                   {/* Teachers Grid */}
