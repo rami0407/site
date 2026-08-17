@@ -136,14 +136,17 @@ const AiAssistant = () => {
     setIsTyping(true);
 
     try {
-      // Map message history to Gemini API format
-      const contents = updatedMessages.map(msg => ({
+      // Ensure contents starts with a 'user' message as required by Gemini API spec
+      const firstUserIndex = updatedMessages.findIndex(m => m.role === 'user');
+      const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
+
+      const contents = filteredMessages.map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
         parts: [{ text: msg.text }]
       }));
 
-      // Try gemini-2.0-flash then gemini-1.5-flash via v1beta endpoint
-      const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+      // Try gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, gemini-2.0-flash-exp via v1beta endpoint
+      const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-2.0-flash-exp"];
       let response = null;
       let lastError = null;
 
@@ -157,10 +160,10 @@ const AiAssistant = () => {
               body: JSON.stringify({
                 contents: contents,
                 systemInstruction: {
-                  parts: [{ text: schoolContext || "أنت مساعد ذكي لمدرسة مشيرفة الابتدائية." }]
+                  parts: [{ text: schoolContext || "أنت المساعد الرقمي والتعليمي والموسوعي لمدرسة مشيرفة الابتدائية." }]
                 },
                 generationConfig: {
-                  temperature: 0.4,
+                  temperature: 0.5,
                   maxOutputTokens: 800
                 }
               })

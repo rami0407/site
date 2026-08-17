@@ -498,6 +498,17 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSaveGeminiKey = async (newKey) => {
+    try {
+      await setDoc(doc(db, 'schoolGuide', 'gemini'), { apiKey: newKey.trim(), updatedAt: new Date().toISOString() });
+      setGeminiKey(newKey.trim());
+      localStorage.setItem('db_gemini_key', newKey.trim());
+      alert('تم حفظ وتفعيل مفتاح الذكاء الاصطناعي (Gemini API Key) بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء حفظ مفتاح الـ API: ' + err.message);
+    }
+  };
+
   const fetchTeachersData = async () => {
     await loadTeachersList();
   };
@@ -2568,6 +2579,26 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-user-tie" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               👨‍🏫 أيام وساعات المعلمين ({teachersList.length})
+            </button>
+
+            {/* AI ASSISTANT SETTINGS TAB */}
+            <button 
+              onClick={() => setActiveTab('ai-settings')} 
+              className={`filter-chip ${activeTab === 'ai-settings' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.85rem 1.2rem', 
+                fontSize: '1rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'ai-settings' ? '#8b5cf6' : '#f5f3ff',
+                color: activeTab === 'ai-settings' ? 'white' : '#6d28d9',
+                fontWeight: 800,
+                border: '2px solid #ddd6fe'
+              }}
+            >
+              <i className="fas fa-robot" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              🤖 إعدادات الذكاء الاصطناعي (Gemini)
             </button>
 
             <button 
@@ -5352,6 +5383,54 @@ const AdminDashboard = () => {
                           </div>
                         ))
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 13: AI ASSISTANT SETTINGS */}
+              {activeTab === 'ai-settings' && (
+                <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ fontSize: '3rem', background: '#f5f3ff', padding: '1rem', borderRadius: '20px', color: '#8b5cf6' }}>🤖</div>
+                    <div>
+                      <h2 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.6rem' }}>
+                        إعدادات وتفعيل خادم الذكاء الاصطناعي (Google Gemini AI)
+                      </h2>
+                      <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontWeight: 600 }}>
+                        ربط الموقع بمحرك الذكاء الاصطناعي للرد على أسئلة الطلاب وأولياء الأمور والشرح التعليمي التفاعلي!
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
+                      🔑 مفتاح خادم الذكاء الاصطناعي (Google Gemini API Key):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="أدخل مفتاح الـ API هنا (AIzaSy...)"
+                      value={geminiKey}
+                      onChange={(e) => setGeminiKey(e.target.value)}
+                      style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '14px', border: '2px solid #a7f3d0', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'monospace', marginBottom: '1rem' }}
+                    />
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => handleSaveGeminiKey(geminiKey)}
+                        className="btn"
+                        style={{ background: '#8b5cf6', color: 'white', padding: '0.8rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(139, 92, 246, 0.3)' }}
+                      >
+                        💾 حفظ وتفعيل مفتاح الذكاء الاصطناعي
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '18px', padding: '1.25rem', color: '#065f46' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900 }}>💡 كيف يعمل الذكاء الاصطناعي بالموقع؟</h4>
+                    <ul style={{ margin: 0, paddingRight: '1.25rem', fontWeight: 700, fontSize: '0.95rem' }}>
+                      <li>يقوم المساعد الإشعاعي (الروبوت العائم أسفل الشاشة) بالإجابة عن أسئلة المواد التعليمية (الرياضيات، العلوم، اللغة العربية، العبرية، الإنجليزية، الاجتماعيات، الفلك).</li>
+                      <li>يقرأ تلقائياً بيانات الكتب واللباس الموحد والرزنامة والفعاليات الرسمية لإجابة الزوار بذكاء موسوعي فوري!</li>
+                    </ul>
                   </div>
                 </div>
               )}
