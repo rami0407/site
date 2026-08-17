@@ -120,6 +120,20 @@ const AiAssistant = () => {
     compileContext();
   }, []);
 
+  const evalMathString = (str) => {
+    try {
+      const clean = str.replace(/×|x/gi, '*').replace(/÷/g, '/').replace(/=/g, '').trim();
+      if (/^[\d\s\+\-\*\/\(\)\.\^]+$/.test(clean) && /[\+\-\*\/\^]/.test(clean)) {
+        const expression = clean.replace(/\^/g, '**');
+        const result = Function(`"use strict"; return (${expression})`)();
+        if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+          return `${clean.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ')} = ${result}`;
+        }
+      }
+    } catch (e) {}
+    return null;
+  };
+
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
@@ -130,9 +144,18 @@ const AiAssistant = () => {
     setInputText('');
     setIsTyping(true);
 
+    // 0. Check Instant Local Math Evaluator (e.g. 5*5, 12+18, 100/4)
+    const mathResult = evalMathString(text);
+    if (mathResult) {
+      const replyText = `🔢 **النتيجة الحسابية:**\n${mathResult} ✨`;
+      setMessages(prev => [...prev, { role: 'model', text: replyText }]);
+      setIsTyping(false);
+      return;
+    }
+
     try {
       const firstUserIndex = updatedMessages.findIndex(m => m.role === 'user');
-    const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
+      const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
 
     // STEP 1: Try Groq Ultra-Fast API (Llama 3.3 70B)
     const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
@@ -232,23 +255,14 @@ const AiAssistant = () => {
       console.warn("Gemini API error:", geminiErr);
     }
 
-    // STEP 3: Fallback to Pollinations AI Free Model
+    // STEP 3: Fallback to Pollinations AI Free Model (CORS-Friendly Direct GET AI)
     try {
-      const pollRes = await fetch("https://text.pollinations.ai/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: schoolContext || "أنت المساعد التعليمي الرقمي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بوضوح وبأسلوب تربوي مشجع باللغة العربية." },
-            ...filteredMessages.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }))
-          ],
-          model: "openai"
-        })
-      });
+      const pollUrl = `https://text.pollinations.ai/${encodeURIComponent("أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية. السؤال: " + text)}`;
+      const pollRes = await fetch(pollUrl);
 
       if (pollRes.ok) {
         const pollText = await pollRes.text();
-        if (pollText && pollText.trim()) {
+        if (pollText && pollText.trim() && !pollText.includes("Error")) {
           setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
           setIsTyping(false);
           return;
