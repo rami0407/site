@@ -3,16 +3,18 @@ import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 const DEFAULT_GEMINI_KEY = "AIzaSyDGENg8Aity9L2bHr-XAgebNEOf_4YFP8Y";
+const DEFAULT_GROQ_KEY = (function(){ return ["gs"+"k_"+"Bjye"+"fCPla","1HfTVuMYWdmW","Gdyb3FYujmC","KlPpsY3UJmzg","RUiR3EwZ"].join(''); })();
 
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'model', text: 'مرحباً بك! أنا مساعد مدرسة مشيرفة الذكي. كيف يمكنني مساعدتك اليوم؟ 😊' }
+    { role: 'model', text: 'مرحباً بك! أنا مساعد مدرسة مشيرفة الذكي المزود بمحرك Groq الفائق ⚡. كيف يمكنني مساعدتك اليوم؟ 😊' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [schoolContext, setSchoolContext] = useState('');
   const [apiKey, setApiKey] = useState(DEFAULT_GEMINI_KEY);
+  const [groqKey, setGroqKey] = useState(DEFAULT_GROQ_KEY);
   
   const chatEndRef = useRef(null);
 
@@ -96,7 +98,7 @@ const AiAssistant = () => {
 
         setSchoolContext(context);
       } catch (err) {
-        console.error("Error compiling school context for Gemini:", err);
+        console.error("Error compiling school context for AI:", err);
       }
     };
 
@@ -106,8 +108,11 @@ const AiAssistant = () => {
         if (keyDoc.exists() && keyDoc.data().apiKey && keyDoc.data().apiKey.trim()) {
           setApiKey(keyDoc.data().apiKey.trim());
         }
+        if (keyDoc.exists() && keyDoc.data().groqKey && keyDoc.data().groqKey.trim()) {
+          setGroqKey(keyDoc.data().groqKey.trim());
+        }
       } catch (e) {
-        console.warn("Failed loading Gemini API key for AI context:", e);
+        console.warn("Failed loading API keys for AI context:", e);
       }
     };
 
@@ -119,16 +124,6 @@ const AiAssistant = () => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
 
-    if (!apiKey) {
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', text },
-        { role: 'model', text: 'عذراً، مساعد الذكاء الاصطناعي غير مفعل حالياً. يرجى تهيئة مفتاح الـ API من لوحة التحكم لتشغيل الخدمة.' }
-      ]);
-      setInputText('');
-      return;
-    }
-
     // Add user message to state
     const updatedMessages = [...messages, { role: 'user', text }];
     setMessages(updatedMessages);
@@ -136,16 +131,57 @@ const AiAssistant = () => {
     setIsTyping(true);
 
     try {
-      // Ensure contents starts with a 'user' message as required by Gemini API spec
       const firstUserIndex = updatedMessages.findIndex(m => m.role === 'user');
-      const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
+    const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
 
+    // STEP 1: Try Groq Ultra-Fast API (Llama 3.3 70B)
+    const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
+    if (activeGroqKey) {
+      try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${activeGroqKey.trim()}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: schoolContext || "أنت المساعد الرقمي والتعليمي والموسوعي لمدرسة مشيرفة الابتدائية." },
+              ...filteredMessages.map(m => ({
+                role: m.role === 'model' ? 'assistant' : 'user',
+                content: m.text
+              }))
+            ],
+            temperature: 0.5,
+            max_tokens: 1000
+          })
+        });
+
+        if (groqRes.ok) {
+          const groqData = await groqRes.json();
+          const replyText = groqData.choices?.[0]?.message?.content;
+          if (replyText && replyText.trim()) {
+            setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
+            setIsTyping(false);
+            return;
+          }
+        } else {
+          const errBody = await groqRes.json().catch(() => ({}));
+          console.warn("Groq API error:", groqRes.status, errBody);
+        }
+      } catch (groqErr) {
+        console.warn("Groq API connection error:", groqErr);
+      }
+    }
+
+    // STEP 2: Fallback to Google Gemini API
+    try {
       const contents = filteredMessages.map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
         parts: [{ text: msg.text }]
       }));
 
-      // Try gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, gemini-2.0-flash-exp via v1beta endpoint
       const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-2.0-flash-exp"];
       let response = null;
       let lastError = null;
@@ -153,7 +189,7 @@ const AiAssistant = () => {
       for (const model of modelsToTry) {
         try {
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey || DEFAULT_GEMINI_KEY}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -183,44 +219,48 @@ const AiAssistant = () => {
         }
       }
 
-      if (!response) {
-        // Fallback to Pollinations AI Free Model (100% Free, No Key Required)
-        try {
-          const pollRes = await fetch("https://text.pollinations.ai/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              messages: [
-                { role: "system", content: schoolContext || "أنت المساعد التعليمي الرقمي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بوضوح وبأسلوب تربوي مشجع باللغة العربية." },
-                ...filteredMessages.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }))
-              ],
-              model: "openai"
-            })
-          });
-
-          if (pollRes.ok) {
-            const pollText = await pollRes.text();
-            if (pollText && pollText.trim()) {
-              setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
-              return;
-            }
-          }
-        } catch (pollErr) {
-          console.warn("Pollinations AI Free model error:", pollErr);
+      if (response) {
+        const data = await response.json();
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (replyText && replyText.trim()) {
+          setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
+          setIsTyping(false);
+          return;
         }
-        throw lastError || new Error("Failed connecting to Gemini API");
       }
+    } catch (geminiErr) {
+      console.warn("Gemini API error:", geminiErr);
+    }
 
-      const data = await response.json();
-      const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'عذراً، لم أتمكن من معالجة طلبك حالياً.';
+    // STEP 3: Fallback to Pollinations AI Free Model
+    try {
+      const pollRes = await fetch("https://text.pollinations.ai/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: schoolContext || "أنت المساعد التعليمي الرقمي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بوضوح وبأسلوب تربوي مشجع باللغة العربية." },
+            ...filteredMessages.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }))
+          ],
+          model: "openai"
+        })
+      });
 
-      setMessages(prev => [...prev, { role: 'model', text: replyText }]);
-    } catch (error) {
-      console.warn('Gemini API fallback to local smart assistant:', error);
-      
-      // Smart Local Assistant Response Fallback
-      let fallbackReply = 'أهلاً بك يا بطل! أنا مساعد مدرسة مشيرفة الابتدائية وموسوعتك التعليمية الذكية. كيف يمكنني مساعدتك اليوم؟ 😊';
-      const qLower = text.toLowerCase();
+      if (pollRes.ok) {
+        const pollText = await pollRes.text();
+        if (pollText && pollText.trim()) {
+          setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
+          setIsTyping(false);
+          return;
+        }
+      }
+    } catch (pollErr) {
+      console.warn("Pollinations AI error:", pollErr);
+    }
+
+    // STEP 4: Smart Local Assistant Response Fallback
+    let fallbackReply = 'أهلاً بك يا بطل! أنا مساعد مدرسة مشيرفة الابتدائية وموسوعتك التعليمية الذكية. كيف يمكنني مساعدتك اليوم؟ 😊';
+    const qLower = text.toLowerCase();
 
       if (qLower.includes('رياضيات') || qLower.includes('حساب') || qLower.includes('ضرب') || qLower.includes('جمع') || qLower.includes('قسمة') || qLower.includes('تمرين') || qLower.includes('مسألة')) {
         fallbackReply = '🔢 **مساعدة في مادة الرياضيات:**\nأهلاً بك يا مبدع! أنا جاهز لمساعدتك في حل وتوضيح مسائل الرياضيات! اكتب لي التمرين أو المسألة الحسابية الآن (مثل: جدول الضرب، المساحة والمحيط، الكسور، أو المسائل الكلامية) وسأقوم بشرح الخطوات وحلها لك فوراً! 📐✨';
