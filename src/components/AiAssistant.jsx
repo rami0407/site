@@ -175,8 +175,20 @@ const AiAssistant = () => {
 
     // 2. Try Pollinations AI Direct Stream (CORS-Friendly Direct Public AI Model)
     try {
-      const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(systemPrompt + "\n\nسؤال المستخدم الحالي: " + text)}`;
-      const pollRes = await fetch(pollUrl);
+      const pollRes = await fetch("https://text.pollinations.ai/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...filteredMessages.map(m => ({
+              role: m.role === 'model' ? 'assistant' : 'user',
+              content: m.text
+            }))
+          ],
+          model: "openai"
+        })
+      });
       if (pollRes.ok) {
         const pollText = await pollRes.text();
         if (pollText && pollText.trim() && !pollText.includes("Error")) {
@@ -229,6 +241,11 @@ const AiAssistant = () => {
       console.warn("Gemini API error:", geminiErr);
     }
 
+    // 4. If network call failed, inform user gracefully
+    setMessages(prev => [...prev, { 
+      role: 'model', 
+      text: 'مرحباً بك! أنا مساعد مدرسة مشيرفة الذكي. تم استلام سؤالك بنجاح ولكن تعذر الاتصال بالخادم الرئيسي حالياً. يرجى التأكد من الاتصال بالإنترنت ومحاولة إعادة إرسال السؤال مرة أخرى! 😊' 
+    }]);
     setIsTyping(false);
   };
 
