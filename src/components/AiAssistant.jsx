@@ -130,19 +130,20 @@ const AiAssistant = () => {
     setInputText('');
     setIsTyping(true);
 
-    const qLower = text.toLowerCase().trim();
+    const firstUserIndex = updatedMessages.findIndex(m => m.role === 'user');
+    const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
 
     // ----------------------------------------------------
-    // STEP 1: Fast Pollinations Public CORS AI (100% Guaranteed Web Browser AI)
+    // STEP 1: Pure Pollinations Real-Time AI Stream (100% Live AI Response)
     // ----------------------------------------------------
     try {
-      const cleanPrompt = `أنت المساعد الذكي والتعليمي لمدرسة مشيرفة الابتدائية (مدير المدرسة الأستاذ رامي ارفاعية). أجب بوضوح ودقة باللغة العربية عن سؤال المستخدم التالي: ${text}`;
-      const pollRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(cleanPrompt)}?model=openai`, {
-        method: 'GET'
-      });
+      const systemContext = "أنت المساعد الذكي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بدقة باللغة العربية أو لغة السؤال عن:";
+      const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(`${systemContext} ${text}`)}`;
+      const pollRes = await fetch(pollUrl);
+
       if (pollRes.ok) {
         const pollText = await pollRes.text();
-        if (pollText && pollText.trim() && !pollText.includes("<html>") && !pollText.includes("Error") && !pollText.includes("Bad Request")) {
+        if (pollText && pollText.trim() && !pollText.startsWith("<!DOCTYPE") && !pollText.includes("Error")) {
           setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
           setIsTyping(false);
           return;
@@ -153,7 +154,7 @@ const AiAssistant = () => {
     }
 
     // ----------------------------------------------------
-    // STEP 2: Try Groq AI (Llama 3.3 70B)
+    // STEP 2: Try Groq AI (Llama 3.3 70B Live LLM)
     // ----------------------------------------------------
     const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
     if (activeGroqKey) {
@@ -168,10 +169,13 @@ const AiAssistant = () => {
             model: "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: "أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية." },
-              { role: "user", content: text }
+              ...filteredMessages.map(m => ({
+                role: m.role === 'model' ? 'assistant' : 'user',
+                content: m.text
+              }))
             ],
             temperature: 0.7,
-            max_tokens: 800
+            max_tokens: 1000
           })
         });
 
@@ -190,17 +194,22 @@ const AiAssistant = () => {
     }
 
     // ----------------------------------------------------
-    // STEP 3: Try Google Gemini API
+    // STEP 3: Try Google Gemini API (Live LLM)
     // ----------------------------------------------------
     if (apiKey) {
       try {
+        const contents = filteredMessages.map(msg => ({
+          role: msg.role === 'model' ? 'model' : 'user',
+          parts: [{ text: msg.text }]
+        }));
+
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text }] }],
+              contents: contents,
               systemInstruction: { parts: [{ text: "أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية." }] }
             })
           }
@@ -220,37 +229,27 @@ const AiAssistant = () => {
     }
 
     // ----------------------------------------------------
-    // STEP 4: Smart Interactive Knowledge Base Fallback (100% Zero Failure Guarantee)
+    // STEP 4: Direct Clean Pollinations AI (Zero Context Fallback)
     // ----------------------------------------------------
-    let reply = "";
-
-    // 4.1 Math Expressions Evaluator
     try {
-      const cleanMath = qLower.replace(/×|x/gi, '*').replace(/÷/g, '/').replace(/=/g, '').trim();
-      if (/^[\d\s\+\-\*\/\(\)\.\^]+$/.test(cleanMath) && /[\+\-\*\/\^]/.test(cleanMath)) {
-        const expr = cleanMath.replace(/\^/g, '**');
-        const calcRes = Function(`"use strict"; return (${expr})`)();
-        if (typeof calcRes === 'number' && !isNaN(calcRes) && isFinite(calcRes)) {
-          reply = `🔢 **النتيجة الحسابية:**\n${cleanMath.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ')} = **${calcRes}** ✨`;
+      const rawPollRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(text)}`);
+      if (rawPollRes.ok) {
+        const rawText = await rawPollRes.text();
+        if (rawText && rawText.trim() && !rawText.startsWith("<!DOCTYPE")) {
+          setMessages(prev => [...prev, { role: 'model', text: rawText.trim() }]);
+          setIsTyping(false);
+          return;
         }
       }
-    } catch (e) {}
-
-    if (!reply) {
-      if (qLower.includes('كتب') || qLower.includes('كتاب') || qLower.includes('منهج')) {
-        reply = '📚 **قائمة الكتب المدرسية:**\nتتوفر قائمة الكتب المدرسية لكل صفوف مدرسة مشيرفة الابتدائية (من الأول إلى السادس) في قسم "الكتب واللباس الموحد" بالموقع الرسمي.';
-      } else if (qLower.includes('لباس') || qLower.includes('زي') || qLower.includes('قميص') || qLower.includes('موحد')) {
-        reply = '👕 **اللباس المدرسي الموحد المعتمد:**\n- **الصفوف 1-4:** بلوزة كحلي/أزرق مع شعار المدرسة + بنطال كحلي/رمادي.\n- **الصفوف 5-6:** اللباس الرسمي الموحد المعتمد في دستور المدرسة.';
-      } else if (qLower.includes('مدير') || qLower.includes('رامي') || qLower.includes('إدارة')) {
-        reply = '👨‍🏫 **إدارة المدرسة:**\nمدير مدرسة مشيرفة الابتدائية هو الأستاذ **رامي ارفاعية**، ويسعد الإدارة التواصل مع الأهالي دوماً عبر حجز المواعيد المباشرة أو قسم "اتصل بنا".';
-      } else if (qLower.includes('رزنامة') || qLower.includes('فعاليات') || qLower.includes('امتحان')) {
-        reply = '📅 **الرزنامة والفعاليات:**\nيمكنك الاطلاع على كافة الامتحانات والفعاليات القادمة في قسم "الرزنامة المدرسية" في الصفحة الرئيسية.';
-      } else {
-        reply = `مرحباً بك! أنا مساعد مدرسة مشيرفة الابتدائية الذكي. تلقيت سؤالك: "${text}". يسعدني إجابتك ومساعدتك في كافة المواضيع التعليمية والمدرسية! 😊`;
-      }
+    } catch (e) {
+      console.warn("Raw Pollinations error:", e);
     }
 
-    setMessages(prev => [...prev, { role: 'model', text: reply }]);
+    // If network is completely offline
+    setMessages(prev => [...prev, { 
+      role: 'model', 
+      text: 'عذراً، تعذر الاتصال بمحرك الذكاء الاصطناعي حالياً بسبب ضعف الشبكة. يرجى التأكد من الاتصال بالإنترنت وإعادة إرسال السؤال! 😊' 
+    }]);
     setIsTyping(false);
   };
 
