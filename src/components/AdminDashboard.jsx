@@ -2759,15 +2759,6 @@ const AdminDashboard = () => {
               <i className="fas fa-address-book" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               معلومات الاتصال والشبكات
             </button>
-
-            <button 
-              onClick={() => setActiveTab('gemini-key')} 
-              className={`filter-chip ${activeTab === 'gemini-key' ? 'active' : ''}`}
-              style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
-            >
-              <i className="fas fa-robot" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              إعدادات الذكاء الاصطناعي (Gemini)
-            </button>
           </div>
         </aside>
 
@@ -4989,43 +4980,7 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* TAB 10: GEMINI API KEY EDITOR */}
-              {activeTab === 'gemini-key' && (
-                <div>
-                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إعدادات وتفعيل مساعد الذكاء الاصطناعي (Gemini)</h2>
-                  
-                  <div style={{ background: 'var(--bg-white)', padding: '2.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                    <form onSubmit={handleUpdateGeminiKey}>
-                      
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>مفتاح Gemini API Key الخاص بك *</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          required
-                          value={geminiKey}
-                          onChange={(e) => setGeminiKey(e.target.value)}
-                          placeholder="مثال: AIzaSyC-pSd6..."
-                          style={{ fontFamily: 'monospace', letterSpacing: '1px' }}
-                        />
-                        <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                          <i className="fas fa-info-circle"></i> يرجى إدخال مفتاح الـ API الخاص بـ Gemini المولد من لوحة <strong>Google AI Studio</strong>. 
-                          تخزين المفتاح في قاعدة البيانات يضمن تشغيل المساعد بشكل آمن دون تسريبه أو إيقافه تلقائياً من قِبل خوارزميات الحماية لـ GitHub.
-                        </small>
-                      </div>
 
-                      <button 
-                        type="submit" 
-                        className="btn form-submit-btn" 
-                        style={{ background: 'var(--primary)', marginTop: '1.5rem' }}
-                        disabled={isSavingGeminiKey}
-                      >
-                        <i className="fas fa-save"></i> {isSavingGeminiKey ? ' جاري الحفظ والتفعيل...' : ' حفظ وتفعيل المساعد الذكي'}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              )}
 
               {/* TAB 11: TEACHERS & RECEPTION SCHEDULE MANAGEMENT */}
               {activeTab === 'teachers-management' && (
