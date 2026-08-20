@@ -134,7 +134,25 @@ const AiAssistant = () => {
     const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
 
     // ----------------------------------------------------
-    // STEP 1: Pure Pollinations Real-Time AI Stream (100% Live AI Response)
+    // STEP 1: Puter.js Free Keyless Client AI (100% Guaranteed OpenAI GPT Model)
+    // ----------------------------------------------------
+    if (window.puter && window.puter.ai) {
+      try {
+        const sysContext = schoolContext || "أنت المساعد الرقمي الذكي والموسوعي والتربوي لمدرسة مشيرفة الابتدائية (مدير المدرسة الأستاذ رامي ارفاعية). أجب بوضوح ودقة ودود باللغة العربية أو لغة السؤال.";
+        const puterRes = await window.puter.ai.chat(`${sysContext}\n\nالسؤال: ${text}`);
+        const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
+        if (replyText && replyText.trim()) {
+          setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
+          setIsTyping(false);
+          return;
+        }
+      } catch (e) {
+        console.warn("Puter.js AI error:", e);
+      }
+    }
+
+    // ----------------------------------------------------
+    // STEP 2: Pure Pollinations Real-Time AI Stream
     // ----------------------------------------------------
     try {
       const systemContext = "أنت المساعد الذكي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بدقة باللغة العربية أو لغة السؤال عن:";
