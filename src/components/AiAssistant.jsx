@@ -140,6 +140,111 @@ const AiAssistant = () => {
     ]);
   };
 
+  const fetchAiText = async (promptText) => {
+    const systemPrompt = "أنت المساعد الرقمي لمدرسة مشيرفة الابتدائية. أجب بوضوح ودقة عن التالي: ";
+    const fullQuery = systemPrompt + promptText;
+    const encodedQuery = encodeURIComponent(fullQuery);
+    const encodedRaw = encodeURIComponent(promptText);
+
+    // 1. Try AllOrigins Proxy + Pollinations AI (100% CORS-Bypassing Server Proxy)
+    try {
+      const res = await fetchWithTimeout(
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://text.pollinations.ai/${encodedQuery}`)}`,
+        {},
+        4000
+      );
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
+          return txt.trim();
+        }
+      }
+    } catch (e) {
+      console.warn("AllOrigins Proxy Pollinations error:", e);
+    }
+
+    // 2. Try CorsProxy.io + Pollinations AI
+    try {
+      const res = await fetchWithTimeout(
+        `https://corsproxy.io/?https://text.pollinations.ai/${encodedQuery}`,
+        {},
+        4000
+      );
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
+          return txt.trim();
+        }
+      }
+    } catch (e) {
+      console.warn("CorsProxy Pollinations error:", e);
+    }
+
+    // 3. Try Direct Pollinations AI (Raw)
+    try {
+      const res = await fetchWithTimeout(`https://text.pollinations.ai/${encodedRaw}`, {}, 3000);
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
+          return txt.trim();
+        }
+      }
+    } catch (e) {
+      console.warn("Direct Pollinations error:", e);
+    }
+
+    // 4. Try Puter.js Client AI SDK
+    if (window.puter && window.puter.ai) {
+      try {
+        const puterRes = await promiseWithTimeout(
+          window.puter.ai.chat(`${systemPrompt}\n\nالسؤال: ${promptText}`),
+          4000
+        );
+        const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
+        if (replyText && replyText.trim()) {
+          return replyText.trim();
+        }
+      } catch (e) {
+        console.warn("Puter.js AI error:", e);
+      }
+    }
+
+    // 5. Try Groq AI via CorsProxy
+    const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
+    if (activeGroqKey) {
+      try {
+        const res = await fetchWithTimeout(
+          "https://corsproxy.io/?https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${activeGroqKey.trim()}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "llama-3.1-8b-instant",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: promptText }
+              ],
+              max_tokens: 800
+            })
+          },
+          4000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return txt.trim();
+        }
+      } catch (e) {
+        console.warn("Groq CorsProxy error:", e);
+      }
+    }
+
+    return null;
+  };
+
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
@@ -150,99 +255,16 @@ const AiAssistant = () => {
     setInputText('');
     setIsTyping(true);
 
-    const systemPrompt = "أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية. أجب بذكاء تربوي وعلمي دقيق عن أي سؤال باللغة العربية أو لغة السؤال.";
+    const aiReply = await fetchAiText(text);
 
-    // ----------------------------------------------------
-    // STEP 1: Puter.js Keyless Client AI (100% Guaranteed OpenAI Model)
-    // ----------------------------------------------------
-    try {
-      if (window.puter && window.puter.ai) {
-        const puterRes = await promiseWithTimeout(
-          window.puter.ai.chat(`${systemPrompt}\n\nالسؤال: ${text}`),
-          4000
-        );
-        const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
-        if (replyText && replyText.trim()) {
-          setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
-          setIsTyping(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn("Puter AI error:", e);
+    if (aiReply) {
+      setMessages(prev => [...prev, { role: 'model', text: aiReply }]);
+    } else {
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: 'عذراً، تعذر الاتصال بسيرفر الذكاء الاصطناعي حالياً بسبب ضعف الشبكة. يرجى التأكد من الاتصال بالإنترنت وإعادة إرسال السؤال! 😊' 
+      }]);
     }
-
-    // ----------------------------------------------------
-    // STEP 2: Pollinations Short Clean Stream (CORS-Friendly < 200 chars)
-    // ----------------------------------------------------
-    try {
-      const shortPrompt = `أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب عن السؤال التالي: ${text}`;
-      const pollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(shortPrompt)}`, {}, 3000);
-      if (pollRes.ok) {
-        const pollText = await pollRes.text();
-        if (pollText && pollText.trim() && !pollText.startsWith("<!DOCTYPE") && !pollText.includes("Error") && !pollText.includes("Bad Request")) {
-          setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
-          setIsTyping(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn("Pollinations GET AI error:", e);
-    }
-
-    // ----------------------------------------------------
-    // STEP 3: Google Gemini API Live LLM
-    // ----------------------------------------------------
-    if (apiKey && apiKey !== DEFAULT_GEMINI_KEY) {
-      try {
-        const res = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text }] }],
-              systemInstruction: { parts: [{ text: systemPrompt }] }
-            })
-          },
-          3000
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (replyText && replyText.trim()) {
-            setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
-            setIsTyping(false);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn("Gemini API error:", e);
-      }
-    }
-
-    // ----------------------------------------------------
-    // STEP 4: Direct Keyless Raw AI Stream
-    // ----------------------------------------------------
-    try {
-      const rawPollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(text)}`, {}, 3000);
-      if (rawPollRes.ok) {
-        const rawText = await rawPollRes.text();
-        if (rawText && rawText.trim() && !rawText.startsWith("<!DOCTYPE")) {
-          setMessages(prev => [...prev, { role: 'model', text: rawText.trim() }]);
-          setIsTyping(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn("Raw Pollinations error:", e);
-    }
-
-    // Zero templates. Inform user if all AI network endpoints were unreachable.
-    setMessages(prev => [...prev, { 
-      role: 'model', 
-      text: 'عذراً، تعذر الاتصال بسيرفر الذكاء الاصطناعي حالياً. يرجى التأكد من الاتصال بالإنترنت وإعادة إرسال السؤال! 😊' 
-    }]);
     setIsTyping(false);
   };
 
