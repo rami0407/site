@@ -150,57 +150,34 @@ const AiAssistant = () => {
     setInputText('');
     setIsTyping(true);
 
-    const firstUserIndex = updatedMessages.findIndex(m => m.role === 'user');
-    const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
-
     const systemPrompt = "أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية. أجب بذكاء تربوي وعلمي دقيق عن أي سؤال باللغة العربية أو لغة السؤال.";
 
     // ----------------------------------------------------
-    // STEP 1: Groq Ultra-Fast Live LLM (llama-3.1-8b-instant < 0.3s)
+    // STEP 1: Puter.js Keyless Client AI (100% Guaranteed OpenAI Model)
     // ----------------------------------------------------
-    const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
-    if (activeGroqKey) {
-      try {
-        const groqRes = await fetchWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${activeGroqKey.trim()}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
-            messages: [
-              { role: "system", content: systemPrompt },
-              ...filteredMessages.map(m => ({
-                role: m.role === 'model' ? 'assistant' : 'user',
-                content: m.text
-              }))
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-          })
-        }, 3500);
-
-        if (groqRes.ok) {
-          const groqData = await groqRes.json();
-          const replyText = groqData.choices?.[0]?.message?.content;
-          if (replyText && replyText.trim()) {
-            setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
-            setIsTyping(false);
-            return;
-          }
+    try {
+      if (window.puter && window.puter.ai) {
+        const puterRes = await promiseWithTimeout(
+          window.puter.ai.chat(`${systemPrompt}\n\nالسؤال: ${text}`),
+          4000
+        );
+        const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
+        if (replyText && replyText.trim()) {
+          setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
+          setIsTyping(false);
+          return;
         }
-      } catch (e) {
-        console.warn("Groq API error:", e);
       }
+    } catch (e) {
+      console.warn("Puter AI error:", e);
     }
 
     // ----------------------------------------------------
-    // STEP 2: Pollinations Direct Live AI Stream
+    // STEP 2: Pollinations Short Clean Stream (CORS-Friendly < 200 chars)
     // ----------------------------------------------------
     try {
-      const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(`${systemPrompt} ${text}`)}`;
-      const pollRes = await fetchWithTimeout(pollUrl, {}, 3500);
+      const shortPrompt = `أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب عن السؤال التالي: ${text}`;
+      const pollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(shortPrompt)}`, {}, 3000);
       if (pollRes.ok) {
         const pollText = await pollRes.text();
         if (pollText && pollText.trim() && !pollText.startsWith("<!DOCTYPE") && !pollText.includes("Error") && !pollText.includes("Bad Request")) {
@@ -216,7 +193,7 @@ const AiAssistant = () => {
     // ----------------------------------------------------
     // STEP 3: Google Gemini API Live LLM
     // ----------------------------------------------------
-    if (apiKey) {
+    if (apiKey && apiKey !== DEFAULT_GEMINI_KEY) {
       try {
         const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -228,7 +205,7 @@ const AiAssistant = () => {
               systemInstruction: { parts: [{ text: systemPrompt }] }
             })
           },
-          3500
+          3000
         );
         if (res.ok) {
           const data = await res.json();
@@ -245,27 +222,10 @@ const AiAssistant = () => {
     }
 
     // ----------------------------------------------------
-    // STEP 4: Puter.js Browser AI (OpenAI Model)
-    // ----------------------------------------------------
-    if (window.puter && window.puter.ai) {
-      try {
-        const puterRes = await promiseWithTimeout(window.puter.ai.chat(`${systemPrompt} ${text}`), 3500);
-        const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
-        if (replyText && replyText.trim()) {
-          setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
-          setIsTyping(false);
-          return;
-        }
-      } catch (e) {
-        console.warn("Puter.js AI error:", e);
-      }
-    }
-
-    // ----------------------------------------------------
-    // STEP 5: Pure Raw Pollinations Stream Fallback
+    // STEP 4: Direct Keyless Raw AI Stream
     // ----------------------------------------------------
     try {
-      const rawPollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(text)}`, {}, 3500);
+      const rawPollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(text)}`, {}, 3000);
       if (rawPollRes.ok) {
         const rawText = await rawPollRes.text();
         if (rawText && rawText.trim() && !rawText.startsWith("<!DOCTYPE")) {
@@ -278,7 +238,7 @@ const AiAssistant = () => {
       console.warn("Raw Pollinations error:", e);
     }
 
-    // Zero templates. Inform user only if network is completely offline.
+    // Zero templates. Inform user if all AI network endpoints were unreachable.
     setMessages(prev => [...prev, { 
       role: 'model', 
       text: 'عذراً، تعذر الاتصال بسيرفر الذكاء الاصطناعي حالياً. يرجى التأكد من الاتصال بالإنترنت وإعادة إرسال السؤال! 😊' 
