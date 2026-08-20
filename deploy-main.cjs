@@ -22,6 +22,8 @@ try {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Puter.js Free Client AI SDK -->
+    <script src="https://js.puter.com/v2/"></script>
   </head>
   <body>
     <div id="root"></div>

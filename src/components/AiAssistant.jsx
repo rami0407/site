@@ -8,7 +8,7 @@ const DEFAULT_GROQ_KEY = (function(){ return ["gs"+"k_"+"Bjye"+"fCPla","1HfTVuMY
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'model', text: 'مرحباً بك! أنا مساعد مدرسة مشيرفة الذكي المزود بمحرك Groq الفائق ⚡. كيف يمكنني مساعدتك اليوم؟ 😊' }
+    { role: 'model', text: 'مرحباً بك! أنا مساعد مدرسة مشيرفة الابتدائية الذكي 🤖✨. كيف يمكنني مساعدتك اليوم؟' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
