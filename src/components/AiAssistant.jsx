@@ -120,6 +120,26 @@ const AiAssistant = () => {
     compileContext();
   }, []);
 
+  const fetchWithTimeout = async (url, options = {}, timeoutMs = 2500) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return response;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  };
+
+  const promiseWithTimeout = (promise, ms = 2500) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms))
+    ]);
+  };
+
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
@@ -130,16 +150,33 @@ const AiAssistant = () => {
     setInputText('');
     setIsTyping(true);
 
-    const firstUserIndex = updatedMessages.findIndex(m => m.role === 'user');
-    const filteredMessages = firstUserIndex >= 0 ? updatedMessages.slice(firstUserIndex) : updatedMessages;
+    const qLower = text.toLowerCase().trim();
 
     // ----------------------------------------------------
-    // STEP 1: Puter.js Free Keyless Client AI (100% Guaranteed OpenAI GPT Model)
+    // STEP 1: Ultra-Fast Pollinations GET AI (With 2.5s Timeout)
+    // ----------------------------------------------------
+    try {
+      const cleanPrompt = `أنت المساعد الذكي والتعليمي لمدرسة مشيرفة الابتدائية. أجب بوضوح ودقة ودود باللغة العربية أو لغة السؤال عن: ${text}`;
+      const pollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(cleanPrompt)}?model=openai`, {}, 2500);
+      if (pollRes.ok) {
+        const pollText = await pollRes.text();
+        if (pollText && pollText.trim() && !pollText.startsWith("<!DOCTYPE") && !pollText.includes("Error") && !pollText.includes("Bad Request")) {
+          setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
+          setIsTyping(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Pollinations GET AI timeout/error:", e);
+    }
+
+    // ----------------------------------------------------
+    // STEP 2: Puter.js Browser AI (With 2.5s Timeout)
     // ----------------------------------------------------
     if (window.puter && window.puter.ai) {
       try {
-        const sysContext = schoolContext || "أنت المساعد الرقمي الذكي والموسوعي والتربوي لمدرسة مشيرفة الابتدائية (مدير المدرسة الأستاذ رامي ارفاعية). أجب بوضوح ودقة ودود باللغة العربية أو لغة السؤال.";
-        const puterRes = await window.puter.ai.chat(`${sysContext}\n\nالسؤال: ${text}`);
+        const sysContext = "أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب بوضوح باللغة العربية عن:";
+        const puterRes = await promiseWithTimeout(window.puter.ai.chat(`${sysContext} ${text}`), 2500);
         const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
         if (replyText && replyText.trim()) {
           setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
@@ -147,90 +184,26 @@ const AiAssistant = () => {
           return;
         }
       } catch (e) {
-        console.warn("Puter.js AI error:", e);
+        console.warn("Puter.js AI timeout/error:", e);
       }
     }
 
     // ----------------------------------------------------
-    // STEP 2: Pure Pollinations Real-Time AI Stream
-    // ----------------------------------------------------
-    try {
-      const systemContext = "أنت المساعد الذكي والموسوعي لمدرسة مشيرفة الابتدائية. أجب بدقة باللغة العربية أو لغة السؤال عن:";
-      const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(`${systemContext} ${text}`)}`;
-      const pollRes = await fetch(pollUrl);
-
-      if (pollRes.ok) {
-        const pollText = await pollRes.text();
-        if (pollText && pollText.trim() && !pollText.startsWith("<!DOCTYPE") && !pollText.includes("Error")) {
-          setMessages(prev => [...prev, { role: 'model', text: pollText.trim() }]);
-          setIsTyping(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn("Pollinations GET AI error:", e);
-    }
-
-    // ----------------------------------------------------
-    // STEP 2: Try Groq AI (Llama 3.3 70B Live LLM)
-    // ----------------------------------------------------
-    const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
-    if (activeGroqKey) {
-      try {
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${activeGroqKey.trim()}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: "أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية." },
-              ...filteredMessages.map(m => ({
-                role: m.role === 'model' ? 'assistant' : 'user',
-                content: m.text
-              }))
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-          })
-        });
-
-        if (groqRes.ok) {
-          const groqData = await groqRes.json();
-          const replyText = groqData.choices?.[0]?.message?.content;
-          if (replyText && replyText.trim()) {
-            setMessages(prev => [...prev, { role: 'model', text: replyText.trim() }]);
-            setIsTyping(false);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn("Groq API error:", e);
-      }
-    }
-
-    // ----------------------------------------------------
-    // STEP 3: Try Google Gemini API (Live LLM)
+    // STEP 3: Google Gemini API (With 2.5s Timeout)
     // ----------------------------------------------------
     if (apiKey) {
       try {
-        const contents = filteredMessages.map(msg => ({
-          role: msg.role === 'model' ? 'model' : 'user',
-          parts: [{ text: msg.text }]
-        }));
-
-        const res = await fetch(
+        const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: contents,
+              contents: [{ role: 'user', parts: [{ text }] }],
               systemInstruction: { parts: [{ text: "أنت المساعد الرقمي والتعليمي لمدرسة مشيرفة الابتدائية." }] }
             })
-          }
+          },
+          2500
         );
         if (res.ok) {
           const data = await res.json();
@@ -242,15 +215,15 @@ const AiAssistant = () => {
           }
         }
       } catch (e) {
-        console.warn("Gemini API error:", e);
+        console.warn("Gemini API timeout/error:", e);
       }
     }
 
     // ----------------------------------------------------
-    // STEP 4: Direct Clean Pollinations AI (Zero Context Fallback)
+    // STEP 4: Direct Clean Pollinations AI (With 2.5s Timeout)
     // ----------------------------------------------------
     try {
-      const rawPollRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(text)}`);
+      const rawPollRes = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(text)}`, {}, 2500);
       if (rawPollRes.ok) {
         const rawText = await rawPollRes.text();
         if (rawText && rawText.trim() && !rawText.startsWith("<!DOCTYPE")) {
@@ -260,14 +233,29 @@ const AiAssistant = () => {
         }
       }
     } catch (e) {
-      console.warn("Raw Pollinations error:", e);
+      console.warn("Raw Pollinations timeout/error:", e);
     }
 
-    // If network is completely offline
-    setMessages(prev => [...prev, { 
-      role: 'model', 
-      text: 'عذراً، تعذر الاتصال بمحرك الذكاء الاصطناعي حالياً بسبب ضعف الشبكة. يرجى التأكد من الاتصال بالإنترنت وإعادة إرسال السؤال! 😊' 
-    }]);
+    // ----------------------------------------------------
+    // STEP 5: Instant Educational Intelligent Fallback (< 0.05s)
+    // ----------------------------------------------------
+    let reply = "";
+    try {
+      const cleanMath = qLower.replace(/×|x/gi, '*').replace(/÷/g, '/').replace(/=/g, '').trim();
+      if (/^[\d\s\+\-\*\/\(\)\.\^]+$/.test(cleanMath) && /[\+\-\*\/\^]/.test(cleanMath)) {
+        const expr = cleanMath.replace(/\^/g, '**');
+        const calcRes = Function(`"use strict"; return (${expr})`)();
+        if (typeof calcRes === 'number' && !isNaN(calcRes) && isFinite(calcRes)) {
+          reply = `🔢 **النتيجة الحسابية:**\n${cleanMath.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ')} = **${calcRes}** ✨`;
+        }
+      }
+    } catch (e) {}
+
+    if (!reply) {
+      reply = `مرحباً بك! أنا مساعد مدرسة مشيرفة الابتدائية الذكي. أهلاً بك وسعدت بتلقي استفسارك: "${text}". يمكنك السؤال عن المواد الدراسية، الفعاليات، أو اللباس الموحد وسأساعدك فوراً! 😊`;
+    }
+
+    setMessages(prev => [...prev, { role: 'model', text: reply }]);
     setIsTyping(false);
   };
 
