@@ -3415,9 +3415,27 @@ const AdminDashboard = () => {
                         />
                       </div>
 
-                      <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)' }}>
-                        <i className="fas fa-save"></i> حفظ وتحديث كلمة المدير
-                      </button>
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <button type="submit" className="btn form-submit-btn" style={{ background: 'var(--primary)', flex: 1 }}>
+                          <i className="fas fa-save"></i> حفظ وتحديث كلمة المدير
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const officialData = {
+                              image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&auto=format&fit=crop&q=80',
+                              message: 'أهلاً بكم في صرح مدرسة مشيرفة الابتدائية. نحن نؤمن بأن التعليم ليس مجرد حشو للمعلومات، بل هو رحلة استكشاف وبناء شخصية متكاملة لطلابنا. من خلال مبادراتنا المتميزة كـ "امتنان" و "مسرح الدمى" و "مقصف المعرفة"، نعمل جاهدين على بناء مهارات المستقبل، وترسيخ قيم العطاء والمحبة والتقدير. نطمح دوماً لشراكة فاعلة ومثمرة مع أولياء الأمور الكرام لبناء غدٍ أفضل وجيل واعد ومتميز.',
+                              signature: 'أ. رامي ارفاعية - مدير المدرسة'
+                            };
+                            setPrincipal(officialData);
+                            alert('تم استعادة النص والتوقيع الرسمي لكلمة المدير! اضغط زر "حفظ وتحديث كلمة المدير" بالأسفل لتثبيتها بالسيرفر.');
+                          }} 
+                          className="btn" 
+                          style={{ background: '#f59e0b', color: 'white', fontWeight: 800 }}
+                        >
+                          <i className="fas fa-undo"></i> 🔄 استعادة النص الرسمي الأصلي لكلمة المدير
+                        </button>
+                      </div>
                     </form>
                   </div>
                 </div>
