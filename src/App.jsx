@@ -37,6 +37,8 @@ import ParentPolls from './components/ParentPolls';
 import AppointmentBooking from './components/AppointmentBooking';
 import ExcellenceYearPage from './components/ExcellenceYearPage';
 import LearningCorner from './components/LearningCorner';
+import StemCorner from './components/StemCorner';
+import TeacherStemPortal from './components/TeacherStemPortal';
 import './App.css';
 
 
@@ -276,6 +278,7 @@ function App() {
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isExcellenceView = currentHash.includes('excellence');
+  const isStemView = currentHash.includes('stem');
   const isLearningCornerView = currentHash.includes('learning-corner');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
   const isWorksheetsView = currentHash.includes('worksheets');
@@ -284,6 +287,8 @@ function App() {
   const isAppointmentsView = currentHash.includes('appointments');
   const isAstronomyView = currentHash.includes('astronomy');
   const isChallengeView = currentHash.includes('challenge');
+  const isPrincipalView = currentHash.includes('principal');
+  const isTeacherPortalView = currentHash.includes('stem-teacher') || currentHash.includes('teacher-portal');
   const isBooksView = currentHash.includes('books');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
@@ -305,7 +310,13 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isExcellenceView ? (
+      {isTeacherPortalView ? (
+        <TeacherStemPortal />
+      ) : isPrincipalView ? (
+        <PrincipalMessage isStandalone={true} />
+      ) : isStemView ? (
+        <StemCorner isStandalone={true} />
+      ) : isExcellenceView ? (
         <ExcellenceYearPage isStandalone={true} />
       ) : isLearningCornerView ? (
         <LearningCorner isStandalone={true} />
@@ -341,9 +352,6 @@ function App() {
 
           {/* Expandable News & Bulletins */}
           <NewsFeed />
-
-          {/* Principal Welcome Speech */}
-          <PrincipalMessage />
 
           {/* Fast Action Hyperlinks */}
           <ImportantLinks />

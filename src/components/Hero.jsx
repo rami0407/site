@@ -182,6 +182,23 @@ const Hero = () => {
               {isLaunching ? 'جاري الإطلاق إلى الفضاء... 🌌' : 'إطلاق مركبة التميز 🚀'}
             </button>
 
+            <button onClick={() => window.location.hash = '#/stem'} className="btn" style={{
+              background: 'linear-gradient(135deg, #7209b7 0%, #00b4d8 100%)',
+              color: 'white',
+              border: 'none',
+              fontWeight: 900,
+              padding: '0.85rem 1.4rem',
+              borderRadius: '16px',
+              boxShadow: '0 8px 20px rgba(114, 9, 183, 0.4)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer'
+            }}>
+              <i className="fas fa-atom" style={{ fontSize: '1.2rem' }}></i>
+              🚀 زاوية STEM (صناع الحلول)
+            </button>
+
             <button onClick={() => window.location.hash = '#/learning-corner'} className="btn btn-space-outline">
               <i className="fas fa-gamepad"></i>
               ركن التعلم

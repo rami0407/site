@@ -437,6 +437,78 @@ const AdminDashboard = () => {
   const [filterAppDate, setFilterAppDate] = useState('');
   const [searchAppParent, setSearchAppParent] = useState('');
 
+  // STEM Teacher Follow-Up Dashboard States
+  const [adminStemSolutions, setAdminStemSolutions] = useState([]);
+  const [stemFilterClass, setStemFilterClass] = useState('all');
+  const [stemFilterStage, setStemFilterStage] = useState('all');
+  const [editingStemSolId, setEditingStemSolId] = useState(null);
+
+  const loadAdminStemSolutions = async () => {
+    let loaded = [];
+    try {
+      const snap = await getDocs(collection(db, 'stem_solutions'));
+      if (!snap.empty) {
+        snap.forEach(d => loaded.push({ id: d.id, ...d.data() }));
+      }
+    } catch (e) {
+      console.warn("Offline stem_solutions fallback:", e);
+    }
+    const localSols = JSON.parse(localStorage.getItem('stem_local_solutions') || '[]');
+    const combined = [...loaded, ...localSols];
+    if (combined.length === 0) {
+      setAdminStemSolutions([
+        {
+          id: 'demo1',
+          studentName: 'أحمد محمود ارفاعية',
+          studentClass: 'الصف الثالث (أ)',
+          participationType: 'team',
+          teamName: 'فريق رواد الفضاء',
+          teamLeader: 'أحمد محمود',
+          challengeTitle: '🎒 تحدي الحقيبة الثقيلة',
+          solutionTitle: 'خزانة الصف الذكية مع الجدول الرقمي',
+          solutionDesc: 'اقتراحي تقسيم الكتب إلى نصفين: نصف يبقى في خزانة الصف ونصف في البيت.',
+          currentStage: 2,
+          teacherStars: 5,
+          teacherFeedback: '🌟 ممتاز جداً! فكرة تكنولوجية رائعة تميزت بواقعيتها. تابع جمع الكرتون.',
+          studentUpdates: ['تم رسم المخطط الأولي بالصف، وجاري جمع العلب البلاستيكية.']
+        }
+      ]);
+    } else {
+      setAdminStemSolutions(combined);
+    }
+  };
+
+  const handleSaveTeacherStemFeedback = async (solId, newStage, newFeedback, newStars) => {
+    const updatedSols = adminStemSolutions.map(sol => {
+      if (sol.id === solId || sol.createdAt === solId) {
+        return {
+          ...sol,
+          currentStage: parseInt(newStage, 10),
+          teacherFeedback: newFeedback,
+          teacherStars: parseInt(newStars, 10)
+        };
+      }
+      return sol;
+    });
+
+    setAdminStemSolutions(updatedSols);
+    localStorage.setItem('stem_local_solutions', JSON.stringify(updatedSols));
+
+    try {
+      const solRef = doc(db, 'stem_solutions', solId);
+      await updateDoc(solRef, {
+        currentStage: parseInt(newStage, 10),
+        teacherFeedback: newFeedback,
+        teacherStars: parseInt(newStars, 10)
+      });
+    } catch (e) {
+      console.warn("Firestore stem feedback update fallback:", e);
+    }
+
+    setEditingStemSolId(null);
+    alert('🎉 تم حفظ توجيه معلم الموضوع وترقية مرحلة الطالب بنجاح!');
+  };
+
   const loadBookedAppointments = async () => {
     try {
       const snap = await getDocs(collection(db, 'teacher_appointments'));
@@ -2733,6 +2805,28 @@ const AdminDashboard = () => {
             </button>
 
             <button 
+              onClick={() => {
+                loadAdminStemSolutions();
+                setActiveTab('stem-corner');
+              }} 
+              className={`filter-chip ${activeTab === 'stem-corner' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.9rem 1.2rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'stem-corner' ? '#7209b7' : '#f3e8ff',
+                color: activeTab === 'stem-corner' ? 'white' : '#6b21a8',
+                fontWeight: 800,
+                border: '2px solid #d8b4fe'
+              }}
+            >
+              <i className="fas fa-atom" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              🚀 إدارة زاوية STEM ومبتكرات الطلاب
+            </button>
+
+            <button 
               onClick={() => setActiveTab('teachers')} 
               className={`filter-chip ${activeTab === 'teachers' ? 'active' : ''}`}
               style={{
@@ -4876,6 +4970,179 @@ const AdminDashboard = () => {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 10.9: SUBJECT TEACHER STEM FOLLOW-UP & EVALUATION DASHBOARD */}
+              {activeTab === 'stem-corner' && (
+                <div>
+                  <div style={{ background: 'linear-gradient(135deg, #7209b7 0%, #3a0ca3 100%)', color: 'white', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', boxShadow: '0 10px 25px rgba(114, 9, 183, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div>
+                        <h2 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.6rem' }}>
+                          🚀 لوحة معلم الموضوع لمتابعة وتقييم حلول وتحديات الـ STEM
+                        </h2>
+                        <p style={{ margin: 0, opacity: 0.9, fontSize: '1rem' }}>
+                          تابع إنجازات الطلاب، وجّه ملحوظات معلم المادة، وقَم بـ ترقية مرحلة الابتكار حتى الاعتماد والوسام النهائي!
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={loadAdminStemSolutions}
+                        className="btn"
+                        style={{ background: 'white', color: '#7209b7', fontWeight: 900, padding: '0.65rem 1.2rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+                      >
+                        <i className="fas fa-sync-alt"></i> تحديث القائمة فورياً
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filters Bar */}
+                  <div style={{ background: 'white', padding: '1.25rem', borderRadius: '16px', border: '1px solid #cbd5e1', marginBottom: '2rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <label style={{ fontWeight: 800, fontSize: '0.9rem', color: '#334155' }}>🏫 تصفية حسب الصف:</label>
+                      <select
+                        value={stemFilterClass}
+                        onChange={(e) => setStemFilterClass(e.target.value)}
+                        style={{ padding: '0.6rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800, background: 'white' }}
+                      >
+                        <option value="all">كل الصفوف للشعبة</option>
+                        <option value="الصف الأول">الصف الأول</option>
+                        <option value="الصف الثاني">الصف الثاني</option>
+                        <option value="الصف الثالث">الصف الثالث</option>
+                        <option value="الصف الرابع">الصف الرابع</option>
+                        <option value="الصف الخامس">الصف الخامس</option>
+                        <option value="الصف السادس">الصف السادس</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <label style={{ fontWeight: 800, fontSize: '0.9rem', color: '#334155' }}>📊 تصفية حسب مرحلة المتابعة:</label>
+                      <select
+                        value={stemFilterStage}
+                        onChange={(e) => setStemFilterStage(e.target.value)}
+                        style={{ padding: '0.6rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800, background: 'white' }}
+                      >
+                        <option value="all">جميع المراحل (1 - 4)</option>
+                        <option value="1">1. الاعتماد الأولي وتسجيل التحدي</option>
+                        <option value="2">2. جاري التوجيه والمراجعة</option>
+                        <option value="3">3. بناء وتنفيذ النموذج الأولي</option>
+                        <option value="4">4. تم التكريم والاعتماد الوسام 🏅</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Solutions Evaluation Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.75rem' }}>
+                    {adminStemSolutions
+                      .filter(sol => stemFilterClass === 'all' || (sol.studentClass && sol.studentClass.includes(stemFilterClass)))
+                      .filter(sol => stemFilterStage === 'all' || String(sol.currentStage || 1) === stemFilterStage)
+                      .map((sol, index) => {
+                        const isEditing = editingStemSolId === (sol.id || sol.createdAt);
+
+                        return (
+                          <div
+                            key={sol.id || index}
+                            style={{
+                              background: 'white',
+                              borderRadius: '20px',
+                              border: '2px solid #e2e8f0',
+                              padding: '1.5rem',
+                              boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                <span style={{ background: '#f3e8ff', color: '#6b21a8', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 900 }}>
+                                  📌 {sol.challengeTitle}
+                                </span>
+
+                                <span style={{ background: sol.currentStage === 4 ? '#dcfce7' : '#dbeafe', color: sol.currentStage === 4 ? '#15803d' : '#1d4ed8', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 900 }}>
+                                  مرحلة المتابعة: ({sol.currentStage || 1} من 4)
+                                </span>
+                              </div>
+
+                              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.25rem' }}>
+                                {sol.solutionTitle}
+                              </h3>
+
+                              <div style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 800, marginBottom: '0.85rem' }}>
+                                {sol.participationType === 'team' ? `👥 الفريق: ${sol.teamName} (القائد: ${sol.teamLeader})` : `👨‍🎓 المخترع/ة: ${sol.studentName}`} ({sol.studentClass})
+                              </div>
+
+                              <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', fontSize: '0.92rem', color: '#334155', lineHeight: '1.6', marginBottom: '1rem' }}>
+                                <strong>شرح فكرة الطالب:</strong> {sol.solutionDesc}
+                              </div>
+
+                              {sol.prototypeImage && (
+                                <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#7209b7', marginBottom: '0.3rem' }}>📸 رسمة / مجسم نموذج الطالب الأولي:</div>
+                                  <img src={sol.prototypeImage} alt="نموذج" style={{ maxHeight: '160px', borderRadius: '12px', border: '2px solid #cbd5e1' }} />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* TEACHER EVALUATION FORM */}
+                            <div style={{ background: '#fffbeb', border: '2px solid #fde68a', borderRadius: '16px', padding: '1rem', marginTop: '1rem' }}>
+                              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.98rem', fontWeight: 900, color: '#b45309', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                ✍️ توجيه وتقييم معلم المادة:
+                              </h4>
+
+                              <div style={{ marginBottom: '0.75rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#78350f', marginBottom: '0.3rem' }}>ترقية مرحلة المتابعة بالمشروع:</label>
+                                <select
+                                  id={`stage_select_${sol.id || index}`}
+                                  defaultValue={sol.currentStage || 1}
+                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #fcd34d', fontWeight: 800, background: 'white' }}
+                                >
+                                  <option value="1">1. الاعتماد الأولي وتسجيل التحدي 📌</option>
+                                  <option value="2">2. جاري التوجيه والمراجعة العلمية 💬</option>
+                                  <option value="3">3. بناء وتنفيذ النموذج الأولي بالبيت/المدرسة 🛠️</option>
+                                  <option value="4">4. الاعتماد الوسام والتكريم النهائي 🏅</option>
+                                </select>
+                              </div>
+
+                              <div style={{ marginBottom: '0.75rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#78350f', marginBottom: '0.3rem' }}>توجيهات المعلم المباشرة للطالب/الفريق:</label>
+                                <textarea
+                                  id={`feedback_text_${sol.id || index}`}
+                                  rows="3"
+                                  defaultValue={sol.teacherFeedback || 'رائع جداً! استمر في جمع المواد وتطبيق النموذج.'}
+                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #fcd34d', fontWeight: 700, fontSize: '0.88rem' }}
+                                ></textarea>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#78350f', marginLeft: '0.3rem' }}>النجوم:</label>
+                                  <select id={`stars_select_${sol.id || index}`} defaultValue={sol.teacherStars || 5} style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #fcd34d', fontWeight: 800 }}>
+                                    <option value="5">⭐⭐⭐⭐⭐ (5 نجوم)</option>
+                                    <option value="4">⭐⭐⭐⭐ (4 نجوم)</option>
+                                    <option value="3">⭐⭐⭐ (3 نجوم)</option>
+                                  </select>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const st = document.getElementById(`stage_select_${sol.id || index}`).value;
+                                    const fb = document.getElementById(`feedback_text_${sol.id || index}`).value;
+                                    const sr = document.getElementById(`stars_select_${sol.id || index}`).value;
+                                    handleSaveTeacherStemFeedback(sol.id || sol.createdAt, st, fb, sr);
+                                  }}
+                                  style={{ background: '#7209b7', color: 'white', border: 'none', padding: '0.65rem 1rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.88rem' }}
+                                >
+                                  <i className="fas fa-paper-plane"></i> حفظ التوجيه والترقية 🚀
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               )}

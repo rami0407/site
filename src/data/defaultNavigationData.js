@@ -16,7 +16,7 @@ export const defaultMainNavigation = [
   { id: "nav_parent_polls", label: "📊 تصويت الأهالي", type: "page", target: "parent-polls", category: "main", order: 7 },
   { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", category: "main", order: 9 },
   { id: "nav_4", label: "الأخبار", type: "section", target: "news", category: "main", order: 8 },
-  { id: "nav_5", label: "كلمة المدير", type: "section", target: "principal", category: "main", order: 9 }
+  { id: "nav_5", label: "🎓 كلمة المدير", type: "page", target: "principal", category: "main", order: 9 }
 ];
 
 export const defaultNavigation = [...defaultMainNavigation, ...defaultTopNavigation];

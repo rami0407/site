@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { defaultNavigation, defaultTopNavigation, defaultMainNavigation } from '../data/defaultNavigationData';
+import { getStudentSession, logoutStudent } from '../utils/studentAuth';
+import StudentAuthModal from './StudentAuthModal';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -9,6 +11,16 @@ const Navbar = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [topNavItems, setTopNavItems] = useState([]);
   const [mainNavItems, setMainNavItems] = useState([]);
+  const [studentSession, setStudentSession] = useState(getStudentSession());
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setStudentSession(getStudentSession());
+    };
+    window.addEventListener('studentAuthChanged', handleAuthChange);
+    return () => window.removeEventListener('studentAuthChanged', handleAuthChange);
+  }, []);
 
   // Real-time navigation links listener from Firestore & LocalStorage for INSTANT zero-delay updates
   useEffect(() => {
@@ -16,10 +28,12 @@ const Navbar = () => {
 
     const updateNavState = (rawItems) => {
       let items = [...rawItems];
-      // Filter out any lingering nav_excellence or nav_astronomy if deleted or moved
-      items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy');
+      // Filter out any lingering nav_excellence, nav_astronomy, or nav_stem from navbar
+      items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
+      items = items.map(item => item.target === 'principal' ? { ...item, type: 'page', target: 'principal' } : item);
 
       // 🌟 GUARANTEE: Ensure nav_articles and nav_parent_polls always exist in main navigation!
+
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
         items.push({
           id: "nav_articles",
@@ -140,14 +154,14 @@ const Navbar = () => {
     e.preventDefault();
 
     if (item.type === 'page' || item.type === 'custom_page') {
-      const isSystemPage = ['worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
+      const isSystemPage = ['principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
       window.location.hash = isSystemPage ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('parent-polls') || window.location.hash.includes('appointments') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('principal') || window.location.hash.includes('stem') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('parent-polls') || window.location.hash.includes('appointments') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {
@@ -192,6 +206,66 @@ const Navbar = () => {
                 </a>
               </li>
             ))}
+
+            {/* Student/User Unified Single Sign-On Badge */}
+            <li>
+              {studentSession ? (
+                <div className="student-profile-chip" style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(135deg, #7209b7 0%, #3a0ca3 100%)',
+                  color: '#ffffff',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '0.88rem',
+                  fontWeight: 800
+                }}>
+                  <span>{studentSession.roleIcon || '👨‍🎓'} أهلاً: {studentSession.fullName} ({studentSession.studentClass})</span>
+                  <button 
+                    onClick={() => logoutStudent()}
+                    title="تسجيل الخروج"
+                    style={{
+                      background: 'rgba(255,255,255,0.25)',
+                      border: 'none',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '22px',
+                      height: '22px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <i className="fas fa-sign-out-alt"></i>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setAuthModalOpen(true)}
+                  className="student-login-top-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.88rem',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                  }}
+                >
+                  <i className="fas fa-user-circle"></i> تسجيل الدخول الموحد 🔑
+                </button>
+              )}
+            </li>
+
             <li>
               <a href="#/admin" className="top-admin-link" title="بوابة الإدارة">
                 <i className="fas fa-user-shield"></i> لوحة التحكم
@@ -267,6 +341,12 @@ const Navbar = () => {
           </ul>
         </div>
       </nav>
+
+      {/* Global Student Single Sign-On Auth Modal */}
+      <StudentAuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+      />
     </header>
   );
 };
