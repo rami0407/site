@@ -3,7 +3,6 @@ import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 const DEFAULT_GEMINI_KEY = "AIzaSyDGENg8Aity9L2bHr-XAgebNEOf_4YFP8Y";
-const DEFAULT_GROQ_KEY = (function(){ return ["gs"+"k_"+"Bjye"+"fCPla","1HfTVuMYWdmW","Gdyb3FYujmC","KlPpsY3UJmzg","RUiR3EwZ"].join(''); })();
 
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +13,6 @@ const AiAssistant = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [schoolContext, setSchoolContext] = useState('');
   const [apiKey, setApiKey] = useState(DEFAULT_GEMINI_KEY);
-  const [groqKey, setGroqKey] = useState(DEFAULT_GROQ_KEY);
   
   const chatEndRef = useRef(null);
 
@@ -206,39 +204,6 @@ const AiAssistant = () => {
         }
       } catch (e) {
         console.warn("Puter.js AI error:", e);
-      }
-    }
-
-    // 5. Try Groq AI via CorsProxy
-    const activeGroqKey = groqKey || DEFAULT_GROQ_KEY;
-    if (activeGroqKey) {
-      try {
-        const res = await fetchWithTimeout(
-          "https://corsproxy.io/?https://api.groq.com/openai/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${activeGroqKey.trim()}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              model: "llama-3.1-8b-instant",
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: promptText }
-              ],
-              max_tokens: 800
-            })
-          },
-          4000
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const txt = data.choices?.[0]?.message?.content;
-          if (txt && txt.trim()) return txt.trim();
-        }
-      } catch (e) {
-        console.warn("Groq CorsProxy error:", e);
       }
     }
 

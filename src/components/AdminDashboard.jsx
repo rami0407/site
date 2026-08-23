@@ -613,26 +613,20 @@ const AdminDashboard = () => {
     }
   };
 
-  const [groqKey, setGroqKey] = useState((function(){ return ["gs"+"k_"+"Bjye"+"fCPla","1HfTVuMYWdmW","Gdyb3FYujmC","KlPpsY3UJmzg","RUiR3EwZ"].join(''); })());
-
-  const handleSaveGeminiKey = async (newGeminiKey, newGroqKey) => {
+  const handleSaveGeminiKey = async (newGeminiKey) => {
     try {
       const gKey = newGeminiKey !== undefined ? newGeminiKey.trim() : geminiKey;
-      const grKey = newGroqKey !== undefined ? newGroqKey.trim() : groqKey;
 
       await setDoc(doc(db, 'schoolGuide', 'gemini'), {
         apiKey: gKey,
-        groqKey: grKey,
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
       setGeminiKey(gKey);
-      setGroqKey(grKey);
       localStorage.setItem('db_gemini_key', gKey);
-      localStorage.setItem('db_groq_key', grKey);
-      alert('تم حفظ وتفعيل مفاتيح الذكاء الاصطناعي (Groq + Gemini) بنجاح!');
+      alert('تم حفظ وتفعيل مفتاح الذكاء الاصطناعي (Google Gemini) بنجاح!');
     } catch (err) {
-      alert('حدث خطأ أثناء حفظ مفاتيح الـ API: ' + err.message);
+      alert('حدث خطأ أثناء حفظ مفتاح الـ API: ' + err.message);
     }
   };
 
@@ -5733,40 +5727,27 @@ const AdminDashboard = () => {
                   <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ marginBottom: '1.25rem' }}>
                       <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
-                        ⚡ مفتاح محرك Groq الفائق (Groq API Key):
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="gsk_..."
-                        value={groqKey}
-                        onChange={(e) => setGroqKey(e.target.value)}
-                        style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '14px', border: '2px solid #8b5cf6', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'monospace', background: '#f5f3ff', color: '#5b21b6' }}
-                      />
-                      <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 700, display: 'block', marginTop: '0.3rem' }}>
-                        🟢 مفتاح Groq نشط (Llama 3.3 70B - سرعة استجابة فائقة في أقل من 0.3 ثانية).
-                      </span>
-                    </div>
-
-                    <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
                         🔑 مفتاح محرك Google Gemini (Gemini API Key):
                       </label>
                       <input
                         type="text"
-                        placeholder="أدخل مفتاح الـ API هنا (AIzaSy...)"
+                        placeholder="أدخل مفتاح الـ API المجاني هنا (AIzaSy...)"
                         value={geminiKey}
                         onChange={(e) => setGeminiKey(e.target.value)}
-                        style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'monospace' }}
+                        style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '14px', border: '2px solid #8b5cf6', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'monospace', background: '#f5f3ff', color: '#5b21b6' }}
                       />
+                      <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 700, display: 'block', marginTop: '0.4rem' }}>
+                        🟢 تم إلغاء واستبعاد محرك Groq المدفوع بنجاح! الموقع يعمل الآن بالمحركات المجانية المباشرة (Gemini + Puter.js + Pollinations).
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <button
-                        onClick={() => handleSaveGeminiKey(geminiKey, groqKey)}
+                        onClick={() => handleSaveGeminiKey(geminiKey)}
                         className="btn"
                         style={{ background: '#8b5cf6', color: 'white', padding: '0.8rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(139, 92, 246, 0.3)' }}
                       >
-                        💾 حفظ وتفعيل مفاتيح الذكاء الاصطناعي
+                        💾 حفظ وتفعيل مفتاح Gemini المجاني
                       </button>
                     </div>
                   </div>
