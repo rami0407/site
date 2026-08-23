@@ -39,6 +39,7 @@ import ExcellenceYearPage from './components/ExcellenceYearPage';
 import LearningCorner from './components/LearningCorner';
 import StemCorner from './components/StemCorner';
 import TeacherStemPortal from './components/TeacherStemPortal';
+import WorldIdeasPage from './components/WorldIdeasPage';
 import './App.css';
 
 
@@ -290,6 +291,7 @@ function App() {
   const isPrincipalView = currentHash.includes('principal');
   const isTeacherPortalView = currentHash.includes('stem-teacher') || currentHash.includes('teacher-portal');
   const isBooksView = currentHash.includes('books');
+  const isWorldIdeasView = currentHash.includes('world-ideas') || currentHash.includes('ideas') || currentHash.includes('share-ideas');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -310,7 +312,9 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isTeacherPortalView ? (
+      {isWorldIdeasView ? (
+        <WorldIdeasPage />
+      ) : isTeacherPortalView ? (
         <TeacherStemPortal />
       ) : isPrincipalView ? (
         <PrincipalMessage isStandalone={true} />

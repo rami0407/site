@@ -183,7 +183,7 @@ const Hero = () => {
             </button>
 
             <button onClick={() => window.location.hash = '#/stem'} className="btn" style={{
-              background: 'linear-gradient(135deg, #7209b7 0%, #00b4d8 100%)',
+              background: 'linear-gradient(135deg, #7209b7 0%, #4361ee 100%)',
               color: 'white',
               border: 'none',
               fontWeight: 900,
@@ -197,6 +197,11 @@ const Hero = () => {
             }}>
               <i className="fas fa-atom" style={{ fontSize: '1.2rem' }}></i>
               🚀 زاوية STEM (صناع الحلول)
+            </button>
+
+            <button onClick={() => window.location.hash = '#/world-ideas'} className="btn btn-space-primary">
+              <i className="fas fa-rocket"></i>
+              🚀 شارِك أفكارك للعالم
             </button>
 
             <button onClick={() => window.location.hash = '#/learning-corner'} className="btn btn-space-outline">
