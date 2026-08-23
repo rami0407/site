@@ -300,22 +300,6 @@ const AdminDashboard = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
-
-  // Monitor setup mode in URL (e.g. #/admin?setup=true)
-  useEffect(() => {
-    const checkSetupMode = () => {
-      const hashParts = window.location.hash.split('?');
-      const queryStr = hashParts[1] || '';
-      const params = new URLSearchParams(queryStr);
-      setShowSetup(params.get('setup') === 'true' || params.get('developer') === 'true');
-    };
-
-    checkSetupMode();
-    window.addEventListener('hashchange', checkSetupMode);
-    return () => window.removeEventListener('hashchange', checkSetupMode);
-  }, []);
 
   const [autoAddToNav, setAutoAddToNav] = useState(true);
 
@@ -2476,11 +2460,11 @@ const AdminDashboard = () => {
             />
             <h2 style={{ color: 'var(--primary-dark)', fontWeight: '900', fontSize: '1.6rem' }}>بوابة الإدارة المدرسية</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-              {isRegistering ? 'إنشاء حساب مسؤول جديد للتحكم بالبيانات' : 'تسجيل الدخول لإدارة بيانات الرزنامة والأخبار والرسائل'}
+              تسجيل الدخول الحصري لمدير المدرسة لإدارة بيانات ومحتوى الموقع
             </p>
           </div>
 
-          <form onSubmit={isRegistering ? handleRegister : handleLogin}>
+          <form onSubmit={handleLogin}>
             <div style={{ marginBottom: '1.25rem' }}>
               <label htmlFor="email" className="form-label">البريد الإلكتروني الإداري *</label>
               <input 
@@ -2516,29 +2500,12 @@ const AdminDashboard = () => {
 
             <button type="submit" className="btn form-submit-btn" disabled={isLoggingIn} style={{ height: '48px' }}>
               {isLoggingIn ? (
-                <><i className="fas fa-spinner fa-spin"></i> جاري التنفيذ...</>
-              ) : isRegistering ? (
-                <><i className="fas fa-user-plus"></i> إنشاء حساب مسؤول جديد</>
+                <><i className="fas fa-spinner fa-spin"></i> جاري التحقق من الصلاحيات...</>
               ) : (
-                <><i className="fas fa-sign-in-alt"></i> دخول مسؤول النظام</>
+                <><i className="fas fa-sign-in-alt"></i> دخول مدير المدرسة المفوض</>
               )}
             </button>
           </form>
-
-          {showSetup && (
-            <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
-              <button 
-                type="button" 
-                onClick={() => {
-                  setIsRegistering(!isRegistering);
-                  setLoginError('');
-                }}
-                style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}
-              >
-                {isRegistering ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'ليس لديك حساب مسؤول؟ سجل إيميلك هنا'}
-              </button>
-            </div>
-          )}
 
           <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
             <div style={{ background: '#ecfdf5', color: '#047857', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', width: '100%' }}>
