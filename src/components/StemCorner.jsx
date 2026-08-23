@@ -548,15 +548,27 @@ const StemCorner = ({ isStandalone = true }) => {
             مرحباً بكم في عالم العلوم، التكنولوجيا، الهندسة، والرياضيات بمدرسة مشيرفة الابتدائية! نتحدى المشكلات، نبتكر الحلول، ونلعب بالذكاء.
           </p>
 
-          {/* Gamification Score Badge */}
-          <div className="stem-score-card">
-            <div className="score-icon"><i className="fas fa-trophy"></i></div>
-            <div className="score-details">
-              <span className="score-label">مجموع نقاط الابتكار لديك</span>
-              <span className="score-value">{userScore} <small>نقطة ⭐</small></span>
+          {/* Gamification Score Badge & Teacher Access Button */}
+          <div className="hero-flex-actions">
+            <div className="stem-score-card">
+              <div className="score-icon"><i className="fas fa-trophy"></i></div>
+              <div className="score-details">
+                <span className="score-label">مجموع نقاط الابتكار لديك</span>
+                <span className="score-value">{userScore} <small>نقطة ⭐</small></span>
+              </div>
+              <div className="score-badge-tag">
+                {userScore >= 200 ? '🏅 عالم مشيرفة الصغير' : userScore >= 100 ? '🛠️ مهندس STEM' : '🌱 مبتكر صاعد'}
+              </div>
             </div>
-            <div className="score-badge-tag">
-              {userScore >= 200 ? '🏅 عالم مشيرفة الصغير' : userScore >= 100 ? '🛠️ مهندس STEM' : '🌱 مبتكر صاعد'}
+
+            <div className="teacher-access-hero-wrapper">
+              <button 
+                onClick={() => window.location.hash = '#/stem-teacher'} 
+                className="teacher-portal-quick-btn"
+                title="الانتقال المباشر لبوابة معلم المادة لمتابعة وتوجيه الطلاب"
+              >
+                <i className="fas fa-chalkboard-user"></i> 👨‍🏫 دخول معلم المادة لمتابعة الطلاب 🔐
+              </button>
             </div>
           </div>
         </div>
@@ -597,6 +609,14 @@ const StemCorner = ({ isStandalone = true }) => {
           onClick={() => setActiveTab('gallery')}
         >
           <i className="fas fa-palette"></i> 4. معرض مشاريع الطلاب 🎨
+        </button>
+
+        <button 
+          className="stem-tab-btn teacher-quick-tab-btn"
+          onClick={() => window.location.hash = '#/stem-teacher'}
+          title="بوابة معلم الموضوع لمتابعة وتوجيه الطلاب"
+        >
+          <i className="fas fa-user-shield"></i> 👨‍🏫 بوابة توجيه المعلم 🔐
         </button>
       </nav>
 
@@ -957,6 +977,16 @@ const StemCorner = ({ isStandalone = true }) => {
           <div className="section-header-box">
             <h2><i className="fas fa-bars-progress"></i> مرحلة متابعة التحدي والنموذج الأولي 🔍</h2>
             <p>تتبع مراحل تقدم مشاريعك التنافسية خطوة بخطوة، واطلع على توجيهات معلم الـ STEM، وارفع تحديثات مجسمك ورسمتك الهندسية!</p>
+
+            <div className="teacher-quick-notice-banner">
+              <span>👨‍🏫 هل أنت معلم المادة؟</span>
+              <button 
+                onClick={() => window.location.hash = '#/stem-teacher'}
+                className="teacher-notice-link-btn"
+              >
+                اضغط هنا لدخول بوابة معلم الموضوع لمتابعة وتوجيه الطلاب 🔐
+              </button>
+            </div>
           </div>
 
           <div className="tracking-dashboard-wrapper">

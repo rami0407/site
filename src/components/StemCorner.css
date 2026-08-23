@@ -1112,8 +1112,71 @@
 }
 
 /* ==========================================================================
-   🔍 Follow-Up & Milestone Progress Tracker Tab Styles
+   👨‍🏫 Teacher Portal Quick Access Buttons & Banners Styles
    ========================================================================== */
+
+.hero-flex-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.teacher-portal-quick-btn {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  color: #78350f;
+  border: none;
+  padding: 14px 22px;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease;
+}
+
+.teacher-portal-quick-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+}
+
+.teacher-quick-tab-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3) !important;
+}
+
+.teacher-quick-notice-banner {
+  background: #fffbeb;
+  border: 2px solid #fde68a;
+  border-radius: 14px;
+  padding: 10px 16px;
+  margin-top: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.teacher-notice-link-btn {
+  background: #7209b7;
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 
 .tracking-dashboard-wrapper {
   margin-top: 20px;
