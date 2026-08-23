@@ -145,38 +145,52 @@ const TeacherStemPortal = () => {
 
     setIsSubmitting(true);
 
-    // Fetch requests list to verify approval status
+    // Fetch requests list and school_teachers list to verify approval status
     let requestsList = [];
+    let schoolTeachersList = [];
+
     try {
-      const snap = await getDocs(collection(db, 'stem_teacher_requests'));
-      if (!snap.empty) {
-        snap.forEach(d => requestsList.push({ id: d.id, ...d.data() }));
+      const snapReqs = await getDocs(collection(db, 'stem_teacher_requests'));
+      if (!snapReqs.empty) {
+        snapReqs.forEach(d => requestsList.push({ id: d.id, ...d.data() }));
+      }
+      const snapTeachers = await getDocs(collection(db, 'school_teachers'));
+      if (!snapTeachers.empty) {
+        snapTeachers.forEach(d => schoolTeachersList.push({ id: d.id, ...d.data() }));
       }
     } catch (e) {}
 
     const localReqs = JSON.parse(localStorage.getItem('stem_local_teacher_requests') || '[]');
     const combinedReqs = [...requestsList, ...localReqs];
 
-    // Find teacher record by ID
-    const foundReq = combinedReqs.find(r => r.teacherId === cleanId || r.id === `req_${cleanId}`);
+    // Check 1: Is there an approved request in stem_teacher_requests?
+    const approvedReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'approved');
+    const pendingReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'pending');
+    const rejectedReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'rejected');
 
-    if (foundReq) {
-      if (foundReq.status === 'pending') {
-        setIsSubmitting(false);
-        setAuthError('⏳ طلب اعتماد حسابك كمعلم موضوع (قيد المراجعة والموافقة من قبل مدير المدرسة). يرجى التواصل مع المدير لتأشير وتفعيل حسابك.');
-        return;
-      } else if (foundReq.status === 'rejected') {
-        setIsSubmitting(false);
-        setAuthError('❌ تم رفض طلب اعتماد هذا الحساب. يرجى مراجعة إدارة المدرسة.');
-        return;
-      }
-    }
+    // Check 2: Is teacher in school_teachers database list?
+    const isKnownSchoolTeacher = schoolTeachersList.some(t => t.id === cleanId || t.phone === cleanId || t.id === `tch_${cleanId}`);
 
     setIsSubmitting(false);
 
-    // If approved or master passcode override
+    if (pendingReq) {
+      setAuthError('⏳ طلب اعتمادك كمعلم موضوع لا يزال (قيد الانتظار لموافقة مدير المدرسة). يرجى مراجعة إدارة المدرسة لتأشير وتفعيل حسابك.');
+      return;
+    }
+
+    if (rejectedReq) {
+      setAuthError('❌ عفواً، هذا الطلب غير معتمد من قبل إدارة المدرسة. يرجى التواصل مع المدير.');
+      return;
+    }
+
+    if (!approvedReq && !isKnownSchoolTeacher) {
+      setAuthError(`⛔ عذراً، رقم الهوية/الرمز (${cleanId}) غير معتمد في المنظومة حتى الآن!\nيرجى التبديل لتبويب "📝 إرسال طلب اعتماد جديد للمدير" بالأعلى لإرسال طلبك أولاً حتى يعتمده المدير.`);
+      return;
+    }
+
+    // Access granted!
     const newSession = saveStudentSession({
-      fullName: cleanName,
+      fullName: approvedReq ? approvedReq.teacherName : cleanName,
       idNumber: cleanId,
       studentClass: 'معلم في المدرسة 👨‍🏫',
       role: 'teacher',
