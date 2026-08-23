@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
 import './TeacherStemPortal.css';
 
@@ -13,9 +13,17 @@ const STAGE_OPTIONS = [
 
 const TeacherStemPortal = () => {
   const [session, setSession] = useState(getStudentSession());
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+
+  // Form Inputs
   const [teacherNameInput, setTeacherNameInput] = useState('');
   const [teacherIdInput, setTeacherIdInput] = useState('');
+  const [teacherSubjectInput, setTeacherSubjectInput] = useState('علوم وتكنولوجيا');
+  const [teacherPhoneInput, setTeacherPhoneInput] = useState('');
+  
   const [authError, setAuthError] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [solutions, setSolutions] = useState([]);
   const [filterClass, setFilterClass] = useState('all');
@@ -67,16 +75,65 @@ const TeacherStemPortal = () => {
     fetchSolutions();
   }, []);
 
-  // Handle Teacher Login
-  const handleTeacherLogin = (e) => {
+  // Handle Teacher Registration / Access Request to Principal
+  const handleTeacherRegister = async (e) => {
     e.preventDefault();
     setAuthError('');
+    setAuthNotice('');
+
+    const cleanName = teacherNameInput.trim();
+    const cleanId = teacherIdInput.trim();
+    const cleanPhone = teacherPhoneInput.trim();
+
+    if (cleanName.split(/\s+/).length < 2) {
+      setAuthError('⚠️ يرجى إدخال اسم المعلم كاملاً (الاسم الأول واسم العائلة على الأقل).');
+      return;
+    }
+
+    if (!/^\d{9}$/.test(cleanId)) {
+      setAuthError('⚠️ رمز الدخول المفوض يجب أن يكون رقم الهوية المكون من 9 أرقام بالضبط (مثال: 123456789).');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const newRequest = {
+      id: `req_${cleanId}`,
+      teacherName: cleanName,
+      teacherId: cleanId,
+      subject: teacherSubjectInput,
+      phone: cleanPhone,
+      status: 'pending', // Pending Principal Approval
+      createdAt: new Date().toISOString()
+    };
+
+    // Save to Firestore & LocalStorage
+    try {
+      await setDoc(doc(db, 'stem_teacher_requests', newRequest.id), newRequest, { merge: true });
+    } catch (e) {
+      console.warn("Offline teacher request fallback:", e);
+    }
+
+    const localReqs = JSON.parse(localStorage.getItem('stem_local_teacher_requests') || '[]');
+    const filtered = localReqs.filter(r => r.teacherId !== cleanId);
+    filtered.push(newRequest);
+    localStorage.setItem('stem_local_teacher_requests', JSON.stringify(filtered));
+
+    setIsSubmitting(false);
+    setAuthNotice(`🎉 تم إرسال طلب اعتمادك كمعلم موضوع إلى مدير المدرسة بنجاح!\nسوف يتلقى المدير الطلب في لوحة التحكم، وبعد تأشير الموافقــة ستتمكن من تسجيل الدخول فوراً بالرمز (${cleanId}).`);
+  };
+
+  // Handle Teacher Login & Approval Verification
+  const handleTeacherLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthNotice('');
 
     const cleanName = teacherNameInput.trim();
     const cleanId = teacherIdInput.trim();
 
     if (cleanName.split(/\s+/).length < 2) {
-      setAuthError('⚠️ يرجى إدخال اسم المعلم كاملاً (ثنائي على الأقل).');
+      setAuthError('⚠️ يرجى إدخال اسم المعلم كاملاً (الاسم الأول واسم العائلة على الأقل).');
       return;
     }
 
@@ -85,6 +142,38 @@ const TeacherStemPortal = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
+    // Fetch requests list to verify approval status
+    let requestsList = [];
+    try {
+      const snap = await getDocs(collection(db, 'stem_teacher_requests'));
+      if (!snap.empty) {
+        snap.forEach(d => requestsList.push({ id: d.id, ...d.data() }));
+      }
+    } catch (e) {}
+
+    const localReqs = JSON.parse(localStorage.getItem('stem_local_teacher_requests') || '[]');
+    const combinedReqs = [...requestsList, ...localReqs];
+
+    // Find teacher record by ID
+    const foundReq = combinedReqs.find(r => r.teacherId === cleanId || r.id === `req_${cleanId}`);
+
+    if (foundReq) {
+      if (foundReq.status === 'pending') {
+        setIsSubmitting(false);
+        setAuthError('⏳ طلب اعتماد حسابك كمعلم موضوع (قيد المراجعة والموافقة من قبل مدير المدرسة). يرجى التواصل مع المدير لتأشير وتفعيل حسابك.');
+        return;
+      } else if (foundReq.status === 'rejected') {
+        setIsSubmitting(false);
+        setAuthError('❌ تم رفض طلب اعتماد هذا الحساب. يرجى مراجعة إدارة المدرسة.');
+        return;
+      }
+    }
+
+    setIsSubmitting(false);
+
+    // If approved or master passcode override
     const newSession = saveStudentSession({
       fullName: cleanName,
       idNumber: cleanId,
@@ -128,53 +217,136 @@ const TeacherStemPortal = () => {
     setTimeout(() => setSavedSuccessId(null), 3000);
   };
 
-  // If not logged in as teacher, render Teacher Passcode Guard
+  // If not logged in as teacher, render Teacher Passcode / Request Guard
   if (!isTeacherLoggedIn) {
     return (
       <div className="teacher-portal-login-page">
         <div className="teacher-login-card animate-pop">
           <div className="teacher-card-badge">👨‍🏫</div>
           <h2>بوابة المعلم المتابع لـ STEM 🔐</h2>
-          <p>أدخل رمز الدخول المخصص واسمك لمتابعة وتوجيه مشاريع طلابك مستقلة دون الحاجة للوحة الإدارة.</p>
+          <p>تابع وتوجيه إنجازات الطلاب مستقلة. يمكنك تسجيل الدخول أو إرسال طلب اعتماد لمدير المدرسة.</p>
+
+          {/* Mode Switcher Tabs */}
+          <div className="t-mode-switcher">
+            <button 
+              className={`t-mode-btn ${!isRegisterMode ? 'active' : ''}`}
+              onClick={() => {
+                setIsRegisterMode(false);
+                setAuthError('');
+                setAuthNotice('');
+              }}
+            >
+              🔑 تسجيل دخول معلم معتمد
+            </button>
+            <button 
+              className={`t-mode-btn ${isRegisterMode ? 'active' : ''}`}
+              onClick={() => {
+                setIsRegisterMode(true);
+                setAuthError('');
+                setAuthNotice('');
+              }}
+            >
+              📝 إرسال طلب اعتماد جديد للمدير
+            </button>
+          </div>
 
           {authError && <div className="teacher-auth-error">{authError}</div>}
+          {authNotice && <div className="teacher-auth-notice">{authNotice}</div>}
 
-          <form onSubmit={handleTeacherLogin} className="teacher-login-form">
-            <div className="t-form-group">
-              <label><i className="fas fa-user-tie"></i> اسم المعلم / المعلمة:</label>
-              <input 
-                type="text"
-                placeholder="مثال: الأستاذ محمود ارفاعية"
-                value={teacherNameInput}
-                onChange={(e) => setTeacherNameInput(e.target.value)}
-                required
-              />
-            </div>
+          {!isRegisterMode ? (
+            /* LOGIN FORM */
+            <form onSubmit={handleTeacherLogin} className="teacher-login-form">
+              <div className="t-form-group">
+                <label><i className="fas fa-user-tie"></i> اسم المعلم / المعلمة:</label>
+                <input 
+                  type="text"
+                  placeholder="مثال: الأستاذ محمود ارفاعية"
+                  value={teacherNameInput}
+                  onChange={(e) => setTeacherNameInput(e.target.value)}
+                  required
+                />
+              </div>
 
-            <div className="t-form-group">
-              <label><i className="fas fa-key"></i> رمز الدخول المفوض (9 أرقام):</label>
-              <input 
-                type="password"
-                maxLength={9}
-                placeholder="أدخل رمز الدخول (9 أرقام)"
-                value={teacherIdInput}
-                onChange={(e) => setTeacherIdInput(e.target.value.replace(/\D/g, ''))}
-                required
-              />
-              <small className="t-field-hint">رمز الدخول المفوض الممنوح لك من إدارة مدرسة مشيرفة.</small>
-            </div>
+              <div className="t-form-group">
+                <label><i className="fas fa-key"></i> رمز الدخول المفوض (9 أرقام):</label>
+                <input 
+                  type="password"
+                  maxLength={9}
+                  placeholder="أدخل رمز الدخول (9 أرقام)"
+                  value={teacherIdInput}
+                  onChange={(e) => setTeacherIdInput(e.target.value.replace(/\D/g, ''))}
+                  required
+                />
+                <small className="t-field-hint">رمز الدخول أو رقم الهوية المعتمد والمؤشر عليه من المدير.</small>
+              </div>
 
-            <button type="submit" className="t-login-btn">
-              <i className="fas fa-sign-in-alt"></i> دخول بوابة متابعة المعلم 🚀
-            </button>
-          </form>
+              <button type="submit" className="t-login-btn" disabled={isSubmitting}>
+                {isSubmitting ? <><i className="fas fa-spinner fa-spin"></i> جاري التحقق...</> : <><i className="fas fa-sign-in-alt"></i> دخول بوابة متابعة المعلم 🚀</>}
+              </button>
+            </form>
+          ) : (
+            /* REGISTER / REQUEST ACCESS FORM */
+            <form onSubmit={handleTeacherRegister} className="teacher-login-form">
+              <div className="t-form-group">
+                <label><i className="fas fa-user-tie"></i> اسم المعلم الثلاثي (مطلوب):</label>
+                <input 
+                  type="text"
+                  placeholder="مثال: أحمد محمود ارفاعية"
+                  value={teacherNameInput}
+                  onChange={(e) => setTeacherNameInput(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="t-form-group">
+                <label><i className="fas fa-book-open"></i> مادة / موضوع التدريس:</label>
+                <select 
+                  value={teacherSubjectInput}
+                  onChange={(e) => setTeacherSubjectInput(e.target.value)}
+                  style={{ width: '100%', padding: '12px', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                >
+                  <option value="علوم وتكنولوجيا">معلم علوم وتكنولوجيا</option>
+                  <option value="رياضيات ومهندسون">معلم رياضيات والهندسة</option>
+                  <option value="حاسوب وبرمجة">معلم حاسوب وبرمجة</option>
+                  <option value="مربي صف وقادة">مربي صف / معلم موضوع</option>
+                </select>
+              </div>
+
+              <div className="t-form-group">
+                <label><i className="fas fa-id-card"></i> اختر رمز دخول خاص بك (9 أرقام):</label>
+                <input 
+                  type="text"
+                  maxLength={9}
+                  placeholder="أدخل 9 أرقام (رقم الهوية أو رمز خاص)"
+                  value={teacherIdInput}
+                  onChange={(e) => setTeacherIdInput(e.target.value.replace(/\D/g, ''))}
+                  required
+                />
+                <small className="t-field-hint">هذا الرمز هو الذي سيعتمده المدير وستستخدمه للدخول لاحقاً.</small>
+              </div>
+
+              <div className="t-form-group">
+                <label><i className="fas fa-phone"></i> رقم الهاتف للتأكيد (اختياري):</label>
+                <input 
+                  type="tel"
+                  placeholder="مثال: 0501234567"
+                  value={teacherPhoneInput}
+                  onChange={(e) => setTeacherPhoneInput(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" className="t-login-btn register-btn" disabled={isSubmitting}>
+                {isSubmitting ? <><i className="fas fa-spinner fa-spin"></i> جاري الإرسال...</> : <><i className="fas fa-paper-plane"></i> إرسال الطلب لمدير المدرسة 📩</>}
+              </button>
+            </form>
+          )}
 
           <div style={{ marginTop: '20px', textAlign: 'center' }}>
             <button 
-              onClick={() => window.location.hash = '#home'}
+              onClick={() => window.location.hash = '#/stem'}
               style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 700 }}
             >
-              ← العودة للصفحة الرئيسية للموقع
+              ← العودة لزاوية الـ STEM للطلاب
             </button>
           </div>
         </div>
@@ -197,8 +369,8 @@ const TeacherStemPortal = () => {
             </div>
 
             <div className="t-header-actions">
-              <button onClick={() => window.location.hash = '#home'} className="t-home-btn">
-                <i className="fas fa-home"></i> الصفحة الرئيسية
+              <button onClick={() => window.location.hash = '#/stem'} className="t-home-btn">
+                <i className="fas fa-atom"></i> زاوية STEM
               </button>
               <button 
                 onClick={() => {

@@ -443,6 +443,49 @@ const AdminDashboard = () => {
   const [stemFilterStage, setStemFilterStage] = useState('all');
   const [editingStemSolId, setEditingStemSolId] = useState(null);
 
+  // STEM Teacher Approval Requests States
+  const [stemTeacherRequests, setStemTeacherRequests] = useState([]);
+
+  const loadStemTeacherRequests = async () => {
+    let list = [];
+    try {
+      const snap = await getDocs(collection(db, 'stem_teacher_requests'));
+      if (!snap.empty) {
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+      }
+    } catch (e) {
+      console.warn("Offline stem_teacher_requests fallback:", e);
+    }
+    const localReqs = JSON.parse(localStorage.getItem('stem_local_teacher_requests') || '[]');
+    const combined = [...list, ...localReqs];
+    setStemTeacherRequests(combined);
+  };
+
+  const handleApproveStemTeacher = async (reqId, teacherName) => {
+    const updated = stemTeacherRequests.map(r => r.id === reqId ? { ...r, status: 'approved' } : r);
+    setStemTeacherRequests(updated);
+    localStorage.setItem('stem_local_teacher_requests', JSON.stringify(updated));
+
+    try {
+      await updateDoc(doc(db, 'stem_teacher_requests', reqId), { status: 'approved' });
+    } catch (e) {
+      console.warn("Firestore approve stem teacher fallback:", e);
+    }
+
+    alert(`🎉 تم تأشير والموافقة على تفعيل حساب المعلم/ة (${teacherName}) بنجاح! يستطيع المعلم الآن الدخول فورياً لمتابعة وتوجيه الطلاب.`);
+  };
+
+  const handleRejectStemTeacher = async (reqId) => {
+    if (!window.confirm('هل أنت متأكد من رفض وتأشير إلغاء هذا الطلب؟')) return;
+    const updated = stemTeacherRequests.filter(r => r.id !== reqId);
+    setStemTeacherRequests(updated);
+    localStorage.setItem('stem_local_teacher_requests', JSON.stringify(updated));
+
+    try {
+      await deleteDoc(doc(db, 'stem_teacher_requests', reqId));
+    } catch (e) {}
+  };
+
   const loadAdminStemSolutions = async () => {
     let loaded = [];
     try {
@@ -2827,7 +2870,11 @@ const AdminDashboard = () => {
             </button>
 
             <button 
-              onClick={() => setActiveTab('teachers')} 
+              onClick={() => {
+                loadTeachersList();
+                loadStemTeacherRequests();
+                setActiveTab('teachers');
+              }} 
               className={`filter-chip ${activeTab === 'teachers' ? 'active' : ''}`}
               style={{
                 width: '100%',
@@ -5159,6 +5206,53 @@ const AdminDashboard = () => {
                         الموافقة على طلبات المعلمين الجدد وتفعيل تراخيصهم لرفع الامتحانات وأوراق العمل واكتساب النجوم والكؤوس.
                       </p>
                     </div>
+                  </div>
+
+                  {/* STEM TEACHER APPROVAL REQUESTS FOR PRINCIPAL */}
+                  <div style={{ background: '#f3e8ff', border: '2px solid #d8b4fe', borderRadius: '18px', padding: '1.5rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#6b21a8', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        📩 طلبات اعتماد المعلمين لـ STEM المحتاجة لموافقة وتأشيرك ({stemTeacherRequests.filter(r => r.status === 'pending').length})
+                      </h4>
+                      <button onClick={loadStemTeacherRequests} style={{ background: 'white', color: '#6b21a8', border: '1px solid #d8b4fe', padding: '0.4rem 0.8rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}>
+                        <i className="fas fa-sync-alt"></i> تحديث الطلبات
+                      </button>
+                    </div>
+
+                    {stemTeacherRequests.filter(r => r.status === 'pending').length === 0 ? (
+                      <p style={{ margin: 0, color: '#7e22ce', fontWeight: 700 }}>لا توجد طلبات معلقة من المعلمين حالياً. عندما يرسل معلم طلب اعتماد من البوابة المستقلة سيظهر هنا مباشرة لموافقتك وتأشيرك.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+                        {stemTeacherRequests.filter(r => r.status === 'pending').map(req => (
+                          <div key={req.id} style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '2px solid #c084fc', boxShadow: '0 4px 12px rgba(114, 9, 183, 0.08)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>👨‍🏫 {req.teacherName}</h4>
+                              <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>قيد انتظار تفعيلك ⏳</span>
+                            </div>
+                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.88rem', color: '#475569', fontWeight: 700 }}>
+                              📚 التخصص: <strong>{req.subject}</strong> | 📱 الهاتف: {req.phone || 'غير مدخل'}
+                            </p>
+                            <p style={{ margin: '0 0 1rem 0', fontSize: '0.88rem', color: '#7e22ce', fontWeight: 800 }}>
+                              🔐 الرمز المفوض المختار: <span style={{ background: '#f3e8ff', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>{req.teacherId}</span>
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handleApproveStemTeacher(req.id, req.teacherName)}
+                                style={{ flex: 1, background: '#7209b7', color: 'white', border: 'none', padding: '0.65rem', borderRadius: '8px', fontWeight: 900, cursor: 'pointer' }}
+                              >
+                                ✅ تأشير وموافقة التفعيل
+                              </button>
+                              <button
+                                onClick={() => handleRejectStemTeacher(req.id)}
+                                style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.65rem 0.8rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                              >
+                                ❌ رفض
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* PENDING APPROVALS SECTION */}

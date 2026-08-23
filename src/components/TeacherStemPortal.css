@@ -31,6 +31,48 @@
   margin: 0 auto 15px;
 }
 
+.t-mode-switcher {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.t-mode-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 8px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.t-mode-btn.active {
+  background: #7209b7;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(114, 9, 183, 0.25);
+}
+
+.teacher-auth-notice {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  white-space: pre-line;
+  line-height: 1.5;
+  text-align: right;
+}
+
 .teacher-login-card h2 {
   font-size: 1.5rem;
   font-weight: 900;
