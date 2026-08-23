@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { saveStudentSession } from '../utils/studentAuth';
+import { sanitizeText } from '../utils/security';
 import './StudentAuthModal.css';
 
 const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
@@ -17,8 +18,8 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
     e.preventDefault();
     setErrorMsg('');
 
-    const cleanName = fullName.trim();
-    const cleanId = idNumber.trim();
+    const cleanName = sanitizeText(fullName.trim());
+    const cleanId = sanitizeText(idNumber.trim());
 
     // Validate name (at least 2 words)
     const nameParts = cleanName.split(/\s+/);

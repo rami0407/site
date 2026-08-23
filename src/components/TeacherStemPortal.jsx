@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
+import { sanitizeText } from '../utils/security';
 import './TeacherStemPortal.css';
 
 const STAGE_OPTIONS = [
