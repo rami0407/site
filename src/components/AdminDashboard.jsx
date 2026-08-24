@@ -606,11 +606,42 @@ const AdminDashboard = () => {
     heroBadge: "✨ سفير الإبداع الفضائي الطلابي",
     heroTitle: "شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء",
     heroSubtitle: "هنا صوتك وأفكارك يسبحان في فضاء الإبداع! انشر أفكارك المبتكرة، اختراعاتك العلمية، لوحاتك الفنية، أو قصصك الملهمة لأصدقائك حول العالم.",
-    gifUrl: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif",
+    gifUrl: "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif",
     badgeText: "فضاء الأفكار والابتكار 2026 🪐✨",
     themeColor: "voca-yellow"
   });
   const [adminWorldIdeas, setAdminWorldIdeas] = useState([]);
+  const [isUploadingWorldGif, setIsUploadingWorldGif] = useState(false);
+
+  const handleWorldIdeasGifFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 15 ميغابايت.');
+      return;
+    }
+
+    setIsUploadingWorldGif(true);
+
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target.result;
+      setWorldIdeasConfig(prev => ({
+        ...prev,
+        gifUrl: dataUrl
+      }));
+      setIsUploadingWorldGif(false);
+      alert('🎉 تم رفع ملف الـ GIF / الصورة من حاسوبك بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها في الموقع.');
+    };
+
+    reader.onerror = () => {
+      alert('حدث خطأ أثناء قراءة ملف الـ GIF من جهاز الحاسوب.');
+      setIsUploadingWorldGif(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
 
   const loadWorldIdeasAdminData = async () => {
     try {
@@ -3044,6 +3075,24 @@ const AdminDashboard = () => {
                           value={worldIdeasConfig.gifUrl || ''}
                           onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: e.target.value })}
                         />
+
+                        {/* Direct File Upload from Computer */}
+                        <div style={{ background: '#f0f9ff', padding: '1rem', borderRadius: '14px', border: '2px dashed #7dd3fc', margin: '0.85rem 0' }}>
+                          <label className="form-label" style={{ color: '#0369a1', fontWeight: 900, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <i className="fas fa-desktop"></i> 💻 أو اختر وارفـع ملف GIF / صورة مباشرة من جهاز حاسوبك:
+                          </label>
+                          <input 
+                            type="file" 
+                            accept="image/gif,image/png,image/jpeg,image/webp"
+                            onChange={handleWorldIdeasGifFileUpload}
+                            style={{ width: '100%', fontSize: '0.9rem' }}
+                          />
+                          {isUploadingWorldGif && (
+                            <span style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, marginTop: '0.5rem', display: 'block' }}>
+                              ⌛ جاري معالجة الملف من حاسوبك...
+                            </span>
+                          )}
+                        </div>
 
                         {/* Quick Presets for Mascot GIF */}
                         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
