@@ -32,6 +32,13 @@ const WorldIdeasPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pageConfig, setPageConfig] = useState(DEFAULT_CONFIG);
 
+  // Comments State
+  const [commentsMap, setCommentsMap] = useState({});
+  const [activeCommentDrawer, setActiveCommentDrawer] = useState(null);
+  const [commentInputText, setCommentInputText] = useState({});
+  const [guestAuthorName, setGuestAuthorName] = useState({});
+  const [isSubmittingComment, setIsSubmittingComment] = useState({});
+
   // Idea Share Form
   const [ideaTitle, setIdeaTitle] = useState('');
   const [ideaCategory, setIdeaCategory] = useState('stem');
@@ -44,7 +51,80 @@ const WorldIdeasPage = () => {
   useEffect(() => {
     loadConfig();
     loadIdeas();
+    loadAllComments();
   }, []);
+
+  const loadAllComments = async () => {
+    try {
+      const q = query(collection(db, 'world_ideas_comments'), orderBy('createdAt', 'asc'));
+      const snap = await getDocs(q);
+      const grouped = {};
+      if (!snap.empty) {
+        snap.forEach(d => {
+          const c = { id: d.id, ...d.data() };
+          if (!grouped[c.ideaId]) grouped[c.ideaId] = [];
+          grouped[c.ideaId].push(c);
+        });
+      }
+      const localC = JSON.parse(localStorage.getItem('db_world_ideas_comments') || '[]');
+      localC.forEach(c => {
+        if (!grouped[c.ideaId]) grouped[c.ideaId] = [];
+        if (!grouped[c.ideaId].some(existing => existing.id === c.id)) {
+          grouped[c.ideaId].push(c);
+        }
+      });
+      setCommentsMap(grouped);
+    } catch (e) {
+      const localC = JSON.parse(localStorage.getItem('db_world_ideas_comments') || '[]');
+      const grouped = {};
+      localC.forEach(c => {
+        if (!grouped[c.ideaId]) grouped[c.ideaId] = [];
+        grouped[c.ideaId].push(c);
+      });
+      setCommentsMap(grouped);
+    }
+  };
+
+  const handleAddComment = async (ideaId) => {
+    const text = (commentInputText[ideaId] || '').trim();
+    if (!text) {
+      alert('يرجى كتابة نص التعليق أو الملاحظة البناءة.');
+      return;
+    }
+
+    const authorName = session ? session.fullName : ((guestAuthorName[ideaId] || '').trim() || 'مشارك متميز 🌟');
+    const studentClass = session ? session.studentClass : 'زائر إيجابي ✨';
+
+    setIsSubmittingComment(prev => ({ ...prev, [ideaId]: true }));
+
+    const newComment = {
+      id: `comment_${Date.now()}`,
+      ideaId,
+      authorName: sanitizeText(authorName),
+      studentClass: sanitizeText(studentClass),
+      content: sanitizeText(text),
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, 'world_ideas_comments'), newComment);
+    } catch (e) {
+      console.warn("Firestore comment save fallback:", e);
+    }
+
+    // Update Local State & LocalStorage
+    const currentList = commentsMap[ideaId] || [];
+    const updatedList = [...currentList, newComment];
+    const newMap = { ...commentsMap, [ideaId]: updatedList };
+    setCommentsMap(newMap);
+
+    const allLocal = JSON.parse(localStorage.getItem('db_world_ideas_comments') || '[]');
+    allLocal.push(newComment);
+    localStorage.setItem('db_world_ideas_comments', JSON.stringify(allLocal));
+
+    setCommentInputText(prev => ({ ...prev, [ideaId]: '' }));
+    setIsSubmittingComment(prev => ({ ...prev, [ideaId]: false }));
+  };
 
   const loadConfig = async () => {
     try {
@@ -302,13 +382,90 @@ const WorldIdeasPage = () => {
                       <p className="idea-text">{idea.content}</p>
 
                       <div className="idea-card-footer">
-                        <button onClick={() => handleLike(idea.id)} className="btn-like">
-                          ❤️ <span>{idea.likes || 1}</span> إعجاب وتحفيز
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button onClick={() => handleLike(idea.id)} className="btn-like">
+                            ❤️ <span>{idea.likes || 1}</span> إعجاب وتحفيز
+                          </button>
+                          <button 
+                            onClick={() => setActiveCommentDrawer(activeCommentDrawer === idea.id ? null : idea.id)} 
+                            className="btn-comment-toggle"
+                          >
+                            💬 <span>{(commentsMap[idea.id] || []).length}</span> تعليقات وتغذية راجعة
+                          </button>
+                        </div>
                         <span className="idea-date">
                           📅 {new Date(idea.createdAt).toLocaleDateString('ar-EG')}
                         </span>
                       </div>
+
+                      {/* Expandable Comments Drawer Section */}
+                      {activeCommentDrawer === idea.id && (
+                        <div className="comments-drawer-box">
+                          <h4 className="comments-drawer-title">
+                            💬 المناقشات والتعقيبات البناءة ({(commentsMap[idea.id] || []).length})
+                          </h4>
+
+                          {/* List of existing comments */}
+                          <div className="comments-list">
+                            {(commentsMap[idea.id] || []).length === 0 ? (
+                              <p className="no-comments-msg">لا توجد تعليقات بعد. كن أول من يبدي رأيه ويشجع صاحب الفكرة! 🌟</p>
+                            ) : (
+                              (commentsMap[idea.id] || []).map(c => (
+                                <div key={c.id} className="comment-item">
+                                  <div className="comment-header">
+                                    <span className="comment-author">👤 {c.authorName}</span>
+                                    <span className="comment-badge">{c.studentClass}</span>
+                                    <span className="comment-time">
+                                      {new Date(c.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  <p className="comment-content">{c.content}</p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          {/* Add New Comment Form */}
+                          <form 
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleAddComment(idea.id);
+                            }} 
+                            className="add-comment-form"
+                          >
+                            {!session && (
+                              <input 
+                                type="text"
+                                className="form-input comment-guest-input"
+                                placeholder="اسمك المعروض (مثال: معلم العلوم / طالب متميز)..."
+                                value={guestAuthorName[idea.id] || ''}
+                                onChange={(e) => setGuestAuthorName({ ...guestAuthorName, [idea.id]: e.target.value })}
+                              />
+                            )}
+                            <div className="comment-input-row">
+                              <textarea
+                                required
+                                rows="2"
+                                className="form-textarea comment-textarea"
+                                placeholder="اكتب تعليقك المشجع، ملاحظتك، أو استفسارك عن الفكرة..."
+                                value={commentInputText[idea.id] || ''}
+                                onChange={(e) => setCommentInputText({ ...commentInputText, [idea.id]: e.target.value })}
+                              ></textarea>
+                              <button 
+                                type="submit" 
+                                disabled={isSubmittingComment[idea.id]}
+                                className="btn-send-comment"
+                              >
+                                {isSubmittingComment[idea.id] ? (
+                                  <i className="fas fa-spinner fa-spin"></i>
+                                ) : (
+                                  <><i className="fas fa-paper-plane"></i> تعقيب</>
+                                )}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

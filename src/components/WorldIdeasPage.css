@@ -500,3 +500,147 @@
   color: #64748b;
   font-weight: 800;
 }
+
+/* Comment Drawer & Toggle Button */
+.btn-comment-toggle {
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  padding: 0.5rem 1.25rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-comment-toggle:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.comments-drawer-box {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+}
+
+.comments-drawer-title {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-left: 0.25rem;
+}
+
+.no-comments-msg {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.75rem 0;
+}
+
+.comment-item {
+  background: #ffffff;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.comment-author {
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.comment-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.15rem 0.6rem;
+  border-radius: 50px;
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-right: auto;
+}
+
+.comment-content {
+  font-size: 0.95rem;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.add-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.comment-guest-input {
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  border-radius: 10px;
+}
+
+.comment-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+
+.comment-textarea {
+  min-height: 50px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  flex: 1;
+}
+
+.btn-send-comment {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background 0.2s ease;
+}
+
+.btn-send-comment:hover {
+  background: #0369a1;
+}
