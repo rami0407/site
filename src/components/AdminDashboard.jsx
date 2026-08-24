@@ -601,6 +601,64 @@ const AdminDashboard = () => {
     return ["x" + "ai" + "-", "3GYKubvzcaPbelVsI5TFwWcITOQ1BQuo5OibJOWlC7n17wM7Geym7u1cIvMm8BW1Gs7xUZ17gWP9aqdX"].join('');
   })());
 
+  // ==================== WORLD IDEAS ADMIN ACTIONS ====================
+  const [worldIdeasConfig, setWorldIdeasConfig] = useState({
+    heroBadge: "✨ سفير الإبداع الفضائي الطلابي",
+    heroTitle: "شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء",
+    heroSubtitle: "هنا صوتك وأفكارك يسبحان في فضاء الإبداع! انشر أفكارك المبتكرة، اختراعاتك العلمية، لوحاتك الفنية، أو قصصك الملهمة لأصدقائك حول العالم.",
+    gifUrl: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif",
+    badgeText: "فضاء الأفكار والابتكار 2026 🪐✨",
+    themeColor: "voca-yellow"
+  });
+  const [adminWorldIdeas, setAdminWorldIdeas] = useState([]);
+
+  const loadWorldIdeasAdminData = async () => {
+    try {
+      const snapConfig = await getDoc(doc(db, 'world_ideas_config', 'info'));
+      if (snapConfig.exists()) {
+        setWorldIdeasConfig(prev => ({ ...prev, ...snapConfig.data() }));
+      } else {
+        const localC = localStorage.getItem('db_world_ideas_config');
+        if (localC) setWorldIdeasConfig(JSON.parse(localC));
+      }
+
+      const snapIdeas = await getDocs(collection(db, 'world_ideas'));
+      const list = [];
+      if (!snapIdeas.empty) {
+        snapIdeas.forEach(d => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setAdminWorldIdeas(list);
+      } else {
+        const localI = localStorage.getItem('db_world_ideas');
+        if (localI) setAdminWorldIdeas(JSON.parse(localI));
+      }
+    } catch (e) {
+      console.warn("Error loading world ideas admin data:", e);
+    }
+  };
+
+  const handleSaveWorldIdeasConfig = async (e) => {
+    e.preventDefault();
+    try {
+      await setDoc(doc(db, 'world_ideas_config', 'info'), worldIdeasConfig, { merge: true });
+      localStorage.setItem('db_world_ideas_config', JSON.stringify(worldIdeasConfig));
+      alert('🎉 تم حفظ وتحديث واجهة وشكل زاوية "شارك أفكارك للعالم" بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء حفظ الإعدادات: ' + err.message);
+    }
+  };
+
+  const handleDeleteWorldIdea = async (ideaId, title) => {
+    if (!window.confirm(`هل أنت متأكد من حذف فكرة الطالب (${title}) نهائياً؟`)) return;
+    try {
+      await deleteDoc(doc(db, 'world_ideas', ideaId));
+    } catch (e) {}
+    const updated = adminWorldIdeas.filter(i => i.id !== ideaId);
+    setAdminWorldIdeas(updated);
+    localStorage.setItem('db_world_ideas', JSON.stringify(updated));
+    alert('تم حذف الفكرة بنجاح.');
+  };
+
   const handleSaveGeminiKey = async (newGeminiKey, newXaiKey) => {
     try {
       const gKey = newGeminiKey !== undefined ? newGeminiKey.trim() : geminiKey;
@@ -2620,6 +2678,30 @@ const AdminDashboard = () => {
               🔗 سطر العناوين ({navigation.length})
             </button>
 
+            {/* TOP ITEM 3: WORLD IDEAS CONTROL TAB */}
+            <button 
+              onClick={() => {
+                loadWorldIdeasAdminData();
+                setActiveTab('world-ideas-admin');
+              }} 
+              className={`filter-chip ${activeTab === 'world-ideas-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'world-ideas-admin' ? '#d97706' : '#fffbeb',
+                color: activeTab === 'world-ideas-admin' ? 'white' : '#b45309',
+                fontWeight: 800,
+                border: '2px solid #fde68a',
+                boxShadow: '0 2px 6px rgba(217, 119, 6, 0.2)'
+              }}
+            >
+              <i className="fas fa-globe" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🚀 "شارك أفكارك للعالم" ({adminWorldIdeas.length})
+            </button>
+
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
 
             <button 
@@ -2882,6 +2964,175 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <>
+              {/* TAB: WORLD IDEAS CONTROL & CUSTOMIZATION */}
+              {activeTab === 'world-ideas-admin' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>
+                        🚀 إدارة زاوية "شارك أفكارك للعالم" وااختراعات الطلاب
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                        التحكم التام في تصميم الواجهة، العناوين، صور وأنيميشن GIF، وإدارة أفكار الطلاب المنشورة!
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 1. INTERFACE & HERO DESIGN CUSTOMIZER FORM */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', marginBottom: '2.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#d97706', marginBottom: '1.5rem', borderBottom: '2px solid #fde68a', paddingBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      🎨 تخصيص تصميم وشكل الواجهة والهيدر (Hero Banner Editor)
+                    </h3>
+
+                    <form onSubmit={handleSaveWorldIdeasConfig}>
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label className="form-label">نص الشارة العلوية (Hero Badge) *</label>
+                          <input 
+                            type="text" 
+                            className="form-input"
+                            required
+                            placeholder="مثال: ✨ سفير الإبداع الفضائي الطلابي"
+                            value={worldIdeasConfig.heroBadge || ''}
+                            onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, heroBadge: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">نص الوسام الشرفي البارز (Hero Award Badge) *</label>
+                          <input 
+                            type="text" 
+                            className="form-input"
+                            required
+                            placeholder="مثال: فضاء الأفكار والابتكار 2026 🪐✨"
+                            value={worldIdeasConfig.badgeText || ''}
+                            onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, badgeText: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">العنوان الرئيسي للهيدر (Hero Title) *</label>
+                        <input 
+                          type="text" 
+                          className="form-input"
+                          required
+                          placeholder="مثال: شارِك أفكارك وااختراعاتك مع العالم! 🚀👨‍ضاء"
+                          value={worldIdeasConfig.heroTitle || ''}
+                          onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, heroTitle: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">الوصف الترحيبي (Hero Subtitle) *</label>
+                        <textarea 
+                          className="form-input"
+                          required
+                          rows="3"
+                          placeholder="اكتب الوصف الترحيبي المشجع للطلاب..."
+                          value={worldIdeasConfig.heroSubtitle || ''}
+                          onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, heroSubtitle: e.target.value })}
+                        ></textarea>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">رابط صورة أو أنيميشن GIF الرئيسي (Hero Mascot GIF URL) *</label>
+                        <input 
+                          type="text" 
+                          className="form-input"
+                          required
+                          placeholder="الصق رابط صورة أو GIF هنا..."
+                          value={worldIdeasConfig.gifUrl || ''}
+                          onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: e.target.value })}
+                        />
+
+                        {/* Quick Presets for Mascot GIF */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>نماذج جاهزة سريعة:</span>
+                          <button 
+                            type="button"
+                            onClick={() => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif" })}
+                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            👨‍ضاء رائد الفضاء GIF
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif" })}
+                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            🪐 كوكب الأفكار GIF
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: "https://media.giphy.com/media/l41K3o5Tz2713iQBW/giphy.gif" })}
+                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            🦜 طائر الإبداع الأصفر (Voca-Tooki) GIF
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">طراز ولون خلفية الهيدر (Header Theme) *</label>
+                        <select 
+                          className="form-input"
+                          value={worldIdeasConfig.themeColor || 'voca-yellow'}
+                          onChange={(e) => setWorldIdeasConfig({ ...worldIdeasConfig, themeColor: e.target.value })}
+                        >
+                          <option value="voca-yellow">☀️ أصفر إشعاعي (طراز Voca-Tooki الأصفر)</option>
+                          <option value="space-purple">🌌 بنفسجي وأرجواني فضائي (Space Galaxy Theme)</option>
+                          <option value="emerald-green">🌿 أخضر زمردي إبداعي (Emerald Green Theme)</option>
+                          <option value="ocean-blue">🌊 أزرق محيطي مشرق (Ocean Blue Theme)</option>
+                        </select>
+                      </div>
+
+                      <button type="submit" className="btn form-submit-btn" style={{ background: '#d97706', color: 'white', fontWeight: 900, padding: '0.9rem 1.8rem', borderRadius: '14px', border: 'none', cursor: 'pointer' }}>
+                        💾 حفظ وتطبيق تصميم الواجهة فوراً
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* 2. PUBLISHED STUDENT IDEAS MANAGER */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      💡 أفكار واختراعات الطلاب المنشورة ({adminWorldIdeas.length})
+                    </h3>
+
+                    {adminWorldIdeas.length === 0 ? (
+                      <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>لا توجد أفكار منشورة حالياً.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {adminWorldIdeas.map(idea => (
+                          <div key={idea.id} style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              {idea.mediaUrl && (
+                                <img src={idea.mediaUrl} alt={idea.title} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', marginBottom: '0.85rem' }} />
+                              )}
+                              <div style={{ fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 800, marginBottom: '0.3rem' }}>
+                                👤 {idea.authorName} ({idea.studentClass})
+                              </div>
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.15rem', color: '#0f172a' }}>{idea.title}</h4>
+                              <p style={{ fontSize: '0.95rem', color: '#334155', lineHeight: '1.6', margin: '0 0 1rem 0' }}>{idea.content}</p>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444' }}>❤️ {idea.likes || 1} إعجاب</span>
+                              <button 
+                                onClick={() => handleDeleteWorldIdea(idea.id, idea.title)}
+                                style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.45rem 0.85rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}
+                              >
+                                🗑️ حذف الفكرة
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
+
               {/* TAB 1: CALENDAR MANAGER */}
               {activeTab === 'calendar' && (
                 <div>

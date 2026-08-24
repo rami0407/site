@@ -16,7 +16,27 @@
   padding: 4rem 2rem 6rem;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(255, 145, 0, 0.25);
+  transition: all 0.5s ease;
 }
+
+/* Color Themes */
+.world-ideas-container.theme-space-purple .ideas-hero-banner {
+  background: linear-gradient(135deg, #5b21b6 0%, #1e1b4b 100%);
+}
+.world-ideas-container.theme-space-purple .hero-title { color: #ffffff; }
+.world-ideas-container.theme-space-purple .hero-subtitle { color: #cbd5e1; }
+
+.world-ideas-container.theme-emerald-green .ideas-hero-banner {
+  background: linear-gradient(135deg, #059669 0%, #064e3b 100%);
+}
+.world-ideas-container.theme-emerald-green .hero-title { color: #ffffff; }
+.world-ideas-container.theme-emerald-green .hero-subtitle { color: #a7f3d0; }
+
+.world-ideas-container.theme-ocean-blue .ideas-hero-banner {
+  background: linear-gradient(135deg, #0284c7 0%, #075985 100%);
+}
+.world-ideas-container.theme-ocean-blue .hero-title { color: #ffffff; }
+.world-ideas-container.theme-ocean-blue .hero-subtitle { color: #bae6fd; }
 
 .ideas-hero-content {
   max-width: 1200px;

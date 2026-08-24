@@ -15,12 +15,22 @@ const CATEGORIES = [
   { id: 'environment', label: '🌱 حماية البيئة والتصفيات', icon: 'fa-seedling' }
 ];
 
+const DEFAULT_CONFIG = {
+  heroBadge: "✨ سفير الإبداع الفضائي الطلابي",
+  heroTitle: "شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء",
+  heroSubtitle: "هنا صوتك وأفكارك يسبحان في فضاء الإبداع! انشر أفكارك المبتكرة، اختراعاتك العلمية، لوحاتك الفنية، أو قصصك الملهمة لأصدقائك حول العالم.",
+  gifUrl: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif",
+  badgeText: "فضاء الأفكار والابتكار 2026 🪐✨",
+  themeColor: "voca-yellow"
+};
+
 const WorldIdeasPage = () => {
   const [session, setSession] = useState(getStudentSession());
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [ideas, setIdeas] = useState([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [pageConfig, setPageConfig] = useState(DEFAULT_CONFIG);
 
   // Idea Share Form
   const [ideaTitle, setIdeaTitle] = useState('');
@@ -30,10 +40,26 @@ const WorldIdeasPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState('');
 
-  // Load Ideas from Firestore
+  // Load Ideas & Config from Firestore
   useEffect(() => {
+    loadConfig();
     loadIdeas();
   }, []);
+
+  const loadConfig = async () => {
+    try {
+      const snap = await getDoc(doc(db, 'world_ideas_config', 'info'));
+      if (snap.exists()) {
+        setPageConfig(prev => ({ ...prev, ...snap.data() }));
+      } else {
+        const localC = localStorage.getItem('db_world_ideas_config');
+        if (localC) setPageConfig(JSON.parse(localC));
+      }
+    } catch(e) {
+      const localC = localStorage.getItem('db_world_ideas_config');
+      if (localC) setPageConfig(JSON.parse(localC));
+    }
+  };
 
   const loadIdeas = async () => {
     setIsLoading(true);
@@ -165,16 +191,16 @@ const WorldIdeasPage = () => {
     : ideas.filter(i => i.category === activeCategory);
 
   return (
-    <div className="world-ideas-container">
+    <div className={`world-ideas-container theme-${pageConfig.themeColor || 'voca-yellow'}`}>
       
-      {/* Dynamic Animated Header Banner (Voca Tooki Style with Astronaut in Space Theme) */}
+      {/* Dynamic Animated Header Banner (Voca Tooki Style with Dynamic Config) */}
       <section className="ideas-hero-banner">
         <div className="ideas-hero-content">
           <div className="ideas-hero-text">
-            <span className="hero-badge">✨ سفير الإبداع الفضائي الطلابي</span>
-            <h1 className="hero-title">شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء</h1>
+            <span className="hero-badge">{pageConfig.heroBadge || "✨ سفير الإبداع الفضائي الطلابي"}</span>
+            <h1 className="hero-title">{pageConfig.heroTitle || "شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء"}</h1>
             <p className="hero-subtitle">
-              هنا صوتك وأفكارك يسبحان في فضاء الإبداع! انشر أفكارك المبتكرة، اختراعاتك العلمية، لوحاتك الفنية، أو قصصك الملهمة لأصدقائك حول العالم.
+              {pageConfig.heroSubtitle || "هنا صوتك وأفكارك يسبحان في فضاء الإبداع! انشر أفكارك المبتكرة، اختراعاتك العلمية، لوحاتك الفنية، أو قصصك الملهمة لأصدقائك حول العالم."}
             </p>
             <div className="hero-actions">
               <a href="#submit-idea-form" className="btn-hero-play">
@@ -190,10 +216,10 @@ const WorldIdeasPage = () => {
 
           <div className="ideas-hero-visual">
             <div className="hero-gif-card floating-space-astronaut">
-              {/* Dynamic Animated Floating Astronaut GIF Visual */}
+              {/* Dynamic Animated Floating Mascot GIF / Image Visual */}
               <img 
-                src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif" 
-                alt="رائد فضاء يسبح في الفضاء مع أفكار مضيئة GIF" 
+                src={pageConfig.gifUrl || "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif"} 
+                alt="انيميشن فضاء الأفكار تفاعلي GIF" 
                 className="hero-gif-img"
                 onError={(e) => {
                   e.target.onerror = null;
@@ -202,7 +228,7 @@ const WorldIdeasPage = () => {
               />
               <div className="hero-award-badge">
                 <i className="fas fa-meteor"></i>
-                <span>فضاء الأفكار والابتكار 2026 🪐✨</span>
+                <span>{pageConfig.badgeText || "فضاء الأفكار والابتكار 2026 🪐✨"}</span>
               </div>
             </div>
           </div>
