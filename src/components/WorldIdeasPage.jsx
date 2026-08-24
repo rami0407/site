@@ -316,6 +316,8 @@ const WorldIdeasPage = () => {
     } catch (e) {}
   };
 
+  const [showFloatingAstronaut, setShowFloatingAstronaut] = useState(true);
+
   const filteredIdeas = activeCategory === 'all' 
     ? ideas 
     : ideas.filter(i => i.category === activeCategory);
@@ -323,6 +325,57 @@ const WorldIdeasPage = () => {
   return (
     <div className={`world-ideas-container theme-${pageConfig.themeColor || 'voca-yellow'}`}>
       
+      {/* Full-Screen Swimming Space Astronaut Animation */}
+      {showFloatingAstronaut && (
+        <div className="fullscreen-astronaut-container">
+          <div 
+            className="floating-space-astronaut"
+            onClick={() => alert('🚀 تحية فضائية من رائد الفضاء! أهلاً بك في فضاء الإبداع والابتكار ✨')}
+            title="انقر لإرسال سلام وتحية فضائية! 🚀"
+          >
+            <img 
+              src={pageConfig.gifUrl || "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif"} 
+              alt="رائد فضاء يسبح بحرية عبر الشاشة" 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif";
+              }}
+            />
+          </div>
+          {/* Ambient Floating Stars */}
+          <div className="floating-space-star" style={{ top: '18%', left: '12%' }}></div>
+          <div className="floating-space-star" style={{ top: '65%', left: '35%' }}></div>
+          <div className="floating-space-star" style={{ top: '30%', left: '80%' }}></div>
+          <div className="floating-space-star" style={{ top: '82%', left: '70%' }}></div>
+        </div>
+      )}
+
+      {/* Floating Control Badge to Toggle Fullscreen Swimming Astronaut */}
+      <button
+        onClick={() => setShowFloatingAstronaut(!showFloatingAstronaut)}
+        style={{
+          position: 'fixed',
+          bottom: '25px',
+          left: '25px',
+          zIndex: 1000,
+          background: showFloatingAstronaut ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : '#334155',
+          color: 'white',
+          border: 'none',
+          padding: '0.65rem 1.15rem',
+          borderRadius: '50px',
+          fontWeight: 800,
+          fontSize: '0.85rem',
+          cursor: 'pointer',
+          boxShadow: '0 8px 24px rgba(124, 58, 237, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        <span>👨‍ضاء</span> {showFloatingAstronaut ? 'إخفاء رائد الفضاء السابح' : 'إظهار رائد الفضاء السابح'}
+      </button>
+
       {/* Dynamic Animated Header Banner (Voca Tooki Style with Dynamic Config) */}
       <section className="ideas-hero-banner">
         <div className="ideas-hero-content">
