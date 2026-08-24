@@ -3050,17 +3050,17 @@ const AdminDashboard = () => {
                           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>نماذج جاهزة سريعة:</span>
                           <button 
                             type="button"
-                            onClick={() => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif" })}
-                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-                          >
-                            👨‍ضاء رائد الفضاء GIF
-                          </button>
-                          <button 
-                            type="button"
                             onClick={() => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif" })}
                             style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
                           >
-                            🪐 كوكب الأفكار GIF
+                            👨‍ضاء رائد الفضاء GIF 1
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setWorldIdeasConfig({ ...worldIdeasConfig, gifUrl: "https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif" })}
+                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            🚀 صاروخ وفضاء GIF 2
                           </button>
                           <button 
                             type="button"

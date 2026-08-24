@@ -110,8 +110,8 @@ const AiAssistant = () => {
         if (keyDoc.exists() && keyDoc.data().apiKey && keyDoc.data().apiKey.trim()) {
           setApiKey(keyDoc.data().apiKey.trim());
         }
-        if (keyDoc.exists() && keyDoc.data().groqKey && keyDoc.data().groqKey.trim()) {
-          setGroqKey(keyDoc.data().groqKey.trim());
+        if (keyDoc.exists() && keyDoc.data().xaiKey && keyDoc.data().xaiKey.trim()) {
+          setXaiKey(keyDoc.data().xaiKey.trim());
         }
       } catch (e) {
         console.warn("Failed loading API keys for AI context:", e);

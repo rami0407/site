@@ -19,7 +19,7 @@ const DEFAULT_CONFIG = {
   heroBadge: "✨ سفير الإبداع الفضائي الطلابي",
   heroTitle: "شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء",
   heroSubtitle: "هنا صوتك وأفكارك يسبحان في فضاء الإبداع! انشر أفكارك المبتكرة، اختراعاتك العلمية، لوحاتك الفنية، أو قصصك الملهمة لأصدقائك حول العالم.",
-  gifUrl: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlhNzA4c2pwaGZtbGFmdXZmZDRqZ2N1NnA0ZXpsODg4eHRpaTZiMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPx8201C46cbr2/giphy.gif",
+  gifUrl: "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif",
   badgeText: "فضاء الأفكار والابتكار 2026 🪐✨",
   themeColor: "voca-yellow"
 };
