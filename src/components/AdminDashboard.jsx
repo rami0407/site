@@ -3054,11 +3054,23 @@ const AdminDashboard = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
                       <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>
-                        🚀 إدارة زاوية "شارك أفكارك للعالم" وااختراعات الطلاب
+                        🚀 إدارة زاوية "شارك أفكارك للعالم" واختراعات الطلاب
                       </h2>
                       <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
                         التحكم التام في تصميم الواجهة، العناوين، صور وأنيميشن GIF، وإدارة أفكار الطلاب المنشورة!
                       </p>
+                    </div>
+                    <div>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          loadWorldIdeasAdminData();
+                          alert('🔄 تم إجراء حتلنة وتحديث فورية واستدعاء أحدث البيانات السحابية بنجاح!');
+                        }}
+                        style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.75rem 1.35rem', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', boxShadow: '0 6px 18px rgba(2, 132, 199, 0.3)' }}
+                      >
+                        <i className="fas fa-sync-alt"></i> 🔄 حتلنة وإعادة تنشيط البث المباشر
+                      </button>
                     </div>
                   </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, increment, getDoc, onSnapshot } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
 import { sanitizeText } from '../utils/security';
@@ -48,11 +48,51 @@ const WorldIdeasPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState('');
 
-  // Load Ideas & Config from Firestore
+  // Real-time Live Synchronization (الحتلنة التلقائية اللحظية من Firestore)
   useEffect(() => {
+    // 1. Real-time Config Listener
+    let unsubConfig = () => {};
+    try {
+      unsubConfig = onSnapshot(doc(db, 'world_ideas_config', 'info'), async (snap) => {
+        if (snap.exists()) {
+          const cfgData = snap.data();
+          if (cfgData.gifUrl && (cfgData.gifUrl.startsWith('chunked:') || cfgData.gifUrl.startsWith('local-file:'))) {
+            const fullDataUrl = await downloadChunkedFile(cfgData.gifUrl);
+            if (fullDataUrl) cfgData.gifUrl = fullDataUrl;
+          }
+          setPageConfig(prev => ({ ...prev, ...cfgData }));
+          localStorage.setItem('db_world_ideas_config', JSON.stringify(cfgData));
+        }
+      }, (err) => {
+        console.warn("Config snapshot warning:", err);
+      });
+    } catch(e) {}
+
+    // 2. Real-time Ideas Listener
+    let unsubIdeas = () => {};
+    try {
+      const q = query(collection(db, 'world_ideas'), orderBy('createdAt', 'desc'), limit(50));
+      unsubIdeas = onSnapshot(q, (snap) => {
+        const loadedIdeas = [];
+        snap.forEach(d => loadedIdeas.push({ id: d.id, ...d.data() }));
+        if (loadedIdeas.length > 0) {
+          setIdeas(loadedIdeas);
+          setIsLoading(false);
+        }
+      }, (err) => {
+        console.warn("Ideas snapshot warning:", err);
+      });
+    } catch(e) {}
+
+    // Fallback initial load
     loadConfig();
     loadIdeas();
     loadAllComments();
+
+    return () => {
+      unsubConfig();
+      unsubIdeas();
+    };
   }, []);
 
   const loadAllComments = async () => {
