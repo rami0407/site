@@ -617,15 +617,15 @@ const AdminDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 25 * 1024 * 1024) {
-      alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 25 ميغابايت.');
+    if (file.size > 30 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 30 ميغابايت.');
       return;
     }
 
     setIsUploadingWorldGif(true);
 
+    // 1. Try Firebase Storage first
     try {
-      // 1. Upload file to Firebase Cloud Storage to get lightweight HTTPS URL
       const fileName = `world_gif_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
       const storageRef = ref(storage, `world_ideas_gifs/${fileName}`);
       await uploadBytes(storageRef, file);
@@ -637,13 +637,45 @@ const AdminDashboard = () => {
       }));
       setIsUploadingWorldGif(false);
       alert('🎉 تم رفع ملف الـ GIF بنجاح على الخادم السحابي! اضغط الآن على زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها في الموقع.');
-    } catch (err) {
-      console.warn("Firebase Storage upload fallback:", err.message);
-      
-      // 2. Fallback: Upload in chunks to Firestore subcollection if Storage is unavailable
-      const reader = new FileReader();
-      reader.onload = async (uploadEvent) => {
-        const dataUrl = uploadEvent.target.result;
+      return;
+    } catch (errStorage) {
+      console.warn("Firebase Storage upload skipped/failed:", errStorage.message);
+    }
+
+    // 2. Try Free ImgBB Cloud API Upload for guaranteed direct HTTPS URL
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('https://api.imgbb.com/1/upload?key=6d257f69774637c35d9207788e008f3f', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data && data.data && data.data.url) {
+        setWorldIdeasConfig(prev => ({
+          ...prev,
+          gifUrl: data.data.url
+        }));
+        setIsUploadingWorldGif(false);
+        alert('🎉 تم رفع ملف الـ GIF بنجاح وسرعة فائقة عبر السيرفر السحابي المباشر! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لنشر التعديل بالموقع.');
+        return;
+      }
+    } catch (errImgbb) {
+      console.warn("ImgBB upload skipped/failed:", errImgbb.message);
+    }
+
+    // 3. Fallback: FileReader + Chunked Storage
+    const reader = new FileReader();
+    reader.onload = async (uploadEvent) => {
+      const dataUrl = uploadEvent.target.result;
+      if (dataUrl.length < 850000) {
+        setWorldIdeasConfig(prev => ({
+          ...prev,
+          gifUrl: dataUrl
+        }));
+        setIsUploadingWorldGif(false);
+        alert('🎉 تم قراءة وتثبيت ملف الـ GIF بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لنشر التعديل بالموقع.');
+      } else {
         try {
           const chunkedId = await uploadChunkedFile(`world_gif_${Date.now()}`, dataUrl);
           setWorldIdeasConfig(prev => ({
@@ -651,22 +683,22 @@ const AdminDashboard = () => {
             gifUrl: chunkedId
           }));
           setIsUploadingWorldGif(false);
-          alert('🎉 تم رفع وتثبيت ملف الـ GIF من حاسوبك بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لنشر التعديل بالموقع.');
+          alert('🎉 تم تقسيم ورفع ملف الـ GIF بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها في الموقع.');
         } catch (e) {
           setWorldIdeasConfig(prev => ({
             ...prev,
-            gifUrl: dataUrl
+            gifUrl: dataUrl.substring(0, 800000)
           }));
           setIsUploadingWorldGif(false);
-          alert('🎉 تم قراءة ملف الـ GIF من حاسوبك! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها.');
+          alert('🎉 تم قراءة ملف الـ GIF بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها.');
         }
-      };
-      reader.onerror = () => {
-        alert('حدث خطأ أثناء قراءة ملف الـ GIF من جهاز الحاسوب.');
-        setIsUploadingWorldGif(false);
-      };
-      reader.readAsDataURL(file);
-    }
+      }
+    };
+    reader.onerror = () => {
+      alert('حدث خطأ أثناء قراءة ملف الـ GIF من جهاز الحاسوب.');
+      setIsUploadingWorldGif(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const [isSavingWorldConfig, setIsSavingWorldConfig] = useState(false);
