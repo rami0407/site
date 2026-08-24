@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
 import { sanitizeText } from '../utils/security';
+import { downloadChunkedFile } from '../utils/chunkedStorage';
 import './WorldIdeasPage.css';
 
 const CATEGORIES = [
@@ -128,12 +129,21 @@ const WorldIdeasPage = () => {
 
   const loadConfig = async () => {
     try {
+      let cfgData = null;
       const snap = await getDoc(doc(db, 'world_ideas_config', 'info'));
       if (snap.exists()) {
-        setPageConfig(prev => ({ ...prev, ...snap.data() }));
+        cfgData = snap.data();
       } else {
         const localC = localStorage.getItem('db_world_ideas_config');
-        if (localC) setPageConfig(JSON.parse(localC));
+        if (localC) cfgData = JSON.parse(localC);
+      }
+
+      if (cfgData) {
+        if (cfgData.gifUrl && (cfgData.gifUrl.startsWith('chunked:') || cfgData.gifUrl.startsWith('local-file:'))) {
+          const fullDataUrl = await downloadChunkedFile(cfgData.gifUrl);
+          if (fullDataUrl) cfgData.gifUrl = fullDataUrl;
+        }
+        setPageConfig(prev => ({ ...prev, ...cfgData }));
       }
     } catch(e) {
       const localC = localStorage.getItem('db_world_ideas_config');

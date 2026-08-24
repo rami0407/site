@@ -640,16 +640,26 @@ const AdminDashboard = () => {
     } catch (err) {
       console.warn("Firebase Storage upload fallback:", err.message);
       
-      // 2. Fallback: If Firebase Storage is unconfigured or blocked, use FileReader Base64
+      // 2. Fallback: Upload in chunks to Firestore subcollection if Storage is unavailable
       const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
+      reader.onload = async (uploadEvent) => {
         const dataUrl = uploadEvent.target.result;
-        setWorldIdeasConfig(prev => ({
-          ...prev,
-          gifUrl: dataUrl
-        }));
-        setIsUploadingWorldGif(false);
-        alert('🎉 تم قراءة ملف الـ GIF من حاسوبك! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها.');
+        try {
+          const chunkedId = await uploadChunkedFile(`world_gif_${Date.now()}`, dataUrl);
+          setWorldIdeasConfig(prev => ({
+            ...prev,
+            gifUrl: chunkedId
+          }));
+          setIsUploadingWorldGif(false);
+          alert('🎉 تم رفع وتثبيت ملف الـ GIF من حاسوبك بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لنشر التعديل بالموقع.');
+        } catch (e) {
+          setWorldIdeasConfig(prev => ({
+            ...prev,
+            gifUrl: dataUrl
+          }));
+          setIsUploadingWorldGif(false);
+          alert('🎉 تم قراءة ملف الـ GIF من حاسوبك! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها.');
+        }
       };
       reader.onerror = () => {
         alert('حدث خطأ أثناء قراءة ملف الـ GIF من جهاز الحاسوب.');
@@ -3136,6 +3146,23 @@ const AdminDashboard = () => {
                             </span>
                           )}
                         </div>
+
+                        {/* Live Selected Image Preview */}
+                        {worldIdeasConfig.gifUrl && (
+                          <div style={{ marginTop: '0.85rem', padding: '0.85rem', background: '#f8fafc', borderRadius: '16px', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                            <img 
+                              src={worldIdeasConfig.gifUrl.startsWith('chunked:') ? 'https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif' : worldIdeasConfig.gifUrl} 
+                              alt="معاينة الصورة المختارة" 
+                              style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: '12px', border: '3px solid #0ea5e9', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)' }} 
+                            />
+                            <div>
+                              <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.25rem' }}>🖼️ معاينة الصورة/أنيميشن الـ GIF المعروضة حالياً:</div>
+                              <div style={{ fontSize: '0.8rem', color: '#64748b', wordBreak: 'break-all', fontWeight: 700 }}>
+                                {worldIdeasConfig.gifUrl.startsWith('data:') ? '📌 صورة محملة مباشرة من حاسوبك الشخصي (Data URL)' : worldIdeasConfig.gifUrl.substring(0, 75) + '...'}
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Quick Presets for Mascot GIF */}
                         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
