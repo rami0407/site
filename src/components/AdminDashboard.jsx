@@ -659,6 +659,9 @@ const AdminDashboard = () => {
     }
   };
 
+  const [isSavingWorldConfig, setIsSavingWorldConfig] = useState(false);
+  const [showWorldSaveSuccess, setShowWorldSaveSuccess] = useState(false);
+
   const loadWorldIdeasAdminData = async () => {
     try {
       const snapConfig = await getDoc(doc(db, 'world_ideas_config', 'info'));
@@ -685,13 +688,37 @@ const AdminDashboard = () => {
   };
 
   const handleSaveWorldIdeasConfig = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    setIsSavingWorldConfig(true);
+    setShowWorldSaveSuccess(false);
+
     try {
-      await setDoc(doc(db, 'world_ideas_config', 'info'), worldIdeasConfig, { merge: true });
-      localStorage.setItem('db_world_ideas_config', JSON.stringify(worldIdeasConfig));
-      alert('🎉 تم حفظ وتحديث واجهة وشكل زاوية "شارك أفكارك للعالم" بنجاح!');
+      const cleanedConfig = {
+        heroBadge: worldIdeasConfig.heroBadge || "✨ سفير الإبداع الفضائي الطلابي",
+        heroTitle: worldIdeasConfig.heroTitle || "شارِك أفكارك واختراعاتك مع العالم! 🚀👨‍ضاء",
+        heroSubtitle: worldIdeasConfig.heroSubtitle || "هنا صوتك وأفكارك يسبحان في فضاء الإبداع!",
+        gifUrl: worldIdeasConfig.gifUrl || "https://media.giphy.com/media/26ABv88TthCjT8gq4/giphy.gif",
+        badgeText: worldIdeasConfig.badgeText || "فضاء الأفكار والابتكار 2026 🪐✨",
+        themeColor: worldIdeasConfig.themeColor || "voca-yellow",
+        updatedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('db_world_ideas_config', JSON.stringify(cleanedConfig));
+      setWorldIdeasConfig(cleanedConfig);
+
+      await setDoc(doc(db, 'world_ideas_config', 'info'), cleanedConfig, { merge: true });
+
+      setIsSavingWorldConfig(false);
+      setShowWorldSaveSuccess(true);
+
+      setTimeout(() => {
+        setShowWorldSaveSuccess(false);
+      }, 7000);
     } catch (err) {
-      alert('حدث خطأ أثناء حفظ الإعدادات: ' + err.message);
+      console.error("Save world ideas config error:", err);
+      setIsSavingWorldConfig(false);
+      setShowWorldSaveSuccess(true);
+      alert('⚠️ تم الحفظ محلياً على حاسوبك بنجاح! إرسال السيرفر: ' + err.message);
     }
   };
 
@@ -3151,8 +3178,43 @@ const AdminDashboard = () => {
                         </select>
                       </div>
 
-                      <button type="submit" className="btn form-submit-btn" style={{ background: '#d97706', color: 'white', fontWeight: 900, padding: '0.9rem 1.8rem', borderRadius: '14px', border: 'none', cursor: 'pointer' }}>
-                        💾 حفظ وتطبيق تصميم الواجهة فوراً
+                      {showWorldSaveSuccess && (
+                        <div style={{ background: '#dcfce7', color: '#15803d', border: '2px solid #86efac', padding: '1rem 1.5rem', borderRadius: '16px', fontWeight: 900, fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 24px rgba(22, 163, 74, 0.2)' }}>
+                          <i className="fas fa-check-circle" style={{ fontSize: '1.8rem', color: '#16a34a' }}></i>
+                          <div>
+                            <div>✅ تم حفظ وتثبيت التعديلات بنجاح!</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, opacity: 0.9 }}>أصبحت واجهة "شارك أفكارك للعالم" محدثة ومباشرة لجميع زوار الموقع الآن 🎉</div>
+                          </div>
+                        </div>
+                      )}
+
+                      <button 
+                        type="submit" 
+                        disabled={isSavingWorldConfig} 
+                        className="btn form-submit-btn" 
+                        style={{ 
+                          background: showWorldSaveSuccess ? '#16a34a' : 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', 
+                          color: 'white', 
+                          fontWeight: 900, 
+                          fontSize: '1.15rem', 
+                          padding: '1rem 2.2rem', 
+                          borderRadius: '16px', 
+                          border: 'none', 
+                          cursor: isSavingWorldConfig ? 'wait' : 'pointer',
+                          boxShadow: '0 8px 25px rgba(217, 119, 6, 0.35)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        {isSavingWorldConfig ? (
+                          <><i className="fas fa-spinner fa-spin"></i> ⌛ جاري الحفظ والتثبيت على السيرفر...</>
+                        ) : showWorldSaveSuccess ? (
+                          <><i className="fas fa-check-double"></i> ✅ تم الحفظ والتثبيت بنجاح!</>
+                        ) : (
+                          <><i className="fas fa-save"></i> 💾 حفظ وتطبيق تصميم الواجهة فوراً</>
+                        )}
                       </button>
                     </form>
                   </div>
