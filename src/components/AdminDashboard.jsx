@@ -613,34 +613,50 @@ const AdminDashboard = () => {
   const [adminWorldIdeas, setAdminWorldIdeas] = useState([]);
   const [isUploadingWorldGif, setIsUploadingWorldGif] = useState(false);
 
-  const handleWorldIdeasGifFileUpload = (e) => {
+  const handleWorldIdeasGifFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 15 * 1024 * 1024) {
-      alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 15 ميغابايت.');
+    if (file.size > 25 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 25 ميغابايت.');
       return;
     }
 
     setIsUploadingWorldGif(true);
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const dataUrl = uploadEvent.target.result;
+    try {
+      // 1. Upload file to Firebase Cloud Storage to get lightweight HTTPS URL
+      const fileName = `world_gif_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const storageRef = ref(storage, `world_ideas_gifs/${fileName}`);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+
       setWorldIdeasConfig(prev => ({
         ...prev,
-        gifUrl: dataUrl
+        gifUrl: downloadUrl
       }));
       setIsUploadingWorldGif(false);
-      alert('🎉 تم رفع ملف الـ GIF / الصورة من حاسوبك بنجاح! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها في الموقع.');
-    };
-
-    reader.onerror = () => {
-      alert('حدث خطأ أثناء قراءة ملف الـ GIF من جهاز الحاسوب.');
-      setIsUploadingWorldGif(false);
-    };
-
-    reader.readAsDataURL(file);
+      alert('🎉 تم رفع ملف الـ GIF بنجاح على الخادم السحابي! اضغط الآن على زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها في الموقع.');
+    } catch (err) {
+      console.warn("Firebase Storage upload fallback:", err.message);
+      
+      // 2. Fallback: If Firebase Storage is unconfigured or blocked, use FileReader Base64
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const dataUrl = uploadEvent.target.result;
+        setWorldIdeasConfig(prev => ({
+          ...prev,
+          gifUrl: dataUrl
+        }));
+        setIsUploadingWorldGif(false);
+        alert('🎉 تم قراءة ملف الـ GIF من حاسوبك! اضغط زر "حفظ وتطبيق تصميم الواجهة" بالأسفل لتثبيتها.');
+      };
+      reader.onerror = () => {
+        alert('حدث خطأ أثناء قراءة ملف الـ GIF من جهاز الحاسوب.');
+        setIsUploadingWorldGif(false);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const loadWorldIdeasAdminData = async () => {
