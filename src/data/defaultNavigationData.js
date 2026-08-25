@@ -17,7 +17,7 @@ export const defaultMainNavigation = [
   { id: "nav_articles", label: "📚 مقالات علمية", type: "page", target: "articles", category: "main", order: 8 },
   { id: "nav_parent_polls", label: "📊 تصويت الأهالي", type: "page", target: "parent-polls", category: "main", order: 9 },
   { id: "nav_3", label: "الرزنامة", type: "section", target: "calendar", category: "main", order: 10 },
-  { id: "nav_4", label: "الأخبار", type: "section", target: "news", category: "main", order: 11 },
+  { id: "nav_4", label: "📰 الأخبار والبث المباشر", type: "page", target: "news", category: "main", order: 11 },
   { id: "nav_5", label: "🎓 كلمة المدير", type: "page", target: "principal", category: "main", order: 12 }
 ];
 

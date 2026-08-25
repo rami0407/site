@@ -41,6 +41,7 @@ import StemCorner from './components/StemCorner';
 import TeacherStemPortal from './components/TeacherStemPortal';
 import WorldIdeasPage from './components/WorldIdeasPage';
 import FacebookFeed from './components/FacebookFeed';
+import NewsPage from './components/NewsPage';
 import './App.css';
 
 
@@ -294,6 +295,7 @@ function App() {
   const isBooksView = currentHash.includes('books');
   const isWorldIdeasView = currentHash.includes('world-ideas') || currentHash.includes('ideas') || currentHash.includes('share-ideas');
   const isFacebookView = currentHash.includes('facebook') || currentHash.includes('fb');
+  const isNewsView = currentHash.includes('news');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -314,8 +316,8 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isFacebookView ? (
-        <FacebookFeed />
+      {(isNewsView || isFacebookView) ? (
+        <NewsPage />
       ) : isWorldIdeasView ? (
         <WorldIdeasPage />
       ) : isTeacherPortalView ? (
@@ -357,12 +359,6 @@ function App() {
 
           {/* Institutional Values */}
           <Values />
-
-          {/* Expandable News & Bulletins */}
-          <NewsFeed />
-
-          {/* Facebook Live Feed Stream */}
-          <FacebookFeed />
 
           {/* Fast Action Hyperlinks */}
           <ImportantLinks />
