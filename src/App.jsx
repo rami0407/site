@@ -43,6 +43,7 @@ import WorldIdeasPage from './components/WorldIdeasPage';
 import FacebookFeed from './components/FacebookFeed';
 import NewsPage from './components/NewsPage';
 import GalleryPage from './components/GalleryPage';
+import CalendarPage from './components/CalendarPage';
 import './App.css';
 
 
@@ -298,6 +299,7 @@ function App() {
   const isFacebookView = currentHash.includes('facebook') || currentHash.includes('fb');
   const isNewsView = currentHash.includes('news');
   const isGalleryView = currentHash.includes('gallery');
+  const isCalendarView = currentHash.includes('calendar');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -318,7 +320,9 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isGalleryView ? (
+      {isCalendarView ? (
+        <CalendarPage />
+      ) : isGalleryView ? (
         <GalleryPage />
       ) : (isNewsView || isFacebookView) ? (
         <NewsPage />
@@ -357,9 +361,6 @@ function App() {
 
           {/* School Pedagogical Initiatives */}
           <Initiatives />
-
-          {/* Dynamic & Filterable Event Calendar */}
-          <InteractiveCalendar />
 
           {/* Institutional Values */}
           <Values />
