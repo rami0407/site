@@ -30,7 +30,9 @@ const Navbar = () => {
       let items = [...rawItems];
       // Filter out any lingering nav_excellence, nav_astronomy, or nav_stem from navbar
       items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
-      items = items.map(item => item.target === 'principal' ? { ...item, type: 'page', target: 'principal' } : item);
+      
+      const standaloneTargets = ['news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books'];
+      items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
       // 🌟 GUARANTEE: Ensure nav_articles and nav_parent_polls always exist in main navigation!
 
@@ -119,7 +121,8 @@ const Navbar = () => {
       }
 
       // Track active section on scroll if we are on the homepage
-      const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('worksheets') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
+      const systemTargets = ['principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+      const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || systemTargets.some(t => window.location.hash.includes(t));
       if (!isOnCustomPage && mainNavItems.length > 0) {
         const sections = mainNavItems
           .filter(item => item.type === 'section')
@@ -153,15 +156,17 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    if (item.type === 'page' || item.type === 'custom_page') {
-      const isSystemPage = ['principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner'].includes(item.target);
+    const systemPages = ['principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+
+    if (item.type === 'page' || item.type === 'custom_page' || systemPages.includes(item.target)) {
+      const isSystemPage = systemPages.includes(item.target);
       window.location.hash = isSystemPage ? `#/${item.target}` : `#/page/${item.target}`;
       setActiveSection(item.target);
       return;
     }
 
     // Scroll to homepage section
-    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || window.location.hash.includes('principal') || window.location.hash.includes('stem') || window.location.hash.includes('worksheets') || window.location.hash.includes('articles') || window.location.hash.includes('parent-polls') || window.location.hash.includes('appointments') || window.location.hash.includes('astronomy') || window.location.hash.includes('challenge') || window.location.hash.includes('books') || window.location.hash.includes('excellence');
+    const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || systemPages.some(t => window.location.hash.includes(t));
     if (isOnCustomPage) {
       window.location.hash = `#${item.target}`;
     } else {
