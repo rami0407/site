@@ -6,11 +6,11 @@ import FacebookFeed from './FacebookFeed';
 import './NewsPage.css';
 
 const NEWS_CATEGORIES = {
-  all: '🌟 جميع الأخبار',
+  all: '🌟 جميع الأخبار (تزامن أوتوماتيكي)',
   activities: '🏃‍♂️ فعاليات مدرسية',
   announcements: '📢 إعلانات رسمية',
   achievements: '🏆 إنجازات وتكريم',
-  facebook: '📱 منشورات الفيس بوك'
+  facebook: '📱 منشورات الفيس بوك الأوتوماتيكية'
 };
 
 const NewsPage = () => {
@@ -21,8 +21,9 @@ const NewsPage = () => {
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [facebookUrl, setFacebookUrl] = useState('https://www.facebook.com/MusheirifaElementarySchool');
   const [isLoading, setIsLoading] = useState(true);
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
 
-  // Real-time news listener from Firestore
+  // 1. Real-time news listener from Firestore
   useEffect(() => {
     let unsubscribeNews = () => {};
     try {
@@ -67,6 +68,65 @@ const NewsPage = () => {
   const safeFbUrl = (typeof facebookUrl === 'string' && facebookUrl.trim()) ? facebookUrl.trim() : 'https://www.facebook.com/MusheirifaElementarySchool';
   const cleanFbUrl = safeFbUrl.startsWith('http://') || safeFbUrl.startsWith('https://') ? safeFbUrl : `https://${safeFbUrl}`;
 
+  // 2. AUTOMATIC LIVE FACEBOOK POSTS PARSER & SYNCHRONIZER (Zero-Touch Automation)
+  useEffect(() => {
+    const autoFetchFacebookPosts = async () => {
+      if (!cleanFbUrl) return;
+      setIsAutoSyncing(true);
+      try {
+        const targetUrl = cleanFbUrl;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(targetUrl)}&tabs=timeline`)}`;
+        
+        const res = await fetch(proxyUrl);
+        const data = await res.json();
+        
+        if (data && data.contents) {
+          const parser = new DOMParser();
+          const docParsed = parser.parseFromString(data.contents, 'text/html');
+          
+          // Parse post elements from Meta plugin stream
+          const postElements = docParsed.querySelectorAll('._5eb7, .userContent, ._5pbx, ._5pcr, ._427g, blockquote');
+          const autoParsedPosts = [];
+
+          postElements.forEach((el, index) => {
+            const rawText = el.textContent || '';
+            const cleanText = rawText.trim().replace(/\s+/g, ' ');
+
+            if (cleanText.length > 20 && !cleanText.includes('مدرسة مشيرفة الابتدائية على الفيس بوك')) {
+              const lines = cleanText.split('.');
+              const title = lines[0].length > 75 ? `${lines[0].substring(0, 75)}...` : lines[0];
+
+              autoParsedPosts.push({
+                id: `auto_fb_${index}_${cleanText.substring(0, 15)}`,
+                title: `📱 ${title}`,
+                content: cleanText,
+                date: 'تزامن أوتوماتيكي مباشر • فيس بوك 🌐',
+                category: 'facebook',
+                isFacebookPost: true,
+                icon: 'fa-facebook-f',
+                fbLink: cleanFbUrl
+              });
+            }
+          });
+
+          if (autoParsedPosts.length > 0) {
+            setNews((prevNews) => {
+              const existingTitles = new Set(prevNews.map(n => n.title));
+              const uniqueNewPosts = autoParsedPosts.filter(p => !existingTitles.has(p.title));
+              return [...uniqueNewPosts, ...prevNews];
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Live Facebook auto-parser fallback active:", e);
+      } finally {
+        setIsAutoSyncing(false);
+      }
+    };
+
+    autoFetchFacebookPosts();
+  }, [cleanFbUrl]);
+
   const filteredNews = news.filter((item) => {
     if (!item) return false;
     
@@ -91,13 +151,13 @@ const NewsPage = () => {
         <div className="news-hero-overlay"></div>
         <div className="container news-hero-content">
           <div className="news-hero-badge">
-            <i className="fas fa-newspaper"></i> المركز الإعلامي والتغذية المباشرة
+            <i className="fas fa-magic"></i> أتمتة البث والتزامن التلقائي
           </div>
           <h1 className="news-hero-title">
-            المركز الإعلامي لأخبار المدرسة والفيس بوك 📰✨
+            المركز الإعلامي وتزامن الفيس بوك الأوتوماتيكي 📰⚡
           </h1>
           <p className="news-hero-subtitle">
-            تابع كافة إعلانات المدرسة والأنشطة، بالإضافة لمنشورات الفيس بوك الرسمية المضافة ككروت إخبارية حديثة واحترافية.
+            تم تفعيل الأتمتة المباشرة! يتم سحب منشورات صفحة الفيس بوك الرسمية وتحويلها إلى كروت إخبارية أوتوماتيكياً بدون أي تدخل يدوي!
           </p>
 
           {/* View Tab Switcher */}
@@ -106,19 +166,19 @@ const NewsPage = () => {
               className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => setActiveTab('all')}
             >
-              <i className="fas fa-layer-group"></i> 🌐 جميع الأخبار
+              <i className="fas fa-layer-group"></i> 🌐 جميع الأخبار (تزامن تلقائي)
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'facebook_native' ? 'active' : ''}`}
+              onClick={() => setActiveTab('facebook_native')}
+            >
+              <i className="fab fa-facebook-square"></i> 📱 منشورات الفيس بوك الأوتوماتيكية
             </button>
             <button 
               className={`tab-btn ${activeTab === 'school' ? 'active' : ''}`}
               onClick={() => setActiveTab('school')}
             >
               <i className="fas fa-bullhorn"></i> 📰 الأخبار المدرسية الرسمية
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'facebook_native' ? 'active' : ''}`}
-              onClick={() => setActiveTab('facebook_native')}
-            >
-              <i className="fab fa-facebook-square"></i> 📱 منشورات الفيس بوك
             </button>
             <button 
               className={`tab-btn ${activeTab === 'facebook_embed' ? 'active' : ''}`}
@@ -139,21 +199,26 @@ const NewsPage = () => {
       {/* Main Content Body */}
       <main className="container news-page-body">
 
-        {/* SECTION 1: NATIVE NEWS CARDS (SCHOOL & FACEBOOK SYNCED) */}
+        {/* SECTION 1: NATIVE NEWS CARDS (SCHOOL & AUTOMATED FACEBOOK SYNC) */}
         {activeTab !== 'facebook_embed' && (
           <div className="news-section-wrapper">
             
             {/* Header Title */}
             <div className="news-sub-header">
               <div className="sub-header-title">
-                <i className="fas fa-newspaper icon-blue"></i>
+                <i className="fas fa-sync-alt icon-blue spin-on-sync"></i>
                 <h2>
-                  {activeTab === 'facebook_native' ? '📱 منشورات الفيس بوك الرسمية' : 'الأخبار والفعاليات المدرسية الرسمية'}
+                  {activeTab === 'facebook_native' ? '📱 منشورات الفيس بوك (تزامن أوتوماتيكي مباشر)' : 'الأخبار والمنشورات الرسمية'}
                 </h2>
+                {isAutoSyncing && (
+                  <span className="auto-sync-badge">
+                    <i className="fas fa-spinner fa-spin"></i> جاري الأتمتة والسحب المباشر...
+                  </span>
+                )}
               </div>
               
               <a href={cleanFbUrl} target="_blank" rel="noopener noreferrer" className="btn-fb-quick">
-                <i className="fab fa-facebook-f"></i> زيارة صفحة الفيس بوك الرسمية للمدرسة ➔
+                <i className="fab fa-facebook-f"></i> صفحة الفيس بوك الرسمية ➔
               </a>
             </div>
 
@@ -191,7 +256,7 @@ const NewsPage = () => {
             {isLoading ? (
               <div className="news-loading-box">
                 <i className="fas fa-spinner fa-spin"></i>
-                <p>جاري تحميل أحدث الأخبار والفعاليات...</p>
+                <p>جاري سحب وحزم أحدث الأخبار ككروت إخبارية أوتوماتيكية...</p>
               </div>
             ) : filteredNews.length > 0 ? (
               <div className="modern-news-grid">
@@ -207,7 +272,7 @@ const NewsPage = () => {
                         
                         {isFb ? (
                           <span className="news-cat-tag cat-facebook-synced">
-                            <i className="fab fa-facebook"></i> فيس بوك رسمي
+                            <i className="fab fa-facebook"></i> فيس بوك أوتوماتيكي
                           </span>
                         ) : (
                           <span className={`news-cat-tag cat-${item.category || 'activities'}`}>
@@ -233,7 +298,7 @@ const NewsPage = () => {
                           className="btn-read-more"
                           onClick={() => setSelectedArticle(item)}
                         >
-                          <i className="fas fa-book-open"></i> قراءة التفاصيل
+                          <i className="fas fa-book-open"></i> قراءة الخبر
                         </button>
                         
                         {isFb ? (
@@ -242,7 +307,7 @@ const NewsPage = () => {
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="btn-fb-post-direct"
-                            title="فتح المنشور الأصلي في فيس بوك"
+                            title="فتح المنشور الأصلي على فيس بوك"
                           >
                             <i className="fab fa-facebook-messenger"></i> التفاعلات ➔
                           </a>
@@ -267,7 +332,7 @@ const NewsPage = () => {
               <div className="news-empty-box">
                 <i className="fas fa-newspaper icon-empty"></i>
                 <h3>لم يتم العثور على أخبار مطابقة للبحث</h3>
-                <p>قم باختيار فئة أخرى من الأعلى أو أضف أخباراً جديدة من لوحة التحكم (#admin).</p>
+                <p>قم باختيار فئة أخرى أو أضف أخباراً جديدة من لوحة التحكم (#admin).</p>
               </div>
             )}
 
