@@ -300,6 +300,19 @@
 .news-cat-tag.cat-activities { background: #e0f2fe; color: #0284c7; }
 .news-cat-tag.cat-announcements { background: #fef3c7; color: #d97706; }
 .news-cat-tag.cat-achievements { background: #dcfce7; color: #16a34a; }
+.news-cat-tag.cat-facebook-synced {
+  background: #eff6ff;
+  color: #1877f2;
+  border: 1px solid #bfdbfe;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fb-synced-card {
+  border-top: 4px solid #1877f2;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
 
 .card-icon-wrapper {
   width: 52px;
@@ -312,6 +325,31 @@
   justify-content: center;
   font-size: 1.4rem;
   margin-bottom: 1rem;
+}
+
+.card-icon-wrapper.icon-fb {
+  background: #1877f2;
+  color: #ffffff;
+}
+
+.btn-fb-post-direct {
+  background: #1877f2;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.btn-fb-post-direct:hover {
+  background: #0d65d9;
+  color: white;
+  transform: translateY(-2px);
 }
 
 .news-card-title {
