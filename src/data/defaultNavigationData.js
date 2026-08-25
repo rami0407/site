@@ -2,7 +2,7 @@
 export const defaultTopNavigation = [
   { id: "top_books", label: "📚 الكتب واللباس الموحد", type: "page", target: "books", category: "top", order: 1 },
   { id: "top_links", label: "🔗 روابط هامة", type: "section", target: "links", category: "top", order: 2 },
-  { id: "top_gallery", label: "🖼️ المعرض", type: "section", target: "gallery", category: "top", order: 3 },
+  { id: "top_gallery", label: "🖼️ المعرض المصور", type: "page", target: "gallery", category: "top", order: 3 },
   { id: "top_contact", label: "📞 اتصل بنا", type: "section", target: "contact", category: "top", order: 4 }
 ];
 

@@ -42,6 +42,7 @@ import TeacherStemPortal from './components/TeacherStemPortal';
 import WorldIdeasPage from './components/WorldIdeasPage';
 import FacebookFeed from './components/FacebookFeed';
 import NewsPage from './components/NewsPage';
+import GalleryPage from './components/GalleryPage';
 import './App.css';
 
 
@@ -296,6 +297,7 @@ function App() {
   const isWorldIdeasView = currentHash.includes('world-ideas') || currentHash.includes('ideas') || currentHash.includes('share-ideas');
   const isFacebookView = currentHash.includes('facebook') || currentHash.includes('fb');
   const isNewsView = currentHash.includes('news');
+  const isGalleryView = currentHash.includes('gallery');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -316,7 +318,9 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {(isNewsView || isFacebookView) ? (
+      {isGalleryView ? (
+        <GalleryPage />
+      ) : (isNewsView || isFacebookView) ? (
         <NewsPage />
       ) : isWorldIdeasView ? (
         <WorldIdeasPage />
@@ -362,9 +366,6 @@ function App() {
 
           {/* Fast Action Hyperlinks */}
           <ImportantLinks />
-
-          {/* Responsive Activity Gallery */}
-          <Gallery />
 
           {/* Dynamic Client Validation Contact Form */}
           <ContactForm />
