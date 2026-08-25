@@ -35,13 +35,15 @@ const CATEGORIES_CALENDAR = {
 const CATEGORIES_NEWS = {
   activities: 'فعاليات مدرسية',
   announcements: 'إعلانات',
-  achievements: 'إنجازات'
+  achievements: 'إنجازات',
+  facebook: '📱 منشور من صفحة الفيس بوك الرسمية'
 };
 
 const NEWS_ICONS = {
   activities: 'fa-running',
   announcements: 'fa-laptop-code',
-  achievements: 'fa-trophy'
+  achievements: 'fa-trophy',
+  facebook: 'fa-facebook-f'
 };
 
 const GALLERY_CATEGORIES = {

@@ -6,46 +6,12 @@ import FacebookFeed from './FacebookFeed';
 import './NewsPage.css';
 
 const NEWS_CATEGORIES = {
-  all: '🌟 جميع الأخبار التفاعلية',
+  all: '🌟 جميع الأخبار',
   activities: '🏃‍♂️ فعاليات مدرسية',
   announcements: '📢 إعلانات رسمية',
   achievements: '🏆 إنجازات وتكريم',
   facebook: '📱 منشورات الفيس بوك'
 };
-
-// Fallback parsed Facebook posts formatted natively as news cards
-const MOCK_FB_POSTS = [
-  {
-    id: 'fb_post_1',
-    category: 'facebook',
-    isFacebookPost: true,
-    title: '🎉 تغطية حية: فعاليات مسرح الدمى وتكريم الطلاب المبدعين',
-    date: 'تم النشر اليوم على الفيس بوك',
-    icon: 'fa-theater-masks',
-    content: 'شهدت مدرسة مشيرفة الابتدائية اليوم أجواءً مليئة بالإبداع والفرح خلال تقديم العرض المسرحي المميز لمسرح الدمى. تم تكريم الطلاب المشاركين وإشادتهم بمهاراتهم العالية في إلقاء القصص والحوارات التربوية.',
-    fbLink: 'https://www.facebook.com/MusheirifaElementarySchool'
-  },
-  {
-    id: 'fb_post_2',
-    category: 'facebook',
-    isFacebookPost: true,
-    title: '🌟 توزيع رسائل الامتنان ضمن مشروع امتنان المدرسي',
-    date: 'تم النشر أمس على الفيس بوك',
-    icon: 'fa-heart',
-    content: 'قام طلاب المدرسة بتوزيع صناديق ورسائل الامتنان لزملائهم والمعلمين في لفتة تربوية تؤكد على غرس قيم التقدير والمحبة والاحترام المتبادل بين الجميع.',
-    fbLink: 'https://www.facebook.com/MusheirifaElementarySchool'
-  },
-  {
-    id: 'fb_post_3',
-    category: 'facebook',
-    isFacebookPost: true,
-    title: '🚀 انطلاق ورشات العلوم والبرمجة للصفوف العليا',
-    date: 'تم النشر قبل يومين على الفيس بوك',
-    icon: 'fa-robot',
-    content: 'ضمن فعاليات ركن STEM، بدأ طلاب الصفين الخامس والسادس ورشات العمل التطبيقية لبناء المجسمات العلمية والبرمجة الأساسية وسط تفاعل واهتمام كبير من الطلاب.',
-    fbLink: 'https://www.facebook.com/MusheirifaElementarySchool'
-  }
-];
 
 const NewsPage = () => {
   const [news, setNews] = useState([]);
@@ -65,25 +31,21 @@ const NewsPage = () => {
         const list = [];
         snap.forEach(docSnap => list.push({ ...docSnap.data(), id: docSnap.id }));
         if (list.length > 0) {
-          // Combine Firestore school news with parsed Facebook native news cards
-          setNews([...list, ...MOCK_FB_POSTS]);
+          setNews(list);
         } else {
           const localNews = localStorage.getItem('db_news');
-          const baseNews = localNews ? JSON.parse(localNews) : fallbackNews;
-          setNews([...baseNews, ...MOCK_FB_POSTS]);
+          setNews(localNews ? JSON.parse(localNews) : fallbackNews);
         }
         setIsLoading(false);
       }, (err) => {
         console.warn("Real-time news listener warning:", err);
         const localNews = localStorage.getItem('db_news');
-        const baseNews = localNews ? JSON.parse(localNews) : fallbackNews;
-        setNews([...baseNews, ...MOCK_FB_POSTS]);
+        setNews(localNews ? JSON.parse(localNews) : fallbackNews);
         setIsLoading(false);
       });
     } catch (e) {
       const localNews = localStorage.getItem('db_news');
-      const baseNews = localNews ? JSON.parse(localNews) : fallbackNews;
-      setNews([...baseNews, ...MOCK_FB_POSTS]);
+      setNews(localNews ? JSON.parse(localNews) : fallbackNews);
       setIsLoading(false);
     }
 
@@ -108,9 +70,11 @@ const NewsPage = () => {
   const filteredNews = news.filter((item) => {
     if (!item) return false;
     
+    const isFbItem = item.category === 'facebook' || item.isFacebookPost;
+
     // Tab filtering
-    if (activeTab === 'school' && item.isFacebookPost) return false;
-    if (activeTab === 'facebook_native' && !item.isFacebookPost) return false;
+    if (activeTab === 'school' && isFbItem) return false;
+    if (activeTab === 'facebook_native' && !isFbItem) return false;
 
     // Category filtering
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -130,10 +94,10 @@ const NewsPage = () => {
             <i className="fas fa-newspaper"></i> المركز الإعلامي والتغذية المباشرة
           </div>
           <h1 className="news-hero-title">
-            المركز الإعلامي وأخبار الفيس بوك المباشرة 📰✨
+            المركز الإعلامي لأخبار المدرسة والفيس بوك 📰✨
           </h1>
           <p className="news-hero-subtitle">
-            تم سحب ودمج كافة منشورات الفيس بوك الرسمية وإعلانات المدرسة في كروت إخبارية مدرسية حديثة واحترافية بدون إطارات خارجية!
+            تابع كافة إعلانات المدرسة والأنشطة، بالإضافة لمنشورات الفيس بوك الرسمية المضافة ككروت إخبارية حديثة واحترافية.
           </p>
 
           {/* View Tab Switcher */}
@@ -142,13 +106,7 @@ const NewsPage = () => {
               className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => setActiveTab('all')}
             >
-              <i className="fas fa-layer-group"></i> 🌐 جميع الأخبار (دمج الفيس بوك والمدرسة)
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'facebook_native' ? 'active' : ''}`}
-              onClick={() => setActiveTab('facebook_native')}
-            >
-              <i className="fab fa-facebook-square"></i> 📱 أخبار الفيس بوك (كروت حديثة)
+              <i className="fas fa-layer-group"></i> 🌐 جميع الأخبار
             </button>
             <button 
               className={`tab-btn ${activeTab === 'school' ? 'active' : ''}`}
@@ -157,10 +115,16 @@ const NewsPage = () => {
               <i className="fas fa-bullhorn"></i> 📰 الأخبار المدرسية الرسمية
             </button>
             <button 
+              className={`tab-btn ${activeTab === 'facebook_native' ? 'active' : ''}`}
+              onClick={() => setActiveTab('facebook_native')}
+            >
+              <i className="fab fa-facebook-square"></i> 📱 منشورات الفيس بوك
+            </button>
+            <button 
               className={`tab-btn ${activeTab === 'facebook_embed' ? 'active' : ''}`}
               onClick={() => setActiveTab('facebook_embed')}
             >
-              <i className="fas fa-desktop"></i> 🖥️ صفحة الفيس بوك الكاملة
+              <i className="fas fa-desktop"></i> 🖥️ البث المباشر المدمج
             </button>
           </div>
         </div>
@@ -184,12 +148,12 @@ const NewsPage = () => {
               <div className="sub-header-title">
                 <i className="fas fa-newspaper icon-blue"></i>
                 <h2>
-                  {activeTab === 'facebook_native' ? '📱 منشورات الفيس بوك المصممة كأخبار احترافية' : 'الأخبار والفعاليات المدرسية الرسمية'}
+                  {activeTab === 'facebook_native' ? '📱 منشورات الفيس بوك الرسمية' : 'الأخبار والفعاليات المدرسية الرسمية'}
                 </h2>
               </div>
               
               <a href={cleanFbUrl} target="_blank" rel="noopener noreferrer" className="btn-fb-quick">
-                <i className="fab fa-facebook-f"></i> زيارة صفحة الفيس بوك الرسمية ➔
+                <i className="fab fa-facebook-f"></i> زيارة صفحة الفيس بوك الرسمية للمدرسة ➔
               </a>
             </div>
 
@@ -227,80 +191,83 @@ const NewsPage = () => {
             {isLoading ? (
               <div className="news-loading-box">
                 <i className="fas fa-spinner fa-spin"></i>
-                <p>جاري تحميل وحزم أحدث الأخبار ككروت إخبارية...</p>
+                <p>جاري تحميل أحدث الأخبار والفعاليات...</p>
               </div>
             ) : filteredNews.length > 0 ? (
               <div className="modern-news-grid">
-                {filteredNews.map((item) => (
-                  <article className={`modern-news-card ${item.isFacebookPost ? 'fb-synced-card' : ''}`} key={item.id}>
-                    
-                    <div className="card-top-bar">
-                      <span className="news-date-badge">
-                        <i className="far fa-calendar-alt"></i> {item.date || 'مؤخراً'}
-                      </span>
+                {filteredNews.map((item) => {
+                  const isFb = item.category === 'facebook' || item.isFacebookPost;
+                  return (
+                    <article className={`modern-news-card ${isFb ? 'fb-synced-card' : ''}`} key={item.id}>
                       
-                      {item.isFacebookPost ? (
-                        <span className="news-cat-tag cat-facebook-synced">
-                          <i className="fab fa-facebook"></i> فيس بوك مباشر
+                      <div className="card-top-bar">
+                        <span className="news-date-badge">
+                          <i className="far fa-calendar-alt"></i> {item.date || 'مؤخراً'}
                         </span>
-                      ) : (
-                        <span className={`news-cat-tag cat-${item.category || 'activities'}`}>
-                          {NEWS_CATEGORIES[item.category] || 'فعالية'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="card-content-body">
-                      <div className={`card-icon-wrapper ${item.isFacebookPost ? 'icon-fb' : ''}`}>
-                        <i className={`fas ${item.icon || 'fa-newspaper'}`}></i>
+                        
+                        {isFb ? (
+                          <span className="news-cat-tag cat-facebook-synced">
+                            <i className="fab fa-facebook"></i> فيس بوك رسمي
+                          </span>
+                        ) : (
+                          <span className={`news-cat-tag cat-${item.category || 'activities'}`}>
+                            {NEWS_CATEGORIES[item.category] || 'فعالية'}
+                          </span>
+                        )}
                       </div>
-                      <h3 className="news-card-title">{item.title}</h3>
-                      <p className="news-card-excerpt">
-                        {(item.content || '').length > 150 
-                          ? `${(item.content || '').substring(0, 150)}...` 
-                          : item.content}
-                      </p>
-                    </div>
 
-                    <div className="card-footer-action">
-                      <button 
-                        className="btn-read-more"
-                        onClick={() => setSelectedArticle(item)}
-                      >
-                        <i className="fas fa-book-open"></i> قراءة التفاصيل
-                      </button>
-                      
-                      {item.isFacebookPost ? (
-                        <a 
-                          href={item.fbLink || cleanFbUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="btn-fb-post-direct"
-                          title="فتح المنشور الأصلي في فيس بوك"
-                        >
-                          <i className="fab fa-facebook-messenger"></i> التفاعلات ➔
-                        </a>
-                      ) : (
-                        <a 
-                          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="btn-share-news"
-                          title="مشاركة الخبر على فيس بوك"
-                        >
-                          <i className="fab fa-facebook-f"></i>
-                        </a>
-                      )}
-                    </div>
+                      <div className="card-content-body">
+                        <div className={`card-icon-wrapper ${isFb ? 'icon-fb' : ''}`}>
+                          <i className={`fas ${item.icon || (isFb ? 'fa-facebook-f' : 'fa-newspaper')}`}></i>
+                        </div>
+                        <h3 className="news-card-title">{item.title}</h3>
+                        <p className="news-card-excerpt">
+                          {(item.content || '').length > 150 
+                            ? `${(item.content || '').substring(0, 150)}...` 
+                            : item.content}
+                        </p>
+                      </div>
 
-                  </article>
-                ))}
+                      <div className="card-footer-action">
+                        <button 
+                          className="btn-read-more"
+                          onClick={() => setSelectedArticle(item)}
+                        >
+                          <i className="fas fa-book-open"></i> قراءة التفاصيل
+                        </button>
+                        
+                        {isFb ? (
+                          <a 
+                            href={item.fbLink || cleanFbUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="btn-fb-post-direct"
+                            title="فتح المنشور الأصلي في فيس بوك"
+                          >
+                            <i className="fab fa-facebook-messenger"></i> التفاعلات ➔
+                          </a>
+                        ) : (
+                          <a 
+                            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="btn-share-news"
+                            title="مشاركة الخبر على فيس بوك"
+                          >
+                            <i className="fab fa-facebook-f"></i>
+                          </a>
+                        )}
+                      </div>
+
+                    </article>
+                  );
+                })}
               </div>
             ) : (
               <div className="news-empty-box">
                 <i className="fas fa-newspaper icon-empty"></i>
-                <h3>لم يتم العثور على أخبار تطابق البحث</h3>
-                <p>جرب تغيير كلمات البحث أو اختيار فئة أخرى من الأعلى.</p>
+                <h3>لم يتم العثور على أخبار مطابقة للبحث</h3>
+                <p>قم باختيار فئة أخرى من الأعلى أو أضف أخباراً جديدة من لوحة التحكم (#admin).</p>
               </div>
             )}
 
@@ -339,7 +306,7 @@ const NewsPage = () => {
                 rel="noopener noreferrer" 
                 className="btn-modal-fb"
               >
-                <i className="fab fa-facebook-square"></i> مشاهدة التفاعلات الأصلية على فيس بوك
+                <i className="fab fa-facebook-square"></i> مشاهدة التفاعلات على الفيس بوك
               </a>
             </div>
           </div>
