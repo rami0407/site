@@ -142,6 +142,12 @@
   transform: rotate(-2deg);
   transition: transform 0.3s ease;
   border: 4px solid #ffffff;
+  animation: floatCardMascot 4s ease-in-out infinite alternate;
+}
+
+@keyframes floatCardMascot {
+  0% { transform: translateY(0px) rotate(-2deg); }
+  100% { transform: translateY(-14px) rotate(1deg); }
 }
 
 .hero-gif-card:hover {
@@ -497,81 +503,9 @@
   box-shadow: 0 6px 18px rgba(124, 58, 237, 0.4);
 }
 
-/* Full-Screen Swimming Space Astronaut Animation */
-.fullscreen-astronaut-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 999;
-  overflow: hidden;
-}
-
-.floating-space-astronaut {
-  position: absolute;
-  width: 135px;
-  height: auto;
-  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
-  animation: floatAcrossScreen 32s cubic-bezier(0.4, 0, 0.6, 1) infinite alternate;
-  pointer-events: auto;
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.floating-space-astronaut img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.floating-space-astronaut:hover {
-  transform: scale(1.3) rotate(20deg);
-}
-
-@keyframes floatAcrossScreen {
-  0% {
-    top: 15%;
-    left: -160px;
-    transform: rotate(-10deg) scale(0.9);
-  }
-  25% {
-    top: 45%;
-    left: 28vw;
-    transform: rotate(18deg) scale(1.15);
-  }
-  50% {
-    top: 72%;
-    left: 62vw;
-    transform: rotate(-15deg) scale(1.25);
-  }
-  75% {
-    top: 22%;
-    left: 82vw;
-    transform: rotate(28deg) scale(1.05);
-  }
-  100% {
-    top: 55%;
-    left: calc(100vw + 60px);
-    transform: rotate(-8deg) scale(0.85);
-  }
-}
-
-/* Floating Space Stars Particles */
-.floating-space-star {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #fef08a;
-  border-radius: 50%;
-  box-shadow: 0 0 14px #fef08a, 0 0 28px #eab308;
-  animation: starPulse 2.8s ease-in-out infinite alternate;
-}
-
-@keyframes starPulse {
-  0% { opacity: 0.2; transform: scale(0.7); }
-  100% { opacity: 1; transform: scale(1.6); }
+.btn-add-comment:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.4);
 }
 
 .loading-box, .empty-box {
