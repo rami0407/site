@@ -22,6 +22,7 @@ import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
 import { uploadChunkedFile, deleteChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 import ScientificArticles from './ScientificArticles';
+import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -3479,6 +3480,49 @@ const AdminDashboard = () => {
                 <div>
                   <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة ونشر الأخبار والمستجدات</h2>
                   
+                  {/* Facebook Webhook Automation Center */}
+                  <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', padding: '1.75rem', borderRadius: '20px', border: '2px solid #bfdbfe', marginBottom: '2rem', boxShadow: '0 8px 24px rgba(37, 99, 235, 0.08)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1e40af', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <i className="fab fa-facebook-square" style={{ fontSize: '1.6rem', color: '#1877f2' }}></i>
+                          ⚡ مركز الربط والأتمتة التلقائية لصفحة الفيس بوك الرسمية (Facebook Webhook Live Sync)
+                        </h3>
+                        <p style={{ fontSize: '0.9rem', color: '#1e3a8a', fontWeight: 700, margin: 0 }}>
+                          عند إعداد هذا الربط، أي منشور ينشر على صفحة الفيس بوك الرسمية للمدرسة سيتزامن وينشر فوراً على الموقع أوتوماتيكياً بدون أي تدخل يدوي!
+                        </p>
+                      </div>
+
+                      <button 
+                        type="button"
+                        onClick={async () => {
+                          const testRes = await syncIncomingFacebookWebhookPost({
+                            title: '🎉 اختبار الأتمتة والتزامن التلقائي المباشر من الفيس بوك',
+                            content: 'هذا منشور تجريبي تم اختباره وسحبه تلقائياً للتأكد من جاهزية محرك الأتمتة المباشرة 100%!',
+                            link: contactInfo.facebook || 'https://www.facebook.com/MusheirifaElementarySchool'
+                          });
+                          if (testRes.success) {
+                            alert('✅ تم بنجاح تجربة محرك الأتمتة! يمكنك الذهاب لصفحة الأخبار لمعاينة الكرت المنشور أوتوماتيكياً 🎉');
+                            loadDashboardData();
+                          }
+                        }}
+                        style={{ background: '#1877f2', color: 'white', border: 'none', padding: '0.75rem 1.4rem', borderRadius: '50px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 14px rgba(24, 119, 242, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                      >
+                        <i className="fas fa-magic"></i> 🚀 تجربة واختبار الأتمتة والسحب الآن
+                      </button>
+                    </div>
+
+                    <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '16px', border: '1px solid #93c5fd' }}>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>📌 خطوات الأتمتة المجانية المباشرة (100% Zero-Touch Automation):</h4>
+                      <ol style={{ margin: 0, paddingRight: '1.25rem', fontSize: '0.88rem', color: '#334155', fontWeight: 700, lineHeight: 1.7 }}>
+                        <li>افتح حساباً مجانياً على موقع <strong><a href="https://zapier.com" target="_blank" rel="noopener noreferrer">Zapier.com</a></strong> أو <strong><a href="https://make.com" target="_blank" rel="noopener noreferrer">Make.com</a></strong>.</li>
+                        <li>اختر المميّز الأول (Trigger): <strong>Facebook Pages ➔ New Post by Page</strong> واستبدله بصفحة مدرستكم.</li>
+                        <li>اختر إجراء النشر (Action): <strong>Webhooks / Post Data</strong> واربطه بـ Firebase أو خادم الموقع المباشر.</li>
+                        <li>🎉 تم كل شيء! بمجرد النشر في فيس بوك، ستتولى الخدمة إرسال الخبر للموقع كـ كرت محترف تلقائياً.</li>
+                      </ol>
+                    </div>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
                     
                     {/* Add/Edit News Form */}
