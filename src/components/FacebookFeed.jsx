@@ -8,7 +8,7 @@ const DEFAULT_FB_URL = 'https://www.facebook.com/MusheirifaElementarySchool';
 const FacebookFeed = ({ fbUrl: customFbUrl }) => {
   const [facebookUrl, setFacebookUrl] = useState(customFbUrl || DEFAULT_FB_URL);
   const [activeTab, setActiveTab] = useState('embed'); // 'embed' or 'cards'
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // Default to extra-large expanded view!
 
   useEffect(() => {
     const fetchContactDetails = async () => {
@@ -36,11 +36,11 @@ const FacebookFeed = ({ fbUrl: customFbUrl }) => {
 
   const cleanFbUrl = facebookUrl.startsWith('http') ? facebookUrl : `https://${facebookUrl}`;
   const encodedFbUrl = encodeURIComponent(cleanFbUrl);
-  const iframeSrc = `https://www.facebook.com/plugins/page.php?href=${encodedFbUrl}&tabs=timeline,events&width=500&height=750&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId`;
+  const iframeSrc = `https://www.facebook.com/plugins/page.php?href=${encodedFbUrl}&tabs=timeline,events&width=750&height=1100&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId`;
 
   return (
-    <section className="facebook-feed-section" id="facebook-feed">
-      <div className="container">
+    <section className={`facebook-feed-section ${isExpanded ? 'expanded-mode' : ''}`} id="facebook-feed">
+      <div className={`container ${isExpanded ? 'container-expanded' : ''}`}>
         
         {/* Section Title */}
         <div className="fb-section-header">
@@ -48,56 +48,66 @@ const FacebookFeed = ({ fbUrl: customFbUrl }) => {
             <i className="fab fa-facebook-square"></i> بث مباشر وتزامن تلقائي
           </div>
           <h2 className="fb-section-title">
-            📱 منشورات صفحة الفيس بوك الرسمية (Facebook Live Feed)
+            📱 تصفح صفحة الفيس بوك الرسمية (Facebook Live Page View)
           </h2>
           <p className="fb-section-subtitle">
-            تابع كل ما يتم نشره على صفحة الفيس بوك الرسمية لمدرسة مشيرفة الابتدائية مباشرة هنا على الموقع اللحظي!
+            تصفح منشورات وصور وفعاليات صفحة مدرسة مشيرفة الرسمية على الفيس بوك بحجم كبير وشامل كأنك داخل التطبيق تماماً!
           </p>
         </div>
 
-        {/* Action Bar & Link Button */}
+        {/* Action Bar & Link Buttons */}
         <div className="fb-actions-bar">
-          <a 
-            href={cleanFbUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="btn-visit-fb"
-          >
-            <i className="fab fa-facebook-f"></i> زيارة صفحة الفيس بوك الرسمية للمدرسة
-          </a>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <a 
+              href={cleanFbUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn-visit-fb"
+            >
+              <i className="fab fa-facebook-f"></i> فتح في موقع الفيس بوك
+            </a>
+
+            <button 
+              type="button"
+              className="btn-expand-fb"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <i className={`fas ${isExpanded ? 'fa-compress-alt' : 'fa-expand-alt'}`}></i> 
+              {isExpanded ? 'تصغير العرض' : '🔍 تكبير الشاشة (حجم ضخم)'}
+            </button>
+          </div>
           
           <div className="fb-view-toggle">
             <button 
               className={`toggle-btn ${activeTab === 'embed' ? 'active' : ''}`}
               onClick={() => setActiveTab('embed')}
             >
-              <i className="fas fa-desktop"></i> البث المباشر المدمج
+              <i className="fas fa-desktop"></i> صفحة الفيس بوك الكاملة
             </button>
             <button 
               className={`toggle-btn ${activeTab === 'cards' ? 'active' : ''}`}
               onClick={() => setActiveTab('cards')}
             >
-              <i className="fas fa-th-large"></i> كروت المنشورات والسريعة
+              <i className="fas fa-th-large"></i> كروت المنشورات السريعة
             </button>
           </div>
         </div>
 
         {/* Content Box */}
-        <div className="fb-feed-content-wrapper">
+        <div className={`fb-feed-content-wrapper ${isExpanded ? 'wrapper-expanded' : ''}`}>
           {activeTab === 'embed' ? (
             <div className="fb-iframe-container">
-              <div className="fb-iframe-card">
+              <div className={`fb-iframe-card ${isExpanded ? 'card-expanded' : ''}`}>
                 <iframe 
                   title="Facebook Page Live Feed"
                   src={iframeSrc}
                   width="100%" 
-                  height="750" 
-                  style={{ border: 'none', overflow: 'hidden', borderRadius: '24px' }} 
+                  height="1100" 
+                  style={{ border: 'none', overflow: 'hidden', borderRadius: '24px', minHeight: '900px' }} 
                   scrolling="no" 
                   frameBorder="0" 
                   allowFullScreen={true} 
                   allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                  onLoad={() => setIsLoaded(true)}
                 ></iframe>
               </div>
             </div>

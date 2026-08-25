@@ -105,9 +105,34 @@
   box-shadow: 0 3px 10px rgba(0,0,0,0.08);
 }
 
+.btn-expand-fb {
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  font-weight: 900;
+  font-size: 0.9rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 50px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-expand-fb:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
 .fb-feed-content-wrapper {
-  max-width: 750px;
+  max-width: 950px;
   margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.fb-feed-content-wrapper.wrapper-expanded {
+  max-width: 1150px;
 }
 
 .fb-iframe-container {
@@ -117,12 +142,18 @@
 
 .fb-iframe-card {
   width: 100%;
-  max-width: 550px;
+  max-width: 850px;
   background: #ffffff;
   border-radius: 28px;
   padding: 0.75rem;
   box-shadow: 0 15px 40px rgba(0,0,0,0.08);
   border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.fb-iframe-card.card-expanded {
+  max-width: 1100px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.14);
 }
 
 .fb-cards-grid {
