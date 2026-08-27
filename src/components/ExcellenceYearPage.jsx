@@ -1,39 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 const ExcellenceYearPage = ({ isStandalone = true }) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const videoId = 'EF4g6yBUbmk';
-  const videoEmbedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=1&rel=0&modestbranding=1&enablejsapi=1`;
-
-  const toggleFullscreen = () => {
-    const elem = document.getElementById('excellence-video-box');
-    if (!elem) return;
-
-    if (!document.fullscreenElement) {
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-      }
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-      setIsFullscreen(false);
-    }
-  };
-
   return (
     <div className="excellence-page-wrapper" style={{
-      background: 'linear-gradient(180deg, #090d16 0%, #0f172a 50%, #0b0f19 100%)',
+      background: 'linear-gradient(180deg, #0b0f19 0%, #111827 50%, #0f172a 100%)',
       color: '#f8fafc',
       minHeight: '100vh',
       paddingBottom: '5rem',
@@ -41,193 +16,120 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
       direction: 'rtl'
     }}>
 
-      {/* Hero Header Section */}
+      {/* Header Banner */}
       <header style={{
         position: 'relative',
-        padding: '4.5rem 1.5rem 3rem 1.5rem',
+        padding: '5rem 1.5rem 4rem 1.5rem',
         textAlign: 'center',
-        background: 'radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.95) 75%)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.18) 0%, rgba(15, 23, 42, 0.8) 70%)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         overflow: 'hidden'
       }}>
-        {/* Floating Glowing Aura */}
+        {/* Floating Background Stars & Glow */}
         <div style={{
           position: 'absolute',
-          top: '-100px',
+          top: '-50px',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '700px',
-          height: '700px',
+          width: '600px',
+          height: '600px',
           background: 'radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, rgba(0,0,0,0) 70%)',
           pointerEvents: 'none'
         }}></div>
 
-        <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
           
-          {/* Golden Badge */}
+          {/* Date Badge */}
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.6rem',
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)',
+            gap: '0.5rem',
+            background: 'rgba(245, 158, 11, 0.15)',
             border: '1px solid rgba(245, 158, 11, 0.4)',
             color: '#fbbf24',
-            padding: '0.5rem 1.5rem',
+            padding: '0.4rem 1.2rem',
             borderRadius: '50px',
-            fontSize: '1rem',
+            fontSize: '0.95rem',
             fontWeight: 800,
             marginBottom: '1.5rem',
-            boxShadow: '0 0 25px rgba(245, 158, 11, 0.25)'
+            boxShadow: '0 0 20px rgba(245, 158, 11, 0.2)'
           }}>
-            <span>✨ العام الدراسي الجديد</span>
+            <span>📅 30.8.2026</span>
             <span>•</span>
-            <span>مدرسة مشيرفة الابتدائية</span>
+            <span>رؤية وتوجيهات الإدارة</span>
           </div>
 
-          {/* MAIN PAGE TITLE REQUESTED BY USER */}
           <h1 style={{
-            fontSize: 'clamp(2.2rem, 5vw, 3.8rem)',
+            fontSize: 'clamp(2.2rem, 5vw, 3.4rem)',
             fontWeight: 900,
             lineHeight: 1.25,
-            marginBottom: '1.2rem',
-            background: 'linear-gradient(135deg, #ffffff 0%, #fef08a 40%, #f59e0b 100%)',
+            marginBottom: '1rem',
+            background: 'linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #f59e0b 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: '0 10px 40px rgba(245, 158, 11, 0.3)'
+            textShadow: '0 10px 30px rgba(0,0,0,0.5)'
           }}>
-            أهلاً وسهلاً بكم في عام التميز 2026-2027
+            عام التميز في مدرسة مشيرفة الابتدائية
           </h1>
 
           <p style={{
             fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
-            color: '#cbd5e1',
-            maxWidth: '850px',
-            margin: '0 auto 2.5rem auto',
-            fontWeight: 600,
-            lineHeight: 1.7
+            color: '#94a3b8',
+            maxWidth: '750px',
+            margin: '0 auto 2rem auto',
+            fontWeight: 600
           }}>
-            نرحب بكم في العام الدراسي الجديد، حيث نُطلق العنان لطاقات إبداع طلابنا ونحلق معاً من سفينة النجاة إلى سفينة الفضاء 🚀✨
+            من سفينة النجاة إلى سفينة الفضاء 🚀✨ رحلتنا نحو التأثير والإلخام واكتشاف الكون داخل كل طالب
           </p>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => window.location.hash = '#/'}
+              style={{
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '0.8rem 1.8rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '1rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(37, 99, 235, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <i className="fas fa-arrow-right"></i> العودة للرئيسية
+            </button>
+            <button 
+              onClick={() => {
+                const el = document.getElementById('spaceship-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#f1f5f9',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '0.8rem 1.8rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '1rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              🚀 فلسفة سفينة الفضاء
+            </button>
+          </div>
 
         </div>
       </header>
 
-      {/* FULL-SCREEN / FULL-WIDTH CINEMATIC VIDEO PLAYER SECTION */}
-      <section style={{ maxWidth: '1200px', margin: '-1.5rem auto 4rem auto', padding: '0 1.5rem', position: 'relative', zIndex: 10 }}>
-        
-        <div 
-          id="excellence-video-box"
-          style={{
-            background: '#000000',
-            borderRadius: '24px',
-            border: '2px solid rgba(245, 158, 11, 0.4)',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(245, 158, 11, 0.2)',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          {/* Top Video Action Bar */}
-          <div style={{
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            padding: '0.8rem 1.5rem',
-            background: 'rgba(15, 23, 42, 0.95)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#fbbf24',
-            fontSize: '0.95rem',
-            fontWeight: 800
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <i className="fas fa-film" style={{ fontSize: '1.2rem', color: '#f59e0b' }}></i>
-              <span>فيلم عام التميز 2026-2027 • عرض متواصل لا ينتهي 🔄</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button 
-                onClick={toggleFullscreen}
-                style={{
-                  background: 'rgba(245, 158, 11, 0.2)',
-                  color: '#fbbf24',
-                  border: '1px solid rgba(245, 158, 11, 0.5)',
-                  padding: '0.4rem 1rem',
-                  borderRadius: '50px',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <i className="fas fa-expand"></i> {isFullscreen ? 'الخروج من الشاشة الكاملة' : '🔍 عرض بملء الشاشة'}
-              </button>
-
-              <a 
-                href="https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  padding: '0.4rem 1rem',
-                  borderRadius: '50px',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                <i className="fab fa-youtube"></i> فتح في يوتيوب ➔
-              </a>
-            </div>
-          </div>
-
-          {/* Responsive 16:9 Full-Width Video Frame */}
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            paddingTop: '56.25%', /* 16:9 Aspect Ratio */
-            background: '#000000'
-          }}>
-            <iframe
-              src={videoEmbedUrl}
-              title="فيلم عام التميز 2026-2027"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                border: 'none'
-              }}
-            ></iframe>
-          </div>
-
-          {/* Footer Continuous Loop Notice */}
-          <div style={{
-            padding: '0.75rem 1.5rem',
-            background: 'rgba(15, 23, 42, 0.95)',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            textAlign: 'center',
-            fontSize: '0.9rem',
-            color: '#94a3b8',
-            fontWeight: 700
-          }}>
-            <span>🔄 هذا الفيلم مبرمج للعرض التلقائي والإعادة المستمرة (Infinite Auto-Loop) طوال تواجدكم في الصفحة.</span>
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* Main Content Container: Excellence Philosophy & Pillars */}
-      <main style={{ maxWidth: '1050px', margin: '0 auto', padding: '1rem 1.5rem' }}>
+      {/* Main Content Container */}
+      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '3rem 1.5rem' }}>
 
         {/* Section 1: Concept of Excellence */}
         <section style={{ marginBottom: '3.5rem' }}>
@@ -247,20 +149,20 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               marginBottom: '1.5rem'
             }}>
               <div style={{
-                width: '52px',
-                height: '52px',
+                width: '50px',
+                height: '50px',
                 borderRadius: '16px',
                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.6rem',
+                fontSize: '1.5rem',
                 boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)'
               }}>
                 🌟
               </div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                مفهوم التميز بالنسبة لنا في مدرسة مشيرفة
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                مفهوم التميز بالنسبة لنا
               </h2>
             </div>
 
@@ -292,7 +194,7 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
         {/* Section 2: Core Questions */}
         <section style={{ marginBottom: '3.5rem' }}>
           <h2 style={{
-            fontSize: '1.8rem',
+            fontSize: '1.75rem',
             fontWeight: 900,
             color: '#f8fafc',
             marginBottom: '1.8rem',
@@ -317,7 +219,8 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               border: '1px solid rgba(56, 189, 248, 0.2)',
               borderRadius: '20px',
               padding: '1.8rem',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              transition: 'transform 0.3s ease'
             }}>
               <div style={{ fontSize: '2.2rem', marginBottom: '0.8rem' }}>➕</div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#38bdf8', marginBottom: '0.6rem' }}>
@@ -334,7 +237,8 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               border: '1px solid rgba(168, 85, 247, 0.2)',
               borderRadius: '20px',
               padding: '1.8rem',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              transition: 'transform 0.3s ease'
             }}>
               <div style={{ fontSize: '2.2rem', marginBottom: '0.8rem' }}>🔄</div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#c084fc', marginBottom: '0.6rem' }}>
@@ -351,7 +255,8 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
               border: '1px solid rgba(244, 63, 94, 0.2)',
               borderRadius: '20px',
               padding: '1.8rem',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              transition: 'transform 0.3s ease'
             }}>
               <div style={{ fontSize: '2.2rem', marginBottom: '0.8rem' }}>💫</div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fb7185', marginBottom: '0.6rem' }}>
@@ -392,7 +297,56 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
           </div>
         </section>
 
-        {/* Section 3: Spaceship Vision Feature */}
+        {/* Section 3: Daily Habit & Goal */}
+        <section style={{ marginBottom: '3.5rem' }}>
+          <div style={{
+            background: 'rgba(30, 41, 59, 0.7)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            padding: '2.5rem',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+          }}>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#67e8f9', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span>⚙️</span> التميز: عادة يومية في التفكير والعمل
+            </h2>
+
+            <p style={{ fontSize: '1.15rem', lineHeight: '1.9', color: '#cbd5e1', marginBottom: '1.5rem' }}>
+              فالتميز ليس حدثًا استثنائيًا يحدث مرة واحدة، بل عادة يومية في التفكير والعمل. التميز هو أن نلاحظ ما لا يلاحظه الآخرون، وأن نعطي قيمة للتفاصيل الصغيرة، وأن نمتلك الجرأة على التجربة، والقدرة على التعلم من الخطأ، والاستعداد لتغيير ما اعتدنا عليه عندما نرى إمكانية أفضل. فالتميز لا يبدأ دائمًا بفكرة عظيمة؛ أحيانًا يبدأ من تفصيل صغير رآه أحدهم بطريقة مختلفة.
+            </p>
+
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.6)',
+              borderLeft: '4px solid #38bdf8',
+              padding: '1.2rem 1.5rem',
+              borderRadius: '8px',
+              fontSize: '1.15rem',
+              color: '#e2e8f0',
+              fontWeight: 700,
+              marginBottom: '2rem'
+            }}>
+              💡 "وهو أن ندرك دائمًا أن: ما أوصلنا إلى هنا قد لا يكون كافيًا ليأخذنا إلى هناك."
+            </div>
+
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.5) 0%, rgba(17, 24, 39, 0.8) 100%)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: '16px',
+              padding: '1.8rem',
+              color: '#f8fafc'
+            }}>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#60a5fa', marginBottom: '0.8rem' }}>
+                🎯 غايتنا السامية في عام التميز:
+              </h3>
+              <p style={{ fontSize: '1.1rem', lineHeight: '1.8', margin: 0, color: '#e2e8f0' }}>
+                ليست فقط أن نحافظ على مدرسة ناجحة، وإنما أن ننتقل إلى مرحلة أعمق: <strong>من مدرسة ناجحة ➔ إلى مدرسة متميزة ➔ إلى مدرسة مؤثرة وملهمة.</strong><br/>
+                مدرسة لا تقيس نفسها فقط بما أنجزته، وإنما بما تضيفه كل يوم إلى طلابها ومعلميها ومجتمعها، وبما تتركه من أثر بعد كل فكرة ومبادرة وتجربة.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 4: From Lifeboat to Spaceship (The Vision Feature) */}
         <section id="spaceship-section" style={{ marginBottom: '3.5rem' }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%)',
@@ -403,6 +357,17 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
             position: 'relative',
             overflow: 'hidden'
           }}>
+
+            {/* Glowing Accent */}
+            <div style={{
+              position: 'absolute',
+              top: '-100px',
+              right: '-100px',
+              width: '300px',
+              height: '300px',
+              background: 'radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(0,0,0,0) 70%)',
+              pointerEvents: 'none'
+            }}></div>
 
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               <div style={{
@@ -448,7 +413,7 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
                   </div>
                 </div>
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#cbd5e1', margin: 0 }}>
-                  على مدار سنوات كانت مدرستنا أشبه بـ <strong>سفينة نجاة</strong>؛ مهمتها أن تحمل أبناءها، تحميهم، تمنحهم الأمان، وتوصلهم إلى برّ يستطيعون الوقوف عليه بثقة.
+                  على مدار سنوات كانت مدرستنا أشبه بـ <strong>سفينة نجاة</strong>؛ مهمتها أن تحمل أبناءها، تحميهم، تمنحهم الأمان، وتوصلهم إلى برّ يستطيعون الوقوف عليه بثقة. كان ذلك ضروريًا في مرحلة من رحلتنا.
                 </p>
               </div>
 
@@ -476,35 +441,137 @@ const ExcellenceYearPage = ({ isStandalone = true }) => {
 
             </div>
 
-            <p style={{ fontSize: '1.15rem', lineHeight: '1.9', color: '#cbd5e1', marginBottom: '1.8rem', textAlign: 'center' }}>
-              الفضاء واسع، ولا توجد فيه طريق واحدة يجب على الجميع أن يسلكوها... ولكذلك طلابنا. كل طالب عالم مختلف، ولكل طالب مداره ومساره وحلمه الخاص.
+            <p style={{ fontSize: '1.15rem', lineHeight: '1.9', color: '#cbd5e1', marginBottom: '1.8rem' }}>
+              وهنا يأتي الفضاء ليعبّر عن فلسفة عام التميز. فالفضاء واسع، ولا توجد فيه طريق واحدة يجب على الجميع أن يسلكوها، ولا كوكب واحد يجب على الجميع الوصول إليه. وكذلك طلابنا. كل طالب عالم مختلف، وكل طالب يحمل إمكانات مختلفة، ولكل طالب مداره ومساره وحلمه الخاص.
             </p>
 
-            {/* Home Navigation Button */}
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-              <button 
-                onClick={() => window.location.hash = '#/'}
-                style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.9rem 2.2rem',
-                  borderRadius: '50px',
-                  fontWeight: 900,
-                  fontSize: '1.05rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 25px rgba(37, 99, 235, 0.4)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.6rem'
-                }}
-              >
-                <i className="fas fa-home"></i> العودة للبوابة الرئيسية للمدرسة ➔
-              </button>
+            <div style={{
+              background: 'rgba(245, 158, 11, 0.1)',
+              borderRight: '4px solid #f59e0b',
+              padding: '1.4rem 1.8rem',
+              borderRadius: '0 12px 12px 0',
+              fontSize: '1.1rem',
+              lineHeight: '1.8',
+              color: '#fef08a',
+              fontWeight: 700
+            }}>
+              🌟 "ولذلك فإن مهمتنا ليست أن نصنع نسخًا متشابهة من الطلاب. فالعالم لم يعد بحاجة إلى المزيد من النسخ؛ بل بحاجة إلى أشخاص يستطيعون أن يفكروا بطريقة مختلفة، وأن يبدعوا، وأن يبادروا، وأن يكتشفوا ما لم يكتشفه غيرهم، لذلك علينا أن نساعد كل طالب على الوصول إلى أبعد نقطة يستطيع هو أن يصل إليها."
             </div>
 
           </div>
         </section>
+
+        {/* Section 5: The 5 Shifts Covenant */}
+        <section style={{ marginBottom: '3.5rem' }}>
+          <h2 style={{
+            fontSize: '1.75rem',
+            fontWeight: 900,
+            color: '#f8fafc',
+            marginBottom: '1.8rem',
+            textAlign: 'center'
+          }}>
+            📜 ميثاق الانطلاق لمرحلة التميز الجديدة
+          </h2>
+
+          <div style={{
+            display: 'grid',
+            gap: '1rem',
+            maxWidth: '800px',
+            margin: '0 auto'
+          }}>
+
+            {[
+              { icon: '🛡️ ➔ 🚀', from: 'من الأمان', to: 'إلى الانطلاق', color: '#38bdf8' },
+              { icon: '📚 ➔ 🔬', from: 'من التعلم', to: 'إلى الاكتشاف', color: '#c084fc' },
+              { icon: '👥 ➔ 🌟', from: 'من التشابه', to: 'إلى التفرد', color: '#f43f5e' },
+              { icon: '🏆 ➔ 💖', from: 'من النجاح', to: 'إلى التأثير', color: '#10b981' },
+              { icon: '⛵ ➔ 🛸', from: 'من سفينة النجاة', to: 'إلى سفينة الفضاء', color: '#f59e0b' },
+            ].map((item, idx) => (
+              <div key={idx} style={{
+                background: 'rgba(30, 41, 59, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                padding: '1.2rem 1.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#94a3b8' }}>
+                  {item.from}
+                </div>
+                <div style={{ fontSize: '1.5rem' }}>➔</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: item.color }}>
+                  {item.to}
+                </div>
+              </div>
+            ))}
+
+          </div>
+        </section>
+
+        {/* Section 6: Golden Conclusion Card */}
+        <section style={{ marginBottom: '2rem' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #d97706 0%, #b45309 50%, #78350f 100%)',
+            borderRadius: '28px',
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            color: '#ffffff',
+            boxShadow: '0 20px 50px rgba(217, 119, 6, 0.3)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌠</div>
+            <h2 style={{
+              fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)',
+              fontWeight: 900,
+              lineHeight: 1.4,
+              maxWidth: '850px',
+              margin: '0 auto 1.5rem auto',
+              textShadow: '0 4px 15px rgba(0,0,0,0.4)'
+            }}>
+              "لأننا نؤمن أن: كل طفل يحمل بداخله كونًا يستحق أن يُكتشف."
+            </h2>
+            <p style={{ fontSize: '1.15rem', color: '#fef3c7', fontWeight: 700, margin: 0 }}>
+              مدرسة مشيرفة الابتدائية • بوابة التميز والإبداع 🌟
+            </p>
+          </div>
+        </section>
+
+        {/* Footer Actions */}
+        <div style={{ textAlign: 'center', marginTop: '3rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => window.location.hash = '#/'}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              color: '#f8fafc',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              padding: '0.8rem 1.8rem',
+              borderRadius: '12px',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            🏠 الصفحة الرئيسية
+          </button>
+          <button 
+            onClick={() => window.location.hash = '#/astronomy'}
+            style={{
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.8rem 1.8rem',
+              borderRadius: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+            }}
+          >
+            🌌 تجربة مختبر الفلك
+          </button>
+        </div>
 
       </main>
 
