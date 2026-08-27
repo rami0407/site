@@ -28,13 +28,23 @@ const Navbar = () => {
 
     const updateNavState = (rawItems) => {
       let items = [...rawItems];
-      // Filter out any lingering nav_excellence, nav_astronomy, or nav_stem from navbar
-      items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
+      // Filter out any lingering nav_astronomy or nav_stem from navbar
+      items = items.filter(item => item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
       
-      const standaloneTargets = ['news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books'];
+      const standaloneTargets = ['news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books', 'excellence'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
-      // 🌟 GUARANTEE: Ensure nav_articles and nav_parent_polls always exist in main navigation!
+      // 🌟 GUARANTEE: Ensure nav_excellence, nav_articles and nav_parent_polls always exist in main navigation!
+      if (!items.some(item => item.id === 'nav_excellence' || item.target === 'excellence')) {
+        items.push({
+          id: "nav_excellence",
+          label: "🌟 عام التميز 2026-2027",
+          type: "page",
+          target: "excellence",
+          category: "main",
+          order: 2
+        });
+      }
 
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
         items.push({
