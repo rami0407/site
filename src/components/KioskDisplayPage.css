@@ -1,0 +1,341 @@
+/* Kiosk Full-Screen Display Board Styles */
+.kiosk-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background: #090d16;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  font-family: 'Tajawal', 'Cairo', sans-serif;
+  direction: rtl;
+}
+
+/* Themes */
+.kiosk-container.theme-dark {
+  background: linear-gradient(180deg, #090d16 0%, #0f172a 100%);
+}
+
+.kiosk-container.theme-gold {
+  background: linear-gradient(180deg, #1e1b18 0%, #3a2e1d 100%);
+}
+
+.kiosk-container.theme-blue {
+  background: linear-gradient(180deg, #0b1329 0%, #1e3a8a 100%);
+}
+
+/* Header Bar */
+.kiosk-header {
+  height: 90px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 100;
+}
+
+.kiosk-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.kiosk-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+  object-fit: cover;
+}
+
+.kiosk-titles .kiosk-main-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #fef08a 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.kiosk-titles .kiosk-subtitle {
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  margin: 0.2rem 0 0 0;
+  font-weight: 600;
+}
+
+.kiosk-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.kiosk-clock-box {
+  text-align: left;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.kiosk-time {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1px;
+  font-family: monospace, sans-serif;
+}
+
+.kiosk-date {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.kiosk-btn-fullscreen {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kiosk-btn-fullscreen:hover {
+  background: #f59e0b;
+  color: #000;
+  transform: scale(1.05);
+}
+
+/* Stage Area */
+.kiosk-stage {
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 150px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* YouTube Video Mode */
+.kiosk-video-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #000;
+}
+
+.kiosk-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Slideshow Mode */
+.kiosk-slideshow-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.kiosk-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out, transform 8s ease-out;
+  transform: scale(1.03);
+}
+
+.kiosk-slide.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.slide-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+}
+
+.kiosk-slide-dots {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.6rem;
+  z-index: 20;
+}
+
+.kiosk-slide-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.kiosk-slide-dots .dot.active {
+  background: #f59e0b;
+  width: 28px;
+  border-radius: 20px;
+}
+
+/* Announcement Card Mode */
+.kiosk-announcement-card {
+  max-width: 900px;
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  borderRadius: 28px;
+  padding: 3.5rem;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+}
+
+.announcement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+}
+
+.announcement-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.announcement-text {
+  font-size: 1.4rem;
+  color: #cbd5e1;
+  line-height: 1.8;
+}
+
+/* Footer & Running Ticker */
+.kiosk-footer {
+  position: relative;
+  height: 60px;
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  z-index: 100;
+}
+
+.kiosk-qr-badge {
+  position: absolute;
+  bottom: 75px;
+  right: 2rem;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  border-radius: 16px;
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 200;
+}
+
+.qr-img {
+  width: 55px;
+  height: 55px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 2px;
+}
+
+.qr-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+}
+
+.qr-text strong {
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+/* News Ticker */
+.kiosk-ticker-bar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.ticker-label {
+  background: #f59e0b;
+  color: #000;
+  font-weight: 900;
+  font-size: 0.95rem;
+  padding: 0 1.5rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+.ticker-track {
+  flex-grow: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-content {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f8fafc;
+  padding-right: 100%;
+  animation: ticker-animation 35s linear infinite;
+}
+
+@keyframes ticker-animation {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}

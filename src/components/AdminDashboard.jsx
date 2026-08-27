@@ -433,6 +433,43 @@ const AdminDashboard = () => {
   // STEM Teacher Approval Requests States
   const [stemTeacherRequests, setStemTeacherRequests] = useState([]);
 
+  // Smart Kiosk Display Config State
+  const [kioskConfig, setKioskConfig] = useState({
+    mode: 'youtube',
+    title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
+    subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
+    youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+    imagesText: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+    tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
+    showTicker: true,
+    showClock: true,
+    showQr: true,
+    showLogo: true,
+    theme: 'dark',
+    slideInterval: 5
+  });
+
+  const handleSaveKioskConfig = async (e) => {
+    e.preventDefault();
+    try {
+      const imagesArray = kioskConfig.imagesText
+        ? kioskConfig.imagesText.split('\n').map(s => s.trim()).filter(Boolean)
+        : [];
+
+      const payload = {
+        ...kioskConfig,
+        images: imagesArray,
+        updatedAt: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'displayBoard', 'config'), payload);
+      localStorage.setItem('db_kiosk_config', JSON.stringify(payload));
+      alert('🎉 تم حفظ وتطبيق إعدادات شاشة العرض الرقمية بنجاح! التعديلات مباشرة على كافّة الشاشات الآن.');
+    } catch (err) {
+      alert('حدث خطأ أثناء حفظ إعدادات شاشة العرض: ' + err.message);
+    }
+  };
+
   const loadStemTeacherRequests = async () => {
     let list = [];
     try {
@@ -3063,6 +3100,25 @@ const AdminDashboard = () => {
             </button>
 
             <button 
+              onClick={() => setActiveTab('kiosk-display')} 
+              className={`filter-chip ${activeTab === 'kiosk-display' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justify: 'flex-start',
+                padding: '0.9rem 1.2rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'kiosk-display' ? '#0ea5e9' : '#e0f2fe',
+                color: activeTab === 'kiosk-display' ? 'white' : '#0369a1',
+                fontWeight: 800,
+                border: '2px solid #7dd3fc'
+              }}
+            >
+              <i className="fas fa-desktop" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              📺 شاشة العرض الرقمية (Display Kiosk)
+            </button>
+
+            <button 
               onClick={() => setActiveTab('contact-info')} 
               className={`filter-chip ${activeTab === 'contact-info' ? 'active' : ''}`}
               style={{ width: '100%', justifyContent: 'flex-start', padding: '0.9rem 1.2rem', fontSize: '1rem', borderRadius: 'var(--radius-sm)' }}
@@ -3083,6 +3139,236 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <>
+              {/* TAB: KIOSK DISPLAY BOARD MANAGER */}
+              {activeTab === 'kiosk-display' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>📺 لوحة التحكم بشاشة العرض الرقمية (Smart Display Board)</h2>
+                      <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 700, margin: '0.4rem 0 0 0' }}>
+                        هذه اللوحة تتيح لك إعداد وتغيير وسائط وأخبار شاشة العرض الخارجية بملء الشاشة، والتي يمكن فتحها على أي شاشة تلفزيون أو قاعة بالمدرسة!
+                      </p>
+                    </div>
+
+                    <a 
+                      href="#/kiosk" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                        color: 'white',
+                        padding: '0.8rem 1.6rem',
+                        borderRadius: '50px',
+                        fontWeight: 900,
+                        fontSize: '0.95rem',
+                        textDecoration: 'none',
+                        boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <i className="fas fa-external-link-alt"></i> 🚀 فتح شاشة العرض الحية في نافذة جديدة (/#/kiosk)
+                    </a>
+                  </div>
+
+                  <form onSubmit={handleSaveKioskConfig} style={{ background: 'white', padding: '2rem', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                    
+                    {/* Mode Choice */}
+                    <div className="form-group" style={{ marginBottom: '1.8rem' }}>
+                      <label className="form-label" style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+                        🎬 اختر نوع المحتوى الرئيسي المعروض على الشاشة:
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '0.75rem' }}>
+                        <label style={{
+                          background: kioskConfig.mode === 'youtube' ? '#f0f9ff' : '#f8fafc',
+                          border: kioskConfig.mode === 'youtube' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
+                          padding: '1.2rem',
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <input 
+                            type="radio" 
+                            name="kioskMode" 
+                            value="youtube" 
+                            checked={kioskConfig.mode === 'youtube'} 
+                            onChange={() => setKioskConfig({ ...kioskConfig, mode: 'youtube' })} 
+                          />
+                          <span>🔴 عرض فيديو يوتيوب متواصل (YouTube Video)</span>
+                        </label>
+
+                        <label style={{
+                          background: kioskConfig.mode === 'slideshow' ? '#f0f9ff' : '#f8fafc',
+                          border: kioskConfig.mode === 'slideshow' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
+                          padding: '1.2rem',
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <input 
+                            type="radio" 
+                            name="kioskMode" 
+                            value="slideshow" 
+                            checked={kioskConfig.mode === 'slideshow'} 
+                            onChange={() => setKioskConfig({ ...kioskConfig, mode: 'slideshow' })} 
+                          />
+                          <span>🖼️ معرض صور متقلب أوتوماتيكياً (Image Slideshow)</span>
+                        </label>
+
+                        <label style={{
+                          background: kioskConfig.mode === 'announcement' ? '#f0f9ff' : '#f8fafc',
+                          border: kioskConfig.mode === 'announcement' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
+                          padding: '1.2rem',
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <input 
+                            type="radio" 
+                            name="kioskMode" 
+                            value="announcement" 
+                            checked={kioskConfig.mode === 'announcement'} 
+                            onChange={() => setKioskConfig({ ...kioskConfig, mode: 'announcement' })} 
+                          />
+                          <span>📢 كرت إعلاني ترحيبي عريض (Announcement Mode)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Main Titles */}
+                    <div className="form-group-row">
+                      <div className="form-group">
+                        <label className="form-label">العنوان الرئيسي أعلى الشاشة *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={kioskConfig.title} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, title: e.target.value })} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">العنوان الفرعي / الترحيب *</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={kioskConfig.subtitle} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, subtitle: e.target.value })} 
+                          required 
+                        />
+                      </div>
+                    </div>
+
+                    {/* YouTube URL input */}
+                    {kioskConfig.mode === 'youtube' && (
+                      <div className="form-group" style={{ background: '#fffbeb', padding: '1.25rem', borderRadius: '16px', border: '1px solid #fde68a', marginBottom: '1.5rem' }}>
+                        <label className="form-label" style={{ color: '#b45309', fontWeight: 900 }}>🎥 رابط فيديو اليوتيوب المعروض على الشاشة:</label>
+                        <input 
+                          type="url" 
+                          className="form-input" 
+                          value={kioskConfig.youtubeUrl} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, youtubeUrl: e.target.value })} 
+                          placeholder="مثال: https://youtu.be/EF4g6yBUbmk" 
+                        />
+                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>نماذج فيديو جاهزة:</span>
+                          <button 
+                            type="button" 
+                            onClick={() => setKioskConfig({ ...kioskConfig, youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw' })}
+                            style={{ background: 'white', border: '1px solid #cbd5e1', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            🎬 فيلم عام التميز 2026-2027
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Slideshow Images input */}
+                    {kioskConfig.mode === 'slideshow' && (
+                      <div className="form-group" style={{ background: '#f0f9ff', padding: '1.25rem', borderRadius: '16px', border: '1px solid #bae6fd', marginBottom: '1.5rem' }}>
+                        <label className="form-label" style={{ color: '#0369a1', fontWeight: 900 }}>🖼️ روابط صور المعرض (روابط الصور، رابط في كل سطر):</label>
+                        <textarea 
+                          className="form-input" 
+                          rows="4" 
+                          value={kioskConfig.imagesText} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, imagesText: e.target.value })} 
+                          placeholder="ضع رابط صورة بكل سطر..."
+                        ></textarea>
+                      </div>
+                    )}
+
+                    {/* Ticker Text input */}
+                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                      <label className="form-label" style={{ fontWeight: 900 }}>📰 نص الشريط الإخباري المتحرك أسفل الشاشة:</label>
+                      <textarea 
+                        className="form-input" 
+                        rows="2" 
+                        value={kioskConfig.tickerText} 
+                        onChange={(e) => setKioskConfig({ ...kioskConfig, tickerText: e.target.value })} 
+                      ></textarea>
+                    </div>
+
+                    {/* Toggles */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '1.8rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={kioskConfig.showTicker} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, showTicker: e.target.checked })} 
+                        />
+                        <span>إظهار الشريط الإخباري المتحرك</span>
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={kioskConfig.showClock} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, showClock: e.target.checked })} 
+                        />
+                        <span>إظهار الساعة الرقمية والتاريخ</span>
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={kioskConfig.showQr} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, showQr: e.target.checked })} 
+                        />
+                        <span>إظهار باركود الـ QR للموقع</span>
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={kioskConfig.showLogo} 
+                          onChange={(e) => setKioskConfig({ ...kioskConfig, showLogo: e.target.checked })} 
+                        />
+                        <span>إظهار شعار المدرسة</span>
+                      </label>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn form-submit-btn" 
+                      style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', color: 'white', fontWeight: 900, fontSize: '1.1rem', padding: '0.9rem' }}
+                    >
+                      <i className="fas fa-save"></i> حفظ وتطبيق إعدادات شاشة العرض مباشرة 🎉
+                    </button>
+
+                  </form>
+                </div>
+              )}
+
               {/* TAB: WORLD IDEAS CONTROL & CUSTOMIZATION */}
               {activeTab === 'world-ideas-admin' && (
                 <div>

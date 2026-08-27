@@ -44,6 +44,7 @@ import FacebookFeed from './components/FacebookFeed';
 import NewsPage from './components/NewsPage';
 import GalleryPage from './components/GalleryPage';
 import CalendarPage from './components/CalendarPage';
+import KioskDisplayPage from './components/KioskDisplayPage';
 import './App.css';
 
 
@@ -282,7 +283,22 @@ function App() {
   }, []);
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
+  const isKioskView = currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display');
   const isExcellenceView = currentHash.includes('excellence');
+
+  if (isAdminView) {
+    return (
+      <>
+        <Loader />
+        <AdminDashboard />
+      </>
+    );
+  }
+
+  if (isKioskView) {
+    return <KioskDisplayPage />;
+  }
+
   const isStemView = currentHash.includes('stem');
   const isLearningCornerView = currentHash.includes('learning-corner');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
