@@ -3230,35 +3230,123 @@ const AdminDashboard = () => {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                     <div>
-                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>📺 لوحة التحكم بشاشة العرض الرقمية (Smart Display Board)</h2>
+                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>📺 لوحة التحكم بشاشات العرض الرقمية المتعددة (Smart Multi-Channel Signage)</h2>
                       <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 700, margin: '0.4rem 0 0 0' }}>
-                        هذه اللوحة تتيح لك إعداد وتغيير وسائط وأخبار شاشة العرض الخارجية بملء الشاشة، والتي يمكن فتحها على أي شاشة تلفزيون أو قاعة بالمدرسة!
+                        تحكم كامل بكل شاشة مستقلة من مكان واحد: شاشة الطلاب، شاشة المعلمين، شاشة الأهالي، والشاشة العامة للمدرسة!
                       </p>
                     </div>
-
-                    <a 
-                      href="#/kiosk" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      style={{
-                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                        color: 'white',
-                        padding: '0.8rem 1.6rem',
-                        borderRadius: '50px',
-                        fontWeight: 900,
-                        fontSize: '0.95rem',
-                        textDecoration: 'none',
-                        boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                    >
-                      <i className="fas fa-external-link-alt"></i> 🚀 فتح شاشة العرض الحية في نافذة جديدة (/#/kiosk)
-                    </a>
                   </div>
 
+                  {/* Channel Selector Chips Bar */}
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.8rem', background: '#e2e8f0', padding: '0.5rem', borderRadius: '16px' }}>
+                    {[
+                      { key: 'main', label: '🏫 الشاشة العامة للمدرسة', hash: '#/kiosk/main', color: '#0ea5e9' },
+                      { key: 'students', label: '🎓 شاشة الطلاب والفعاليات', hash: '#/kiosk/students', color: '#f59e0b' },
+                      { key: 'teachers', label: '👨‍🏫 شاشة غرفة المعلمين', hash: '#/kiosk/teachers', color: '#8b5cf6' },
+                      { key: 'parents', label: '👨‍👩‍👧 شاشة الأهالي والزوار', hash: '#/kiosk/parents', color: '#10b981' }
+                    ].map(ch => (
+                      <button
+                        key={ch.key}
+                        type="button"
+                        onClick={() => setSelectedKioskChannel(ch.key)}
+                        style={{
+                          flex: 1,
+                          minWidth: '180px',
+                          padding: '0.85rem 1.2rem',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: selectedKioskChannel === ch.key ? ch.color : 'white',
+                          color: selectedKioskChannel === ch.key ? 'white' : '#334155',
+                          fontWeight: 900,
+                          fontSize: '0.95rem',
+                          cursor: 'pointer',
+                          boxShadow: selectedKioskChannel === ch.key ? '0 4px 15px rgba(0,0,0,0.15)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {ch.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selected Channel Actions Control Card */}
+                  <div style={{ background: '#0f172a', color: 'white', padding: '1.5rem 2rem', borderRadius: '20px', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: '#fbbf24', fontWeight: 800, marginBottom: '0.3rem' }}>
+                        📍 القناة المحددة حالياً: {selectedKioskChannel === 'students' ? 'شاشة الطلاب والفعاليات 🎓' : selectedKioskChannel === 'teachers' ? 'شاشة غرفة المعلمين 👨‍🏫' : selectedKioskChannel === 'parents' ? 'شاشة الأهالي والزوار 👨‍👩‍👧' : 'الشاشة العامة للمدرسة 🏫'}
+                      </div>
+                      <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.1rem' }}>
+                        رابط القناة: <code style={{ background: '#1e293b', color: '#38bdf8', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.85rem' }}>{window.location.origin + window.location.pathname + (selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`)}</code>
+                      </h3>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyKioskLink(selectedKioskChannel)}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.15)',
+                          color: '#ffffff',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: '50px',
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <i className="fas fa-copy"></i> 📋 نسخ رابط هذه الشاشة
+                      </button>
+
+                      <a
+                        href={selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          background: '#0ea5e9',
+                          color: 'white',
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: '50px',
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          boxShadow: '0 4px 15px rgba(14, 165, 233, 0.4)'
+                        }}
+                      >
+                        <i className="fas fa-external-link-alt"></i> 🚀 فتح الشاشة بملء الشاشة
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* LIVE PREVIEW IFRAME BOX INSIDE ADMIN DASHBOARD */}
+                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '20px', border: '1px solid #cbd5e1', marginBottom: '2rem', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ margin: 0, fontWeight: 900, fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>👁️ معاينة تفاعلية حية مباشرة (Live Screen Preview)</span>
+                      </h4>
+                      <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 800 }}>● متصل ومزامن بالحيوية اللحظية</span>
+                    </div>
+
+                    <div style={{ width: '100%', height: '380px', borderRadius: '14px', overflow: 'hidden', border: '2px solid #334155', background: '#000' }}>
+                      <iframe
+                        src={window.location.origin + window.location.pathname + (selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`)}
+                        title="Live Kiosk Preview"
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                      ></iframe>
+                    </div>
+                  </div>
+
+                  {/* CONFIG EDIT FORM FOR SELECTED CHANNEL */}
                   <form onSubmit={handleSaveKioskConfig} style={{ background: 'white', padding: '2rem', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      ⚙️ إعدادات محتوى شاشة ({selectedKioskChannel === 'students' ? 'الطلاب 🎓' : selectedKioskChannel === 'teachers' ? 'المعلمين 👨‍🏫' : selectedKioskChannel === 'parents' ? 'الأهالي 👨‍👩‍👧' : 'العامة 🏫'}):
+                    </h3>
                     
                     {/* Mode Choice */}
                     <div className="form-group" style={{ marginBottom: '1.8rem' }}>
@@ -3267,8 +3355,8 @@ const AdminDashboard = () => {
                       </label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '0.75rem' }}>
                         <label style={{
-                          background: kioskConfig.mode === 'youtube' ? '#f0f9ff' : '#f8fafc',
-                          border: kioskConfig.mode === 'youtube' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
+                          background: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube' ? '#f0f9ff' : '#f8fafc',
+                          border: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
                           padding: '1.2rem',
                           borderRadius: '16px',
                           cursor: 'pointer',
@@ -3281,15 +3369,18 @@ const AdminDashboard = () => {
                             type="radio" 
                             name="kioskMode" 
                             value="youtube" 
-                            checked={kioskConfig.mode === 'youtube'} 
-                            onChange={() => setKioskConfig({ ...kioskConfig, mode: 'youtube' })} 
+                            checked={(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube'} 
+                            onChange={() => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: 'youtube' }
+                            })} 
                           />
                           <span>🔴 عرض فيديو يوتيوب متواصل (YouTube Video)</span>
                         </label>
 
                         <label style={{
-                          background: kioskConfig.mode === 'slideshow' ? '#f0f9ff' : '#f8fafc',
-                          border: kioskConfig.mode === 'slideshow' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
+                          background: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow' ? '#f0f9ff' : '#f8fafc',
+                          border: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
                           padding: '1.2rem',
                           borderRadius: '16px',
                           cursor: 'pointer',
@@ -3302,15 +3393,18 @@ const AdminDashboard = () => {
                             type="radio" 
                             name="kioskMode" 
                             value="slideshow" 
-                            checked={kioskConfig.mode === 'slideshow'} 
-                            onChange={() => setKioskConfig({ ...kioskConfig, mode: 'slideshow' })} 
+                            checked={(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow'} 
+                            onChange={() => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: 'slideshow' }
+                            })} 
                           />
                           <span>🖼️ معرض صور متقلب أوتوماتيكياً (Image Slideshow)</span>
                         </label>
 
                         <label style={{
-                          background: kioskConfig.mode === 'announcement' ? '#f0f9ff' : '#f8fafc',
-                          border: kioskConfig.mode === 'announcement' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
+                          background: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'announcement' ? '#f0f9ff' : '#f8fafc',
+                          border: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'announcement' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
                           padding: '1.2rem',
                           borderRadius: '16px',
                           cursor: 'pointer',
@@ -3323,8 +3417,11 @@ const AdminDashboard = () => {
                             type="radio" 
                             name="kioskMode" 
                             value="announcement" 
-                            checked={kioskConfig.mode === 'announcement'} 
-                            onChange={() => setKioskConfig({ ...kioskConfig, mode: 'announcement' })} 
+                            checked={(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'announcement'} 
+                            onChange={() => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: 'announcement' }
+                            })} 
                           />
                           <span>📢 كرت إعلاني ترحيبي عريض (Announcement Mode)</span>
                         </label>
@@ -3338,8 +3435,11 @@ const AdminDashboard = () => {
                         <input 
                           type="text" 
                           className="form-input" 
-                          value={kioskConfig.title} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, title: e.target.value })} 
+                          value={kioskChannelsConfig[selectedKioskChannel]?.title || ''} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], title: e.target.value }
+                          })} 
                           required 
                         />
                       </div>
@@ -3348,46 +3448,45 @@ const AdminDashboard = () => {
                         <input 
                           type="text" 
                           className="form-input" 
-                          value={kioskConfig.subtitle} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, subtitle: e.target.value })} 
+                          value={kioskChannelsConfig[selectedKioskChannel]?.subtitle || ''} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], subtitle: e.target.value }
+                          })} 
                           required 
                         />
                       </div>
                     </div>
 
                     {/* YouTube URL input */}
-                    {kioskConfig.mode === 'youtube' && (
+                    {(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube' && (
                       <div className="form-group" style={{ background: '#fffbeb', padding: '1.25rem', borderRadius: '16px', border: '1px solid #fde68a', marginBottom: '1.5rem' }}>
                         <label className="form-label" style={{ color: '#b45309', fontWeight: 900 }}>🎥 رابط فيديو اليوتيوب المعروض على الشاشة:</label>
                         <input 
                           type="url" 
                           className="form-input" 
-                          value={kioskConfig.youtubeUrl} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, youtubeUrl: e.target.value })} 
+                          value={kioskChannelsConfig[selectedKioskChannel]?.youtubeUrl || ''} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], youtubeUrl: e.target.value }
+                          })} 
                           placeholder="مثال: https://youtu.be/EF4g6yBUbmk" 
                         />
-                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>نماذج فيديو جاهزة:</span>
-                          <button 
-                            type="button" 
-                            onClick={() => setKioskConfig({ ...kioskConfig, youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw' })}
-                            style={{ background: 'white', border: '1px solid #cbd5e1', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-                          >
-                            🎬 فيلم عام التميز 2026-2027
-                          </button>
-                        </div>
                       </div>
                     )}
 
                     {/* Slideshow Images input */}
-                    {kioskConfig.mode === 'slideshow' && (
+                    {(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow' && (
                       <div className="form-group" style={{ background: '#f0f9ff', padding: '1.25rem', borderRadius: '16px', border: '1px solid #bae6fd', marginBottom: '1.5rem' }}>
                         <label className="form-label" style={{ color: '#0369a1', fontWeight: 900 }}>🖼️ روابط صور المعرض (روابط الصور، رابط في كل سطر):</label>
                         <textarea 
                           className="form-input" 
                           rows="4" 
-                          value={kioskConfig.imagesText} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, imagesText: e.target.value })} 
+                          value={kioskChannelsConfig[selectedKioskChannel]?.imagesText || ''} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], imagesText: e.target.value }
+                          })} 
                           placeholder="ضع رابط صورة بكل سطر..."
                         ></textarea>
                       </div>
@@ -3399,8 +3498,11 @@ const AdminDashboard = () => {
                       <textarea 
                         className="form-input" 
                         rows="2" 
-                        value={kioskConfig.tickerText} 
-                        onChange={(e) => setKioskConfig({ ...kioskConfig, tickerText: e.target.value })} 
+                        value={kioskChannelsConfig[selectedKioskChannel]?.tickerText || ''} 
+                        onChange={(e) => setKioskChannelsConfig({
+                          ...kioskChannelsConfig,
+                          [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], tickerText: e.target.value }
+                        })} 
                       ></textarea>
                     </div>
 
@@ -3409,8 +3511,11 @@ const AdminDashboard = () => {
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
                         <input 
                           type="checkbox" 
-                          checked={kioskConfig.showTicker} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, showTicker: e.target.checked })} 
+                          checked={kioskChannelsConfig[selectedKioskChannel]?.showTicker ?? true} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], showTicker: e.target.checked }
+                          })} 
                         />
                         <span>إظهار الشريط الإخباري المتحرك</span>
                       </label>
@@ -3418,8 +3523,11 @@ const AdminDashboard = () => {
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
                         <input 
                           type="checkbox" 
-                          checked={kioskConfig.showClock} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, showClock: e.target.checked })} 
+                          checked={kioskChannelsConfig[selectedKioskChannel]?.showClock ?? true} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], showClock: e.target.checked }
+                          })} 
                         />
                         <span>إظهار الساعة الرقمية والتاريخ</span>
                       </label>
@@ -3427,8 +3535,11 @@ const AdminDashboard = () => {
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
                         <input 
                           type="checkbox" 
-                          checked={kioskConfig.showQr} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, showQr: e.target.checked })} 
+                          checked={kioskChannelsConfig[selectedKioskChannel]?.showQr ?? true} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], showQr: e.target.checked }
+                          })} 
                         />
                         <span>إظهار باركود الـ QR للموقع</span>
                       </label>
@@ -3436,8 +3547,11 @@ const AdminDashboard = () => {
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
                         <input 
                           type="checkbox" 
-                          checked={kioskConfig.showLogo} 
-                          onChange={(e) => setKioskConfig({ ...kioskConfig, showLogo: e.target.checked })} 
+                          checked={kioskChannelsConfig[selectedKioskChannel]?.showLogo ?? true} 
+                          onChange={(e) => setKioskChannelsConfig({
+                            ...kioskChannelsConfig,
+                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], showLogo: e.target.checked }
+                          })} 
                         />
                         <span>إظهار شعار المدرسة</span>
                       </label>
@@ -3448,7 +3562,7 @@ const AdminDashboard = () => {
                       className="btn form-submit-btn" 
                       style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', color: 'white', fontWeight: 900, fontSize: '1.1rem', padding: '0.9rem' }}
                     >
-                      <i className="fas fa-save"></i> حفظ وتطبيق إعدادات شاشة العرض مباشرة 🎉
+                      <i className="fas fa-save"></i> حفظ وتطبيق إعدادات هذه الشاشة مباشرة 🎉
                     </button>
 
                   </form>
