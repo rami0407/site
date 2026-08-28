@@ -1103,6 +1103,7 @@ const AdminDashboard = () => {
   // Smart Forms & Survey Engine State
   const [surveysList, setSurveysList] = useState([]);
   const [selectedAnalyticsSurvey, setSelectedAnalyticsSurvey] = useState(null);
+  const [selectedQrSurvey, setSelectedQrSurvey] = useState(null);
   const [editingSurveyId, setEditingSurveyId] = useState(null);
   const [surveyAudienceFilter, setSurveyAudienceFilter] = useState('all');
   const [showFormCreator, setShowFormCreator] = useState(false);
@@ -6418,6 +6419,90 @@ const AdminDashboard = () => {
                 />
               )}
 
+              {/* QR Code Modal Generator */}
+              {selectedQrSurvey && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                  <div style={{ background: 'white', borderRadius: '28px', width: '100%', maxWidth: '480px', padding: '2rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #cbd5e1', textAlign: 'center', position: 'relative' }}>
+                    <button
+                      onClick={() => setSelectedQrSurvey(null)}
+                      style={{ position: 'absolute', top: '1.25rem', left: '1.25rem', background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontWeight: 900, fontSize: '1rem', color: '#64748b' }}
+                    >
+                      ✕
+                    </button>
+
+                    <span style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '0.3rem 0.85rem', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 900, display: 'inline-block', marginBottom: '0.75rem' }}>
+                      🎯 {selectedQrSurvey.targetAudience || 'عام'}
+                    </span>
+
+                    <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.2rem', lineHeight: 1.4 }}>
+                      {selectedQrSurvey.title}
+                    </h3>
+                    <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.85rem', color: '#64748b' }}>
+                      امسح الرمز عبر كاميرا الجوال للمشاركة المباشرة والتصويت
+                    </p>
+
+                    {/* QR Image Box */}
+                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '20px', border: '2px dashed #cbd5e1', display: 'inline-block', marginBottom: '1.25rem' }}>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.origin + window.location.pathname + '#/form/' + selectedQrSurvey.id)}`}
+                        alt="QR Code"
+                        style={{ width: '210px', height: '210px', borderRadius: '12px', display: 'block', margin: '0 auto' }}
+                      />
+                    </div>
+
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', wordBreak: 'break-all', marginBottom: '1.25rem', background: '#f1f5f9', padding: '0.55rem', borderRadius: '10px', fontWeight: 700 }}>
+                      🔗 {window.location.origin + window.location.pathname + '#/form/' + selectedQrSurvey.id}
+                    </div>
+
+                    {/* QR Action Buttons */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const link = window.location.origin + window.location.pathname + '#/form/' + selectedQrSurvey.id;
+                          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(link)}`;
+                          const win = window.open('', '_blank');
+                          win.document.write(`
+                            <html dir="rtl">
+                              <head>
+                                <title>طباعة QR كود - ${selectedQrSurvey.title}</title>
+                                <style>
+                                  body { font-family: sans-serif; text-align: center; padding: 30px; }
+                                  img { width: 280px; height: 280px; margin: 20px 0; border: 1px solid #cbd5e1; padding: 10px; border-radius: 16px; }
+                                  h2 { color: #0f172a; margin-bottom: 5px; }
+                                  p { color: #64748b; font-size: 18px; }
+                                </style>
+                              </head>
+                              <body>
+                                <h2>مدرسة مشيرفة الابتدائية</h2>
+                                <h3>${selectedQrSurvey.title}</h3>
+                                <p>🎯 الجمهور المستهدف: ${selectedQrSurvey.targetAudience || 'عام'}</p>
+                                <img src="${qrUrl}" />
+                                <p>امسح الرمز عبر كاميرا الهاتف للمشاركة المباشرة</p>
+                                <script>setTimeout(() => { window.print(); }, 800);</script>
+                              </body>
+                            </html>
+                          `);
+                        }}
+                        style={{ background: '#2563eb', color: 'white', border: 'none', padding: '0.75rem', borderRadius: '12px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                      >
+                        <i className="fas fa-print"></i> 🖨️ طباعة الرمز
+                      </button>
+
+                      <a
+                        href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(window.location.origin + window.location.pathname + '#/form/' + selectedQrSurvey.id)}`}
+                        download={`QR_${selectedQrSurvey.id}.png`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.75rem', borderRadius: '12px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                      >
+                        <i className="fas fa-download"></i> 📥 تحميل الصورة
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* TAB ${tabKey}: STRUCTURED FORMS & SURVEYS ARCHIVE HUB */}
               {activeTab === '${tabKey}' && (
                 <div>
@@ -6833,15 +6918,24 @@ const AdminDashboard = () => {
                                         navigator.clipboard.writeText(link);
                                         alert("📋 تم نسخ رابط الاستطلاع المباشر لـ (" + (srv.targetAudience || 'الجمهور') + ") بنجاح!");
                                       }}
-                                      style={{ flex: 1, background: '#15803d', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                      style={{ flex: 1, background: '#15803d', color: 'white', border: 'none', padding: '0.4rem 0.65rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                                     >
-                                      <i className="fas fa-copy"></i> 📋 نسخ الرابط
+                                      <i className="fas fa-copy"></i> 📋 نسخ
                                     </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedQrSurvey(srv)}
+                                      style={{ background: '#7c3aed', color: 'white', border: 'none', padding: '0.4rem 0.65rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                    >
+                                      <i className="fas fa-qrcode"></i> 📱 رمز QR
+                                    </button>
+
                                     <a
                                       href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('تثمن مدرسة مشيرفة مشاركتكم في استطلاع المخصص لـ (' + (srv.targetAudience || 'الجمهور') + '): ' + srv.title + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#/form/' + srv.id)}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                      style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.65rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                                     >
                                       <i className="fab fa-whatsapp"></i> 📱 واتساب
                                     </a>
@@ -7308,15 +7402,24 @@ const AdminDashboard = () => {
                                         navigator.clipboard.writeText(link);
                                         alert("📋 تم نسخ رابط الاستطلاع المباشر لـ (" + (srv.targetAudience || 'الجمهور') + ") بنجاح!");
                                       }}
-                                      style={{ flex: 1, background: '#15803d', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                      style={{ flex: 1, background: '#15803d', color: 'white', border: 'none', padding: '0.4rem 0.65rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                                     >
-                                      <i className="fas fa-copy"></i> 📋 نسخ الرابط
+                                      <i className="fas fa-copy"></i> 📋 نسخ
                                     </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedQrSurvey(srv)}
+                                      style={{ background: '#7c3aed', color: 'white', border: 'none', padding: '0.4rem 0.65rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                    >
+                                      <i className="fas fa-qrcode"></i> 📱 رمز QR
+                                    </button>
+
                                     <a
                                       href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('تثمن مدرسة مشيرفة مشاركتكم في استطلاع المخصص لـ (' + (srv.targetAudience || 'الجمهور') + '): ' + srv.title + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#/form/' + srv.id)}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                      style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.65rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                                     >
                                       <i className="fab fa-whatsapp"></i> 📱 واتساب
                                     </a>
