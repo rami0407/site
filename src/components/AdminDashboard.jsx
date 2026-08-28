@@ -1103,6 +1103,7 @@ const AdminDashboard = () => {
   // Smart Forms & Survey Engine State
   const [surveysList, setSurveysList] = useState([]);
   const [selectedAnalyticsSurvey, setSelectedAnalyticsSurvey] = useState(null);
+  const [editingSurveyId, setEditingSurveyId] = useState(null);
   const [newSurveyForm, setNewSurveyForm] = useState({
     title: '',
     description: '',
@@ -1199,6 +1200,23 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleEditSurveyClick = (srv) => {
+    setEditingSurveyId(srv.id);
+    setNewSurveyForm({
+      title: srv.title || '',
+      description: srv.description || '',
+      category: srv.category || 'التطوير والتأهيل',
+      targetAudience: srv.targetAudience || 'أولياء الأمور والأهالي 👨‍👩‍👧',
+      closeDate: srv.closeDate || '',
+      questions: srv.questions && srv.questions.length > 0 ? srv.questions : [
+        { id: 'q_1', title: 'ما هو تقييمكم العام لخدمات المدرسة؟', type: 'rating_stars', required: true }
+      ]
+    });
+
+    const formEl = document.getElementById('survey-builder-card');
+    if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const handleSaveSurveySubmit = async (e) => {
     e.preventDefault();
     if (!newSurveyForm.title.trim()) {
@@ -1206,32 +1224,62 @@ const AdminDashboard = () => {
       return;
     }
 
-    const surveyId = `survey_${Date.now()}`;
-    const surveyObj = {
-      id: surveyId,
-      title: newSurveyForm.title.trim(),
-      description: newSurveyForm.description.trim() || 'يرجى التكرم بتعبئة الاستمارة المدرسية التالية.',
-      category: newSurveyForm.category,
-      targetAudience: newSurveyForm.targetAudience,
-      closeDate: newSurveyForm.closeDate || null,
-      questions: newSurveyForm.questions,
-      status: 'active',
-      totalResponses: 0,
-      totalTimeSpentSeconds: 0,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+    if (editingSurveyId) {
+      // EDIT MODE
+      const targetSrv = surveysList.find(s => s.id === editingSurveyId);
+      const updatedObj = {
+        ...targetSrv,
+        title: newSurveyForm.title.trim(),
+        description: newSurveyForm.description.trim() || 'يرجى التكرم بتعبئة الاستمارة المدرسية التالية.',
+        category: newSurveyForm.category,
+        targetAudience: newSurveyForm.targetAudience,
+        closeDate: newSurveyForm.closeDate || null,
+        questions: newSurveyForm.questions,
+        updatedAt: new Date().toISOString().split('T')[0]
+      };
 
-    const updated = [surveyObj, ...surveysList];
-    setSurveysList(updated);
-    localStorage.setItem('db_school_surveys', JSON.stringify(updated));
+      const updatedList = surveysList.map(s => s.id === editingSurveyId ? updatedObj : s);
+      setSurveysList(updatedList);
+      localStorage.setItem('db_school_surveys', JSON.stringify(updatedList));
 
-    try {
-      await setDoc(doc(db, 'school_surveys', surveyId), surveyObj);
-    } catch(err) {
-      console.warn("Firestore survey create notice:", err);
+      try {
+        await setDoc(doc(db, 'school_surveys', editingSurveyId), updatedObj, { merge: true });
+      } catch(err) {
+        console.warn("Firestore survey update notice:", err);
+      }
+
+      alert("🎉 تم حفظ وتحديث التعديلات على الاستمارة بنجاح!");
+      setEditingSurveyId(null);
+    } else {
+      // CREATE MODE
+      const surveyId = `survey_${Date.now()}`;
+      const surveyObj = {
+        id: surveyId,
+        title: newSurveyForm.title.trim(),
+        description: newSurveyForm.description.trim() || 'يرجى التكرم بتعبئة الاستمارة المدرسية التالية.',
+        category: newSurveyForm.category,
+        targetAudience: newSurveyForm.targetAudience,
+        closeDate: newSurveyForm.closeDate || null,
+        questions: newSurveyForm.questions,
+        status: 'active',
+        totalResponses: 0,
+        totalTimeSpentSeconds: 0,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+
+      const updated = [surveyObj, ...surveysList];
+      setSurveysList(updated);
+      localStorage.setItem('db_school_surveys', JSON.stringify(updated));
+
+      try {
+        await setDoc(doc(db, 'school_surveys', surveyId), surveyObj);
+      } catch(err) {
+        console.warn("Firestore survey create notice:", err);
+      }
+
+      alert("🎉 تم إنشاء ونشر الاستمارة الجديدة بنجاح!");
     }
 
-    alert("🎉 تم إنشاء ونشر الاستمارة الجديدة بنجاح!");
     setNewSurveyForm({
       title: '',
       description: '',
@@ -6037,7 +6085,7 @@ const AdminDashboard = () => {
               {/* TAB 10.85: SMART FORMS & SURVEY ANALYTICS CENTER */}
               {activeTab === 'forms-center' && (
                 <div>
-                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                  <div id="survey-builder-card" style={{ background: editingSurveyId ? '#f0f9ff' : 'white', padding: '2rem', borderRadius: '24px', border: editingSurveyId ? '2px solid #3b82f6' : '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                       <span style={{ fontSize: '1.6rem' }}>📝</span>
                       <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
@@ -6281,6 +6329,14 @@ const AdminDashboard = () => {
                               <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 <button
                                   type="button"
+                                  onClick={() => handleEditSurveyClick(srv)}
+                                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.45rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                >
+                                  <i className="fas fa-edit"></i> ✏️ تعديل
+                                </button>
+
+                                <button
+                                  type="button"
                                   onClick={() => handleToggleSurveyStatus(srv)}
                                   style={{ flex: 1, background: srv.status === 'active' ? '#fef3c7' : '#dbeafe', color: srv.status === 'active' ? '#b45309' : '#1d4ed8', border: 'none', padding: '0.45rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
                                 >
@@ -6318,8 +6374,8 @@ const AdminDashboard = () => {
                   <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                       <span style={{ fontSize: '1.6rem' }}>📊</span>
-                      <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
-                        إضافة وإنشاء استطلاع واستمارة تصويت جديدة (مع تحديد جمهور الهدف والأسئلة)
+                      <h3 style={{ margin: 0, fontWeight: 900, color: editingSurveyId ? '#1e40af' : '#0f172a', fontSize: '1.3rem' }}>
+                        {editingSurveyId ? '✏️ تعديل وتحديث بيانات الاستمارة الناشرة' : 'إضافة وإنشاء استطلاع واستمارة تصويت جديدة (مع تحديد جمهور الهدف والأسئلة)'}
                       </h3>
                     </div>
 
@@ -6482,13 +6538,37 @@ const AdminDashboard = () => {
                         </div>
                       </div>
 
-                      <button
-                        type="submit"
-                        className="btn"
-                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', fontWeight: 900, padding: '0.85rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem' }}
-                      >
-                        <i className="fas fa-paper-plane"></i> 🚀 نشر ونشر الاستطلاع فورياً لجمهور الهدف
-                      </button>
+                      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <button
+                          type="submit"
+                          className="btn"
+                          style={{ background: editingSurveyId ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', fontWeight: 900, padding: '0.85rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem' }}
+                        >
+                          <i className={editingSurveyId ? "fas fa-save" : "fas fa-paper-plane"}></i> {editingSurveyId ? '💾 حفظ التعديلات على الاستمارة' : '🚀 نشر الاستطلاع فورياً لجمهور الهدف'}
+                        </button>
+
+                        {editingSurveyId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSurveyId(null);
+                              setNewSurveyForm({
+                                title: '',
+                                description: '',
+                                category: 'التطوير والتأهيل',
+                                targetAudience: 'أولياء الأمور والأهالي 👨‍👩‍👧',
+                                closeDate: '',
+                                questions: [
+                                  { id: 'q_1', title: 'ما هو تقييمكم العام لخدمات المدرسة؟', type: 'rating_stars', required: true }
+                                ]
+                              });
+                            }}
+                            style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            إلغاء التعديل ✕
+                          </button>
+                        )}
+                      </div>
                     </form>
                   </div>
 
