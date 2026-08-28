@@ -1168,12 +1168,16 @@ const AdminDashboard = () => {
     });
 
     const combinedLocalMap = new Map();
+
+    // Default Seed Items
+    [{"id":"survey_demo_parents","title":"استطلاع رأي أولياء الأمور في الأنشطة المدرسية والخدمات 👨‍👩‍👧","description":"استبيان رصد انطباعات الأهالي وتقييم الفعاليات والمبادرات المدرسية.","category":"الأنشطة والفعاليات","targetAudience":"أولياء الأمور والأهالي 👨‍👩‍👧","status":"active","totalResponses":14,"starred":true,"questions":[{"id":"q_p1","title":"ما هو تقييمكم العام لخدمات ومبادرات مدرسة مشيرفة الابتدائية؟","type":"rating_stars","required":true},{"id":"q_p2","title":"هل تؤيد زيادة الأنشطة والرحلات اللامنهجية في المدرسة؟","type":"multiple_choice","required":true,"options":["نعم، وبشدة 🌟","حسب الميزانية 👍","لا داعي حالياً ⚠️"]},{"id":"q_p3","title":"ما هي مقترحاتكم التطويرية المستقبلية للإدارة الكريمة؟","type":"long_text","required":false}],"createdAt":"2026-08-28"},{"id":"survey_demo_teachers","title":"استبيان تقييم اليوم التحضيري للمعلمين والكوادر 👨‍🏫","description":"استطلاع ملائمة ورضا الطاقم عن فعاليات اليوم التحضيري والورشات.","category":"التطوير والتأهيل","targetAudience":"المعلمون والطاقم 👨‍🏫","status":"active","totalResponses":28,"starred":true,"questions":[{"id":"q_t1","title":"ما هو انطباعك العام عن برنامج وفعاليات اليوم التحضيري؟","type":"likert_scale","required":true,"options":["مقتنع جداً 🌟","مقتنع 👍","محايد 😐","غير مقتنع ⚠️"]},{"id":"q_t2","title":"ما هي مقترحاتك التطويرية للخطوات القادمة؟","type":"short_text","required":false}],"createdAt":"2026-08-28"},{"id":"survey_demo_students","title":"استطلاع رأي الطلاب والأبناء في الفعاليات اللاصفية 🎓","description":"استبيان صوت الطالب واختيارات الأنشطة الرياضية والعلمية.","category":"الأنشطة والفعاليات","targetAudience":"الطلاب والأبناء 🎓","status":"active","totalResponses":45,"starred":false,"questions":[{"id":"q_s1","title":"ما هي أكثر الفعاليات المدرسية التي تفضل المشاركة فيها؟","type":"checkboxes","required":true,"options":["دوري كرة القدم ⚽","مسابقة الربوت 🤖","الرحلات العلمية 🚌","الإذاعة المدرسية 🎙️"]},{"id":"q_s2","title":"قيم مدى رضاك عن زوايا المكتبة والمبتكرات","type":"rating_stars","required":true}],"createdAt":"2026-08-28"}].forEach(item => combinedLocalMap.set(item.id, item));
+
     localSurveys.forEach(item => combinedLocalMap.set(item.id, item));
     localPolls.forEach(item => combinedLocalMap.set(item.id, formatPollToSurvey(item)));
 
-    if (combinedLocalMap.size > 0) {
-      setSurveysList(Array.from(combinedLocalMap.values()));
-    }
+    const initList = Array.from(combinedLocalMap.values());
+    setSurveysList(initList);
+    localStorage.setItem('db_school_surveys', JSON.stringify(initList));
 
     let unsub1 = () => {};
     let unsub2 = () => {};
