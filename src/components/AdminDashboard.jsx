@@ -1134,11 +1134,14 @@ const AdminDashboard = () => {
   useEffect(() => {
     let localSurveys = [];
     let localPolls = [];
+    let deletedIds = [];
     try {
       const s1 = localStorage.getItem('db_school_surveys');
       if (s1) localSurveys = JSON.parse(s1);
       const s2 = localStorage.getItem('db_parent_polls');
       if (s2) localPolls = JSON.parse(s2);
+      const del = localStorage.getItem('deleted_surveys_ids');
+      if (del) deletedIds = JSON.parse(del);
     } catch(e){}
 
     const formatPollToSurvey = (poll) => ({
@@ -1186,8 +1189,10 @@ const AdminDashboard = () => {
     try {
       unsub1 = onSnapshot(collection(db, 'school_surveys'), (snap) => {
         if (!snap.empty) {
-          snap.forEach(d => combinedLocalMap.set(d.id, { id: d.id, ...d.data() }));
-          const list = Array.from(combinedLocalMap.values());
+          snap.forEach(d => {
+            if (!deletedIds.includes(d.id)) combinedLocalMap.set(d.id, { id: d.id, ...d.data() });
+          });
+          const list = Array.from(combinedLocalMap.values()).filter(s => !deletedIds.includes(s.id));
           setSurveysList(list);
           localStorage.setItem('db_school_surveys', JSON.stringify(list));
         }
@@ -1195,8 +1200,11 @@ const AdminDashboard = () => {
 
       unsub2 = onSnapshot(collection(db, 'parent_polls'), (snap) => {
         if (!snap.empty) {
-          snap.forEach(d => combinedLocalMap.set(d.id, formatPollToSurvey({ id: d.id, ...d.data() })));
-          const list = Array.from(combinedLocalMap.values());
+          snap.forEach(d => {
+            const formatted = formatPollToSurvey({ id: d.id, ...d.data() });
+            if (!deletedIds.includes(formatted.id)) combinedLocalMap.set(formatted.id, formatted);
+          });
+          const list = Array.from(combinedLocalMap.values()).filter(s => !deletedIds.includes(s.id));
           setSurveysList(list);
           localStorage.setItem('db_school_surveys', JSON.stringify(list));
         }
@@ -1362,13 +1370,24 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteSurvey = async (surveyId) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذه الاستمارة وكافة بياناتها؟")) return;
+    if (!window.confirm("هل أنت متأكد من حذف هذه الاستمارة وكافة بياناتها نهائياً؟")) return;
+    
+    // Save to deleted_surveys_ids to block auto-reseeding
+    let deletedIds = [];
+    try {
+      const existing = localStorage.getItem('deleted_surveys_ids');
+      if (existing) deletedIds = JSON.parse(existing);
+    } catch(e){}
+    if (!deletedIds.includes(surveyId)) deletedIds.push(surveyId);
+    localStorage.setItem('deleted_surveys_ids', JSON.stringify(deletedIds));
+
     const updated = surveysList.filter(s => s.id !== surveyId);
     setSurveysList(updated);
     localStorage.setItem('db_school_surveys', JSON.stringify(updated));
 
     try { await deleteDoc(doc(db, 'school_surveys', surveyId)); } catch(e){}
-    alert("تم حذف الاستمارة بنجاح.");
+    try { await deleteDoc(doc(db, 'parent_polls', surveyId)); } catch(e){}
+    alert("🗑️ تم حذف الاستمارة وإزالتها نهائياً من الأرشيف بنجاح.");
   };
 
   const handleToggleSurveyStatus = async (sObj) => {
