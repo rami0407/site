@@ -1102,7 +1102,6 @@ const AdminDashboard = () => {
 
   // Smart Forms & Survey Engine State
   const [surveysList, setSurveysList] = useState([]);
-  const [selectedAnalyticsSurvey, setSelectedAnalyticsSurvey] = useState(null);
   const [selectedQrSurvey, setSelectedQrSurvey] = useState(null);
   const [editingSurveyId, setEditingSurveyId] = useState(null);
   const [surveyAudienceFilter, setSurveyAudienceFilter] = useState('all');
@@ -1278,6 +1277,7 @@ const AdminDashboard = () => {
 
   const handleEditSurveyClick = (srv) => {
     setEditingSurveyId(srv.id);
+    setShowFormCreator(true);
     setShowFormCreator(true);
     setNewSurveyForm({
       title: srv.title || '',
