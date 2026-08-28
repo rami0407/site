@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 
 const FormAnalyticsView = ({ survey, onClose }) => {
   const [responses, setResponses] = useState([]);
@@ -9,24 +9,49 @@ const FormAnalyticsView = ({ survey, onClose }) => {
   useEffect(() => {
     if (!survey) return;
 
-    const loadResponses = async () => {
-      setLoading(true);
-      try {
-        const q = query(collection(db, 'survey_responses'), where('surveyId', '==', survey.id));
-        const snap = await getDocs(q);
-        let list = [];
-        if (!snap.empty) {
-          snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-        }
-        setResponses(list);
-      } catch (err) {
-        console.warn("Analytics responses load warning:", err);
-      } finally {
-        setLoading(false);
+    // 1. Initial Load from LocalStorage Cache
+    let localList = [];
+    try {
+      const stored = localStorage.getItem('db_survey_responses');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        localList = parsed.filter(r => r.surveyId === survey.id);
       }
-    };
+    } catch(e){}
 
-    loadResponses();
+    if (localList.length > 0) {
+      setResponses(localList);
+      setLoading(false);
+    }
+
+    // 2. Real-time Firestore Listener
+    let unsubscribe = () => {};
+    try {
+      const q = query(collection(db, 'survey_responses'), where('surveyId', '==', survey.id));
+      unsubscribe = onSnapshot(q, (snap) => {
+        let fsList = [];
+        if (!snap.empty) {
+          snap.forEach(doc => fsList.push({ id: doc.id, ...doc.data() }));
+        }
+
+        // Merge local & Firestore lists uniquely by id
+        const mergedMap = new Map();
+        localList.forEach(item => mergedMap.set(item.id, item));
+        fsList.forEach(item => mergedMap.set(item.id, item));
+
+        const combined = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        setResponses(combined);
+        setLoading(false);
+      }, (err) => {
+        console.warn("Real-time responses listener warning:", err);
+        setLoading(false);
+      });
+    } catch(err) {
+      console.warn("Firestore query setup warning:", err);
+      setLoading(false);
+    }
+
+    return () => unsubscribe();
   }, [survey]);
 
   if (!survey) return null;

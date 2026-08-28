@@ -1115,29 +1115,28 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    const loadSurveys = async () => {
-      let localItems = [];
-      try {
-        const localS = localStorage.getItem('db_school_surveys');
-        if (localS) localItems = JSON.parse(localS);
-      } catch(e){}
+    let localItems = [];
+    try {
+      const localS = localStorage.getItem('db_school_surveys');
+      if (localS) localItems = JSON.parse(localS);
+    } catch(e){}
+    if (localItems.length > 0) setSurveysList(localItems);
 
-      try {
-        const snap = await getDocs(collection(db, 'school_surveys'));
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onSnapshot(collection(db, 'school_surveys'), (snap) => {
         let fsList = [];
         if (!snap.empty) {
           snap.forEach(d => fsList.push({ id: d.id, ...d.data() }));
           setSurveysList(fsList);
           localStorage.setItem('db_school_surveys', JSON.stringify(fsList));
-        } else if (localItems.length > 0) {
-          setSurveysList(localItems);
         }
-      } catch(err) {
-        console.warn("Surveys load notice:", err);
-        if (localItems.length > 0) setSurveysList(localItems);
-      }
-    };
-    loadSurveys();
+      }, (err) => console.warn("Surveys snapshot notice:", err));
+    } catch(err) {
+      console.warn("Surveys setup notice:", err);
+    }
+
+    return () => unsubscribe();
   }, []);
 
   const handleAddSurveyQuestion = () => {

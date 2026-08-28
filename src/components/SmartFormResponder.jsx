@@ -157,6 +157,31 @@ const SmartFormResponder = () => {
     votedList[survey.id] = true;
     localStorage.setItem('voted_surveys', JSON.stringify(votedList));
 
+    // Save response to LocalStorage cache
+    let localResponses = [];
+    try {
+      const existing = localStorage.getItem('db_survey_responses');
+      if (existing) localResponses = JSON.parse(existing);
+    } catch(e){}
+    localResponses = [responsePayload, ...localResponses.filter(r => r.id !== responseId)];
+    localStorage.setItem('db_survey_responses', JSON.stringify(localResponses));
+
+    // Update local survey totals
+    try {
+      const cachedSurveys = JSON.parse(localStorage.getItem('db_school_surveys') || '[]');
+      const updatedSurveys = cachedSurveys.map(s => {
+        if (s.id === survey.id) {
+          return {
+            ...s,
+            totalResponses: (s.totalResponses || 0) + 1,
+            totalTimeSpentSeconds: (s.totalTimeSpentSeconds || 0) + timeSpentSeconds
+          };
+        }
+        return s;
+      });
+      localStorage.setItem('db_school_surveys', JSON.stringify(updatedSurveys));
+    } catch(e){}
+
     setSubmitted(true);
 
     try {
