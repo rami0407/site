@@ -6242,19 +6242,31 @@ const AdminDashboard = () => {
                               </p>
 
                               {/* Form Link Copy Box */}
-                              <div style={{ background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.78rem', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                <span>🔗 رابط الاستمارة المباشر</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const link = window.location.origin + window.location.pathname + '#/form/' + srv.id;
-                                    navigator.clipboard.writeText(link);
-                                    alert("📋 تم نسخ رابط الاستمارة المباشر لشاركتها!");
-                                  }}
-                                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800, cursor: 'pointer' }}
-                                >
-                                  نسخ الرابط 📋
-                                </button>
+                              <div style={{ background: '#eff6ff', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #bfdbfe', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span>🔗 رابط الاستمارة المباشر لجمهور الهدف:</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const link = window.location.origin + window.location.pathname + '#/form/' + srv.id;
+                                      navigator.clipboard.writeText(link);
+                                      alert("📋 تم نسخ رابط الاستمارة المباشر بنجاح! يمكنك الآن إرساله وطباعته.");
+                                    }}
+                                    style={{ flex: 1, background: '#2563eb', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fas fa-copy"></i> 📋 نسخ الرابط
+                                  </button>
+                                  <a
+                                    href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('تثمن إدراة المدرسة مشاركتكم في الاستمارة التالية: ' + srv.title + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#/form/' + srv.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fab fa-whatsapp"></i> 📱 واتساب
+                                  </a>
+                                </div>
                               </div>
                             </div>
 
@@ -6354,56 +6366,60 @@ const AdminDashboard = () => {
                       </div>
 
                       <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #cbd5e1', marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', fontWeight: 900, fontSize: '0.95rem', marginBottom: '0.85rem', color: '#047857' }}>
-                          🎯 الخيارات المتاحة لأولياء الأمور للتصويت (خياران على الأقل):
-                        </label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <label style={{ fontWeight: 900, fontSize: '0.95rem', color: '#047857', margin: 0 }}>
+                            🎯 خيارات التصويت المتاحة للأهالي (أضف إجابات بعدد لا محدود حسب الحاجة):
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAddPollOptionField}
+                            style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '0.35rem 0.85rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                          >
+                            <i className="fas fa-plus"></i> ➕ إضافة خيار جديد
+                          </button>
+                        </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
-                          <div>
-                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الأول (مطلوب):</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="الخيار رقم 1..."
-                              value={newPollForm.option1}
-                              onChange={(e) => setNewPollForm({ ...newPollForm, option1: e.target.value })}
-                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                            />
-                          </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.85rem' }}>
+                          {newPollForm.options.map((optVal, idx) => (
+                            <div key={idx} style={{ position: 'relative' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                <label style={{ fontWeight: 800, fontSize: '0.8rem', color: '#475569' }}>
+                                  الخيار رقم {idx + 1} {idx < 2 ? '(مطلوب)' : '(اختياري)'}:
+                                </label>
+                                {newPollForm.options.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePollOptionField(idx)}
+                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}
+                                    title="حذف الخيار"
+                                  >
+                                    🗑️ حذف
+                                  </button>
+                                )}
+                              </div>
+                              <input
+                                type="text"
+                                required={idx < 2}
+                                placeholder={`أدخل نص الخيار رقم ${idx + 1}...`}
+                                value={optVal}
+                                onChange={(e) => handlePollOptionChange(idx, e.target.value)}
+                                style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                              />
+                            </div>
+                          ))}
+                        </div>
 
-                          <div>
-                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الثاني (مطلوب):</label>
+                        {/* Open Text Checkbox */}
+                        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed #cbd5e1' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, fontSize: '0.9rem', color: '#1e40af', cursor: 'pointer', background: '#eff6ff', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
                             <input
-                              type="text"
-                              required
-                              placeholder="الخيار رقم 2..."
-                              value={newPollForm.option2}
-                              onChange={(e) => setNewPollForm({ ...newPollForm, option2: e.target.value })}
-                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                              type="checkbox"
+                              checked={newPollForm.allowOpenText}
+                              onChange={(e) => setNewPollForm({ ...newPollForm, allowOpenText: e.target.checked })}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                             />
-                          </div>
-
-                          <div>
-                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الثالث (اختياري):</label>
-                            <input
-                              type="text"
-                              placeholder="الخيار رقم 3..."
-                              value={newPollForm.option3}
-                              onChange={(e) => setNewPollForm({ ...newPollForm, option3: e.target.value })}
-                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                            />
-                          </div>
-
-                          <div>
-                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>الخيار الرابع (اختياري):</label>
-                            <input
-                              type="text"
-                              placeholder="الخيار رقم 4..."
-                              value={newPollForm.option4}
-                              onChange={(e) => setNewPollForm({ ...newPollForm, option4: e.target.value })}
-                              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                            />
-                          </div>
+                            <span>✍️ تفعيل "حقل إجابة مفتوحة / اقتراح آخر" للأهالي (إمكانية كتابة ولي الأمر إجابة أو اقتراح خاص به)</span>
+                          </label>
                         </div>
                       </div>
 
@@ -6454,6 +6470,35 @@ const AdminDashboard = () => {
                                 )}
                               </div>
                             )}
+
+                            
+                            {/* Copy Direct Link Box for Poll */}
+                            <div style={{ background: '#f0fdf4', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #bbf7d0', marginBottom: '0.85rem' }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#166534', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span>🔗 رابط التصويت المباشر للأهالي:</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const link = window.location.origin + window.location.pathname + '#parent-polls';
+                                    navigator.clipboard.writeText(link);
+                                    alert("📋 تم نسخ رابط الاستطلاع والتصويت للأهالي بنجاح!");
+                                  }}
+                                  style={{ flex: 1, background: '#15803d', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                >
+                                  <i className="fas fa-copy"></i> 📋 نسخ الرابط
+                                </button>
+                                <a
+                                  href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('شاركونا رأيكم وصوتكم في استطلاع مدرسة مشيرفة الابتدائية: ' + poll.question + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#parent-polls')}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                >
+                                  <i className="fab fa-whatsapp"></i> 📱 واتساب
+                                </a>
+                              </div>
+                            </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                               <button

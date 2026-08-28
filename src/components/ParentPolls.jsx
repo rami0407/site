@@ -364,9 +364,31 @@ const ParentPolls = ({ isStandalone }) => {
                   </div>
                 </div>
 
-                {/* Footer Participation Meta */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>
+                {/* Footer Participation Meta & Share Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700, flexWrap: 'wrap', gap: '0.6rem' }}>
                   <span>📊 إجمالي مشاركات الأهالي: <strong style={{ color: '#0f172a' }}>{poll.totalVotes || 0} ولي أمر</strong></span>
+                  
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        const link = window.location.origin + window.location.pathname + '#parent-polls';
+                        navigator.clipboard.writeText(link);
+                        alert("📋 تم نسخ رابط صفحة تصويت واستطلاعات الأهالي بنجاح!");
+                      }}
+                      style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      📋 نسخ رابط الاستطلاع
+                    </button>
+                    <a
+                      href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('شاركونا رأيكم وصوتكم في استطلاع مدرسة مشيرفة الابتدائية: ' + poll.question + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#parent-polls')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      📱 واتساب
+                    </a>
+                  </div>
+
                   <span>📅 {poll.createdAt}</span>
                 </div>
 
