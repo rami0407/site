@@ -56,7 +56,10 @@ const FormAnalyticsView = ({ survey, onClose }) => {
 
   if (!survey) return null;
 
-  const totalEntries = responses.length;
+  // Calculate total entries including votes from poll options or open text responses
+  const pollOptionVotesSum = (survey.options || []).reduce((sum, opt) => sum + (typeof opt === 'object' ? (opt.votes || 0) : 0), 0);
+  const openTextCount = (survey.openTextResponses || []).length;
+  const totalEntries = Math.max(responses.length, survey.totalResponses || 0, pollOptionVotesSum + openTextCount);
   const avgTimeSeconds = totalEntries > 0 
     ? Math.round(responses.reduce((sum, r) => sum + (r.timeSpentSeconds || 0), 0) / totalEntries) 
     : 0;
@@ -211,6 +214,15 @@ const FormAnalyticsView = ({ survey, onClose }) => {
                     : ['ممتاز جداً 🌟', 'جيد جداً 👍', 'متوسط 😐', 'يحتاج تحسين ⚠️'];
                   
                   opts.forEach(opt => optionCounts[opt] = 0);
+
+                  // If survey has options with pre-existing vote counts
+                  if (survey.options && Array.isArray(survey.options)) {
+                    survey.options.forEach(optObj => {
+                      if (typeof optObj === 'object' && optObj.text && optionCounts[optObj.text] !== undefined) {
+                        optionCounts[optObj.text] = (optionCounts[optObj.text] || 0) + (optObj.votes || 0);
+                      }
+                    });
+                  }
                   
                   responses.forEach(r => {
                     const ans = r.answers?.[q.id];
@@ -221,6 +233,11 @@ const FormAnalyticsView = ({ survey, onClose }) => {
                     }
                   });
                 } else if (q.type === 'short_text' || q.type === 'long_text') {
+                  if (survey.openTextResponses && Array.isArray(survey.openTextResponses)) {
+                    survey.openTextResponses.forEach(res => {
+                      textResponses.push({ text: res.text, date: res.date || 'سابقاً' });
+                    });
+                  }
                   responses.forEach(r => {
                     const txt = r.answers?.[q.id];
                     if (txt && String(txt).trim()) {

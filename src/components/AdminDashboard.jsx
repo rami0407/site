@@ -1131,28 +1131,76 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    let localItems = [];
+    let localSurveys = [];
+    let localPolls = [];
     try {
-      const localS = localStorage.getItem('db_school_surveys');
-      if (localS) localItems = JSON.parse(localS);
+      const s1 = localStorage.getItem('db_school_surveys');
+      if (s1) localSurveys = JSON.parse(s1);
+      const s2 = localStorage.getItem('db_parent_polls');
+      if (s2) localPolls = JSON.parse(s2);
     } catch(e){}
-    if (localItems.length > 0) setSurveysList(localItems);
 
-    let unsubscribe = () => {};
-    try {
-      unsubscribe = onSnapshot(collection(db, 'school_surveys'), (snap) => {
-        let fsList = [];
-        if (!snap.empty) {
-          snap.forEach(d => fsList.push({ id: d.id, ...d.data() }));
-          setSurveysList(fsList);
-          localStorage.setItem('db_school_surveys', JSON.stringify(fsList));
-        }
-      }, (err) => console.warn("Surveys snapshot notice:", err));
-    } catch(err) {
-      console.warn("Surveys setup notice:", err);
+    const formatPollToSurvey = (poll) => ({
+      id: poll.id,
+      title: poll.question || poll.title || 'استطلاع رأي',
+      description: poll.description || 'شارك بصوتك بنقرة واحدة في القرار المدرسي.',
+      category: poll.category || 'عام',
+      targetAudience: poll.targetAudience || 'أولياء الأمور والأهالي 👨‍👩‍👧',
+      status: poll.status || 'active',
+      totalResponses: poll.totalVotes || poll.totalResponses || 0,
+      starred: Boolean(poll.starred),
+      options: poll.options || [],
+      openTextResponses: poll.openTextResponses || [],
+      questions: poll.questions && poll.questions.length > 0 ? poll.questions : [
+        {
+          id: 'q_main',
+          title: poll.question || poll.title || 'السؤال الرئيسي',
+          type: 'multiple_choice',
+          options: (poll.options || []).map(o => typeof o === 'string' ? o : o.text)
+        },
+        ...(poll.allowOpenText ? [{
+          id: 'q_open',
+          title: 'إجابات واقتراحات حرة ومفتوحة من المستجيبين',
+          type: 'long_text'
+        }] : [])
+      ],
+      createdAt: poll.createdAt || new Date().toISOString().split('T')[0]
+    });
+
+    const combinedLocalMap = new Map();
+    localSurveys.forEach(item => combinedLocalMap.set(item.id, item));
+    localPolls.forEach(item => combinedLocalMap.set(item.id, formatPollToSurvey(item)));
+
+    if (combinedLocalMap.size > 0) {
+      setSurveysList(Array.from(combinedLocalMap.values()));
     }
 
-    return () => unsubscribe();
+    let unsub1 = () => {};
+    let unsub2 = () => {};
+
+    try {
+      unsub1 = onSnapshot(collection(db, 'school_surveys'), (snap) => {
+        if (!snap.empty) {
+          snap.forEach(d => combinedLocalMap.set(d.id, { id: d.id, ...d.data() }));
+          const list = Array.from(combinedLocalMap.values());
+          setSurveysList(list);
+          localStorage.setItem('db_school_surveys', JSON.stringify(list));
+        }
+      });
+
+      unsub2 = onSnapshot(collection(db, 'parent_polls'), (snap) => {
+        if (!snap.empty) {
+          snap.forEach(d => combinedLocalMap.set(d.id, formatPollToSurvey({ id: d.id, ...d.data() })));
+          const list = Array.from(combinedLocalMap.values());
+          setSurveysList(list);
+          localStorage.setItem('db_school_surveys', JSON.stringify(list));
+        }
+      });
+    } catch(err) {
+      console.warn("Surveys snapshot notice:", err);
+    }
+
+    return () => { unsub1(); unsub2(); };
   }, []);
 
   const handleAddSurveyQuestion = () => {
@@ -3373,41 +3421,23 @@ const AdminDashboard = () => {
             </button>
 
             <button 
-              onClick={() => setActiveTab('parent-polls')} 
-              className={`filter-chip ${activeTab === 'parent-polls' ? 'active' : ''}`}
-              style={{
-                width: '100%',
-                justifyContent: 'flex-start',
-                padding: '0.9rem 1.2rem',
-                fontSize: '1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: activeTab === 'parent-polls' ? '#10b981' : '#ecfdf5',
-                color: activeTab === 'parent-polls' ? 'white' : '#047857',
-                fontWeight: 800,
-                border: '2px solid #a7f3d0'
-              }}
-            >
-              <i className="fas fa-poll" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              📊 إدارة تصويت واستطلاعات الأهالي
-            </button>
-
-            <button 
               onClick={() => setActiveTab('forms-center')} 
-              className={`filter-chip ${activeTab === 'forms-center' ? 'active' : ''}`}
+              className={`filter-chip ${(activeTab === 'forms-center' || activeTab === 'parent-polls') ? 'active' : ''}`}
               style={{
                 width: '100%',
                 justifyContent: 'flex-start',
-                padding: '0.9rem 1.2rem',
-                fontSize: '1rem',
+                padding: '0.95rem 1.2rem',
+                fontSize: '1.02rem',
                 borderRadius: 'var(--radius-sm)',
-                background: activeTab === 'forms-center' ? '#2563eb' : '#eff6ff',
-                color: activeTab === 'forms-center' ? 'white' : '#1d4ed8',
-                fontWeight: 800,
-                border: '2px solid #bfdbfe'
+                background: (activeTab === 'forms-center' || activeTab === 'parent-polls') ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#eff6ff',
+                color: (activeTab === 'forms-center' || activeTab === 'parent-polls') ? 'white' : '#1d4ed8',
+                fontWeight: 900,
+                border: '2px solid #93c5fd',
+                boxShadow: '0 4px 10px rgba(37,99,235,0.15)'
               }}
             >
-              <i className="fas fa-clipboard-list" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              📋 مركز الاستمارات وتحليل البيانات الشامل
+              <i className="fas fa-clipboard-list" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              📋 أرشيف ومركز الاستمارات والاستطلاعات الشامل
             </button>
 
             <button 
