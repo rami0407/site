@@ -78,6 +78,8 @@ const ParentPolls = ({ isStandalone }) => {
     loadPolls();
   }, []);
 
+  const [customTextInputs, setCustomTextInputs] = useState({});
+
   // Handle Cast Vote
   const handleVoteOption = async (pollId, optionId) => {
     if (votedPollIds[pollId]) {
@@ -117,6 +119,47 @@ const ParentPolls = ({ isStandalone }) => {
       }
     } catch(err) {
       console.warn("Firestore vote save warning:", err.message);
+    }
+  };
+
+  // Handle Open Text Input Vote Submit
+  const handleVoteOpenTextSubmit = async (pollId) => {
+    const textVal = (customTextInputs[pollId] || '').trim();
+    if (!textVal) {
+      alert("يرجى إدخال إجابتك أو اقتراحك الخاص أولاً قبل الإرسال.");
+      return;
+    }
+    if (votedPollIds[pollId]) {
+      alert("لقد قمت بالتصويت والمشاركة في هذا الاستطلاع سابقاً! شكراً لصوتكم واهتمامكم 💖");
+      return;
+    }
+
+    const newVotedState = { ...votedPollIds, [pollId]: 'open_text' };
+    setVotedPollIds(newVotedState);
+    localStorage.setItem('voted_polls', JSON.stringify(newVotedState));
+
+    const updatedPolls = polls.map(p => {
+      if (p.id === pollId) {
+        const prevOpenResponses = p.openTextResponses || [];
+        return {
+          ...p,
+          totalVotes: (p.totalVotes || 0) + 1,
+          openTextResponses: [...prevOpenResponses, { text: textVal, date: new Date().toLocaleDateString('ar-EG') }]
+        };
+      }
+      return p;
+    });
+
+    setPolls(updatedPolls);
+    localStorage.setItem('db_parent_polls', JSON.stringify(updatedPolls));
+
+    try {
+      const targetPoll = updatedPolls.find(p => p.id === pollId);
+      if (targetPoll) {
+        await setDoc(doc(db, 'parent_polls', pollId), targetPoll, { merge: true });
+      }
+    } catch(err) {
+      console.warn("Firestore open text vote save warning:", err.message);
     }
   };
 
@@ -288,6 +331,36 @@ const ParentPolls = ({ isStandalone }) => {
                         </div>
                       );
                     })}
+
+                    {/* Open Text Response Input Field for Parents */}
+                    {poll.allowOpenText && (
+                      <div style={{ marginTop: '1rem', background: '#f0f9ff', padding: '1.25rem', borderRadius: '18px', border: '2px solid #bae6fd', boxShadow: '0 4px 12px rgba(2,132,199,0.06)' }}>
+                        <label style={{ display: 'block', fontWeight: 900, fontSize: '0.92rem', color: '#0369a1', marginBottom: '0.6rem' }}>
+                          ✍️ أضف إجابتك أو اقتراحك الخاص (حقل كتابة مفتوح):
+                        </label>
+                        {hasVoted ? (
+                          <div style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, background: '#e0f2fe', padding: '0.65rem 0.9rem', borderRadius: '10px' }}>
+                            ✅ تم تسجيل مشاركتك المفتوحة بنجاح. شكراً لاهتمامكم وحرصكم! 💖
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                            <input
+                              type="text"
+                              placeholder="أدخل إجابتك أو اقتراحك الحر هنا..."
+                              value={customTextInputs[poll.id] || ''}
+                              onChange={(e) => setCustomTextInputs({ ...customTextInputs, [poll.id]: e.target.value })}
+                              style={{ flex: 1, padding: '0.7rem 0.9rem', borderRadius: '10px', border: '2px solid #7dd3fc', fontWeight: 700, fontSize: '0.9rem', minWidth: '220px', background: 'white' }}
+                            />
+                            <button
+                              onClick={() => handleVoteOpenTextSubmit(poll.id)}
+                              style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: 'white', border: 'none', padding: '0.7rem 1.3rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 10px rgba(3,105,161,0.2)' }}
+                            >
+                              إرسال 🚀
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

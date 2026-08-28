@@ -1105,30 +1105,53 @@ const AdminDashboard = () => {
     question: '',
     description: '',
     category: 'الأنشطة والفعاليات',
-    option1: '',
-    option2: '',
-    option3: '',
-    option4: ''
+    options: ['', ''],
+    allowOpenText: true
   });
+
+  const handleAddPollOptionField = () => {
+    setNewPollForm(prev => ({
+      ...prev,
+      options: [...prev.options, '']
+    }));
+  };
+
+  const handleRemovePollOptionField = (index) => {
+    if (newPollForm.options.length <= 2) {
+      alert('يجب إدخال خيارين على الأقل للتصويت.');
+      return;
+    }
+    setNewPollForm(prev => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handlePollOptionChange = (index, val) => {
+    setNewPollForm(prev => {
+      const opts = [...prev.options];
+      opts[index] = val;
+      return { ...prev, options: opts };
+    });
+  };
 
   const handleAddPollSubmit = async (e) => {
     e.preventDefault();
-    if (!newPollForm.question.trim() || !newPollForm.option1.trim() || !newPollForm.option2.trim()) {
-      alert('يرجى كتابة سؤال الاستطلاع وخيارين على الأقل للتصويت.');
+    const validOptionsText = newPollForm.options.map(o => o.trim()).filter(Boolean);
+
+    if (!newPollForm.question.trim() || validOptionsText.length < 2) {
+      alert('يرجى كتابة سؤال الاستطلاع وإدخال خيارين على الأقل للتصويت.');
       return;
     }
 
-    const options = [
-      { id: 'opt-1', text: newPollForm.option1.trim(), votes: 0, color: '#0284c7' },
-      { id: 'opt-2', text: newPollForm.option2.trim(), votes: 0, color: '#7c3aed' }
-    ];
+    const colors = ['#0284c7', '#7c3aed', '#ec4899', '#16a34a', '#f59e0b', '#06b6d4', '#e11d48', '#8b5cf6'];
 
-    if (newPollForm.option3.trim()) {
-      options.push({ id: 'opt-3', text: newPollForm.option3.trim(), votes: 0, color: '#ec4899' });
-    }
-    if (newPollForm.option4.trim()) {
-      options.push({ id: 'opt-4', text: newPollForm.option4.trim(), votes: 0, color: '#16a34a' });
-    }
+    const formattedOptions = validOptionsText.map((txt, idx) => ({
+      id: `opt-${idx + 1}`,
+      text: txt,
+      votes: 0,
+      color: colors[idx % colors.length]
+    }));
 
     const pollId = `poll_${Date.now()}`;
     const pollObj = {
@@ -1138,7 +1161,9 @@ const AdminDashboard = () => {
       category: newPollForm.category,
       status: 'active',
       totalVotes: 0,
-      options: options,
+      options: formattedOptions,
+      allowOpenText: Boolean(newPollForm.allowOpenText),
+      openTextResponses: [],
       createdAt: new Date().toISOString().split('T')[0]
     };
 
@@ -1157,10 +1182,8 @@ const AdminDashboard = () => {
       question: '',
       description: '',
       category: 'الأنشطة والفعاليات',
-      option1: '',
-      option2: '',
-      option3: '',
-      option4: ''
+      options: ['', ''],
+      allowOpenText: true
     });
   };
 
@@ -5964,7 +5987,23 @@ const AdminDashboard = () => {
                             </div>
 
                             <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a' }}>{poll.question}</h4>
-                            <p style={{ margin: '0 0 1rem 0', fontSize: '0.82rem', color: '#64748b' }}>إجمالي الأصوات: <strong>{poll.totalVotes || 0}</strong> ولي أمر</p>
+                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.82rem', color: '#64748b' }}>إجمالي الأصوات: <strong>{poll.totalVotes || 0}</strong> ولي أمر</p>
+
+                            {/* Display Open Text Answers Count if allowed */}
+                            {poll.allowOpenText && (
+                              <div style={{ background: '#eff6ff', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #bfdbfe', fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', marginBottom: '0.85rem' }}>
+                                ✍️ إجابات حرة من الأهالي: <strong>{poll.openTextResponses?.length || 0} إجابة واقتراح</strong>
+                                {poll.openTextResponses && poll.openTextResponses.length > 0 && (
+                                  <div style={{ marginTop: '0.5rem', maxHeight: '120px', overflowY: 'auto', background: 'white', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                                    {poll.openTextResponses.map((res, rIdx) => (
+                                      <div key={rIdx} style={{ fontSize: '0.78rem', color: '#334155', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.3rem', marginBottom: '0.3rem' }}>
+                                        💬 "{res.text}" <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>({res.date || 'اليوم'})</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                               <button
