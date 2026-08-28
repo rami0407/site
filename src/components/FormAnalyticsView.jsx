@@ -36,7 +36,6 @@ const FormAnalyticsView = ({ survey, onClose }) => {
     ? Math.round(responses.reduce((sum, r) => sum + (r.timeSpentSeconds || 0), 0) / totalEntries) 
     : 0;
 
-  // Format Avg Time
   const formatAvgTime = (secs) => {
     if (secs < 60) return `${secs} ثانية`;
     const mins = Math.floor(secs / 60);
@@ -44,21 +43,17 @@ const FormAnalyticsView = ({ survey, onClose }) => {
     return `${mins} دقيقة و ${remSecs} ثانية`;
   };
 
-  // Export to CSV spreadsheet
   const handleExportCSV = () => {
     if (responses.length === 0) {
       alert("لا توجد إجابات مجمعة بعد لتصديرها.");
       return;
     }
 
-    let csvContent = "\uFEFF"; // UTF-8 BOM for Arabic Excel
-    
-    // Headers
+    let csvContent = "\uFEFF";
     const headers = ["معرف الإجابة", "التاريخ والوقت", "الوقت المستغرق (بالثواني)"];
     (survey.questions || []).forEach(q => headers.push(`"${q.title.replace(/"/g, '""')}"`));
     csvContent += headers.join(",") + "\n";
 
-    // Data rows
     responses.forEach(r => {
       const row = [
         `"${r.id}"`,
@@ -90,7 +85,6 @@ const FormAnalyticsView = ({ survey, onClose }) => {
     document.body.removeChild(link);
   };
 
-  // Print Report
   const handlePrintReport = () => {
     window.print();
   };
@@ -103,7 +97,7 @@ const FormAnalyticsView = ({ survey, onClose }) => {
         <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <span style={{ background: '#10b981', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 900 }}>
-              📊 ملف التقرير والتحليل البياني الخاص بالاستمارة
+              📊 ملف التقرير والتحليل البياني المتقدم
             </span>
             <h2 style={{ margin: '0.4rem 0 0 0', fontWeight: 900, fontSize: '1.35rem' }}>
               {survey.title}
@@ -132,12 +126,12 @@ const FormAnalyticsView = ({ survey, onClose }) => {
               onClick={handlePrintReport}
               style={{ background: '#2563eb', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}
             >
-              <i className="fas fa-print"></i> 🖨️ طباعة التقرير الرسمي
+              <i className="fas fa-print"></i> 🖨️ طباعة التقرير الرسمية
             </button>
           </div>
 
           <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>
-            جمهور الاستمارة: <strong>{survey.targetAudience || 'عام 🏫'}</strong>
+            جمهور المستهدف: <strong>{survey.targetAudience || 'عام 🏫'}</strong>
           </div>
         </div>
 
@@ -148,7 +142,7 @@ const FormAnalyticsView = ({ survey, onClose }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
             
             <div style={{ background: '#eff6ff', padding: '1.25rem', borderRadius: '16px', border: '1px solid #bfdbfe' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1d4ed8', display: 'block', marginBottom: '0.3rem' }}>📊 إجمالي الاستجابات المجمعة</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1d4ed8', display: 'block', marginBottom: '0.3rem' }}>📊 إجمالي المشاركات والاستجابات</span>
               <strong style={{ fontSize: '1.8rem', color: '#1e40af', fontWeight: 900 }}>{totalEntries} مشاركة</strong>
             </div>
 
@@ -158,7 +152,7 @@ const FormAnalyticsView = ({ survey, onClose }) => {
             </div>
 
             <div style={{ background: '#fef3c7', padding: '1.25rem', borderRadius: '16px', border: '1px solid #fde68a' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b45309', display: 'block', marginBottom: '0.3rem' }}>🔒 حالة الاستمارة حالياً</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b45309', display: 'block', marginBottom: '0.3rem' }}>🔒 حالة التفعيل</span>
               <strong style={{ fontSize: '1.3rem', color: '#92400e', fontWeight: 900 }}>
                 {survey.status === 'active' ? '🟢 مفتوحة ومفعلة' : '🔴 مغلقة'}
               </strong>
@@ -175,7 +169,7 @@ const FormAnalyticsView = ({ survey, onClose }) => {
             <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
               <i className="fas fa-chart-pie fa-3x" style={{ color: '#cbd5e1', marginBottom: '1rem' }}></i>
               <h3 style={{ fontWeight: 800, color: '#475569' }}>لا توجد استجابات مسجلة لهذه الاستمارة حتى الآن</h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>بمجرد مشاركة الرابط وتعبئة الاستمارة من الأهالي أو المعلمين ستظهر التحليلات تلقائياً هنا.</p>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>بمجرد مشاركة الرابط وتعبئة الاستمارة من الجمهور المخصص ستظهر التحليلات تلقائياً هنا.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -183,12 +177,15 @@ const FormAnalyticsView = ({ survey, onClose }) => {
               {/* Question Analysis Blocks */}
               {(survey.questions || []).map((q, idx) => {
                 
-                // Aggregate answer options for Choice questions
                 const optionCounts = {};
                 let textResponses = [];
 
-                if (q.type === 'multiple_choice' || q.type === 'checkboxes') {
-                  (q.options || []).forEach(opt => optionCounts[opt] = 0);
+                if (q.type === 'multiple_choice' || q.type === 'checkboxes' || q.type === 'likert_scale') {
+                  const opts = q.options && q.options.length > 0 
+                    ? q.options 
+                    : ['ممتاز جداً 🌟', 'جيد جداً 👍', 'متوسط 😐', 'يحتاج تحسين ⚠️'];
+                  
+                  opts.forEach(opt => optionCounts[opt] = 0);
                   
                   responses.forEach(r => {
                     const ans = r.answers?.[q.id];
@@ -221,18 +218,18 @@ const FormAnalyticsView = ({ survey, onClose }) => {
                       س{idx + 1}: {q.title}
                     </h3>
 
-                    {/* Chart Distribution for Options / Ratings */}
-                    {(q.type === 'multiple_choice' || q.type === 'checkboxes' || q.type === 'rating_stars') && (
+                    {/* Chart Distribution */}
+                    {(q.type === 'multiple_choice' || q.type === 'checkboxes' || q.type === 'likert_scale' || q.type === 'rating_stars') && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                         {Object.keys(optionCounts).map((optKey, oIdx) => {
                           const count = optionCounts[optKey];
-                          const percent = Math.round((count / totalEntries) * 100);
+                          const percent = totalEntries > 0 ? Math.round((count / totalEntries) * 100) : 0;
 
                           return (
                             <div key={oIdx} style={{ background: 'white', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.9rem' }}>
                                 <span style={{ color: '#1e293b' }}>{optKey}</span>
-                                <span style={{ color: '#2563eb' }}>{count} مشاركة ({percent}%)</span>
+                                <span style={{ color: '#2563eb' }}>{count} إجابة ({percent}%)</span>
                               </div>
 
                               <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
@@ -244,7 +241,7 @@ const FormAnalyticsView = ({ survey, onClose }) => {
                       </div>
                     )}
 
-                    {/* Open Text Feed List */}
+                    {/* Open Text Feed */}
                     {(q.type === 'short_text' || q.type === 'long_text') && (
                       <div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>
@@ -254,7 +251,7 @@ const FormAnalyticsView = ({ survey, onClose }) => {
                         {textResponses.length === 0 ? (
                           <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>لا توجد إجابات نصية مكتوبة لهذا السؤال بعد.</div>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '200px', overflowY: 'auto' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '220px', overflowY: 'auto' }}>
                             {textResponses.map((item, tIdx) => (
                               <div key={tIdx} style={{ background: 'white', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.88rem', color: '#1e293b', fontWeight: 700 }}>
                                 "{item.text}" <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginTop: '0.2rem' }}>({item.date || 'اليوم'})</span>

@@ -4,38 +4,44 @@ import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 
 const DEFAULT_SURVEY = {
   id: 'survey-demo',
-  title: '📋 استبيان قياس جودة الخدمات والفعاليات المدرسية',
-  description: 'يسعدنا مشاركتكم في هذا الاستبيان لتقييم جودة الأنشطة والخدمات المدرسية وتطوير البيئة التعليمية للأبناء.',
+  title: '📋 استبيان واستطلاع رأي شامل للجمهور',
+  description: 'يسعدنا مشاركتكم الفاعلة في هذا الاستطلاع لتطوير البيئة والخدمات المدرسية.',
   category: 'التطوير والتأهيل',
   targetAudience: 'أولياء الأمور والأهالي 👨‍👩‍👧',
   status: 'active',
-  allowOpenText: true,
   silentTimer: true,
   createdAt: '2026-08-28',
   questions: [
     {
       id: 'q1',
-      title: 'ما هو مدى رضاكم عن التواصل المباشر بين المدرسة وأولياء الأمور؟',
+      title: 'ما هو مدى رضاكم عن التواصل والخدمات المدرسية؟',
       type: 'rating_stars',
       required: true
     },
     {
       id: 'q2',
-      title: 'ما هي الفعاليات الأكثر فائدة لأبنائكم خلال الفصل الدراسي؟',
+      title: 'ما هي الأنشطة أو المبادرات التي ترونها أكثر أهمية؟',
       type: 'multiple_choice',
       required: true,
-      options: ['🚀 ورشات STEM والابتكار', '📚 بنك أوراق العمل والمراجعات', '⚽ البطولات والأنشطة الرياضية', '🎨 معرض الفنون والمسرح']
+      options: ['🚀 ورشات STEM والابتكار', '📚 المراجعات والامتحانات', '⚽ الأنشطة والبطولات الرياضية', '🎨 معرض الفنون والمسرح']
     },
     {
       id: 'q3',
-      title: 'ما هي المواد أو المهارات التي ترغبون في إعطائها تركيزاً إضافياً؟',
+      title: 'ما هي مواضيع المهارات التي ترغبون في إعطائها تركيزاً إضافياً؟',
       type: 'checkboxes',
       required: false,
       options: ['اللغة العربية والإملاء', 'الرياضيات والتفكير المنطقي', 'الذكاء الاصطناعي والبرمجة', 'اللغة الإنجليزية']
     },
     {
       id: 'q4',
-      title: 'هل لديكم أي اقتراحات أو ملحوظات إضافية لتطوير المدرسة؟ (مفتوح)',
+      title: 'كيف تقيمون ملائمة البيئة التعليمية والمبنى المدرسي؟',
+      type: 'likert_scale',
+      required: true,
+      options: ['ممتاز جداً 🌟', 'جيد جداً 👍', 'متوسط 😐', 'يحتاج تحسين ⚠️']
+    },
+    {
+      id: 'q5',
+      title: 'هل لديكم أي اقتراحات أو ملاحظات مفتوحة؟',
       type: 'long_text',
       required: false
     }
@@ -64,10 +70,9 @@ const SmartFormResponder = () => {
 
     const fetchSurvey = async () => {
       setLoading(true);
-      // Try local cache first
       let localItems = [];
       try {
-        const cached = localStorage.getItem('db_school_surveys');
+        const cached = localStorage.getItem('db_school_surveys') || localStorage.getItem('db_parent_polls');
         if (cached) localItems = JSON.parse(cached);
       } catch(e){}
 
@@ -79,7 +84,7 @@ const SmartFormResponder = () => {
       }
 
       try {
-        const docRef = doc(db, 'school_surveys', surveyId);
+        const docRef = doc(doc(db, 'school_surveys', surveyId));
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setSurvey({ id: docSnap.id, ...docSnap.data() });
@@ -97,7 +102,6 @@ const SmartFormResponder = () => {
     fetchSurvey();
   }, []);
 
-  // Check if voted in localStorage
   useEffect(() => {
     if (survey) {
       const votedList = JSON.parse(localStorage.getItem('voted_surveys') || '{}');
@@ -107,7 +111,6 @@ const SmartFormResponder = () => {
     }
   }, [survey]);
 
-  // Input change handlers
   const handleSingleAnswer = (qId, value) => {
     setAnswers(prev => ({ ...prev, [qId]: value }));
   };
@@ -123,7 +126,6 @@ const SmartFormResponder = () => {
     });
   };
 
-  // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!survey) return;
@@ -139,7 +141,6 @@ const SmartFormResponder = () => {
       }
     }
 
-    // Calculate Silent Time Metrics (in seconds)
     const timeSpentSeconds = Math.round((Date.now() - startTime) / 1000);
 
     const responseId = `resp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -152,18 +153,14 @@ const SmartFormResponder = () => {
       timestamp: Date.now()
     };
 
-    // Save to localStorage
     const votedList = JSON.parse(localStorage.getItem('voted_surveys') || '{}');
     votedList[survey.id] = true;
     localStorage.setItem('voted_surveys', JSON.stringify(votedList));
 
     setSubmitted(true);
 
-    // Save Response to Firestore
     try {
       await setDoc(doc(db, 'survey_responses', responseId), responsePayload);
-      
-      // Update survey metadata totals
       const surveyRef = doc(db, 'school_surveys', survey.id);
       await updateDoc(surveyRef, {
         totalResponses: increment(1),
@@ -178,7 +175,7 @@ const SmartFormResponder = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Tajawal, sans-serif' }}>
         <i className="fas fa-spinner fa-spin fa-3x" style={{ color: '#2563eb', marginBottom: '1rem' }}></i>
-        <h3 style={{ fontWeight: 800, color: '#1e293b' }}>جاري تحميل الاستمارة المدرسية...</h3>
+        <h3 style={{ fontWeight: 800, color: '#1e293b' }}>جاري تحميل الاستمارة والاستطلاع...</h3>
       </div>
     );
   }
@@ -187,20 +184,19 @@ const SmartFormResponder = () => {
     return (
       <div style={{ textAlign: 'center', padding: '4rem 1rem', background: '#f8fafc', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif' }}>
         <h2>⚠️ لم يتم العثور على الاستمارة المطلوب تعبئتها</h2>
-        <p>قد تكون الاستمارة قد أغلقت أو حذفت من قبل الإدارة المدرسية.</p>
+        <p>قد تكون الاستمارة مغلقة أو حذفت من قبل الإدارة المدرسية.</p>
         <a href="#home" style={{ color: '#2563eb', fontWeight: 800, textDecoration: 'underline' }}>العودة للصفحة الرئيسية</a>
       </div>
     );
   }
 
-  // Check Expiration/Status
   const isExpired = survey.status === 'closed' || (survey.closeDate && new Date(survey.closeDate) < new Date());
 
   return (
     <div style={{ background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', minHeight: '100vh', padding: '2rem 1rem', fontFamily: 'Tajawal, sans-serif', direction: 'rtl' }}>
-      <div style={{ maxWidth: '780px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '820px', margin: '0 auto' }}>
         
-        {/* Top Return & Brand Bar */}
+        {/* Top Header Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <img 
@@ -222,25 +218,25 @@ const SmartFormResponder = () => {
           </a>
         </div>
 
-        {/* Main Survey Form Card */}
+        {/* Survey Card Container */}
         <div style={{ background: 'white', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
           
           {/* Header Banner */}
           <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: 'white', padding: '2rem', borderRadius: '20px', marginBottom: '2rem', boxShadow: '0 10px 25px rgba(37,99,235,0.2)' }}>
-            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginBottom: '0.6rem' }}>
-              <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800 }}>
-                {survey.targetAudience || 'استمارة عامة 🏫'}
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
+              <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800 }}>
+                🎯 جمهور الاستمارة: {survey.targetAudience || 'عام 🏫'}
               </span>
-              <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800 }}>
+              <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800 }}>
                 🏷️ {survey.category || 'عام'}
               </span>
             </div>
 
-            <h1 style={{ margin: '0 0 0.75rem 0', fontWeight: 900, fontSize: '1.6rem', lineHeight: 1.4 }}>
+            <h1 style={{ margin: '0 0 0.75rem 0', fontWeight: 900, fontSize: '1.65rem', lineHeight: 1.4 }}>
               {survey.title}
             </h1>
             <p style={{ margin: 0, opacity: 0.92, fontSize: '0.95rem', lineHeight: 1.6 }}>
-              {survey.description}
+              {survey.description || 'يسعدنا مشاركتكم الفاعلة بنقرة واحدة لتطوير خدمات ومبادرات المدرسة.'}
             </p>
           </div>
 
@@ -251,10 +247,10 @@ const SmartFormResponder = () => {
                 ✓
               </div>
               <h2 style={{ fontWeight: 900, color: '#065f46', margin: '0 0 0.75rem 0', fontSize: '1.6rem' }}>
-                تم استلام إجابتك واستجابتك بنجاح! 🎉
+                تم استلام إجابتك بنجاح! 🎉
               </h2>
               <p style={{ color: '#047857', fontSize: '1rem', fontWeight: 700, maxWidth: '500px', margin: '0 auto 1.5rem auto', lineHeight: 1.6 }}>
-                نشكركم جزيل الشكر على وقتكم ومشاركتكم الفاعلة. صوتكم واقترحاتكم هي الركيزة الأساسية للتطوير والارتقاء في مدرسة مشيرفة الابتدائية.
+                نشكركم جزيل الشكر على وقتكم واهتمامكم. صوتكم وإجاباتكم هي الركيزة الأساسية للتطوير والارتقاء في مدرسة مشيرفة الابتدائية.
               </p>
               <a 
                 href="#home"
@@ -268,7 +264,7 @@ const SmartFormResponder = () => {
             <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: '#fffbebfb', borderRadius: '20px', border: '2px solid #fcd34d' }}>
               <i className="fas fa-clock fa-3x" style={{ color: '#d97706', marginBottom: '1rem' }}></i>
               <h2 style={{ fontWeight: 900, color: '#92400e', margin: '0 0 0.5rem 0' }}>هذه الاستمارة مغلقة حالياً 🔒</h2>
-              <p style={{ color: '#b45309', fontWeight: 700 }}>لقد انتهى الوقت المخصص لتعبئة هذه الاستمارة أو تم إغلاقها من قبل الإدارة المدرسية.</p>
+              <p style={{ color: '#b45309', fontWeight: 700 }}>لقد انتهى الوقت المخصص لتعبئة الاستمارة أو تم إغلاقها من قبل الإدارة المدرسية.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -287,7 +283,7 @@ const SmartFormResponder = () => {
                       </h3>
                     </div>
 
-                    {/* Question Type 1: Single Choice (Radio) */}
+                    {/* Type 1: Single Choice (Radio) */}
                     {q.type === 'multiple_choice' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {(q.options || []).map((opt, oIdx) => (
@@ -321,7 +317,7 @@ const SmartFormResponder = () => {
                       </div>
                     )}
 
-                    {/* Question Type 2: Checkboxes */}
+                    {/* Type 2: Checkboxes */}
                     {q.type === 'checkboxes' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {(q.options || []).map((opt, oIdx) => {
@@ -357,7 +353,34 @@ const SmartFormResponder = () => {
                       </div>
                     )}
 
-                    {/* Question Type 3: Short Text */}
+                    {/* Type 3: Likert Satisfaction / Matching Scale */}
+                    {q.type === 'likert_scale' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                        {(q.options || ['ممتاز جداً 🌟', 'جيد جداً 👍', 'متوسط 😐', 'يحتاج تحسين ⚠️']).map((opt, oIdx) => (
+                          <button
+                            type="button"
+                            key={oIdx}
+                            onClick={() => handleSingleAnswer(q.id, opt)}
+                            style={{
+                              background: answers[q.id] === opt ? '#2563eb' : 'white',
+                              color: answers[q.id] === opt ? 'white' : '#1e293b',
+                              border: `2px solid ${answers[q.id] === opt ? '#2563eb' : '#cbd5e1'}`,
+                              padding: '0.85rem 0.5rem',
+                              borderRadius: '12px',
+                              fontWeight: 900,
+                              fontSize: '0.9rem',
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Type 4: Short Text */}
                     {q.type === 'short_text' && (
                       <input
                         type="text"
@@ -368,18 +391,18 @@ const SmartFormResponder = () => {
                       />
                     )}
 
-                    {/* Question Type 4: Long Text */}
+                    {/* Type 5: Long Text */}
                     {q.type === 'long_text' && (
                       <textarea
                         rows={4}
-                        placeholder="اكتب إجابتك وتفاصيل اقتراحك هنا..."
+                        placeholder="اكتب إجابتك وتفاصيل رأيك واقتراحك هنا..."
                         value={answers[q.id] || ''}
                         onChange={(e) => handleSingleAnswer(q.id, e.target.value)}
                         style={{ width: '100%', padding: '0.85rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700, fontSize: '0.95rem', background: 'white', resize: 'vertical' }}
                       />
                     )}
 
-                    {/* Question Type 5: 5-Star Rating */}
+                    {/* Type 6: 5-Star Rating */}
                     {q.type === 'rating_stars' && (
                       <div style={{ display: 'flex', gap: '0.6rem', background: 'white', padding: '1rem', borderRadius: '12px', border: '2px solid #cbd5e1', justifyContent: 'center' }}>
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -390,7 +413,7 @@ const SmartFormResponder = () => {
                             style={{
                               background: 'none',
                               border: 'none',
-                              fontSize: '2rem',
+                              fontSize: '2.2rem',
                               cursor: 'pointer',
                               color: (answers[q.id] || 0) >= star ? '#f59e0b' : '#cbd5e1',
                               transition: 'transform 0.15s ease'
@@ -424,7 +447,7 @@ const SmartFormResponder = () => {
                     gap: '0.6rem'
                   }}
                 >
-                  <i className="fas fa-paper-plane"></i> 🚀 إرسال الاستمارة فورياً
+                  <i className="fas fa-paper-plane"></i> 🚀 إرسال الإجابات فورياً
                 </button>
               </div>
             </form>

@@ -6313,6 +6313,555 @@ const AdminDashboard = () => {
                 />
               )}
 
+              {/* TAB 10.8: PARENT POLLS & TARGET AUDIENCE SURVEYS ENGINE */}
+              {activeTab === 'parent-polls' && (
+                <div>
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.6rem' }}>📊</span>
+                      <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
+                        إضافة وإنشاء استطلاع واستمارة تصويت جديدة (مع تحديد جمهور الهدف والأسئلة)
+                      </h3>
+                    </div>
+
+                    <form onSubmit={handleSaveSurveySubmit}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#166534' }}>🎯 تحديد الجمهور المستهدف للإستطلاع:</label>
+                          <select
+                            value={newSurveyForm.targetAudience}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, targetAudience: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #a7f3d0', fontWeight: 900, background: '#f0fdf4', color: '#14532d', fontSize: '0.95rem' }}
+                          >
+                            <option value="أولياء الأمور والأهالي 👨‍👩‍👧">👨‍👩‍👧 أولياء الأمور والأهالي</option>
+                            <option value="الطلاب والأبناء 🎓">🎓 الطلاب والأبناء</option>
+                            <option value="المعلمون والطاقم 👨‍🏫">👨‍🏫 المعلمون والطاقم</option>
+                            <option value="الزوار والضيوف 🌟">🌟 الزوار والضيوف</option>
+                            <option value="عام (جميع الفئات) 🏫">🏫 عام (جميع الفئات)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>📋 عنوان أو موضوع الاستطلاع الرئيسي:</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="مثال: استطلاع رأي الطلاب والمعلمين في الفعاليات والتطوير..."
+                            value={newSurveyForm.title}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, title: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>🏷️ المجال / التصنيف:</label>
+                          <select
+                            value={newSurveyForm.category}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, category: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                          >
+                            <option value="الأنشطة والفعاليات">الأنشطة والفعاليات</option>
+                            <option value="التقييم الجودة">التقييم والجودة</option>
+                            <option value="التواصل والخدمات">التواصل والخدمات</option>
+                            <option value="التطوير والتأهيل">التطوير والتأهيل</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>توضيح للموضوع ووصف الاستطلاع (اختياري):</label>
+                          <input
+                            type="text"
+                            placeholder="وصف مختصر يوضح الهدف من الاستطلاع للجمهور..."
+                            value={newSurveyForm.description}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, description: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Dynamic Question & Question Type Builder */}
+                      <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '18px', border: '1.5px solid #cbd5e1', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <label style={{ fontWeight: 900, fontSize: '1rem', color: '#047857', margin: 0 }}>
+                            ❓ أسئلة الاستطلاع (أضف أسئلة متعددة وحدد نوعها مغلق أم مفتوح أم تقييم أم ملائمة):
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAddSurveyQuestion}
+                            style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '0.45rem 1rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <i className="fas fa-plus-circle"></i> ➕ إضافة سؤال جديد
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                          {newSurveyForm.questions.map((q, qIdx) => (
+                            <div key={q.id || qIdx} style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '1.5px solid #cbd5e1' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#047857' }}>السؤال رقم {qIdx + 1}</span>
+                                {newSurveyForm.questions.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSurveyQuestion(qIdx)}
+                                    style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 800, fontSize: '0.78rem' }}
+                                  >
+                                    🗑️ حذف السؤال
+                                  </button>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '0.85rem' }}>
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>نص السؤال:</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="أدخل سؤال الاستطلاع هنا..."
+                                    value={q.title}
+                                    onChange={(e) => handleQuestionChange(qIdx, 'title', e.target.value)}
+                                    style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>نوع السؤال وطريقة الإجابة:</label>
+                                  <select
+                                    value={q.type}
+                                    onChange={(e) => handleQuestionChange(qIdx, 'type', e.target.value)}
+                                    style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 800, background: '#f8fafc' }}
+                                  >
+                                    <option value="multiple_choice">🔘 سؤال مغلق - إختيار من متعدد (إجابة واحدة)</option>
+                                    <option value="checkboxes">☑️ سؤال مغلق - خيارات متعددة (Checkboxes)</option>
+                                    <option value="likert_scale">📊 سؤال ملائمة وتقييم - مقياس رضا واقتناع</option>
+                                    <option value="short_text">✍️ سؤال مفتوح - إجابة نصية قصيرة</option>
+                                    <option value="long_text">📝 سؤال مفتوح - نص مطول / رأي واقتراح</option>
+                                    <option value="rating_stars">⭐ سؤال تقييم بالنجوم (1 إلى 5)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Render Options if Choice / Likert Question */}
+                              {(q.type === 'multiple_choice' || q.type === 'checkboxes' || q.type === 'likert_scale') && (
+                                <div style={{ background: '#f1f5f9', padding: '0.85rem', borderRadius: '10px', marginTop: '0.5rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>خيارات الإجابة والملائمة لـ (سؤال {qIdx + 1}):</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddQuestionOption(qIdx)}
+                                      style={{ background: 'white', color: '#15803d', border: '1px solid #86efac', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                      + إضافة خيار جديد
+                                    </button>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                                    {(q.options || []).map((optStr, optIdx) => (
+                                      <div key={optIdx} style={{ display: 'flex', gap: '0.3rem' }}>
+                                        <input
+                                          type="text"
+                                          value={optStr}
+                                          onChange={(e) => handleQuestionOptionChange(qIdx, optIdx, e.target.value)}
+                                          style={{ flex: 1, padding: '0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 700 }}
+                                        />
+                                        {(q.options || []).length > 2 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveQuestionOption(qIdx, optIdx)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn"
+                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', fontWeight: 900, padding: '0.85rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem' }}
+                      >
+                        <i className="fas fa-paper-plane"></i> 🚀 نشر ونشر الاستطلاع فورياً لجمهور الهدف
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* List of Active Polls & Surveys */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1' }}>
+                    <h3 style={{ margin: '0 0 1.25rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.25rem' }}>
+                      📋 قائمة الاستطلاعات والاستمارات الحالية ({surveysList.length}):
+                    </h3>
+
+                    {surveysList.length === 0 ? (
+                      <p style={{ color: '#64748b', fontWeight: 700 }}>لا توجد استطلاعات حالية. استخدم المُنشيء بالأعلى لبناء أول استطلاع وتحديد الجمهور!</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {surveysList.map((srv) => (
+                          <div key={srv.id} style={{ background: '#f8fafc', padding: '1.35rem', borderRadius: '18px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                                <span style={{ background: '#dcfce7', color: '#15803d', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                  🎯 الجمهور: {srv.targetAudience || 'عام'}
+                                </span>
+                                <span style={{ background: srv.status === 'active' ? '#dbeafe' : '#fef3c7', color: srv.status === 'active' ? '#1d4ed8' : '#b45309', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                  {srv.status === 'active' ? '🟢 مفتوح للتصويت' : '🔴 مغلق'}
+                                </span>
+                              </div>
+
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', lineHeight: 1.4 }}>{srv.title}</h4>
+                              <p style={{ margin: '0 0 0.85rem 0', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
+                                إجمالي مشاركات الإجابة: <strong style={{ color: '#10b981', fontSize: '0.95rem' }}>{srv.totalResponses || 0} مشاركة</strong>
+                              </p>
+
+                              {/* Copy Link & WhatsApp Share Box */}
+                              <div style={{ background: '#f0fdf4', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #bbf7d0', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#166534', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span>🔗 رابط الاستطلاع المباشر لـ ({srv.targetAudience || 'الجمهور'}):</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const link = window.location.origin + window.location.pathname + '#/form/' + srv.id;
+                                      navigator.clipboard.writeText(link);
+                                      alert("📋 تم نسخ رابط الاستطلاع المباشر لـ (" + (srv.targetAudience || 'الجمهور') + ") بنجاح!");
+                                    }}
+                                    style={{ flex: 1, background: '#15803d', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fas fa-copy"></i> 📋 نسخ الرابط
+                                  </button>
+                                  <a
+                                    href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('تثمن مدرسة مشيرفة مشاركتكم في استطلاع المخصص لـ (' + (srv.targetAudience || 'الجمهور') + '): ' + srv.title + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#/form/' + srv.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fab fa-whatsapp"></i> 📱 واتساب
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAnalyticsSurvey(srv)}
+                                style={{ width: '100%', background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', border: 'none', padding: '0.65rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                              >
+                                <i className="fas fa-chart-line"></i> 📊 فتح التقرير البياني وتحليل المعطيات
+                              </button>
+
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSurveyStatus(srv)}
+                                  style={{ flex: 1, background: srv.status === 'active' ? '#fef3c7' : '#dbeafe', color: srv.status === 'active' ? '#b45309' : '#1d4ed8', border: 'none', padding: '0.45rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
+                                >
+                                  {srv.status === 'active' ? 'إغلاق 🔒' : 'إعادة فتح 🔓'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSurvey(srv.id)}
+                                  style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.45rem 0.7rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
+                                >
+                                  حذف 🗑️
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 10.85: SMART FORMS & SURVEY ANALYTICS CENTER */}
+              {activeTab === 'forms-center' && (
+                <div>
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.6rem' }}>📝</span>
+                      <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
+                        تصميم وإنشاء استمارة مدرسية ذكية جديدة مع توقيت ومؤقت خفي
+                      </h3>
+                    </div>
+
+                    <form onSubmit={handleSaveSurveySubmit}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>📋 عنوان الاستمارة:</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="مثال: استبيان تقييم جودة الفعالية وتطوير البيئة المدرسية..."
+                            value={newSurveyForm.title}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, title: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>🎯 الجمهور المستهدف:</label>
+                          <select
+                            value={newSurveyForm.targetAudience}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, targetAudience: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                          >
+                            <option value="أولياء الأمور والأهالي 👨‍👩‍👧">أولياء الأمور والأهالي 👨‍👩‍👧</option>
+                            <option value="المعلمون والطاقم 👨‍🏫">المعلمون والطاقم 👨‍🏫</option>
+                            <option value="الطلاب والشبكة 🎓">الطلاب 🎓</option>
+                            <option value="عام (الجميع) 🏫">عام (الجميع) 🏫</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>🏷️ المجال / التصنيف:</label>
+                          <input
+                            type="text"
+                            placeholder="مثال: التطوير والتأهيل..."
+                            value={newSurveyForm.category}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, category: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>⏰ توقيت الإغلاق الإجباري للاستمارة (اختياري):</label>
+                          <input
+                            type="date"
+                            value={newSurveyForm.closeDate}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, closeDate: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>📝 وصف وتوجيهات تعبئة الاستمارة:</label>
+                        <textarea
+                          rows={2}
+                          placeholder="اكتب توجيهات تظهر للمستجيبين أعلى الاستمارة..."
+                          value={newSurveyForm.description}
+                          onChange={(e) => setNewSurveyForm({ ...newSurveyForm, description: e.target.value })}
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                        />
+                      </div>
+
+                      {/* Dynamic Question Builder Section */}
+                      <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '18px', border: '1px solid #cbd5e1', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <label style={{ fontWeight: 900, fontSize: '1rem', color: '#1e3a8a', margin: 0 }}>
+                            ❓ أسئلة الاستمارة (أضف أسئلة حدد نوعها مفتوحة أم مغلقة):
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAddSurveyQuestion}
+                            style={{ background: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd', padding: '0.45rem 1rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <i className="fas fa-plus-circle"></i> ➕ إضافة سؤال جديد
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                          {newSurveyForm.questions.map((q, qIdx) => (
+                            <div key={q.id || qIdx} style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '1.5px solid #cbd5e1' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#2563eb' }}>السؤال رقم {qIdx + 1}</span>
+                                {newSurveyForm.questions.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSurveyQuestion(qIdx)}
+                                    style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 800, fontSize: '0.78rem' }}
+                                  >
+                                    🗑️ حذف السؤال
+                                  </button>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '0.85rem' }}>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="أدخل نص السؤال هنا..."
+                                  value={q.title}
+                                  onChange={(e) => handleQuestionChange(qIdx, 'title', e.target.value)}
+                                  style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                />
+
+                                <select
+                                  value={q.type}
+                                  onChange={(e) => handleQuestionChange(qIdx, 'type', e.target.value)}
+                                  style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 800, background: '#f8fafc' }}
+                                >
+                                  <option value="multiple_choice">🔘 إختيار من متعدد (مغلق)</option>
+                                  <option value="checkboxes">☑️ اختيار خيارات متعددة (Checkboxes)</option>
+                                  <option value="short_text">✍️ إجابة نصية قصيرة (مفتوح)</option>
+                                  <option value="long_text">📝 نص مطول / فقرة رأي (مفتوح)</option>
+                                  <option value="rating_stars">⭐ تقييم بالنجوم (1 إلى 5)</option>
+                                </select>
+                              </div>
+
+                              {/* Render Options if Choice Question */}
+                              {(q.type === 'multiple_choice' || q.type === 'checkboxes') && (
+                                <div style={{ background: '#f1f5f9', padding: '0.85rem', borderRadius: '10px', marginTop: '0.5rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>خيارات الإجابة لـ (سؤال {qIdx + 1}):</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddQuestionOption(qIdx)}
+                                      style={{ background: '#white', color: '#15803d', border: '1px solid #86efac', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                      + إضافة خيار
+                                    </button>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                                    {(q.options || []).map((optStr, optIdx) => (
+                                      <div key={optIdx} style={{ display: 'flex', gap: '0.3rem' }}>
+                                        <input
+                                          type="text"
+                                          value={optStr}
+                                          onChange={(e) => handleQuestionOptionChange(qIdx, optIdx, e.target.value)}
+                                          style={{ flex: 1, padding: '0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 700 }}
+                                        />
+                                        {(q.options || []).length > 2 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveQuestionOption(qIdx, optIdx)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn"
+                        style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: 'white', fontWeight: 900, padding: '0.85rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem' }}
+                      >
+                        <i className="fas fa-rocket"></i> 🚀 نشر الاستمارة فورياً للجمهور
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* List of Active Surveys & Form Analytics File buttons */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1' }}>
+                    <h3 style={{ margin: '0 0 1.25rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.25rem' }}>
+                      📂 مكتبة الملفات والتحليلات البيانية للاستمارات المجمعة ({surveysList.length}):
+                    </h3>
+
+                    {surveysList.length === 0 ? (
+                      <p style={{ color: '#64748b', fontWeight: 700 }}>لا توجد استمارات حالية. استخدم النماذج بالأعلى لبناء أول استمارة إلكترونية!</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {surveysList.map((srv) => (
+                          <div key={srv.id} style={{ background: '#f8fafc', padding: '1.35rem', borderRadius: '18px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                                <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                  🎯 {srv.targetAudience || 'عام'}
+                                </span>
+                                <span style={{ background: srv.status === 'active' ? '#d1fae5' : '#fef3c7', color: srv.status === 'active' ? '#047857' : '#b45309', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                  {srv.status === 'active' ? '🟢 مفتوحة' : '🔴 مغلقة'}
+                                </span>
+                              </div>
+
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', lineHeight: 1.4 }}>{srv.title}</h4>
+                              <p style={{ margin: '0 0 0.85rem 0', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
+                                إجمالي مشاركات الإجابة: <strong style={{ color: '#2563eb', fontSize: '0.95rem' }}>{srv.totalResponses || 0} مشاركة</strong>
+                              </p>
+
+                              {/* Form Link Copy Box */}
+                              <div style={{ background: '#eff6ff', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #bfdbfe', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span>🔗 رابط الاستمارة المباشر لجمهور الهدف:</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const link = window.location.origin + window.location.pathname + '#/form/' + srv.id;
+                                      navigator.clipboard.writeText(link);
+                                      alert("📋 تم نسخ رابط الاستمارة المباشر بنجاح! يمكنك الآن إرساله وطباعته.");
+                                    }}
+                                    style={{ flex: 1, background: '#2563eb', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fas fa-copy"></i> 📋 نسخ الرابط
+                                  </button>
+                                  <a
+                                    href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('تثمن إدراة المدرسة مشاركتكم في الاستمارة التالية: ' + srv.title + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#/form/' + srv.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fab fa-whatsapp"></i> 📱 واتساب
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAnalyticsSurvey(srv)}
+                                style={{ width: '100%', background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', border: 'none', padding: '0.65rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                              >
+                                <i className="fas fa-chart-line"></i> 📊 فتح التقرير البياني وتحليل المعطيات
+                              </button>
+
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSurveyStatus(srv)}
+                                  style={{ flex: 1, background: srv.status === 'active' ? '#fef3c7' : '#dbeafe', color: srv.status === 'active' ? '#b45309' : '#1d4ed8', border: 'none', padding: '0.45rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
+                                >
+                                  {srv.status === 'active' ? 'إغلاق 🔒' : 'إعادة فتح 🔓'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSurvey(srv.id)}
+                                  style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.45rem 0.7rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
+                                >
+                                  حذف 🗑️
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Form Analytics Modal */}
+              {selectedAnalyticsSurvey && (
+                <FormAnalyticsView 
+                  survey={selectedAnalyticsSurvey} 
+                  onClose={() => setSelectedAnalyticsSurvey(null)} 
+                />
+              )}
+
               {/* TAB 10.8: PARENT POLLS MANAGEMENT */}
               {activeTab === 'parent-polls' && (
                 <div>
