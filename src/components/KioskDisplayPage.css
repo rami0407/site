@@ -59,6 +59,18 @@
   object-fit: cover;
 }
 
+.kiosk-channel-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0.15rem 0.65rem;
+  border-radius: 50px;
+  margin-bottom: 0.2rem;
+}
+
 .kiosk-titles .kiosk-main-title {
   font-size: 1.5rem;
   font-weight: 900;

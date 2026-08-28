@@ -1,65 +1,138 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import './KioskDisplayPage.css';
 
-const DEFAULT_CONFIG = {
-  mode: 'youtube', // 'youtube', 'slideshow', 'announcement'
-  title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
-  subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
-  youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
-  images: [
-    'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop'
-  ],
-  tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء • يرجى متابعة آخر الأخبار والأنشطة عبر موقع المدرسة!',
-  showTicker: true,
-  showClock: true,
-  showQr: true,
-  showLogo: true,
-  theme: 'dark', // 'dark', 'gold', 'blue'
-  slideInterval: 5
+const DEFAULT_CONFIGS = {
+  main: {
+    mode: 'youtube',
+    title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
+    subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
+    youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+    images: [
+      'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop'
+    ],
+    tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
+    showTicker: true,
+    showClock: true,
+    showQr: true,
+    showLogo: true,
+    theme: 'dark',
+    slideInterval: 5
+  },
+  students: {
+    mode: 'youtube',
+    title: '🚀 شاشة إبداع الطلاب والفعاليات المدرسية',
+    subtitle: 'ركن المبتكرين، التحديات الأسبوعية، والأنشطة اللامنهجية ✨',
+    youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+    images: [
+      'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop'
+    ],
+    tickerText: 'طلابنا الأعزاء • شاركوا أفكاركم في زاوية "شارك أفكارك للعالم" وحلوا التحدي الأسبوعي للفوز بجوائز التميز!',
+    showTicker: true,
+    showClock: true,
+    showQr: true,
+    showLogo: true,
+    theme: 'gold',
+    slideInterval: 5
+  },
+  teachers: {
+    mode: 'announcement',
+    title: '👨‍🏫 شاشة غرفة المعلمين والإدارة التربوية',
+    subtitle: 'التعاميم الرسمية، جدول الفعاليات، ورسائل الإدارة 📚',
+    youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+    images: [
+      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop'
+    ],
+    tickerText: 'زملاءنا المعلمين والمعلمات • يرجى متابعة بوابة STEM وحزم أوراق العمل وتحديث السجلات العلمية دورياً.',
+    showTicker: true,
+    showClock: true,
+    showQr: false,
+    showLogo: true,
+    theme: 'blue',
+    slideInterval: 5
+  },
+  parents: {
+    mode: 'slideshow',
+    title: '👨‍👩‍👧 شاشة الأهالي والزوار الكرام',
+    subtitle: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية 🌟',
+    youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+    images: [
+      'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop'
+    ],
+    tickerText: 'أولياء الأمور الكرام • يسعدنا استقبالكم والرد على استفساراتكم عبر حجز المواعيد وبوابة التواصل الرسمية.',
+    showTicker: true,
+    showClock: true,
+    showQr: true,
+    showLogo: true,
+    theme: 'dark',
+    slideInterval: 5
+  }
 };
 
 const KioskDisplayPage = () => {
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [channel, setChannel] = useState('main');
+  const [config, setConfig] = useState(DEFAULT_CONFIGS.main);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // 1. Real-time Firestore configuration listener
+  // Detect channel from route hash or URL
+  useEffect(() => {
+    const detectChannel = () => {
+      const hash = window.location.hash.toLowerCase();
+      let ch = 'main';
+      if (hash.includes('student')) ch = 'students';
+      else if (hash.includes('teacher')) ch = 'teachers';
+      else if (hash.includes('parent')) ch = 'parents';
+      
+      setChannel(ch);
+      setConfig(DEFAULT_CONFIGS[ch] || DEFAULT_CONFIGS.main);
+    };
+
+    detectChannel();
+    window.addEventListener('hashchange', detectChannel);
+    return () => window.removeEventListener('hashchange', detectChannel);
+  }, []);
+
+  // Real-time Firestore listener for target channel
   useEffect(() => {
     let unsubscribe = () => {};
     try {
-      const configRef = doc(db, 'displayBoard', 'config');
+      const configRef = doc(db, 'displayBoard', channel);
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
-          setConfig({ ...DEFAULT_CONFIG, ...docSnap.data() });
+          const defaultForChannel = DEFAULT_CONFIGS[channel] || DEFAULT_CONFIGS.main;
+          setConfig({ ...defaultForChannel, ...docSnap.data() });
         } else {
-          const localConf = localStorage.getItem('db_kiosk_config');
+          const localConf = localStorage.getItem(`db_kiosk_${channel}`);
           if (localConf) setConfig(JSON.parse(localConf));
+          else setConfig(DEFAULT_CONFIGS[channel] || DEFAULT_CONFIGS.main);
         }
       }, (err) => {
-        console.warn("Kiosk Firestore listener warning:", err);
-        const localConf = localStorage.getItem('db_kiosk_config');
+        console.warn(`Kiosk listener warning for channel ${channel}:`, err);
+        const localConf = localStorage.getItem(`db_kiosk_${channel}`);
         if (localConf) setConfig(JSON.parse(localConf));
       });
     } catch (e) {
-      const localConf = localStorage.getItem('db_kiosk_config');
+      const localConf = localStorage.getItem(`db_kiosk_${channel}`);
       if (localConf) setConfig(JSON.parse(localConf));
     }
 
     return () => unsubscribe();
-  }, []);
+  }, [channel]);
 
-  // 2. Real-time clock interval
+  // Real-time clock interval
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // 3. Slideshow auto-rotation timer
+  // Slideshow auto-rotation timer
   useEffect(() => {
     if (config.mode === 'slideshow' && config.images && config.images.length > 0) {
       const slideTimer = setInterval(() => {
@@ -106,6 +179,13 @@ const KioskDisplayPage = () => {
     second: '2-digit'
   });
 
+  const channelBadges = {
+    main: '🏫 الشاشة العامة',
+    students: '🎓 شاشة الطلاب',
+    teachers: '👨‍🏫 شاشة المعلمين',
+    parents: '👨‍👩‍👧 شاشة الأهالي'
+  };
+
   return (
     <div className={`kiosk-container theme-${config.theme || 'dark'}`}>
       
@@ -120,6 +200,7 @@ const KioskDisplayPage = () => {
             />
           )}
           <div className="kiosk-titles">
+            <div className="kiosk-channel-tag">{channelBadges[channel] || '📺 شاشة العرض'}</div>
             <h1 className="kiosk-main-title">{config.title}</h1>
             <p className="kiosk-subtitle">{config.subtitle}</p>
           </div>
@@ -185,7 +266,7 @@ const KioskDisplayPage = () => {
         {config.mode === 'announcement' && (
           <div className="kiosk-announcement-card">
             <div className="announcement-badge">
-              <i className="fas fa-bullhorn"></i> إعلان مدرسي هدم
+              <i className="fas fa-bullhorn"></i> إعلان مدرسي رسمي
             </div>
             <h2 className="announcement-title">{config.title}</h2>
             <p className="announcement-text">{config.subtitle}</p>

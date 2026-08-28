@@ -433,40 +433,126 @@ const AdminDashboard = () => {
   // STEM Teacher Approval Requests States
   const [stemTeacherRequests, setStemTeacherRequests] = useState([]);
 
-  // Smart Kiosk Display Config State
-  const [kioskConfig, setKioskConfig] = useState({
-    mode: 'youtube',
-    title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
-    subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
-    youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
-    imagesText: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
-    tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
-    showTicker: true,
-    showClock: true,
-    showQr: true,
-    showLogo: true,
-    theme: 'dark',
-    slideInterval: 5
+  // Smart Multi-Channel Kiosk Display Config State
+  const [selectedKioskChannel, setSelectedKioskChannel] = useState('main');
+  const [kioskChannelsConfig, setKioskChannelsConfig] = useState({
+    main: {
+      mode: 'youtube',
+      title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
+      subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
+      youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+      imagesText: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+      tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
+      showTicker: true,
+      showClock: true,
+      showQr: true,
+      showLogo: true,
+      theme: 'dark',
+      slideInterval: 5
+    },
+    students: {
+      mode: 'youtube',
+      title: '🚀 شاشة إبداع الطلاب والفعاليات المدرسية',
+      subtitle: 'ركن المبتكرين، التحديات الأسبوعية، والأنشطة اللامنهجية ✨',
+      youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+      imagesText: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
+      tickerText: 'طلابنا الأعزاء • شاركوا أفكاركم في زاوية "شارك أفكارك للعالم" وحلوا التحدي الأسبوعي للفوز بجوائز التميز!',
+      showTicker: true,
+      showClock: true,
+      showQr: true,
+      showLogo: true,
+      theme: 'gold',
+      slideInterval: 5
+    },
+    teachers: {
+      mode: 'announcement',
+      title: '👨‍🏫 شاشة غرفة المعلمين والإدارة التربوية',
+      subtitle: 'التعاميم الرسمية، جدول الفعاليات، ورسائل الإدارة 📚',
+      youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+      imagesText: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+      tickerText: 'زملاءنا المعلمين والمعلمات • يرجى متابعة بوابة STEM وحزم أوراق العمل وتحديث السجلات العلمية دورياً.',
+      showTicker: true,
+      showClock: true,
+      showQr: false,
+      showLogo: true,
+      theme: 'blue',
+      slideInterval: 5
+    },
+    parents: {
+      mode: 'slideshow',
+      title: '👨‍👩‍👧 شاشة الأهالي والزوار الكرام',
+      subtitle: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية 🌟',
+      youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
+      imagesText: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
+      tickerText: 'أولياء الأمور الكرام • يسعدنا استقبالكم والرد على استفساراتكم عبر حجز المواعيد وبوابة التواصل الرسمية.',
+      showTicker: true,
+      showClock: true,
+      showQr: true,
+      showLogo: true,
+      theme: 'dark',
+      slideInterval: 5
+    }
   });
+
+  const loadKioskAdminData = async () => {
+    const channels = ['main', 'students', 'teachers', 'parents'];
+    for (const ch of channels) {
+      try {
+        const snap = await getDoc(doc(db, 'displayBoard', ch));
+        if (snap.exists()) {
+          const data = snap.data();
+          setKioskChannelsConfig(prev => ({
+            ...prev,
+            [ch]: {
+              ...prev[ch],
+              ...data,
+              imagesText: data.images ? data.images.join('\n') : (prev[ch]?.imagesText || '')
+            }
+          }));
+        }
+      } catch (e) {}
+    }
+  };
 
   const handleSaveKioskConfig = async (e) => {
     e.preventDefault();
+    const ch = selectedKioskChannel;
+    const currentConf = kioskChannelsConfig[ch];
     try {
-      const imagesArray = kioskConfig.imagesText
-        ? kioskConfig.imagesText.split('\n').map(s => s.trim()).filter(Boolean)
+      const imagesArray = currentConf.imagesText
+        ? currentConf.imagesText.split('\n').map(s => s.trim()).filter(Boolean)
         : [];
 
       const payload = {
-        ...kioskConfig,
+        ...currentConf,
         images: imagesArray,
         updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'displayBoard', 'config'), payload);
-      localStorage.setItem('db_kiosk_config', JSON.stringify(payload));
-      alert('🎉 تم حفظ وتطبيق إعدادات شاشة العرض الرقمية بنجاح! التعديلات مباشرة على كافّة الشاشات الآن.');
+      await setDoc(doc(db, 'displayBoard', ch), payload);
+      if (ch === 'main') {
+        await setDoc(doc(db, 'displayBoard', 'config'), payload);
+      }
+      localStorage.setItem(`db_kiosk_${ch}`, JSON.stringify(payload));
+      alert(`🎉 تم حفظ وتحديث شاشة (${ch === 'students' ? 'الطلاب' : ch === 'teachers' ? 'المعلمين' : ch === 'parents' ? 'الأهالي' : 'العامة'}) بنجاح! التعديلات مباشرة على تلك الشاشة الآن.`);
     } catch (err) {
-      alert('حدث خطأ أثناء حفظ إعدادات شاشة العرض: ' + err.message);
+      alert('حدث خطأ أثناء حفظ إعدادات الشاشة: ' + err.message);
+    }
+  };
+
+  const handleCopyKioskLink = (channelKey) => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const targetHash = channelKey === 'main' ? '#/kiosk' : `#/kiosk/${channelKey}`;
+    const fullUrl = baseUrl + targetHash;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        alert(`📋 تم نسخ رابط شاشة (${channelKey === 'students' ? 'الطلاب' : channelKey === 'teachers' ? 'المعلمين' : channelKey === 'parents' ? 'الأهالي' : 'العامة'}) بنجاح!\n\nالرابط المنسوخ:\n${fullUrl}\n\nيمكنك إرساله أو فتحه بمتصفح الشاشة التفاعلية بالمدرسة 🚀`);
+      }).catch(() => {
+        prompt('الرابط المباشر لهذه الشاشة هو:', fullUrl);
+      });
+    } else {
+      prompt('الرابط المباشر لهذه الشاشة هو:', fullUrl);
     }
   };
 
