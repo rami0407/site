@@ -21,19 +21,7 @@ try {
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <!-- Puter.js Free Client AI SDK (Silent Async Loader) -->
-    <script>
-      (function() {
-        try {
-          var s = document.createElement('script');
-          s.src = 'https://js.puter.com/v2/';
-          s.async = true;
-          s.onerror = function() { console.warn('Puter.js SDK skipped due to network SSL policy.'); };
-          document.head.appendChild(s);
-        } catch(e) {}
-      })();
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
