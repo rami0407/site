@@ -45,6 +45,7 @@ import NewsPage from './components/NewsPage';
 import GalleryPage from './components/GalleryPage';
 import CalendarPage from './components/CalendarPage';
 import KioskDisplayPage from './components/KioskDisplayPage';
+import SmartFormResponder from './components/SmartFormResponder';
 import './App.css';
 
 
@@ -284,6 +285,7 @@ function App() {
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isKioskView = currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display');
+  const isFormView = currentHash.includes('form/') || currentHash.startsWith('#form/') || currentHash.startsWith('#/form/');
   const isExcellenceView = currentHash.includes('excellence');
 
   if (isAdminView) {
@@ -297,6 +299,10 @@ function App() {
 
   if (isKioskView) {
     return <KioskDisplayPage />;
+  }
+
+  if (isFormView) {
+    return <SmartFormResponder />;
   }
 
   const isStemView = currentHash.includes('stem');

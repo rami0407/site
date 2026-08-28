@@ -22,6 +22,7 @@ import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { saveWorksheetIDB, getWorksheetsIDB, deleteWorksheetIDB } from '../utils/idbStore';
 import { uploadChunkedFile, deleteChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 import ScientificArticles from './ScientificArticles';
+import FormAnalyticsView from './FormAnalyticsView';
 import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
 
 const CATEGORIES_CALENDAR = {
@@ -1098,6 +1099,170 @@ const AdminDashboard = () => {
 
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [isUploadingPrincipal, setIsUploadingPrincipal] = useState(false);
+
+  // Smart Forms & Survey Engine State
+  const [surveysList, setSurveysList] = useState([]);
+  const [selectedAnalyticsSurvey, setSelectedAnalyticsSurvey] = useState(null);
+  const [newSurveyForm, setNewSurveyForm] = useState({
+    title: '',
+    description: '',
+    category: 'التطوير والتأهيل',
+    targetAudience: 'أولياء الأمور والأهالي 👨‍👩‍👧',
+    closeDate: '',
+    questions: [
+      { id: 'q_1', title: 'ما هو تقييمكم العام لخدمات المدرسة؟', type: 'rating_stars', required: true }
+    ]
+  });
+
+  useEffect(() => {
+    const loadSurveys = async () => {
+      let localItems = [];
+      try {
+        const localS = localStorage.getItem('db_school_surveys');
+        if (localS) localItems = JSON.parse(localS);
+      } catch(e){}
+
+      try {
+        const snap = await getDocs(collection(db, 'school_surveys'));
+        let fsList = [];
+        if (!snap.empty) {
+          snap.forEach(d => fsList.push({ id: d.id, ...d.data() }));
+          setSurveysList(fsList);
+          localStorage.setItem('db_school_surveys', JSON.stringify(fsList));
+        } else if (localItems.length > 0) {
+          setSurveysList(localItems);
+        }
+      } catch(err) {
+        console.warn("Surveys load notice:", err);
+        if (localItems.length > 0) setSurveysList(localItems);
+      }
+    };
+    loadSurveys();
+  }, []);
+
+  const handleAddSurveyQuestion = () => {
+    setNewSurveyForm(prev => ({
+      ...prev,
+      questions: [
+        ...prev.questions,
+        { id: `q_${Date.now()}`, title: '', type: 'multiple_choice', required: true, options: ['الخيار الأول', 'الخيار الثاني'] }
+      ]
+    }));
+  };
+
+  const handleRemoveSurveyQuestion = (idx) => {
+    if (newSurveyForm.questions.length <= 1) {
+      alert("يجب أن تحتوي الاستمارة على سؤال واحد على الأقل.");
+      return;
+    }
+    setNewSurveyForm(prev => ({
+      ...prev,
+      questions: prev.questions.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const handleQuestionChange = (idx, field, val) => {
+    setNewSurveyForm(prev => {
+      const qList = [...prev.questions];
+      qList[idx] = { ...qList[idx], [field]: val };
+      if (field === 'type' && (val === 'multiple_choice' || val === 'checkboxes') && !qList[idx].options) {
+        qList[idx].options = ['الخيار الأول', 'الخيار الثاني'];
+      }
+      return { ...prev, questions: qList };
+    });
+  };
+
+  const handleQuestionOptionChange = (qIdx, optIdx, val) => {
+    setNewSurveyForm(prev => {
+      const qList = [...prev.questions];
+      const opts = [...(qList[qIdx].options || [])];
+      opts[optIdx] = val;
+      qList[qIdx] = { ...qList[qIdx], options: opts };
+      return { ...prev, questions: qList };
+    });
+  };
+
+  const handleAddQuestionOption = (qIdx) => {
+    setNewSurveyForm(prev => {
+      const qList = [...prev.questions];
+      const opts = [...(qList[qIdx].options || []), `خيار إضافي`];
+      qList[qIdx] = { ...qList[qIdx], options: opts };
+      return { ...prev, questions: qList };
+    });
+  };
+
+  const handleRemoveQuestionOption = (qIdx, optIdx) => {
+    setNewSurveyForm(prev => {
+      const qList = [...prev.questions];
+      const opts = (qList[qIdx].options || []).filter((_, i) => i !== optIdx);
+      qList[qIdx] = { ...qList[qIdx], options: opts };
+      return { ...prev, questions: qList };
+    });
+  };
+
+  const handleSaveSurveySubmit = async (e) => {
+    e.preventDefault();
+    if (!newSurveyForm.title.trim()) {
+      alert("يرجى إدخال عنوان الاستمارة.");
+      return;
+    }
+
+    const surveyId = `survey_${Date.now()}`;
+    const surveyObj = {
+      id: surveyId,
+      title: newSurveyForm.title.trim(),
+      description: newSurveyForm.description.trim() || 'يرجى التكرم بتعبئة الاستمارة المدرسية التالية.',
+      category: newSurveyForm.category,
+      targetAudience: newSurveyForm.targetAudience,
+      closeDate: newSurveyForm.closeDate || null,
+      questions: newSurveyForm.questions,
+      status: 'active',
+      totalResponses: 0,
+      totalTimeSpentSeconds: 0,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    const updated = [surveyObj, ...surveysList];
+    setSurveysList(updated);
+    localStorage.setItem('db_school_surveys', JSON.stringify(updated));
+
+    try {
+      await setDoc(doc(db, 'school_surveys', surveyId), surveyObj);
+    } catch(err) {
+      console.warn("Firestore survey create notice:", err);
+    }
+
+    alert("🎉 تم إنشاء ونشر الاستمارة الجديدة بنجاح!");
+    setNewSurveyForm({
+      title: '',
+      description: '',
+      category: 'التطوير والتأهيل',
+      targetAudience: 'أولياء الأمور والأهالي 👨‍👩‍👧',
+      closeDate: '',
+      questions: [
+        { id: 'q_1', title: 'ما هو تقييمكم العام لخدمات المدرسة؟', type: 'rating_stars', required: true }
+      ]
+    });
+  };
+
+  const handleDeleteSurvey = async (surveyId) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الاستمارة وكافة بياناتها؟")) return;
+    const updated = surveysList.filter(s => s.id !== surveyId);
+    setSurveysList(updated);
+    localStorage.setItem('db_school_surveys', JSON.stringify(updated));
+
+    try { await deleteDoc(doc(db, 'school_surveys', surveyId)); } catch(e){}
+    alert("تم حذف الاستمارة بنجاح.");
+  };
+
+  const handleToggleSurveyStatus = async (sObj) => {
+    const newStatus = sObj.status === 'active' ? 'closed' : 'active';
+    const updated = surveysList.map(s => s.id === sObj.id ? { ...s, status: newStatus } : s);
+    setSurveysList(updated);
+    localStorage.setItem('db_school_surveys', JSON.stringify(updated));
+
+    try { await updateDoc(doc(db, 'school_surveys', sObj.id), { status: newStatus }); } catch(e){}
+  };
 
   // Parent Polls Admin State
   const [adminPolls, setAdminPolls] = useState([]);
@@ -3161,6 +3326,25 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-poll" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               📊 إدارة تصويت واستطلاعات الأهالي
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('forms-center')} 
+              className={`filter-chip ${activeTab === 'forms-center' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.9rem 1.2rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'forms-center' ? '#2563eb' : '#eff6ff',
+                color: activeTab === 'forms-center' ? 'white' : '#1d4ed8',
+                fontWeight: 800,
+                border: '2px solid #bfdbfe'
+              }}
+            >
+              <i className="fas fa-clipboard-list" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              📋 مركز الاستمارات وتحليل البيانات الشامل
             </button>
 
             <button 
@@ -5785,10 +5969,10 @@ const AdminDashboard = () => {
                           <div key={ws.id} style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
+                                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
                                   <i className="fas fa-book" style={{ marginLeft: '0.3rem' }}></i> {ws.subject}
                                 </span>
-                                <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800 }}>
+                                <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
                                   <i className="fas fa-user-graduate" style={{ marginLeft: '0.3rem' }}></i> {ws.grade}
                                 </span>
                               </div>
@@ -5849,6 +6033,272 @@ const AdminDashboard = () => {
                 <div>
                   <ScientificArticles isStandalone={false} />
                 </div>
+              )}
+
+              {/* TAB 10.85: SMART FORMS & SURVEY ANALYTICS CENTER */}
+              {activeTab === 'forms-center' && (
+                <div>
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1', marginBottom: '2.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.6rem' }}>📝</span>
+                      <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
+                        تصميم وإنشاء استمارة مدرسية ذكية جديدة مع توقيت ومؤقت خفي
+                      </h3>
+                    </div>
+
+                    <form onSubmit={handleSaveSurveySubmit}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>📋 عنوان الاستمارة:</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="مثال: استبيان تقييم جودة الفعالية وتطوير البيئة المدرسية..."
+                            value={newSurveyForm.title}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, title: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>🎯 الجمهور المستهدف:</label>
+                          <select
+                            value={newSurveyForm.targetAudience}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, targetAudience: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                          >
+                            <option value="أولياء الأمور والأهالي 👨‍👩‍👧">أولياء الأمور والأهالي 👨‍👩‍👧</option>
+                            <option value="المعلمون والطاقم 👨‍🏫">المعلمون والطاقم 👨‍🏫</option>
+                            <option value="الطلاب والشبكة 🎓">الطلاب 🎓</option>
+                            <option value="عام (الجميع) 🏫">عام (الجميع) 🏫</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>🏷️ المجال / التصنيف:</label>
+                          <input
+                            type="text"
+                            placeholder="مثال: التطوير والتأهيل..."
+                            value={newSurveyForm.category}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, category: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>⏰ توقيت الإغلاق الإجباري للاستمارة (اختياري):</label>
+                          <input
+                            type="date"
+                            value={newSurveyForm.closeDate}
+                            onChange={(e) => setNewSurveyForm({ ...newSurveyForm, closeDate: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700, background: 'white' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.4rem', color: '#334155' }}>📝 وصف وتوجيهات تعبئة الاستمارة:</label>
+                        <textarea
+                          rows={2}
+                          placeholder="اكتب توجيهات تظهر للمستجيبين أعلى الاستمارة..."
+                          value={newSurveyForm.description}
+                          onChange={(e) => setNewSurveyForm({ ...newSurveyForm, description: e.target.value })}
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                        />
+                      </div>
+
+                      {/* Dynamic Question Builder Section */}
+                      <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '18px', border: '1px solid #cbd5e1', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <label style={{ fontWeight: 900, fontSize: '1rem', color: '#1e3a8a', margin: 0 }}>
+                            ❓ أسئلة الاستمارة (أضف أسئلة حدد نوعها مفتوحة أم مغلقة):
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAddSurveyQuestion}
+                            style={{ background: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd', padding: '0.45rem 1rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <i className="fas fa-plus-circle"></i> ➕ إضافة سؤال جديد
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                          {newSurveyForm.questions.map((q, qIdx) => (
+                            <div key={q.id || qIdx} style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '1.5px solid #cbd5e1' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#2563eb' }}>السؤال رقم {qIdx + 1}</span>
+                                {newSurveyForm.questions.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSurveyQuestion(qIdx)}
+                                    style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 800, fontSize: '0.78rem' }}
+                                  >
+                                    🗑️ حذف السؤال
+                                  </button>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '0.85rem' }}>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="أدخل نص السؤال هنا..."
+                                  value={q.title}
+                                  onChange={(e) => handleQuestionChange(qIdx, 'title', e.target.value)}
+                                  style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                                />
+
+                                <select
+                                  value={q.type}
+                                  onChange={(e) => handleQuestionChange(qIdx, 'type', e.target.value)}
+                                  style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 800, background: '#f8fafc' }}
+                                >
+                                  <option value="multiple_choice">🔘 إختيار من متعدد (مغلق)</option>
+                                  <option value="checkboxes">☑️ اختيار خيارات متعددة (Checkboxes)</option>
+                                  <option value="short_text">✍️ إجابة نصية قصيرة (مفتوح)</option>
+                                  <option value="long_text">📝 نص مطول / فقرة رأي (مفتوح)</option>
+                                  <option value="rating_stars">⭐ تقييم بالنجوم (1 إلى 5)</option>
+                                </select>
+                              </div>
+
+                              {/* Render Options if Choice Question */}
+                              {(q.type === 'multiple_choice' || q.type === 'checkboxes') && (
+                                <div style={{ background: '#f1f5f9', padding: '0.85rem', borderRadius: '10px', marginTop: '0.5rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>خيارات الإجابة لـ (سؤال {qIdx + 1}):</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddQuestionOption(qIdx)}
+                                      style={{ background: '#white', color: '#15803d', border: '1px solid #86efac', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                      + إضافة خيار
+                                    </button>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                                    {(q.options || []).map((optStr, optIdx) => (
+                                      <div key={optIdx} style={{ display: 'flex', gap: '0.3rem' }}>
+                                        <input
+                                          type="text"
+                                          value={optStr}
+                                          onChange={(e) => handleQuestionOptionChange(qIdx, optIdx, e.target.value)}
+                                          style={{ flex: 1, padding: '0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 700 }}
+                                        />
+                                        {(q.options || []).length > 2 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveQuestionOption(qIdx, optIdx)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn"
+                        style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: 'white', fontWeight: 900, padding: '0.85rem 1.8rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem' }}
+                      >
+                        <i className="fas fa-rocket"></i> 🚀 نشر الاستمارة فورياً للجمهور
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* List of Active Surveys & Form Analytics File buttons */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #cbd5e1' }}>
+                    <h3 style={{ margin: '0 0 1.25rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.25rem' }}>
+                      📂 مكتبة الملفات والتحليلات البيانية للاستمارات المجمعة ({surveysList.length}):
+                    </h3>
+
+                    {surveysList.length === 0 ? (
+                      <p style={{ color: '#64748b', fontWeight: 700 }}>لا توجد استمارات حالية. استخدم النماذج بالأعلى لبناء أول استمارة إلكترونية!</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {surveysList.map((srv) => (
+                          <div key={srv.id} style={{ background: '#f8fafc', padding: '1.35rem', borderRadius: '18px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                                <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                  🎯 {srv.targetAudience || 'عام'}
+                                </span>
+                                <span style={{ background: srv.status === 'active' ? '#d1fae5' : '#fef3c7', color: srv.status === 'active' ? '#047857' : '#b45309', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>
+                                  {srv.status === 'active' ? '🟢 مفتوحة' : '🔴 مغلقة'}
+                                </span>
+                              </div>
+
+                              <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', lineHeight: 1.4 }}>{srv.title}</h4>
+                              <p style={{ margin: '0 0 0.85rem 0', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
+                                إجمالي مشاركات الإجابة: <strong style={{ color: '#2563eb', fontSize: '0.95rem' }}>{srv.totalResponses || 0} مشاركة</strong>
+                              </p>
+
+                              {/* Form Link Copy Box */}
+                              <div style={{ background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.78rem', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <span>🔗 رابط الاستمارة المباشر</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const link = window.location.origin + window.location.pathname + '#/form/' + srv.id;
+                                    navigator.clipboard.writeText(link);
+                                    alert("📋 تم نسخ رابط الاستمارة المباشر لشاركتها!");
+                                  }}
+                                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800, cursor: 'pointer' }}
+                                >
+                                  نسخ الرابط 📋
+                                </button>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAnalyticsSurvey(srv)}
+                                style={{ width: '100%', background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white', border: 'none', padding: '0.65rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                              >
+                                <i className="fas fa-chart-line"></i> 📊 فتح التقرير البياني وتحليل المعطيات
+                              </button>
+
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSurveyStatus(srv)}
+                                  style={{ flex: 1, background: srv.status === 'active' ? '#fef3c7' : '#dbeafe', color: srv.status === 'active' ? '#b45309' : '#1d4ed8', border: 'none', padding: '0.45rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
+                                >
+                                  {srv.status === 'active' ? 'إغلاق 🔒' : 'إعادة فتح 🔓'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSurvey(srv.id)}
+                                  style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.45rem 0.7rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer' }}
+                                >
+                                  حذف 🗑️
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Form Analytics Modal */}
+              {selectedAnalyticsSurvey && (
+                <FormAnalyticsView 
+                  survey={selectedAnalyticsSurvey} 
+                  onClose={() => setSelectedAnalyticsSurvey(null)} 
+                />
               )}
 
               {/* TAB 10.8: PARENT POLLS MANAGEMENT */}
