@@ -195,8 +195,12 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
+    const systemPages = ['prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+    if (systemPages.includes(item.target)) {
+      return `#/${item.target}`;
+    }
     if (item.type === 'page' || item.type === 'custom_page') {
-      return (item.target === 'worksheets' || item.target === 'astronomy' || item.target === 'challenge' || item.target === 'books' || item.target === 'excellence') ? `#/${item.target}` : `#/page/${item.target}`;
+      return `#/page/${item.target}`;
     }
     return `#${item.target}`;
   };

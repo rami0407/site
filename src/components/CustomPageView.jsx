@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { defaultPages } from '../data/defaultNavigationData';
 import ExcellenceYearPage from './ExcellenceYearPage';
+import PrepDayExcellencePage from './PrepDayExcellencePage';
 
 const CustomPageView = ({ pageId }) => {
   const [pageData, setPageData] = useState(null);
@@ -11,6 +12,10 @@ const CustomPageView = ({ pageId }) => {
 
   if (pageId === 'excellence') {
     return <ExcellenceYearPage isStandalone={true} />;
+  }
+
+  if (pageId === 'prep-day' || pageId === 'prep-excellence') {
+    return <PrepDayExcellencePage />;
   }
 
   useEffect(() => {
