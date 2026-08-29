@@ -72,8 +72,10 @@ const SmartFormResponder = () => {
       setLoading(true);
       let localItems = [];
       try {
-        const cached = localStorage.getItem('db_school_surveys') || localStorage.getItem('db_parent_polls');
-        if (cached) localItems = JSON.parse(cached);
+        const s1 = localStorage.getItem('db_school_surveys');
+        if (s1) localItems.push(...JSON.parse(s1));
+        const s2 = localStorage.getItem('db_parent_polls');
+        if (s2) localItems.push(...JSON.parse(s2));
       } catch(e){}
 
       const foundLocal = localItems.find(s => s.id === surveyId);
@@ -84,12 +86,35 @@ const SmartFormResponder = () => {
       }
 
       try {
-        const docRef = doc(doc(db, 'school_surveys', surveyId));
+        const docRef = doc(db, 'school_surveys', surveyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setSurvey({ id: docSnap.id, ...docSnap.data() });
         } else {
-          setSurvey({ ...DEFAULT_SURVEY, id: surveyId });
+          // Check parent_polls collection as fallback
+          const pollRef = doc(db, 'parent_polls', surveyId);
+          const pollSnap = await getDoc(pollRef);
+          if (pollSnap.exists()) {
+            const pData = pollSnap.data();
+            setSurvey({
+              id: pollSnap.id,
+              title: pData.question || pData.title || 'استطلاع رأي',
+              description: pData.description || 'شارك بصوتك بنقرة واحدة في القرار المدرسي.',
+              category: pData.category || 'عام',
+              targetAudience: pData.targetAudience || 'أولياء الأمور والأهالي 👨‍👩‍👧',
+              status: pData.status || 'active',
+              questions: pData.questions || [
+                {
+                  id: 'q_main',
+                  title: pData.question || pData.title || 'السؤال الرئيسي',
+                  type: 'multiple_choice',
+                  options: (pData.options || []).map(o => typeof o === 'string' ? o : (o.text || ''))
+                }
+              ]
+            });
+          } else {
+            setSurvey({ ...DEFAULT_SURVEY, id: surveyId });
+          }
         }
       } catch (err) {
         console.warn("Survey load fallback:", err);
@@ -100,6 +125,8 @@ const SmartFormResponder = () => {
     };
 
     fetchSurvey();
+    window.addEventListener('hashchange', fetchSurvey);
+    return () => window.removeEventListener('hashchange', fetchSurvey);
   }, []);
 
   useEffect(() => {
