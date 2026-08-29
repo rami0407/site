@@ -309,7 +309,7 @@ function App() {
   const isPrepDayView = currentHash.includes('prep-day') || currentHash.includes('prep-excellence');
   const isStemView = currentHash.includes('stem');
   const isLearningCornerView = currentHash.includes('learning-corner');
-  const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
+  const isCustomPageView = (currentHash.startsWith('#/page/') || currentHash.startsWith('#page/')) && !currentHash.includes('prep-day');
   const isWorksheetsView = currentHash.includes('worksheets');
   const isArticlesView = currentHash.includes('articles');
   const isParentPollsView = currentHash.includes('parent-polls');
