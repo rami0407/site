@@ -68,6 +68,7 @@ html {
 
 body {
   font-family: var(--font-primary);
+  font-variant-numeric: tabular-nums lining-nums;
   background-color: var(--bg-light);
   color: var(--text-dark);
   line-height: 1.8;
