@@ -14,7 +14,7 @@ const CustomPageView = ({ pageId }) => {
     return <ExcellenceYearPage isStandalone={true} />;
   }
 
-  if (pageId === 'prep-day' || pageId === 'prep-excellence') {
+  if (pageId === 'prep-day' || pageId === 'prep-excellence' || pageId === 'monawaat' || pageId === 'monawat') {
     return <PrepDayExcellencePage />;
   }
 

@@ -182,6 +182,23 @@ const Hero = () => {
               {isLaunching ? 'جاري الإطلاق إلى الفضاء... 🌌' : 'إطلاق مركبة التميز 🚀'}
             </button>
 
+            <button onClick={() => window.location.hash = '#/monawaat'} className="btn" style={{
+              background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)',
+              color: 'white',
+              border: 'none',
+              fontWeight: 900,
+              padding: '0.85rem 1.4rem',
+              borderRadius: '16px',
+              boxShadow: '0 8px 20px rgba(236, 72, 153, 0.4)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer'
+            }}>
+              <i className="fas fa-palette" style={{ fontSize: '1.2rem' }}></i>
+              🎨 منوعات
+            </button>
+
             <button onClick={() => window.location.hash = '#/stem'} className="btn" style={{
               background: 'linear-gradient(135deg, #7209b7 0%, #4361ee 100%)',
               color: 'white',

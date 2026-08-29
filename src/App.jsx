@@ -306,10 +306,10 @@ function App() {
     return <SmartFormResponder />;
   }
 
-  const isPrepDayView = currentHash.includes('prep-day') || currentHash.includes('prep-excellence');
+  const isPrepDayView = currentHash.includes('monawaat') || currentHash.includes('monawat') || currentHash.includes('prep-day') || currentHash.includes('prep-excellence');
   const isStemView = currentHash.includes('stem');
   const isLearningCornerView = currentHash.includes('learning-corner');
-  const isCustomPageView = (currentHash.startsWith('#/page/') || currentHash.startsWith('#page/')) && !currentHash.includes('prep-day');
+  const isCustomPageView = (currentHash.startsWith('#/page/') || currentHash.startsWith('#page/')) && !currentHash.includes('prep-day') && !currentHash.includes('monawaat');
   const isWorksheetsView = currentHash.includes('worksheets');
   const isArticlesView = currentHash.includes('articles');
   const isParentPollsView = currentHash.includes('parent-polls');
