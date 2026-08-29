@@ -31,10 +31,20 @@ const Navbar = () => {
       // Filter out any lingering nav_excellence, nav_astronomy, or nav_stem from navbar
       items = items.filter(item => item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
       
-      const standaloneTargets = ['news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books'];
+      const standaloneTargets = ['prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
-      // 🌟 GUARANTEE: Ensure nav_articles and nav_parent_polls always exist in main navigation!
+      // 🌟 GUARANTEE: Ensure nav_prep_day always exists in main navigation!
+      if (!items.some(item => item.id === 'nav_prep_day' || item.target === 'prep-day')) {
+        items.push({
+          id: "nav_prep_day",
+          label: "🎨 اليوم التحضيري",
+          type: "page",
+          target: "prep-day",
+          category: "main",
+          order: 1.5
+        });
+      }
 
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
         items.push({
@@ -121,7 +131,7 @@ const Navbar = () => {
       }
 
       // Track active section on scroll if we are on the homepage
-      const systemTargets = ['principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+      const systemTargets = ['prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
       const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || systemTargets.some(t => window.location.hash.includes(t));
       if (!isOnCustomPage && mainNavItems.length > 0) {
         const sections = mainNavItems
@@ -156,7 +166,7 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    const systemPages = ['principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+    const systemPages = ['prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
 
     if (item.type === 'page' || item.type === 'custom_page' || systemPages.includes(item.target)) {
       const isSystemPage = systemPages.includes(item.target);

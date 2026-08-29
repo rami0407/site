@@ -46,6 +46,7 @@ import GalleryPage from './components/GalleryPage';
 import CalendarPage from './components/CalendarPage';
 import KioskDisplayPage from './components/KioskDisplayPage';
 import SmartFormResponder from './components/SmartFormResponder';
+import PrepDayExcellencePage from './components/PrepDayExcellencePage';
 import './App.css';
 
 
@@ -305,6 +306,7 @@ function App() {
     return <SmartFormResponder />;
   }
 
+  const isPrepDayView = currentHash.includes('prep-day') || currentHash.includes('prep-excellence');
   const isStemView = currentHash.includes('stem');
   const isLearningCornerView = currentHash.includes('learning-corner');
   const isCustomPageView = currentHash.startsWith('#/page/') || currentHash.startsWith('#page/');
@@ -342,7 +344,9 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isCalendarView ? (
+      {isPrepDayView ? (
+        <PrepDayExcellencePage />
+      ) : isCalendarView ? (
         <CalendarPage />
       ) : isGalleryView ? (
         <GalleryPage />
