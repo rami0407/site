@@ -24,6 +24,7 @@ import { uploadChunkedFile, deleteChunkedFile, downloadChunkedFile, downloadBase
 import ScientificArticles from './ScientificArticles';
 import FormAnalyticsView from './FormAnalyticsView';
 import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
+import EduStaffingPortal from './EduStaffingPortal';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -3679,6 +3680,27 @@ const AdminDashboard = () => {
               <i className="fas fa-palette" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
               🎨 منوعات - مراقبة الصور ({monawaatDrawings.length})
             </button>
+
+            {/* زر سري: منصة التوظيف والخدمات التعليمية */}
+            <button 
+              onClick={() => setActiveTab('edu-staffing-admin')} 
+              className={`filter-chip ${activeTab === 'edu-staffing-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'edu-staffing-admin' ? '#1e40af' : '#eff6ff',
+                color: activeTab === 'edu-staffing-admin' ? 'white' : '#1e3a8a',
+                fontWeight: 800,
+                border: '2px solid #93c5fd',
+                boxShadow: '0 2px 6px rgba(30,64,175,0.15)'
+              }}
+            >
+              <i className="fas fa-user-graduate" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🔒 منصة التوظيف والخدمات (مسودة)
+            </button>
           </div>
         </aside>
 
@@ -6005,6 +6027,13 @@ const AdminDashboard = () => {
                   </div>
                 );
               })()}
+
+              {/* تبويب سري: منصة التوظيف والخدمات التعليمية الذكية */}
+              {activeTab === 'edu-staffing-admin' && (
+                <div>
+                  <EduStaffingPortal />
+                </div>
+              )}
 
               {/* TAB 9: CONTACT INFO EDITOR */}
               {activeTab === 'contact-info' && (
