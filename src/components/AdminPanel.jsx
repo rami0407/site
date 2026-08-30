@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import {
   collection,
   onSnapshot,
@@ -11,12 +12,13 @@ import {
 } from 'firebase/firestore';
 import './AdminPanel.css';
 
-const ADMIN_PASSWORD = 'admin@musheirifa2026';
-
 const AdminPanel = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
   const [drawings, setDrawings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
@@ -25,8 +27,18 @@ const AdminPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // استخدام نفس مصادقة Firebase كلوحة التحكم الأصلية
   useEffect(() => {
-    if (!isAuthenticated) return;
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // تحميل البيانات بعد تسجيل الدخول
+  useEffect(() => {
+    if (!user) return;
     const drawingsRef = collection(db, 'prep_drawings');
     const q = query(drawingsRef, orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -38,15 +50,15 @@ const AdminPanel = () => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [isAuthenticated]);
+  }, [user]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      setPasswordError('');
-    } else {
-      setPasswordError('كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+    setLoginError('');
+    try {
+      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+    } catch (error) {
+      setLoginError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
     }
   };
 
@@ -84,31 +96,62 @@ const AdminPanel = () => {
 
   const totalLikes = drawings.reduce((sum, item) => sum + (item.likes || 0), 0);
 
-  if (!isAuthenticated) {
+  // جاري التحقق من حالة الدخول
+  if (checkingAuth) {
     return (
       <div className="admin-login-wrapper">
         <div className="admin-login-card">
-          <div className="admin-login-icon">🔐</div>
-          <h2>لوحة تحكم المشرف</h2>
-          <p>مدرسة مشيرفة الابتدائية - منوعات</p>
-          <form onSubmit={handleLogin}>
-            <input type="password" className="admin-input" placeholder="أدخل كلمة مرور المشرف" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
-            {passwordError && <div className="admin-error-msg">{passwordError}</div>}
-            <button type="submit" className="admin-btn admin-btn-primary">🔓 دخول</button>
-          </form>
+          <div className="admin-login-icon">⏳</div>
+          <p>جاري التحقق من صلاحيات الدخول...</p>
         </div>
       </div>
     );
   }
 
+  // شاشة تسجيل الدخول (نفس Firebase المستخدمة في لوحة التحكم الرئيسية)
+  if (!user) {
+    return (
+      <div className="admin-login-wrapper">
+        <div className="admin-login-card">
+          <div className="admin-login-icon">🔐</div>
+          <h2>لوحة مراقبة المنوعات</h2>
+          <p>سجّل دخولك بنفس بيانات لوحة التحكم الرئيسية</p>
+          <form onSubmit={handleLogin}>
+            <input
+              type="email"
+              className="admin-input"
+              placeholder="البريد الإلكتروني"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              autoFocus
+            />
+            <input
+              type="password"
+              className="admin-input"
+              placeholder="كلمة المرور"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+            />
+            {loginError && <div className="admin-error-msg">{loginError}</div>}
+            <button type="submit" className="admin-btn admin-btn-primary">🔓 دخول</button>
+          </form>
+          <div style={{ marginTop: '16px', fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
+            استخدم نفس البريد وكلمة المرور المستخدمين في لوحة التحكم الرئيسية
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // لوحة التحكم الرئيسية
   return (
     <div className="admin-wrapper">
       <div className="admin-header">
         <div>
-          <h1>🛡️ لوحة تحكم المشرف</h1>
-          <p>مراقبة وإدارة محتوى صفحة المنوعات</p>
+          <h1>🛡️ لوحة مراقبة المنوعات</h1>
+          <p>مراقبة وإدارة محتوى صفحة المنوعات | {user.email}</p>
         </div>
-        <button className="admin-btn admin-btn-outline" onClick={() => setIsAuthenticated(false)}>🚪 تسجيل الخروج</button>
+        <a href="#/admin" className="admin-btn admin-btn-outline">← لوحة التحكم الرئيسية</a>
       </div>
 
       <div className="admin-stats-row">
@@ -133,9 +176,7 @@ const AdminPanel = () => {
         <div className="admin-table-wrapper">
           <table className="admin-table">
             <thead>
-              <tr>
-                <th>الصورة</th><th>اسم المعلم/ة</th><th>التخصص</th><th>العنوان</th><th>الإعجابات</th><th>التاريخ</th><th>الإجراءات</th>
-              </tr>
+              <tr><th>الصورة</th><th>اسم المعلم/ة</th><th>التخصص</th><th>العنوان</th><th>الإعجابات</th><th>التاريخ</th><th>الإجراءات</th></tr>
             </thead>
             <tbody>
               {filteredDrawings.map((item) => (
@@ -147,7 +188,7 @@ const AdminPanel = () => {
                   <td>
                     <div className="admin-likes-cell">
                       <span>❤️ {item.likes || 0}</span>
-                      <button className="admin-btn-tiny admin-btn-reset" onClick={() => handleResetLikes(item.id)} title="إعادة تعيين الإعجابات إلى صفر">↺ تصفير</button>
+                      <button className="admin-btn-tiny admin-btn-reset" onClick={() => handleResetLikes(item.id)}>↺ تصفير</button>
                     </div>
                   </td>
                   <td><div className="admin-date-cell">{item.createdAt ? new Date(item.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</div></td>
