@@ -47,6 +47,7 @@ import CalendarPage from './components/CalendarPage';
 import KioskDisplayPage from './components/KioskDisplayPage';
 import SmartFormResponder from './components/SmartFormResponder';
 import PrepDayExcellencePage from './components/PrepDayExcellencePage';
+import AdminPanel from './components/AdminPanel';
 import './App.css';
 
 
@@ -299,6 +300,7 @@ function App() {
     return <SmartFormResponder />;
   }
 
+  const isMonawaatAdminView = currentHash.includes('monawaat-admin') || currentHash.includes('monawat-admin');
   const isPrepDayView = currentHash.includes('monawaat') || currentHash.includes('monawat') || currentHash.includes('prep-day') || currentHash.includes('prep-excellence');
   const isStemView = currentHash.includes('stem');
   const isLearningCornerView = currentHash.includes('learning-corner');
@@ -337,7 +339,9 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isPrepDayView ? (
+      {isMonawaatAdminView ? (
+        <AdminPanel />
+      ) : isPrepDayView ? (
         <PrepDayExcellencePage />
       ) : isCalendarView ? (
         <CalendarPage />
