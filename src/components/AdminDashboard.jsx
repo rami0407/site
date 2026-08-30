@@ -318,6 +318,14 @@ const AdminDashboard = () => {
   const [guideLetter, setGuideLetter] = useState({ title: '', salutation: '', content: '', valediction: '' });
 
   const [worksheets, setWorksheets] = useState([]);
+  // منوعات - صور المعلمين
+  const [monawaatDrawings, setMonawaatDrawings] = useState([]);
+  const [monawaatLoading, setMonawaatLoading] = useState(false);
+  const [monawaatDeleteId, setMonawaatDeleteId] = useState(null);
+  const [monawaatConfirmDelete, setMonawaatConfirmDelete] = useState(null);
+  const [monawaatSelectedImg, setMonawaatSelectedImg] = useState(null);
+  const [monawaatSearch, setMonawaatSearch] = useState('');
+  const [monawaatSuccessMsg, setMonawaatSuccessMsg] = useState('');
   const [editingWsId, setEditingWsId] = useState(null);
   const [newWs, setNewWs] = useState({
     title: '',
@@ -674,6 +682,46 @@ const AdminDashboard = () => {
       console.error('Error fetching appointments:', err);
     }
   };
+
+  // دوال قسم المنوعات
+  const loadMonawaatDrawings = async () => {
+    setMonawaatLoading(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'prep_drawings'), orderBy('createdAt', 'desc')));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setMonawaatDrawings(list);
+    } catch (err) {
+      console.error('Error loading monawaat drawings:', err);
+    }
+    setMonawaatLoading(false);
+  };
+
+  const handleMonawaatDelete = async () => {
+    if (!monawaatConfirmDelete) return;
+    setMonawaatDeleteId(monawaatConfirmDelete);
+    try {
+      await deleteDoc(doc(db, 'prep_drawings', monawaatConfirmDelete));
+      setMonawaatDrawings(prev => prev.filter(d => d.id !== monawaatConfirmDelete));
+      setMonawaatSuccessMsg('تم حذف الصورة بنجاح ✅');
+      setTimeout(() => setMonawaatSuccessMsg(''), 3000);
+    } catch (err) {
+      console.error('Delete error:', err);
+    }
+    setMonawaatDeleteId(null);
+    setMonawaatConfirmDelete(null);
+  };
+
+  const handleMonawaatResetLikes = async (id) => {
+    try {
+      await updateDoc(doc(db, 'prep_drawings', id), { likes: 0 });
+      setMonawaatDrawings(prev => prev.map(d => d.id === id ? { ...d, likes: 0 } : d));
+      setMonawaatSuccessMsg('تم تصفير الإعجابات ✅');
+      setTimeout(() => setMonawaatSuccessMsg(''), 3000);
+    } catch (err) {
+      console.error('Reset likes error:', err);
+    }
+  };
+
 
   const handleDeleteAppointment = async (id, ticketCode) => {
     if (!window.confirm(`هل أنت متأكد من إلغاء الحجز رقم (${ticketCode})؟`)) return;
@@ -3605,6 +3653,32 @@ const AdminDashboard = () => {
               <i className="fas fa-address-book" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               معلومات الاتصال والشبكات
             </button>
+
+            <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
+
+            {/* منوعات - مراقبة صور المعلمين */}
+            <button 
+              onClick={() => {
+                loadMonawaatDrawings();
+                setActiveTab('monawaat-admin');
+              }} 
+              className={`filter-chip ${activeTab === 'monawaat-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'monawaat-admin' ? '#db2777' : '#fdf2f8',
+                color: activeTab === 'monawaat-admin' ? 'white' : '#9d174d',
+                fontWeight: 800,
+                border: '2px solid #f9a8d4',
+                boxShadow: '0 2px 6px rgba(219,39,119,0.15)'
+              }}
+            >
+              <i className="fas fa-palette" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🎨 منوعات - مراقبة الصور ({monawaatDrawings.length})
+            </button>
           </div>
         </aside>
 
@@ -5776,6 +5850,161 @@ const AdminDashboard = () => {
                     </div>
                 </div>
               )}
+
+              {/* تبويب منوعات - مراقبة صور المعلمين */}
+              {activeTab === 'monawaat-admin' && (() => {
+                const filtered = monawaatDrawings.filter(item =>
+                  item.teacherName?.toLowerCase().includes(monawaatSearch.toLowerCase()) ||
+                  item.subject?.toLowerCase().includes(monawaatSearch.toLowerCase()) ||
+                  item.title?.toLowerCase().includes(monawaatSearch.toLowerCase())
+                );
+                const totalLikes = monawaatDrawings.reduce((s, d) => s + (d.likes || 0), 0);
+                return (
+                  <div>
+                    <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '0.5rem' }}>🎨 منوعات - مراقبة ومراجعة صور المعلمين</h2>
+                    <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.95rem' }}>يمكنك هنا مشاهدة وحذف أي صورة غير لائقة، وتصفير الإعجابات</p>
+
+                    {/* إحصائيات */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                      {[
+                        { num: monawaatDrawings.length, label: '📸 إجمالي الصور' },
+                        { num: totalLikes, label: '❤️ إجمالي الإعجابات' },
+                        { num: filtered.length, label: '🔍 نتائج البحث' }
+                      ].map((s, i) => (
+                        <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+                          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#db2777' }}>{s.num}</div>
+                          <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* رسالة نجاح */}
+                    {monawaatSuccessMsg && (
+                      <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#166534', padding: '12px 20px', borderRadius: '10px', marginBottom: '1rem', fontWeight: 600, textAlign: 'center' }}>
+                        {monawaatSuccessMsg}
+                      </div>
+                    )}
+
+                    {/* بحث وتحديث */}
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="🔍 بحث باسم المعلم، التخصص، أو العنوان..."
+                        value={monawaatSearch}
+                        onChange={(e) => setMonawaatSearch(e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <button className="btn" onClick={loadMonawaatDrawings} style={{ background: '#db2777', color: 'white', whiteSpace: 'nowrap' }}>
+                        🔄 تحديث
+                      </button>
+                    </div>
+
+                    {/* الجدول */}
+                    {monawaatLoading ? (
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>⏳ جاري التحميل...</div>
+                    ) : filtered.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                        <div style={{ fontSize: '3rem' }}>📭</div>
+                        <p>{monawaatSearch ? 'لا توجد نتائج مطابقة' : 'لا توجد صور مرفوعة حتى الآن'}</p>
+                      </div>
+                    ) : (
+                      <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+                          <thead style={{ background: '#f8fafc' }}>
+                            <tr>
+                              {['الصورة','اسم المعلم/ة','التخصص','العنوان','❤️','التاريخ','إجراءات'].map(h => (
+                                <th key={h} style={{ padding: '12px 14px', textAlign: 'right', fontSize: '0.85rem', fontWeight: 700, color: '#475569', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map(item => (
+                              <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.title || 'صورة'}
+                                    style={{ width: '70px', height: '55px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: '2px solid #e2e8f0', transition: 'transform 0.2s' }}
+                                    onClick={() => setMonawaatSelectedImg(item)}
+                                    title="اضغط لعرض الصورة"
+                                  />
+                                </td>
+                                <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e293b' }}>👨‍🏫 {item.teacherName}</td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <span style={{ background: '#ede9fe', color: '#5b21b6', padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
+                                    {item.subject || '-'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 14px', color: '#475569', fontSize: '0.9rem', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '-'}</td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ color: '#dc2626', fontWeight: 700 }}>❤️ {item.likes || 0}</span>
+                                    <button
+                                      className="btn"
+                                      style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}
+                                      onClick={() => handleMonawaatResetLikes(item.id)}
+                                    >↺ تصفير</button>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    <button className="btn" style={{ fontSize: '0.8rem', padding: '5px 10px', background: '#e0e7ff', color: '#3730a3', border: 'none' }} onClick={() => setMonawaatSelectedImg(item)}>🔍 عرض</button>
+                                    <button
+                                      className="btn"
+                                      style={{ fontSize: '0.8rem', padding: '5px 10px', background: '#fee2e2', color: '#b91c1c', border: 'none' }}
+                                      onClick={() => setMonawaatConfirmDelete(item.id)}
+                                      disabled={monawaatDeleteId === item.id}
+                                    >{monawaatDeleteId === item.id ? '⏳' : '🗑️ حذف'}</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* نافذة عرض الصورة */}
+                    {monawaatSelectedImg && (
+                      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }} onClick={() => setMonawaatSelectedImg(null)}>
+                        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '700px', width: '100%', position: 'relative', maxHeight: '90vh', overflowY: 'auto', direction: 'rtl' }} onClick={e => e.stopPropagation()}>
+                          <button onClick={() => setMonawaatSelectedImg(null)} style={{ position: 'absolute', top: '12px', left: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+                          <img src={monawaatSelectedImg.imageUrl} alt={monawaatSelectedImg.title} style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', borderRadius: '12px', border: '2px solid #e2e8f0', marginBottom: '16px' }} />
+                          <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                            <p style={{ fontWeight: 700, color: '#0f172a' }}>👨‍🏫 {monawaatSelectedImg.teacherName}</p>
+                            {monawaatSelectedImg.subject && <p style={{ color: '#4f46e5', marginTop: '4px' }}>التخصص: {monawaatSelectedImg.subject}</p>}
+                            {monawaatSelectedImg.title && <p style={{ color: '#334155', marginTop: '4px' }}>العنوان: "{monawaatSelectedImg.title}"</p>}
+                            <p style={{ color: '#dc2626', marginTop: '4px', fontWeight: 700 }}>الإعجابات: ❤️ {monawaatSelectedImg.likes || 0}</p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button className="btn" style={{ background: '#dc2626', color: 'white' }} onClick={() => { const id = monawaatSelectedImg.id; setMonawaatSelectedImg(null); setMonawaatConfirmDelete(id); }}>🗑️ حذف هذه الصورة</button>
+                            <button className="btn" style={{ background: '#f1f5f9', color: '#475569' }} onClick={() => setMonawaatSelectedImg(null)}>إغلاق</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* نافذة تأكيد الحذف */}
+                    {monawaatConfirmDelete && (
+                      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+                        <div style={{ background: 'white', borderRadius: '16px', padding: '36px', maxWidth: '400px', width: '100%', textAlign: 'center', direction: 'rtl' }}>
+                          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⚠️</div>
+                          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '10px' }}>هل أنت متأكد من الحذف؟</h3>
+                          <p style={{ color: '#64748b', marginBottom: '24px' }}>سيتم حذف هذه الصورة نهائياً ولا يمكن التراجع عن هذه العملية.</p>
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button className="btn" style={{ background: '#dc2626', color: 'white' }} onClick={handleMonawaatDelete} disabled={!!monawaatDeleteId}>{monawaatDeleteId ? '⏳ جاري الحذف...' : '🗑️ نعم، احذف'}</button>
+                            <button className="btn" style={{ background: '#f1f5f9', color: '#475569' }} onClick={() => setMonawaatConfirmDelete(null)}>إلغاء</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* TAB 9: CONTACT INFO EDITOR */}
               {activeTab === 'contact-info' && (
