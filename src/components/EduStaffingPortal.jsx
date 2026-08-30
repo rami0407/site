@@ -209,28 +209,28 @@ const EduStaffingPortal = () => {
       </div>
 
       <div className="edu-nav-tabs">
-        <button className={edu-tab-btn } onClick={() => setActiveTab('landing')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'landing' ? 'active' : '')} onClick={() => setActiveTab('landing')}>
           🏠 الصفحة الرئيسية
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('browse-teachers')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'browse-teachers' ? 'active' : '')} onClick={() => setActiveTab('browse-teachers')}>
           👨‍🏫 دليل المعلمين ({teachers.length})
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('browse-jobs')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'browse-jobs' ? 'active' : '')} onClick={() => setActiveTab('browse-jobs')}>
           🏫 الشواغر المدرسية ({jobs.length})
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('browse-providers')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'browse-providers' ? 'active' : '')} onClick={() => setActiveTab('browse-providers')}>
           🎨 سوق البرامج والمحتوى ({programs.length})
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('teacher-dash')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'teacher-dash' ? 'active' : '')} onClick={() => setActiveTab('teacher-dash')}>
           📝 تجربة لوحة المعلم
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('principal-dash')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'principal-dash' ? 'active' : '')} onClick={() => setActiveTab('principal-dash')}>
           📢 تجربة لوحة المدير (+ شاغر)
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('provider-dash')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'provider-dash' ? 'active' : '')} onClick={() => setActiveTab('provider-dash')}>
           🚀 تجربة لوحة مزود الدورات
         </button>
-        <button className={edu-tab-btn } onClick={() => setActiveTab('chat')}>
+        <button className={'edu-tab-btn ' + (activeTab === 'chat' ? 'active' : '')} onClick={() => setActiveTab('chat')}>
           💬 الشات الآمن والمجهول
         </button>
       </div>
@@ -508,7 +508,7 @@ const EduStaffingPortal = () => {
                     {SPECIALIZATIONS.slice(0, 10).map(s => {
                       const isSel = myTeacherProfile.specializations.includes(s);
                       return (
-                        <button key={s} type="button" className={edu-chip } onClick={() => {
+                        <button key={s} type="button" className={'edu-chip ' + (isSel ? 'selected' : '')} onClick={() => {
                           const updated = isSel ? myTeacherProfile.specializations.filter(x => x !== s) : [...myTeacherProfile.specializations, s];
                           setMyTeacherProfile({...myTeacherProfile, specializations: updated});
                         }}>
@@ -525,7 +525,7 @@ const EduStaffingPortal = () => {
                     {REGIONS.slice(0, 8).map(r => {
                       const isSel = myTeacherProfile.regions.includes(r);
                       return (
-                        <button key={r} type="button" className={edu-chip } onClick={() => {
+                        <button key={r} type="button" className={'edu-chip ' + (isSel ? 'selected' : '')} onClick={() => {
                           const updated = isSel ? myTeacherProfile.regions.filter(x => x !== r) : [...myTeacherProfile.regions, r];
                           setMyTeacherProfile({...myTeacherProfile, regions: updated});
                         }}>
@@ -654,7 +654,7 @@ const EduStaffingPortal = () => {
 
               <div className="edu-chat-msgs">
                 {chatMessages.map((m, idx) => (
-                  <div key={idx} className={edu-msg-bubble }>
+                  <div key={idx} className={'edu-msg-bubble ' + (m.sender === 'أنت' ? 'edu-msg-me' : 'edu-msg-other')}>
                     <div style={{ fontSize: '0.75rem', opacity: 0.8, marginBottom: '2px' }}>{m.sender} • {m.time}</div>
                     <div>{m.text}</div>
                   </div>
