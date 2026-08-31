@@ -94,7 +94,28 @@
 .kiosk-header-left {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.2rem;
+}
+
+.kiosk-btn-switch-channel {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 0.45rem 1rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.kiosk-btn-switch-channel:hover {
+  background: #f59e0b;
+  color: #000;
+  border-color: #f59e0b;
 }
 
 .kiosk-clock-box {
@@ -453,6 +474,115 @@
   font-size: 1.4rem;
   color: #cbd5e1;
   line-height: 1.8;
+}
+
+/* ==================== SMART TV LAUNCHER HUB ==================== */
+.kiosk-tv-launcher {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem;
+  box-sizing: border-box;
+  z-index: 9999999;
+  text-align: center;
+  overflow-y: auto;
+}
+
+.tv-launcher-header {
+  margin-bottom: 2.5rem;
+}
+
+.tv-launcher-logo {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid #f59e0b;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+  margin-bottom: 1rem;
+}
+
+.tv-launcher-title {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(135deg, #ffffff 0%, #fde68a 60%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tv-launcher-subtitle {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 700;
+}
+
+.tv-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.8rem;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.tv-launcher-card {
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+  text-decoration: none;
+  color: #f8fafc;
+}
+
+.tv-launcher-card:hover, .tv-launcher-card:focus {
+  transform: scale(1.06);
+  box-shadow: 0 20px 50px rgba(245, 158, 11, 0.35);
+  border-color: #f59e0b;
+  background: rgba(45, 55, 75, 0.95);
+  outline: none;
+}
+
+.tv-launcher-card-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.tv-launcher-card-title {
+  font-size: 1.45rem;
+  font-weight: 900;
+  margin: 0 0 0.5rem 0;
+}
+
+.tv-launcher-card-desc {
+  font-size: 0.92rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.tv-launcher-card-badge {
+  margin-top: 1.25rem;
+  padding: 0.35rem 1rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
 /* Footer & Running Ticker */

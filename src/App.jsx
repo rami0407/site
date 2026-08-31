@@ -279,7 +279,7 @@ function App() {
   }, []);
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
-  const isKioskView = currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display');
+  const isKioskView = currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display') || currentHash.includes('tv') || currentHash.includes('screen');
   const isFormView = currentHash.includes('form/') || currentHash.startsWith('#form/') || currentHash.startsWith('#/form/');
   const isExcellenceView = currentHash.includes('excellence');
 

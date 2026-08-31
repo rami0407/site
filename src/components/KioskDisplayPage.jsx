@@ -14,18 +14,15 @@ const DEFAULT_CONFIGS = {
       'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop'
     ],
-    // Side Widget Settings
-    sideType: 'greeting', // 'image' | 'greeting' | 'reminder'
+    sideType: 'greeting',
     sideTitle: '🌟 باقة تهنئة وتكريم',
     sideText: 'تبارك إدارة مدرسة مشيرفة لفرسان التميز والابتكار في فعاليات اليوم الدراسي.',
     sideImageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
-    sideTheme: 'gold', // 'gold' | 'blue' | 'emerald' | 'purple'
-    // Celebration Mode Settings
+    sideTheme: 'gold',
     celebrationBadge: '🏆 وسام التميز والتفوق',
     celebrationTitle: 'مبارك لطلابنا المبدعين!',
     celebrationText: 'نفتخر بإنجازات طلابنا وطالباتنا في المسابقات العلمية والأنشطة اللامنهجية.',
     celebrationImageUrl: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
-    // Ticker & Header
     tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
     showTicker: true,
     showClock: true,
@@ -114,6 +111,7 @@ const DEFAULT_CONFIGS = {
 };
 
 const KioskDisplayPage = () => {
+  const [isLauncherMode, setIsLauncherMode] = useState(false);
   const [channel, setChannel] = useState('main');
   const [config, setConfig] = useState(DEFAULT_CONFIGS.main);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -124,6 +122,14 @@ const KioskDisplayPage = () => {
   useEffect(() => {
     const detectChannel = () => {
       const hash = window.location.hash.toLowerCase();
+      
+      // If user typed #tv or #/tv or #tv-launcher without specific channel
+      if (hash === '#tv' || hash === '#/tv' || hash === '#tv/' || hash === '#/kiosk/launcher' || hash === '#launcher') {
+        setIsLauncherMode(true);
+        return;
+      }
+
+      setIsLauncherMode(false);
       let ch = 'main';
       if (hash.includes('student')) ch = 'students';
       else if (hash.includes('teacher')) ch = 'teachers';
@@ -151,6 +157,8 @@ const KioskDisplayPage = () => {
 
   // Real-time Firestore listener for target channel
   useEffect(() => {
+    if (isLauncherMode) return;
+
     let unsubscribe = () => {};
     try {
       const configRef = doc(db, 'displayBoard', channel);
@@ -186,7 +194,7 @@ const KioskDisplayPage = () => {
     }
 
     return () => unsubscribe();
-  }, [channel]);
+  }, [channel, isLauncherMode]);
 
   // Real-time clock interval
   useEffect(() => {
@@ -196,6 +204,7 @@ const KioskDisplayPage = () => {
 
   // Slideshow auto-rotation timer
   useEffect(() => {
+    if (isLauncherMode) return;
     const isSlideMode = config.mode === 'slideshow' || config.mode === 'split_slideshow';
     if (isSlideMode && config.images && config.images.length > 0) {
       const slideTimer = setInterval(() => {
@@ -203,7 +212,7 @@ const KioskDisplayPage = () => {
       }, (config.slideInterval || 5) * 1000);
       return () => clearInterval(slideTimer);
     }
-  }, [config.mode, config.images, config.slideInterval]);
+  }, [config.mode, config.images, config.slideInterval, isLauncherMode]);
 
   // Extract YouTube ID helper & force autoplay with mute to ensure autoplay works in modern browsers
   const getYoutubeEmbedUrl = (url) => {
@@ -227,6 +236,12 @@ const KioskDisplayPage = () => {
       if (document.exitFullscreen) document.exitFullscreen();
       setIsFullscreen(false);
     }
+  };
+
+  const selectChannelFromLauncher = (targetCh) => {
+    setChannel(targetCh);
+    setIsLauncherMode(false);
+    window.location.hash = targetCh === 'main' ? '#/kiosk' : `#/kiosk/${targetCh}`;
   };
 
   const formattedDate = currentTime.toLocaleDateString('ar-EG', {
@@ -272,6 +287,46 @@ const KioskDisplayPage = () => {
     </div>
   );
 
+  // ==================== TV LAUNCHER SCREEN ====================
+  if (isLauncherMode) {
+    return (
+      <div className="kiosk-tv-launcher">
+        <div className="tv-launcher-header">
+          <img 
+            src="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" 
+            alt="شعار المدرسة" 
+            className="tv-launcher-logo" 
+          />
+          <h1 className="tv-launcher-title">📺 بوابة شاشات العرض الذكية</h1>
+          <p className="tv-launcher-subtitle">مدرسة مشيرفة الابتدائية • اختر الشاشة المراد بثها على هذا التلفاز:</p>
+        </div>
+
+        <div className="tv-launcher-grid">
+          {[
+            { key: 'students', icon: '🎓', title: 'شاشة إبداع الطلاب', desc: 'الأنشطة، التحدي الأسبوعي، نجوم STEM، والمبتكرين الصغار', badge: 'مخصصة للردهات والممرات', color: '#f59e0b' },
+            { key: 'main', icon: '🏫', title: 'الشاشة العامة للمدرسة', desc: 'البث العام، إعلانات المدخل، الأنشطة والترحيب', badge: 'مخصصة للمدخل الرئيسي', color: '#0ea5e9' },
+            { key: 'teachers', icon: '👨‍🏫', title: 'شاشة غرفة المعلمين', desc: 'التعاميم الإدارية، جدول الحصص، ورسائل الإدارة', badge: 'مخصصة لغرفة المعلمين', color: '#8b5cf6' },
+            { key: 'parents', icon: '👨‍👩‍👧', title: 'شاشة الأهالي والزوار', desc: 'الاستقبال، حجز المواعيد، وبوابة التواصل المباشر', badge: 'مخصصة للاستقبال والإدارة', color: '#10b981' }
+          ].map(item => (
+            <button
+              key={item.key}
+              type="button"
+              className="tv-launcher-card"
+              onClick={() => selectChannelFromLauncher(item.key)}
+              style={{ borderTop: `5px solid ${item.color}` }}
+            >
+              <div className="tv-launcher-card-icon">{item.icon}</div>
+              <h2 className="tv-launcher-card-title">{item.title}</h2>
+              <p className="tv-launcher-card-desc">{item.desc}</p>
+              <div className="tv-launcher-card-badge">{item.badge}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== KIOSK ACTIVE DISPLAY ====================
   return (
     <div className={`kiosk-container theme-${config.theme || 'dark'}`}>
       
@@ -293,6 +348,16 @@ const KioskDisplayPage = () => {
         </div>
 
         <div className="kiosk-header-left">
+          {/* Switch Channel Quick Button for TV remotes */}
+          <button 
+            type="button" 
+            className="kiosk-btn-switch-channel" 
+            onClick={() => setIsLauncherMode(true)}
+            title="اختيار شاشة أخرى"
+          >
+            <i className="fas fa-th-large"></i> اختيار شاشة أخرى
+          </button>
+
           {config.showClock && (
             <div className="kiosk-clock-box">
               <div className="kiosk-time">{formattedTime}</div>
