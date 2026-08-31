@@ -560,6 +560,89 @@ const AdminDashboard = () => {
     }
   };
 
+  
+  const handleUploadKioskImage = (file, targetField) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1600;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        setKioskChannelsConfig(prev => ({
+          ...prev,
+          [selectedKioskChannel]: {
+            ...prev[selectedKioskChannel],
+            [targetField]: optimizedBase64
+          }
+        }));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadKioskMultipleImages = (files) => {
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1600;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+          setKioskChannelsConfig(prev => {
+            const currentText = prev[selectedKioskChannel]?.imagesText || '';
+            const updated = currentText ? `${currentText}\n${optimizedBase64}` : optimizedBase64;
+            return {
+              ...prev,
+              [selectedKioskChannel]: {
+                ...prev[selectedKioskChannel],
+                imagesText: updated
+              }
+            };
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSaveKioskConfig = async (e) => {
     e.preventDefault();
     const ch = selectedKioskChannel;
@@ -4035,17 +4118,56 @@ const AdminDashboard = () => {
                           </div>
 
                           <div>
-                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>رابط الصورة الجانبية أو البوستر (اختياري):</label>
-                            <input 
-                              type="url" 
-                              className="form-input" 
-                              placeholder="https://..."
-                              value={kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl || ''} 
-                              onChange={(e) => setKioskChannelsConfig({
-                                ...kioskChannelsConfig,
-                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideImageUrl: e.target.value }
-                              })} 
-                            />
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>صورة اللوحة الجانبية (رفع من جهازك أو رابط):</label>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                              <label style={{ background: '#15803d', color: 'white', padding: '0.55rem 1rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                                <i className="fas fa-upload"></i> 📁 رفع صورة من جهازك
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  style={{ display: 'none' }}
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleUploadKioskImage(e.target.files[0], 'sideImageUrl');
+                                    }
+                                  }}
+                                />
+                              </label>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                placeholder="أو الصق رابط صورة خارجية..."
+                                value={kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl?.startsWith('data:') ? '✅ تم رفع وحفظ الصورة من جهازك' : (kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl || '')} 
+                                onChange={(e) => setKioskChannelsConfig({
+                                  ...kioskChannelsConfig,
+                                  [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideImageUrl: e.target.value }
+                                })} 
+                                style={{ flex: 1 }}
+                              />
+                              {kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => setKioskChannelsConfig({
+                                    ...kioskChannelsConfig,
+                                    [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideImageUrl: '' }
+                                  })}
+                                  style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.5rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 800 }}
+                                  title="حذف الصورة"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                            {kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl && (
+                              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <img 
+                                  src={kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl} 
+                                  alt="معاينة" 
+                                  style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: '2px solid #16a34a' }}
+                                />
+                                <small style={{ color: '#15803d', fontWeight: 700 }}>✨ تتم ملاءمة أبعاد الصورة تلقائياً لتناسب الشاشة الكبيرة.</small>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -4120,17 +4242,56 @@ const AdminDashboard = () => {
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#581c87', marginBottom: '0.35rem' }}>رابط صورة المحتفى به / الكأس (اختياري):</label>
-                          <input 
-                            type="url" 
-                            className="form-input" 
-                            placeholder="https://..."
-                            value={kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl || ''} 
-                            onChange={(e) => setKioskChannelsConfig({
-                              ...kioskChannelsConfig,
-                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationImageUrl: e.target.value }
-                            })} 
-                          />
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#581c87', marginBottom: '0.35rem' }}>صورة المحتفى به / الطالب المتميز (رفع من جهازك أو رابط):</label>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <label style={{ background: '#7e22ce', color: 'white', padding: '0.55rem 1rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                              <i className="fas fa-upload"></i> 📁 رفع صورة من جهازك
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleUploadKioskImage(e.target.files[0], 'celebrationImageUrl');
+                                  }
+                                }}
+                              />
+                            </label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="أو الصق رابط صورة خارجية..."
+                              value={kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl?.startsWith('data:') ? '✅ تم رفع وحفظ الصورة من جهازك' : (kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl || '')} 
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationImageUrl: e.target.value }
+                              })} 
+                              style={{ flex: 1 }}
+                            />
+                            {kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setKioskChannelsConfig({
+                                  ...kioskChannelsConfig,
+                                  [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationImageUrl: '' }
+                                })}
+                                style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.5rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 800 }}
+                                title="حذف الصورة"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                          {kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl && (
+                            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <img 
+                                src={kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl} 
+                                alt="معاينة" 
+                                style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #a855f7' }}
+                              />
+                              <small style={{ color: '#7e22ce', fontWeight: 700 }}>✨ تظهر الصورة في إطار شرفي دائري مضيء على الشاشة.</small>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -4144,16 +4305,35 @@ const AdminDashboard = () => {
                             صور المعرض والسلايدر (ضع رابط كل صورة بسطر منفصل):
                           </h4>
                         </div>
-                        <textarea 
-                          className="form-input" 
-                          rows="4" 
-                          value={kioskChannelsConfig[selectedKioskChannel]?.imagesText || ''} 
-                          onChange={(e) => setKioskChannelsConfig({
-                            ...kioskChannelsConfig,
-                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], imagesText: e.target.value }
-                          })} 
-                          placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."
-                        ></textarea>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <label style={{ background: '#0284c7', color: 'white', padding: '0.65rem 1.25rem', borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <i className="fas fa-images"></i> 📁 رفع صور متعددة من جهازك للمعرض
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files.length > 0) {
+                                    handleUploadKioskMultipleImages(e.target.files);
+                                  }
+                                }}
+                              />
+                            </label>
+                            <small style={{ color: '#0369a1', fontWeight: 700 }}>يمكنك تحديد عدة صور معاً بضغطة واحدة وسيقوم النظام بضبطها تلقائياً.</small>
+                          </div>
+                          <textarea 
+                            className="form-input" 
+                            rows="4" 
+                            value={kioskChannelsConfig[selectedKioskChannel]?.imagesText || ''} 
+                            onChange={(e) => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], imagesText: e.target.value }
+                            })} 
+                            placeholder="أو الصق روابط الصور بسطور منفصلة هنا..."
+                          ></textarea>
+                        </div>
                       </div>
                     )}
 
