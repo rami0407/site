@@ -447,11 +447,20 @@ const AdminDashboard = () => {
   const [selectedKioskChannel, setSelectedKioskChannel] = useState('main');
   const [kioskChannelsConfig, setKioskChannelsConfig] = useState({
     main: {
-      mode: 'youtube',
+      mode: 'split_video',
       title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
       subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
       youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
       imagesText: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+      sideType: 'greeting',
+      sideTitle: '🌟 باقة تهنئة وتكريم',
+      sideText: 'تبارك إدارة مدرسة مشيرفة لفرسان التميز والابتكار في فعاليات اليوم الدراسي.',
+      sideImageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
+      sideTheme: 'gold',
+      celebrationBadge: '🏆 وسام التميز والتفوق',
+      celebrationTitle: 'مبارك لطلابنا المبدعين!',
+      celebrationText: 'نفتخر بإنجازات طلابنا وطالباتنا في المسابقات العلمية والأنشطة اللامنهجية.',
+      celebrationImageUrl: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
       tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
       showTicker: true,
       showClock: true,
@@ -461,11 +470,20 @@ const AdminDashboard = () => {
       slideInterval: 5
     },
     students: {
-      mode: 'youtube',
+      mode: 'split_video',
       title: '🚀 شاشة إبداع الطلاب والفعاليات المدرسية',
       subtitle: 'ركن المبتكرين، التحديات الأسبوعية، والأنشطة اللامنهجية ✨',
       youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
       imagesText: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
+      sideType: 'greeting',
+      sideTitle: '⭐ نجم الأسبوع في STEM',
+      sideText: 'نهنئ فرسان التحدي الأسبوعي والمخترعين الصغار في زاوية العلوم والابتكار!',
+      sideImageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+      sideTheme: 'gold',
+      celebrationBadge: '🌟 نجم الأسبوع',
+      celebrationTitle: 'تحية إكبار للمتفوقين',
+      celebrationText: 'المثابرة والاجتهاد هما طريقكم نحو القمة والنجاح الباهر.',
+      celebrationImageUrl: '',
       tickerText: 'طلابنا الأعزاء • شاركوا أفكاركم في زاوية "شارك أفكارك للعالم" وحلوا التحدي الأسبوعي للفوز بجوائز التميز!',
       showTicker: true,
       showClock: true,
@@ -475,11 +493,20 @@ const AdminDashboard = () => {
       slideInterval: 5
     },
     teachers: {
-      mode: 'announcement',
+      mode: 'split_video',
       title: '👨‍🏫 شاشة غرفة المعلمين والإدارة التربوية',
       subtitle: 'التعاميم الرسمية، جدول الفعاليات، ورسائل الإدارة 📚',
       youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
       imagesText: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+      sideType: 'reminder',
+      sideTitle: '📌 تذكير إداري أسبوعي',
+      sideText: 'يرجى استكمال تقارير المتابعة التربوية وتحديث بنك أوراق العمل على المنصة.',
+      sideImageUrl: '',
+      sideTheme: 'blue',
+      celebrationBadge: '💐 شكر وتقدير',
+      celebrationTitle: 'شكراً لصناع الأجيال',
+      celebrationText: 'تثمن إدارة المدرسة جهود الهيئة التدريسية المخلصة في بناء جيل واعد.',
+      celebrationImageUrl: '',
       tickerText: 'زملاءنا المعلمين والمعلمات • يرجى متابعة بوابة STEM وحزم أوراق العمل وتحديث السجلات العلمية دورياً.',
       showTicker: true,
       showClock: true,
@@ -489,11 +516,20 @@ const AdminDashboard = () => {
       slideInterval: 5
     },
     parents: {
-      mode: 'slideshow',
+      mode: 'split_slideshow',
       title: '👨‍👩‍👧 شاشة الأهالي والزوار الكرام',
       subtitle: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية 🌟',
       youtubeUrl: 'https://youtu.be/EF4g6yBUbmk?si=prQGqDMugyhPoLFw',
       imagesText: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop\nhttps://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1600&auto=format&fit=crop',
+      sideType: 'greeting',
+      sideTitle: '👨‍👩‍👧 شركاء النجاح',
+      sideText: 'أهلاً وسهلاً بأولياء الأمور الكرام. مشاركتكم واستطلاعاتكم تصنع الفارق.',
+      sideImageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
+      sideTheme: 'emerald',
+      celebrationBadge: '🌟 ترحيب كريم',
+      celebrationTitle: 'مرحباً بضيوف مشيرفة',
+      celebrationText: 'أهلاً بكم في صرح التميز والإبداع والقيادة التربوية.',
+      celebrationImageUrl: '',
       tickerText: 'أولياء الأمور الكرام • يسعدنا استقبالكم والرد على استفساراتكم عبر حجز المواعيد وبوابة التواصل الرسمية.',
       showTicker: true,
       showClock: true,
@@ -504,7 +540,7 @@ const AdminDashboard = () => {
     }
   });
 
-  const loadKioskAdminData = async () => {
+    const loadKioskAdminData = async () => {
     const channels = ['main', 'students', 'teachers', 'parents'];
     for (const ch of channels) {
       try {
@@ -3714,115 +3750,88 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <>
-              {/* TAB: KIOSK DISPLAY BOARD MANAGER */}
+              {/* TAB: DIGITAL DISPLAY BOARD (KIOSK) CONTROL STUDIO */}
               {activeTab === 'kiosk-display' && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
-                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>📺 لوحة التحكم بشاشات العرض الرقمية المتعددة (Smart Multi-Channel Signage)</h2>
-                      <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 700, margin: '0.4rem 0 0 0' }}>
-                        تحكم كامل بكل شاشة مستقلة من مكان واحد: شاشة الطلاب، شاشة المعلمين، شاشة الأهالي، والشاشة العامة للمدرسة!
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Channel Selector Chips Bar */}
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.8rem', background: '#e2e8f0', padding: '0.5rem', borderRadius: '16px' }}>
-                    {[
-                      { key: 'main', label: '🏫 الشاشة العامة للمدرسة', hash: '#/kiosk/main', color: '#0ea5e9' },
-                      { key: 'students', label: '🎓 شاشة الطلاب والفعاليات', hash: '#/kiosk/students', color: '#f59e0b' },
-                      { key: 'teachers', label: '👨‍🏫 شاشة غرفة المعلمين', hash: '#/kiosk/teachers', color: '#8b5cf6' },
-                      { key: 'parents', label: '👨‍👩‍👧 شاشة الأهالي والزوار', hash: '#/kiosk/parents', color: '#10b981' }
-                    ].map(ch => (
-                      <button
-                        key={ch.key}
-                        type="button"
-                        onClick={() => setSelectedKioskChannel(ch.key)}
-                        style={{
-                          flex: 1,
-                          minWidth: '180px',
-                          padding: '0.85rem 1.2rem',
-                          borderRadius: '12px',
-                          border: 'none',
-                          background: selectedKioskChannel === ch.key ? ch.color : 'white',
-                          color: selectedKioskChannel === ch.key ? 'white' : '#334155',
-                          fontWeight: 900,
-                          fontSize: '0.95rem',
-                          cursor: 'pointer',
-                          boxShadow: selectedKioskChannel === ch.key ? '0 4px 15px rgba(0,0,0,0.15)' : 'none',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {ch.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Selected Channel Actions Control Card */}
-                  <div style={{ background: '#0f172a', color: 'white', padding: '1.5rem 2rem', borderRadius: '20px', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', color: '#fbbf24', fontWeight: 800, marginBottom: '0.3rem' }}>
-                        📍 القناة المحددة حالياً: {selectedKioskChannel === 'students' ? 'شاشة الطلاب والفعاليات 🎓' : selectedKioskChannel === 'teachers' ? 'شاشة غرفة المعلمين 👨‍🏫' : selectedKioskChannel === 'parents' ? 'شاشة الأهالي والزوار 👨‍👩‍👧' : 'الشاشة العامة للمدرسة 🏫'}
-                      </div>
-                      <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.1rem' }}>
-                        رابط القناة: <code style={{ background: '#1e293b', color: '#38bdf8', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.85rem' }}>{window.location.origin + window.location.pathname + (selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`)}</code>
-                      </h3>
+                      <span style={{ background: '#f59e0b', color: '#000', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900 }}>
+                        📺 استوديو شاشات العرض الذكية (Digital Signage Studio)
+                      </span>
+                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: '0.5rem 0 0 0', fontSize: '1.6rem' }}>
+                        التحكم المباشر في شاشات العرض المدرسية (شاشة الطلاب، المعلمين، الأهالي، والعامة)
+                      </h2>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                       <button
                         type="button"
                         onClick={() => handleCopyKioskLink(selectedKioskChannel)}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.15)',
-                          color: '#ffffff',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          padding: '0.65rem 1.25rem',
-                          borderRadius: '50px',
-                          fontWeight: 800,
-                          fontSize: '0.9rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}
+                        className="btn"
+                        style={{ background: '#10b981', color: 'white', fontWeight: 900, padding: '0.75rem 1.4rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer' }}
                       >
-                        <i className="fas fa-copy"></i> 📋 نسخ رابط هذه الشاشة
+                        <i className="fas fa-link"></i> 📋 نسخ رابط البث للشاشة الكبيرة
                       </button>
 
                       <a
-                        href={selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`}
+                        href={window.location.origin + window.location.pathname + (selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{
-                          background: '#0ea5e9',
-                          color: 'white',
-                          padding: '0.65rem 1.25rem',
-                          borderRadius: '50px',
-                          fontWeight: 800,
-                          fontSize: '0.9rem',
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          boxShadow: '0 4px 15px rgba(14, 165, 233, 0.4)'
-                        }}
+                        className="btn"
+                        style={{ background: '#0284c7', color: 'white', fontWeight: 900, padding: '0.75rem 1.4rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
                       >
-                        <i className="fas fa-external-link-alt"></i> 🚀 فتح الشاشة بملء الشاشة
+                        <i className="fas fa-external-link-alt"></i> 🖥️ فتح الشاشة بتبويب كامل
                       </a>
                     </div>
                   </div>
 
-                  {/* LIVE PREVIEW IFRAME BOX INSIDE ADMIN DASHBOARD */}
-                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '20px', border: '1px solid #cbd5e1', marginBottom: '2rem', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h4 style={{ margin: 0, fontWeight: 900, fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span>👁️ معاينة تفاعلية حية مباشرة (Live Screen Preview)</span>
-                      </h4>
-                      <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 800 }}>● متصل ومزامن بالحيوية اللحظية</span>
+                  {/* Channel Selector Chips */}
+                  <div style={{ background: '#0f172a', padding: '1.25rem', borderRadius: '20px', marginBottom: '2rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.9rem', marginLeft: '0.5rem' }}>اختر الشاشة المراد تعديلها:</span>
+                    {[
+                      { key: 'students', label: '🎓 شاشة إبداع الطلاب', desc: 'في الردهة والممرات' },
+                      { key: 'main', label: '🏫 الشاشة الرئيسية العامة', desc: 'في المدخل الرئيسي' },
+                      { key: 'teachers', label: '👨‍🏫 شاشة غرفة المعلمين', desc: 'التعاميم والجدول' },
+                      { key: 'parents', label: '👨‍👩‍👧 شاشة الأهالي والزوار', desc: 'الاستقبال والخدمات' }
+                    ].map((ch) => (
+                      <button
+                        key={ch.key}
+                        type="button"
+                        onClick={() => setSelectedKioskChannel(ch.key)}
+                        style={{
+                          background: selectedKioskChannel === ch.key ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(255,255,255,0.08)',
+                          color: selectedKioskChannel === ch.key ? '#000' : '#e2e8f0',
+                          border: `2px solid ${selectedKioskChannel === ch.key ? '#fbbf24' : 'rgba(255,255,255,0.15)'}`,
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: '14px',
+                          fontWeight: 900,
+                          fontSize: '0.92rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.15rem',
+                          transition: 'all 0.2s ease',
+                          boxShadow: selectedKioskChannel === ch.key ? '0 8px 20px rgba(245,158,11,0.3)' : 'none'
+                        }}
+                      >
+                        <span>{ch.label}</span>
+                        <small style={{ fontSize: '0.72rem', opacity: 0.8 }}>({ch.desc})</small>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* LIVE PREVIEW BOX */}
+                  <div style={{ background: '#090d16', padding: '1.5rem', borderRadius: '24px', marginBottom: '2.5rem', border: '2px solid #334155', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', color: '#e2e8f0' }}>
+                      <span style={{ fontWeight: 900, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: '12px', height: '12px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }}></span>
+                        بث مباشر فوري لشاشة ({selectedKioskChannel === 'students' ? 'الطلاب 🎓' : selectedKioskChannel === 'teachers' ? 'المعلمين 👨‍🏫' : selectedKioskChannel === 'parents' ? 'الأهالي 👨‍👩‍👧' : 'العامة 🏫'}):
+                      </span>
+                      <small style={{ color: '#94a3b8' }}>هذا ما يظهر بالضبط على شاشات المدرسة التلفزيونية في الوقت الفعلي</small>
                     </div>
 
-                    <div style={{ width: '100%', height: '380px', borderRadius: '14px', overflow: 'hidden', border: '2px solid #334155', background: '#000' }}>
+                    <div style={{ position: 'relative', width: '100%', height: '420px', borderRadius: '16px', overflow: 'hidden', border: '1px solid #475569' }}>
                       <iframe
                         src={window.location.origin + window.location.pathname + (selectedKioskChannel === 'main' ? '#/kiosk' : `#/kiosk/${selectedKioskChannel}`)}
                         title="Live Kiosk Preview"
@@ -3832,125 +3841,121 @@ const AdminDashboard = () => {
                   </div>
 
                   {/* CONFIG EDIT FORM FOR SELECTED CHANNEL */}
-                  <form onSubmit={handleSaveKioskConfig} style={{ background: 'white', padding: '2rem', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-                      ⚙️ إعدادات محتوى شاشة ({selectedKioskChannel === 'students' ? 'الطلاب 🎓' : selectedKioskChannel === 'teachers' ? 'المعلمين 👨‍🏫' : selectedKioskChannel === 'parents' ? 'الأهالي 👨‍👩‍👧' : 'العامة 🏫'}):
-                    </h3>
+                  <form onSubmit={handleSaveKioskConfig} style={{ background: 'white', padding: '2.5rem', borderRadius: '24px', border: '1px solid #cbd5e1', boxShadow: '0 15px 35px rgba(0,0,0,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '1rem' }}>
+                      <div>
+                        <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.2rem 0.65rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 800 }}>
+                          ⚙️ تخصيص المحتوى والتقسيم
+                        </span>
+                        <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: '0.3rem 0 0 0' }}>
+                          إعدادات وتخطيط شاشة ({selectedKioskChannel === 'students' ? 'الطلاب 🎓' : selectedKioskChannel === 'teachers' ? 'المعلمين 👨‍🏫' : selectedKioskChannel === 'parents' ? 'الأهالي 👨‍👩‍👧' : 'العامة 🏫'}):
+                        </h3>
+                      </div>
+                    </div>
                     
-                    {/* Mode Choice */}
-                    <div className="form-group" style={{ marginBottom: '1.8rem' }}>
-                      <label className="form-label" style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
-                        🎬 اختر نوع المحتوى الرئيسي المعروض على الشاشة:
+                    {/* Mode Choice - 6 Presets */}
+                    <div className="form-group" style={{ marginBottom: '2rem' }}>
+                      <label className="form-label" style={{ fontSize: '1.08rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.75rem', display: 'block' }}>
+                        🎬 اختر نمط وتخطيط الشاشة (Screen Layout Preset):
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '0.75rem' }}>
-                        <label style={{
-                          background: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube' ? '#f0f9ff' : '#f8fafc',
-                          border: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
-                          padding: '1.2rem',
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem'
-                        }}>
-                          <input 
-                            type="radio" 
-                            name="kioskMode" 
-                            value="youtube" 
-                            checked={(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube'} 
-                            onChange={() => setKioskChannelsConfig({
-                              ...kioskChannelsConfig,
-                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: 'youtube' }
-                            })} 
-                          />
-                          <span>🔴 عرض فيديو يوتيوب متواصل (YouTube Video)</span>
-                        </label>
-
-                        <label style={{
-                          background: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow' ? '#f0f9ff' : '#f8fafc',
-                          border: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
-                          padding: '1.2rem',
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem'
-                        }}>
-                          <input 
-                            type="radio" 
-                            name="kioskMode" 
-                            value="slideshow" 
-                            checked={(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow'} 
-                            onChange={() => setKioskChannelsConfig({
-                              ...kioskChannelsConfig,
-                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: 'slideshow' }
-                            })} 
-                          />
-                          <span>🖼️ معرض صور متقلب أوتوماتيكياً (Image Slideshow)</span>
-                        </label>
-
-                        <label style={{
-                          background: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'announcement' ? '#f0f9ff' : '#f8fafc',
-                          border: (kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'announcement' ? '2px solid #0ea5e9' : '1px solid #cbd5e1',
-                          padding: '1.2rem',
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem'
-                        }}>
-                          <input 
-                            type="radio" 
-                            name="kioskMode" 
-                            value="announcement" 
-                            checked={(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'announcement'} 
-                            onChange={() => setKioskChannelsConfig({
-                              ...kioskChannelsConfig,
-                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: 'announcement' }
-                            })} 
-                          />
-                          <span>📢 كرت إعلاني ترحيبي عريض (Announcement Mode)</span>
-                        </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                        {[
+                          { id: 'split_video', icon: '🌓', title: 'شاشة منقسمة (فيديو + لوحة جانبية)', desc: 'فيديو يوتيوب يعمل بالجانب + صورة أو بطاقة تهنئة أو تذكير بالجانب الآخر' },
+                          { id: 'youtube', icon: '🔴', title: 'فيديو يوتيوب كامل (Full Video)', desc: 'عرض فيديو يوتيوب بملء الشاشة مع الشريط الإخباري والساعة' },
+                          { id: 'split_slideshow', icon: '🖼️', title: 'شاشة منقسمة (سلايدر صور + لوحة جانبية)', desc: 'سلايدر صور الأنشطة + لوحة جانبية مخصصة' },
+                          { id: 'slideshow', icon: '📸', title: 'معرض صور كامل (Full Slideshow)', desc: 'معرض صور متبدلة تلقائياً بملء الشاشة' },
+                          { id: 'celebration', icon: '🎉', title: 'لوحة التهاني والتكريم والمناسبات', desc: 'تصميم احتفالي مخصص مع وسام التميز وشهادات الشكر' },
+                          { id: 'announcement', icon: '📢', title: 'كرت إعلاني رسمي عريض', desc: 'إعلان نصي رسمي مميز من الإدارة المدرسية' }
+                        ].map(m => {
+                          const isSelected = (kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === m.id;
+                          return (
+                            <label
+                              key={m.id}
+                              style={{
+                                background: isSelected ? '#eff6ff' : '#f8fafc',
+                                border: isSelected ? '2.5px solid #2563eb' : '1.5px solid #cbd5e1',
+                                padding: '1.25rem',
+                                borderRadius: '18px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '0.85rem',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isSelected ? '0 6px 15px rgba(37,99,235,0.15)' : 'none'
+                              }}
+                            >
+                              <input 
+                                type="radio" 
+                                name="kioskMode" 
+                                value={m.id} 
+                                checked={isSelected} 
+                                onChange={() => setKioskChannelsConfig({
+                                  ...kioskChannelsConfig,
+                                  [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], mode: m.id }
+                                })}
+                                style={{ marginTop: '0.25rem', width: '18px', height: '18px' }}
+                              />
+                              <div>
+                                <div style={{ fontWeight: 900, color: isSelected ? '#1e40af' : '#0f172a', fontSize: '0.98rem', marginBottom: '0.25rem' }}>
+                                  {m.icon} {m.title}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
+                                  {m.desc}
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* Main Titles */}
-                    <div className="form-group-row">
-                      <div className="form-group">
-                        <label className="form-label">العنوان الرئيسي أعلى الشاشة *</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          value={kioskChannelsConfig[selectedKioskChannel]?.title || ''} 
-                          onChange={(e) => setKioskChannelsConfig({
-                            ...kioskChannelsConfig,
-                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], title: e.target.value }
-                          })} 
-                          required 
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">العنوان الفرعي / الترحيب *</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          value={kioskChannelsConfig[selectedKioskChannel]?.subtitle || ''} 
-                          onChange={(e) => setKioskChannelsConfig({
-                            ...kioskChannelsConfig,
-                            [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], subtitle: e.target.value }
-                          })} 
-                          required 
-                        />
+                    {/* Main Titles Header Settings */}
+                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '18px', border: '1px solid #cbd5e1', marginBottom: '1.8rem' }}>
+                      <h4 style={{ margin: '0 0 1rem 0', fontWeight: 900, color: '#1e3a8a', fontSize: '1rem' }}>
+                        🏷️ العناوين العلوية للشاشة (تظهر أعلى البث):
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#334155', marginBottom: '0.35rem' }}>العنوان الرئيسي أعلى الشاشة *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            value={kioskChannelsConfig[selectedKioskChannel]?.title || ''} 
+                            onChange={(e) => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], title: e.target.value }
+                            })} 
+                            required 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#334155', marginBottom: '0.35rem' }}>العنوان الفرعي / رسالة الترحيب *</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            value={kioskChannelsConfig[selectedKioskChannel]?.subtitle || ''} 
+                            onChange={(e) => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], subtitle: e.target.value }
+                            })} 
+                            required 
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* YouTube URL input */}
-                    {(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'youtube' && (
-                      <div className="form-group" style={{ background: '#fffbeb', padding: '1.25rem', borderRadius: '16px', border: '1px solid #fde68a', marginBottom: '1.5rem' }}>
-                        <label className="form-label" style={{ color: '#b45309', fontWeight: 900 }}>🎥 رابط فيديو اليوتيوب المعروض على الشاشة:</label>
+                    {/* SECTION: YOUTUBE SETTINGS (if mode uses video) */}
+                    {((kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'youtube' || (kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'split_video') && (
+                      <div style={{ background: '#fffbeb', padding: '1.5rem', borderRadius: '18px', border: '1.5px solid #fde68a', marginBottom: '1.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          <span style={{ fontSize: '1.3rem' }}>🔴</span>
+                          <h4 style={{ margin: 0, fontWeight: 900, color: '#b45309', fontSize: '1.05rem' }}>
+                            إعدادات فيديو اليوتيوب المعروض على الشاشة:
+                          </h4>
+                        </div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#92400e', marginBottom: '0.4rem' }}>
+                          🎥 رابط فيديو اليوتيوب (انسخ الرابط من يوتيوب والصقه هنا):
+                        </label>
                         <input 
                           type="url" 
                           className="form-input" 
@@ -3961,13 +3966,184 @@ const AdminDashboard = () => {
                           })} 
                           placeholder="مثال: https://youtu.be/EF4g6yBUbmk" 
                         />
+                        <small style={{ color: '#b45309', display: 'block', marginTop: '0.4rem', fontWeight: 700 }}>
+                          💡 ملاحظة: يتم تشغيل الفيديو أوتوماتيكياً في وضع تكرار مستمر (Loop) ليعمل طوال اليوم الدراسي بدون توقف.
+                        </small>
                       </div>
                     )}
 
-                    {/* Slideshow Images input */}
-                    {(kioskChannelsConfig[selectedKioskChannel]?.mode || 'youtube') === 'slideshow' && (
-                      <div className="form-group" style={{ background: '#f0f9ff', padding: '1.25rem', borderRadius: '16px', border: '1px solid #bae6fd', marginBottom: '1.5rem' }}>
-                        <label className="form-label" style={{ color: '#0369a1', fontWeight: 900 }}>🖼️ روابط صور المعرض (روابط الصور، رابط في كل سطر):</label>
+                    {/* SECTION: SIDE WIDGET SETTINGS (for split modes) */}
+                    {((kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'split_video' || (kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'split_slideshow') && (
+                      <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '18px', border: '1.5px solid #bbf7d0', marginBottom: '1.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                          <span style={{ fontSize: '1.3rem' }}>🌓</span>
+                          <h4 style={{ margin: 0, fontWeight: 900, color: '#166534', fontSize: '1.05rem' }}>
+                            إعدادات اللوحة الجانبية (Side Widget - صورة أو تهنئة أو تذكير):
+                          </h4>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>نوع اللوحة الجانبية:</label>
+                            <select
+                              className="form-input"
+                              value={kioskChannelsConfig[selectedKioskChannel]?.sideType || 'greeting'}
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideType: e.target.value }
+                              })}
+                              style={{ fontWeight: 800 }}
+                            >
+                              <option value="greeting">🏆 بطاقة تهنئة وتكريم للطلاب/المعلمين</option>
+                              <option value="reminder">📌 تذكير بمناسبة / تعميم رسمي</option>
+                              <option value="image">🖼️ صورة جانبية أو بوستر إعلاني فقط</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>المظهر واللون اللوني (Theme):</label>
+                            <select
+                              className="form-input"
+                              value={kioskChannelsConfig[selectedKioskChannel]?.sideTheme || 'gold'}
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideTheme: e.target.value }
+                              })}
+                              style={{ fontWeight: 800 }}
+                            >
+                              <option value="gold">✨ ذهبي ملكي (للتهاني والتفوق)</option>
+                              <option value="blue">🌊 أزرق عصري (للإعلانات والتعاميم)</option>
+                              <option value="emerald">🌿 زمردي أنيق (للأنشطة والبيئة)</option>
+                              <option value="purple">🔮 بنفسجي ملكي (للاحتفالات الخاصة)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>عنوان اللوحة الجانبية:</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="مثال: ⭐ نجم الأسبوع، تذكير برحلة..."
+                              value={kioskChannelsConfig[selectedKioskChannel]?.sideTitle || ''} 
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideTitle: e.target.value }
+                              })} 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>رابط الصورة الجانبية أو البوستر (اختياري):</label>
+                            <input 
+                              type="url" 
+                              className="form-input" 
+                              placeholder="https://..."
+                              value={kioskChannelsConfig[selectedKioskChannel]?.sideImageUrl || ''} 
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideImageUrl: e.target.value }
+                              })} 
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#14532d', marginBottom: '0.35rem' }}>نص التهنئة أو التذكير المفصل:</label>
+                          <textarea 
+                            className="form-input" 
+                            rows="2" 
+                            placeholder="اكتب نص التهنئة أو التذكير للطلاب أو الهيئة المدرسية..."
+                            value={kioskChannelsConfig[selectedKioskChannel]?.sideText || ''} 
+                            onChange={(e) => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], sideText: e.target.value }
+                            })} 
+                          ></textarea>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION: CELEBRATION MODE SETTINGS */}
+                    {(kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'celebration' && (
+                      <div style={{ background: '#faf5ff', padding: '1.5rem', borderRadius: '18px', border: '1.5px solid #e9d5ff', marginBottom: '1.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                          <span style={{ fontSize: '1.3rem' }}>🎉</span>
+                          <h4 style={{ margin: 0, fontWeight: 900, color: '#7e22ce', fontSize: '1.05rem' }}>
+                            إعدادات لوحة التهنئة والتكريم والمناسبات الخاصة:
+                          </h4>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#581c87', marginBottom: '0.35rem' }}>شارة التكريم / الوسام:</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="مثال: 🏆 وسام التميز، 🌟 بطل المدرسة..."
+                              value={kioskChannelsConfig[selectedKioskChannel]?.celebrationBadge || ''} 
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationBadge: e.target.value }
+                              })} 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#581c87', marginBottom: '0.35rem' }}>عنوان التهنئة العريض:</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="مثال: مبارك لفرسان مشيرفة المتفوقين!"
+                              value={kioskChannelsConfig[selectedKioskChannel]?.celebrationTitle || ''} 
+                              onChange={(e) => setKioskChannelsConfig({
+                                ...kioskChannelsConfig,
+                                [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationTitle: e.target.value }
+                              })} 
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#581c87', marginBottom: '0.35rem' }}>رسالة التهنئة والتكريم الكاملة:</label>
+                          <textarea 
+                            className="form-input" 
+                            rows="2" 
+                            placeholder="اكتب عبارات التهنئة والتحفيز..."
+                            value={kioskChannelsConfig[selectedKioskChannel]?.celebrationText || ''} 
+                            onChange={(e) => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationText: e.target.value }
+                            })} 
+                          ></textarea>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#581c87', marginBottom: '0.35rem' }}>رابط صورة المحتفى به / الكأس (اختياري):</label>
+                          <input 
+                            type="url" 
+                            className="form-input" 
+                            placeholder="https://..."
+                            value={kioskChannelsConfig[selectedKioskChannel]?.celebrationImageUrl || ''} 
+                            onChange={(e) => setKioskChannelsConfig({
+                              ...kioskChannelsConfig,
+                              [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], celebrationImageUrl: e.target.value }
+                            })} 
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION: SLIDESHOW IMAGES (if mode uses images) */}
+                    {((kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'slideshow' || (kioskChannelsConfig[selectedKioskChannel]?.mode || 'split_video') === 'split_slideshow') && (
+                      <div style={{ background: '#f0f9ff', padding: '1.5rem', borderRadius: '18px', border: '1.5px solid #bae6fd', marginBottom: '1.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          <span style={{ fontSize: '1.3rem' }}>📸</span>
+                          <h4 style={{ margin: 0, fontWeight: 900, color: '#0369a1', fontSize: '1.05rem' }}>
+                            صور المعرض والسلايدر (ضع رابط كل صورة بسطر منفصل):
+                          </h4>
+                        </div>
                         <textarea 
                           className="form-input" 
                           rows="4" 
@@ -3976,14 +4152,16 @@ const AdminDashboard = () => {
                             ...kioskChannelsConfig,
                             [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], imagesText: e.target.value }
                           })} 
-                          placeholder="ضع رابط صورة بكل سطر..."
+                          placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."
                         ></textarea>
                       </div>
                     )}
 
                     {/* Ticker Text input */}
-                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                      <label className="form-label" style={{ fontWeight: 900 }}>📰 نص الشريط الإخباري المتحرك أسفل الشاشة:</label>
+                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '18px', border: '1px solid #cbd5e1', marginBottom: '1.8rem' }}>
+                      <label className="form-label" style={{ fontWeight: 900, color: '#0f172a', fontSize: '1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>📰</span> نص الشريط الإخباري المتحرك أسفل الشاشة:
+                      </label>
                       <textarea 
                         className="form-input" 
                         rows="2" 
@@ -3992,11 +4170,12 @@ const AdminDashboard = () => {
                           ...kioskChannelsConfig,
                           [selectedKioskChannel]: { ...kioskChannelsConfig[selectedKioskChannel], tickerText: e.target.value }
                         })} 
+                        placeholder="اكتب التنبيهات والأخبار المدرسية العاجلة التي ستتحرك أسفل شاشة العرض..."
                       ></textarea>
                     </div>
 
-                    {/* Toggles */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '1.8rem' }}>
+                    {/* Display Feature Toggles */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', marginBottom: '2rem' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
                         <input 
                           type="checkbox" 
@@ -4049,9 +4228,9 @@ const AdminDashboard = () => {
                     <button 
                       type="submit" 
                       className="btn form-submit-btn" 
-                      style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', color: 'white', fontWeight: 900, fontSize: '1.1rem', padding: '0.9rem' }}
+                      style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', color: 'white', fontWeight: 900, fontSize: '1.15rem', padding: '1rem 2rem', borderRadius: '16px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', boxShadow: '0 8px 25px rgba(14,165,233,0.35)', width: '100%' }}
                     >
-                      <i className="fas fa-save"></i> حفظ وتطبيق إعدادات هذه الشاشة مباشرة 🎉
+                      <i className="fas fa-save"></i> 🚀 حفظ وبث إعدادات الشاشة مباشرة فورياً على شاشات المدرسة
                     </button>
 
                   </form>
