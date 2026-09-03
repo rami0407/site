@@ -299,6 +299,29 @@ const AppointmentBooking = ({ isStandalone = true }) => {
           <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '700px', margin: '0 auto', fontWeight: 500 }}>
             اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!
           </p>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
+            <a
+              href="#/guard"
+              style={{
+                background: 'rgba(255, 255, 255, 0.12)',
+                color: '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                padding: '0.45rem 1.1rem',
+                borderRadius: '50px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <i className="fas fa-shield-alt"></i>
+              <span>📋 سجل مواعيد وزوار المدرسة (خاص بالحارس والإدارة) ⬅️</span>
+            </a>
+          </div>
         </div>
 
         {!bookingTicket ? (
@@ -686,6 +709,11 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               <div>
                 <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>نوع اللقاء والسبب:</span>
                 <strong style={{ display: 'block', fontSize: '1rem', color: '#0284c7' }}>{bookingTicket.meetingType} ({bookingTicket.meetingTopic})</strong>
+              </div>
+
+              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '0.75rem 1rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 800, marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'center', justifyContent: 'center' }}>
+                <i className="fas fa-shield-alt" style={{ color: '#10b981', fontSize: '1.1rem' }}></i>
+                <span>موعدك مسجل تلقائياً لدى حارس البوابة وسكرتارية المدرسة للدخول في الموعد المحدد.</span>
               </div>
             </div>
 
