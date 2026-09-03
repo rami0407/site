@@ -3,12 +3,22 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ==========================================
-    // SECURITY HELPER FUNCTIONS
+    // 🛡️ SECURITY & AUTHORIZATION DEFINITIONS
     // ==========================================
 
-    // Authenticated administrator check
-    function isAdmin() {
+    // General authenticated staff check
+    function isAuthenticated() {
       return request.auth != null;
+    }
+
+    // 👑 Super Administrator check: Strictly limited to Principal Rami / Official School Admin Emails
+    function isSuperAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'rami0407@gmail.com' ||
+        request.auth.token.email == 'musheirifa.primary@gmail.com' ||
+        request.auth.token.email.matches('.*@musheirifa\\.edu.*') ||
+        request.auth.token.email.matches('rami.*@gmail\\.com')
+      );
     }
 
     // Input string length & type validation helpers
@@ -17,220 +27,223 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 1. PUBLIC READ-ONLY COLLECTIONS (ADMIN MANAGED)
+    // 1. LANDING PAGE & CORE IDENTITY (SUPER ADMIN ONLY)
     // ==========================================
 
-    match /news/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /events/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /calendar/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /gallery/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /values/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
+    // 🎓 كلمة مدير المدرسة — محمية بقفل السوبر أدمن حصراً
     match /principal/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
+    // 🌟 القيم المدرسية في الواجهة
+    match /values/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // 🚀 المبادرات المدرسية في الواجهة الرئيسية
     match /initiatives/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
-    match /links/{docId} {
+    // 📄 الصفحات الرسمية وقوائم الموقع
+    match /pages/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /books/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /uniform/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /schoolGuide/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
     match /navigation/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /pages/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /astronomy/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /challenge/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
     match /contactDetails/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
+    }
+
+    match /schoolGuide/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // ==========================================
+    // 2. DYNAMIC SCHOOL CONTENT (ADMIN MANAGED)
+    // ==========================================
+
+    match /news/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /events/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /calendar/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /gallery/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /links/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /books/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /uniform/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /astronomy/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /challenge/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     match /kiosk_settings/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     match /display_board/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     // ==========================================
-    // 2. TEACHERS & STAFF DATA (STRICT PROTECTION)
+    // 3. TEACHERS & ROSTER DATA (PROTECTED)
     // ==========================================
 
     match /teachers/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     match /school_teachers/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     match /teacher_scores/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     // ==========================================
-    // 3. CONTACTS & MESSAGES (PRIVACY PROTECTION)
+    // 4. CONTACTS & MESSAGES (PRIVACY PROTECTION)
     // ==========================================
 
-    // Visitors can submit contact messages, only Admin can read, update, or delete
     match /contacts/{docId} {
       allow create: if isValidString(request.resource.data.fullName, 2, 120)
                     && isValidString(request.resource.data.message, 2, 3500);
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if isAuthenticated();
     }
 
     match /messages/{docId} {
       allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if isAuthenticated();
     }
 
     // ==========================================
-    // 4. APPOINTMENTS & GATE VISITOR LOGS
+    // 5. APPOINTMENTS & GATE VISITOR LOGS
     // ==========================================
 
     match /teacher_appointments/{docId} {
-      // Parents & gatekeepers can view scheduled appointments
       allow read: if true;
-      // Parents can create bookings with valid names and dates
       allow create: if isValidString(request.resource.data.parentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      // Gatekeeper can update entry status or Admin has full update access
-      allow update: if isAdmin() 
+      allow update: if isAuthenticated() 
                     || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt']));
-      // Strict: Only authenticated admin can delete appointments
-      allow delete: if isAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     // ==========================================
-    // 5. POLLS, SURVEYS & FORMS
+    // 6. POLLS, SURVEYS & FORMS
     // ==========================================
 
     match /parent_polls/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     match /school_surveys/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     match /survey_responses/{docId} {
       allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if isAuthenticated();
     }
 
     // ==========================================
-    // 6. STUDENT ACTIVITIES & SUBMISSIONS
+    // 7. STUDENT ACTIVITIES & SUBMISSIONS
     // ==========================================
 
     match /worksheets/{docId} {
       allow read: if true;
       allow create, update: if true;
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated();
     }
 
     match /prep_drawings/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated();
     }
 
     match /stem_solutions/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated();
     }
 
     match /stem_teacher_requests/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated();
     }
 
     match /world_ideas/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated();
     }
 
     match /world_ideas_comments/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated();
     }
 
     match /students/{docId} {
       allow read, create, update: if true;
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated();
     }
 
     match /stars/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     // ==========================================
-    // 7. DEFAULT CATCH-ALL (DENY BY DEFAULT)
+    // 8. DEFAULT CATCH-ALL (DENY BY DEFAULT)
     // ==========================================
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if isSuperAdmin();
     }
   }
 }
