@@ -135,6 +135,33 @@ const Initiatives = () => {
                       <i className="fas fa-arrow-left"></i> {`شارك في ${item.title}`}
                     </span>
                   </a>
+
+                  {(item.themeColor === 'emtnan' || item.id === 'emtnan') && (
+                    <a
+                      href="#/gratitude-sky"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        marginTop: '10px',
+                        background: 'linear-gradient(135deg, #0f172a, #1e293b)',
+                        border: '1px solid #f59e0b',
+                        color: '#fde68a',
+                        padding: '10px 16px',
+                        borderRadius: '14px',
+                        fontSize: '0.88rem',
+                        fontWeight: 900,
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 15px rgba(245, 158, 11, 0.25)',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <i className="fas fa-star" style={{ color: '#f59e0b' }}></i>
+                      <span>🌌 ادخل سماء الامتنان وأطلق نجمتك الآن ✨</span>
+                    </a>
+                  )}
                 </div>
               </div>
             );

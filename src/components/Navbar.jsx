@@ -31,8 +31,19 @@ const Navbar = () => {
       // Filter out nav_prep_day, nav_excellence, nav_astronomy, or nav_stem from top navbar
       items = items.filter(item => item.id !== 'nav_prep_day' && item.target !== 'prep-day' && item.target !== 'monawaat' && item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
       
-      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books'];
+      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books', 'gratitude-sky', 'stars'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
+
+      if (!items.some(item => item.id === 'nav_gratitude_sky' || item.target === 'gratitude-sky')) {
+        items.push({
+          id: "nav_gratitude_sky",
+          label: "🌌 سماء الامتنان والنجوم ✨",
+          type: "page",
+          target: "gratitude-sky",
+          category: "main",
+          order: 0
+        });
+      }
 
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
         items.push({
@@ -271,6 +282,27 @@ const Navbar = () => {
                   <i className="fas fa-user-circle"></i> تسجيل الدخول الموحد 🔑
                 </button>
               )}
+            </li>
+
+            <li>
+              <a 
+                href="#/gratitude-sky" 
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: '#0f172a',
+                  padding: '4px 13px',
+                  borderRadius: '20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  boxShadow: '0 2px 10px rgba(245, 158, 11, 0.4)'
+                }}
+              >
+                <span>🌌 سماء النجوم المضيئة ✨</span>
+              </a>
             </li>
 
             <li>

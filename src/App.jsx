@@ -36,6 +36,7 @@ import ScientificArticles, { ScientificArticlesBanner } from './components/Scien
 import ParentPolls from './components/ParentPolls';
 import AppointmentBooking from './components/AppointmentBooking';
 import AppointmentsLogPage from './components/AppointmentsLogPage';
+import GratitudeSkyPage from './components/GratitudeSkyPage';
 import ExcellenceYearPage from './components/ExcellenceYearPage';
 import LearningCorner from './components/LearningCorner';
 import StemCorner from './components/StemCorner';
@@ -311,6 +312,7 @@ function App() {
   const isParentPollsView = currentHash.includes('parent-polls');
   const isGuardLogView = currentHash.includes('guard') || currentHash.includes('appointments-log') || currentHash.includes('visitors') || currentHash.includes('gate');
   const isAppointmentsView = currentHash.includes('appointments') && !isGuardLogView;
+  const isGratitudeSkyView = currentHash.includes('gratitude-sky') || currentHash.includes('stars-sky') || currentHash.includes('emtnan-sky') || currentHash.includes('stars');
   const isAstronomyView = currentHash.includes('astronomy');
   const isChallengeView = currentHash.includes('challenge');
   const isPrincipalView = currentHash.includes('principal');
@@ -371,6 +373,8 @@ function App() {
         <AppointmentsLogPage />
       ) : isAppointmentsView ? (
         <AppointmentBooking isStandalone={true} />
+      ) : isGratitudeSkyView ? (
+        <GratitudeSkyPage />
       ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (
