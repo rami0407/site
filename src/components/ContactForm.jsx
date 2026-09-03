@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { sanitizeObject } from '../utils/security';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -95,11 +96,11 @@ const ContactForm = () => {
 
     setIsSubmitting(true);
 
-    const messageData = {
+    const messageData = sanitizeObject({
       ...formData,
       date: new Date().toLocaleString('ar-EG'),
       createdAt: new Date().toISOString()
-    };
+    });
 
     try {
       // 1. Attempt Firestore write

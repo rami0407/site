@@ -11,6 +11,7 @@ import {
   orderBy,
   onSnapshot 
 } from 'firebase/firestore';
+import { sanitizeText } from '../utils/security';
 
 const WEEKDAYS_AR = {
   0: 'الأحد',
@@ -157,16 +158,16 @@ const AppointmentsLogPage = () => {
 
       const newRecord = {
         ticketCode,
-        parentName: newParentName.trim(),
-        parentPhone: newParentPhone.trim() || 'غير مسجل',
-        studentName: newStudentName.trim() || 'زيارة عامة',
-        studentClass: newStudentClass,
-        teacherNameAr: newTeacherName,
+        parentName: sanitizeText(newParentName.trim()),
+        parentPhone: sanitizeText(newParentPhone.trim()) || 'غير مسجل',
+        studentName: sanitizeText(newStudentName.trim()) || 'زيارة عامة',
+        studentClass: sanitizeText(newStudentClass),
+        teacherNameAr: sanitizeText(newTeacherName),
         teacherRole: 'استقبال مدرسي',
         date: selectedDate,
         dayAr: WEEKDAYS_AR[new Date(selectedDate).getDay()] || '',
-        timeSlot: newTimeSlot,
-        meetingTopic: newMeetingTopic,
+        timeSlot: sanitizeText(newTimeSlot),
+        meetingTopic: sanitizeText(newMeetingTopic),
         meetingType: 'زيارة فورية',
         status: 'confirmed',
         entryStatus: 'entered',

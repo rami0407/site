@@ -1,6 +1,6 @@
 /**
  * Anti-XSS and Input Sanitization Utility
- * Cleans user input to prevent Cross-Site Scripting (XSS) and Script Injection attacks.
+ * Cleans user input to prevent Cross-Site Scripting (XSS), HTML Injection, and script execution.
  */
 
 export const sanitizeText = (input) => {
@@ -15,7 +15,8 @@ export const sanitizeText = (input) => {
     .replace(/\//g, '&#x2F;')
     .replace(/javascript:/gi, '')
     .replace(/onerror=/gi, '')
-    .replace(/onload=/gi, '');
+    .replace(/onload=/gi, '')
+    .replace(/onclick=/gi, '');
 };
 
 export const sanitizeObject = (obj) => {
@@ -35,6 +36,26 @@ export const sanitizeObject = (obj) => {
     }
   }
   return sanitized;
+};
+
+/**
+ * Strips executable scripts, inline event handlers, and unauthorized iframes
+ * from rich text HTML before rendering via dangerouslySetInnerHTML.
+ */
+export const sanitizeHtml = (htmlString) => {
+  if (typeof htmlString !== 'string') return '';
+  return htmlString
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, (match) => {
+      // Allow only verified safe video & map embeds
+      if (/src=["'](https:\/\/(www\.)?(youtube\.com|youtube-nocookie\.com|player\.vimeo\.com|google\.com\/maps))/i.test(match)) {
+        return match;
+      }
+      return '';
+    })
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '') // Removes onerror, onload, onclick, etc.
+    .replace(/\son\w+\s*=\s*[^"'\s>]+/gi, '')
+    .replace(/javascript:/gi, '');
 };
 
 /**

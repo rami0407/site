@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { uploadChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
+import { sanitizeHtml } from '../utils/security';
 
 const DEFAULT_ARTICLES = [
   {
@@ -748,7 +749,7 @@ const ScientificArticles = ({ isStandalone }) => {
               {/* Formatted HTML Body */}
               <div 
                 className="written-article-body"
-                dangerouslySetInnerHTML={{ __html: activeWrittenArticle.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeWrittenArticle.content) }}
                 style={{ lineHeight: 1.8, color: '#1e293b' }}
               />
 
@@ -1038,7 +1039,7 @@ const ScientificArticles = ({ isStandalone }) => {
                   {showLivePreview ? (
                     <div 
                       style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #cbd5e1', minHeight: '200px', maxHeight: '350px', overflowY: 'auto' }}
-                      dangerouslySetInnerHTML={{ __html: newArticle.content || '<p style="color: #94a3b8;">المعاينة الحية تظهر هنا أثناء الكتابة والتصميم...</p>' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(newArticle.content) || '<p style="color: #94a3b8;">المعاينة الحية تظهر هنا أثناء الكتابة والتصميم...</p>' }}
                     />
                   ) : (
                     <textarea 

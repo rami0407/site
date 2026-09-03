@@ -8,6 +8,7 @@ import {
   where 
 } from 'firebase/firestore';
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
+import { sanitizeText } from '../utils/security';
 
 const WEEKDAYS_MAP = {
   0: 'Sunday',
@@ -188,11 +189,11 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       date: selectedDate,
       dayAr: WEEKDAYS_AR[dayNameEn] || '',
       timeSlot: selectedSlot,
-      parentName: parentName.trim(),
-      parentPhone: parentPhone.trim(),
-      studentName: studentName.trim(),
-      studentClass,
-      meetingTopic: meetingTopic.trim() || 'متابعة وتواصل تربوي',
+      parentName: sanitizeText(parentName.trim()),
+      parentPhone: sanitizeText(parentPhone.trim()),
+      studentName: sanitizeText(studentName.trim()),
+      studentClass: sanitizeText(studentClass),
+      meetingTopic: sanitizeText(meetingTopic.trim()) || 'متابعة وتواصل تربوي',
       meetingType,
       status: 'confirmed',
       createdAt: new Date().toISOString()

@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { defaultPages } from '../data/defaultNavigationData';
 import ExcellenceYearPage from './ExcellenceYearPage';
 import PrepDayExcellencePage from './PrepDayExcellencePage';
+import { sanitizeHtml } from '../utils/security';
 
 const CustomPageView = ({ pageId }) => {
   const [pageData, setPageData] = useState(null);
@@ -120,7 +121,7 @@ const CustomPageView = ({ pageId }) => {
           {pageData.content && (pageData.content.includes('<') && pageData.content.includes('>')) ? (
             <div 
               className="rich-page-content" 
-              dangerouslySetInnerHTML={{ __html: pageData.content }} 
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(pageData.content) }} 
             />
           ) : (
             (pageData.content || '').split('\n\n').map((paragraph, index) => {

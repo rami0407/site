@@ -2,18 +2,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ==========================================
+    // SECURITY HELPER FUNCTIONS
+    // ==========================================
+
+    // Authenticated administrator check
     function isAdmin() {
       return request.auth != null;
     }
 
-    // Public read-only collections (Managed strictly by Admin)
+    // Input string length & type validation helpers
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // ==========================================
+    // 1. PUBLIC READ-ONLY COLLECTIONS (ADMIN MANAGED)
+    // ==========================================
+
+    match /news/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /events/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    match /news/{docId} {
+    match /calendar/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gallery/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -34,11 +56,6 @@ service cloud.firestore {
     }
 
     match /links/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /gallery/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -68,23 +85,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Worksheets collection: Public read & likes/teacher uploads, delete restricted to Admin
-    match /worksheets/{docId} {
-      allow read, create, update: if true;
-      allow delete: if isAdmin();
-    }
-
-    // Teacher Scores & Honor Roll: Public read & score updates, delete restricted to Admin
-    match /teacher_scores/{docId} {
-      allow read, create, update: if true;
-      allow delete: if isAdmin();
-    }
-
-    // Teachers Registration & Approvals: Public can register & update, Admin can delete
-    match /teachers/{docId} {
-      allow read, create, update, delete: if true;
-    }
-
     match /astronomy/{docId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -100,21 +100,137 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Messages collection: Visitors can CREATE messages, only Admin can READ and DELETE
+    match /kiosk_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /display_board/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // 2. TEACHERS & STAFF DATA (STRICT PROTECTION)
+    // ==========================================
+
+    match /teachers/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /school_teachers/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /teacher_scores/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // 3. CONTACTS & MESSAGES (PRIVACY PROTECTION)
+    // ==========================================
+
+    // Visitors can submit contact messages, only Admin can read, update, or delete
+    match /contacts/{docId} {
+      allow create: if isValidString(request.resource.data.fullName, 2, 120)
+                    && isValidString(request.resource.data.message, 2, 3500);
+      allow read, update, delete: if isAdmin();
+    }
+
     match /messages/{docId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
 
-    // Student Progress & Games: Students can read/write their own progress, admin has full access
+    // ==========================================
+    // 4. APPOINTMENTS & GATE VISITOR LOGS
+    // ==========================================
+
+    match /teacher_appointments/{docId} {
+      // Parents & gatekeepers can view scheduled appointments
+      allow read: if true;
+      // Parents can create bookings with valid names and dates
+      allow create: if isValidString(request.resource.data.parentName, 2, 100)
+                    && isValidString(request.resource.data.date, 8, 20);
+      // Gatekeeper can update entry status or Admin has full update access
+      allow update: if isAdmin() 
+                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt']));
+      // Strict: Only authenticated admin can delete appointments
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // 5. POLLS, SURVEYS & FORMS
+    // ==========================================
+
+    match /parent_polls/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /school_surveys/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /survey_responses/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ==========================================
+    // 6. STUDENT ACTIVITIES & SUBMISSIONS
+    // ==========================================
+
+    match /worksheets/{docId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /prep_drawings/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /stem_solutions/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /stem_teacher_requests/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /world_ideas/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /world_ideas_comments/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
     match /students/{docId} {
       allow read, create, update: if true;
       allow delete: if isAdmin();
     }
 
-    match /vocab_students/{docId} {
-      allow read, create, update: if true;
-      allow delete: if isAdmin();
+    match /stars/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // 7. DEFAULT CATCH-ALL (DENY BY DEFAULT)
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }
