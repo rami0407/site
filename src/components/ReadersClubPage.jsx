@@ -98,6 +98,9 @@ const ReadersClubPage = () => {
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddLogModal, setShowAddLogModal] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [certStudentName, setCertStudentName] = useState(localStorage.getItem('school_unified_student_name') || 'سارة أحمد محاميد');
+  const [certStudentClass, setCertStudentClass] = useState('الصف الخامس (أ)');
   const [likedLogIds, setLikedLogIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('liked_reader_logs') || '[]');
@@ -323,29 +326,51 @@ const ReadersClubPage = () => {
               {config.heroSubtitle || 'في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!'}
             </p>
 
-            {/* Quick Action to Log Book */}
-            <button
-              onClick={() => setShowAddLogModal(true)}
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#0f172a',
-                border: 'none',
-                padding: '1rem 2.2rem',
-                borderRadius: '20px',
-                fontSize: '1.1rem',
-                fontWeight: 900,
-                cursor: 'pointer',
-                boxShadow: '0 10px 30px rgba(245, 158, 11, 0.5)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                transform: 'translateY(0)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <i className="fas fa-book-reader" style={{ fontSize: '1.3rem' }}></i>
-              <span>سجّل قصة قرأتها وأضف ورقة لشجرتك 🌿</span>
-            </button>
+            {/* Quick Actions */}
+            <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setShowAddLogModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#0f172a',
+                  border: 'none',
+                  padding: '1rem 2rem',
+                  borderRadius: '20px',
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  boxShadow: '0 10px 30px rgba(245, 158, 11, 0.5)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem'
+                }}
+              >
+                <i className="fas fa-book-reader" style={{ fontSize: '1.25rem' }}></i>
+                <span>سجّل قصة قرأتها في رحلتك 🌿</span>
+              </button>
+
+              <button
+                onClick={() => setShowCertificateModal(true)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: 'white',
+                  border: '2px solid rgba(255, 255, 255, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '1rem 1.8rem',
+                  borderRadius: '20px',
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.2)'
+                }}
+              >
+                <i className="fas fa-award" style={{ fontSize: '1.25rem', color: '#fcd34d' }}></i>
+                <span>🏆 استخراج شهادة وجواز بطل العشر كتب</span>
+              </button>
+            </div>
           </div>
 
         </div>
@@ -853,13 +878,41 @@ const ReadersClubPage = () => {
                         </div>
                       </div>
 
-                      <div style={{ textAlign: 'left' }}>
-                        <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#047857' }}>
-                          {student.count * 3 + 2} قصص
-                        </span>
-                        <div style={{ fontSize: '0.75rem', color: '#e11d48', fontWeight: 700 }}>
-                          ❤️ {student.likes + 15} إعجاباً
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ textAlign: 'left' }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#047857' }}>
+                            {Math.min(10, student.count * 3 + 2)} / 10 كتب
+                          </span>
+                          <div style={{ fontSize: '0.75rem', color: '#e11d48', fontWeight: 700 }}>
+                            ❤️ {student.likes + 15} إعجاباً
+                          </div>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCertStudentName(student.name);
+                            setCertStudentClass(student.sClass || 'الصف الرابع (أ)');
+                            setShowCertificateModal(true);
+                          }}
+                          style={{
+                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                            color: '#0f172a',
+                            border: 'none',
+                            padding: '0.45rem 0.9rem',
+                            borderRadius: '12px',
+                            fontWeight: 900,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            boxShadow: '0 3px 10px rgba(245, 158, 11, 0.3)'
+                          }}
+                        >
+                          <i className="fas fa-award"></i>
+                          <span>الشهادة 📜</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -1092,6 +1145,301 @@ const ReadersClubPage = () => {
         </div>
       )}
 
+      {/* ==================== MODAL: DIPLOMA & PASSPORT CERTIFICATE ==================== */}
+      {showCertificateModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '28px',
+            padding: '2rem',
+            maxWidth: '850px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)',
+            maxHeight: '95vh',
+            overflowY: 'auto'
+          }}>
+            {/* Top Toolbar (No Print) */}
+            <div className="no-print-btn" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+                  🎓 شهادة وجواز بطل «رحلة العشر كتب»
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 700 }}>
+                  شهادة رسمية معتمدة قابلة للطباعة والمشاركة الفورية
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <button
+                  onClick={() => window.print()}
+                  style={{
+                    background: 'linear-gradient(135deg, #059669, #047857)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.6rem 1.3rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                  }}
+                >
+                  <i className="fas fa-print"></i>
+                  <span>طباعة الشهادة 🖨️</span>
+                </button>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`🎉 أبارك للبطل/ـة (${certStudentName} - ${certStudentClass}) اجتياز بطولة «رحلة العشر كتب» ونيل وسام التميز القرائي بمدرسة مشيرفة الابتدائية! 📚🏆 تصفح إنجازه على: https://musherfe.com/#/readers-club`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: '#25D366',
+                    color: 'white',
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <i className="fab fa-whatsapp"></i>
+                  <span>مشاركة واتساب</span>
+                </a>
+
+                <button
+                  onClick={() => setShowCertificateModal(false)}
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontWeight: 900 }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Customization Inputs before Print (No Print) */}
+            <div className="no-print-btn" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.82rem', color: '#334155', marginBottom: '0.3rem' }}>
+                  اسم بطل / بطلة القراءة على الشهادة:
+                </label>
+                <input
+                  type="text"
+                  value={certStudentName}
+                  onChange={(e) => setCertStudentName(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '0.95rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.82rem', color: '#334155', marginBottom: '0.3rem' }}>
+                  الصف والشعبة:
+                </label>
+                <input
+                  type="text"
+                  value={certStudentClass}
+                  onChange={(e) => setCertStudentClass(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '0.95rem' }}
+                />
+              </div>
+            </div>
+
+            {/* THE PRINTABLE DIPLOMA CARD */}
+            <div
+              id="readers-diploma-print-area"
+              style={{
+                background: 'radial-gradient(circle at center, #ffffff 0%, #fffdfa 60%, #fef9ee 100%)',
+                border: '10px double #b45309',
+                borderRadius: '20px',
+                padding: '2.5rem 2rem',
+                position: 'relative',
+                boxShadow: '0 10px 35px rgba(0,0,0,0.06)',
+                textAlign: 'center',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Inner Fine Border */}
+              <div style={{ position: 'absolute', inset: '10px', border: '1px solid #fcd34d', borderRadius: '12px', pointerEvents: 'none' }}></div>
+
+              {/* Watermark in Background */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', fontSize: '16rem', color: 'rgba(245, 158, 11, 0.04)', pointerEvents: 'none', zIndex: 0 }}>
+                📚
+              </div>
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                {/* Header: School Logo & Title */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #fde68a', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+                      مدرسة مشيرفة الابتدائية
+                    </h4>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>
+                      لواء الشمال • وزارة التربية والتعليم
+                    </span>
+                  </div>
+
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#fffbeb', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+                    🏆
+                  </div>
+
+                  <div style={{ textAlign: 'left' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b45309', background: '#fef3c7', padding: '0.2rem 0.75rem', borderRadius: '50px' }}>
+                      عام التميّز والإبداع 2026/2027
+                    </span>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 700 }}>
+                      نادي القُرّاء وشجرة التميز
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Diploma Title */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#b45309', fontWeight: 800, letterSpacing: '1px' }}>
+                    بـسـم الله الـرحـمـن الـرحـيـم
+                  </span>
+                  <h2 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#78350f', margin: '0.4rem 0 0.2rem 0', fontFamily: 'Tajawal, sans-serif' }}>
+                    شهادة اجتياز وبطولة «رحلة العشر كتب»
+                  </h2>
+                  <div style={{ width: '120px', height: '4px', background: 'linear-gradient(90deg, transparent, #d97706, transparent)', margin: '0.4rem auto' }}></div>
+                </div>
+
+                {/* Diploma Body Text */}
+                <p style={{ fontSize: '1.05rem', color: '#475569', lineHeight: 1.8, maxWidth: '680px', margin: '0 auto 1.5rem', fontWeight: 600 }}>
+                  تتقدم إدارة مدرسة مشيرفة الابتدائية وطاقم اللغة العربية والمكتبة المدرسية بأسمى آيات التقدير والاعتزاز إلى فارس/فارسة القراءة:
+                </p>
+
+                {/* Honored Student Box */}
+                <div style={{ background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '2px solid #f59e0b', borderRadius: '16px', padding: '0.85rem 1.5rem', display: 'inline-block', minWidth: '320px', marginBottom: '1.5rem', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.15)' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.65rem', fontWeight: 900, color: '#0f172a' }}>
+                    {certStudentName || 'اسم الطالب البطل'}
+                  </h3>
+                  <span style={{ fontSize: '0.95rem', color: '#047857', fontWeight: 800 }}>
+                    {certStudentClass || 'الصف الرابع (أ)'}
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '1rem', color: '#334155', lineHeight: 1.8, maxWidth: '700px', margin: '0 auto 1.5rem', fontWeight: 600 }}>
+                  لاجتيازهـ/ـا بتفوق وشغف قراءة واستيعاب وتلخيص <strong style={{ color: '#047857' }}>(10) كتب وقصص هادفة</strong> واستحقاقهـ/ـا بكل جدارة نيل:
+                  <br />
+                  <strong style={{ fontSize: '1.15rem', color: '#b45309' }}>👑 «وسام التميز القرائي الذهبي لفرسان مشيرفة» 👑</strong>
+                </p>
+
+                {/* 10 Completed Books Milestone Grid */}
+                <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '1rem', border: '1px solid #e2e8f0', marginBottom: '1.75rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#047857', marginBottom: '0.6rem' }}>
+                    🌿 محطات الكتب العشرة المكتملة في رحلة التميز:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', fontSize: '0.78rem' }}>
+                    {[
+                      '1. رحلة إلى مركز الأرض',
+                      '2. كليلة ودمنة',
+                      '3. سر الكهف العجيب',
+                      '4. كواكب الفضاء',
+                      '5. بائعة الخبز',
+                      '6. السندباد البحري',
+                      '7. مغامرات ماجد',
+                      '8. حكمة الأجداد',
+                      '9. كوكبنا الأزرق',
+                      '10. تاج القراءة 🏆'
+                    ].map((bookTitleStr, idx) => (
+                      <div key={idx} style={{ background: 'white', padding: '0.4rem 0.5rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ color: '#059669', marginRight: '0.2rem' }}>✓</span> {bookTitleStr}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Signatures & School Seal Footer */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '2px solid #fde68a', paddingTop: '1.25rem', marginTop: '1rem' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>التاريخ المعتمد:</span>
+                    <strong style={{ display: 'block', fontSize: '0.95rem', color: '#0f172a', marginTop: '0.2rem' }}>
+                      {new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </strong>
+                  </div>
+
+                  {/* Golden Official School Seal */}
+                  <div style={{
+                    width: '95px',
+                    height: '95px',
+                    borderRadius: '50%',
+                    border: '3px dashed #d97706',
+                    background: 'radial-gradient(circle, #fef3c7 0%, #fde68a 100%)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 15px rgba(217, 119, 6, 0.25)',
+                    transform: 'rotate(-5deg)'
+                  }}>
+                    <span style={{ fontSize: '1.3rem' }}>🏛️</span>
+                    <span style={{ fontSize: '0.62rem', fontWeight: 900, color: '#78350f', lineHeight: 1.1, textAlign: 'center' }}>
+                      مدرسة مشيرفة<br />الختم الرسمي
+                    </span>
+                  </div>
+
+                  <div style={{ textAlign: 'left' }}>
+                    <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>مدير المدرسة:</span>
+                    <strong style={{ display: 'block', fontSize: '1.05rem', color: '#0f172a', marginTop: '0.2rem', fontWeight: 900 }}>
+                      أ. رامي ارفاعية
+                    </strong>
+                    <span style={{ fontSize: '0.78rem', color: '#047857', fontWeight: 800 }}>
+                      بوابة التميّز والإبداع 🌟
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Print Stylesheet */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #readers-diploma-print-area, #readers-diploma-print-area * {
+            visibility: visible !important;
+          }
+          #readers-diploma-print-area {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 30px !important;
+            box-sizing: border-box !important;
+            background: white !important;
+            border: 10px double #b45309 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justifyContent: space-between !important;
+            z-index: 999999 !important;
+          }
+          .no-print-btn {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
