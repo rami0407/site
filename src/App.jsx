@@ -334,6 +334,15 @@ function App() {
     );
   }
 
+  if (isGratitudeSkyView) {
+    return (
+      <>
+        <Loader />
+        <GratitudeSkyPage />
+      </>
+    );
+  }
+
   return (
     <>
       {/* Simulation Page Loader */}
@@ -373,8 +382,6 @@ function App() {
         <AppointmentsLogPage />
       ) : isAppointmentsView ? (
         <AppointmentBooking isStandalone={true} />
-      ) : isGratitudeSkyView ? (
-        <GratitudeSkyPage />
       ) : isCustomPageView ? (
         <CustomPageView pageId={customPageId} />
       ) : isWorksheetsView ? (

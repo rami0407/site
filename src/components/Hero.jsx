@@ -182,6 +182,27 @@ const Hero = () => {
               {isLaunching ? 'جاري الإطلاق إلى الفضاء... 🌌' : 'إطلاق مركبة التميز 🚀'}
             </button>
 
+            <button 
+              onClick={() => window.location.hash = '#/gratitude-sky'} 
+              className="btn" 
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#0f172a',
+                border: '1px solid #fde68a',
+                fontWeight: 900,
+                padding: '0.85rem 1.4rem',
+                borderRadius: '16px',
+                boxShadow: '0 8px 25px rgba(245, 158, 11, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="fas fa-star" style={{ fontSize: '1.2rem', color: '#0f172a' }}></i>
+              🌌 سماء الامتنان والنجوم ✨
+            </button>
+
             <button onClick={() => window.location.hash = '#/monawaat'} className="btn" style={{
               background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)',
               color: 'white',
