@@ -203,6 +203,27 @@ const Hero = () => {
               🌌 سماء الامتنان والنجوم ✨
             </button>
 
+            <button 
+              onClick={() => window.location.hash = '#/readers-club'} 
+              className="btn" 
+              style={{
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                color: 'white',
+                border: '1px solid #6ee7b7',
+                fontWeight: 900,
+                padding: '0.85rem 1.4rem',
+                borderRadius: '16px',
+                boxShadow: '0 8px 25px rgba(5, 150, 105, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="fas fa-book-reader" style={{ fontSize: '1.2rem', color: '#a7f3d0' }}></i>
+              📚 نادي القُرّاء وشجرة التميز 🌿
+            </button>
+
             <button onClick={() => window.location.hash = '#/monawaat'} className="btn" style={{
               background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)',
               color: 'white',

@@ -37,6 +37,7 @@ import ParentPolls from './components/ParentPolls';
 import AppointmentBooking from './components/AppointmentBooking';
 import AppointmentsLogPage from './components/AppointmentsLogPage';
 import GratitudeSkyPage from './components/GratitudeSkyPage';
+import ReadersClubPage from './components/ReadersClubPage';
 import ExcellenceYearPage from './components/ExcellenceYearPage';
 import LearningCorner from './components/LearningCorner';
 import StemCorner from './components/StemCorner';
@@ -313,11 +314,12 @@ function App() {
   const isGuardLogView = currentHash.includes('guard') || currentHash.includes('appointments-log') || currentHash.includes('visitors') || currentHash.includes('gate');
   const isAppointmentsView = currentHash.includes('appointments') && !isGuardLogView;
   const isGratitudeSkyView = currentHash.includes('gratitude-sky') || currentHash.includes('stars-sky') || currentHash.includes('emtnan-sky') || currentHash.includes('stars');
+  const isReadersClubView = currentHash.includes('readers-club') || currentHash.includes('readers') || currentHash.includes('reading-club');
   const isAstronomyView = currentHash.includes('astronomy');
   const isChallengeView = currentHash.includes('challenge');
   const isPrincipalView = currentHash.includes('principal');
   const isTeacherPortalView = currentHash.includes('stem-teacher') || currentHash.includes('teacher-portal');
-  const isBooksView = currentHash.includes('books');
+  const isBooksView = currentHash.includes('books') && !isReadersClubView;
   const isWorldIdeasView = currentHash.includes('world-ideas') || currentHash.includes('ideas') || currentHash.includes('share-ideas');
   const isFacebookView = currentHash.includes('facebook') || currentHash.includes('fb');
   const isNewsView = currentHash.includes('news');
@@ -339,6 +341,15 @@ function App() {
       <>
         <Loader />
         <GratitudeSkyPage />
+      </>
+    );
+  }
+
+  if (isReadersClubView) {
+    return (
+      <>
+        <Loader />
+        <ReadersClubPage />
       </>
     );
   }

@@ -245,6 +245,12 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    match /readers_club_logs/{docId} {
+      allow read, create: if true;
+      allow update: if isAuthenticated() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
+      allow delete: if isSuperAdmin();
+    }
+
     // ==========================================
     // 8. DEFAULT CATCH-ALL (DENY BY DEFAULT)
     // ==========================================

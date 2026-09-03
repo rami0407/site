@@ -992,6 +992,41 @@ const AdminDashboard = () => {
     }
   };
 
+  // ==================== READERS CLUB ADMIN STATE & ACTIONS ====================
+  const [adminReadingLogs, setAdminReadingLogs] = useState([]);
+  const [isLoadingAdminReadingLogs, setIsLoadingAdminReadingLogs] = useState(false);
+  const [adminReadingSearchQuery, setAdminReadingSearchQuery] = useState('');
+
+  const loadAdminReadingLogs = async () => {
+    setIsLoadingAdminReadingLogs(true);
+    try {
+      const q = query(collection(db, 'readers_club_logs'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const list = [];
+        snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+        setAdminReadingLogs(list);
+      } else {
+        setAdminReadingLogs([]);
+      }
+    } catch (err) {
+      console.warn("Error loading reading logs for admin:", err);
+    } finally {
+      setIsLoadingAdminReadingLogs(false);
+    }
+  };
+
+  const handleDeleteReadingLog = async (logId, bookTitle, studentName) => {
+    if (!window.confirm(`هل أنت متأكد من حذف قراءة قصة "${bookTitle}" المسجلة للطالب "${studentName}"؟`)) return;
+    try {
+      await deleteDoc(doc(db, 'readers_club_logs', logId));
+      setAdminReadingLogs(prev => prev.filter(l => l.id !== logId));
+      alert('🌿 تم حذف سجل القراءة بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء الحذف: ' + err.message);
+    }
+  };
+
   const [adminWorldIdeas, setAdminWorldIdeas] = useState([]);
   const [isUploadingWorldGif, setIsUploadingWorldGif] = useState(false);
 
@@ -2197,8 +2232,9 @@ const AdminDashboard = () => {
       });
       setPages(fetchedPages);
 
-      // Load Gratitude Stars
+      // Load Gratitude Stars & Reading Logs
       loadGratitudeStars();
+      loadAdminReadingLogs();
 
       // 15. Load Gemini Key
       const geminiDoc = doc(db, 'schoolGuide', 'gemini');
@@ -3616,6 +3652,30 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-star" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#f59e0b' }}></i>
               🌌 سماء الامتنان والنجوم ({adminGratitudeStars.length})
+            </button>
+
+            {/* TOP ITEM 5: READERS CLUB CONTROL */}
+            <button 
+              onClick={() => {
+                loadAdminReadingLogs();
+                setActiveTab('readers-club-admin');
+              }} 
+              className={`filter-chip ${activeTab === 'readers-club-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'readers-club-admin' ? 'linear-gradient(135deg, #059669, #047857)' : '#ecfdf5',
+                color: activeTab === 'readers-club-admin' ? 'white' : '#047857',
+                fontWeight: 900,
+                border: '2px solid #6ee7b7',
+                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)'
+              }}
+            >
+              <i className="fas fa-book-reader" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#10b981' }}></i>
+              📚 نادي القُرّاء وشجرة التميز ({adminReadingLogs.length})
             </button>
 
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
@@ -5144,6 +5204,192 @@ const AdminDashboard = () => {
                           </div>
                         </form>
                       </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* TAB: READERS CLUB CONTROL */}
+              {activeTab === 'readers-club-admin' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: '#047857', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span>📚 نادي القُرّاء وشجرة التميز</span>
+                        <span style={{ background: '#ecfdf5', color: '#047857', padding: '0.2rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem' }}>مبادرة أبطال القراءة 2026/2027</span>
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.35rem 0 0 0', fontSize: '1rem' }}>
+                        متابعة قراءات الطلاب، مراجعة ملخصات القصص والعبر، وتكريم فرسان القراءة الأكثر تميزاً وإلهاماً.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <a 
+                        href="#/readers-club" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ background: '#047857', color: 'white', border: 'none', padding: '0.75rem 1.3rem', borderRadius: '14px', fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(4, 120, 87, 0.25)' }}
+                      >
+                        <i className="fas fa-external-link-alt"></i> فتح نادي القراء العام 👁️
+                      </a>
+
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          loadAdminReadingLogs();
+                          alert('🔄 تم تحديث سجلات القراءة بنجاح!');
+                        }}
+                        style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: 800, cursor: 'pointer' }}
+                        title="تحديث البيانات"
+                      >
+                        <i className="fas fa-sync-alt"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Stats */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #a7f3d0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#ecfdf5', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        📖
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>إجمالي القصص المسجلة</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#047857', fontWeight: 900 }}>{adminReadingLogs.length}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #fed7aa', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#fffbeb', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        🌳
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>أوراق شجرة القراءة الكلية</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#d97706', fontWeight: 900 }}>{345 + adminReadingLogs.length}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #fbcfe8', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#fdf2f8', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        ❤️
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>إجمالي تفاعل الزملاء</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#db2777', fontWeight: 900 }}>
+                          {adminReadingLogs.reduce((sum, l) => sum + (l.likesCount || 0), 0)}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div style={{ background: 'white', padding: '1.25rem 1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '1.75rem' }}>
+                    <input
+                      type="text"
+                      placeholder="ابحث باسم الطالب، عنوان القصة، أو العبرة..."
+                      value={adminReadingSearchQuery}
+                      onChange={(e) => setAdminReadingSearchQuery(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                    />
+                  </div>
+
+                  {/* Logs Table / Cards */}
+                  {isLoadingAdminReadingLogs ? (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                      <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#047857' }}></i>
+                      <p>جاري تحميل سجلات القراءة...</p>
+                    </div>
+                  ) : adminReadingLogs.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
+                      <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📚🌱</div>
+                      <h3 style={{ fontWeight: 900, color: '#1e293b' }}>لا توجد سجلات قراءة مضافة حتى الآن في السحابة</h3>
+                      <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto' }}>
+                        عندما يسجل الطلاب قراءاتهم في صفحة النادي، ستظهر جميع مراجعاتهم وعبرهم هنا لإدارتها ومتابعتها.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                      {adminReadingLogs
+                        .filter(l => {
+                          if (adminReadingSearchQuery.trim()) {
+                            const q = adminReadingSearchQuery.toLowerCase();
+                            const b = (l.bookTitle || '').toLowerCase();
+                            const s = (l.studentName || '').toLowerCase();
+                            const t = (l.takeaway || '').toLowerCase();
+                            if (!b.includes(q) && !s.includes(q) && !t.includes(q)) return false;
+                          }
+                          return true;
+                        })
+                        .map(log => (
+                          <div 
+                            key={log.id} 
+                            style={{ 
+                              background: 'white', 
+                              borderRadius: '20px', 
+                              padding: '1.5rem', 
+                              border: '1px solid #e2e8f0', 
+                              boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ background: '#ecfdf5', color: '#047857', padding: '0.2rem 0.65rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800 }}>
+                                  {log.studentClass}
+                                </span>
+                                <span style={{ color: '#f59e0b', fontSize: '0.85rem' }}>
+                                  {'⭐'.repeat(log.rating || 5)}
+                                </span>
+                              </div>
+
+                              <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+                                {log.studentName}
+                              </h4>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#047857', marginBottom: '0.75rem' }}>
+                                📖 {log.bookTitle} {log.author ? `(تأليف: ${log.author})` : ''}
+                              </div>
+
+                              <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                                <strong>العبرة:</strong> {log.takeaway}
+                              </div>
+
+                              {log.favoriteCharacter && (
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>
+                                  <strong>الشخصية المفضلة:</strong> {log.favoriteCharacter}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                ❤️ {log.likesCount || 1} إعجاب
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteReadingLog(log.id, log.bookTitle, log.studentName)}
+                                style={{
+                                  background: '#fee2e2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fca5a5',
+                                  padding: '0.35rem 0.8rem',
+                                  borderRadius: '10px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}
+                              >
+                                <i className="fas fa-trash-alt"></i> حذف السجل
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                     </div>
                   )}
 
