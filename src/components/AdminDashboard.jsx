@@ -1028,11 +1028,11 @@ const AdminDashboard = () => {
   };
 
   const [readersClubConfig, setReadersClubConfig] = useState({
-    targetGoal: 1000,
-    baseCount: 345,
-    challengeTitle: 'هدف المدرسة: قراءة 1,000 كتاب وقصة هذا العام 🏆',
-    heroTitle: 'نادي القُرّاء وشجرة التميّز 📚🌳✨',
-    heroSubtitle: 'في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!',
+    targetGoal: 10,
+    baseCount: 0,
+    challengeTitle: 'تحدي رحلة العشر كتب 📚🎒 لكل طالب في مشيرفة',
+    heroTitle: 'نادي القُرّاء • رحلة العشر كتب 📚✨',
+    heroSubtitle: 'اقرأ 10 كتب وقصص ممتعة، واجمع محطات رحلتك خطوة بخطوة لتنال وسام التميز القرائي الذهبي!',
     featuredBookTitle: 'رحلة إلى مركز الأرض',
     featuredBookAuthor: 'جول فيرن',
     featuredBookWhy: 'قصة مشوقة تعلم الصبر والمثابرة وحب الاستكشاف العلمي والجيولوجي.'
@@ -5357,13 +5357,13 @@ const AdminDashboard = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
                         <div>
                           <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#334155', marginBottom: '0.4rem' }}>
-                            هدف التحدي السنوي للمدرسة (عدد الكتب) *:
+                            هدف رحلة القراءة للطالب (عدد الكتب - الافتراضي 10) *:
                           </label>
                           <input
                             type="number"
                             required
-                            min="10"
-                            max="10000"
+                            min="1"
+                            max="100"
                             value={readersClubConfig.targetGoal}
                             onChange={(e) => setReadersClubConfig({ ...readersClubConfig, targetGoal: Number(e.target.value) })}
                             style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '1rem', color: '#047857' }}

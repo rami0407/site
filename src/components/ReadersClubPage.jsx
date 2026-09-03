@@ -85,11 +85,11 @@ const DEFAULT_READING_LOGS = [
 const ReadersClubPage = () => {
   const [logs, setLogs] = useState(DEFAULT_READING_LOGS);
   const [config, setConfig] = useState({
-    targetGoal: 1000,
-    baseCount: 345,
-    challengeTitle: 'هدف المدرسة: قراءة 1,000 كتاب وقصة هذا العام 🏆',
-    heroTitle: 'نادي القُرّاء وشجرة التميّز',
-    heroSubtitle: 'في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!',
+    targetGoal: 10,
+    baseCount: 0,
+    challengeTitle: 'تحدي رحلة العشر كتب 📚🎒 لكل طالب في مشيرفة',
+    heroTitle: 'نادي القُرّاء • رحلة العشر كتب 📚✨',
+    heroSubtitle: 'اقرأ 10 كتب وقصص ممتعة، واجمع محطات رحلتك خطوة بخطوة لتنال وسام التميز القرائي الذهبي!',
     featuredBookTitle: '',
     featuredBookAuthor: '',
     featuredBookWhy: ''
@@ -351,7 +351,7 @@ const ReadersClubPage = () => {
         </div>
       </header>
 
-      {/* Floating Collective Challenge Box */}
+      {/* Floating Collective Challenge Box - رحلة العشر كتب */}
       <section style={{ maxWidth: '1000px', margin: '-2.5rem auto 2.5rem', padding: '0 1.25rem', position: 'relative', zIndex: 20 }}>
         <div style={{
           background: 'white',
@@ -361,47 +361,71 @@ const ReadersClubPage = () => {
           border: '2px solid #a7f3d0',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem'
+          gap: '1.25rem'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#047857', background: '#ecfdf5', padding: '0.2rem 0.75rem', borderRadius: '50px' }}>
-                تحدي القراءة السنوي لمشيرفة 🎯
+                مغامرة التميز القرائي 🎒📚
               </span>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: '0.4rem 0 0 0' }}>
-                {config.challengeTitle || `هدف المدرسة: قراءة ${targetGoal} كتاب وقصة هذا العام 🏆`}
+                {config.challengeTitle || `تحدي رحلة العشر كتب لكل طالب بمشيرفة 🏆`}
               </h3>
             </div>
 
             <div style={{ textAlign: 'left' }}>
               <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#047857' }}>
-                {totalBooksRead}
+                {logs.length}
               </span>
-              <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 700 }}> / {targetGoal} كتاب</span>
+              <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 700 }}> قصة مسجلة • الهدف: {targetGoal} كتب 👑</span>
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div style={{ width: '100%', height: '18px', background: '#e2e8f0', borderRadius: '50px', overflow: 'hidden', position: 'relative' }}>
-            <div style={{
-              width: `${progressPercent}%`,
-              height: '100%',
-              background: 'linear-gradient(90deg, #10b981 0%, #059669 50%, #f59e0b 100%)',
-              borderRadius: '50px',
-              transition: 'width 1s ease-in-out',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              paddingLeft: '8px'
-            }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'white' }}>{progressPercent}%</span>
+          {/* 10-Books Visual Stepping Stones Roadmap */}
+          <div style={{ position: 'relative', padding: '1rem 0.25rem' }}>
+            <div style={{ position: 'absolute', top: '28px', left: '25px', right: '25px', height: '4px', background: '#e2e8f0', zIndex: 1 }}></div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '0.25rem', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((stepNum) => {
+                const isFinal = stepNum === 10;
+                const isReached = logs.length >= stepNum;
+
+                return (
+                  <div key={stepNum} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{
+                      width: isFinal ? '44px' : '36px',
+                      height: isFinal ? '44px' : '36px',
+                      borderRadius: '50%',
+                      background: isFinal 
+                        ? (isReached ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#fef3c7')
+                        : (isReached ? '#059669' : '#f1f5f9'),
+                      color: isFinal 
+                        ? (isReached ? '#0f172a' : '#b45309')
+                        : (isReached ? 'white' : '#64748b'),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: isFinal ? '1.2rem' : '0.85rem',
+                      boxShadow: isReached ? (isFinal ? '0 4px 14px rgba(245, 158, 11, 0.45)' : '0 4px 10px rgba(5, 150, 105, 0.25)') : 'none',
+                      border: isReached ? '3px solid white' : '2px dashed #cbd5e1',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      {isFinal ? '👑' : isReached ? '✓' : stepNum}
+                    </div>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isReached ? '#047857' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                      {isFinal ? 'التتويج 🏆' : `كتاب ${stepNum}`}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-            <span>🌿 البداية: غرس العادة</span>
-            <span>⭐ منتصف الطريق: تميز وإتقان</span>
-            <span>🏆 الهدف النهائي: مشيرفة تقرأ وتبتكر</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#475569', fontWeight: 700, borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <span>🌱 محطة البداية (كتب 1-3): غرس العادة والاستكشاف</span>
+            <span>⭐ منتصف الرحلة (كتب 4-7): تميز وبناء الثروة اللغوية</span>
+            <span style={{ color: '#b45309', fontWeight: 900 }}>👑 محطة التتويج (كتاب 10): وسام التميز القرائي الذهبي</span>
           </div>
         </div>
       </section>

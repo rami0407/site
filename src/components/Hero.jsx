@@ -221,7 +221,7 @@ const Hero = () => {
               }}
             >
               <i className="fas fa-book-reader" style={{ fontSize: '1.2rem', color: '#a7f3d0' }}></i>
-              📚 نادي القُرّاء وشجرة التميز 🌿
+              📚 رحلة الـ 10 كتب وشجرة التميز 🌿
             </button>
 
             <button onClick={() => window.location.hash = '#/monawaat'} className="btn" style={{
