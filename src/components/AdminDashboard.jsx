@@ -905,6 +905,93 @@ const AdminDashboard = () => {
     badgeText: "فضاء الأفكار والابتكار 2026 🪐✨",
     themeColor: "voca-yellow"
   });
+
+  // ==================== GRATITUDE SKY ADMIN STATE & ACTIONS ====================
+  const [adminGratitudeStars, setAdminGratitudeStars] = useState([]);
+  const [isLoadingGratitudeStars, setIsLoadingGratitudeStars] = useState(false);
+  const [gratitudeSearchFilter, setGratitudeSearchFilter] = useState('');
+  const [gratitudeCategoryFilter, setGratitudeCategoryFilter] = useState('all');
+  const [showAdminAddStarModal, setShowAdminAddStarModal] = useState(false);
+  const [newAdminStar, setNewAdminStar] = useState({
+    recipientName: '',
+    recipientRole: 'teacher',
+    senderName: 'إدارة المدرسة (أ. رامي ارفاعية)',
+    senderRole: 'management',
+    senderClass: 'إدارة مدرسة مشيرفة',
+    color: 'gold',
+    message: ''
+  });
+
+  const loadGratitudeStars = async () => {
+    setIsLoadingGratitudeStars(true);
+    try {
+      const q = query(collection(db, 'gratitude_stars'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const list = [];
+        snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+        setAdminGratitudeStars(list);
+      } else {
+        setAdminGratitudeStars([]);
+      }
+    } catch (err) {
+      console.warn("Error loading gratitude stars for admin:", err);
+    } finally {
+      setIsLoadingGratitudeStars(false);
+    }
+  };
+
+  const handleDeleteGratitudeStar = async (starId, recipientName) => {
+    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف هذه النجمة المهداة إلى "${recipientName}" من سماء المدرسة؟`)) return;
+    try {
+      await deleteDoc(doc(db, 'gratitude_stars', starId));
+      setAdminGratitudeStars(prev => prev.filter(s => s.id !== starId));
+      alert('✨ تم حذف النجمة من سماء المدرسة بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء حذف النجمة: ' + err.message);
+    }
+  };
+
+  const handleAdminCreateStar = async (e) => {
+    e.preventDefault();
+    if (!newAdminStar.recipientName.trim() || !newAdminStar.message.trim()) {
+      alert('يرجى كتابة اسم المهدى إليه ونص رسالة التكريم.');
+      return;
+    }
+
+    try {
+      const starObj = {
+        recipientName: newAdminStar.recipientName.trim(),
+        recipientRole: newAdminStar.recipientRole,
+        senderName: newAdminStar.senderName.trim(),
+        senderRole: newAdminStar.senderRole,
+        senderClass: newAdminStar.senderClass,
+        color: newAdminStar.color,
+        message: newAdminStar.message.trim(),
+        likesCount: 15,
+        x: Math.floor(Math.random() * 70) + 15,
+        y: Math.floor(Math.random() * 55) + 20,
+        size: 32,
+        createdAt: new Date().toISOString()
+      };
+      const docRef = await addDoc(collection(db, 'gratitude_stars'), starObj);
+      setAdminGratitudeStars(prev => [{ id: docRef.id, ...starObj }, ...prev]);
+      setShowAdminAddStarModal(false);
+      setNewAdminStar({
+        recipientName: '',
+        recipientRole: 'teacher',
+        senderName: 'إدارة المدرسة (أ. رامي ارفاعية)',
+        senderRole: 'management',
+        senderClass: 'إدارة مدرسة مشيرفة',
+        color: 'gold',
+        message: ''
+      });
+      alert('🌟 تم إطلاق نجمة التكريم الرسمية بنجاح في سماء مشيرفة!');
+    } catch (err) {
+      alert('حدث خطأ أثناء إطلاق النجمة: ' + err.message);
+    }
+  };
+
   const [adminWorldIdeas, setAdminWorldIdeas] = useState([]);
   const [isUploadingWorldGif, setIsUploadingWorldGif] = useState(false);
 
@@ -2109,6 +2196,9 @@ const AdminDashboard = () => {
         fetchedPages.push({ ...doc.data(), id: doc.id });
       });
       setPages(fetchedPages);
+
+      // Load Gratitude Stars
+      loadGratitudeStars();
 
       // 15. Load Gemini Key
       const geminiDoc = doc(db, 'schoolGuide', 'gemini');
@@ -3504,6 +3594,30 @@ const AdminDashboard = () => {
               🚀 "شارك أفكارك للعالم" ({adminWorldIdeas.length})
             </button>
 
+            {/* TOP ITEM 4: GRATITUDE SKY CONTROL */}
+            <button 
+              onClick={() => {
+                loadGratitudeStars();
+                setActiveTab('gratitude-sky-admin');
+              }} 
+              className={`filter-chip ${activeTab === 'gratitude-sky-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'gratitude-sky-admin' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#fffbeb',
+                color: activeTab === 'gratitude-sky-admin' ? '#0f172a' : '#b45309',
+                fontWeight: 900,
+                border: '2px solid #fcd34d',
+                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.25)'
+              }}
+            >
+              <i className="fas fa-star" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#f59e0b' }}></i>
+              🌌 سماء الامتنان والنجوم ({adminGratitudeStars.length})
+            </button>
+
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
 
             <button 
@@ -4664,6 +4778,374 @@ const AdminDashboard = () => {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* TAB: GRATITUDE SKY & STARS CONTROL */}
+              {activeTab === 'gratitude-sky-admin' && (
+                <div>
+                  {/* Top Bar with Title and Quick Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: '#b45309', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span>🌌 سماء الامتنان والنجوم المضيئة</span>
+                        <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem' }}>مشروع امتنان 2026/2027</span>
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.35rem 0 0 0', fontSize: '1rem' }}>
+                        متابعة ومراجعة رسائل الشكر والتقدير التي يطلقها الطلاب والأهالي، إطلاق نجوم تكريم رسمية من الإدارة، وحذف أي محتوى غير لائق فورياً.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowAdminAddStarModal(true)}
+                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', border: 'none', padding: '0.75rem 1.4rem', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)' }}
+                      >
+                        <i className="fas fa-plus-circle"></i> 🌟 إطلاق نجمة تكريم رسمية من الإدارة
+                      </button>
+
+                      <a 
+                        href="#/gratitude-sky" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.75rem 1.3rem', borderRadius: '14px', fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(2, 132, 199, 0.25)' }}
+                      >
+                        <i className="fas fa-external-link-alt"></i> فتح سماء الامتنان العامة 👁️
+                      </a>
+
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          loadGratitudeStars();
+                          alert('🔄 تم تحديث نجوم السماء بنجاح!');
+                        }}
+                        style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: 800, cursor: 'pointer' }}
+                        title="تحديث البيانات"
+                      >
+                        <i className="fas fa-sync-alt"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Stats Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #fed7aa', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        🌟
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>إجمالي نجوم السماء</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#0f172a', fontWeight: 900 }}>{adminGratitudeStars.length}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #fbcfe8', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#fdf2f8', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        💖
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>إجمالي البريق والإعجابات</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#db2777', fontWeight: 900 }}>
+                          {adminGratitudeStars.reduce((sum, s) => sum + (s.likesCount || 0), 0)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #bae6fd', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#f0f9ff', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        👨‍🏫
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>شكر المعلمين والمعلمات</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#0284c7', fontWeight: 900 }}>
+                          {adminGratitudeStars.filter(s => s.recipientRole === 'teacher').length}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'white', padding: '1.4rem', borderRadius: '20px', border: '1px solid #a7f3d0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+                        🤝
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>نجوم الزملاء والطلاب</span>
+                        <strong style={{ display: 'block', fontSize: '1.7rem', color: '#059669', fontWeight: 900 }}>
+                          {adminGratitudeStars.filter(s => s.recipientRole === 'peer').length}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <div style={{ background: 'white', padding: '1.25rem 1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '1.75rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {[
+                        { id: 'all', label: 'الكل' },
+                        { id: 'teacher', label: 'المعلمون 👨‍🏫' },
+                        { id: 'peer', label: 'الزملاء 🤝' },
+                        { id: 'management', label: 'الإدارة 🏛️' },
+                        { id: 'staff', label: 'الطاقم والعاملون 🌿' }
+                      ].map(f => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setGratitudeCategoryFilter(f.id)}
+                          style={{
+                            padding: '0.45rem 1rem',
+                            borderRadius: '12px',
+                            border: gratitudeCategoryFilter === f.id ? '2px solid #f59e0b' : '1px solid #cbd5e1',
+                            background: gratitudeCategoryFilter === f.id ? '#fef3c7' : '#f8fafc',
+                            color: gratitudeCategoryFilter === f.id ? '#b45309' : '#475569',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            fontSize: '0.88rem'
+                          }}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ minWidth: '260px' }}>
+                      <input
+                        type="text"
+                        placeholder="ابحث عن نجمة باسم المكرم أو المرسل..."
+                        value={gratitudeSearchFilter}
+                        onChange={(e) => setGratitudeSearchFilter(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Stars List */}
+                  {isLoadingGratitudeStars ? (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                      <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#f59e0b' }}></i>
+                      <p>جاري تحميل وتحديث نجوم السماء...</p>
+                    </div>
+                  ) : adminGratitudeStars.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
+                      <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🌌✨</div>
+                      <h3 style={{ fontWeight: 900, color: '#1e293b' }}>لا توجد نجوم مسجلة حالياً في السماء</h3>
+                      <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto 1.5rem' }}>
+                        كن أول من ينير سماء مشيرفة بإطلاق نجمة تكريم رسمية من الإدارة لمعلم أو طالب متميز!
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminAddStarModal(true)}
+                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', border: 'none', padding: '0.75rem 1.6rem', borderRadius: '14px', fontWeight: 900, cursor: 'pointer' }}
+                      >
+                        🌟 أطلق نجمة تكريم الآن
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                      {adminGratitudeStars
+                        .filter(s => {
+                          if (gratitudeCategoryFilter !== 'all' && s.recipientRole !== gratitudeCategoryFilter) return false;
+                          if (gratitudeSearchFilter.trim()) {
+                            const q = gratitudeSearchFilter.toLowerCase();
+                            const r = (s.recipientName || '').toLowerCase();
+                            const sn = (s.senderName || '').toLowerCase();
+                            const m = (s.message || '').toLowerCase();
+                            if (!r.includes(q) && !sn.includes(q) && !m.includes(q)) return false;
+                          }
+                          return true;
+                        })
+                        .map(star => (
+                          <div 
+                            key={star.id} 
+                            style={{ 
+                              background: 'white', 
+                              borderRadius: '20px', 
+                              padding: '1.5rem', 
+                              border: '1px solid #e2e8f0', 
+                              boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              position: 'relative'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <span style={{
+                                  background: star.color === 'gold' ? '#fef3c7' : star.color === 'pink' ? '#fdf2f8' : star.color === 'teal' ? '#ecfeff' : star.color === 'purple' ? '#f5f3ff' : '#ecfdf5',
+                                  color: star.color === 'gold' ? '#b45309' : star.color === 'pink' ? '#be185d' : star.color === 'teal' ? '#0e7490' : star.color === 'purple' ? '#6d28d9' : '#047857',
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '50px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 800,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}>
+                                  <span>{star.color === 'gold' ? '🌟 نجمة ذهبية' : star.color === 'pink' ? '💖 نجمة وردية' : star.color === 'teal' ? '💎 نجمة تركواز' : star.color === 'purple' ? '🔮 نجمة بنفسج' : '🌿 نجمة زمردية'}</span>
+                                </span>
+
+                                <span style={{ fontSize: '0.8rem', color: '#e11d48', fontWeight: 800 }}>
+                                  <i className="fas fa-heart"></i> {star.likesCount || 1} بريق
+                                </span>
+                              </div>
+
+                              <div style={{ marginBottom: '0.75rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>مهداة إلى:</span>
+                                <h4 style={{ margin: '0.15rem 0 0 0', fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                                  {star.recipientName}
+                                </h4>
+                              </div>
+
+                              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '14px', border: '1px solid #f1f5f9', fontSize: '0.95rem', lineHeight: 1.7, color: '#334155', fontWeight: 600, marginBottom: '1rem' }}>
+                                "{star.message}"
+                              </div>
+
+                              <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1.25rem' }}>
+                                <strong>المرسل:</strong> {star.senderName} {star.senderClass ? `(${star.senderClass})` : ''}
+                              </div>
+                            </div>
+
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                {star.createdAt ? new Date(star.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteGratitudeStar(star.id, star.recipientName)}
+                                style={{
+                                  background: '#fee2e2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fca5a5',
+                                  padding: '0.4rem 0.85rem',
+                                  borderRadius: '10px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem'
+                                }}
+                              >
+                                <i className="fas fa-trash-alt"></i> حذف من السماء
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Modal: Admin Add Official Star */}
+                  {showAdminAddStarModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                      <div style={{ background: 'white', borderRadius: '24px', padding: '2rem', maxWidth: '540px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                          <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
+                            🌟 إطلاق نجمة تكريم رسمية من إدارة المدرسة
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setShowAdminAddStarModal(false)}
+                            style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontWeight: 900 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleAdminCreateStar}>
+                          <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                              اسم المهدى إليه (المعلم / الطالب / الموظف) *:
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="مثال: المعلمة سوسن، الطالب المتميز كمال..."
+                              value={newAdminStar.recipientName}
+                              onChange={(e) => setNewAdminStar({ ...newAdminStar, recipientName: e.target.value })}
+                              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                                تصنيف النجمة:
+                              </label>
+                              <select
+                                value={newAdminStar.recipientRole}
+                                onChange={(e) => setNewAdminStar({ ...newAdminStar, recipientRole: e.target.value })}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', background: 'white' }}
+                              >
+                                <option value="teacher">معلم / كادر تدريسي 👨‍🏫</option>
+                                <option value="peer">طالب / زميل 🎓</option>
+                                <option value="management">إدارة المدرسة 🏛️</option>
+                                <option value="staff">طاقم وعاملين 🌿</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                                لون وطاقة النجمة:
+                              </label>
+                              <select
+                                value={newAdminStar.color}
+                                onChange={(e) => setNewAdminStar({ ...newAdminStar, color: e.target.value })}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', background: 'white' }}
+                              >
+                                <option value="gold">🌟 ذهبية (إلهام وإتقان)</option>
+                                <option value="purple">🔮 بنفسجية (ريادة وإبداع)</option>
+                                <option value="teal">💎 تركوازية (صداقة ومحبة)</option>
+                                <option value="pink">💖 وردية (امتنان وعرفان)</option>
+                                <option value="emerald">🌿 زمردية (عطاء ووفاء)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                              اسم المرسل:
+                            </label>
+                            <input
+                              type="text"
+                              value={newAdminStar.senderName}
+                              onChange={(e) => setNewAdminStar({ ...newAdminStar, senderName: e.target.value })}
+                              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+                            />
+                          </div>
+
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                              رسالة الشكر والتكريم الرسمية *:
+                            </label>
+                            <textarea
+                              required
+                              rows={4}
+                              placeholder="اكتب رسالة التكريم والثناء والامتنان..."
+                              value={newAdminStar.message}
+                              onChange={(e) => setNewAdminStar({ ...newAdminStar, message: e.target.value })}
+                              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', lineHeight: 1.6 }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => setShowAdminAddStarModal(false)}
+                              style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              إلغاء
+                            </button>
+                            <button
+                              type="submit"
+                              style={{ padding: '0.75rem 1.6rem', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)' }}
+                            >
+                              🚀 أطلق النجمة في السماء الآن
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               )}
