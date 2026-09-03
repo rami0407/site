@@ -82,11 +82,18 @@ const DEFAULT_READING_LOGS = [
   }
 ];
 
-const TARGET_GOAL = 1000;
-const BASE_COUNT = 345; // Baseline school counter
-
 const ReadersClubPage = () => {
   const [logs, setLogs] = useState(DEFAULT_READING_LOGS);
+  const [config, setConfig] = useState({
+    targetGoal: 1000,
+    baseCount: 345,
+    challengeTitle: 'هدف المدرسة: قراءة 1,000 كتاب وقصة هذا العام 🏆',
+    heroTitle: 'نادي القُرّاء وشجرة التميّز',
+    heroSubtitle: 'في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!',
+    featuredBookTitle: '',
+    featuredBookAuthor: '',
+    featuredBookWhy: ''
+  });
   const [activeTab, setActiveTab] = useState('wall'); // 'wall', 'tree', 'hall-of-fame'
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -135,7 +142,7 @@ const ReadersClubPage = () => {
   // Real-time Firestore sync
   useEffect(() => {
     const q = query(collection(db, 'readers_club_logs'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeLogs = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const list = [];
         snapshot.forEach((docSnap) => {
@@ -150,12 +157,25 @@ const ReadersClubPage = () => {
       setLogs(DEFAULT_READING_LOGS);
     });
 
-    return () => unsubscribe();
+    const unsubscribeConfig = onSnapshot(doc(db, 'readers_club_config', 'settings'), (snap) => {
+      if (snap.exists()) {
+        setConfig(prev => ({ ...prev, ...snap.data() }));
+      }
+    }, (err) => {
+      console.warn("Using offline config:", err);
+    });
+
+    return () => {
+      unsubscribeLogs();
+      unsubscribeConfig();
+    };
   }, []);
 
   // Total books read metric
-  const totalBooksRead = BASE_COUNT + logs.length;
-  const progressPercent = Math.min(100, Math.round((totalBooksRead / TARGET_GOAL) * 100));
+  const targetGoal = config.targetGoal || 1000;
+  const baseCount = config.baseCount !== undefined ? config.baseCount : 345;
+  const totalBooksRead = baseCount + logs.length;
+  const progressPercent = Math.min(100, Math.round((totalBooksRead / targetGoal) * 100));
 
   // Filtered Logs
   const filteredLogs = logs.filter((item) => {
@@ -296,11 +316,11 @@ const ReadersClubPage = () => {
 
           <div style={{ textAlign: 'center', maxWidth: '820px', margin: '0 auto' }}>
             <h1 style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)', fontWeight: 900, margin: '0 0 0.8rem 0', lineHeight: 1.2 }}>
-              <span>نادي القُرّاء وشجرة التميّز</span>
+              <span>{config.heroTitle || 'نادي القُرّاء وشجرة التميّز'}</span>
               <span style={{ marginRight: '0.5rem' }}>📚🌳✨</span>
             </h1>
             <p style={{ fontSize: '1.15rem', color: '#a7f3d0', fontWeight: 600, lineHeight: 1.7, margin: '0 0 2rem 0' }}>
-              في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!
+              {config.heroSubtitle || 'في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!'}
             </p>
 
             {/* Quick Action to Log Book */}
@@ -331,7 +351,7 @@ const ReadersClubPage = () => {
         </div>
       </header>
 
-      {/* Floating Collective 1,000 Books Challenge Box */}
+      {/* Floating Collective Challenge Box */}
       <section style={{ maxWidth: '1000px', margin: '-2.5rem auto 2.5rem', padding: '0 1.25rem', position: 'relative', zIndex: 20 }}>
         <div style={{
           background: 'white',
@@ -349,7 +369,7 @@ const ReadersClubPage = () => {
                 تحدي القراءة السنوي لمشيرفة 🎯
               </span>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: '0.4rem 0 0 0' }}>
-                هدف المدرسة: قراءة {TARGET_GOAL} كتاب وقصة هذا العام 🏆
+                {config.challengeTitle || `هدف المدرسة: قراءة ${targetGoal} كتاب وقصة هذا العام 🏆`}
               </h3>
             </div>
 
@@ -357,7 +377,7 @@ const ReadersClubPage = () => {
               <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#047857' }}>
                 {totalBooksRead}
               </span>
-              <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 700 }}> / {TARGET_GOAL} كتاب</span>
+              <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 700 }}> / {targetGoal} كتاب</span>
             </div>
           </div>
 
@@ -385,6 +405,64 @@ const ReadersClubPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Featured Book Recommendation by Administration */}
+      {config.featuredBookTitle && (
+        <section style={{ maxWidth: '1000px', margin: '0 auto 2.5rem', padding: '0 1.25rem' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+            border: '2px solid #f59e0b',
+            borderRadius: '24px',
+            padding: '1.5rem 2rem',
+            boxShadow: '0 10px 25px rgba(245, 158, 11, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1.25rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: '#f59e0b', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', flexShrink: 0 }}>
+                🌟
+              </div>
+              <div>
+                <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#b45309', background: '#fde68a', padding: '0.2rem 0.75rem', borderRadius: '50px' }}>
+                  كتاب الشهر الموصى به من إدارة مدرسة مشيرفة 📖
+                </span>
+                <h3 style={{ margin: '0.35rem 0 0.15rem 0', fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+                  {config.featuredBookTitle} {config.featuredBookAuthor ? `• تأليف: ${config.featuredBookAuthor}` : ''}
+                </h3>
+                {config.featuredBookWhy && (
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
+                    💡 <strong>رسالة الإدارة:</strong> {config.featuredBookWhy}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setBookTitle(config.featuredBookTitle);
+                setAuthor(config.featuredBookAuthor || '');
+                setShowAddLogModal(true);
+              }}
+              style={{
+                background: '#047857',
+                color: 'white',
+                border: 'none',
+                padding: '0.65rem 1.4rem',
+                borderRadius: '14px',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)'
+              }}
+            >
+              قرأت هذا الكتاب! سجله الآن 🌿
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Main Content Area */}
       <main style={{ maxWidth: '1140px', margin: '0 auto', padding: '0 1.25rem 4rem' }}>

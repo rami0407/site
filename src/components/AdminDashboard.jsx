@@ -1027,6 +1027,95 @@ const AdminDashboard = () => {
     }
   };
 
+  const [readersClubConfig, setReadersClubConfig] = useState({
+    targetGoal: 1000,
+    baseCount: 345,
+    challengeTitle: 'هدف المدرسة: قراءة 1,000 كتاب وقصة هذا العام 🏆',
+    heroTitle: 'نادي القُرّاء وشجرة التميّز 📚🌳✨',
+    heroSubtitle: 'في مدرسة مشيرفة، كل قصة تقرؤها تزرع فكرة وتُنبت ورقة خضراء على شجرة مدرستنا.. سجّل كتبك واجمع أوسمة التميز!',
+    featuredBookTitle: 'رحلة إلى مركز الأرض',
+    featuredBookAuthor: 'جول فيرن',
+    featuredBookWhy: 'قصة مشوقة تعلم الصبر والمثابرة وحب الاستكشاف العلمي والجيولوجي.'
+  });
+  const [isSavingReadersClubConfig, setIsSavingReadersClubConfig] = useState(false);
+  const [showAdminAddReadingLogModal, setShowAdminAddReadingLogModal] = useState(false);
+  const [newAdminReadingLog, setNewAdminReadingLog] = useState({
+    studentName: '',
+    studentClass: 'الصف الرابع (أ)',
+    bookTitle: '',
+    author: '',
+    category: 'قصص وعبر',
+    rating: 5,
+    takeaway: '',
+    favoriteCharacter: ''
+  });
+
+  const loadReadersClubConfig = async () => {
+    try {
+      const snap = await getDoc(doc(db, 'readers_club_config', 'settings'));
+      if (snap.exists()) {
+        setReadersClubConfig(prev => ({ ...prev, ...snap.data() }));
+      }
+    } catch (e) {
+      console.warn("Offline readers_club_config fallback:", e);
+    }
+  };
+
+  const handleSaveReadersClubConfig = async (e) => {
+    e.preventDefault();
+    setIsSavingReadersClubConfig(true);
+    try {
+      await setDoc(doc(db, 'readers_club_config', 'settings'), {
+        ...readersClubConfig,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      alert('🎉 تم حفظ وتطبيق إعدادات وأهداف نادي القراء بنجاح على الموقع العام!');
+    } catch (err) {
+      alert('حدث خطأ أثناء حفظ الإعدادات: ' + err.message);
+    } finally {
+      setIsSavingReadersClubConfig(false);
+    }
+  };
+
+  const handleAdminCreateReadingLog = async (e) => {
+    e.preventDefault();
+    if (!newAdminReadingLog.studentName.trim() || !newAdminReadingLog.bookTitle.trim() || !newAdminReadingLog.takeaway.trim()) {
+      alert('يرجى تعبئة الحقول الأساسية المطلوبة.');
+      return;
+    }
+
+    try {
+      const logObj = {
+        studentName: newAdminReadingLog.studentName.trim(),
+        studentClass: newAdminReadingLog.studentClass,
+        bookTitle: newAdminReadingLog.bookTitle.trim(),
+        author: newAdminReadingLog.author.trim() || 'غير محدد',
+        category: newAdminReadingLog.category,
+        rating: Number(newAdminReadingLog.rating),
+        takeaway: newAdminReadingLog.takeaway.trim(),
+        favoriteCharacter: newAdminReadingLog.favoriteCharacter.trim() || 'شخصيات القصة',
+        likesCount: 10,
+        createdAt: new Date().toISOString()
+      };
+      const docRef = await addDoc(collection(db, 'readers_club_logs'), logObj);
+      setAdminReadingLogs(prev => [{ id: docRef.id, ...logObj }, ...prev]);
+      setShowAdminAddReadingLogModal(false);
+      setNewAdminReadingLog({
+        studentName: '',
+        studentClass: 'الصف الرابع (أ)',
+        bookTitle: '',
+        author: '',
+        category: 'قصص وعبر',
+        rating: 5,
+        takeaway: '',
+        favoriteCharacter: ''
+      });
+      alert('🌿 تم تسجيل وتوثيق قراءة الطالب بنجاح وإضافتها لشجرة القراءة!');
+    } catch (err) {
+      alert('حدث خطأ أثناء التسجيل: ' + err.message);
+    }
+  };
+
   const [adminWorldIdeas, setAdminWorldIdeas] = useState([]);
   const [isUploadingWorldGif, setIsUploadingWorldGif] = useState(false);
 
@@ -3658,6 +3747,7 @@ const AdminDashboard = () => {
             <button 
               onClick={() => {
                 loadAdminReadingLogs();
+                loadReadersClubConfig();
                 setActiveTab('readers-club-admin');
               }} 
               className={`filter-chip ${activeTab === 'readers-club-admin' ? 'active' : ''}`}
@@ -5225,6 +5315,14 @@ const AdminDashboard = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowAdminAddReadingLogModal(true)}
+                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', border: 'none', padding: '0.75rem 1.4rem', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)' }}
+                      >
+                        <i className="fas fa-plus-circle"></i> 🌿 تسجيل وتوثيق قراءة معتمدة لطالب
+                      </button>
+
                       <a 
                         href="#/readers-club" 
                         target="_blank"
@@ -5238,7 +5336,8 @@ const AdminDashboard = () => {
                         type="button" 
                         onClick={() => {
                           loadAdminReadingLogs();
-                          alert('🔄 تم تحديث سجلات القراءة بنجاح!');
+                          loadReadersClubConfig();
+                          alert('🔄 تم تحديث سجلات وإعدادات القراءة بنجاح!');
                         }}
                         style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: 800, cursor: 'pointer' }}
                         title="تحديث البيانات"
@@ -5246,6 +5345,126 @@ const AdminDashboard = () => {
                         <i className="fas fa-sync-alt"></i>
                       </button>
                     </div>
+                  </div>
+
+                  {/* 1. CHALLENGE SETTINGS & TARGETS FORM */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', marginBottom: '2.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#047857', marginBottom: '1.5rem', borderBottom: '2px solid #a7f3d0', paddingBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      ⚙️ تخصيص أهداف التحدي والواجهة (Challenge & Settings Editor)
+                    </h3>
+
+                    <form onSubmit={handleSaveReadersClubConfig}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#334155', marginBottom: '0.4rem' }}>
+                            هدف التحدي السنوي للمدرسة (عدد الكتب) *:
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="10"
+                            max="10000"
+                            value={readersClubConfig.targetGoal}
+                            onChange={(e) => setReadersClubConfig({ ...readersClubConfig, targetGoal: Number(e.target.value) })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '1rem', color: '#047857' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#334155', marginBottom: '0.4rem' }}>
+                            الرصيد الابتدائي للكتب المقروءة بالمدرسة *:
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={readersClubConfig.baseCount}
+                            onChange={(e) => setReadersClubConfig({ ...readersClubConfig, baseCount: Number(e.target.value) })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '1rem' }}
+                          />
+                        </div>
+
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#334155', marginBottom: '0.4rem' }}>
+                            عنوان لافتة التحدي السنوي:
+                          </label>
+                          <input
+                            type="text"
+                            value={readersClubConfig.challengeTitle}
+                            onChange={(e) => setReadersClubConfig({ ...readersClubConfig, challengeTitle: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1.25rem', marginTop: '1.25rem', marginBottom: '1.25rem' }}>
+                        <h4 style={{ margin: '0 0 1rem 0', fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>
+                          🌟 كتاب الشهر الموصى به من إدارة المدرسة (اختياري):
+                        </h4>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 700, fontSize: '0.82rem', color: '#64748b', marginBottom: '0.3rem' }}>
+                              عنوان القصة الموصى بها:
+                            </label>
+                            <input
+                              type="text"
+                              value={readersClubConfig.featuredBookTitle}
+                              onChange={(e) => setReadersClubConfig({ ...readersClubConfig, featuredBookTitle: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 700, fontSize: '0.82rem', color: '#64748b', marginBottom: '0.3rem' }}>
+                              اسم الكاتب / المؤلف:
+                            </label>
+                            <input
+                              type="text"
+                              value={readersClubConfig.featuredBookAuthor}
+                              onChange={(e) => setReadersClubConfig({ ...readersClubConfig, featuredBookAuthor: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <label style={{ display: 'block', fontWeight: 700, fontSize: '0.82rem', color: '#64748b', marginBottom: '0.3rem' }}>
+                              لماذا توصي الإدارة بقراءة هذا الكتاب؟:
+                            </label>
+                            <input
+                              type="text"
+                              value={readersClubConfig.featuredBookWhy}
+                              onChange={(e) => setReadersClubConfig({ ...readersClubConfig, featuredBookWhy: e.target.value })}
+                              style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="submit"
+                          disabled={isSavingReadersClubConfig}
+                          style={{
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.85rem 1.8rem',
+                            borderRadius: '14px',
+                            fontWeight: 900,
+                            fontSize: '0.95rem',
+                            cursor: isSavingReadersClubConfig ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            boxShadow: '0 6px 18px rgba(5, 150, 105, 0.35)'
+                          }}
+                        >
+                          <i className="fas fa-save"></i>
+                          <span>{isSavingReadersClubConfig ? 'جاري الحفظ...' : 'حفظ وتطبيق إعدادات نادي القراء فورياً'}</span>
+                        </button>
+                      </div>
+                    </form>
                   </div>
 
                   {/* Summary Metric Stats */}
@@ -5390,6 +5609,131 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                         ))}
+                    </div>
+                  )}
+
+                  {/* Modal: Admin Add Official Reading Log */}
+                  {showAdminAddReadingLogModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                      <div style={{ background: 'white', borderRadius: '24px', padding: '2rem', maxWidth: '540px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                          <h3 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.3rem' }}>
+                            🌿 تسجيل وتوثيق قراءة معتمدة لطالب
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setShowAdminAddReadingLogModal(false)}
+                            style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontWeight: 900 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleAdminCreateReadingLog}>
+                          <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                              اسم الطالب رباعياً *:
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="مثال: يوسف كمال إغبارية"
+                              value={newAdminReadingLog.studentName}
+                              onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, studentName: e.target.value })}
+                              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                                الصف والشعبة:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="مثال: الصف الرابع (أ)"
+                                value={newAdminReadingLog.studentClass}
+                                onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, studentClass: e.target.value })}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                                التقييم بالنجوم:
+                              </label>
+                              <select
+                                value={newAdminReadingLog.rating}
+                                onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, rating: Number(e.target.value) })}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', background: 'white' }}
+                              >
+                                <option value={5}>⭐⭐⭐⭐⭐ (رائع جداً)</option>
+                                <option value={4}>⭐⭐⭐⭐ (ممتاز ومفيد)</option>
+                                <option value={3}>⭐⭐⭐ (جيد)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                                عنوان الكتاب أو القصة *:
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="عنوان القصة..."
+                                value={newAdminReadingLog.bookTitle}
+                                onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, bookTitle: e.target.value })}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                                الكاتب / المؤلف:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="اسم الكاتب..."
+                                value={newAdminReadingLog.author}
+                                onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, author: e.target.value })}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                              العبرة المستفادة أو تلخيص الطالب *:
+                            </label>
+                            <textarea
+                              required
+                              rows={3}
+                              placeholder="اكتب العبرة أو التلخيص..."
+                              value={newAdminReadingLog.takeaway}
+                              onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, takeaway: e.target.value })}
+                              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', lineHeight: 1.6 }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => setShowAdminAddReadingLogModal(false)}
+                              style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              إلغاء
+                            </button>
+                            <button
+                              type="submit"
+                              style={{ padding: '0.75rem 1.6rem', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 15px rgba(5, 150, 105, 0.4)' }}
+                            >
+                              🌿 اعتماد وتوثيق القراءة في الشجرة
+                            </button>
+                          </div>
+                        </form>
+                      </div>
                     </div>
                   )}
 

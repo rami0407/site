@@ -251,6 +251,11 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    match /readers_club_config/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
     // ==========================================
     // 8. DEFAULT CATCH-ALL (DENY BY DEFAULT)
     // ==========================================
