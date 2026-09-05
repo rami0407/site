@@ -70,15 +70,46 @@ const INITIAL_CAMPAIGN = {
   endDate: '2026-09-30',
 };
 
+const ALL_18_CLASSES = [
+  'الصف الأول (أ)',
+  'الصف الأول (ب)',
+  'الصف الأول (ج)',
+  'الصف الثاني (أ)',
+  'الصف الثاني (ب)',
+  'الصف الثاني (ج)',
+  'الصف الثالث (أ)',
+  'الصف الثالث (ب)',
+  'الصف الثالث (ج)',
+  'الصف الرابع (أ)',
+  'الصف الرابع (ب)',
+  'الصف الرابع (ج)',
+  'الصف الخامس (أ)',
+  'الصف الخامس (ب)',
+  'الصف الخامس (ج)',
+  'الصف السادس (أ)',
+  'الصف السادس (ب)',
+  'الصف السادس (ج)',
+];
+
 const INITIAL_CLASSES = {
-  'الصف الرابع - شعبة (أ)': { total: 8450, totalStudents: 34, dailyActive: 29 },
-  'الصف السادس - شعبة (ب)': { total: 7920, totalStudents: 32, dailyActive: 27 },
-  'الصف الخامس - شعبة (أ)': { total: 6810, totalStudents: 30, dailyActive: 24 },
-  'الصف الثالث - شعبة (ج)': { total: 5490, totalStudents: 33, dailyActive: 22 },
-  'الصف الخامس - شعبة (ب)': { total: 5120, totalStudents: 31, dailyActive: 20 },
-  'الصف الرابع - شعبة (ب)': { total: 4780, totalStudents: 32, dailyActive: 21 },
-  'الصف الثاني - شعبة (أ)': { total: 4320, totalStudents: 29, dailyActive: 19 },
-  'الصف الأول - شعبة (أ)':  { total: 3950, totalStudents: 30, dailyActive: 25 },
+  'الصف السادس (أ)': { total: 5820, totalStudents: 32, dailyActive: 28 },
+  'الصف السادس (ب)': { total: 5410, totalStudents: 31, dailyActive: 27 },
+  'الصف السادس (ج)': { total: 5120, totalStudents: 30, dailyActive: 25 },
+  'الصف الخامس (أ)': { total: 4950, totalStudents: 32, dailyActive: 26 },
+  'الصف الخامس (ب)': { total: 4720, totalStudents: 31, dailyActive: 23 },
+  'الصف الخامس (ج)': { total: 4510, totalStudents: 30, dailyActive: 22 },
+  'الصف الرابع (أ)': { total: 4320, totalStudents: 33, dailyActive: 25 },
+  'الصف الرابع (ب)': { total: 4180, totalStudents: 32, dailyActive: 24 },
+  'الصف الرابع (ج)': { total: 3990, totalStudents: 31, dailyActive: 21 },
+  'الصف الثالث (أ)': { total: 3820, totalStudents: 32, dailyActive: 22 },
+  'الصف الثالث (ب)': { total: 3650, totalStudents: 31, dailyActive: 21 },
+  'الصف الثالث (ج)': { total: 3490, totalStudents: 30, dailyActive: 20 },
+  'الصف الثاني (أ)': { total: 3320, totalStudents: 31, dailyActive: 23 },
+  'الصف الثاني (ب)': { total: 3180, totalStudents: 30, dailyActive: 21 },
+  'الصف الثاني (ج)': { total: 3020, totalStudents: 29, dailyActive: 20 },
+  'الصف الأول (أ)':  { total: 2890, totalStudents: 30, dailyActive: 25 },
+  'الصف الأول (ب)':  { total: 2740, totalStudents: 29, dailyActive: 24 },
+  'الصف الأول (ج)':  { total: 2580, totalStudents: 28, dailyActive: 22 },
 };
 
 const playClickTone = () => {
@@ -186,7 +217,21 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
   const [classStats, setClassStats] = useState(() => {
     const saved = localStorage.getItem('tasbih_class_stats');
-    return saved ? JSON.parse(saved) : INITIAL_CLASSES;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const merged = { ...INITIAL_CLASSES };
+        Object.keys(parsed).forEach(k => {
+          if (merged[k]) {
+            merged[k] = { ...merged[k], ...parsed[k] };
+          } else {
+            merged[k] = parsed[k];
+          }
+        });
+        return merged;
+      } catch (e) {}
+    }
+    return INITIAL_CLASSES;
   });
 
   const [settings, setSettings] = useState(() => {
@@ -210,8 +255,10 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     return localStorage.getItem('school_unified_student_name') || 'يوسف أحمد';
   });
   const [studentClass, setStudentClass] = useState(() => {
-    return localStorage.getItem('school_unified_student_grade') || 'الصف الرابع - شعبة (أ)';
+    const saved = localStorage.getItem('school_unified_student_grade');
+    return (saved && ALL_18_CLASSES.includes(saved)) ? saved : 'الصف السادس (أ)';
   });
+  const [leaderboardFilter, setLeaderboardFilter] = useState('all'); // all, 1-2, 3-4, 5-6
   const [counterSkin, setCounterSkin] = useState(() => {
     const saved = localStorage.getItem('tasbih_counter_skin');
     return saved === 'marble' ? 'marble' : 'emerald';
@@ -258,7 +305,15 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             setDhikrCounts(data.dhikrCounts);
           }
           if (data.classStats) {
-            setClassStats(data.classStats);
+            const merged = { ...INITIAL_CLASSES };
+            Object.keys(data.classStats).forEach(k => {
+              if (merged[k]) {
+                merged[k] = { ...merged[k], ...data.classStats[k] };
+              } else {
+                merged[k] = data.classStats[k];
+              }
+            });
+            setClassStats(merged);
           }
           if (data.campaign) {
             setCampaign(data.campaign);
@@ -281,7 +336,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             },
             campaign: INITIAL_CAMPAIGN,
             adhkarList: INITIAL_ADHKAR,
-            classStats: INITIAL_CLASS_STATS,
+            classStats: INITIAL_CLASSES,
             initializedAt: new Date().toISOString()
           }, { merge: true }).catch(() => {});
         }
@@ -373,14 +428,17 @@ const SchoolTasbihPortal = ({ initialTab }) => {
         return next;
       });
 
-      if (studentClass && classStats[studentClass]) {
-        setClassStats(prev => ({
-          ...prev,
-          [studentClass]: {
-            ...prev[studentClass],
-            total: prev[studentClass].total + 1
-          }
-        }));
+      if (studentClass) {
+        setClassStats(prev => {
+          const cur = prev[studentClass] || { total: 0, totalStudents: 30, dailyActive: 1 };
+          return {
+            ...prev,
+            [studentClass]: {
+              ...cur,
+              total: cur.total + 1
+            }
+          };
+        });
       }
     }
   };
@@ -966,180 +1024,474 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
         {/* TAB 3: STUDENT VIEW PREVIEW */}
         {activeTab === 'student-view' && (
-          <div style={{ maxWidth: '480px', margin: '0 auto', background: '#022c22', color: 'white', borderRadius: '24px', padding: '1.5rem', border: '2px solid #059669', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(16,185,129,0.2)', paddingBottom: '12px', marginBottom: '1rem' }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{studentName}</div>
-                <div style={{ fontSize: '0.75rem', color: '#34d399' }}>{studentClass}</div>
+          <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+            {/* Student & Class Configuration Card */}
+            <div style={{
+              background: 'linear-gradient(135deg, #064e3b, #022c22)',
+              borderRadius: '20px',
+              padding: '1.25rem',
+              marginBottom: '1rem',
+              border: '1.5px solid #10b981',
+              boxShadow: '0 8px 24px rgba(2, 44, 34, 0.4)',
+              color: 'white'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, background: 'rgba(16,185,129,0.25)', color: '#6ee7b7', padding: '3px 10px', borderRadius: '12px', border: '1px solid rgba(52,211,153,0.3)' }}>
+                  📱 مسبحة الطالب من البيت
+                </span>
+                <span style={{ fontSize: '0.78rem', color: '#a7f3d0' }}>
+                  {isCloudConnected ? '🟢 متصل بالمسابقة المباشرة' : '🔄 متصل محلياً'}
+                </span>
               </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={() => setStudentTargetRound(33)}
-                  style={{ background: studentTargetRound === 33 ? '#059669' : '#0f172a', border: 'none', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  ٣٣
-                </button>
-                <button
-                  onClick={() => setStudentTargetRound(100)}
-                  style={{ background: studentTargetRound === 100 ? '#059669' : '#0f172a', border: 'none', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  ١٠٠
-                </button>
-              </div>
-            </div>
 
-            {/* Dhikr Switcher */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '10px' }}>
-              {adhkarList.map(d => (
-                <button
-                  key={d.id}
-                  onClick={() => setStudentActiveDhikr(d.id)}
-                  style={{
-                    background: studentActiveDhikr === d.id ? '#059669' : 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'white',
-                    padding: '6px 12px',
-                    borderRadius: '12px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {d.badge} {d.shortTitle}
-                </button>
-              ))}
-            </div>
-
-            {/* Anti-Spam Warning */}
-            {antiSpamWarning && (
-              <div style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', color: '#fef08a', padding: '6px 12px', borderRadius: '10px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
-                {antiSpamWarning}
-              </div>
-            )}
-
-            {/* Active Dhikr Label */}
-            <div style={{ textAlign: 'center', margin: '1rem 0 0.5rem 0' }}>
-              <div style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 700 }}>الذكر النشط:</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '4px 0', color: 'white' }}>
-                {adhkarList.find(d => d.id === studentActiveDhikr)?.title}
-              </h3>
-            </div>
-
-            {/* REAL ELECTRONIC DIGITAL TALLY COUNTER */}
-            <div className="tasbih-real-counter-section">
-              <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
-                <img
-                  src={currentTasbihSkin.img}
-                  alt={currentTasbihSkin.name}
-                  className="tasbih-device-casing"
-                />
-
-                {/* Digital OLED Screen */}
-                <div
-                  className={`${currentTasbihSkin.screenClass} ${studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
-                >
-                  <div className="tasbih-lcd-meta">
-                    <span className="tasbih-lcd-round-badge">
-                      الهدف: {studentTargetRound}
-                    </span>
-                    <span className="tasbih-lcd-icon">
-                      {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || '✨'}
-                    </span>
-                  </div>
-
-                  {/* OLED Digits */}
-                  <div className="tasbih-lcd-digits">
-                    {String(studentSessionCount % studentTargetRound).padStart(4, '0')}
-                  </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#a7f3d0', fontWeight: 700, marginBottom: '3px' }}>
+                    اسم الطالب (اختياري):
+                  </label>
+                  <input
+                    type="text"
+                    value={studentName}
+                    onChange={(e) => {
+                      setStudentName(e.target.value);
+                      localStorage.setItem('school_unified_student_name', e.target.value);
+                    }}
+                    placeholder="اكتب اسمك..."
+                    style={{
+                      width: '100%',
+                      padding: '7px 10px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(16,185,129,0.4)',
+                      background: 'rgba(0,0,0,0.35)',
+                      color: 'white',
+                      fontSize: '0.85rem',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box'
+                    }}
+                  />
                 </div>
 
-                {/* Big Main Push Button */}
-                <button
-                  type="button"
-                  aria-label="تسبيح"
-                  className={`${currentTasbihSkin.btnClass} ${isBtnPressed ? 'pressed' : ''}`}
-                  onMouseDown={() => setIsBtnPressed(true)}
-                  onMouseUp={() => setIsBtnPressed(false)}
-                  onTouchStart={() => setIsBtnPressed(true)}
-                  onTouchEnd={() => setIsBtnPressed(false)}
-                  onClick={() => handleTapDhikr(studentActiveDhikr, 'mobile')}
-                  title="المس الزر الذهبي للتسبيح"
-                >
-                  <span className="btn-touch-hint">اضغط 👆</span>
-                </button>
-
-                {/* Small Reset Button - Local Student Session Reset Only */}
-                <button
-                  type="button"
-                  aria-label="تصفير الجلسة الحالية"
-                  className={currentTasbihSkin.resetClass}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playResetTone();
-                    setStudentSessionCount(0);
-                    showToast('تم بدء جولة تسبيح جديدة لجلسة الطالب 🔄 (عداد المدرسة العام محفوظ وآمن)');
-                  }}
-                  title="تصفير الجلسة الفردية للبدء من جديد"
-                />
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#fef08a', fontWeight: 800, marginBottom: '3px' }}>
+                    اختر صفك من الـ 18 صفاً:
+                  </label>
+                  <select
+                    value={studentClass}
+                    onChange={(e) => {
+                      const newCls = e.target.value;
+                      setStudentClass(newCls);
+                      localStorage.setItem('school_unified_student_grade', newCls);
+                      showToast(`تم تعيين صفك: ${newCls} 🎯`);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '7px 10px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #fbbf24',
+                      background: '#064e3b',
+                      color: '#fef08a',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {ALL_18_CLASSES.map(cls => (
+                      <option key={cls} value={cls} style={{ background: '#022c22', color: 'white' }}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Color Skins Selector */}
-              <div className="tasbih-skins-row">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCounterSkin('emerald');
-                    localStorage.setItem('tasbih_counter_skin', 'emerald');
-                  }}
-                  className={`tasbih-skin-choice ${counterSkin === 'emerald' ? 'active' : ''}`}
-                  title="المسبحة الزمردية الملكية"
-                >
-                  <span className="tasbih-skin-gem emerald"></span>
-                  <span>الزمردي الملكي بالذهب 👑</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCounterSkin('marble');
-                    localStorage.setItem('tasbih_counter_skin', 'marble');
-                  }}
-                  className={`tasbih-skin-choice ${counterSkin === 'marble' ? 'active' : ''}`}
-                  title="المسبحة الرخامية بالخط العربي"
-                >
-                  <span className="tasbih-skin-gem marble"></span>
-                  <span>الرخام الإيطالي المذهّب 🏛️</span>
-                </button>
+              {/* Class Live Points Banner */}
+              <div style={{
+                background: 'rgba(0,0,0,0.3)',
+                borderRadius: '12px',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                border: '1px solid rgba(251,191,36,0.3)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                  <span style={{ fontSize: '0.82rem', color: '#e2e8f0' }}>
+                    رصيد <strong>{studentClass}</strong> في المسابقة:
+                  </span>
+                </div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 10px rgba(245,158,11,0.5)' }}>
+                  {(classStats[studentClass]?.total || 0).toLocaleString('ar-EG')} تسبيحة
+                </div>
               </div>
             </div>
 
-            {/* Spiritual Merit Card */}
-            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '12px', textAlign: 'right', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fef08a', marginBottom: '4px' }}>
-                ✨ الثواب والأجر في ميزان حسناتك:
+            {/* Electronic Counter Box */}
+            <div style={{ background: '#022c22', color: 'white', borderRadius: '24px', padding: '1.5rem', border: '2px solid #059669', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(16,185,129,0.2)', paddingBottom: '12px', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📿</span>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem' }}>هدف الدورة الحالية:</div>
+                    <div style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>يتنبه العداد بنغمة خفيفة عند بلوغه</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => setStudentTargetRound(33)}
+                    style={{ background: studentTargetRound === 33 ? '#059669' : '#0f172a', border: studentTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '5px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    ٣٣
+                  </button>
+                  <button
+                    onClick={() => setStudentTargetRound(100)}
+                    style={{ background: studentTargetRound === 100 ? '#059669' : '#0f172a', border: studentTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '5px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    ١٠٠
+                  </button>
+                </div>
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#e2e8f0', margin: 0, lineHeight: 1.5 }}>
-                {studentActiveDhikr === 'salawat'
-                  ? 'صليت على النبي ﷺ ' + studentSessionCount + ' مرات، فصلى الله عليك بها ' + (studentSessionCount * 10) + ' صلوات، وحط عنك خطاياك ورفع درجاتك.'
-                  : 'غرست لنفسك ' + studentSessionCount + ' نخلة وشجرة مباركة في الجنة بإذن الله تعالى.'}
-              </p>
+
+              {/* Dhikr Switcher */}
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '10px' }}>
+                {adhkarList.map(d => (
+                  <button
+                    key={d.id}
+                    onClick={() => setStudentActiveDhikr(d.id)}
+                    style={{
+                      background: studentActiveDhikr === d.id ? 'linear-gradient(135deg, #059669, #047857)' : 'rgba(255,255,255,0.06)',
+                      border: studentActiveDhikr === d.id ? '1.5px solid #34d399' : '1px solid rgba(255,255,255,0.1)',
+                      color: 'white',
+                      padding: '6px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {d.badge} {d.shortTitle}
+                  </button>
+                ))}
+              </div>
+
+              {/* Anti-Spam Warning */}
+              {antiSpamWarning && (
+                <div style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', color: '#fef08a', padding: '6px 12px', borderRadius: '10px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
+                  {antiSpamWarning}
+                </div>
+              )}
+
+              {/* Active Dhikr Label */}
+              <div style={{ textAlign: 'center', margin: '0.75rem 0 0.5rem 0' }}>
+                <div style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 700 }}>الذكر النشط:</div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: '4px 0', color: 'white' }}>
+                  {adhkarList.find(d => d.id === studentActiveDhikr)?.title}
+                </h3>
+              </div>
+
+              {/* REAL ELECTRONIC DIGITAL TALLY COUNTER */}
+              <div className="tasbih-real-counter-section">
+                <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
+                  <img
+                    src={currentTasbihSkin.img}
+                    alt={currentTasbihSkin.name}
+                    className="tasbih-device-casing"
+                  />
+
+                  {/* Digital OLED Screen */}
+                  <div
+                    className={`${currentTasbihSkin.screenClass} ${studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
+                  >
+                    <div className="tasbih-lcd-meta">
+                      <span className="tasbih-lcd-round-badge">
+                        الهدف: {studentTargetRound}
+                      </span>
+                      <span className="tasbih-lcd-icon">
+                        {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || '✨'}
+                      </span>
+                    </div>
+
+                    {/* OLED Digits */}
+                    <div className="tasbih-lcd-digits">
+                      {String(studentSessionCount % studentTargetRound).padStart(4, '0')}
+                    </div>
+                  </div>
+
+                  {/* Big Main Push Button */}
+                  <button
+                    type="button"
+                    aria-label="تسبيح"
+                    className={`${currentTasbihSkin.btnClass} ${isBtnPressed ? 'pressed' : ''}`}
+                    onMouseDown={() => setIsBtnPressed(true)}
+                    onMouseUp={() => setIsBtnPressed(false)}
+                    onTouchStart={() => setIsBtnPressed(true)}
+                    onTouchEnd={() => setIsBtnPressed(false)}
+                    onClick={() => handleTapDhikr(studentActiveDhikr, 'mobile')}
+                    title="المس الزر الذهبي للتسبيح واحتساب نقطة لصفك"
+                  >
+                    <span className="btn-touch-hint">اضغط 👆</span>
+                  </button>
+
+                  {/* Small Reset Button - Local Student Session Reset Only */}
+                  <button
+                    type="button"
+                    aria-label="تصفير الجلسة الحالية"
+                    className={currentTasbihSkin.resetClass}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playResetTone();
+                      setStudentSessionCount(0);
+                      showToast('تم تصفير جولتك الشخصية (0..33) للبدء من جديد 🔄 رصيدك ورصيد صفك في المسابقة المدرسية محفوظ وآمن سحابياً 🛡️');
+                    }}
+                    title="تصفير دورتك الفردية الحالية (0..33) للبدء من جديد"
+                  />
+                </div>
+
+                {/* Anti-Wipe Security Notice */}
+                <div style={{
+                  background: 'rgba(16,185,129,0.12)',
+                  border: '1px solid rgba(16,185,129,0.3)',
+                  borderRadius: '12px',
+                  padding: '8px 12px',
+                  marginTop: '10px',
+                  fontSize: '0.78rem',
+                  color: '#a7f3d0',
+                  textAlign: 'center',
+                  lineHeight: 1.4
+                }}>
+                  🛡️ <strong>حماية المسابقة ونزاهة النتائج:</strong> زر التصفير الدائري الصغير يعيد دورتك الفردية الحالية فقط (0..33)، بينما نقاطك ونقاط صفك في المسابقة المدرسية العامة مسجلة في السحابة ومحمية دائماً ولا يمكن لأحد مسحها.
+                </div>
+
+                {/* Color Skins Selector */}
+                <div className="tasbih-skins-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCounterSkin('emerald');
+                      localStorage.setItem('tasbih_counter_skin', 'emerald');
+                    }}
+                    className={`tasbih-skin-choice ${counterSkin === 'emerald' ? 'active' : ''}`}
+                    title="المسبحة الزمردية الملكية"
+                  >
+                    <span className="tasbih-skin-gem emerald"></span>
+                    <span>الزمردي الملكي بالذهب 👑</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCounterSkin('marble');
+                      localStorage.setItem('tasbih_counter_skin', 'marble');
+                    }}
+                    className={`tasbih-skin-choice ${counterSkin === 'marble' ? 'active' : ''}`}
+                    title="المسبحة الرخامية بالخط العربي"
+                  >
+                    <span className="tasbih-skin-gem marble"></span>
+                    <span>الرخام الإيطالي المذهّب 🏛️</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Spiritual Merit Card */}
+              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '12px', textAlign: 'right', border: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fef08a', marginBottom: '4px' }}>
+                  ✨ الثواب والأجر في ميزان حسناتك:
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#e2e8f0', margin: 0, lineHeight: 1.5 }}>
+                  {studentActiveDhikr === 'salawat'
+                    ? 'صليت على النبي ﷺ ' + studentSessionCount + ' مرات في هذه الجلسة، فصلى الله عليك بها ' + (studentSessionCount * 10) + ' صلوات، وساهمت بـ ' + studentSessionCount + ' نقطة لصفك المبارك.'
+                    : 'غرست لنفسك ' + studentSessionCount + ' نخلة وشجرة مباركة في الجنة، ورفعت رصيد صفك في المسابقة.'}
+                </p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 4: CLASSES LEADERBOARD PREVIEW */}
+        {/* TAB 4: CLASSES LEADERBOARD PREVIEW - 18 CLASSES COMPETITION */}
         {activeTab === 'classes-view' && (
           <div>
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <span style={{ background: '#ecfdf5', color: '#065f46', fontSize: '0.85rem', fontWeight: 800, padding: '4px 14px', borderRadius: '20px' }}>
-                🏆 تنافس الشعب المدرسية الإيماني
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <span style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: '#fef08a', fontSize: '0.85rem', fontWeight: 900, padding: '5px 16px', borderRadius: '20px', border: '1.5px solid #fbbf24', boxShadow: '0 4px 12px rgba(5,150,105,0.3)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <span>🏆</span> المسابقة المدرسية الكبرى لتسبيح الصفوف والشعب (١٨ صفاً)
               </span>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: '8px 0 4px 0' }}>
-                لوحة الشرف وتنافس الصفوف
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '10px 0 4px 0' }}>
+                لوحة الشرف وتنافس الشعب المدرسية
               </h2>
-              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                يتم احتساب المراكز بناء على التفاعل الجماعي ونسبة مشاركة طلاب كل صف.
+              <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0 }}>
+                تنافس إيماني شريف بين طلاب مدرسة مشيرفة الابتدائية • كل تسبيحة من بيت الطالب ترتقي بصفه في لوحة الشرف
               </p>
+            </div>
+
+            {/* Competition Security & Anti-Cheat Guarantee Banner */}
+            <div style={{
+              background: '#f0fdf4',
+              border: '1.5px solid #10b981',
+              borderRadius: '16px',
+              padding: '12px 18px',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 8px rgba(16,185,129,0.1)'
+            }}>
+              <div style={{ fontSize: '2rem', color: '#059669' }}>🛡️</div>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#065f46' }}>
+                  نظام النزاهة التنافسية وضمان عدم المسح:
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: '2px' }}>
+                  رصيد الشعب والصفوف تراكمي وموثق في السحابة لحظة بلحظة. <strong>تم إلغاء أي إمكانية لمسح النتائج أو تصفيرها من أجهزة الطلاب والشاشات العامة</strong> لضمان تتويج الصف الأكثر اجتهاداً بكل نزاهة وأمان.
+                </div>
+              </div>
+            </div>
+
+            {/* PODIUM DISPLAY (Top 3 Classes) */}
+            {(() => {
+              const sorted = Object.entries(classStats).sort(([, a], [, b]) => b.total - a.total);
+              const top1 = sorted[0];
+              const top2 = sorted[1];
+              const top3 = sorted[2];
+
+              if (!top1) return null;
+
+              return (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '14px',
+                  marginBottom: '1.75rem'
+                }}>
+                  {/* 2nd Place */}
+                  {top2 && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                      border: '2px solid #cbd5e1',
+                      borderRadius: '18px',
+                      padding: '1.25rem',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+                    }}>
+                      <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>🥈</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>المركز الثاني (الوصيف)</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1e293b', margin: '4px 0' }}>{top2[0]}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#2563eb' }}>
+                        {top2[1].total.toLocaleString('ar-EG')}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>تسبيحة مباركة</div>
+                    </div>
+                  )}
+
+                  {/* 1st Place */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fefce8, #fef08a)',
+                    border: '2.5px solid #eab308',
+                    borderRadius: '20px',
+                    padding: '1.5rem 1.25rem',
+                    textAlign: 'center',
+                    boxShadow: '0 8px 25px rgba(234,179,8,0.25)',
+                    transform: 'scale(1.03)',
+                    position: 'relative'
+                  }}>
+                    <div style={{ position: 'absolute', top: '-12px', right: '50%', transform: 'translateX(50%)', background: '#eab308', color: '#713f12', fontWeight: 900, fontSize: '0.75rem', padding: '2px 10px', borderRadius: '12px' }}>
+                      متصدر المدرسة 👑
+                    </div>
+                    <div style={{ fontSize: '2.6rem', marginBottom: '4px' }}>🥇</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#854d0e' }}>المركز الأول (بطل التسبيح)</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#713f12', margin: '4px 0' }}>{top1[0]}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#059669', textShadow: '0 0 10px rgba(5,150,105,0.2)' }}>
+                      {top1[1].total.toLocaleString('ar-EG')}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#854d0e', fontWeight: 700 }}>تسبيحة مباركة</div>
+                  </div>
+
+                  {/* 3rd Place */}
+                  {top3 && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+                      border: '2px solid #fdba74',
+                      borderRadius: '18px',
+                      padding: '1.25rem',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+                    }}>
+                      <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>🥉</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#9a3412' }}>المركز الثالث</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#7c2d12', margin: '4px 0' }}>{top3[0]}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#d97706' }}>
+                        {top3[1].total.toLocaleString('ar-EG')}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#9a3412' }}>تسبيحة مباركة</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+              <button
+                onClick={() => setLeaderboardFilter('all')}
+                style={{
+                  background: leaderboardFilter === 'all' ? '#0f172a' : '#f1f5f9',
+                  color: leaderboardFilter === 'all' ? 'white' : '#475569',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                جميع الصفوف (١٨ شعبة)
+              </button>
+              <button
+                onClick={() => setLeaderboardFilter('1-2')}
+                style={{
+                  background: leaderboardFilter === '1-2' ? '#0f172a' : '#f1f5f9',
+                  color: leaderboardFilter === '1-2' ? 'white' : '#475569',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                صفوف الأول والثاني (٦ شعب)
+              </button>
+              <button
+                onClick={() => setLeaderboardFilter('3-4')}
+                style={{
+                  background: leaderboardFilter === '3-4' ? '#0f172a' : '#f1f5f9',
+                  color: leaderboardFilter === '3-4' ? 'white' : '#475569',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                صفوف الثالث والرابع (٦ شعب)
+              </button>
+              <button
+                onClick={() => setLeaderboardFilter('5-6')}
+                style={{
+                  background: leaderboardFilter === '5-6' ? '#0f172a' : '#f1f5f9',
+                  color: leaderboardFilter === '5-6' ? 'white' : '#475569',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                صفوف الخامس والسادس (٦ شعب)
+              </button>
             </div>
 
             {/* Classes Table */}
@@ -1152,21 +1504,48 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     <th style={{ padding: '12px 16px' }}>مجموع التسبيحات</th>
                     <th style={{ padding: '12px 16px' }}>الطلاب النشطون</th>
                     <th style={{ padding: '12px 16px' }}>نسبة المشاركة</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>الحالة</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(classStats)
+                    .filter(([cName]) => {
+                      if (leaderboardFilter === '1-2') return cName.includes('الأول') || cName.includes('الثاني');
+                      if (leaderboardFilter === '3-4') return cName.includes('الثالث') || cName.includes('الرابع');
+                      if (leaderboardFilter === '5-6') return cName.includes('الخامس') || cName.includes('السادس');
+                      return true;
+                    })
                     .sort(([, a], [, b]) => b.total - a.total)
                     .map(([cName, data], idx) => {
                       const rate = Math.round((data.dailyActive / data.totalStudents) * 100);
+                      const isMyClass = cName === studentClass;
                       return (
-                        <tr key={cName} style={{ borderBottom: '1px solid #e2e8f0', background: idx === 0 ? '#fefce8' : idx === 1 ? '#f8fafc' : 'white' }}>
+                        <tr
+                          key={cName}
+                          style={{
+                            borderBottom: '1px solid #e2e8f0',
+                            background: isMyClass ? '#ecfdf5' : idx === 0 ? '#fefce8' : idx === 1 ? '#f8fafc' : idx % 2 === 0 ? 'white' : '#fcfcfc'
+                          }}
+                        >
                           <td style={{ padding: '12px 16px', fontWeight: 800 }}>
                             {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : '#' + (idx + 1)}
                           </td>
-                          <td style={{ padding: '12px 16px', fontWeight: 700, color: '#0f172a' }}>{cName}</td>
-                          <td style={{ padding: '12px 16px', fontWeight: 800, color: '#059669' }}>{data.total.toLocaleString('ar-EG')}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#64748b' }}>{data.dailyActive} من {data.totalStudents}</td>
+                          <td style={{ padding: '12px 16px', fontWeight: 700, color: '#0f172a' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>{cName}</span>
+                              {isMyClass && (
+                                <span style={{ background: '#059669', color: 'white', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '10px' }}>
+                                  صفك 👈
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 16px', fontWeight: 900, color: '#059669', fontSize: '1rem' }}>
+                            {data.total.toLocaleString('ar-EG')}
+                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#64748b' }}>
+                            {data.dailyActive} من {data.totalStudents} طالب
+                          </td>
                           <td style={{ padding: '12px 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ width: '80px', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
@@ -1175,11 +1554,59 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                               <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{rate}%</span>
                             </div>
                           </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            {idx === 0 ? (
+                              <span style={{ background: '#fef08a', color: '#854d0e', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '8px' }}>متصدر 👑</span>
+                            ) : idx < 3 ? (
+                              <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '8px' }}>منصة التتويج ⚡</span>
+                            ) : (
+                              <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>نشط 🌟</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Bottom Call to Action for Students */}
+            <div style={{
+              background: 'linear-gradient(135deg, #022c22, #064e3b)',
+              borderRadius: '18px',
+              padding: '1.25rem',
+              textAlign: 'center',
+              color: 'white',
+              border: '1.5px solid #10b981',
+              marginTop: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fef08a' }}>
+                ⚡ تريد رفع نقاط صفك للمركز الأول في المسابقة؟
+              </div>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#a7f3d0' }}>
+                افتح مسبحة الطالب من هاتفك أو حاسوبك من بيتك الآن وابدأ بالتسبيح وذكر الله!
+              </p>
+              <button
+                onClick={() => setActiveTab('student-view')}
+                className="tasbih-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #059669, #10b981)',
+                  color: 'white',
+                  fontWeight: 900,
+                  fontSize: '0.95rem',
+                  padding: '8px 24px',
+                  borderRadius: '14px',
+                  boxShadow: '0 4px 15px rgba(16,185,129,0.4)',
+                  cursor: 'pointer',
+                  border: 'none'
+                }}
+              >
+                📱 الانتقال لمسبحة الطالب والبدء فوراً 👈
+              </button>
             </div>
           </div>
         )}
