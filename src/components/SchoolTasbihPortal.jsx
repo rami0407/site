@@ -146,10 +146,9 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     if (initialTab) return initialTab;
     const h = window.location.hash || '';
     if (h.includes('counter') || h.includes('student')) return 'student-view';
-    if (h.includes('kiosk') || h.includes('entrance')) return 'kiosk-view';
     if (h.includes('classes') || h.includes('leaderboard')) return 'classes-view';
-    if (h.includes('admin')) return 'admin-control';
-    return 'student-view'; // Default for direct mobile visits
+    if (h.includes('settings')) return 'admin-control';
+    return 'kiosk-view'; // Default so the electronic counter is immediately visible!
   });
   const [isPublished, setIsPublished] = useState(() => {
     return localStorage.getItem('tasbih_is_published') === 'true';
@@ -704,34 +703,127 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               </div>
             </div>
 
-            {/* Interactive 5 Touch Buttons */}
-            <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.85rem', color: '#6ee7b7', fontWeight: 700 }}>
-              👆 المس الأزرار أدناه لتسجيل تسبيحة فورية في شاشة المدخل:
-            </div>
+            {/* Kiosk Dhikr Selector & Interactive Electronic Counter */}
+            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '24px', padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)', textAlign: 'center' }}>
+              
+              <div style={{ fontSize: '0.95rem', color: '#a7f3d0', fontWeight: 800, marginBottom: '0.8rem' }}>
+                👇 اختر الذكر المبارك ثم اضغط على زر المسبحة الإلكترونية للتسجيل:
+              </div>
 
-            <div className="kiosk-btn-grid">
-              {adhkarList.filter(d => d.kioskActive).slice(0, 5).map(d => {
-                const isCooling = !!kioskCooldownActive[d.id];
-                return (
+              {/* Dhikr Selector Pills */}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                {adhkarList.filter(d => d.kioskActive).map(d => (
                   <button
                     key={d.id}
-                    disabled={isCooling}
-                    onClick={() => handleTapDhikr(d.id, 'kiosk')}
-                    className="kiosk-dhikr-btn"
+                    onClick={() => setStudentActiveDhikr(d.id)}
+                    style={{
+                      background: studentActiveDhikr === d.id ? 'linear-gradient(135deg, #059669, #047857)' : 'rgba(255,255,255,0.08)',
+                      border: studentActiveDhikr === d.id ? '2px solid #34d399' : '1px solid rgba(255,255,255,0.15)',
+                      color: 'white',
+                      padding: '8px 16px',
+                      borderRadius: '16px',
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: studentActiveDhikr === d.id ? '0 4px 15px rgba(5,150,105,0.4)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.7rem' }}>{d.badge}</span>
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(16,185,129,0.3)', padding: '2px 8px', borderRadius: '10px', color: '#6ee7b7' }}>+١</span>
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', margin: '8px 0' }}>
-                      {d.title}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: isCooling ? '#f59e0b' : '#94a3b8' }}>
-                      {isCooling ? 'جاري التسجيل...' : 'اضغط للتسجيل'}
-                    </div>
+                    <span style={{ fontSize: '1.2rem' }}>{d.badge}</span>
+                    <span>{d.title}</span>
+                    <span style={{ fontSize: '0.7rem', opacity: 0.8, background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '8px' }}>
+                      ({(dhikrCounts[d.id] || 0).toLocaleString('ar-EG')})
+                    </span>
                   </button>
-                );
-              })}
+                ))}
+              </div>
+
+              {/* REAL ELECTRONIC DIGITAL TALLY COUNTER IN KIOSK */}
+              <div className="tasbih-real-counter-section">
+                <div className="tasbih-device-wrapper">
+                  <img
+                    src={tasbihCounterImg}
+                    alt="المسبحة الإلكترونية"
+                    className="tasbih-device-casing"
+                    style={{ filter: getSkinFilter(counterSkin) }}
+                  />
+
+                  {/* Digital LCD Screen */}
+                  <div className={`tasbih-lcd-screen ${kioskCooldownActive[studentActiveDhikr] ? 'celebrate' : ''}`}>
+                    <div className="tasbih-lcd-meta">
+                      <span className="tasbih-lcd-round-badge">
+                        شاشة المدخل
+                      </span>
+                      <span className="tasbih-lcd-icon">
+                        {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || 'ﷺ'}
+                      </span>
+                    </div>
+
+                    {/* LCD Digits */}
+                    <div className="tasbih-lcd-digits">
+                      {String((dhikrCounts[studentActiveDhikr] || 0) % 10000).padStart(4, '0')}
+                    </div>
+                  </div>
+
+                  {/* Big Main Push Button */}
+                  <button
+                    type="button"
+                    disabled={!!kioskCooldownActive[studentActiveDhikr]}
+                    aria-label="تسبيح"
+                    className={`tasbih-main-push-btn ${isBtnPressed ? 'pressed' : ''}`}
+                    onMouseDown={() => setIsBtnPressed(true)}
+                    onMouseUp={() => setIsBtnPressed(false)}
+                    onTouchStart={() => setIsBtnPressed(true)}
+                    onTouchEnd={() => setIsBtnPressed(false)}
+                    onClick={() => handleTapDhikr(studentActiveDhikr, 'kiosk')}
+                    title="المس الزر لتسجيل التسبيحة في شاشة المدخل"
+                  >
+                    <span className="btn-touch-hint">اضغط 👆</span>
+                  </button>
+
+                  {/* Small Reset Button */}
+                  <button
+                    type="button"
+                    aria-label="تصفير العداد"
+                    className="tasbih-reset-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playResetTone();
+                      showToast('زر التصفير خاص بالمدير من لوحة التحكم');
+                    }}
+                    title="زر التصفير"
+                  />
+                </div>
+
+                {/* Skins Selector */}
+                <div className="tasbih-skins-row">
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, marginLeft: '4px' }}>
+                    شكل المسبحة:
+                  </span>
+                  {[
+                    { id: 'pink', color: '#f472b6', name: 'الزهري الطبيعي (الافتراضي)' },
+                    { id: 'emerald', color: '#10b981', name: 'زمردي مدرسة مشيرفة' },
+                    { id: 'gold', color: '#f59e0b', name: 'الملكي الذهبي' },
+                    { id: 'blue', color: '#3b82f6', name: 'الأزرق الفلكي' },
+                    { id: 'purple', color: '#a855f7', name: 'البنفسجي الإبداعي' }
+                  ].map(skin => (
+                    <button
+                      key={skin.id}
+                      title={skin.name}
+                      onClick={() => {
+                        setCounterSkin(skin.id);
+                        localStorage.setItem('tasbih_counter_skin', skin.id);
+                      }}
+                      className={`tasbih-skin-pill ${counterSkin === skin.id ? 'active' : ''}`}
+                      style={{ background: skin.color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
             </div>
           </div>
         )}
