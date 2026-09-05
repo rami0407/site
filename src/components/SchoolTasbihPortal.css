@@ -232,92 +232,104 @@
   -webkit-user-select: none;
 }
 
+/* Real Electronic Luxury Device Wrapper */
+.tasbih-real-counter-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.25rem 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .tasbih-device-wrapper {
   position: relative;
   width: 100%;
-  max-width: 320px;
+  max-width: 380px;
+  aspect-ratio: 1 / 1;
   margin: 0 auto;
-  perspective: 800px;
+  perspective: 900px;
 }
 
 .tasbih-device-casing {
   width: 100%;
+  height: 100%;
   display: block;
-  border-radius: 28px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: filter 0.3s ease, transform 0.2s ease;
+  border-radius: 36px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s ease;
   pointer-events: none;
 }
 
-/* Digital LCD Screen */
-.tasbih-lcd-screen {
+/* =========================================================
+   STYLE 1: ROYAL EMERALD & 24K GOLD (مدرسة مشيرفة الملكية)
+   ========================================================= */
+.tasbih-screen-emerald {
   position: absolute;
-  left: 21.5%;
-  top: 27.2%;
-  width: 45.5%;
-  height: 12.8%;
-  background: linear-gradient(180deg, #d3dad1 0%, #e2e8de 60%, #cbd4c9 100%);
-  border-radius: 4px;
-  box-shadow: inset 1px 2px 5px rgba(0, 0, 0, 0.45), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  left: 31.8%;
+  top: 24.6%;
+  width: 36.4%;
+  height: 17.2%;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 30%, #0e1712 0%, #060a07 100%);
+  border: 1.5px solid rgba(251, 191, 36, 0.5);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.4);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 8px;
+  justify-content: center;
+  padding: 2px 8px;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid #5a554a;
   transition: all 0.3s ease;
 }
 
-.tasbih-lcd-screen.celebrate {
-  background: linear-gradient(180deg, #fef08a 0%, #fde047 100%) !important;
-  box-shadow: inset 1px 2px 4px rgba(180, 83, 9, 0.5), 0 0 15px rgba(250, 204, 21, 0.8) !important;
+.tasbih-screen-emerald.celebrate {
+  border-color: #fef08a !important;
+  box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.7), 0 0 25px rgba(251, 191, 36, 0.9) !important;
+  animation: tasbihGoldGlow 0.5s ease-in-out infinite alternate;
 }
 
-.tasbih-lcd-meta {
+.tasbih-screen-emerald .tasbih-lcd-meta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  line-height: 1.1;
-}
-
-.tasbih-lcd-round-badge {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 9px;
-  font-weight: 900;
-  color: #475569;
-  letter-spacing: 0.5px;
-}
-
-.tasbih-lcd-icon {
-  font-size: 11px;
-  margin-top: 1px;
-}
-
-.tasbih-lcd-digits {
-  font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
-  font-size: 1.65rem;
-  font-weight: 900;
-  color: #111827;
-  letter-spacing: 2px;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
-  font-variant-numeric: tabular-nums;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fbbf24;
+  opacity: 0.9;
   line-height: 1;
+  margin-bottom: 2px;
 }
 
-/* Big Tactile Push Button */
-.tasbih-main-push-btn {
+.tasbih-screen-emerald .tasbih-lcd-round-badge {
+  font-family: 'Tajawal', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.tasbih-screen-emerald .tasbih-lcd-digits {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: #fde047;
+  letter-spacing: 3px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(253, 224, 71, 0.8), 0 0 20px rgba(245, 158, 11, 0.5);
+}
+
+.tasbih-btn-emerald-style {
   position: absolute;
-  left: 29.8%;
-  top: 57.2%;
-  width: 27.2%;
-  height: 23.5%;
+  left: 38.8%;
+  top: 51.5%;
+  width: 22.4%;
+  height: 22.4%;
   border-radius: 50%;
   cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 65%);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22) 0%, rgba(245, 158, 11, 0.1) 60%, rgba(0, 0, 0, 0.12) 100%);
+  border: 2px solid rgba(251, 191, 36, 0.45);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.35);
   transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
   outline: none;
   touch-action: manipulation;
@@ -326,81 +338,243 @@
   justify-content: center;
 }
 
-.tasbih-main-push-btn:hover {
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.05) 70%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 10px rgba(255, 255, 255, 0.35);
+.tasbih-btn-emerald-style:hover {
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), inset 0 2px 8px rgba(255, 255, 255, 0.6);
+  border-color: #fef08a;
 }
 
-.tasbih-main-push-btn:active,
-.tasbih-main-push-btn.pressed {
-  transform: scale(0.92) translateY(2px);
-  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.15);
-  background: rgba(0, 0, 0, 0.1);
+.tasbih-btn-emerald-style:active,
+.tasbih-btn-emerald-style.pressed {
+  transform: scale(0.93) translateY(2px);
+  box-shadow: inset 0 5px 12px rgba(0, 0, 0, 0.65), 0 0 15px rgba(245, 158, 11, 0.6);
+  background: rgba(0, 0, 0, 0.18);
 }
 
-.tasbih-main-push-btn .btn-touch-hint {
+.tasbih-btn-emerald-style .btn-touch-hint {
   font-size: 0.72rem;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
   pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-/* Small Reset Button */
-.tasbih-reset-btn {
+.tasbih-reset-emerald-style {
   position: absolute;
-  left: 58.5%;
-  top: 57.5%;
-  width: 10.5%;
-  height: 9%;
+  left: 62.4%;
+  top: 49.3%;
+  width: 5.4%;
+  height: 5.4%;
   border-radius: 50%;
   cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.3) 0%, rgba(0, 0, 0, 0.08) 80%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35) 0%, rgba(0, 0, 0, 0.1) 80%);
+  border: 1.5px solid rgba(251, 191, 36, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: transform 0.08s ease;
   outline: none;
   touch-action: manipulation;
 }
 
-.tasbih-reset-btn:hover {
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+.tasbih-reset-emerald-style:hover {
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
 }
 
-.tasbih-reset-btn:active {
-  transform: scale(0.88) translateY(1px);
+.tasbih-reset-emerald-style:active {
+  transform: scale(0.85) translateY(1px);
 }
 
-/* Skins Palette Switcher */
+/* =========================================================
+   STYLE 2: CARRARA MARBLE & GILDED CALLIGRAPHY (الرخامي الإيطالي)
+   ========================================================= */
+.tasbih-screen-marble {
+  position: absolute;
+  left: 28.5%;
+  top: 15.6%;
+  width: 43.0%;
+  height: 19.8%;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 30%, #141210 0%, #080706 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.5);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.tasbih-screen-marble.celebrate {
+  border-color: #fef08a !important;
+  box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.7), 0 0 25px rgba(251, 191, 36, 0.9) !important;
+  animation: tasbihGoldGlow 0.5s ease-in-out infinite alternate;
+}
+
+.tasbih-screen-marble .tasbih-lcd-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fbbf24;
+  opacity: 0.9;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.tasbih-screen-marble .tasbih-lcd-digits {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: #fde047;
+  letter-spacing: 3px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(253, 224, 71, 0.8), 0 0 20px rgba(245, 158, 11, 0.5);
+}
+
+.tasbih-btn-marble-style {
+  position: absolute;
+  left: 37.5%;
+  top: 41.8%;
+  width: 25.0%;
+  height: 25.0%;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22) 0%, rgba(245, 158, 11, 0.1) 60%, rgba(0, 0, 0, 0.12) 100%);
+  border: 2px solid rgba(251, 191, 36, 0.45);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.35);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+  outline: none;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasbih-btn-marble-style:hover {
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+  border-color: #fef08a;
+}
+
+.tasbih-btn-marble-style:active,
+.tasbih-btn-marble-style.pressed {
+  transform: scale(0.93) translateY(2px);
+  box-shadow: inset 0 5px 12px rgba(0, 0, 0, 0.65), 0 0 15px rgba(245, 158, 11, 0.6);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.tasbih-btn-marble-style .btn-touch-hint {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.tasbih-reset-marble-style {
+  position: absolute;
+  left: 45.0%;
+  top: 71.0%;
+  width: 10.0%;
+  height: 10.0%;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35) 0%, rgba(0, 0, 0, 0.1) 80%);
+  border: 1.5px solid rgba(251, 191, 36, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.08s ease;
+  outline: none;
+  touch-action: manipulation;
+}
+
+.tasbih-reset-marble-style:hover {
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+}
+
+.tasbih-reset-marble-style:active {
+  transform: scale(0.85) translateY(1px);
+}
+
+/* Common Celebration Keyframes */
+@keyframes tasbihGoldGlow {
+  0% {
+    box-shadow: inset 0 0 12px rgba(251, 191, 36, 0.6), 0 0 15px rgba(251, 191, 36, 0.7);
+  }
+  100% {
+    box-shadow: inset 0 0 22px rgba(251, 191, 36, 0.9), 0 0 30px rgba(251, 191, 36, 1);
+  }
+}
+
+/* =========================================================
+   SKINS SELECTOR BAR
+   ========================================================= */
 .tasbih-skins-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  background: rgba(0, 0, 0, 0.25);
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.tasbih-skin-choice {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.tasbih-skin-pill {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.tasbih-skin-pill:hover {
-  transform: scale(1.18);
-  border-color: white;
+.tasbih-skin-choice:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(251, 191, 36, 0.5);
+  color: white;
+  transform: translateY(-1px);
 }
 
-.tasbih-skin-pill.active {
-  transform: scale(1.25);
-  border-color: #fef08a;
-  box-shadow: 0 0 10px rgba(254, 240, 138, 0.8);
+.tasbih-skin-choice.active {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.4), rgba(4, 120, 87, 0.7));
+  border-color: #fbbf24;
+  color: #fef08a;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.35);
 }
+
+.tasbih-skin-gem {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.tasbih-skin-gem.emerald {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.tasbih-skin-gem.marble {
+  background: #f8fafc;
+  border: 1px solid #d97706;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+}
+
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './SchoolTasbihPortal.css';
-import tasbihCounterImg from '../assets/tasbih_counter_clean.jpg';
+import tasbihEmeraldImg from '../assets/tasbih_emerald.jpg';
+import tasbihMarbleImg from '../assets/tasbih_marble.jpg';
 
 const INITIAL_ADHKAR = [
   {
@@ -210,22 +211,31 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     return localStorage.getItem('school_unified_student_grade') || 'الصف الرابع - شعبة (أ)';
   });
   const [counterSkin, setCounterSkin] = useState(() => {
-    return localStorage.getItem('tasbih_counter_skin') || 'pink';
+    const saved = localStorage.getItem('tasbih_counter_skin');
+    return saved === 'marble' ? 'marble' : 'emerald';
   });
   const [isBtnPressed, setIsBtnPressed] = useState(false);
   const [antiSpamWarning, setAntiSpamWarning] = useState('');
   const lastStudentTapRef = useRef(0);
   const [kioskCooldownActive, setKioskCooldownActive] = useState({});
 
-  const getSkinFilter = (skin) => {
-    switch (skin) {
-      case 'emerald': return 'hue-rotate(240deg) saturate(1.25) brightness(0.95)';
-      case 'gold': return 'hue-rotate(185deg) saturate(1.4) brightness(1.05)';
-      case 'blue': return 'hue-rotate(330deg) saturate(1.3) brightness(0.95)';
-      case 'purple': return 'hue-rotate(75deg) saturate(1.2)';
-      default: return 'none';
-    }
-  };
+  const currentTasbihSkin = counterSkin === 'marble'
+    ? {
+        id: 'marble',
+        name: 'الرخامي الإيطالي المذهّب',
+        img: tasbihMarbleImg,
+        screenClass: 'tasbih-screen-marble',
+        btnClass: 'tasbih-btn-marble-style',
+        resetClass: 'tasbih-reset-marble-style',
+      }
+    : {
+        id: 'emerald',
+        name: 'الزمردي الملكي بالذهب (مدرسة مشيرفة)',
+        img: tasbihEmeraldImg,
+        screenClass: 'tasbih-screen-emerald',
+        btnClass: 'tasbih-btn-emerald-style',
+        resetClass: 'tasbih-reset-emerald-style',
+      };
 
   useEffect(() => {
     localStorage.setItem('tasbih_is_published', String(isPublished));
@@ -743,16 +753,15 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
               {/* REAL ELECTRONIC DIGITAL TALLY COUNTER IN KIOSK */}
               <div className="tasbih-real-counter-section">
-                <div className="tasbih-device-wrapper">
+                <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
                   <img
-                    src={tasbihCounterImg}
-                    alt="المسبحة الإلكترونية"
+                    src={currentTasbihSkin.img}
+                    alt={currentTasbihSkin.name}
                     className="tasbih-device-casing"
-                    style={{ filter: getSkinFilter(counterSkin) }}
                   />
 
-                  {/* Digital LCD Screen */}
-                  <div className={`tasbih-lcd-screen ${kioskCooldownActive[studentActiveDhikr] ? 'celebrate' : ''}`}>
+                  {/* Digital OLED Screen */}
+                  <div className={`${currentTasbihSkin.screenClass} ${kioskCooldownActive[studentActiveDhikr] ? 'celebrate' : ''}`}>
                     <div className="tasbih-lcd-meta">
                       <span className="tasbih-lcd-round-badge">
                         شاشة المدخل
@@ -762,7 +771,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                       </span>
                     </div>
 
-                    {/* LCD Digits */}
+                    {/* OLED Digits */}
                     <div className="tasbih-lcd-digits">
                       {String((dhikrCounts[studentActiveDhikr] || 0) % 10000).padStart(4, '0')}
                     </div>
@@ -773,13 +782,13 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     type="button"
                     disabled={!!kioskCooldownActive[studentActiveDhikr]}
                     aria-label="تسبيح"
-                    className={`tasbih-main-push-btn ${isBtnPressed ? 'pressed' : ''}`}
+                    className={`${currentTasbihSkin.btnClass} ${isBtnPressed ? 'pressed' : ''}`}
                     onMouseDown={() => setIsBtnPressed(true)}
                     onMouseUp={() => setIsBtnPressed(false)}
                     onTouchStart={() => setIsBtnPressed(true)}
                     onTouchEnd={() => setIsBtnPressed(false)}
                     onClick={() => handleTapDhikr(studentActiveDhikr, 'kiosk')}
-                    title="المس الزر لتسجيل التسبيحة في شاشة المدخل"
+                    title="المس الزر الذهبي لتسجيل التسبيحة"
                   >
                     <span className="btn-touch-hint">اضغط 👆</span>
                   </button>
@@ -788,7 +797,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   <button
                     type="button"
                     aria-label="تصفير العداد"
-                    className="tasbih-reset-btn"
+                    className={currentTasbihSkin.resetClass}
                     onClick={(e) => {
                       e.stopPropagation();
                       playResetTone();
@@ -800,27 +809,30 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
                 {/* Skins Selector */}
                 <div className="tasbih-skins-row">
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, marginLeft: '4px' }}>
-                    شكل المسبحة:
-                  </span>
-                  {[
-                    { id: 'pink', color: '#f472b6', name: 'الزهري الطبيعي (الافتراضي)' },
-                    { id: 'emerald', color: '#10b981', name: 'زمردي مدرسة مشيرفة' },
-                    { id: 'gold', color: '#f59e0b', name: 'الملكي الذهبي' },
-                    { id: 'blue', color: '#3b82f6', name: 'الأزرق الفلكي' },
-                    { id: 'purple', color: '#a855f7', name: 'البنفسجي الإبداعي' }
-                  ].map(skin => (
-                    <button
-                      key={skin.id}
-                      title={skin.name}
-                      onClick={() => {
-                        setCounterSkin(skin.id);
-                        localStorage.setItem('tasbih_counter_skin', skin.id);
-                      }}
-                      className={`tasbih-skin-pill ${counterSkin === skin.id ? 'active' : ''}`}
-                      style={{ background: skin.color }}
-                    />
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCounterSkin('emerald');
+                      localStorage.setItem('tasbih_counter_skin', 'emerald');
+                    }}
+                    className={`tasbih-skin-choice ${counterSkin === 'emerald' ? 'active' : ''}`}
+                    title="المسبحة الزمردية الملكية"
+                  >
+                    <span className="tasbih-skin-gem emerald"></span>
+                    <span>الزمردي الملكي بالذهب 👑</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCounterSkin('marble');
+                      localStorage.setItem('tasbih_counter_skin', 'marble');
+                    }}
+                    className={`tasbih-skin-choice ${counterSkin === 'marble' ? 'active' : ''}`}
+                    title="المسبحة الرخامية بالخط العربي"
+                  >
+                    <span className="tasbih-skin-gem marble"></span>
+                    <span>الرخام الإيطالي المذهّب 🏛️</span>
+                  </button>
                 </div>
               </div>
 
@@ -892,28 +904,27 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
             {/* REAL ELECTRONIC DIGITAL TALLY COUNTER */}
             <div className="tasbih-real-counter-section">
-              <div className="tasbih-device-wrapper">
+              <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
                 <img
-                  src={tasbihCounterImg}
-                  alt="المسبحة الإلكترونية"
+                  src={currentTasbihSkin.img}
+                  alt={currentTasbihSkin.name}
                   className="tasbih-device-casing"
-                  style={{ filter: getSkinFilter(counterSkin) }}
                 />
 
-                {/* Digital LCD Screen */}
+                {/* Digital OLED Screen */}
                 <div
-                  className={`tasbih-lcd-screen ${studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
+                  className={`${currentTasbihSkin.screenClass} ${studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
                 >
                   <div className="tasbih-lcd-meta">
                     <span className="tasbih-lcd-round-badge">
-                      {studentTargetRound}
+                      الهدف: {studentTargetRound}
                     </span>
                     <span className="tasbih-lcd-icon">
                       {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || '✨'}
                     </span>
                   </div>
 
-                  {/* LCD Digits */}
+                  {/* OLED Digits */}
                   <div className="tasbih-lcd-digits">
                     {String(studentSessionCount % studentTargetRound).padStart(4, '0')}
                   </div>
@@ -923,13 +934,13 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                 <button
                   type="button"
                   aria-label="تسبيح"
-                  className={`tasbih-main-push-btn ${isBtnPressed ? 'pressed' : ''}`}
+                  className={`${currentTasbihSkin.btnClass} ${isBtnPressed ? 'pressed' : ''}`}
                   onMouseDown={() => setIsBtnPressed(true)}
                   onMouseUp={() => setIsBtnPressed(false)}
                   onTouchStart={() => setIsBtnPressed(true)}
                   onTouchEnd={() => setIsBtnPressed(false)}
                   onClick={() => handleTapDhikr(studentActiveDhikr, 'mobile')}
-                  title="المس الزر للتسبيح"
+                  title="المس الزر الذهبي للتسبيح"
                 >
                   <span className="btn-touch-hint">اضغط 👆</span>
                 </button>
@@ -938,7 +949,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                 <button
                   type="button"
                   aria-label="تصفير العداد"
-                  className="tasbih-reset-btn"
+                  className={currentTasbihSkin.resetClass}
                   onClick={(e) => {
                     e.stopPropagation();
                     playResetTone();
@@ -951,27 +962,30 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
               {/* Color Skins Selector */}
               <div className="tasbih-skins-row">
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, marginLeft: '4px' }}>
-                  شكل المسبحة:
-                </span>
-                {[
-                  { id: 'pink', color: '#f472b6', name: 'الزهري الطبيعي (الافتراضي)' },
-                  { id: 'emerald', color: '#10b981', name: 'زمردي مدرسة مشيرفة' },
-                  { id: 'gold', color: '#f59e0b', name: 'الملكي الذهبي' },
-                  { id: 'blue', color: '#3b82f6', name: 'الأزرق الفلكي' },
-                  { id: 'purple', color: '#a855f7', name: 'البنفسجي الإبداعي' }
-                ].map(skin => (
-                  <button
-                    key={skin.id}
-                    title={skin.name}
-                    onClick={() => {
-                      setCounterSkin(skin.id);
-                      localStorage.setItem('tasbih_counter_skin', skin.id);
-                    }}
-                    className={`tasbih-skin-pill ${counterSkin === skin.id ? 'active' : ''}`}
-                    style={{ background: skin.color }}
-                  />
-                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCounterSkin('emerald');
+                    localStorage.setItem('tasbih_counter_skin', 'emerald');
+                  }}
+                  className={`tasbih-skin-choice ${counterSkin === 'emerald' ? 'active' : ''}`}
+                  title="المسبحة الزمردية الملكية"
+                >
+                  <span className="tasbih-skin-gem emerald"></span>
+                  <span>الزمردي الملكي بالذهب 👑</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCounterSkin('marble');
+                    localStorage.setItem('tasbih_counter_skin', 'marble');
+                  }}
+                  className={`tasbih-skin-choice ${counterSkin === 'marble' ? 'active' : ''}`}
+                  title="المسبحة الرخامية بالخط العربي"
+                >
+                  <span className="tasbih-skin-gem marble"></span>
+                  <span>الرخام الإيطالي المذهّب 🏛️</span>
+                </button>
               </div>
             </div>
 
