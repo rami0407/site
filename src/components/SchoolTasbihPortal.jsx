@@ -361,7 +361,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               padding: '0.5rem 1.1rem',
             }}
           >
-            <i className={as }></i>
+            <i className={isPublished ? 'fas fa-eye-slash' : 'fas fa-bullhorn'}></i>
             {isPublished ? 'إلغاء النشر وجعلها سرية' : '🚀 نشر المنظومة للجمهور في الموقع'}
           </button>
         </div>
