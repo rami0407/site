@@ -67,6 +67,21 @@ const Hero = () => {
   const [currentQuote, setCurrentQuote] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [stars, setStars] = useState([]);
+  const [isTasbihPublished, setIsTasbihPublished] = useState(() => {
+    return localStorage.getItem('tasbih_is_published') !== 'false';
+  });
+
+  useEffect(() => {
+    const handlePublishSync = () => {
+      setIsTasbihPublished(localStorage.getItem('tasbih_is_published') !== 'false');
+    };
+    window.addEventListener('tasbihPublishChanged', handlePublishSync);
+    window.addEventListener('storage', handlePublishSync);
+    return () => {
+      window.removeEventListener('tasbihPublishChanged', handlePublishSync);
+      window.removeEventListener('storage', handlePublishSync);
+    };
+  }, []);
 
   // Generate randomized stars for cosmic background
   useEffect(() => {
@@ -224,26 +239,28 @@ const Hero = () => {
               📚 رحلة الـ 10 كتب وشجرة التميز 🌿
             </button>
 
-            <button 
-              onClick={() => window.location.hash = '#/tasbih'} 
-              className="btn" 
-              style={{
-                background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)',
-                color: '#fef08a',
-                border: '1.5px solid #fbbf24',
-                fontWeight: 900,
-                padding: '0.85rem 1.4rem',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(5, 150, 105, 0.45), 0 0 15px rgba(251, 191, 36, 0.35)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer'
-              }}
-            >
-              <span style={{ fontSize: '1.25rem' }}>📿</span>
-              <span>بوابة الذكر ومسبحة مشيرفة 👑</span>
-            </button>
+            {isTasbihPublished && (
+              <button 
+                onClick={() => window.location.hash = '#/tasbih'} 
+                className="btn" 
+                style={{
+                  background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)',
+                  color: '#fef08a',
+                  border: '1.5px solid #fbbf24',
+                  fontWeight: 900,
+                  padding: '0.85rem 1.4rem',
+                  borderRadius: '16px',
+                  boxShadow: '0 8px 25px rgba(5, 150, 105, 0.45), 0 0 15px rgba(251, 191, 36, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span style={{ fontSize: '1.25rem' }}>📿</span>
+                <span>بوابة الذكر ومسبحة مشيرفة 👑</span>
+              </button>
+            )}
 
             <button onClick={() => window.location.hash = '#/monawaat'} className="btn" style={{
               background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)',

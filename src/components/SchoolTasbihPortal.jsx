@@ -483,73 +483,40 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
   return (
     <div className="tasbih-portal-root">
-      {/* 1. TOP SECRET ADMIN BAR */}
-      <div className="tasbih-secret-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {isPublished ? (
-            <span className="tasbih-badge-published">
-              <i className="fas fa-globe"></i> منشورة للجمهور على الموقع
-            </span>
-          ) : (
-            <span className="tasbih-badge-secret">
-              <i className="fas fa-lock"></i> مسودة سرية خاصة بالمدير (غير منشورة)
-            </span>
-          )}
-          <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
-            🕌 منظومة التسبيح والأذكار المدرسية التفاعلية
-          </span>
-        </div>
-
-        {/* Publishing Toggle & Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={() => {
-              const newState = !isPublished;
-              setIsPublished(newState);
-              localStorage.setItem('tasbih_is_published', String(newState));
-              window.dispatchEvent(new Event('tasbihPublishChanged'));
-              showToast(newState ? 'تم نشر المنظومة وظهورها في قائمة الموقع للجمهور 🚀' : 'تم إلغاء النشر وإخفاؤها لتكون مسودة سرية خاصة بك 🔒');
-            }}
-            className="tasbih-btn"
-            style={{
-              background: isPublished ? '#dc2626' : '#10b981',
-              color: 'white',
-              fontSize: '0.85rem',
-              padding: '0.5rem 1.1rem',
-            }}
-          >
-            <i className={isPublished ? 'fas fa-eye-slash' : 'fas fa-bullhorn'}></i>
-            {isPublished ? 'إلغاء النشر وجعلها سرية' : '🚀 نشر المنظومة للجمهور في الموقع'}
-          </button>
-        </div>
-      </div>
-
-      {/* 2. NAVIGATION TABS */}
+      {/* NAVIGATION TABS */}
       <div className="tasbih-nav-tabs">
-        <button
-          className={'tasbih-tab-btn ' + (activeTab === 'admin-control' ? 'active' : '')}
-          onClick={() => setActiveTab('admin-control')}
-        >
-          <i className="fas fa-sliders-h"></i> ⚙️ لوحة التحكم والإعدادات الشاملة
-        </button>
         <button
           className={'tasbih-tab-btn ' + (activeTab === 'kiosk-view' ? 'active' : '')}
           onClick={() => setActiveTab('kiosk-view')}
         >
-          <i className="fas fa-tv"></i> 🏛️ معاينة شاشة المدخل الكبرى (Kiosk)
+          <i className="fas fa-tv"></i> 🏛️ شاشة المدخل الكبرى (Kiosk)
         </button>
         <button
           className={'tasbih-tab-btn ' + (activeTab === 'student-view' ? 'active' : '')}
           onClick={() => setActiveTab('student-view')}
         >
-          <i className="fas fa-mobile-alt"></i> 📱 معاينة مسبحة الطالب الذكية
+          <i className="fas fa-mobile-alt"></i> 📱 مسبحة الطالب الذكية
         </button>
         <button
           className={'tasbih-tab-btn ' + (activeTab === 'classes-view' ? 'active' : '')}
           onClick={() => setActiveTab('classes-view')}
         >
-          <i className="fas fa-trophy"></i> 🏆 معاينة لوحة تنافس الصفوف
+          <i className="fas fa-trophy"></i> 🏆 لوحة تنافس الصفوف
         </button>
+        <button
+          className={'tasbih-tab-btn ' + (activeTab === 'admin-control' ? 'active' : '')}
+          onClick={() => setActiveTab('admin-control')}
+        >
+          <i className="fas fa-sliders-h"></i> ⚙️ لوحة التحكم والإعدادات
+        </button>
+        <a
+          href="#/"
+          className="tasbih-tab-btn"
+          style={{ marginRight: 'auto', background: 'rgba(255, 255, 255, 0.08)', color: '#fef08a', textDecoration: 'none', border: '1px solid rgba(251, 191, 36, 0.3)' }}
+          title="العودة إلى الصفحة الرئيسية للموقع"
+        >
+          <i className="fas fa-home"></i> 🏠 العودة للرئيسية
+        </a>
       </div>
 
       {/* Toast Alert */}
@@ -565,6 +532,45 @@ const SchoolTasbihPortal = ({ initialTab }) => {
         {/* TAB 1: ADMIN CONTROL & SETTINGS */}
         {activeTab === 'admin-control' && (
           <div>
+            {/* Page Publishing & Site Visibility Card */}
+            <div className="tasbih-card" style={{ border: '2px solid #059669', background: '#f0fdf4', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.8rem' }}>{isPublished ? '🌐' : '🔒'}</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#065f46' }}>
+                      حالة نشر زاوية التسبيح في الموقع العام: {isPublished ? <span style={{ color: '#059669' }}>(منشورة للجمهور ✅)</span> : <span style={{ color: '#dc2626' }}>(مخفية كمسودة سرية 🔒)</span>}
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#047857' }}>
+                      {isPublished 
+                        ? 'الزاوية ظاهرة حالياً في واجهة الموقع الرئيسية لجميع الطلاب والزوار.'
+                        : 'الزاوية غير منشورة ومخفية عن الطلاب، ومتاحة للمدير فقط للمعاينة والتجهيز.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const newState = !isPublished;
+                    setIsPublished(newState);
+                    localStorage.setItem('tasbih_is_published', String(newState));
+                    window.dispatchEvent(new Event('tasbihPublishChanged'));
+                    showToast(newState ? 'تم نشر المنظومة وظهورها في واجهة الموقع للجمهور 🚀' : 'تم إلغاء النشر وإخفاؤها لتكون مسودة خاصة بك 🔒');
+                  }}
+                  className="tasbih-btn"
+                  style={{
+                    background: isPublished ? '#dc2626' : '#059669',
+                    color: 'white',
+                    fontWeight: 800,
+                    padding: '8px 18px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  <i className={isPublished ? 'fas fa-eye-slash' : 'fas fa-bullhorn'}></i>
+                  {isPublished ? 'إلغاء النشر وإخفاء الزاوية عن الموقع' : '🚀 نشر الزاوية وإظهارها للجمهور'}
+                </button>
+              </div>
+            </div>
+
             {/* Quick Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '1.5rem' }}>
               <div className="tasbih-card" style={{ textAlign: 'center', background: '#f0fdf4', borderColor: '#bbf7d0' }}>
