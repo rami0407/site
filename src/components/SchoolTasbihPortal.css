@@ -1,0 +1,246 @@
+﻿/* SchoolTasbihPortal.css - Deep Emerald & Gold Islamic Portal Theme */
+
+.tasbih-portal-root {
+  font-family: 'Tajawal', sans-serif;
+  direction: rtl;
+  color: #1e293b;
+  margin: -1rem;
+}
+
+/* Secret Admin Control Bar */
+.tasbih-secret-bar {
+  background: linear-gradient(135deg, #022c22, #064e3b);
+  color: white;
+  padding: 1.25rem 1.75rem;
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 2px solid #10b981;
+  box-shadow: 0 4px 15px rgba(2, 44, 34, 0.3);
+}
+
+.tasbih-badge-secret {
+  background: #f59e0b;
+  color: #78350f;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.tasbih-badge-published {
+  background: #10b981;
+  color: #022c22;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+/* Nav Tabs */
+.tasbih-nav-tabs {
+  display: flex;
+  background: #0f172a;
+  padding: 8px 12px;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid #1e293b;
+}
+
+.tasbih-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.tasbih-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.tasbih-tab-btn.active {
+  background: #059669;
+  color: white;
+  border-color: #34d399;
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.4);
+}
+
+/* Content Area */
+.tasbih-content-area {
+  background: #f8fafc;
+  padding: 1.75rem;
+  border-radius: 0 0 18px 18px;
+  min-height: 550px;
+}
+
+/* Cards & Containers */
+.tasbih-card {
+  background: white;
+  border-radius: 18px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  margin-bottom: 1.25rem;
+}
+
+.tasbih-card-dark {
+  background: #022c22;
+  color: white;
+  border-radius: 24px;
+  padding: 2rem;
+  border: 2px solid #059669;
+  box-shadow: 0 10px 30px rgba(2, 44, 34, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Form Inputs */
+.tasbih-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  background: white;
+  color: #0f172a;
+  transition: border-color 0.2s;
+}
+
+.tasbih-input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+/* Buttons */
+.tasbih-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.tasbih-btn:active {
+  transform: scale(0.97);
+}
+
+.tasbih-btn-emerald {
+  background: #059669;
+  color: white;
+}
+.tasbih-btn-emerald:hover {
+  background: #047857;
+}
+
+.tasbih-btn-gold {
+  background: #d97706;
+  color: white;
+}
+.tasbih-btn-gold:hover {
+  background: #b45309;
+}
+
+.tasbih-btn-dark {
+  background: #0f172a;
+  color: white;
+}
+.tasbih-btn-dark:hover {
+  background: #1e293b;
+}
+
+.tasbih-btn-danger {
+  background: #dc2626;
+  color: white;
+}
+.tasbih-btn-danger:hover {
+  background: #b91c1c;
+}
+
+/* Kiosk Button Grid */
+.kiosk-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.kiosk-dhikr-btn {
+  background: linear-gradient(135deg, #0f172a, #064e3b);
+  border: 2px solid #10b981;
+  color: white;
+  border-radius: 18px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 130px;
+}
+
+.kiosk-dhikr-btn:hover {
+  transform: translateY(-3px);
+  border-color: #34d399;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.kiosk-dhikr-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Giant Circle Tap Pad */
+.student-tap-circle {
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #065f46 0%, #022c22 100%);
+  border: 6px solid #10b981;
+  box-shadow: 0 0 45px rgba(16, 185, 129, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 1.5rem auto;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.student-tap-circle:active {
+  transform: scale(0.94);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+}

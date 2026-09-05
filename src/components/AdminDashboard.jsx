@@ -25,6 +25,7 @@ import ScientificArticles from './ScientificArticles';
 import FormAnalyticsView from './FormAnalyticsView';
 import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
 import EduStaffingPortal from './EduStaffingPortal';
+import SchoolTasbihPortal from './SchoolTasbihPortal';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -4084,6 +4085,28 @@ const AdminDashboard = () => {
               <i className="fas fa-user-graduate" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
               🔒 منصة التوظيف والخدمات (مسودة)
             </button>
+
+            {/* زر سري: منظومة التسبيح والأذكار المدرسية التفاعلية */}
+            <button 
+              onClick={() => setActiveTab('tasbih-admin')} 
+              className={`filter-chip ${activeTab === 'tasbih-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'tasbih-admin' ? '#065f46' : '#ecfdf5',
+                color: activeTab === 'tasbih-admin' ? 'white' : '#064e3b',
+                fontWeight: 800,
+                border: '2px solid #6ee7b7',
+                boxShadow: '0 2px 6px rgba(6,95,70,0.15)',
+                marginTop: '0.5rem'
+              }}
+            >
+              <i className="fas fa-mosque" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🔒 منظومة التسبيح المدرسية (مسودة)
+            </button>
           </div>
         </aside>
 
@@ -7463,6 +7486,13 @@ const AdminDashboard = () => {
               {activeTab === 'edu-staffing-admin' && (
                 <div>
                   <EduStaffingPortal />
+                </div>
+              )}
+
+              {/* تبويب سري: منظومة التسبيح والأذكار المدرسية التفاعلية */}
+              {activeTab === 'tasbih-admin' && (
+                <div>
+                  <SchoolTasbihPortal />
                 </div>
               )}
 
