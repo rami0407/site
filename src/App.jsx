@@ -51,6 +51,7 @@ import KioskDisplayPage from './components/KioskDisplayPage';
 import SmartFormResponder from './components/SmartFormResponder';
 import PrepDayExcellencePage from './components/PrepDayExcellencePage';
 import AdminPanel from './components/AdminPanel';
+import SchoolTasbihPortal from './components/SchoolTasbihPortal';
 import './App.css';
 
 
@@ -325,6 +326,7 @@ function App() {
   const isNewsView = currentHash.includes('news');
   const isGalleryView = currentHash.includes('gallery');
   const isCalendarView = currentHash.includes('calendar');
+  const isTasbihView = currentHash.includes('tasbih');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isAdminView) {
@@ -350,6 +352,17 @@ function App() {
       <>
         <Loader />
         <ReadersClubPage />
+      </>
+    );
+  }
+
+  if (isTasbihView) {
+    return (
+      <>
+        <Loader />
+        <div style={{ minHeight: '100vh', background: '#022c22', padding: '1rem' }}>
+          <SchoolTasbihPortal />
+        </div>
       </>
     );
   }

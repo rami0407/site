@@ -56,6 +56,19 @@ const Navbar = () => {
         });
       }
 
+      if (localStorage.getItem('tasbih_is_published') === 'true') {
+        if (!items.some(item => item.id === 'nav_tasbih' || item.target === 'tasbih')) {
+          items.push({
+            id: "nav_tasbih",
+            label: "🕌 منظومة التسبيح",
+            type: "page",
+            target: "tasbih",
+            category: "main",
+            order: 8
+          });
+        }
+      }
+
       const filteredItems = items.filter(item => item.id !== 'nav_appointments' && item.target !== 'appointments');
       filteredItems.sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -99,12 +112,14 @@ const Navbar = () => {
     };
 
     window.addEventListener('navigationUpdated', handleNavUpdate);
+    window.addEventListener('tasbihPublishChanged', handleNavUpdate);
     window.addEventListener('storage', handleNavUpdate);
     window.addEventListener('hashchange', handleNavUpdate);
 
     return () => {
       unsubscribe();
       window.removeEventListener('navigationUpdated', handleNavUpdate);
+      window.removeEventListener('tasbihPublishChanged', handleNavUpdate);
       window.removeEventListener('storage', handleNavUpdate);
       window.removeEventListener('hashchange', handleNavUpdate);
     };

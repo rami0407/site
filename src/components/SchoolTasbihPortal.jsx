@@ -116,8 +116,16 @@ const playChimeTone = () => {
   } catch (e) {}
 };
 
-const SchoolTasbihPortal = () => {
-  const [activeTab, setActiveTab] = useState('admin-control');
+const SchoolTasbihPortal = ({ initialTab }) => {
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialTab) return initialTab;
+    const h = window.location.hash || '';
+    if (h.includes('counter') || h.includes('student')) return 'student-view';
+    if (h.includes('kiosk') || h.includes('entrance')) return 'kiosk-view';
+    if (h.includes('classes') || h.includes('leaderboard')) return 'classes-view';
+    if (h.includes('admin')) return 'admin-control';
+    return 'student-view'; // Default for direct mobile visits
+  });
   const [isPublished, setIsPublished] = useState(() => {
     return localStorage.getItem('tasbih_is_published') === 'true';
   });
@@ -341,7 +349,9 @@ const SchoolTasbihPortal = () => {
             onClick={() => {
               const newState = !isPublished;
               setIsPublished(newState);
-              showToast(newState ? 'تم تفعيل نشر المنظومة للجمهور بنجاح 🚀' : 'تم تحويل المنظومة إلى مسودة سرية خاصة بلوحة التحكم 🔒');
+              localStorage.setItem('tasbih_is_published', String(newState));
+              window.dispatchEvent(new Event('tasbihPublishChanged'));
+              showToast(newState ? 'تم نشر المنظومة وظهورها في قائمة الموقع للجمهور 🚀' : 'تم إلغاء النشر وإخفاؤها لتكون مسودة سرية خاصة بك 🔒');
             }}
             className="tasbih-btn"
             style={{
