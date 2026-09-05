@@ -185,7 +185,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     return 'kiosk-view'; // Default so the electronic counter is immediately visible!
   });
   const [isPublished, setIsPublished] = useState(() => {
-    return localStorage.getItem('tasbih_is_published') === 'true';
+    return localStorage.getItem('tasbih_is_published') !== 'false';
   });
 
   const [globalTotal, setGlobalTotal] = useState(() => {
@@ -294,7 +294,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
   // Real-time Cloud Synchronization across all devices (Firebase Firestore)
   useEffect(() => {
     try {
-      const liveDocRef = doc(db, 'school_tasbih', 'live_portal');
+      const liveDocRef = doc(db, 'students', 'tasbih_live_portal');
       const unsubscribe = onSnapshot(liveDocRef, (snap) => {
         if (snap.exists()) {
           const data = snap.data();
@@ -321,17 +321,22 @@ const SchoolTasbihPortal = ({ initialTab }) => {
           if (data.adhkarList && Array.isArray(data.adhkarList)) {
             setAdhkarList(data.adhkarList);
           }
+          if (typeof data.isPublished === 'boolean') {
+            setIsPublished(data.isPublished);
+            localStorage.setItem('tasbih_is_published', String(data.isPublished));
+          }
           setIsCloudConnected(true);
         } else {
           // Initialize first time in cloud
           setDoc(liveDocRef, {
-            globalTotal: 67843,
+            globalTotal: 67852,
+            isPublished: true,
             dhikrCounts: {
-              salawat: 42351,
+              salawat: 42352,
               subhanallah: 11200,
               alhamdulillah: 6840,
               lailahaillallah: 4120,
-              allahuakbar: 3332,
+              allahuakbar: 3340,
               astaghfirullah: 0,
             },
             campaign: INITIAL_CAMPAIGN,
@@ -403,7 +408,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
 
     // 2. Real-time Cloud Broadcast to Firebase so all devices update together
     try {
-      const liveDocRef = doc(db, 'school_tasbih', 'live_portal');
+      const liveDocRef = doc(db, 'students', 'tasbih_live_portal');
       const updatePayload = {
         globalTotal: increment(1),
         [`dhikrCounts.${dhikrId}`]: increment(1),
@@ -520,6 +525,27 @@ const SchoolTasbihPortal = ({ initialTab }) => {
       return reset;
     });
 
+    // Sync cloud reset
+    try {
+      const resetClasses = {};
+      Object.keys(classStats).forEach(k => {
+        resetClasses[k] = { ...classStats[k], total: 0, dailyActive: 0 };
+      });
+      updateDoc(doc(db, 'students', 'tasbih_live_portal'), {
+        globalTotal: 0,
+        dhikrCounts: {
+          salawat: 0,
+          subhanallah: 0,
+          alhamdulillah: 0,
+          lailahaillallah: 0,
+          allahuakbar: 0,
+          astaghfirullah: 0,
+        },
+        classStats: resetClasses,
+        lastUpdated: new Date().toISOString()
+      }).catch(() => {});
+    } catch (e) {}
+
     setIsArchiveModalOpen(false);
     setArchiveConfirmWord('');
     setArchiveBackupDownloaded(false);
@@ -611,6 +637,14 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     const newState = !isPublished;
                     setIsPublished(newState);
                     localStorage.setItem('tasbih_is_published', String(newState));
+                    try {
+                      updateDoc(doc(db, 'students', 'tasbih_live_portal'), {
+                        isPublished: newState,
+                        lastUpdated: new Date().toISOString()
+                      }).catch(() => {
+                        setDoc(doc(db, 'students', 'tasbih_live_portal'), { isPublished: newState }, { merge: true }).catch(() => {});
+                      });
+                    } catch (e) {}
                     window.dispatchEvent(new Event('tasbihPublishChanged'));
                     showToast(newState ? 'تم نشر المنظومة وظهورها في واجهة الموقع للجمهور 🚀' : 'تم إلغاء النشر وإخفاؤها لتكون مسودة خاصة بك 🔒');
                   }}

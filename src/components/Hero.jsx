@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const MOTIVATIONAL_QUOTES = [
   // Arabic Quotes
@@ -70,6 +72,23 @@ const Hero = () => {
   const [isTasbihPublished, setIsTasbihPublished] = useState(() => {
     return localStorage.getItem('tasbih_is_published') !== 'false';
   });
+
+  // Cloud & Local Sync for Tasbih portal visibility
+  useEffect(() => {
+    try {
+      const dRef = doc(db, 'students', 'tasbih_live_portal');
+      const unsubscribe = onSnapshot(dRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (typeof data.isPublished === 'boolean') {
+            setIsTasbihPublished(data.isPublished);
+            localStorage.setItem('tasbih_is_published', String(data.isPublished));
+          }
+        }
+      }, () => {});
+      return () => unsubscribe();
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
     const handlePublishSync = () => {

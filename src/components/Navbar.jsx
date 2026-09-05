@@ -121,7 +121,7 @@ const Navbar = () => {
       }
 
       // Track active section on scroll if we are on the homepage
-      const systemTargets = ['monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+      const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
       const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || systemTargets.some(t => window.location.hash.includes(t));
       if (!isOnCustomPage && mainNavItems.length > 0) {
         const sections = mainNavItems
@@ -156,7 +156,7 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    const systemPages = ['monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
 
     if (item.type === 'page' || item.type === 'custom_page' || systemPages.includes(item.target)) {
       const isSystemPage = systemPages.includes(item.target);
@@ -185,7 +185,7 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
-    const systemPages = ['monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas'];
     if (systemPages.includes(item.target)) {
       return `#/${item.target}`;
     }
