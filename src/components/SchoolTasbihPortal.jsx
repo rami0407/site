@@ -218,6 +218,9 @@ const SchoolTasbihPortal = ({ initialTab }) => {
   const [antiSpamWarning, setAntiSpamWarning] = useState('');
   const lastStudentTapRef = useRef(0);
   const [kioskCooldownActive, setKioskCooldownActive] = useState({});
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [archiveConfirmWord, setArchiveConfirmWord] = useState('');
+  const [archiveBackupDownloaded, setArchiveBackupDownloaded] = useState(false);
 
   const currentTasbihSkin = counterSkin === 'marble'
     ? {
@@ -341,26 +344,52 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     }
   };
 
-  const handleArchiveWeekly = () => {
-    if (window.confirm('⚠️ هل أنت متأكد من تصفير العدادات للأسبوع الجديد وأرشفة النتائج الحالية؟')) {
-      setGlobalTotal(0);
-      setDhikrCounts({
-        salawat: 0,
-        subhanallah: 0,
-        alhamdulillah: 0,
-        lailahaillallah: 0,
-        allahuakbar: 0,
-        astaghfirullah: 0,
-      });
-      setClassStats(prev => {
-        const reset = {};
-        Object.keys(prev).forEach(k => {
-          reset[k] = { ...prev[k], total: 0, dailyActive: 0 };
-        });
-        return reset;
-      });
-      showToast('تمت أرشفة الأسبوع وتصفير العدادات بنجاح 🗄️');
+  const handleOpenArchiveModal = () => {
+    setArchiveConfirmWord('');
+    setArchiveBackupDownloaded(false);
+    setIsArchiveModalOpen(true);
+  };
+
+  const handleExecuteArchive = () => {
+    if (archiveConfirmWord.trim() !== 'تأكيد') {
+      showToast('⚠️ يرجى كتابة كلمة "تأكيد" للمتابعة');
+      return;
     }
+
+    // Save archive history
+    const archiveRecord = {
+      id: 'arch_' + Date.now(),
+      date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }),
+      total: globalTotal,
+      dhikrCounts: { ...dhikrCounts },
+      classStats: { ...classStats },
+    };
+    const savedArchives = JSON.parse(localStorage.getItem('tasbih_weekly_archives') || '[]');
+    savedArchives.unshift(archiveRecord);
+    localStorage.setItem('tasbih_weekly_archives', JSON.stringify(savedArchives));
+
+    // Reset current active week
+    setGlobalTotal(0);
+    setDhikrCounts({
+      salawat: 0,
+      subhanallah: 0,
+      alhamdulillah: 0,
+      lailahaillallah: 0,
+      allahuakbar: 0,
+      astaghfirullah: 0,
+    });
+    setClassStats(prev => {
+      const reset = {};
+      Object.keys(prev).forEach(k => {
+        reset[k] = { ...prev[k], total: 0, dailyActive: 0 };
+      });
+      return reset;
+    });
+
+    setIsArchiveModalOpen(false);
+    setArchiveConfirmWord('');
+    setArchiveBackupDownloaded(false);
+    showToast('✨ تمت أرشفة الأسبوع بنجاح وتصفير العدادات للأسبوع الجديد!');
   };
 
   const handleExportCSV = () => {
@@ -664,7 +693,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                 <button onClick={handleExportCSV} className="tasbih-btn tasbih-btn-dark">
                   <i className="fas fa-file-csv"></i> تصدير إحصائيات الصفوف (CSV)
                 </button>
-                <button onClick={handleArchiveWeekly} className="tasbih-btn tasbih-btn-danger">
+                <button onClick={handleOpenArchiveModal} className="tasbih-btn tasbih-btn-danger">
                   <i className="fas fa-redo"></i> تصفير وأرشفة الأسبوع
                 </button>
               </div>
@@ -793,7 +822,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     <span className="btn-touch-hint">اضغط 👆</span>
                   </button>
 
-                  {/* Small Reset Button */}
+                  {/* Small Reset Button - Protected / Locked in Shared Kiosk */}
                   <button
                     type="button"
                     aria-label="تصفير العداد"
@@ -801,9 +830,9 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       playResetTone();
-                      showToast('زر التصفير خاص بالمدير من لوحة التحكم');
+                      showToast('🔒 هذا العداد المبارك يجمع جهود جميع طلاب مدرسة مشيرفة، ولا يمكن مسحه إلا من قِبل إدارة المدرسة ✨');
                     }}
-                    title="زر التصفير"
+                    title="العداد العام محمي ولا يمكن مسحه من الشاشة المشتركة"
                   />
                 </div>
 
@@ -945,18 +974,18 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   <span className="btn-touch-hint">اضغط 👆</span>
                 </button>
 
-                {/* Small Reset Button */}
+                {/* Small Reset Button - Local Student Session Reset Only */}
                 <button
                   type="button"
-                  aria-label="تصفير العداد"
+                  aria-label="تصفير الجلسة الحالية"
                   className={currentTasbihSkin.resetClass}
                   onClick={(e) => {
                     e.stopPropagation();
                     playResetTone();
                     setStudentSessionCount(0);
-                    showToast('تم تصفير عداد المسبحة 🔄');
+                    showToast('تم بدء جولة تسبيح جديدة لجلسة الطالب 🔄 (عداد المدرسة العام محفوظ وآمن)');
                   }}
-                  title="تصفير العداد"
+                  title="تصفير الجلسة الفردية للبدء من جديد"
                 />
               </div>
 
@@ -1059,6 +1088,124 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             </div>
           </div>
         )}
+
+      {/* Safety Confirmation Modal for Admin Archive / Reset */}
+      {isArchiveModalOpen && (
+        <div className="tasbih-modal-backdrop" onClick={() => setIsArchiveModalOpen(false)}>
+          <div className="tasbih-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="tasbih-modal-header danger">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div className="tasbih-modal-icon-wrap danger">
+                  <i className="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#991b1b' }}>
+                    إجراء أمني: تأكيد أرشفة وتصفير الأسبوع
+                  </h3>
+                  <span style={{ fontSize: '0.8rem', color: '#b91c1c' }}>
+                    حماية بيانات وجهود طلاب مدرسة مشيرفة
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="tasbih-modal-close-btn"
+                onClick={() => setIsArchiveModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="tasbih-modal-body">
+              <div className="tasbih-warning-banner">
+                <i className="fas fa-exclamation-triangle" style={{ fontSize: '1.6rem', color: '#d97706', marginTop: '2px' }}></i>
+                <div>
+                  <strong style={{ fontSize: '0.95rem' }}>تنبيه إداري فائق الأهمية:</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                    أنت على وشك تصفير العداد العام المشترك لجميع طلاب المدرسة لبدء أسبوع جديد. تم حظر هذا الإجراء في شاشة الطلاب حفاظاً على جهودهم ولا يمكن تنفيذه إلا من هذه النافذة الإدارية.
+                  </p>
+                </div>
+              </div>
+
+              <div className="tasbih-archive-stats-box">
+                <div className="tasbih-archive-stat-item">
+                  <span className="stat-label">إجمالي تسبيحات المدرسة:</span>
+                  <span className="stat-value">{globalTotal.toLocaleString('ar-EG')}</span>
+                </div>
+                <div className="tasbih-archive-stat-item">
+                  <span className="stat-label">عدد الصفوف الموثقة:</span>
+                  <span className="stat-value">{Object.keys(classStats).length} صفوف</span>
+                </div>
+              </div>
+
+              {/* Step 1: Download backup */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.88rem', marginBottom: '6px', color: '#1e293b' }}>
+                  ١. الخطوة الأولى (موصى بها بشدة): حفظ نسخة احتياطية
+                </div>
+                <button
+                  type="button"
+                  className="tasbih-btn tasbih-btn-emerald"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => {
+                    handleExportCSV();
+                    setArchiveBackupDownloaded(true);
+                  }}
+                >
+                  <i className="fas fa-file-excel"></i>
+                  {archiveBackupDownloaded ? '✅ تم تحميل التقرير وحفظه (يمكنك المتابعة)' : 'تحميل وتوثيق تقرير الأسبوع الحالي (Excel / CSV)'}
+                </button>
+              </div>
+
+              {/* Step 2: Confirm by typing */}
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.88rem', marginBottom: '6px', color: '#1e293b' }}>
+                  ٢. الخطوة الثانية: تأكيد العملية كتابياً
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 8px 0' }}>
+                  لتفادي المسح غير المقصود، يرجى كتابة كلمة <strong style={{ color: '#dc2626' }}>تأكيد</strong> في الحقل التالي:
+                </p>
+                <input
+                  type="text"
+                  className="tasbih-input"
+                  placeholder="اكتب كلمة: تأكيد"
+                  value={archiveConfirmWord}
+                  onChange={e => setArchiveConfirmWord(e.target.value)}
+                  style={{ textAlign: 'center', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '1px' }}
+                />
+              </div>
+            </div>
+
+            <div className="tasbih-modal-footer">
+              <button
+                type="button"
+                className="tasbih-btn"
+                style={{ background: '#e2e8f0', color: '#475569' }}
+                onClick={() => {
+                  setIsArchiveModalOpen(false);
+                  setArchiveConfirmWord('');
+                }}
+              >
+                إلغاء وتراجع
+              </button>
+              <button
+                type="button"
+                className="tasbih-btn tasbih-btn-danger"
+                disabled={archiveConfirmWord.trim() !== 'تأكيد'}
+                style={{
+                  opacity: archiveConfirmWord.trim() === 'تأكيد' ? 1 : 0.45,
+                  cursor: archiveConfirmWord.trim() === 'تأكيد' ? 'pointer' : 'not-allowed',
+                  fontWeight: 800
+                }}
+                onClick={handleExecuteArchive}
+              >
+                <i className="fas fa-check-circle"></i>
+                أرشفة وتصفير للأسبوع الجديد
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>
