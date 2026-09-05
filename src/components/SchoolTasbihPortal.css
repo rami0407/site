@@ -1,4 +1,4 @@
-﻿/* SchoolTasbihPortal.css - Deep Emerald & Gold Islamic Portal Theme */
+/* SchoolTasbihPortal.css - Deep Emerald & Gold Islamic Portal Theme */
 
 .tasbih-portal-root {
   font-family: 'Tajawal', sans-serif;
@@ -222,25 +222,185 @@
   transform: none;
 }
 
-/* Giant Circle Tap Pad */
-.student-tap-circle {
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #065f46 0%, #022c22 100%);
-  border: 6px solid #10b981;
-  box-shadow: 0 0 45px rgba(16, 185, 129, 0.4);
+/* Real Electronic Finger Counter (المسبحة الإلكترونية الحقيقية) */
+.tasbih-real-counter-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  margin: 1.5rem auto;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  margin: 1rem 0;
   user-select: none;
+  -webkit-user-select: none;
 }
 
-.student-tap-circle:active {
-  transform: scale(0.94);
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+.tasbih-device-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  perspective: 800px;
 }
+
+.tasbih-device-casing {
+  width: 100%;
+  display: block;
+  border-radius: 28px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: filter 0.3s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+/* Digital LCD Screen */
+.tasbih-lcd-screen {
+  position: absolute;
+  left: 21.5%;
+  top: 27.2%;
+  width: 45.5%;
+  height: 12.8%;
+  background: linear-gradient(180deg, #d3dad1 0%, #e2e8de 60%, #cbd4c9 100%);
+  border-radius: 4px;
+  box-shadow: inset 1px 2px 5px rgba(0, 0, 0, 0.45), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #5a554a;
+  transition: all 0.3s ease;
+}
+
+.tasbih-lcd-screen.celebrate {
+  background: linear-gradient(180deg, #fef08a 0%, #fde047 100%) !important;
+  box-shadow: inset 1px 2px 4px rgba(180, 83, 9, 0.5), 0 0 15px rgba(250, 204, 21, 0.8) !important;
+}
+
+.tasbih-lcd-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1.1;
+}
+
+.tasbih-lcd-round-badge {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 9px;
+  font-weight: 900;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.tasbih-lcd-icon {
+  font-size: 11px;
+  margin-top: 1px;
+}
+
+.tasbih-lcd-digits {
+  font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: #111827;
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Big Tactile Push Button */
+.tasbih-main-push-btn {
+  position: absolute;
+  left: 36.5%;
+  top: 60%;
+  width: 25.5%;
+  height: 22.5%;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 60%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+  outline: none;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasbih-main-push-btn:hover {
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.05) 70%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.tasbih-main-push-btn:active,
+.tasbih-main-push-btn.pressed {
+  transform: scale(0.91) translateY(3px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), inset 0 3px 6px rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tasbih-main-push-btn .btn-touch-hint {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* Small Reset Button */
+.tasbih-reset-btn {
+  position: absolute;
+  left: 67.2%;
+  top: 61%;
+  width: 9.8%;
+  height: 8.8%;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.3) 0%, rgba(0, 0, 0, 0.1) 80%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.08s ease;
+  outline: none;
+  touch-action: manipulation;
+}
+
+.tasbih-reset-btn:hover {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.tasbih-reset-btn:active {
+  transform: scale(0.88) translateY(1px);
+}
+
+/* Skins Palette Switcher */
+.tasbih-skins-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tasbih-skin-pill {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.tasbih-skin-pill:hover {
+  transform: scale(1.18);
+  border-color: white;
+}
+
+.tasbih-skin-pill.active {
+  transform: scale(1.25);
+  border-color: #fef08a;
+  box-shadow: 0 0 10px rgba(254, 240, 138, 0.8);
+}
+
