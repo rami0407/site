@@ -28,8 +28,8 @@ const Navbar = () => {
 
     const updateNavState = (rawItems) => {
       let items = [...rawItems];
-      // Filter out nav_prep_day, nav_excellence, nav_astronomy, or nav_stem from top navbar
-      items = items.filter(item => item.id !== 'nav_prep_day' && item.target !== 'prep-day' && item.target !== 'monawaat' && item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem');
+      // Filter out nav_prep_day, nav_excellence, nav_astronomy, nav_stem, or nav_tasbih from top navbar
+      items = items.filter(item => item.id !== 'nav_prep_day' && item.target !== 'prep-day' && item.target !== 'monawaat' && item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem' && item.id !== 'nav_tasbih' && item.target !== 'tasbih');
       
       const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books', 'gratitude-sky', 'stars'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
@@ -54,19 +54,6 @@ const Navbar = () => {
           category: "main",
           order: 7
         });
-      }
-
-      if (localStorage.getItem('tasbih_is_published') === 'true') {
-        if (!items.some(item => item.id === 'nav_tasbih' || item.target === 'tasbih')) {
-          items.push({
-            id: "nav_tasbih",
-            label: "🕌 منظومة التسبيح",
-            type: "page",
-            target: "tasbih",
-            category: "main",
-            order: 8
-          });
-        }
       }
 
       const filteredItems = items.filter(item => item.id !== 'nav_appointments' && item.target !== 'appointments');
