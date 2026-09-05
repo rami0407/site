@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import './SchoolTasbihPortal.css';
 import tasbihEmeraldImg from '../assets/tasbih_emerald.jpg';
 import tasbihMarbleImg from '../assets/tasbih_marble.jpg';
+import { db } from '../firebase';
+import { doc, onSnapshot, setDoc, updateDoc, increment } from 'firebase/firestore';
 
 const INITIAL_ADHKAR = [
   {
@@ -240,6 +242,61 @@ const SchoolTasbihPortal = ({ initialTab }) => {
         resetClass: 'tasbih-reset-emerald-style',
       };
 
+  const [isCloudConnected, setIsCloudConnected] = useState(true);
+
+  // Real-time Cloud Synchronization across all devices (Firebase Firestore)
+  useEffect(() => {
+    try {
+      const liveDocRef = doc(db, 'school_tasbih', 'live_portal');
+      const unsubscribe = onSnapshot(liveDocRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (typeof data.globalTotal === 'number') {
+            setGlobalTotal(data.globalTotal);
+          }
+          if (data.dhikrCounts) {
+            setDhikrCounts(data.dhikrCounts);
+          }
+          if (data.classStats) {
+            setClassStats(data.classStats);
+          }
+          if (data.campaign) {
+            setCampaign(data.campaign);
+          }
+          if (data.adhkarList && Array.isArray(data.adhkarList)) {
+            setAdhkarList(data.adhkarList);
+          }
+          setIsCloudConnected(true);
+        } else {
+          // Initialize first time in cloud
+          setDoc(liveDocRef, {
+            globalTotal: 67843,
+            dhikrCounts: {
+              salawat: 42351,
+              subhanallah: 11200,
+              alhamdulillah: 6840,
+              lailahaillallah: 4120,
+              allahuakbar: 3332,
+              astaghfirullah: 0,
+            },
+            campaign: INITIAL_CAMPAIGN,
+            adhkarList: INITIAL_ADHKAR,
+            classStats: INITIAL_CLASS_STATS,
+            initializedAt: new Date().toISOString()
+          }, { merge: true }).catch(() => {});
+        }
+      }, (err) => {
+        console.warn('Firestore live sync fallback to local cache:', err);
+        setIsCloudConnected(false);
+      });
+
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn('Firebase sync error:', e);
+      setIsCloudConnected(false);
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('tasbih_is_published', String(isPublished));
   }, [isPublished]);
@@ -282,11 +339,30 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     }
 
     playClickTone();
+    // 1. Instant local update for 0ms tactile response
     setGlobalTotal(prev => prev + 1);
     setDhikrCounts(prev => ({
       ...prev,
       [dhikrId]: (prev[dhikrId] || 0) + 1
     }));
+
+    // 2. Real-time Cloud Broadcast to Firebase so all devices update together
+    try {
+      const liveDocRef = doc(db, 'school_tasbih', 'live_portal');
+      const updatePayload = {
+        globalTotal: increment(1),
+        [`dhikrCounts.${dhikrId}`]: increment(1),
+        lastUpdated: new Date().toISOString()
+      };
+      if (!isKiosk && studentClass) {
+        updatePayload[`classStats.${studentClass}.total`] = increment(1);
+      }
+      updateDoc(liveDocRef, updatePayload).catch(() => {
+        setDoc(liveDocRef, updatePayload, { merge: true }).catch(() => {});
+      });
+    } catch (e) {
+      console.warn('Cloud tap broadcast error:', e);
+    }
 
     if (!isKiosk) {
       setStudentSessionCount(prev => {
@@ -713,8 +789,12 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   بوابة الذكر المدرسية الكبرى • مدرسة مشيرفة
                 </h2>
               </div>
-              <div style={{ textAlign: 'left', fontSize: '0.85rem', color: '#a7f3d0' }}>
-                معدل الأمان: {settings.kioskCooldown} ثانية
+              <div style={{ textAlign: 'left', fontSize: '0.85rem', color: '#a7f3d0', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.25)', color: '#6ee7b7', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800, border: '1px solid rgba(52,211,153,0.3)' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #34d399' }}></span>
+                  {isCloudConnected ? '🟢 متزامن ومحتلن لحظياً' : '🔄 متصل محلياً'}
+                </span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>معدل الأمان: {settings.kioskCooldown} ثانية</span>
               </div>
             </div>
 
@@ -793,16 +873,25 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   <div className={`${currentTasbihSkin.screenClass} ${kioskCooldownActive[studentActiveDhikr] ? 'celebrate' : ''}`}>
                     <div className="tasbih-lcd-meta">
                       <span className="tasbih-lcd-round-badge">
-                        شاشة المدخل
+                        {isCloudConnected ? '🟢 سحابي محتلن' : 'شاشة المدخل'}
                       </span>
                       <span className="tasbih-lcd-icon">
                         {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || 'ﷺ'}
                       </span>
                     </div>
 
-                    {/* OLED Digits */}
-                    <div className="tasbih-lcd-digits">
-                      {String((dhikrCounts[studentActiveDhikr] || 0) % 10000).padStart(4, '0')}
+                    {/* OLED Digits - Full Un-truncated Accurate Count */}
+                    <div
+                      className="tasbih-lcd-digits"
+                      style={{
+                        fontSize: (dhikrCounts[studentActiveDhikr] || 0) >= 100000
+                          ? '1.35rem'
+                          : (dhikrCounts[studentActiveDhikr] || 0) >= 10000
+                          ? '1.65rem'
+                          : '2.1rem'
+                      }}
+                    >
+                      {(dhikrCounts[studentActiveDhikr] || 0).toLocaleString('en-US')}
                     </div>
                   </div>
 
