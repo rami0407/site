@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { newsData as fallbackNews } from '../data/schoolData';
 
 const NEWS_CATEGORIES = {
   all: 'الكل',
+  facebook: '📱 فيس بوك',
   activities: 'فعاليات مدرسية',
   announcements: 'إعلانات',
   achievements: 'إنجازات'
@@ -26,6 +27,17 @@ const NewsFeed = () => {
         querySnapshot.forEach((doc) => {
           list.push({ ...doc.data(), id: doc.id });
         });
+
+        // Also fetch Facebook posts synchronized via Make HTTP module
+        try {
+          const qFb = query(collection(db, 'students'), where('isFacebookPost', '==', true));
+          const fbSnap = await getDocs(qFb);
+          fbSnap.forEach((doc) => {
+            list.push({ ...doc.data(), id: doc.id });
+          });
+        } catch(e) {}
+
+        list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
         // Fallback
         if (list.length === 0) {

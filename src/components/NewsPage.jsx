@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
 import { newsData as fallbackNews } from '../data/schoolData';
 import FacebookFeed from './FacebookFeed';
 import './NewsPage.css';
@@ -23,31 +23,56 @@ const NewsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAutoSyncing, setIsAutoSyncing] = useState(false);
 
-  // 1. Real-time news listener from Firestore
+  // 1. Real-time news listener from Firestore (news + Facebook webhook posts)
   useEffect(() => {
-    let unsubscribeNews = () => {};
-    try {
-      const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
-      unsubscribeNews = onSnapshot(q, (snap) => {
-        const list = [];
-        snap.forEach(docSnap => list.push({ ...docSnap.data(), id: docSnap.id }));
-        if (list.length > 0) {
-          setNews(list);
-        } else {
-          const localNews = localStorage.getItem('db_news');
-          setNews(localNews ? JSON.parse(localNews) : fallbackNews);
-        }
-        setIsLoading(false);
-      }, (err) => {
-        console.warn("Real-time news listener warning:", err);
+    let listNews = [];
+    let listFb = [];
+
+    const updateCombinedNews = () => {
+      const combined = [...listNews, ...listFb];
+      const uniqueMap = new Map();
+      combined.forEach(item => uniqueMap.set(item.id, item));
+      const merged = Array.from(uniqueMap.values());
+      merged.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+      if (merged.length > 0) {
+        setNews(merged);
+      } else {
         const localNews = localStorage.getItem('db_news');
         setNews(localNews ? JSON.parse(localNews) : fallbackNews);
-        setIsLoading(false);
+      }
+      setIsLoading(false);
+    };
+
+    let unsubNews = () => {};
+    let unsubFb = () => {};
+
+    try {
+      const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
+      unsubNews = onSnapshot(q, (snap) => {
+        listNews = [];
+        snap.forEach(docSnap => listNews.push({ ...docSnap.data(), id: docSnap.id }));
+        updateCombinedNews();
+      }, (err) => {
+        console.warn("News collection listener fallback:", err.message);
+        updateCombinedNews();
       });
     } catch (e) {
-      const localNews = localStorage.getItem('db_news');
-      setNews(localNews ? JSON.parse(localNews) : fallbackNews);
-      setIsLoading(false);
+      updateCombinedNews();
+    }
+
+    try {
+      const qFb = query(collection(db, 'students'), where('isFacebookPost', '==', true));
+      unsubFb = onSnapshot(qFb, (snap) => {
+        listFb = [];
+        snap.forEach(docSnap => listFb.push({ ...docSnap.data(), id: docSnap.id }));
+        updateCombinedNews();
+      }, (err) => {
+        console.warn("Facebook posts listener fallback:", err.message);
+        updateCombinedNews();
+      });
+    } catch (e) {
+      updateCombinedNews();
     }
 
     // Fetch Facebook page contact link
