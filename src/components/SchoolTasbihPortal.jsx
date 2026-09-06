@@ -289,6 +289,13 @@ const SchoolTasbihPortal = ({ initialTab }) => {
         resetClass: 'tasbih-reset-emerald-style',
       };
 
+  const getOledFontSize = (num) => {
+    if (num >= 100000) return '0.90rem';
+    if (num >= 10000) return '1.02rem';
+    if (num >= 1000) return '1.14rem';
+    return '1.25rem';
+  };
+
   const [isCloudConnected, setIsCloudConnected] = useState(true);
 
   // Real-time Cloud Synchronization across all devices (Firebase Firestore)
@@ -897,11 +904,11 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             </div>
 
             {/* Giant Odometer Card */}
-            <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '20px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', border: '1px solid rgba(16,185,129,0.25)' }}>
+            <div className="tasbih-header-box" style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '20px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', border: '1px solid rgba(16,185,129,0.25)' }}>
               <div style={{ fontSize: '0.9rem', color: '#6ee7b7', fontWeight: 700, marginBottom: '6px' }}>
                 مجموع الأذكار والتسبيحات المسجلة في المدرسة
               </div>
-              <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 30px rgba(245,158,11,0.5)', lineHeight: 1.1 }}>
+              <div className="tasbih-global-total-num" style={{ fontSize: '4.5rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 30px rgba(245,158,11,0.5)', lineHeight: 1.1 }}>
                 {globalTotal.toLocaleString('ar-EG')}
               </div>
               <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginTop: '6px' }}>
@@ -921,7 +928,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             </div>
 
             {/* Kiosk Multi-Tasbih Grid (مسبحة مخصصة تحت كل عبارة) */}
-            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '24px', padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <div className="kiosk-grid-container" style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '24px', padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '1.25rem', borderBottom: '1px solid rgba(16,185,129,0.2)', paddingBottom: '12px' }}>
                 <div style={{ fontSize: '1.05rem', color: '#fef08a', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1004,7 +1011,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                             <div
                               className="tasbih-lcd-digits"
                               style={{
-                                fontSize: count >= 100000 ? '1.25rem' : count >= 10000 ? '1.5rem' : '1.85rem'
+                                fontSize: getOledFontSize(count)
                               }}
                             >
                               {count.toLocaleString('en-US')}
@@ -1064,7 +1071,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
         {activeTab === 'student-view' && (
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             {/* Student & Class Configuration Card */}
-            <div style={{
+            <div className="student-session-card" style={{
               background: 'linear-gradient(135deg, #064e3b, #022c22)',
               borderRadius: '20px',
               padding: '1.25rem',
@@ -1167,7 +1174,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             </div>
 
             {/* Sub-Header & Controls Bar */}
-            <div style={{
+            <div className="student-controls-bar" style={{
               background: '#022c22',
               borderRadius: '20px',
               padding: '1rem 1.25rem',
@@ -1286,7 +1293,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                         >
                           <div className="tasbih-lcd-meta">
                             <span className="tasbih-lcd-round-badge">
-                              {isSelected ? `دورتك: ${studentSessionCount % studentTargetRound}/${studentTargetRound}` : 'المجموع العام'}
+                              {isSelected ? `جولة ${studentSessionCount % studentTargetRound}/${studentTargetRound}` : 'سحابي ☁️'}
                             </span>
                             <span className="tasbih-lcd-icon">
                               {d.badge}
@@ -1297,7 +1304,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                           <div
                             className="tasbih-lcd-digits"
                             style={{
-                              fontSize: count >= 100000 ? '1.25rem' : count >= 10000 ? '1.5rem' : '1.85rem'
+                              fontSize: getOledFontSize(count)
                             }}
                           >
                             {count.toLocaleString('en-US')}
