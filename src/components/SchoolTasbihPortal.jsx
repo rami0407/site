@@ -263,7 +263,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
     const saved = localStorage.getItem('tasbih_counter_skin');
     return saved === 'marble' ? 'marble' : 'emerald';
   });
-  const [isBtnPressed, setIsBtnPressed] = useState(false);
+  const [pressedBtnId, setPressedBtnId] = useState(null);
   const [antiSpamWarning, setAntiSpamWarning] = useState('');
   const lastStudentTapRef = useRef(0);
   const [kioskCooldownActive, setKioskCooldownActive] = useState({});
@@ -920,111 +920,17 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               </div>
             </div>
 
-            {/* Kiosk Dhikr Selector & Interactive Electronic Counter */}
-            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '24px', padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)', textAlign: 'center' }}>
+            {/* Kiosk Multi-Tasbih Grid (مسبحة مخصصة تحت كل عبارة) */}
+            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '24px', padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)' }}>
               
-              <div style={{ fontSize: '0.95rem', color: '#a7f3d0', fontWeight: 800, marginBottom: '0.8rem' }}>
-                👇 اختر الذكر المبارك ثم اضغط على زر المسبحة الإلكترونية للتسجيل:
-              </div>
-
-              {/* Dhikr Selector Pills */}
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                {adhkarList.filter(d => d.kioskActive).map(d => (
-                  <button
-                    key={d.id}
-                    onClick={() => setStudentActiveDhikr(d.id)}
-                    style={{
-                      background: studentActiveDhikr === d.id ? 'linear-gradient(135deg, #059669, #047857)' : 'rgba(255,255,255,0.08)',
-                      border: studentActiveDhikr === d.id ? '2px solid #34d399' : '1px solid rgba(255,255,255,0.15)',
-                      color: 'white',
-                      padding: '8px 16px',
-                      borderRadius: '16px',
-                      fontSize: '0.85rem',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: studentActiveDhikr === d.id ? '0 4px 15px rgba(5,150,105,0.4)' : 'none',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.2rem' }}>{d.badge}</span>
-                    <span>{d.title}</span>
-                    <span style={{ fontSize: '0.7rem', opacity: 0.8, background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '8px' }}>
-                      ({(dhikrCounts[d.id] || 0).toLocaleString('ar-EG')})
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* REAL ELECTRONIC DIGITAL TALLY COUNTER IN KIOSK */}
-              <div className="tasbih-real-counter-section">
-                <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
-                  <img
-                    src={currentTasbihSkin.img}
-                    alt={currentTasbihSkin.name}
-                    className="tasbih-device-casing"
-                  />
-
-                  {/* Digital OLED Screen */}
-                  <div className={`${currentTasbihSkin.screenClass} ${kioskCooldownActive[studentActiveDhikr] ? 'celebrate' : ''}`}>
-                    <div className="tasbih-lcd-meta">
-                      <span className="tasbih-lcd-round-badge">
-                        {isCloudConnected ? '🟢 سحابي محتلن' : 'شاشة المدخل'}
-                      </span>
-                      <span className="tasbih-lcd-icon">
-                        {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || 'ﷺ'}
-                      </span>
-                    </div>
-
-                    {/* OLED Digits - Full Un-truncated Accurate Count */}
-                    <div
-                      className="tasbih-lcd-digits"
-                      style={{
-                        fontSize: (dhikrCounts[studentActiveDhikr] || 0) >= 100000
-                          ? '1.35rem'
-                          : (dhikrCounts[studentActiveDhikr] || 0) >= 10000
-                          ? '1.65rem'
-                          : '2.1rem'
-                      }}
-                    >
-                      {(dhikrCounts[studentActiveDhikr] || 0).toLocaleString('en-US')}
-                    </div>
-                  </div>
-
-                  {/* Big Main Push Button */}
-                  <button
-                    type="button"
-                    disabled={!!kioskCooldownActive[studentActiveDhikr]}
-                    aria-label="تسبيح"
-                    className={`${currentTasbihSkin.btnClass} ${isBtnPressed ? 'pressed' : ''}`}
-                    onMouseDown={() => setIsBtnPressed(true)}
-                    onMouseUp={() => setIsBtnPressed(false)}
-                    onTouchStart={() => setIsBtnPressed(true)}
-                    onTouchEnd={() => setIsBtnPressed(false)}
-                    onClick={() => handleTapDhikr(studentActiveDhikr, 'kiosk')}
-                    title="المس الزر الذهبي لتسجيل التسبيحة"
-                  >
-                    <span className="btn-touch-hint">اضغط 👆</span>
-                  </button>
-
-                  {/* Small Reset Button - Protected / Locked in Shared Kiosk */}
-                  <button
-                    type="button"
-                    aria-label="تصفير العداد"
-                    className={currentTasbihSkin.resetClass}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playResetTone();
-                      showToast('🔒 هذا العداد المبارك يجمع جهود جميع طلاب مدرسة مشيرفة، ولا يمكن مسحه إلا من قِبل إدارة المدرسة ✨');
-                    }}
-                    title="العداد العام محمي ولا يمكن مسحه من الشاشة المشتركة"
-                  />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '1.25rem', borderBottom: '1px solid rgba(16,185,129,0.2)', paddingBottom: '12px' }}>
+                <div style={{ fontSize: '1.05rem', color: '#fef08a', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📿</span>
+                  <span>بستان الأذكار ومسابح النور • مسبحة إلكترونية تحت كل عبارة (اضغط الزر الذهبي لأي ذكر للتسجيل فورياً):</span>
                 </div>
 
                 {/* Skins Selector */}
-                <div className="tasbih-skins-row">
+                <div className="tasbih-skins-row" style={{ marginTop: 0 }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -1035,7 +941,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     title="المسبحة الزمردية الملكية"
                   >
                     <span className="tasbih-skin-gem emerald"></span>
-                    <span>الزمردي الملكي بالذهب 👑</span>
+                    <span>الزمردي الملكي 👑</span>
                   </button>
                   <button
                     type="button"
@@ -1047,24 +953,122 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     title="المسبحة الرخامية بالخط العربي"
                   >
                     <span className="tasbih-skin-gem marble"></span>
-                    <span>الرخام الإيطالي المذهّب 🏛️</span>
+                    <span>الرخام الإيطالي 🏛️</span>
                   </button>
                 </div>
+              </div>
+
+              {/* MULTI-TASBIH GRID */}
+              <div className="tasbih-multi-grid">
+                {adhkarList.filter(d => d.kioskActive).map(d => {
+                  const isTarget = campaign.targetDhikr === d.id;
+                  const count = dhikrCounts[d.id] || 0;
+                  const isCooldown = !!kioskCooldownActive[d.id];
+                  const isPressed = pressedBtnId === d.id;
+
+                  return (
+                    <div
+                      key={d.id}
+                      className={`tasbih-dhikr-card ${isTarget ? 'active-target' : ''}`}
+                    >
+                      {/* Header with Phrase & Merit */}
+                      <div className="tasbih-card-header">
+                        <span className="tasbih-card-badge">{d.badge}</span>
+                        <h3 className="tasbih-card-title">{d.title}</h3>
+                        <span className="tasbih-card-merit">
+                          {isTarget ? '🎯 هدف حملة الأسبوع' : d.meritText || 'أجر عظيم وثواب مضاعف'}
+                        </span>
+                      </div>
+
+                      {/* Dedicated Electronic 3D Digital Tasbih */}
+                      <div className="tasbih-card-device-wrap">
+                        <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
+                          <img
+                            src={currentTasbihSkin.img}
+                            alt={currentTasbihSkin.name}
+                            className="tasbih-device-casing"
+                          />
+
+                          {/* Digital OLED Screen */}
+                          <div className={`${currentTasbihSkin.screenClass} ${isCooldown ? 'celebrate' : ''}`}>
+                            <div className="tasbih-lcd-meta">
+                              <span className="tasbih-lcd-round-badge">
+                                {isCloudConnected ? '🟢 سحابي' : 'محلي'}
+                              </span>
+                              <span className="tasbih-lcd-icon">
+                                {d.badge}
+                              </span>
+                            </div>
+
+                            {/* OLED Digits */}
+                            <div
+                              className="tasbih-lcd-digits"
+                              style={{
+                                fontSize: count >= 100000 ? '1.25rem' : count >= 10000 ? '1.5rem' : '1.85rem'
+                              }}
+                            >
+                              {count.toLocaleString('en-US')}
+                            </div>
+                          </div>
+
+                          {/* Tactile Golden Push Button */}
+                          <button
+                            type="button"
+                            disabled={isCooldown}
+                            aria-label={`تسبيح ${d.shortTitle}`}
+                            className={`${currentTasbihSkin.btnClass} ${isPressed ? 'pressed' : ''}`}
+                            onMouseDown={() => setPressedBtnId(d.id)}
+                            onMouseUp={() => setPressedBtnId(null)}
+                            onTouchStart={() => setPressedBtnId(d.id)}
+                            onTouchEnd={() => setPressedBtnId(null)}
+                            onClick={() => handleTapDhikr(d.id, 'kiosk')}
+                            title={`المس الزر الذهبي لتسجيل: ${d.shortTitle}`}
+                          >
+                            <span className="btn-touch-hint">اضغط 👆</span>
+                          </button>
+
+                          {/* Small Protected Reset Button */}
+                          <button
+                            type="button"
+                            aria-label="تصفير محمي"
+                            className={currentTasbihSkin.resetClass}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playResetTone();
+                              showToast('🔒 هذا العداد المبارك يجمع جهود جميع طلاب مدرسة مشيرفة، ولا يمكن مسحه إلا من قِبل إدارة المدرسة ✨');
+                            }}
+                            title="العداد العام محمي"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Card Footer */}
+                      <div className="tasbih-card-footer-stats">
+                        <span className="dhikr-multiplier">
+                          {isTarget ? '⭐ حملة المدرسة' : `مضاعف: ${d.multiplier}x`}
+                        </span>
+                        <span className="dhikr-total">
+                          {count.toLocaleString('ar-EG')} تسبيحة
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
             </div>
           </div>
         )}
 
-        {/* TAB 3: STUDENT VIEW PREVIEW */}
+        {/* TAB 3: STUDENT VIEW PREVIEW - MULTI-TASBIH PER PHRASE */}
         {activeTab === 'student-view' && (
-          <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             {/* Student & Class Configuration Card */}
             <div style={{
               background: 'linear-gradient(135deg, #064e3b, #022c22)',
               borderRadius: '20px',
               padding: '1.25rem',
-              marginBottom: '1rem',
+              marginBottom: '1.25rem',
               border: '1.5px solid #10b981',
               boxShadow: '0 8px 24px rgba(2, 44, 34, 0.4)',
               color: 'white'
@@ -1078,7 +1082,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '10px', marginBottom: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '10px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', color: '#a7f3d0', fontWeight: 700, marginBottom: '3px' }}>
                     اسم الطالب (اختياري):
@@ -1153,7 +1157,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '1.2rem' }}>🏆</span>
                   <span style={{ fontSize: '0.82rem', color: '#e2e8f0' }}>
-                    رصيد <strong>{studentClass}</strong> في المسابقة:
+                    رصيد <strong>{studentClass}</strong> في المسابقة المدرسية:
                   </span>
                 </div>
                 <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 10px rgba(245,158,11,0.5)' }}>
@@ -1162,145 +1166,49 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               </div>
             </div>
 
-            {/* Electronic Counter Box */}
-            <div style={{ background: '#022c22', color: 'white', borderRadius: '24px', padding: '1.5rem', border: '2px solid #059669', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(16,185,129,0.2)', paddingBottom: '12px', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.3rem' }}>📿</span>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.92rem' }}>هدف الدورة الحالية:</div>
-                    <div style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>يتنبه العداد بنغمة خفيفة عند بلوغه</div>
-                  </div>
+            {/* Sub-Header & Controls Bar */}
+            <div style={{
+              background: '#022c22',
+              borderRadius: '20px',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.25rem',
+              border: '1.5px solid #059669',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              color: 'white'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>📿</span>
+                  <span>اختر أي مقولة مباركة للترديد واضغط على مسبحتها لتسجيل نقاطك ونقاط صفك:</span>
                 </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ fontSize: '0.78rem', color: '#a7f3d0', marginTop: '2px' }}>
+                  دورتك الفردية الحالية: <strong style={{ color: '#fef08a' }}>{studentSessionCount % studentTargetRound}</strong> من <strong>{studentTargetRound}</strong>
+                </div>
+              </div>
+
+              {/* Target & Skins Selectors */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>هدف الجولة:</span>
                   <button
                     onClick={() => setStudentTargetRound(33)}
-                    style={{ background: studentTargetRound === 33 ? '#059669' : '#0f172a', border: studentTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '5px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                    style={{ background: studentTargetRound === 33 ? '#059669' : '#0f172a', border: studentTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
                   >
                     ٣٣
                   </button>
                   <button
                     onClick={() => setStudentTargetRound(100)}
-                    style={{ background: studentTargetRound === 100 ? '#059669' : '#0f172a', border: studentTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '5px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                    style={{ background: studentTargetRound === 100 ? '#059669' : '#0f172a', border: studentTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
                   >
                     ١٠٠
                   </button>
                 </div>
-              </div>
 
-              {/* Dhikr Switcher */}
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '10px' }}>
-                {adhkarList.map(d => (
-                  <button
-                    key={d.id}
-                    onClick={() => setStudentActiveDhikr(d.id)}
-                    style={{
-                      background: studentActiveDhikr === d.id ? 'linear-gradient(135deg, #059669, #047857)' : 'rgba(255,255,255,0.06)',
-                      border: studentActiveDhikr === d.id ? '1.5px solid #34d399' : '1px solid rgba(255,255,255,0.1)',
-                      color: 'white',
-                      padding: '6px 12px',
-                      borderRadius: '12px',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      whiteSpace: 'nowrap',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {d.badge} {d.shortTitle}
-                  </button>
-                ))}
-              </div>
-
-              {/* Anti-Spam Warning */}
-              {antiSpamWarning && (
-                <div style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', color: '#fef08a', padding: '6px 12px', borderRadius: '10px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
-                  {antiSpamWarning}
-                </div>
-              )}
-
-              {/* Active Dhikr Label */}
-              <div style={{ textAlign: 'center', margin: '0.75rem 0 0.5rem 0' }}>
-                <div style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 700 }}>الذكر النشط:</div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: '4px 0', color: 'white' }}>
-                  {adhkarList.find(d => d.id === studentActiveDhikr)?.title}
-                </h3>
-              </div>
-
-              {/* REAL ELECTRONIC DIGITAL TALLY COUNTER */}
-              <div className="tasbih-real-counter-section">
-                <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
-                  <img
-                    src={currentTasbihSkin.img}
-                    alt={currentTasbihSkin.name}
-                    className="tasbih-device-casing"
-                  />
-
-                  {/* Digital OLED Screen */}
-                  <div
-                    className={`${currentTasbihSkin.screenClass} ${studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
-                  >
-                    <div className="tasbih-lcd-meta">
-                      <span className="tasbih-lcd-round-badge">
-                        الهدف: {studentTargetRound}
-                      </span>
-                      <span className="tasbih-lcd-icon">
-                        {adhkarList.find(d => d.id === studentActiveDhikr)?.badge || '✨'}
-                      </span>
-                    </div>
-
-                    {/* OLED Digits */}
-                    <div className="tasbih-lcd-digits">
-                      {String(studentSessionCount % studentTargetRound).padStart(4, '0')}
-                    </div>
-                  </div>
-
-                  {/* Big Main Push Button */}
-                  <button
-                    type="button"
-                    aria-label="تسبيح"
-                    className={`${currentTasbihSkin.btnClass} ${isBtnPressed ? 'pressed' : ''}`}
-                    onMouseDown={() => setIsBtnPressed(true)}
-                    onMouseUp={() => setIsBtnPressed(false)}
-                    onTouchStart={() => setIsBtnPressed(true)}
-                    onTouchEnd={() => setIsBtnPressed(false)}
-                    onClick={() => handleTapDhikr(studentActiveDhikr, 'mobile')}
-                    title="المس الزر الذهبي للتسبيح واحتساب نقطة لصفك"
-                  >
-                    <span className="btn-touch-hint">اضغط 👆</span>
-                  </button>
-
-                  {/* Small Reset Button - Local Student Session Reset Only */}
-                  <button
-                    type="button"
-                    aria-label="تصفير الجلسة الحالية"
-                    className={currentTasbihSkin.resetClass}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playResetTone();
-                      setStudentSessionCount(0);
-                      showToast('تم تصفير جولتك الشخصية (0..33) للبدء من جديد 🔄 رصيدك ورصيد صفك في المسابقة المدرسية محفوظ وآمن سحابياً 🛡️');
-                    }}
-                    title="تصفير دورتك الفردية الحالية (0..33) للبدء من جديد"
-                  />
-                </div>
-
-                {/* Anti-Wipe Security Notice */}
-                <div style={{
-                  background: 'rgba(16,185,129,0.12)',
-                  border: '1px solid rgba(16,185,129,0.3)',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  marginTop: '10px',
-                  fontSize: '0.78rem',
-                  color: '#a7f3d0',
-                  textAlign: 'center',
-                  lineHeight: 1.4
-                }}>
-                  🛡️ <strong>حماية المسابقة ونزاهة النتائج:</strong> زر التصفير الدائري الصغير يعيد دورتك الفردية الحالية فقط (0..33)، بينما نقاطك ونقاط صفك في المسابقة المدرسية العامة مسجلة في السحابة ومحمية دائماً ولا يمكن لأحد مسحها.
-                </div>
-
-                {/* Color Skins Selector */}
-                <div className="tasbih-skins-row">
+                <div className="tasbih-skins-row" style={{ marginTop: 0 }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -1311,7 +1219,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     title="المسبحة الزمردية الملكية"
                   >
                     <span className="tasbih-skin-gem emerald"></span>
-                    <span>الزمردي الملكي بالذهب 👑</span>
+                    <span>الزمردي الملكي 👑</span>
                   </button>
                   <button
                     type="button"
@@ -1323,22 +1231,152 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     title="المسبحة الرخامية بالخط العربي"
                   >
                     <span className="tasbih-skin-gem marble"></span>
-                    <span>الرخام الإيطالي المذهّب 🏛️</span>
+                    <span>الرخام الإيطالي 🏛️</span>
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Spiritual Merit Card */}
-              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '12px', textAlign: 'right', border: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fef08a', marginBottom: '4px' }}>
-                  ✨ الثواب والأجر في ميزان حسناتك:
-                </div>
-                <p style={{ fontSize: '0.8rem', color: '#e2e8f0', margin: 0, lineHeight: 1.5 }}>
-                  {studentActiveDhikr === 'salawat'
-                    ? 'صليت على النبي ﷺ ' + studentSessionCount + ' مرات في هذه الجلسة، فصلى الله عليك بها ' + (studentSessionCount * 10) + ' صلوات، وساهمت بـ ' + studentSessionCount + ' نقطة لصفك المبارك.'
-                    : 'غرست لنفسك ' + studentSessionCount + ' نخلة وشجرة مباركة في الجنة، ورفعت رصيد صفك في المسابقة.'}
-                </p>
+            {/* Anti-Spam Warning */}
+            {antiSpamWarning && (
+              <div style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', color: '#fef08a', padding: '8px 14px', borderRadius: '12px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, marginBottom: '14px' }}>
+                {antiSpamWarning}
               </div>
+            )}
+
+            {/* MULTI-TASBIH GRID IN STUDENT VIEW */}
+            <div className="tasbih-multi-grid">
+              {adhkarList.map(d => {
+                const isSelected = studentActiveDhikr === d.id;
+                const count = dhikrCounts[d.id] || 0;
+                const isPressed = pressedBtnId === d.id;
+                const isTarget = campaign.targetDhikr === d.id;
+
+                return (
+                  <div
+                    key={d.id}
+                    className={`tasbih-dhikr-card ${isSelected ? 'active-target' : ''}`}
+                    style={{
+                      cursor: 'pointer',
+                      borderWidth: isSelected ? '2.5px' : '1.5px'
+                    }}
+                    onClick={() => setStudentActiveDhikr(d.id)}
+                  >
+                    {/* Card Header */}
+                    <div className="tasbih-card-header">
+                      <span className="tasbih-card-badge">{d.badge}</span>
+                      <h3 className="tasbih-card-title">{d.title}</h3>
+                      <span className="tasbih-card-merit">
+                        {d.meritText || 'أجر وثواب مضاعف'}
+                      </span>
+                    </div>
+
+                    {/* Dedicated Electronic 3D Digital Tasbih */}
+                    <div className="tasbih-card-device-wrap" onClick={(e) => e.stopPropagation()}>
+                      <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
+                        <img
+                          src={currentTasbihSkin.img}
+                          alt={currentTasbihSkin.name}
+                          className="tasbih-device-casing"
+                        />
+
+                        {/* Digital OLED Screen */}
+                        <div
+                          className={`${currentTasbihSkin.screenClass} ${isSelected && studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
+                        >
+                          <div className="tasbih-lcd-meta">
+                            <span className="tasbih-lcd-round-badge">
+                              {isSelected ? `دورتك: ${studentSessionCount % studentTargetRound}/${studentTargetRound}` : 'المجموع العام'}
+                            </span>
+                            <span className="tasbih-lcd-icon">
+                              {d.badge}
+                            </span>
+                          </div>
+
+                          {/* OLED Digits */}
+                          <div
+                            className="tasbih-lcd-digits"
+                            style={{
+                              fontSize: count >= 100000 ? '1.25rem' : count >= 10000 ? '1.5rem' : '1.85rem'
+                            }}
+                          >
+                            {count.toLocaleString('en-US')}
+                          </div>
+                        </div>
+
+                        {/* Tactile Golden Push Button */}
+                        <button
+                          type="button"
+                          aria-label={`تسبيح ${d.shortTitle}`}
+                          className={`${currentTasbihSkin.btnClass} ${isPressed ? 'pressed' : ''}`}
+                          onMouseDown={() => setPressedBtnId(d.id)}
+                          onMouseUp={() => setPressedBtnId(null)}
+                          onTouchStart={() => setPressedBtnId(d.id)}
+                          onTouchEnd={() => setPressedBtnId(null)}
+                          onClick={() => {
+                            setStudentActiveDhikr(d.id);
+                            handleTapDhikr(d.id, 'mobile');
+                          }}
+                          title={`المس الزر لتسجيل: ${d.shortTitle}`}
+                        >
+                          <span className="btn-touch-hint">اضغط 👆</span>
+                        </button>
+
+                        {/* Small Reset Button - Local Student Session Reset Only */}
+                        <button
+                          type="button"
+                          aria-label="تصفير الجلسة الحالية"
+                          className={currentTasbihSkin.resetClass}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playResetTone();
+                            setStudentSessionCount(0);
+                            showToast('تم تصفير جولتك الشخصية (0..33) للبدء من جديد 🔄 رصيدك ورصيد صفك في المسابقة المدرسية محفوظ وآمن سحابياً 🛡️');
+                          }}
+                          title="تصفير دورتك الفردية الحالية (0..33) للبدء من جديد"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card Footer Stats */}
+                    <div className="tasbih-card-footer-stats">
+                      <span className="dhikr-multiplier">
+                        {isTarget ? '🎯 هدف الأسبوع' : isSelected ? '⭐ مقولتك الحالية' : `مضاعف: ${d.multiplier}x`}
+                      </span>
+                      <span className="dhikr-total">
+                        {count.toLocaleString('ar-EG')} تسبيحة
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Anti-Wipe Security Notice */}
+            <div style={{
+              background: '#022c22',
+              border: '1.5px solid rgba(16,185,129,0.35)',
+              borderRadius: '16px',
+              padding: '12px 18px',
+              marginTop: '1.25rem',
+              fontSize: '0.82rem',
+              color: '#a7f3d0',
+              textAlign: 'center',
+              lineHeight: 1.5
+            }}>
+              🛡️ <strong>حماية المسابقة ونزاهة النتائج:</strong> زر التصفير الدائري الصغير يعيد دورتك الفردية الحالية فقط (0..33)، بينما نقاطك ونقاط صفك في المسابقة المدرسية العامة مسجلة في السحابة ومحمية دائماً ولا يمكن لأحد مسحها.
+            </div>
+
+            {/* Spiritual Merit Card */}
+            <div style={{ background: 'linear-gradient(135deg, #064e3b, #022c22)', borderRadius: '18px', padding: '16px', textAlign: 'right', border: '1.5px solid #10b981', marginTop: '1rem', color: 'white' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fef08a', marginBottom: '6px' }}>
+                ✨ الثواب والأجر في ميزان حسناتك:
+              </div>
+              <p style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: 0, lineHeight: 1.6 }}>
+                {studentActiveDhikr === 'salawat'
+                  ? 'صليت على النبي ﷺ ' + studentSessionCount + ' مرات في هذه الجلسة، فصلى الله عليك بها ' + (studentSessionCount * 10) + ' صلوات، وحط عنك خطاياك ورفع درجاتك، وساهمت بـ ' + studentSessionCount + ' نقطة لصفك المبارك.'
+                  : 'غرست لنفسك ' + studentSessionCount + ' نخلة وشجرة مباركة في الجنة بإذن الله تعالى، ورفعت رصيد صفك في المسابقة المدرسية.'}
+              </p>
             </div>
           </div>
         )}
