@@ -175,6 +175,52 @@ const playChimeTone = () => {
   } catch (e) {}
 };
 
+const MILESTONE_MESSAGES = {
+  100: {
+    badge: '🌟',
+    title: 'مبارك يا بطل! أتممت 100 تسبيحة مباركة',
+    msg: 'هنيئاً لك غراس الجنة ونوراً في صحيفتك، ورفعت رصيد صفك 100 نقطة في المسابقة المدرسية!',
+    level: 'وسام الـ 100 تسبيحة 🏅'
+  },
+  200: {
+    badge: '🏆',
+    title: 'إنجاز بطولي رائع! 200 تسبيحة',
+    msg: 'بورك لسانك الذاكر وقلبك الطيب! أنت من نخبة طلاب مدرسة مشيرفة المتألقين، واصل الهمة!',
+    level: 'فارس الذاكرين 🥈'
+  },
+  300: {
+    badge: '👑',
+    title: 'تاج الذاكرين وفخر المدرسة! 300 تسبيحة',
+    msg: 'ما أعظم همتك ونقاء سريرتك! حطت عنك الخطايا ورُفعت درجاتك في عليين، وصفك يقترب من الصدارة!',
+    level: 'أمير التسبيح 🥇'
+  },
+  400: {
+    badge: '🌿',
+    title: 'همة إيمانية تعانق السحاب! 400 تسبيحة',
+    msg: 'ثواب عظيم ومنازل رفيعة لك ولوالديك في الجنة بإذن الله تعالى. استمر في نشر الخير والبركة!',
+    level: 'سفير النور 💎'
+  },
+  500: {
+    badge: '⭐',
+    title: 'إنجاز تاريخي مبهر! 500 تسبيحة مباركة',
+    msg: 'نصف ألف تسبيحة عطرت بها بيتك ومدرستك! مدرسة مشيرفة الابتدائية تفتخر بك وبهمتك العالية!',
+    level: 'بطل مشيرفة الذهبي 👑'
+  }
+};
+
+const getMilestoneData = (count) => {
+  if (MILESTONE_MESSAGES[count]) {
+    return { ...MILESTONE_MESSAGES[count], count };
+  }
+  return {
+    badge: '👑',
+    title: `ما شاء الله تبارك الله! ${count} تسبيحة مباركة`,
+    msg: `همة أسطورية مباركة في ذكر الله تعالى! بارك الله فيك ونفع بك ورزقك الفردوس الأعلى برفقة النبي ﷺ.`,
+    level: `أسطورة الذكر (${count} تسبيحة) ✨`,
+    count
+  };
+};
+
 const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab;
@@ -270,6 +316,8 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [archiveConfirmWord, setArchiveConfirmWord] = useState('');
   const [archiveBackupDownloaded, setArchiveBackupDownloaded] = useState(false);
+  const [milestoneCelebration, setMilestoneCelebration] = useState(null);
+  const [highestMilestone, setHighestMilestone] = useState(0);
 
   const currentTasbihSkin = counterSkin === 'marble'
     ? {
@@ -434,7 +482,11 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
     if (!isKiosk) {
       setStudentSessionCount(prev => {
         const next = prev + 1;
-        if (next === studentTargetRound || next % studentTargetRound === 0) {
+        if (next > 0 && next % 100 === 0) {
+          playChimeTone();
+          setMilestoneCelebration(getMilestoneData(next));
+          setHighestMilestone(h => Math.max(h, next));
+        } else if (next === studentTargetRound || next % studentTargetRound === 0) {
           playChimeTone();
         }
         return next;
@@ -1253,113 +1305,163 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
               </div>
             )}
 
-            {/* MULTI-TASBIH GRID IN STUDENT VIEW */}
-            <div className="tasbih-multi-grid">
+            {/* STEP 1: SELECT DHIKR PHRASE */}
+            <div className="tasbih-selector-grid">
               {adhkarList.map(d => {
                 const isSelected = studentActiveDhikr === d.id;
                 const count = dhikrCounts[d.id] || 0;
-                const isPressed = pressedBtnId === d.id;
                 const isTarget = campaign.targetDhikr === d.id;
-
                 return (
                   <div
                     key={d.id}
-                    className={`tasbih-dhikr-card ${isSelected ? 'active-target' : ''}`}
-                    style={{
-                      cursor: 'pointer',
-                      borderWidth: isSelected ? '2.5px' : '1.5px'
+                    className={`tasbih-selector-pill ${isSelected ? 'active' : ''}`}
+                    onClick={() => {
+                      setStudentActiveDhikr(d.id);
+                      showToast(`تم اختيار: ${d.shortTitle} 📿`);
                     }}
-                    onClick={() => setStudentActiveDhikr(d.id)}
                   >
-                    {/* Card Header */}
-                    <div className="tasbih-card-header">
-                      <span className="tasbih-card-badge">{d.badge}</span>
-                      <h3 className="tasbih-card-title">{d.title}</h3>
-                      <span className="tasbih-card-merit">
-                        {d.meritText || 'أجر وثواب مضاعف'}
-                      </span>
-                    </div>
-
-                    {/* Dedicated Electronic 3D Digital Tasbih */}
-                    <div className="tasbih-card-device-wrap" onClick={(e) => e.stopPropagation()}>
-                      <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
-                        <img
-                          src={currentTasbihSkin.img}
-                          alt={currentTasbihSkin.name}
-                          className="tasbih-device-casing"
-                        />
-
-                        {/* Digital OLED Screen */}
-                        <div
-                          className={`${currentTasbihSkin.screenClass} ${isSelected && studentSessionCount > 0 && studentSessionCount % studentTargetRound === 0 ? 'celebrate' : ''}`}
-                        >
-                          <div className="tasbih-lcd-meta">
-                            <span className="tasbih-lcd-round-badge">
-                              {isSelected ? `جولة ${studentSessionCount % studentTargetRound}/${studentTargetRound}` : 'سحابي ☁️'}
-                            </span>
-                            <span className="tasbih-lcd-icon">
-                              {d.badge}
-                            </span>
-                          </div>
-
-                          {/* OLED Digits */}
-                          <div
-                            className="tasbih-lcd-digits"
-                            style={{
-                              fontSize: getOledFontSize(count)
-                            }}
-                          >
-                            {count.toLocaleString('en-US')}
-                          </div>
-                        </div>
-
-                        {/* Tactile Golden Push Button */}
-                        <button
-                          type="button"
-                          aria-label={`تسبيح ${d.shortTitle}`}
-                          className={`${currentTasbihSkin.btnClass} ${isPressed ? 'pressed' : ''}`}
-                          onMouseDown={() => setPressedBtnId(d.id)}
-                          onMouseUp={() => setPressedBtnId(null)}
-                          onTouchStart={() => setPressedBtnId(d.id)}
-                          onTouchEnd={() => setPressedBtnId(null)}
-                          onClick={() => {
-                            setStudentActiveDhikr(d.id);
-                            handleTapDhikr(d.id, 'mobile');
-                          }}
-                          title={`المس الزر لتسجيل: ${d.shortTitle}`}
-                        >
-                          <span className="btn-touch-hint">اضغط 👆</span>
-                        </button>
-
-                        {/* Small Reset Button - Local Student Session Reset Only */}
-                        <button
-                          type="button"
-                          aria-label="تصفير الجلسة الحالية"
-                          className={currentTasbihSkin.resetClass}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            playResetTone();
-                            setStudentSessionCount(0);
-                            showToast('تم تصفير جولتك الشخصية (0..33) للبدء من جديد 🔄 رصيدك ورصيد صفك في المسابقة المدرسية محفوظ وآمن سحابياً 🛡️');
-                          }}
-                          title="تصفير دورتك الفردية الحالية (0..33) للبدء من جديد"
-                        />
+                    <span className="pill-badge">{d.badge}</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="pill-title">
+                        {d.title}
                       </div>
-                    </div>
-
-                    {/* Card Footer Stats */}
-                    <div className="tasbih-card-footer-stats">
-                      <span className="dhikr-multiplier">
-                        {isTarget ? '🎯 هدف الأسبوع' : isSelected ? '⭐ مقولتك الحالية' : `مضاعف: ${d.multiplier}x`}
-                      </span>
-                      <span className="dhikr-total">
-                        {count.toLocaleString('en-US')} تسبيحة
-                      </span>
+                      <div className="pill-count">
+                        {isTarget ? '🎯 هدف الأسبوع • ' : ''}{count.toLocaleString('en-US')} تسبيحة
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* STEP 2: ACTIVE DHIKR SPOTLIGHT & SINGLE 3D ELECTRONIC TASBIH */}
+            {(() => {
+              const activeObj = adhkarList.find(d => d.id === studentActiveDhikr) || adhkarList[0];
+              const nextMilestone = (Math.floor(studentSessionCount / 100) + 1) * 100;
+              const currentRoundProgress = studentSessionCount % 100;
+              const isPressed = pressedBtnId === activeObj.id;
+
+              return (
+                <div className="tasbih-student-single-container">
+                  {/* Spotlight Card */}
+                  <div className="tasbih-active-spotlight-card">
+                    <div className="spotlight-header">
+                      <span className="spotlight-badge">{activeObj.badge}</span>
+                      <h2 className="spotlight-title">{activeObj.title}</h2>
+                    </div>
+                    <p className="spotlight-merit">✨ {activeObj.meritText || 'أجر عظيم وثواب مضاعف'}</p>
+                    <div className="spotlight-progress-wrap">
+                      <div>
+                        <span>الهدف القادم للتشجيع: </span>
+                        <strong>{nextMilestone} تسبيحة 🎯</strong>
+                      </div>
+                      <div>
+                        <span>إنجاز المئة الحالية: </span>
+                        <strong>{currentRoundProgress} / 100</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* EXACTLY ONE CENTRAL 3D ELECTRONIC TASBIH */}
+                  <div className="tasbih-single-device-wrap">
+                    <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
+                      <img
+                        src={currentTasbihSkin.img}
+                        alt={currentTasbihSkin.name}
+                        className="tasbih-device-casing"
+                      />
+
+                      {/* Digital OLED Screen */}
+                      <div
+                        className={`${currentTasbihSkin.screenClass} ${studentSessionCount > 0 && studentSessionCount % 100 === 0 ? 'celebrate' : ''}`}
+                      >
+                        <div className="tasbih-lcd-meta">
+                          <span className="tasbih-lcd-round-badge">
+                            {studentSessionCount > 0 ? `الجولة: ${Math.floor(studentSessionCount / 100) + 1}` : 'ابدأ التسبيح'}
+                          </span>
+                          <span className="tasbih-lcd-icon">
+                            {activeObj.badge}
+                          </span>
+                        </div>
+
+                        {/* OLED Digits (Student Session Count) */}
+                        <div
+                          className="tasbih-lcd-digits"
+                          style={{
+                            fontSize: getOledFontSize(studentSessionCount)
+                          }}
+                        >
+                          {studentSessionCount.toLocaleString('en-US')}
+                        </div>
+                      </div>
+
+                      {/* Tactile Golden Push Button */}
+                      <button
+                        type="button"
+                        aria-label={`تسبيح ${activeObj.shortTitle}`}
+                        className={`${currentTasbihSkin.btnClass} ${isPressed ? 'pressed' : ''}`}
+                        onMouseDown={() => setPressedBtnId(activeObj.id)}
+                        onMouseUp={() => setPressedBtnId(null)}
+                        onTouchStart={() => setPressedBtnId(activeObj.id)}
+                        onTouchEnd={() => setPressedBtnId(null)}
+                        onClick={() => handleTapDhikr(activeObj.id, 'mobile')}
+                        title={`المس الزر الذهبي لتسجيل: ${activeObj.shortTitle}`}
+                      >
+                        <span className="btn-touch-hint">اضغط 👆</span>
+                      </button>
+
+                      {/* Small Reset Button - Local Student Session Reset Only */}
+                      <button
+                        type="button"
+                        aria-label="تصفير الجلسة الحالية"
+                        className={currentTasbihSkin.resetClass}
+                        onClick={() => {
+                          playResetTone();
+                          setStudentSessionCount(0);
+                          showToast('تم تصفير جولتك الشخصية (0) للبدء من جديد 🔄 رصيدك ورصيد صفك في المسابقة المدرسية محفوظ وآمن سحابياً 🛡️');
+                        }}
+                        title="تصفير عداد جلستك الحالية للبدء من 0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Badges Earned Strip */}
+                  {highestMilestone >= 100 && (
+                    <div style={{
+                      marginTop: '1.25rem',
+                      background: 'rgba(0,0,0,0.35)',
+                      border: '1px solid rgba(251,191,36,0.3)',
+                      borderRadius: '16px',
+                      padding: '10px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}>
+                      <span style={{ fontSize: '0.8rem', color: '#fef08a', fontWeight: 800 }}>
+                        🎖️ أوسمة الهمة التي حققتها في هذه الجلسة:
+                      </span>
+                      {[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].filter(m => highestMilestone >= m).map(m => (
+                        <span key={m} style={{
+                          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                          color: '#0f172a',
+                          fontWeight: 900,
+                          fontSize: '0.75rem',
+                          padding: '3px 10px',
+                          borderRadius: '12px',
+                          boxShadow: '0 2px 6px rgba(245,158,11,0.3)'
+                        }}>
+                          {m} تسبيحة 🏅
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Anti-Wipe Security Notice */}
             <div style={{
@@ -1810,6 +1912,35 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                 أرشفة وتصفير للأسبوع الجديد
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MILESTONE ENCOURAGEMENT CELEBRATION MODAL (100, 200, 300, ...) */}
+      {milestoneCelebration && (
+        <div className="tasbih-milestone-backdrop" onClick={() => setMilestoneCelebration(null)}>
+          <div className="tasbih-milestone-modal" onClick={e => e.stopPropagation()}>
+            <div className="milestone-badge-glow">{milestoneCelebration.badge}</div>
+            <span className="milestone-level-pill">{milestoneCelebration.level}</span>
+            <h2 className="milestone-title">{milestoneCelebration.title}</h2>
+            <p className="milestone-msg">{milestoneCelebration.msg}</p>
+            <div className="milestone-stats-box">
+              <div>
+                <span className="stat-label">رصيدك في هذه الجولة:</span>
+                <span className="stat-val">{milestoneCelebration.count.toLocaleString('en-US')} تسبيحة ✨</span>
+              </div>
+              <div>
+                <span className="stat-label">صفك في المنافسة:</span>
+                <span className="stat-val">{studentClass} 🏆</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="tasbih-btn tasbih-btn-gold milestone-continue-btn"
+              onClick={() => setMilestoneCelebration(null)}
+            >
+              <span>واصل الهمة والتسبيح 🚀</span>
+            </button>
           </div>
         </div>
       )}
