@@ -4,6 +4,7 @@ import tasbihEmeraldImg from '../assets/tasbih_emerald.jpg';
 import tasbihMarbleImg from '../assets/tasbih_marble.jpg';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
 
 const INITIAL_ADHKAR = [
   {
@@ -70,46 +71,83 @@ const INITIAL_CAMPAIGN = {
   endDate: '2026-09-30',
 };
 
-const ALL_18_CLASSES = [
-  'الصف الأول (أ)',
-  'الصف الأول (ب)',
-  'الصف الأول (ج)',
-  'الصف الثاني (أ)',
-  'الصف الثاني (ب)',
-  'الصف الثاني (ج)',
-  'الصف الثالث (أ)',
-  'الصف الثالث (ب)',
-  'الصف الثالث (ج)',
-  'الصف الرابع (أ)',
-  'الصف الرابع (ب)',
-  'الصف الرابع (ج)',
-  'الصف الخامس (أ)',
-  'الصف الخامس (ب)',
-  'الصف الخامس (ج)',
-  'الصف السادس (أ)',
-  'الصف السادس (ب)',
-  'الصف السادس (ج)',
+// All 19 Classes: Grade 1 (1-3), Grade 2 (1-3), Grade 3 (1-3), Grade 4 (1-3), Grade 5 (1-3), Grade 6 (1-4)
+const ALL_19_CLASSES = [
+  'الأول 1',
+  'الأول 2',
+  'الأول 3',
+  'الثاني 1',
+  'الثاني 2',
+  'الثاني 3',
+  'الثالث 1',
+  'الثالث 2',
+  'الثالث 3',
+  'الرابع 1',
+  'الرابع 2',
+  'الرابع 3',
+  'الخامس 1',
+  'الخامس 2',
+  'الخامس 3',
+  'السادس 1',
+  'السادس 2',
+  'السادس 3',
+  'السادس 4',
 ];
 
+const mapUnifiedClassTo19 = (rawClass) => {
+  if (!rawClass) return null;
+  const str = String(rawClass).trim();
+  if (ALL_19_CLASSES.includes(str)) return str;
+
+  const grades = [
+    { name: 'الأول', key: 'الأول' },
+    { name: 'الثاني', key: 'الثاني' },
+    { name: 'الثالث', key: 'الثالث' },
+    { name: 'الرابع', key: 'الرابع' },
+    { name: 'الخامس', key: 'الخامس' },
+    { name: 'السادس', key: 'السادس' },
+  ];
+
+  for (const g of grades) {
+    if (str.includes(g.name)) {
+      if (str.includes('4') || str.includes('(د)') || str.includes('د')) {
+        if (g.key === 'السادس') return 'السادس 4';
+      }
+      if (str.includes('3') || str.includes('(ج)') || str.includes('ج')) {
+        return `${g.key} 3`;
+      }
+      if (str.includes('2') || str.includes('(ب)') || str.includes('ب')) {
+        return `${g.key} 2`;
+      }
+      if (str.includes('1') || str.includes('(أ)') || str.includes('أ')) {
+        return `${g.key} 1`;
+      }
+      return `${g.key} 1`;
+    }
+  }
+  return null;
+};
+
 const INITIAL_CLASSES = {
-  'الصف السادس (أ)': { total: 5820, totalStudents: 32, dailyActive: 28 },
-  'الصف السادس (ب)': { total: 5410, totalStudents: 31, dailyActive: 27 },
-  'الصف السادس (ج)': { total: 5120, totalStudents: 30, dailyActive: 25 },
-  'الصف الخامس (أ)': { total: 4950, totalStudents: 32, dailyActive: 26 },
-  'الصف الخامس (ب)': { total: 4720, totalStudents: 31, dailyActive: 23 },
-  'الصف الخامس (ج)': { total: 4510, totalStudents: 30, dailyActive: 22 },
-  'الصف الرابع (أ)': { total: 4320, totalStudents: 33, dailyActive: 25 },
-  'الصف الرابع (ب)': { total: 4180, totalStudents: 32, dailyActive: 24 },
-  'الصف الرابع (ج)': { total: 3990, totalStudents: 31, dailyActive: 21 },
-  'الصف الثالث (أ)': { total: 3820, totalStudents: 32, dailyActive: 22 },
-  'الصف الثالث (ب)': { total: 3650, totalStudents: 31, dailyActive: 21 },
-  'الصف الثالث (ج)': { total: 3490, totalStudents: 30, dailyActive: 20 },
-  'الصف الثاني (أ)': { total: 3320, totalStudents: 31, dailyActive: 23 },
-  'الصف الثاني (ب)': { total: 3180, totalStudents: 30, dailyActive: 21 },
-  'الصف الثاني (ج)': { total: 3020, totalStudents: 29, dailyActive: 20 },
-  'الصف الأول (أ)':  { total: 2890, totalStudents: 30, dailyActive: 25 },
-  'الصف الأول (ب)':  { total: 2740, totalStudents: 29, dailyActive: 24 },
-  'الصف الأول (ج)':  { total: 2580, totalStudents: 28, dailyActive: 22 },
+  'السادس 1': { total: 5820, totalStudents: 32, dailyActive: 28 },
+  'السادس 2': { total: 5410, totalStudents: 31, dailyActive: 27 },
+  'السادس 3': { total: 5120, totalStudents: 30, dailyActive: 25 },
+  'السادس 4': { total: 4890, totalStudents: 29, dailyActive: 24 },
+  'الخامس 1': { total: 4720, totalStudents: 32, dailyActive: 26 },
+  'الخامس 2': { total: 4510, totalStudents: 31, dailyActive: 23 },
+  'الخامس 3': { total: 4320, totalStudents: 30, dailyActive: 22 },
+  'الرابع 1': { total: 4180, totalStudents: 33, dailyActive: 25 },
+  'الرابع 2': { total: 3990, totalStudents: 32, dailyActive: 24 },
+  'الرابع 3': { total: 3820, totalStudents: 31, dailyActive: 21 },
+  'الثالث 1': { total: 3650, totalStudents: 32, dailyActive: 22 },
+  'الثالث 2': { total: 3490, totalStudents: 31, dailyActive: 21 },
+  'الثالث 3': { total: 3320, totalStudents: 30, dailyActive: 20 },
+  'الثاني 1': { total: 3180, totalStudents: 31, dailyActive: 23 },
+  'الثاني 2': { total: 3020, totalStudents: 30, dailyActive: 21 },
+  'الثاني 3': { total: 2890, totalStudents: 29, dailyActive: 20 },
+  'الأول 1':  { total: 2740, totalStudents: 30, dailyActive: 25 },
+  'الأول 2':  { total: 2580, totalStudents: 29, dailyActive: 24 },
+  'الأول 3':  { total: 2420, totalStudents: 28, dailyActive: 22 },
 };
 
 const playClickTone = () => {
@@ -225,10 +263,11 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab;
     const h = window.location.hash || '';
-    if (h.includes('counter') || h.includes('student')) return 'student-view';
-    if (h.includes('classes') || h.includes('leaderboard')) return 'classes-view';
+    if (h.includes('solo')) return 'solo-view';
+    if (h.includes('competition') || h.includes('classes') || h.includes('leaderboard')) return 'competition-view';
+    if (h.includes('counter') || h.includes('student')) return 'solo-view';
     if (isAdminMode && h.includes('settings')) return 'admin-control';
-    return 'kiosk-view'; // Default so the electronic counter is immediately visible!
+    return 'kiosk-view'; // Default: Main School Display
   });
   const [isPublished, setIsPublished] = useState(() => {
     return localStorage.getItem('tasbih_is_published') !== 'false';
@@ -294,17 +333,53 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
     setTimeout(() => setToastMsg(''), 3500);
   };
 
-  const [studentSessionCount, setStudentSessionCount] = useState(0);
-  const [studentTargetRound, setStudentTargetRound] = useState(33);
-  const [studentActiveDhikr, setStudentActiveDhikr] = useState('salawat');
-  const [studentName, setStudentName] = useState(() => {
+  // Section 2: Solo Tasbih States
+  const [soloUserName, setSoloUserName] = useState(() => {
+    return localStorage.getItem('tasbih_solo_user_name') || '';
+  });
+  const [soloSessionCount, setSoloSessionCount] = useState(0);
+  const [soloSavedTotal, setSoloSavedTotal] = useState(() => {
+    return Number(localStorage.getItem('tasbih_solo_cumulative_total')) || 0;
+  });
+  const [soloTargetRound, setSoloTargetRound] = useState(33);
+  const [soloActiveDhikr, setSoloActiveDhikr] = useState('salawat');
+
+  // Section 3: 19-Class Competition & Unified Login States
+  const [unifiedSession, setUnifiedSession] = useState(() => getStudentSession());
+  const [competitionStudentName, setCompetitionStudentName] = useState(() => {
+    const sess = getStudentSession();
+    if (sess && sess.fullName) return sess.fullName;
     return localStorage.getItem('school_unified_student_name') || 'يوسف أحمد';
   });
   const [studentClass, setStudentClass] = useState(() => {
+    const sess = getStudentSession();
+    if (sess && sess.studentClass) {
+      const mapped = mapUnifiedClassTo19(sess.studentClass);
+      if (mapped) return mapped;
+    }
     const saved = localStorage.getItem('school_unified_student_grade');
-    return (saved && ALL_18_CLASSES.includes(saved)) ? saved : 'الصف السادس (أ)';
+    return (saved && ALL_19_CLASSES.includes(saved)) ? saved : 'السادس 1';
   });
-  const [leaderboardFilter, setLeaderboardFilter] = useState('all'); // all, 1-2, 3-4, 5-6
+  const [competitionSessionCount, setCompetitionSessionCount] = useState(0);
+  const [competitionTargetRound, setCompetitionTargetRound] = useState(33);
+  const [competitionActiveDhikr, setCompetitionActiveDhikr] = useState('salawat');
+  const [leaderboardFilter, setLeaderboardFilter] = useState('all'); // all, 1, 2, 3, 4, 5, 6
+
+  // Listen to Global Unified Auth changes
+  useEffect(() => {
+    const handleAuth = () => {
+      const sess = getStudentSession();
+      setUnifiedSession(sess);
+      if (sess && sess.fullName) {
+        setCompetitionStudentName(sess.fullName);
+        const mapped = mapUnifiedClassTo19(sess.studentClass);
+        if (mapped) setStudentClass(mapped);
+      }
+    };
+    window.addEventListener('studentAuthChanged', handleAuth);
+    return () => window.removeEventListener('studentAuthChanged', handleAuth);
+  }, []);
+
   const [counterSkin, setCounterSkin] = useState(() => {
     const saved = localStorage.getItem('tasbih_counter_skin');
     return saved === 'marble' ? 'marble' : 'emerald';
@@ -432,6 +507,8 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
   const handleTapDhikr = (dhikrId, source = 'kiosk') => {
     const now = Date.now();
     const isKiosk = source === 'kiosk';
+    const isSolo = source === 'solo';
+    const isCompetition = source === 'competition';
     const cooldownDuration = isKiosk ? settings.kioskCooldown : settings.studentCooldown;
 
     if (!isKiosk) {
@@ -469,7 +546,7 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
         [`dhikrCounts.${dhikrId}`]: increment(1),
         lastUpdated: new Date().toISOString()
       };
-      if (!isKiosk && studentClass) {
+      if (isCompetition && studentClass) {
         updatePayload[`classStats.${studentClass}.total`] = increment(1);
       }
       updateDoc(liveDocRef, updatePayload).catch(() => {
@@ -479,14 +556,40 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
       console.warn('Cloud tap broadcast error:', e);
     }
 
-    if (!isKiosk) {
-      setStudentSessionCount(prev => {
+    // 3a. Solo Tasbih Updates
+    if (isSolo) {
+      setSoloSavedTotal(prev => {
+        const next = prev + 1;
+        localStorage.setItem('tasbih_solo_cumulative_total', String(next));
+        return next;
+      });
+
+      setSoloSessionCount(prev => {
         const next = prev + 1;
         if (next > 0 && next % 100 === 0) {
           playChimeTone();
           setMilestoneCelebration(getMilestoneData(next));
           setHighestMilestone(h => Math.max(h, next));
-        } else if (next === studentTargetRound || next % studentTargetRound === 0) {
+        } else if (next === soloTargetRound || next % soloTargetRound === 0) {
+          playChimeTone();
+        }
+        return next;
+      });
+    }
+
+    // 3b. Competition Updates (19 Classes)
+    if (isCompetition) {
+      setCompetitionSessionCount(prev => {
+        const next = prev + 1;
+        if (next > 0 && next % 100 === 0) {
+          playChimeTone();
+          const baseData = getMilestoneData(next);
+          setMilestoneCelebration({
+            ...baseData,
+            msg: `ما شاء الله يا ${competitionStudentName || 'بطل'}! أهديت صفك (${studentClass}) مئة تسبيحة نورانية ورفعت ترتيب صفك في المسابقة 🚀`
+          });
+          setHighestMilestone(h => Math.max(h, next));
+        } else if (next === competitionTargetRound || next % competitionTargetRound === 0) {
           playChimeTone();
         }
         return next;
@@ -632,19 +735,19 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
           className={'tasbih-tab-btn ' + (activeTab === 'kiosk-view' ? 'active' : '')}
           onClick={() => setActiveTab('kiosk-view')}
         >
-          <i className="fas fa-tv"></i> 🏛️ شاشة المدخل الكبرى (Kiosk)
+          <i className="fas fa-school"></i> 🏛️ الشاشة الرئيسية للمدرسة
         </button>
         <button
-          className={'tasbih-tab-btn ' + (activeTab === 'student-view' ? 'active' : '')}
-          onClick={() => setActiveTab('student-view')}
+          className={'tasbih-tab-btn ' + (activeTab === 'solo-view' ? 'active' : '')}
+          onClick={() => setActiveTab('solo-view')}
         >
-          <i className="fas fa-mobile-alt"></i> 📱 مسبحة الطالب الذكية
+          <i className="fas fa-user"></i> 📿 التسبيح المنفرد
         </button>
         <button
-          className={'tasbih-tab-btn ' + (activeTab === 'classes-view' ? 'active' : '')}
-          onClick={() => setActiveTab('classes-view')}
+          className={'tasbih-tab-btn ' + (activeTab === 'competition-view' ? 'active' : '')}
+          onClick={() => setActiveTab('competition-view')}
         >
-          <i className="fas fa-trophy"></i> 🏆 لوحة تنافس الصفوف
+          <i className="fas fa-trophy"></i> 🏆 مسابقة الـ 19 صفاً
         </button>
         {isAdminMode && (
           <button
@@ -1117,117 +1220,145 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                 })}
               </div>
 
+              {/* Quick Navigation Cards to Solo and Competition Views */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '14px',
+                marginTop: '1.75rem'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #022c22, #064e3b)',
+                  borderRadius: '18px',
+                  padding: '1.25rem',
+                  border: '1.5px solid #10b981',
+                  color: 'white',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>📿</div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fef08a', margin: '0 0 6px 0' }}>
+                    التسبيح المنفرد
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#a7f3d0', margin: '0 0 12px 0' }}>
+                    مسبحة خاصة لكل شخص يريد الذكر بمفرده مع حفظ إجماليك التراكمي الدائم
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('solo-view')}
+                    className="tasbih-btn tasbih-btn-emerald"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    فتح التسبيح المنفرد 👈
+                  </button>
+                </div>
+
+                <div style={{
+                  background: 'linear-gradient(135deg, #0f172a, #022c22)',
+                  borderRadius: '18px',
+                  padding: '1.25rem',
+                  border: '1.5px solid #fbbf24',
+                  color: 'white',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>🏆</div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fef08a', margin: '0 0 6px 0' }}>
+                    مسابقة الـ 19 صفاً
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#fef08a', margin: '0 0 12px 0' }}>
+                    سباق إيماني بين جميع الشعب من الأول حتى السادس مع ربط الدخول الموحد
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('competition-view')}
+                    className="tasbih-btn tasbih-btn-gold"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    دخول مسابقة الصفوف 🚀
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
 
-        {/* TAB 3: STUDENT VIEW PREVIEW - MULTI-TASBIH PER PHRASE */}
-        {activeTab === 'student-view' && (
+        {/* TAB 2: SOLO TASBIH VIEW (التسبيح المنفرد) */}
+        {activeTab === 'solo-view' && (
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Student & Class Configuration Card */}
-            <div className="student-session-card" style={{
-              background: 'linear-gradient(135deg, #064e3b, #022c22)',
-              borderRadius: '20px',
-              padding: '1.25rem',
-              marginBottom: '1.25rem',
-              border: '1.5px solid #10b981',
-              boxShadow: '0 8px 24px rgba(2, 44, 34, 0.4)',
-              color: 'white'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 800, background: 'rgba(16,185,129,0.25)', color: '#6ee7b7', padding: '3px 10px', borderRadius: '12px', border: '1px solid rgba(52,211,153,0.3)' }}>
-                  📱 مسبحة الطالب من البيت
-                </span>
-                <span style={{ fontSize: '0.78rem', color: '#a7f3d0' }}>
-                  {isCloudConnected ? '🟢 متصل بالمسابقة المباشرة' : '🔄 متصل محلياً'}
-                </span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '10px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#a7f3d0', fontWeight: 700, marginBottom: '3px' }}>
-                    اسم الطالب (اختياري):
-                  </label>
-                  <input
-                    type="text"
-                    value={studentName}
-                    onChange={(e) => {
-                      setStudentName(e.target.value);
-                      localStorage.setItem('school_unified_student_name', e.target.value);
-                    }}
-                    placeholder="اكتب اسمك..."
-                    style={{
-                      width: '100%',
-                      padding: '7px 10px',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(16,185,129,0.4)',
-                      background: 'rgba(0,0,0,0.35)',
-                      color: 'white',
-                      fontSize: '0.85rem',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#fef08a', fontWeight: 800, marginBottom: '3px' }}>
-                    اختر صفك من الـ 18 صفاً:
-                  </label>
-                  <select
-                    value={studentClass}
-                    onChange={(e) => {
-                      const newCls = e.target.value;
-                      setStudentClass(newCls);
-                      localStorage.setItem('school_unified_student_grade', newCls);
-                      showToast(`تم تعيين صفك: ${newCls} 🎯`);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '7px 10px',
-                      borderRadius: '10px',
-                      border: '1.5px solid #fbbf24',
-                      background: '#064e3b',
-                      color: '#fef08a',
-                      fontWeight: 800,
-                      fontSize: '0.85rem',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {ALL_18_CLASSES.map(cls => (
-                      <option key={cls} value={cls} style={{ background: '#022c22', color: 'white' }}>
-                        {cls}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Class Live Points Banner */}
-              <div style={{
-                background: 'rgba(0,0,0,0.3)',
-                borderRadius: '12px',
-                padding: '8px 12px',
-                display: 'flex',
+            {/* Header & Description */}
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <span style={{
+                background: 'linear-gradient(135deg, #059669, #047857)',
+                color: '#fef08a',
+                fontSize: '0.85rem',
+                fontWeight: 900,
+                padding: '5px 16px',
+                borderRadius: '20px',
+                border: '1.5px solid #fbbf24',
+                boxShadow: '0 4px 12px rgba(5,150,105,0.3)',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                border: '1px solid rgba(251,191,36,0.3)'
+                gap: '6px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>🏆</span>
-                  <span style={{ fontSize: '0.82rem', color: '#e2e8f0' }}>
-                    رصيد <strong>{studentClass}</strong> في المسابقة المدرسية:
-                  </span>
-                </div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 10px rgba(245,158,11,0.5)' }}>
-                  {(classStats[studentClass]?.total || 0).toLocaleString('en-US')} تسبيحة
-                </div>
-              </div>
+                <span>📿</span> التسبيح المنفرد • مسبحتك الشخصية لكل الأوقات
+              </span>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '10px 0 4px 0' }}>
+                المسبحة الإلكترونية الفردية
+              </h2>
+              <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0 }}>
+                مسبحة مخصصة لكل شخص (طالب، معلم، زائر) يريد ذكر الله في خلوته، مع حفظ إجماليك التراكمي الدائم تلقائياً
+              </p>
             </div>
 
-            {/* Sub-Header & Controls Bar */}
+            {/* Optional Name Box */}
+            <div style={{
+              background: 'linear-gradient(135deg, #064e3b, #022c22)',
+              borderRadius: '16px',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.25rem',
+              border: '1.5px solid #10b981',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              color: 'white',
+              boxShadow: '0 4px 15px rgba(2, 44, 34, 0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.6rem' }}>👤</span>
+                <div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#fef08a' }}>
+                    الاسم الكريم (اختياري):
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#a7f3d0', marginTop: '2px' }}>
+                    يمكنك التسبيح باسمك أو التسبيح بدون كتابة اسمك لوجه الله تعالى
+                  </div>
+                </div>
+              </div>
+              <input
+                type="text"
+                value={soloUserName}
+                onChange={(e) => {
+                  setSoloUserName(e.target.value);
+                  localStorage.setItem('tasbih_solo_user_name', e.target.value);
+                }}
+                placeholder="اكتب اسمك هنا (اختياري)..."
+                style={{
+                  minWidth: '220px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(16,185,129,0.5)',
+                  background: 'rgba(0,0,0,0.35)',
+                  color: 'white',
+                  fontSize: '0.9rem',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* Controls Bar: Target & Skins */}
             <div className="student-controls-bar" style={{
               background: '#022c22',
               borderRadius: '20px',
@@ -1244,26 +1375,25 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
               <div>
                 <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>📿</span>
-                  <span>اختر أي مقولة مباركة للترديد واضغط على مسبحتها لتسجيل نقاطك ونقاط صفك:</span>
+                  <span>اختر أي مقولة مباركة للترديد:</span>
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#a7f3d0', marginTop: '2px' }}>
-                  دورتك الفردية الحالية: <strong style={{ color: '#fef08a' }}>{studentSessionCount % studentTargetRound}</strong> من <strong>{studentTargetRound}</strong>
+                  دورتك الحالية: <strong style={{ color: '#fef08a' }}>{soloSessionCount % soloTargetRound}</strong> من <strong>{soloTargetRound}</strong>
                 </div>
               </div>
 
-              {/* Target & Skins Selectors */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>هدف الجولة:</span>
                   <button
-                    onClick={() => setStudentTargetRound(33)}
-                    style={{ background: studentTargetRound === 33 ? '#059669' : '#0f172a', border: studentTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+                    onClick={() => setSoloTargetRound(33)}
+                    style={{ background: soloTargetRound === 33 ? '#059669' : '#0f172a', border: soloTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
                   >
                     33
                   </button>
                   <button
-                    onClick={() => setStudentTargetRound(100)}
-                    style={{ background: studentTargetRound === 100 ? '#059669' : '#0f172a', border: studentTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+                    onClick={() => setSoloTargetRound(100)}
+                    style={{ background: soloTargetRound === 100 ? '#059669' : '#0f172a', border: soloTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
                   >
                     100
                   </button>
@@ -1305,10 +1435,10 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
               </div>
             )}
 
-            {/* STEP 1: SELECT DHIKR PHRASE */}
+            {/* Dhikr Selector Grid */}
             <div className="tasbih-selector-grid">
               {adhkarList.map(d => {
-                const isSelected = studentActiveDhikr === d.id;
+                const isSelected = soloActiveDhikr === d.id;
                 const count = dhikrCounts[d.id] || 0;
                 const isTarget = campaign.targetDhikr === d.id;
                 return (
@@ -1316,7 +1446,7 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                     key={d.id}
                     className={`tasbih-selector-pill ${isSelected ? 'active' : ''}`}
                     onClick={() => {
-                      setStudentActiveDhikr(d.id);
+                      setSoloActiveDhikr(d.id);
                       showToast(`تم اختيار: ${d.shortTitle} 📿`);
                     }}
                   >
@@ -1326,7 +1456,7 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                         {d.title}
                       </div>
                       <div className="pill-count">
-                        {isTarget ? '🎯 هدف الأسبوع • ' : ''}{count.toLocaleString('en-US')} تسبيحة
+                        {isTarget ? '🎯 حملة الأسبوع • ' : ''}{count.toLocaleString('en-US')} تسبيحة
                       </div>
                     </div>
                   </div>
@@ -1334,11 +1464,11 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
               })}
             </div>
 
-            {/* STEP 2: ACTIVE DHIKR SPOTLIGHT & SINGLE 3D ELECTRONIC TASBIH */}
+            {/* Solo Spotlight & Single 3D Electronic Tasbih */}
             {(() => {
-              const activeObj = adhkarList.find(d => d.id === studentActiveDhikr) || adhkarList[0];
-              const nextMilestone = (Math.floor(studentSessionCount / 100) + 1) * 100;
-              const currentRoundProgress = studentSessionCount % 100;
+              const activeObj = adhkarList.find(d => d.id === soloActiveDhikr) || adhkarList[0];
+              const nextMilestone = (Math.floor(soloSessionCount / 100) + 1) * 100;
+              const currentRoundProgress = soloSessionCount % 100;
               const isPressed = pressedBtnId === activeObj.id;
 
               return (
@@ -1362,7 +1492,7 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                     </div>
                   </div>
 
-                  {/* EXACTLY ONE CENTRAL 3D ELECTRONIC TASBIH */}
+                  {/* ONE CENTRAL 3D ELECTRONIC TASBIH */}
                   <div className="tasbih-single-device-wrap">
                     <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
                       <img
@@ -1373,25 +1503,25 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
 
                       {/* Digital OLED Screen */}
                       <div
-                        className={`${currentTasbihSkin.screenClass} ${studentSessionCount > 0 && studentSessionCount % 100 === 0 ? 'celebrate' : ''}`}
+                        className={`${currentTasbihSkin.screenClass} ${soloSessionCount > 0 && soloSessionCount % 100 === 0 ? 'celebrate' : ''}`}
                       >
                         <div className="tasbih-lcd-meta">
                           <span className="tasbih-lcd-round-badge">
-                            {studentSessionCount > 0 ? `الجولة: ${Math.floor(studentSessionCount / 100) + 1}` : 'ابدأ التسبيح'}
+                            {soloSessionCount > 0 ? `الجولة: ${Math.floor(soloSessionCount / 100) + 1}` : 'ابدأ التسبيح'}
                           </span>
                           <span className="tasbih-lcd-icon">
                             {activeObj.badge}
                           </span>
                         </div>
 
-                        {/* OLED Digits (Student Session Count) */}
+                        {/* OLED Digits (Solo Session Count) */}
                         <div
                           className="tasbih-lcd-digits"
                           style={{
-                            fontSize: getOledFontSize(studentSessionCount)
+                            fontSize: getOledFontSize(soloSessionCount)
                           }}
                         >
-                          {studentSessionCount.toLocaleString('en-US')}
+                          {soloSessionCount.toLocaleString('en-US')}
                         </div>
                       </div>
 
@@ -1404,24 +1534,50 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                         onMouseUp={() => setPressedBtnId(null)}
                         onTouchStart={() => setPressedBtnId(activeObj.id)}
                         onTouchEnd={() => setPressedBtnId(null)}
-                        onClick={() => handleTapDhikr(activeObj.id, 'mobile')}
+                        onClick={() => handleTapDhikr(activeObj.id, 'solo')}
                         title={`المس الزر الذهبي لتسجيل: ${activeObj.shortTitle}`}
                       >
                         <span className="btn-touch-hint">اضغط 👆</span>
                       </button>
 
-                      {/* Small Reset Button - Local Student Session Reset Only */}
+                      {/* Small Reset Button - Resets session only, Cumulative Total is preserved */}
                       <button
                         type="button"
                         aria-label="تصفير الجلسة الحالية"
                         className={currentTasbihSkin.resetClass}
                         onClick={() => {
                           playResetTone();
-                          setStudentSessionCount(0);
-                          showToast('تم تصفير جولتك الشخصية (0) للبدء من جديد 🔄 رصيدك ورصيد صفك في المسابقة المدرسية محفوظ وآمن سحابياً 🛡️');
+                          setSoloSessionCount(0);
+                          showToast(`تم تصفير جلستك الحالية (0) للبدء من جديد 🔄 وإجماليك التراكمي الدائم (${soloSavedTotal.toLocaleString('en-US')}) محفوظ ولا يمس ✨`);
                         }}
                         title="تصفير عداد جلستك الحالية للبدء من 0"
                       />
+                    </div>
+                  </div>
+
+                  {/* UNDER THE TASBIH: CUMULATIVE TOTAL SINCE START */}
+                  <div className="solo-cumulative-stats-card">
+                    <div className="solo-stat-highlight">
+                      <span className="stat-label">
+                        {soloUserName ? `🌟 رصيد ${soloUserName} الإجمالي التراكمي منذ البداية:` : '🌟 إجمالي تسبيحاتك التراكمي منذ أن بدأت:'}
+                      </span>
+                      <span className="stat-number">{soloSavedTotal.toLocaleString('en-US')}</span>
+                      <span className="stat-sub">تسبيحة مباركة مسجلة في رصيدك الدائم ولا تمحى أبداً ✨</span>
+                    </div>
+
+                    <div className="solo-stats-row">
+                      <div className="solo-stat-subbox">
+                        <span className="sub-label">رصيد جلستك الحالية:</span>
+                        <span className="sub-val">{soloSessionCount.toLocaleString('en-US')} تسبيحة</span>
+                      </div>
+                      <div className="solo-stat-subbox">
+                        <span className="sub-label">المحطة القادمة للتشجيع:</span>
+                        <span className="sub-val">{nextMilestone.toLocaleString('en-US')} 🎯</span>
+                      </div>
+                      <div className="solo-stat-subbox">
+                        <span className="sub-label">مساهمتك في عداد المدرسة:</span>
+                        <span className="sub-val">{(dhikrCounts[activeObj.id] || 0).toLocaleString('en-US')} ✨</span>
+                      </div>
                     </div>
                   </div>
 
@@ -1459,79 +1615,451 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                       ))}
                     </div>
                   )}
+
+                  {/* Spiritual Merit Card */}
+                  <div style={{ background: 'linear-gradient(135deg, #064e3b, #022c22)', borderRadius: '18px', padding: '16px', textAlign: 'right', border: '1.5px solid #10b981', marginTop: '1rem', color: 'white', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fef08a', marginBottom: '6px' }}>
+                      ✨ الثواب والأجر في ميزان حسناتك:
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: 0, lineHeight: 1.6 }}>
+                      {activeObj.id === 'salawat'
+                        ? 'صليت على النبي ﷺ ' + soloSessionCount + ' مرات في هذه الجلسة، فصلى الله عليك بها ' + (soloSessionCount * 10) + ' صلوات، وحط عنك خطاياك ورفع درجاتك في الجنة بإذن الله.'
+                        : 'غرست لنفسك ' + soloSessionCount + ' نخلة وشجرة مباركة في الجنة بإذن الله تعالى، وأثقلت ميزان حسناتك بالذكر الطيب المبارك.'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* TAB 3: 19-CLASS COMPETITION VIEW (مسابقة الـ 19 صفاً) */}
+        {activeTab === 'competition-view' && (
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <span style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: '#fef08a', fontSize: '0.85rem', fontWeight: 900, padding: '5px 16px', borderRadius: '20px', border: '1.5px solid #fbbf24', boxShadow: '0 4px 12px rgba(5,150,105,0.3)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <span>🏆</span> المسابقة المدرسية الكبرى لتسبيح الصفوف والشعب (19 صفاً)
+              </span>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '10px 0 4px 0' }}>
+                مسبحة وتنافس الـ 19 صفاً
+              </h2>
+              <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0 }}>
+                تنافس إيماني شريف بين شعب مدرسة مشيرفة من الأول حتى السادس • كل تسبيحة من بيتك ترفع ترتيب صفك في القمة
+              </p>
+            </div>
+
+            {/* Unified Login Connection Box */}
+            {unifiedSession && unifiedSession.isLoggedIn ? (
+              <div className="unified-student-connected-badge">
+                <div className="unified-info">
+                  <span className="badge-icon">🎓</span>
+                  <div>
+                    <div className="unified-name">
+                      مرحباً يا بطل: <strong>{competitionStudentName}</strong>
+                    </div>
+                    <div className="unified-class">
+                      صفك في المسابقة: <strong style={{ color: '#fef08a' }}>{studentClass}</strong> • مرتبط بالدخول الموحد للموقع 🟢
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.78rem', color: '#a7f3d0', fontWeight: 700 }}>تغيير الشعبة:</label>
+                  <select
+                    value={studentClass}
+                    onChange={(e) => {
+                      const newCls = e.target.value;
+                      setStudentClass(newCls);
+                      localStorage.setItem('school_unified_student_grade', newCls);
+                      if (unifiedSession) {
+                        saveStudentSession({ ...unifiedSession, studentClass: newCls });
+                      }
+                      showToast(`تم تعيين صفك: ${newCls} 🎯`);
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #fbbf24',
+                      background: '#064e3b',
+                      color: '#fef08a',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {ALL_19_CLASSES.map(cls => (
+                      <option key={cls} value={cls} style={{ background: '#022c22', color: 'white' }}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <div className="student-session-card" style={{
+                background: 'linear-gradient(135deg, #064e3b, #022c22)',
+                borderRadius: '20px',
+                padding: '1.25rem',
+                marginBottom: '1.25rem',
+                border: '1.5px solid #10b981',
+                boxShadow: '0 8px 24px rgba(2, 44, 34, 0.4)',
+                color: 'white'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fef08a', background: 'rgba(16,185,129,0.25)', padding: '3px 10px', borderRadius: '12px' }}>
+                    📝 بيانات الطالب لخوض مسابقة الـ 19 صفاً
+                  </span>
+                  <span style={{ fontSize: '0.78rem', color: '#a7f3d0' }}>
+                    {isCloudConnected ? '🟢 متصل بالمسابقة المباشرة' : '🔄 متصل محلياً'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#a7f3d0', fontWeight: 700, marginBottom: '3px' }}>
+                      اسم الطالب للمسابقة:
+                    </label>
+                    <input
+                      type="text"
+                      value={competitionStudentName}
+                      onChange={(e) => {
+                        setCompetitionStudentName(e.target.value);
+                        localStorage.setItem('school_unified_student_name', e.target.value);
+                      }}
+                      placeholder="اكتب اسمك..."
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(16,185,129,0.4)',
+                        background: 'rgba(0,0,0,0.35)',
+                        color: 'white',
+                        fontSize: '0.85rem',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#fef08a', fontWeight: 800, marginBottom: '3px' }}>
+                      اختر صفك وشعبتك من الـ 19 صفاً:
+                    </label>
+                    <select
+                      value={studentClass}
+                      onChange={(e) => {
+                        const newCls = e.target.value;
+                        setStudentClass(newCls);
+                        localStorage.setItem('school_unified_student_grade', newCls);
+                        showToast(`تم تعيين صفك: ${newCls} 🎯`);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #fbbf24',
+                        background: '#064e3b',
+                        color: '#fef08a',
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {ALL_19_CLASSES.map(cls => (
+                        <option key={cls} value={cls} style={{ background: '#022c22', color: 'white' }}>
+                          {cls}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="tasbih-btn tasbih-btn-gold"
+                  style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+                  onClick={() => {
+                    if (!competitionStudentName.trim()) {
+                      showToast('يرجى كتابة اسم الطالب أولاً');
+                      return;
+                    }
+                    saveStudentSession({
+                      fullName: competitionStudentName.trim(),
+                      studentClass: studentClass,
+                      role: 'student'
+                    });
+                    showToast(`تم حفظ بياناتك وربطها بالدخول الموحد للموقع بنجاح 🚀 مرحباً بك يا ${competitionStudentName}`);
+                  }}
+                >
+                  <i className="fas fa-link"></i> ربط وحفظ في الدخول الموحد للموقع
+                </button>
+              </div>
+            )}
+
+            {/* Class Live Status Banner */}
+            {(() => {
+              const allSorted = Object.entries(classStats).sort(([, a], [, b]) => b.total - a.total);
+              const rankIdx = allSorted.findIndex(([cName]) => cName === studentClass);
+              const myRank = rankIdx >= 0 ? rankIdx + 1 : '-';
+
+              return (
+                <div style={{
+                  background: 'linear-gradient(135deg, #022c22, #064e3b)',
+                  borderRadius: '16px',
+                  padding: '12px 18px',
+                  marginBottom: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  border: '1.5px solid #fbbf24',
+                  boxShadow: '0 4px 15px rgba(251,191,36,0.2)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.6rem' }}>🏆</span>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                        رصيد <strong>{studentClass}</strong> في المسابقة المدرسية:
+                      </div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#fef08a' }}>
+                        {(classStats[studentClass]?.total || 0).toLocaleString('en-US')} تسبيحة
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                    <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.3)', padding: '6px 14px', borderRadius: '10px', border: '1px solid rgba(251,191,36,0.3)' }}>
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#a7f3d0' }}>ترتيب صفك:</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: myRank <= 3 ? '#fef08a' : '#34d399' }}>
+                        {myRank === 1 ? '🥇 #1 المتصدر' : myRank === 2 ? '🥈 #2 الوصيف' : myRank === 3 ? '🥉 #3 الثالث' : `#${myRank} من 19`}
+                      </span>
+                    </div>
+
+                    <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.3)', padding: '6px 14px', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#a7f3d0' }}>مساهمتك لصفك اليوم:</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#34d399' }}>
+                        {competitionSessionCount.toLocaleString('en-US')} ⭐
+                      </span>
+                    </div>
+                  </div>
                 </div>
               );
             })()}
 
-            {/* Anti-Wipe Security Notice */}
-            <div style={{
+            {/* Dhikr Selector Bar */}
+            <div className="student-controls-bar" style={{
               background: '#022c22',
-              border: '1.5px solid rgba(16,185,129,0.35)',
-              borderRadius: '16px',
-              padding: '12px 18px',
-              marginTop: '1.25rem',
-              fontSize: '0.82rem',
-              color: '#a7f3d0',
-              textAlign: 'center',
-              lineHeight: 1.5
-            }}>
-              🛡️ <strong>حماية المسابقة ونزاهة النتائج:</strong> زر التصفير الدائري الصغير يعيد دورتك الفردية الحالية فقط (0..33)، بينما نقاطك ونقاط صفك في المسابقة المدرسية العامة مسجلة في السحابة ومحمية دائماً ولا يمكن لأحد مسحها.
-            </div>
-
-            {/* Spiritual Merit Card */}
-            <div style={{ background: 'linear-gradient(135deg, #064e3b, #022c22)', borderRadius: '18px', padding: '16px', textAlign: 'right', border: '1.5px solid #10b981', marginTop: '1rem', color: 'white' }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fef08a', marginBottom: '6px' }}>
-                ✨ الثواب والأجر في ميزان حسناتك:
-              </div>
-              <p style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: 0, lineHeight: 1.6 }}>
-                {studentActiveDhikr === 'salawat'
-                  ? 'صليت على النبي ﷺ ' + studentSessionCount + ' مرات في هذه الجلسة، فصلى الله عليك بها ' + (studentSessionCount * 10) + ' صلوات، وحط عنك خطاياك ورفع درجاتك، وساهمت بـ ' + studentSessionCount + ' نقطة لصفك المبارك.'
-                  : 'غرست لنفسك ' + studentSessionCount + ' نخلة وشجرة مباركة في الجنة بإذن الله تعالى، ورفعت رصيد صفك في المسابقة المدرسية.'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: CLASSES LEADERBOARD PREVIEW - 18 CLASSES COMPETITION */}
-        {activeTab === 'classes-view' && (
-          <div>
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-              <span style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: '#fef08a', fontSize: '0.85rem', fontWeight: 900, padding: '5px 16px', borderRadius: '20px', border: '1.5px solid #fbbf24', boxShadow: '0 4px 12px rgba(5,150,105,0.3)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span>🏆</span> المسابقة المدرسية الكبرى لتسبيح الصفوف والشعب (18 صفاً)
-              </span>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '10px 0 4px 0' }}>
-                لوحة الشرف وتنافس الشعب المدرسية
-              </h2>
-              <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0 }}>
-                تنافس إيماني شريف بين طلاب مدرسة مشيرفة الابتدائية • كل تسبيحة من بيت الطالب ترتقي بصفه في لوحة الشرف
-              </p>
-            </div>
-
-            {/* Competition Security & Anti-Cheat Guarantee Banner */}
-            <div style={{
-              background: '#f0fdf4',
-              border: '1.5px solid #10b981',
-              borderRadius: '16px',
-              padding: '12px 18px',
-              marginBottom: '1.5rem',
+              borderRadius: '20px',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.25rem',
+              border: '1.5px solid #059669',
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
+              flexWrap: 'wrap',
               gap: '12px',
-              boxShadow: '0 2px 8px rgba(16,185,129,0.1)'
+              color: 'white'
             }}>
-              <div style={{ fontSize: '2rem', color: '#059669' }}>🛡️</div>
               <div>
-                <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#065f46' }}>
-                  نظام النزاهة التنافسية وضمان عدم المسح:
+                <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>📿</span>
+                  <span>المسبحة المخصصة لمنافسة الصفوف (19 صفاً):</span>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: '2px' }}>
-                  رصيد الشعب والصفوف تراكمي وموثق في السحابة لحظة بلحظة. <strong>تم إلغاء أي إمكانية لمسح النتائج أو تصفيرها من أجهزة الطلاب والشاشات العامة</strong> لضمان تتويج الصف الأكثر اجتهاداً بكل نزاهة وأمان.
+                <div style={{ fontSize: '0.78rem', color: '#a7f3d0', marginTop: '2px' }}>
+                  أنت تسبح الآن لصالح: <strong style={{ color: '#fef08a' }}>{studentClass}</strong> • كل تسبيحة تسجل في السحابة فوراً
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>هدف الجولة:</span>
+                  <button
+                    onClick={() => setCompetitionTargetRound(33)}
+                    style={{ background: competitionTargetRound === 33 ? '#059669' : '#0f172a', border: competitionTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    33
+                  </button>
+                  <button
+                    onClick={() => setCompetitionTargetRound(100)}
+                    style={{ background: competitionTargetRound === 100 ? '#059669' : '#0f172a', border: competitionTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    100
+                  </button>
+                </div>
+
+                <div className="tasbih-skins-row" style={{ marginTop: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCounterSkin('emerald');
+                      localStorage.setItem('tasbih_counter_skin', 'emerald');
+                    }}
+                    className={`tasbih-skin-choice ${counterSkin === 'emerald' ? 'active' : ''}`}
+                    title="المسبحة الزمردية الملكية"
+                  >
+                    <span className="tasbih-skin-gem emerald"></span>
+                    <span>الزمردي الملكي 👑</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCounterSkin('marble');
+                      localStorage.setItem('tasbih_counter_skin', 'marble');
+                    }}
+                    className={`tasbih-skin-choice ${counterSkin === 'marble' ? 'active' : ''}`}
+                    title="المسبحة الرخامية بالخط العربي"
+                  >
+                    <span className="tasbih-skin-gem marble"></span>
+                    <span>الرخام الإيطالي 🏛️</span>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* PODIUM DISPLAY (Top 3 Classes) */}
+            {/* Dhikr Selector Grid */}
+            <div className="tasbih-selector-grid">
+              {adhkarList.map(d => {
+                const isSelected = competitionActiveDhikr === d.id;
+                const count = dhikrCounts[d.id] || 0;
+                const isTarget = campaign.targetDhikr === d.id;
+                return (
+                  <div
+                    key={d.id}
+                    className={`tasbih-selector-pill ${isSelected ? 'active' : ''}`}
+                    onClick={() => {
+                      setCompetitionActiveDhikr(d.id);
+                      showToast(`تم اختيار: ${d.shortTitle} 📿`);
+                    }}
+                  >
+                    <span className="pill-badge">{d.badge}</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="pill-title">
+                        {d.title}
+                      </div>
+                      <div className="pill-count">
+                        {isTarget ? '🎯 حملة الأسبوع • ' : ''}{count.toLocaleString('en-US')} تسبيحة
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 3D Tasbih for Competition */}
+            {(() => {
+              const activeObj = adhkarList.find(d => d.id === competitionActiveDhikr) || adhkarList[0];
+              const nextMilestone = (Math.floor(competitionSessionCount / 100) + 1) * 100;
+              const currentRoundProgress = competitionSessionCount % 100;
+              const isPressed = pressedBtnId === activeObj.id;
+
+              return (
+                <div className="tasbih-student-single-container">
+                  {/* Spotlight Card */}
+                  <div className="tasbih-active-spotlight-card">
+                    <div className="spotlight-header">
+                      <span className="spotlight-badge">{activeObj.badge}</span>
+                      <h2 className="spotlight-title">{activeObj.title}</h2>
+                    </div>
+                    <p className="spotlight-merit">✨ أنت تسبح الآن لرفع رصيد <strong>{studentClass}</strong> في المسابقة المدرسية</p>
+                    <div className="spotlight-progress-wrap">
+                      <div>
+                        <span>الهدف القادم لصفك: </span>
+                        <strong>{nextMilestone} تسبيحة 🎯</strong>
+                      </div>
+                      <div>
+                        <span>مساهمتك في المئة الحالية: </span>
+                        <strong>{currentRoundProgress} / 100</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ONE CENTRAL 3D ELECTRONIC TASBIH */}
+                  <div className="tasbih-single-device-wrap">
+                    <div className={`tasbih-device-wrapper skin-${currentTasbihSkin.id}`}>
+                      <img
+                        src={currentTasbihSkin.img}
+                        alt={currentTasbihSkin.name}
+                        className="tasbih-device-casing"
+                      />
+
+                      {/* Digital OLED Screen */}
+                      <div
+                        className={`${currentTasbihSkin.screenClass} ${competitionSessionCount > 0 && competitionSessionCount % 100 === 0 ? 'celebrate' : ''}`}
+                      >
+                        <div className="tasbih-lcd-meta">
+                          <span className="tasbih-lcd-round-badge">
+                            {studentClass}
+                          </span>
+                          <span className="tasbih-lcd-icon">
+                            {activeObj.badge}
+                          </span>
+                        </div>
+
+                        {/* OLED Digits (Student Session Count) */}
+                        <div
+                          className="tasbih-lcd-digits"
+                          style={{
+                            fontSize: getOledFontSize(competitionSessionCount)
+                          }}
+                        >
+                          {competitionSessionCount.toLocaleString('en-US')}
+                        </div>
+                      </div>
+
+                      {/* Tactile Golden Push Button */}
+                      <button
+                        type="button"
+                        aria-label={`تسبيح ${activeObj.shortTitle}`}
+                        className={`${currentTasbihSkin.btnClass} ${isPressed ? 'pressed' : ''}`}
+                        onMouseDown={() => setPressedBtnId(activeObj.id)}
+                        onMouseUp={() => setPressedBtnId(null)}
+                        onTouchStart={() => setPressedBtnId(activeObj.id)}
+                        onTouchEnd={() => setPressedBtnId(null)}
+                        onClick={() => handleTapDhikr(activeObj.id, 'competition')}
+                        title={`المس الزر لتسجيل تسبيحة لصفك: ${studentClass}`}
+                      >
+                        <span className="btn-touch-hint">اضغط 👆</span>
+                      </button>
+
+                      {/* Small Reset Button - Protected */}
+                      <button
+                        type="button"
+                        aria-label="تصفير الجلسة الشخصية"
+                        className={currentTasbihSkin.resetClass}
+                        onClick={() => {
+                          playResetTone();
+                          setCompetitionSessionCount(0);
+                          showToast(`تم تصفير جلستك الفردية الحالية (0) 🔄 رصيد صفك (${studentClass}) ورصيد المدرسة محفوظ وسحابي ولا يمس 🛡️`);
+                        }}
+                        title="تصفير شاشتك الفردية (رصيد صفك محفوظ سحابياً)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Anti-Wipe Security Notice */}
+                  <div style={{
+                    background: '#022c22',
+                    border: '1.5px solid rgba(16,185,129,0.35)',
+                    borderRadius: '16px',
+                    padding: '12px 18px',
+                    marginTop: '1.25rem',
+                    fontSize: '0.82rem',
+                    color: '#a7f3d0',
+                    textAlign: 'center',
+                    lineHeight: 1.5,
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}>
+                    🛡️ <strong>حماية المسابقة ونزاهة النتائج:</strong> رصيد الشعب الـ 19 موثق سحابياً في Firebase. <strong>تم إلغاء أي إمكانية لمسح نقاط الصفوف أو تصفيرها من أجهزة الطلاب</strong> لضمان تتويج الصف الفائز بنزاهة تامة.
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* PODIUM DISPLAY (Top 3 of the 19 Classes) */}
             {(() => {
               const sorted = Object.entries(classStats).sort(([, a], [, b]) => b.total - a.total);
               const top1 = sorted[0];
@@ -1545,7 +2073,7 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                   gap: '14px',
-                  marginBottom: '1.75rem'
+                  margin: '2rem 0 1.75rem 0'
                 }}>
                   {/* 2nd Place */}
                   {top2 && (
@@ -1613,72 +2141,39 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
               );
             })()}
 
-            {/* Filter Pills */}
+            {/* Filter Pills for the 19 Classes */}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-              <button
-                onClick={() => setLeaderboardFilter('all')}
-                style={{
-                  background: leaderboardFilter === 'all' ? '#0f172a' : '#f1f5f9',
-                  color: leaderboardFilter === 'all' ? 'white' : '#475569',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: '12px',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                جميع الصفوف (18 شعبة)
-              </button>
-              <button
-                onClick={() => setLeaderboardFilter('1-2')}
-                style={{
-                  background: leaderboardFilter === '1-2' ? '#0f172a' : '#f1f5f9',
-                  color: leaderboardFilter === '1-2' ? 'white' : '#475569',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: '12px',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                صفوف الأول والثاني (6 شعب)
-              </button>
-              <button
-                onClick={() => setLeaderboardFilter('3-4')}
-                style={{
-                  background: leaderboardFilter === '3-4' ? '#0f172a' : '#f1f5f9',
-                  color: leaderboardFilter === '3-4' ? 'white' : '#475569',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: '12px',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                صفوف الثالث والرابع (6 شعب)
-              </button>
-              <button
-                onClick={() => setLeaderboardFilter('5-6')}
-                style={{
-                  background: leaderboardFilter === '5-6' ? '#0f172a' : '#f1f5f9',
-                  color: leaderboardFilter === '5-6' ? 'white' : '#475569',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: '12px',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                صفوف الخامس والسادس (6 شعب)
-              </button>
+              {[
+                { id: 'all', label: 'جميع الصفوف (19 صفاً)' },
+                { id: '1', label: 'الأول (3 شعب)' },
+                { id: '2', label: 'الثاني (3 شعب)' },
+                { id: '3', label: 'الثالث (3 شعب)' },
+                { id: '4', label: 'الرابع (3 شعب)' },
+                { id: '5', label: 'الخامس (3 شعب)' },
+                { id: '6', label: 'السادس (4 شعب)' },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setLeaderboardFilter(f.id)}
+                  style={{
+                    background: leaderboardFilter === f.id ? '#0f172a' : '#f1f5f9',
+                    color: leaderboardFilter === f.id ? 'white' : '#475569',
+                    border: 'none',
+                    padding: '6px 14px',
+                    borderRadius: '12px',
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
 
-            {/* Classes Table */}
-            <div className="tasbih-card" style={{ padding: 0, overflow: 'hidden' }}>
+            {/* 19-Classes Leaderboard Table */}
+            <div className="tasbih-card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                 <thead>
                   <tr style={{ background: '#0f172a', color: 'white', fontSize: '0.85rem' }}>
@@ -1693,9 +2188,12 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                 <tbody>
                   {Object.entries(classStats)
                     .filter(([cName]) => {
-                      if (leaderboardFilter === '1-2') return cName.includes('الأول') || cName.includes('الثاني');
-                      if (leaderboardFilter === '3-4') return cName.includes('الثالث') || cName.includes('الرابع');
-                      if (leaderboardFilter === '5-6') return cName.includes('الخامس') || cName.includes('السادس');
+                      if (leaderboardFilter === '1') return cName.startsWith('الأول');
+                      if (leaderboardFilter === '2') return cName.startsWith('الثاني');
+                      if (leaderboardFilter === '3') return cName.startsWith('الثالث');
+                      if (leaderboardFilter === '4') return cName.startsWith('الرابع');
+                      if (leaderboardFilter === '5') return cName.startsWith('الخامس');
+                      if (leaderboardFilter === '6') return cName.startsWith('السادس');
                       return true;
                     })
                     .sort(([, a], [, b]) => b.total - a.total)
@@ -1707,7 +2205,8 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                           key={cName}
                           style={{
                             borderBottom: '1px solid #e2e8f0',
-                            background: isMyClass ? '#ecfdf5' : idx === 0 ? '#fefce8' : idx === 1 ? '#f8fafc' : idx % 2 === 0 ? 'white' : '#fcfcfc'
+                            background: isMyClass ? '#ecfdf5' : idx === 0 ? '#fefce8' : idx === 1 ? '#f8fafc' : idx % 2 === 0 ? 'white' : '#fcfcfc',
+                            fontWeight: isMyClass ? 800 : 'normal'
                           }}
                         >
                           <td style={{ padding: '12px 16px', fontWeight: 800 }}>
@@ -1751,45 +2250,6 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                     })}
                 </tbody>
               </table>
-            </div>
-
-            {/* Bottom Call to Action for Students */}
-            <div style={{
-              background: 'linear-gradient(135deg, #022c22, #064e3b)',
-              borderRadius: '18px',
-              padding: '1.25rem',
-              textAlign: 'center',
-              color: 'white',
-              border: '1.5px solid #10b981',
-              marginTop: '1.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fef08a' }}>
-                ⚡ تريد رفع نقاط صفك للمركز الأول في المسابقة؟
-              </div>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#a7f3d0' }}>
-                افتح مسبحة الطالب من هاتفك أو حاسوبك من بيتك الآن وابدأ بالتسبيح وذكر الله!
-              </p>
-              <button
-                onClick={() => setActiveTab('student-view')}
-                className="tasbih-btn"
-                style={{
-                  background: 'linear-gradient(135deg, #059669, #10b981)',
-                  color: 'white',
-                  fontWeight: 900,
-                  fontSize: '0.95rem',
-                  padding: '8px 24px',
-                  borderRadius: '14px',
-                  boxShadow: '0 4px 15px rgba(16,185,129,0.4)',
-                  cursor: 'pointer',
-                  border: 'none'
-                }}
-              >
-                📱 الانتقال لمسبحة الطالب والبدء فوراً 👈
-              </button>
             </div>
           </div>
         )}
@@ -1929,10 +2389,17 @@ const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
                 <span className="stat-label">رصيدك في هذه الجولة:</span>
                 <span className="stat-val">{milestoneCelebration.count.toLocaleString('en-US')} تسبيحة ✨</span>
               </div>
-              <div>
-                <span className="stat-label">صفك في المنافسة:</span>
-                <span className="stat-val">{studentClass} 🏆</span>
-              </div>
+              {activeTab === 'competition-view' ? (
+                <div>
+                  <span className="stat-label">صفك في المنافسة:</span>
+                  <span className="stat-val">{studentClass} 🏆</span>
+                </div>
+              ) : (
+                <div>
+                  <span className="stat-label">إجماليك التراكمي:</span>
+                  <span className="stat-val">{soloSavedTotal.toLocaleString('en-US')} تسبيحة 🌟</span>
+                </div>
+              )}
             </div>
             <button
               type="button"

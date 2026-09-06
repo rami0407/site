@@ -1222,6 +1222,112 @@
   box-shadow: 0 8px 25px rgba(245, 158, 11, 0.6);
 }
 
+/* Solo Tasbih Cumulative Stats Card */
+.solo-cumulative-stats-card {
+  margin-top: 1.5rem;
+  background: linear-gradient(135deg, #022c22, #064e3b);
+  border: 2px solid #10b981;
+  border-radius: 20px;
+  padding: 1.5rem;
+  color: white;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(2, 44, 34, 0.35);
+}
+
+.solo-stat-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.solo-stat-highlight .stat-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fef08a;
+}
+
+.solo-stat-highlight .stat-number {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #34d399;
+  letter-spacing: 1px;
+  text-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+}
+
+.solo-stat-highlight .stat-sub {
+  font-size: 0.82rem;
+  color: #a7f3d0;
+}
+
+.solo-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.solo-stat-subbox {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.solo-stat-subbox .sub-label {
+  display: block;
+  font-size: 0.76rem;
+  color: #a7f3d0;
+  margin-bottom: 4px;
+}
+
+.solo-stat-subbox .sub-val {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #fef08a;
+}
+
+/* Unified Student Connected Badge */
+.unified-student-connected-badge {
+  background: linear-gradient(135deg, #064e3b, #022c22);
+  border: 1.5px solid #10b981;
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  color: white;
+  box-shadow: 0 4px 15px rgba(2, 44, 34, 0.3);
+}
+
+.unified-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.unified-info .badge-icon {
+  font-size: 2.2rem;
+}
+
+.unified-name {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fef08a;
+}
+
+.unified-class {
+  font-size: 0.85rem;
+  color: #a7f3d0;
+  margin-top: 3px;
+}
+
+
 
 
 
