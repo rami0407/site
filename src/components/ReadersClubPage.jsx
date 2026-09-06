@@ -24,6 +24,7 @@ const DEFAULT_READING_LOGS = [
     category: 'مغامرات وخيال علمي',
     rating: 5,
     takeaway: 'تعلمت أن الشجاعة والفضول العلمي يقودان الإنسان لاكتشاف أعظم أسرار الطبيعة.',
+    learnedExpressions: 'يمتطي صهوة المجد، يفكك طلاسم الغموض، عظيم الشأن',
     favoriteCharacter: 'البروفيسور ليدنبروك',
     likesCount: 38,
     createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
@@ -37,6 +38,7 @@ const DEFAULT_READING_LOGS = [
     category: 'قصص وعبر',
     rating: 5,
     takeaway: 'الحكمة وحسن التصرف والتفكير قبل الإقدام على الأمر أهم بكثير من القوة الجسدية.',
+    learnedExpressions: 'قاب قوسين أو أدنى، لا يُشق له غبار، حصيف الرأي',
     favoriteCharacter: 'دمنة الحكيم',
     likesCount: 42,
     createdAt: new Date(Date.now() - 3600000 * 48).toISOString()
@@ -50,6 +52,7 @@ const DEFAULT_READING_LOGS = [
     category: 'غموض واستكشاف',
     rating: 4,
     takeaway: 'العمل الجماعي والتعاون بين الأصدقاء يحل أصعب الألغاز والمشكلات.',
+    learnedExpressions: 'تضافرت الجهود، انبلج نور الصباح، شدّ أزره',
     favoriteCharacter: 'ماجد المستكشف',
     likesCount: 29,
     createdAt: new Date(Date.now() - 3600000 * 72).toISOString()
@@ -63,6 +66,7 @@ const DEFAULT_READING_LOGS = [
     category: 'علوم وفضاء',
     rating: 5,
     takeaway: 'الفضاء واسع جداً وكوكب الأرض هو بيتنا الثمين الذي يجب أن نحافظ على بيئته.',
+    learnedExpressions: 'أجرام سماوية فسيحة، بديع صنع الخالق، مدارات فلكية',
     favoriteCharacter: 'رائد الفضاء الصغير',
     likesCount: 51,
     createdAt: new Date(Date.now() - 3600000 * 96).toISOString()
@@ -76,6 +80,7 @@ const DEFAULT_READING_LOGS = [
     category: 'قيم وإنسانيات',
     rating: 5,
     takeaway: 'الصبر والصدق في العمل يثمران دائماً احترام الناس والنجاح في الحياة.',
+    learnedExpressions: 'عزة النفس، الصبر مفتاح الفرج، كدّ اليمين وعرق الجبين',
     favoriteCharacter: 'سلمى البطلة الصبورة',
     likesCount: 35,
     createdAt: new Date(Date.now() - 3600000 * 120).toISOString()
@@ -94,20 +99,41 @@ const ReadersClubPage = () => {
     featuredBookAuthor: '',
     featuredBookWhy: ''
   });
-  const [activeTab, setActiveTab] = useState('wall'); // 'wall', 'tree', 'hall-of-fame'
+
+  // Filters & Search
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [likedLogIds, setLikedLogIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('liked_reader_logs') || '[]'); } catch { return []; }
+  });
+
+  // UI Modals
   const [showAddLogModal, setShowAddLogModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
-  const [certStudentName, setCertStudentName] = useState(localStorage.getItem('school_unified_student_name') || 'سارة أحمد محاميد');
-  const [certStudentClass, setCertStudentClass] = useState('الصف الخامس (أ)');
-  const [likedLogIds, setLikedLogIds] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('liked_reader_logs') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'books' | 'leaders' | 'featured'
+  const [isTreeAnimated, setIsTreeAnimated] = useState(true);
+
+  // Passport / Certificate Student Selector
+  const [selectedStudentForCert, setSelectedStudentForCert] = useState(null);
+  const [certStudentName, setCertStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
+  const [certStudentClass, setCertStudentClass] = useState('الصف الرابع (أ)');
+
+  // Quick Celebration Toast
+  const [toastMessage, setToastMessage] = useState('');
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
+
+  // Reader Log Form Config from Firestore (e.g., target goal)
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'readers_club_config', 'main_config'), (docSnap) => {
+      if (docSnap.exists()) {
+        setConfig(prev => ({ ...prev, ...docSnap.data() }));
+      }
+    }, () => {});
+    return () => unsub();
+  }, []);
 
   // New Log Form State
   const [studentName, setStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
@@ -118,6 +144,7 @@ const ReadersClubPage = () => {
   const [category, setCategory] = useState('قصص وعبر');
   const [rating, setRating] = useState(5);
   const [takeaway, setTakeaway] = useState('');
+  const [learnedExpressions, setLearnedExpressions] = useState('');
   const [favoriteCharacter, setFavoriteCharacter] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -190,8 +217,9 @@ const ReadersClubPage = () => {
       const bTitle = (item.bookTitle || '').toLowerCase();
       const sName = (item.studentName || '').toLowerCase();
       const tWay = (item.takeaway || '').toLowerCase();
+      const expr = (item.learnedExpressions || '').toLowerCase();
       const auth = (item.author || '').toLowerCase();
-      if (!bTitle.includes(q) && !sName.includes(q) && !tWay.includes(q) && !auth.includes(q)) {
+      if (!bTitle.includes(q) && !sName.includes(q) && !tWay.includes(q) && !expr.includes(q) && !auth.includes(q)) {
         return false;
       }
     }
@@ -235,6 +263,7 @@ const ReadersClubPage = () => {
       category,
       rating: Number(rating),
       takeaway: sanitizeText(takeaway.trim()),
+      learnedExpressions: sanitizeText(learnedExpressions.trim()),
       favoriteCharacter: sanitizeText(favoriteCharacter.trim()) || 'شخصيات القصة',
       likesCount: 1,
       createdAt: new Date().toISOString()
@@ -247,12 +276,18 @@ const ReadersClubPage = () => {
       setBookTitle('');
       setAuthor('');
       setTakeaway('');
+      setLearnedExpressions('');
       setFavoriteCharacter('');
       alert('🎉 مبارك! تم تسجيل قراءتك ونمت ورقة ذهبية جديدة على شجرة قراء مشيرفة! 🌿📚');
     } catch (err) {
       console.error('Error saving reading log:', err);
       setLogs(prev => [newLogObj, ...prev]);
       setShowAddLogModal(false);
+      setBookTitle('');
+      setAuthor('');
+      setTakeaway('');
+      setLearnedExpressions('');
+      setFavoriteCharacter('');
       alert('تم حفظ إنجازك القرائي محلياً بنجاح! 🌿');
     } finally {
       setIsSubmitting(false);
@@ -673,9 +708,29 @@ const ReadersClubPage = () => {
                       </div>
 
                       {/* Takeaway / Review */}
-                      <div style={{ fontSize: '0.95rem', lineHeight: 1.7, color: '#334155', fontWeight: 600, marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '0.95rem', lineHeight: 1.7, color: '#334155', fontWeight: 600, marginBottom: '0.75rem' }}>
                         <strong>💡 العبرة التي تعلمتها:</strong> {log.takeaway}
                       </div>
+
+                      {/* Learned Expressions / التعابير التي تعلمتها */}
+                      {log.learnedExpressions && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                          borderRight: '4px solid #10b981',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '12px',
+                          marginBottom: '0.85rem',
+                          fontSize: '0.9rem',
+                          color: '#065f46',
+                          lineHeight: 1.6,
+                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)'
+                        }}>
+                          <strong style={{ color: '#047857', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
+                            <span>✍️</span> التعابير التي تعلمتها من القصة:
+                          </strong>
+                          <span style={{ fontWeight: 700 }}>{log.learnedExpressions}</span>
+                        </div>
+                      )}
 
                       {log.favoriteCharacter && (
                         <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -1098,6 +1153,20 @@ const ReadersClubPage = () => {
                   placeholder="مثال: تعلمت أن الصدق والأمانة ينجيان صاحبهما مهما كانت الصعوبات..."
                   value={takeaway}
                   onChange={(e) => setTakeaway(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '14px', border: '1px solid #cbd5e1', outline: 'none', lineHeight: 1.6 }}
+                />
+              </div>
+
+              {/* Learned Expressions / التعابير التي تعلمتها */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.35rem' }}>
+                  التعابير التي تعلمتها من القصة:
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="مثال: يمتطي صهوة المجد، انبلج الصباح، قاب قوسين أو أدنى، تضافرت الجهود..."
+                  value={learnedExpressions}
+                  onChange={(e) => setLearnedExpressions(e.target.value)}
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '14px', border: '1px solid #cbd5e1', outline: 'none', lineHeight: 1.6 }}
                 />
               </div>

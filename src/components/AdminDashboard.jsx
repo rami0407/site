@@ -1048,6 +1048,7 @@ const AdminDashboard = () => {
     category: 'قصص وعبر',
     rating: 5,
     takeaway: '',
+    learnedExpressions: '',
     favoriteCharacter: ''
   });
 
@@ -1094,6 +1095,7 @@ const AdminDashboard = () => {
         category: newAdminReadingLog.category,
         rating: Number(newAdminReadingLog.rating),
         takeaway: newAdminReadingLog.takeaway.trim(),
+        learnedExpressions: (newAdminReadingLog.learnedExpressions || '').trim(),
         favoriteCharacter: newAdminReadingLog.favoriteCharacter.trim() || 'شخصيات القصة',
         likesCount: 10,
         createdAt: new Date().toISOString()
@@ -1109,6 +1111,7 @@ const AdminDashboard = () => {
         category: 'قصص وعبر',
         rating: 5,
         takeaway: '',
+        learnedExpressions: '',
         favoriteCharacter: ''
       });
       alert('🌿 تم تسجيل وتوثيق قراءة الطالب بنجاح وإضافتها لشجرة القراءة!');
@@ -5619,6 +5622,12 @@ const AdminDashboard = () => {
                                 <strong>العبرة:</strong> {log.takeaway}
                               </div>
 
+                              {log.learnedExpressions && (
+                                <div style={{ background: '#f0fdf4', borderRight: '3px solid #10b981', padding: '0.65rem 0.85rem', borderRadius: '10px', fontSize: '0.85rem', color: '#065f46', lineHeight: 1.5, marginBottom: '0.75rem' }}>
+                                  <strong>✍️ التعابير المكتسبة:</strong> {log.learnedExpressions}
+                                </div>
+                              )}
+
                               {log.favoriteCharacter && (
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>
                                   <strong>الشخصية المفضلة:</strong> {log.favoriteCharacter}
@@ -5747,7 +5756,7 @@ const AdminDashboard = () => {
                             </div>
                           </div>
 
-                          <div style={{ marginBottom: '1.5rem' }}>
+                          <div style={{ marginBottom: '1.25rem' }}>
                             <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
                               العبرة المستفادة أو تلخيص الطالب *:
                             </label>
@@ -5757,6 +5766,19 @@ const AdminDashboard = () => {
                               placeholder="اكتب العبرة أو التلخيص..."
                               value={newAdminReadingLog.takeaway}
                               onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, takeaway: e.target.value })}
+                              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', lineHeight: 1.6 }}
+                            />
+                          </div>
+
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
+                              التعابير التي تعلمها من القصة:
+                            </label>
+                            <textarea
+                              rows={2}
+                              placeholder="مثال: يمتطي صهوة المجد، انبلج الصباح، قاب قوسين أو أدنى، تضافرت الجهود..."
+                              value={newAdminReadingLog.learnedExpressions}
+                              onChange={(e) => setNewAdminReadingLog({ ...newAdminReadingLog, learnedExpressions: e.target.value })}
                               style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', lineHeight: 1.6 }}
                             />
                           </div>
