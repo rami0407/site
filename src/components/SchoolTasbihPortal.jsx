@@ -674,7 +674,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '1.5rem' }}>
               <div className="tasbih-card" style={{ textAlign: 'center', background: '#f0fdf4', borderColor: '#bbf7d0' }}>
                 <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#059669' }}>
-                  {globalTotal.toLocaleString('ar-EG')}
+                  {globalTotal.toLocaleString('en-US')}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#065f46', fontWeight: 700 }}>
                   إجمالي التسبيحات الكلي
@@ -682,7 +682,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               </div>
               <div className="tasbih-card" style={{ textAlign: 'center', background: '#fffbeb', borderColor: '#fef08a' }}>
                 <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#d97706' }}>
-                  {(dhikrCounts['salawat'] || 0).toLocaleString('ar-EG')}
+                  {(dhikrCounts['salawat'] || 0).toLocaleString('en-US')}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#92400e', fontWeight: 700 }}>
                   الصلوات على النبي ﷺ
@@ -909,7 +909,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                 مجموع الأذكار والتسبيحات المسجلة في المدرسة
               </div>
               <div className="tasbih-global-total-num" style={{ fontSize: '4.5rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 30px rgba(245,158,11,0.5)', lineHeight: 1.1 }}>
-                {globalTotal.toLocaleString('ar-EG')}
+                {globalTotal.toLocaleString('en-US')}
               </div>
               <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginTop: '6px' }}>
                 تسبيحة وذكرة عطرت مدرستنا وبيوت طلابنا
@@ -920,7 +920,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '0.9rem', marginBottom: '8px' }}>
                 <span>🎯 {campaign.title}</span>
-                <span style={{ color: '#f59e0b' }}>{campaignPercent}% (تم إنجاز {campaignCurrent.toLocaleString('ar-EG')} من {campaignTarget.toLocaleString('ar-EG')})</span>
+                <span style={{ color: '#f59e0b' }}>{campaignPercent}% (تم إنجاز {campaignCurrent.toLocaleString('en-US')} من {campaignTarget.toLocaleString('en-US')})</span>
               </div>
               <div style={{ height: '14px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: campaignPercent + '%', background: 'linear-gradient(90deg, #10b981, #f59e0b)', borderRadius: '10px', transition: 'width 0.5s' }}></div>
@@ -1055,7 +1055,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                           {isTarget ? '⭐ حملة المدرسة' : `مضاعف: ${d.multiplier}x`}
                         </span>
                         <span className="dhikr-total">
-                          {count.toLocaleString('ar-EG')} تسبيحة
+                          {count.toLocaleString('en-US')} تسبيحة
                         </span>
                       </div>
                     </div>
@@ -1168,7 +1168,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   </span>
                 </div>
                 <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 10px rgba(245,158,11,0.5)' }}>
-                  {(classStats[studentClass]?.total || 0).toLocaleString('ar-EG')} تسبيحة
+                  {(classStats[studentClass]?.total || 0).toLocaleString('en-US')} تسبيحة
                 </div>
               </div>
             </div>
@@ -1205,13 +1205,13 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     onClick={() => setStudentTargetRound(33)}
                     style={{ background: studentTargetRound === 33 ? '#059669' : '#0f172a', border: studentTargetRound === 33 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
                   >
-                    ٣٣
+                    33
                   </button>
                   <button
                     onClick={() => setStudentTargetRound(100)}
                     style={{ background: studentTargetRound === 100 ? '#059669' : '#0f172a', border: studentTargetRound === 100 ? '1px solid #34d399' : '1px solid #334155', color: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
                   >
-                    ١٠٠
+                    100
                   </button>
                 </div>
 
@@ -1351,7 +1351,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                         {isTarget ? '🎯 هدف الأسبوع' : isSelected ? '⭐ مقولتك الحالية' : `مضاعف: ${d.multiplier}x`}
                       </span>
                       <span className="dhikr-total">
-                        {count.toLocaleString('ar-EG')} تسبيحة
+                        {count.toLocaleString('en-US')} تسبيحة
                       </span>
                     </div>
                   </div>
@@ -1394,7 +1394,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <span style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: '#fef08a', fontSize: '0.85rem', fontWeight: 900, padding: '5px 16px', borderRadius: '20px', border: '1.5px solid #fbbf24', boxShadow: '0 4px 12px rgba(5,150,105,0.3)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span>🏆</span> المسابقة المدرسية الكبرى لتسبيح الصفوف والشعب (١٨ صفاً)
+                <span>🏆</span> المسابقة المدرسية الكبرى لتسبيح الصفوف والشعب (18 صفاً)
               </span>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '10px 0 4px 0' }}>
                 لوحة الشرف وتنافس الشعب المدرسية
@@ -1457,7 +1457,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                       <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>المركز الثاني (الوصيف)</div>
                       <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1e293b', margin: '4px 0' }}>{top2[0]}</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#2563eb' }}>
-                        {top2[1].total.toLocaleString('ar-EG')}
+                        {top2[1].total.toLocaleString('en-US')}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#64748b' }}>تسبيحة مباركة</div>
                     </div>
@@ -1481,7 +1481,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#854d0e' }}>المركز الأول (بطل التسبيح)</div>
                     <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#713f12', margin: '4px 0' }}>{top1[0]}</div>
                     <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#059669', textShadow: '0 0 10px rgba(5,150,105,0.2)' }}>
-                      {top1[1].total.toLocaleString('ar-EG')}
+                      {top1[1].total.toLocaleString('en-US')}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#854d0e', fontWeight: 700 }}>تسبيحة مباركة</div>
                   </div>
@@ -1500,7 +1500,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                       <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#9a3412' }}>المركز الثالث</div>
                       <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#7c2d12', margin: '4px 0' }}>{top3[0]}</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#d97706' }}>
-                        {top3[1].total.toLocaleString('ar-EG')}
+                        {top3[1].total.toLocaleString('en-US')}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#9a3412' }}>تسبيحة مباركة</div>
                     </div>
@@ -1524,7 +1524,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   cursor: 'pointer'
                 }}
               >
-                جميع الصفوف (١٨ شعبة)
+                جميع الصفوف (18 شعبة)
               </button>
               <button
                 onClick={() => setLeaderboardFilter('1-2')}
@@ -1539,7 +1539,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   cursor: 'pointer'
                 }}
               >
-                صفوف الأول والثاني (٦ شعب)
+                صفوف الأول والثاني (6 شعب)
               </button>
               <button
                 onClick={() => setLeaderboardFilter('3-4')}
@@ -1554,7 +1554,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   cursor: 'pointer'
                 }}
               >
-                صفوف الثالث والرابع (٦ شعب)
+                صفوف الثالث والرابع (6 شعب)
               </button>
               <button
                 onClick={() => setLeaderboardFilter('5-6')}
@@ -1569,7 +1569,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                   cursor: 'pointer'
                 }}
               >
-                صفوف الخامس والسادس (٦ شعب)
+                صفوف الخامس والسادس (6 شعب)
               </button>
             </div>
 
@@ -1620,7 +1620,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                             </div>
                           </td>
                           <td style={{ padding: '12px 16px', fontWeight: 900, color: '#059669', fontSize: '1rem' }}>
-                            {data.total.toLocaleString('ar-EG')}
+                            {data.total.toLocaleString('en-US')}
                           </td>
                           <td style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#64748b' }}>
                             {data.dailyActive} من {data.totalStudents} طالب
@@ -1731,7 +1731,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               <div className="tasbih-archive-stats-box">
                 <div className="tasbih-archive-stat-item">
                   <span className="stat-label">إجمالي تسبيحات المدرسة:</span>
-                  <span className="stat-value">{globalTotal.toLocaleString('ar-EG')}</span>
+                  <span className="stat-value">{globalTotal.toLocaleString('en-US')}</span>
                 </div>
                 <div className="tasbih-archive-stat-item">
                   <span className="stat-label">عدد الصفوف الموثقة:</span>
@@ -1742,7 +1742,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
               {/* Step 1: Download backup */}
               <div style={{ marginBottom: '1.25rem' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.88rem', marginBottom: '6px', color: '#1e293b' }}>
-                  ١. الخطوة الأولى (موصى بها بشدة): حفظ نسخة احتياطية
+                  1. الخطوة الأولى (موصى بها بشدة): حفظ نسخة احتياطية
                 </div>
                 <button
                   type="button"
@@ -1753,15 +1753,19 @@ const SchoolTasbihPortal = ({ initialTab }) => {
                     setArchiveBackupDownloaded(true);
                   }}
                 >
-                  <i className="fas fa-file-excel"></i>
-                  {archiveBackupDownloaded ? '✅ تم تحميل التقرير وحفظه (يمكنك المتابعة)' : 'تحميل وتوثيق تقرير الأسبوع الحالي (Excel / CSV)'}
+                  <i className="fas fa-file-excel"></i> تنزيل ملف الإكسل وحفظ السجل التراكمي
                 </button>
+                {archiveBackupDownloaded && (
+                  <div style={{ color: '#059669', fontSize: '0.78rem', fontWeight: 800, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <i className="fas fa-check-circle"></i> تم تحميل ملف الإحصائيات بنجاح!
+                  </div>
+                )}
               </div>
 
               {/* Step 2: Confirm by typing */}
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.88rem', marginBottom: '6px', color: '#1e293b' }}>
-                  ٢. الخطوة الثانية: تأكيد العملية كتابياً
+                  2. الخطوة الثانية: تأكيد العملية كتابياً
                 </div>
                 <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 8px 0' }}>
                   لتفادي المسح غير المقصود، يرجى كتابة كلمة <strong style={{ color: '#dc2626' }}>تأكيد</strong> في الحقل التالي:
