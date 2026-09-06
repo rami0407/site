@@ -198,7 +198,13 @@ service cloud.firestore {
     // 7. STUDENT ACTIVITIES & SUBMISSIONS
     // ==========================================
 
-    match /worksheets/{docId} {
+    match /worksheets/{document=**} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    match /scientific_articles/{document=**} {
       allow read: if true;
       allow create, update: if true;
       allow delete: if isAuthenticated();

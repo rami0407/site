@@ -1,105 +1,79 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
+import { db, auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import { uploadChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 import { sanitizeHtml } from '../utils/security';
 
 const DEFAULT_ARTICLES = [
   {
-    id: 'art-written-1',
-    type: 'written',
-    title: 'أسرار واستكشافات الفيزياء الحديثة في حياتنا اليومية ⚡',
-    category: 'العلوم والفلك',
-    author: 'أ. رامي محاميد',
-    date: '2026-08-14',
-    readTime: '4 دقائق',
-    viewsCount: 184,
-    likesCount: 52,
-    coverUrl: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=800&q=80',
-    summary: 'مقالة علمية تفاعلية تشرح مفاهيم الكهرومغناطيسية والطاقة الضوئية وكيف تعمل الأجهزة الذكية في أيدينا ببساطة.',
-    content: `
-      <h2 style="color: #0284c7; font-size: 1.4rem; font-weight: 900; margin-top: 1rem;">💡 مقدمة: كيف تحرّك الفيزياء عالمنا الحديث؟</h2>
-      <p style="font-size: 1.05rem; line-height: 1.8; color: #334155;">الفيزياء ليست مجرد معادلات في كتب الدراسة، بل هي السر الحقيقي الذي يفسر كل ما يحيط بنا؛ من كيفية انبعاث الضوء من شاشات هواتفنا، إلى آليات طيران الطائرات الضخمة في السماء!</p>
-      
-      <div style="background: #f0f9ff; border-right: 5px solid #0284c7; padding: 1.2rem 1.5rem; border-radius: 14px; margin: 1.5rem 0; font-weight: 800; color: #0369a1; box-shadow: 0 4px 12px rgba(2,132,199,0.08);">
-        📌 حقيقة علمية مدهشة: هل تعلم أن الطاقة الشمسية التي تصل إلى سطح الأرض في ساعة واحدة تكفي لتلبية احتياجات العالم من الطاقة لمدة عام كامل! ☀️
-      </div>
-
-      <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 900; margin-top: 1.5rem;">⚡ 1. ظاهرة الكهرومغناطيسية وتكنولوجيا المستقبل</h3>
-      <p style="font-size: 1.05rem; line-height: 1.8; color: #334155;">عندما تفتح هاتفك المحمول، تعمل الملايين من الترانزستورات الدقيقة بفضل فلك الإلكترونات المحكوم بقوانين الفيزياء الذرية. إن الفهم العميق للشحنات الكهربائية هو ما أتاح لنا ابتكار الشبكات اللاسلكية والذكاء الاصطناعي.</p>
-
-      <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 900; margin-top: 1.5rem;">🔬 2. التجارب الاستكشافية في مختبرات المدرسة</h3>
-      <p style="font-size: 1.05rem; line-height: 1.8; color: #334155;">في مدرسة مشيرفة الابتدائية، نسعى دائماً إلى تحويل هذه المفاهيم النظرية إلى تجارب عمليّة يلمسها الطلاب بأيديهم، مثل بناء الدوائر الكهربائية البسيطة ورصد الحركة باستخدام أجهزة الحساسات الذكية.</p>
-
-      <blockquote style="background: #fffbeb; border-right: 5px solid #f59e0b; padding: 1.2rem 1.5rem; border-radius: 14px; margin: 1.5rem 0; font-style: italic; color: #b45309; font-weight: 800; font-size: 1.1rem;">
-        "التعليم ليس ملء إناء، بل هو إشعال فتيل الشغف والاكتشاف العلمي!" - ألبيرت أينشتاين 🎓
-      </blockquote>
-    `
-  },
-  {
-    id: 'art-1',
+    id: 'art_1786798498638',
     type: 'pdf',
-    title: 'مجلة الفلك والاستكشاف الفضائي 2026 🪐',
-    category: 'العلوم والفلك',
-    author: 'أ. رامي محاميد & نادي العلوم',
-    date: '2026-08-10',
-    readTime: '6 دقائق',
-    viewsCount: 142,
-    likesCount: 38,
-    coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    summary: 'مجلة علمية مصورة تأخذك في رحلة إلى أعماق المجرات والشمس والكواكب الشقيقة، وتفسر ظاهرة الكسوف والخسوف ببساطة للطلاب.'
-  },
-  {
-    id: 'art-2',
-    type: 'pdf',
-    title: 'بحث: الذكاء الاصطناعي وأثره في صناعة مستقبِل التعليم 🧬',
-    category: 'الأبحاث والتكنولوجيا',
-    author: 'أ. سارة عابد',
-    date: '2026-08-05',
-    readTime: '8 دقائق',
-    viewsCount: 98,
-    likesCount: 27,
-    coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    summary: 'ورقة بحثية تسلط الضوء على أدوات الذكاء الاصطناعي وتطبيقاته العملية في دعم تفكير الطالب وزيادة مهارات التحليل وحل المشكلات.'
-  },
-  {
-    id: 'art-3',
-    type: 'pdf',
-    title: 'دليل النباتات والبيئة الخضراء في قرية مشيرفة 🌿',
-    category: 'البيئة والطبيعة',
-    author: 'أ. محمد اغبارية & طلاب الصف السادس',
-    date: '2026-07-28',
-    readTime: '5 دقائق',
-    viewsCount: 115,
-    likesCount: 31,
-    coverUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    summary: 'دليل بيئي مصور يوثق الأشجار والنباتات العطرية والطبية في جبال ووديان مشيرفة، وطرق المحافظة على التنوع البيولوجي.'
-  },
-  {
-    id: 'art-4',
-    type: 'pdf',
-    title: 'مجلة مشيرفة التربوية: تعزيز الثقة والدافعية لدى الأبناء 🧠',
+    title: 'إعادة تنظيم شبكة القراءة التنموية في عسر القراءة النمائي: إطار عمل للمرونة العصبية التنموية',
     category: 'التربية وعلم النفس',
-    author: 'مستشار المدرسة & طاقم الإدارة',
-    date: '2026-07-15',
-    readTime: '7 دقائق',
-    viewsCount: 165,
-    likesCount: 44,
+    author: 'سجود كتانة',
+    date: '2026-08-15',
+    readTime: '5 دقائق',
+    viewsCount: 45,
+    likesCount: 12,
+    coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+    pdfUrl: '/articles/reading_neuroplasticity_framework.pdf',
+    summary: 'يُقدم هذا المقال مراجعة نقدية وشاملة حول الآليات العصبية الكامنة وراء "عسر القراءة النمائي"، مع التركيز على ظاهرة تجنيد النصف الأيمن من الدماغ في مراحل القراءة المبكرة. إليك ملخص لأبرز نقاط المقال: تجاوز النماذج التقليدية: يوضح المقال أن النماذج القديمة التي فسرت عسر القراءة كخلل محلي في مناطق معينة من النصف الأيسر للدماغ لم تعد كافية. بدلاً من ذلك، يدعو المقال إلى تبني منظور "الشبكات العصبية" الذي يعتمد على فهم الاتصال واسع النطاق بين مناطق الدماغ المختلفة، والنضج التنموي، والمرونة العصبية. إعادة تفسير دور النصف الأيمن: لطالما اعتُبر تجنيد النصف الأيمن من الدماغ لدى المصابين بعسر القراءة مجرد "آلية تعويضية" للخلل في النصف الأيسر. يقدم المقال طرحاً جديداً يرى فيه هذا التجنيد أحد المسارات التنموية التكيفية الممكنة لإعادة تنظيم شبكات القراءة، وليس مجرد استجابة تعويضية عالمية. إطار العمل الجديد: يقترح الباحثون "إطار عمل المرونة العصبية التنموية" (Developmental Neuroplasticity Framework)، الذي يدمج بين علم الأعصاب التنموي، وعلم الأعصاب الشبكي، ودراسات التصوير العصبي الطولية، وأبحاث التدخل التربوي. يهدف هذا الإطار إلى تفسير سبب وجود أنماط عصبية متشابهة لدى أفراد مختلفين تؤدي إلى نتائج تنموية متفاوتة. العوامل المؤثرة: يشير المقال إلى أن مسار إعادة تنظيم شبكة القراءة يتشكل من خلال تفاعل مستمر بين: الضعف النمائي العصبي المبكر (مثل الاختلافات في المادة البيضاء)، مرونة الدماغ (القدرة على التغيير بناءً على الخبرة)، والتجارب البيئية والتدخلات التعليمية. الخلاصة والآفاق: يؤكد المقال أن عسر القراءة ليس اضطراباً ثابتاً، بل عملية نمائية ديناميكية تتغير باستمرار.'
+  },
+  {
+    id: 'art_1786876272644',
+    type: 'written',
+    title: 'מודל שבעת התא"פים - מתווה לשינוי ומצוינות בחינוך',
+    category: 'التربية وعلم النفس',
+    author: 'ראמי ארפאעיה',
+    date: '2026-08-16',
+    readTime: '5 دقائق',
+    viewsCount: 38,
+    likesCount: 9,
     coverUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    summary: 'إرشادات ونصائح علمية للأهالي والمعلمين للتعامل مع الذكاءات المتعددة لدى الطلاب وبناء نمط تفكير متطور وشغوف بالتعلم.'
+    pdfUrl: '',
+    summary: 'מודל שבעת התא"פים - מתווה לשינוי ומצוינות בחינוך\nבבית ספרנו עמדנו בפני אתגרים עצומים כשיצאנו למסע לשינוי יסודי. התמודדנו עם מצב שנראה בלתי אפשרי: רמת הישגים נמוכה, תדמית שלילית בקרב הקהילה, אקלים אלים ומערכת חינוכית שהתקשתה לשמש עוגן לתלמידים ולמורים. המצב דרש מאיתנו לא רק לחשוב מחוץ לקופסה, אלא גם להאמין באמונה עמוקה שדרך פעולה ממוקדת, חדשנית ומעוררת השראה – ניתן לחולל שינוי אמיתי.',
+    content: `<strong>מודל שבעת התא"פים - מתווה לשינוי ומצוינות בחינוך</strong>
+בבית ספרנו עמדנו בפני אתגרים עצומים כשיצאנו למסע לשינוי יסודי. התמודדנו עם מצב שנראה בלתי אפשרי: רמת הישגים נמוכה, תדמית שלילית בקרב הקהילה, אקלים אלים ומערכת חינוכית שהתקשתה לשמש עוגן לתלמידים ולמורים. המצב דרש מאיתנו לא רק לחשוב מחוץ לקופסה, אלא גם להאמין באמונה עמוקה שדרך פעולה ממוקדת, חדשנית ומעוררת השראה – ניתן לחולל שינוי אמיתי.
+
+המסע התחיל בחזון ברור ואמונה בצוות וביכולותיו. האתגר המרכזי היה לגרום למורים, לתלמידים ולהורים להאמין שגם מה שנראה בלתי אפשרי, יכול להפוך לבר-השגה. בעזרת הובלה נחושה, תכנון קפדני והטמעת ערכים חינוכיים עמוקים, הצלחנו לייצר קפיצת מדרגה משמעותית – משיפור הישגי התלמידים ועד להפיכת בית הספר למודל לחיקוי בקהילה המקומית ובמערכת החינוך.
+
+מתוך התהליך שעברנו בשטח, פותח מודל שבעת התא"פים, המהווה גישה סדורה, מעשית והוליסטית להובלת שינוי ומצוינות.
+
+<strong>מה מייחד את מודל שבעת התא"פים?</strong>
+המודל אינו רשימת מכולת של רעיונות תיאורטיים נפרדים, אלא מערכת אקולוגית שבה כל מרכיב נובע מקודמו ומזין את הבא אחריו. הוא מתחיל בשינוי עמוק של תפיסת התפקיד, עובר דרך הנעה רגשית ומעשית, ומסתיים בהערכה והוקרה שמחזירות את הגלגל להתחלה בעוצמה גדולה יותר.
+
+להלן שבעת השלבים והקשר הרציף שביניהם:
+
+<strong>1. תפיסה (Perception) – נקודת ההתחלה</strong>
+הבסיס ההכרחי לכל התהליך טמון בשינוי המחשבתי. לפני שמשנים פרקטיקות, חובה לשנות את תפיסת המורים לגבי מהות בית הספר ותפקידם בו. מורים חייבים לחדול מלראות עצמם כ"מעבירי ידע" בלבד, ולהתחיל לראות בעצמם סוכני שינוי ומקור של ממש להצלת התלמידים הנכנסים בשערי המוסד. רק כאשר מורה תופס את תפקידו כמשנה חיים, נוצרת הקרקע להצתת השלב הבא.
+
+<strong>2. תשוקה (Passion)</strong>
+מתוך התפיסה החדשה של גודל השליחות, ניצתת התשוקה. התשוקה היא הכוח המניע את הלבבות והפעולה. מורה שמבין את כוחו להציל ולהשפיע, פועל מתוך תחושת ייעוד עמוקה ומוקד שליטה פנימי. ההתלהבות והאמונה בדרך הן הדלק ההכרחי שמאפשר לצוות להעז ולפרוץ גבולות.
+
+<strong>3. תעוזה (Audacity)</strong>
+התשוקה העזה מחייבת פעולה שחורגת מהמוכר, וכאן נכנסת התעוזה. כדי להוביל שינוי משמעותי, המורים וההנהלה חייבים לצאת מאזור הנוחות, לקחת סיכונים מחושבים וללמוד מכישלונות בדרך. הנכונות להעז היא שמביאה לפריצות דרך בהוראה ובלמידה. עם זאת, כדי שהתעוזה לא תהפוך לכאוס, היא חייבת להיות מנותבת למסגרת פעולה.
+
+<strong>4. תכנון (Planning)</strong>
+כדי שהתעוזה תתורגם להצלחה בשטח, נדרש תכנון מוקפד. תכנון מעמיק ממסגר את הרעיונות הנועזים לכדי פרקטיקה עקבית וישימה. שלב זה כולל הגדרת מטרות, בניית לוחות זמנים, חלוקת משימות ותהליכי בקרה ברורים, המבטיחים שכל יוזמה תיושם בצורה המיטבית תוך צמצום טעויות.
+
+<strong>5. תמיכה (Support)</strong>
+יישום של תכנון נועז דורש רשת ביטחון, וזהו תפקידה של התמיכה. שינוי אינו יכול לשרוד אם הצוות מרגיש לבד במערכה. הנהלת בית הספר חייבת לשמש "רוח גבית" – ללוות, לגבות ולהעצים את המורים. סביבה תומכת המקנה תחושת ביטחון פסיכולוגי היא התנאי המאפשר למורים ליישם את תוכניותיהם ללא חשש.
+
+<strong>6. תובנות (Insights)</strong>
+תוך כדי העשייה הנתמכת, חובה לבצע עצירות מתודיות לצורך מדידה והערכה לשם הפקת תובנות. תהליך השינוי אינו ליניארי; עלינו לשאול תמיד: מה עבד בתוכנית? מה נכשל למרות התעוזה? אילו מטרות הושגו? הפקת תובנות מדויקות מאפשרת כיול של המערכת, שיפור מתמיד והתאמה לצרכים המשתנים של התלמידים.
+
+<strong>7. תודה (Gratitude) – סגירת המעגל</strong>
+השלב שחותם את המהלך ומזין אותו מחדש הוא הכרת הטוב. לאחר שעמדנו ביעדים והפקנו תובנות, חובה להוקיר תודה. חגיגת ההישגים, מתן פומביות להצלחות והוקרת המאמצים של צוות ההוראה מייצרים מוטיבציה ותחושת שייכות ארגונית חזקה. ה"תודה" מחזקת את תחושת המסוגלות והערך העצמי של המורים, מה שמעצים מחדש את התפיסה שלהם כסוכני שינוי – ומצית מחדש את התשוקה לקראת האתגר הבא.`
   }
 ];
 
 const ARTICLE_CATEGORIES = [
   'جميع المقالات والمجلات',
+  'التربية وعلم النفس',
   'العلوم والفلك',
   'الأبحاث والتكنولوجيا',
   'البيئة والطبيعة',
-  'التربية وعلم النفس',
   'المجلات المدرسية'
 ];
 
@@ -128,7 +102,7 @@ const ScientificArticles = ({ isStandalone }) => {
   const [newArticle, setNewArticle] = useState({
     type: 'written', // 'written' | 'pdf'
     title: '',
-    category: 'العلوم والفلك',
+    category: 'التربية وعلم النفس',
     author: '',
     readTime: '5 دقائق',
     coverUrl: '',
@@ -144,7 +118,7 @@ const ScientificArticles = ({ isStandalone }) => {
     setNewArticle({
       type: art.type || 'written',
       title: art.title || '',
-      category: art.category || 'العلوم والفلك',
+      category: art.category || 'التربية وعلم النفس',
       author: art.author || '',
       readTime: art.readTime || '5 دقائق',
       coverUrl: art.coverUrl || '',
@@ -160,21 +134,53 @@ const ScientificArticles = ({ isStandalone }) => {
   const contentTextareaRef = useRef(null);
 
   // Check for logged in admin or teacher
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(!isStandalone);
   const [activeTeacherSession, setActiveTeacherSession] = useState(null);
 
   useEffect(() => {
+    if (!isStandalone) {
+      setIsAdminLoggedIn(true);
+    }
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setIsAdminLoggedIn(true);
+      } else if (isStandalone) {
+        setIsAdminLoggedIn(false);
+      }
+    });
+
     try {
       const teacherSess = JSON.parse(localStorage.getItem('active_teacher_session'));
       if (teacherSess) setActiveTeacherSession(teacherSess);
     } catch(e){}
 
-    // Fetch Articles from Firestore & LocalStorage Backup
-    const loadArticles = async () => {
-      let localItems = [];
-      const localArt = localStorage.getItem('db_scientific_articles');
-      if (localArt) { try { localItems = JSON.parse(localArt); } catch(e){} }
+    // 1. Initialise with localStorage cached articles if present
+    const localArt = localStorage.getItem('db_scientific_articles');
+    if (localArt) {
+      try {
+        const parsed = JSON.parse(localArt);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setArticles(parsed);
+        }
+      } catch(e){}
+    }
 
+    // 2. Real-time Live Sync with Firestore students/scientific_articles_live
+    const liveDocRef = doc(db, 'students', 'scientific_articles_live');
+    const unsubLive = onSnapshot(liveDocRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data?.articles && Array.isArray(data.articles) && data.articles.length > 0) {
+          setArticles(data.articles);
+          localStorage.setItem('db_scientific_articles', JSON.stringify(data.articles));
+        }
+      }
+    }, (err) => {
+      console.warn("Live articles sync fallback:", err.message);
+    });
+
+    // 3. Fallback check on scientific_articles collection
+    const checkCollection = async () => {
       try {
         const snap = await getDocs(collection(db, 'scientific_articles'));
         let fsList = [];
@@ -182,17 +188,16 @@ const ScientificArticles = ({ isStandalone }) => {
           snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
           setArticles(fsList);
           localStorage.setItem('db_scientific_articles', JSON.stringify(fsList));
-        } else {
-          setArticles(localItems.length > 0 ? localItems : DEFAULT_ARTICLES);
         }
-      } catch (err) {
-        console.warn("Articles load fallback:", err.message);
-        setArticles(localItems.length > 0 ? localItems : DEFAULT_ARTICLES);
-      }
+      } catch(e){}
     };
+    checkCollection();
 
-    loadArticles();
-  }, []);
+    return () => {
+      unsubAuth();
+      unsubLive();
+    };
+  }, [isStandalone]);
 
   // Handle Like Article
   const handleLikeArticle = async (e, art) => {
@@ -202,11 +207,20 @@ const ScientificArticles = ({ isStandalone }) => {
       return;
     }
 
-    const updated = [...likedArtIds, art.id];
-    setLikedArtIds(updated);
-    localStorage.setItem('liked_articles', JSON.stringify(updated));
+    const updatedLiked = [...likedArtIds, art.id];
+    setLikedArtIds(updatedLiked);
+    localStorage.setItem('liked_articles', JSON.stringify(updatedLiked));
 
-    setArticles(prev => prev.map(item => item.id === art.id ? { ...item, likesCount: (item.likesCount || 0) + 1 } : item));
+    const updated = articles.map(item => item.id === art.id ? { ...item, likesCount: (item.likesCount || 0) + 1 } : item);
+    setArticles(updated);
+    localStorage.setItem('db_scientific_articles', JSON.stringify(updated));
+
+    try {
+      await setDoc(doc(db, 'students', 'scientific_articles_live'), {
+        articles: updated,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch(e){}
 
     try {
       await updateDoc(doc(db, 'scientific_articles', art.id), {
@@ -225,7 +239,17 @@ const ScientificArticles = ({ isStandalone }) => {
     }
 
     // Increment Views Count
-    setArticles(prev => prev.map(item => item.id === art.id ? { ...item, viewsCount: (item.viewsCount || 0) + 1 } : item));
+    const updated = articles.map(item => item.id === art.id ? { ...item, viewsCount: (item.viewsCount || 0) + 1 } : item);
+    setArticles(updated);
+    localStorage.setItem('db_scientific_articles', JSON.stringify(updated));
+
+    try {
+      setDoc(doc(db, 'students', 'scientific_articles_live'), {
+        articles: updated,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch(e){}
+
     try {
       updateDoc(doc(db, 'scientific_articles', art.id), { viewsCount: increment(1) });
     } catch(e){}
@@ -262,8 +286,14 @@ const ScientificArticles = ({ isStandalone }) => {
   // Handle Download Article PDF
   const handleDownloadPDF = async (e, art) => {
     e.stopPropagation();
-    if (art.pdfUrl && (art.pdfUrl.startsWith('http://') || art.pdfUrl.startsWith('https://'))) {
-      window.open(art.pdfUrl, '_blank', 'noopener,noreferrer');
+    if (art.pdfUrl && (art.pdfUrl.startsWith('http://') || art.pdfUrl.startsWith('https://') || art.pdfUrl.startsWith('/'))) {
+      const link = document.createElement('a');
+      link.href = art.pdfUrl;
+      link.download = `${art.title}.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       return;
     }
 
@@ -286,11 +316,18 @@ const ScientificArticles = ({ isStandalone }) => {
 
   // Handle Delete Article
   const handleDeleteArticle = async (artId) => {
-    if (!window.confirm('هل أنت تأكد من حذف هذه المقالة العلمية؟')) return;
+    if (!window.confirm('هل أنت متأكد من حذف هذه المقالة العلمية؟')) return;
 
     const updated = articles.filter(a => a.id !== artId);
     setArticles(updated);
     localStorage.setItem('db_scientific_articles', JSON.stringify(updated));
+
+    try {
+      await setDoc(doc(db, 'students', 'scientific_articles_live'), {
+        articles: updated,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch(e){}
 
     try { await deleteDoc(doc(db, 'scientific_articles', artId)); } catch(e){}
     alert('تم حذف المقالة العلمية بنجاح.');
@@ -402,6 +439,15 @@ const ScientificArticles = ({ isStandalone }) => {
 
     setArticles(updatedArticles);
     localStorage.setItem('db_scientific_articles', JSON.stringify(updatedArticles));
+
+    try {
+      await setDoc(doc(db, 'students', 'scientific_articles_live'), {
+        articles: updatedArticles,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch(err) {
+      console.warn("Live articles doc save warning:", err.message);
+    }
 
     try {
       await setDoc(doc(db, 'scientific_articles', targetId), articleObj, { merge: true });
