@@ -3769,6 +3769,27 @@ const AdminDashboard = () => {
               📚 نادي القُرّاء وشجرة التميز ({adminReadingLogs.length})
             </button>
 
+            {/* TOP ITEM 6: TASBIH & DHIKR PORTAL CONTROL */}
+            <button 
+              onClick={() => setActiveTab('tasbih-admin')} 
+              className={`filter-chip ${activeTab === 'tasbih-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'tasbih-admin' ? 'linear-gradient(135deg, #022c22, #064e3b)' : '#ecfdf5',
+                color: activeTab === 'tasbih-admin' ? '#fef08a' : '#047857',
+                fontWeight: 900,
+                border: '2px solid #10b981',
+                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
+              }}
+            >
+              <i className="fas fa-kaaba" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#10b981' }}></i>
+              📿 بوابة الذكر ومسبحة مشيرفة (لوحة التحكم)
+            </button>
+
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
 
             <button 
@@ -7492,7 +7513,7 @@ const AdminDashboard = () => {
               {/* تبويب سري: منظومة التسبيح والأذكار المدرسية التفاعلية */}
               {activeTab === 'tasbih-admin' && (
                 <div>
-                  <SchoolTasbihPortal />
+                  <SchoolTasbihPortal initialTab="admin-control" isAdminMode={true} />
                 </div>
               )}
 

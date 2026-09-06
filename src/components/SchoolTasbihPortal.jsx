@@ -175,13 +175,13 @@ const playChimeTone = () => {
   } catch (e) {}
 };
 
-const SchoolTasbihPortal = ({ initialTab }) => {
+const SchoolTasbihPortal = ({ initialTab, isAdminMode = false }) => {
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab;
     const h = window.location.hash || '';
     if (h.includes('counter') || h.includes('student')) return 'student-view';
     if (h.includes('classes') || h.includes('leaderboard')) return 'classes-view';
-    if (h.includes('settings')) return 'admin-control';
+    if (isAdminMode && h.includes('settings')) return 'admin-control';
     return 'kiosk-view'; // Default so the electronic counter is immediately visible!
   });
   const [isPublished, setIsPublished] = useState(() => {
@@ -594,12 +594,14 @@ const SchoolTasbihPortal = ({ initialTab }) => {
         >
           <i className="fas fa-trophy"></i> 🏆 لوحة تنافس الصفوف
         </button>
-        <button
-          className={'tasbih-tab-btn ' + (activeTab === 'admin-control' ? 'active' : '')}
-          onClick={() => setActiveTab('admin-control')}
-        >
-          <i className="fas fa-sliders-h"></i> ⚙️ لوحة التحكم والإعدادات
-        </button>
+        {isAdminMode && (
+          <button
+            className={'tasbih-tab-btn ' + (activeTab === 'admin-control' ? 'active' : '')}
+            onClick={() => setActiveTab('admin-control')}
+          >
+            <i className="fas fa-sliders-h"></i> ⚙️ لوحة التحكم والإعدادات
+          </button>
+        )}
         <a
           href="#/"
           className="tasbih-tab-btn"
@@ -621,7 +623,7 @@ const SchoolTasbihPortal = ({ initialTab }) => {
       <div className="tasbih-content-area">
 
         {/* TAB 1: ADMIN CONTROL & SETTINGS */}
-        {activeTab === 'admin-control' && (
+        {isAdminMode && activeTab === 'admin-control' && (
           <div>
             {/* Page Publishing & Site Visibility Card */}
             <div className="tasbih-card" style={{ border: '2px solid #059669', background: '#f0fdf4', marginBottom: '1.25rem' }}>
