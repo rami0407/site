@@ -6,7 +6,7 @@ service cloud.firestore {
     // 🛡️ SECURITY & AUTHORIZATION DEFINITIONS
     // ==========================================
 
-    // General authenticated staff check
+    // Check if user is authenticated with Firebase Auth
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -21,7 +21,7 @@ service cloud.firestore {
       );
     }
 
-    // Input string length & type validation helpers
+    // Input string validation helpers
     function isValidString(val, minLen, maxLen) {
       return val is string && val.size() >= minLen && val.size() <= maxLen;
     }
@@ -70,62 +70,62 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 2. DYNAMIC SCHOOL CONTENT (ADMIN MANAGED)
+    // 2. DYNAMIC SCHOOL CONTENT (SUPER ADMIN ONLY)
     // ==========================================
 
     match /news/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /events/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /calendar/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /gallery/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /links/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /books/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /uniform/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /astronomy/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /challenge/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /kiosk_settings/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /display_board/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     // ==========================================
@@ -134,17 +134,17 @@ service cloud.firestore {
 
     match /teachers/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /school_teachers/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /teacher_scores/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     // ==========================================
@@ -154,12 +154,12 @@ service cloud.firestore {
     match /contacts/{docId} {
       allow create: if isValidString(request.resource.data.fullName, 2, 120)
                     && isValidString(request.resource.data.message, 2, 3500);
-      allow read, update, delete: if isAuthenticated();
+      allow read, update, delete: if isSuperAdmin();
     }
 
     match /messages/{docId} {
       allow create: if true;
-      allow read, update, delete: if isAuthenticated();
+      allow read, update, delete: if isSuperAdmin();
     }
 
     // ==========================================
@@ -170,7 +170,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isValidString(request.resource.data.parentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      allow update: if isAuthenticated() 
+      allow update: if isSuperAdmin() 
                     || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt']));
       allow delete: if isSuperAdmin();
     }
@@ -181,85 +181,91 @@ service cloud.firestore {
 
     match /parent_polls/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /school_surveys/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     match /survey_responses/{docId} {
       allow create: if true;
-      allow read, update, delete: if isAuthenticated();
+      allow read, update, delete: if isSuperAdmin();
     }
 
     // ==========================================
     // 7. STUDENT ACTIVITIES & SUBMISSIONS
     // ==========================================
 
+    // 📚 أوراق العمل - القراءة والتحميل متاح للجميع، والتعديل والإضافة للإدارة حصراً
     match /worksheets/{document=**} {
       allow read: if true;
-      allow create, update: if true;
-      allow delete: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
+    // 🔬 المقالات العلمية - القراءة متاحة للجميع، والتعديل للإدارة حصراً
     match /scientific_articles/{document=**} {
       allow read: if true;
-      allow create, update: if true;
-      allow delete: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
+    // 🎨 رسومات الطلاب - الإرسال متاح للطلاب، والتعديل والحذف للإدارة حصراً
     match /prep_drawings/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if isSuperAdmin();
     }
 
     match /stem_solutions/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if isSuperAdmin();
     }
 
     match /stem_teacher_requests/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if isSuperAdmin();
     }
 
+    // 💡 أفكار الطلاب - المشاركة والإعجاب متاح، والحذف للإدارة حصراً
     match /world_ideas/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAuthenticated();
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+      allow delete: if isSuperAdmin();
     }
 
     match /world_ideas_comments/{docId} {
       allow read, create: if true;
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if isSuperAdmin();
     }
 
+    // 📖 بيانات الطلاب / نادي القراء - التسجيل متاح، والتعديل والحذف للإدارة حصراً
     match /students/{docId} {
-      allow read, create, update: if true;
-      allow delete: if isAuthenticated();
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isSuperAdmin();
     }
 
     match /stars/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
+    // 🌟 سماء الامتنان - الإطلاق متاح، والإعجاب متاح، والحذف للإدارة حصراً
     match /gratitude_stars/{docId} {
       allow read, create: if true;
-      allow update: if isAuthenticated() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
       allow delete: if isSuperAdmin();
     }
 
     match /readers_club_logs/{docId} {
       allow read, create: if true;
-      allow update: if isAuthenticated() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
       allow delete: if isSuperAdmin();
     }
 
     match /readers_club_config/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
 
     // ==========================================
