@@ -158,8 +158,9 @@ service cloud.firestore {
     }
 
     match /messages/{docId} {
-      allow create: if true;
-      allow read, update, delete: if isSuperAdmin();
+      allow read, create: if true;
+      allow update: if true;
+      allow delete: if isSuperAdmin();
     }
 
     // ==========================================
