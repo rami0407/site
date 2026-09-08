@@ -686,6 +686,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSyncKioskToImportantLinks = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'links'));
+      let exists = false;
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.url?.includes('kiosk') || data.title?.includes('شاشة العرض')) {
+          exists = true;
+        }
+      });
+      if (exists) {
+        alert('ℹ️ زر شاشة العرض المدرسية مضاف ومفعل بالفعل ضمن قائمة الروابط الخارجية بالموقع!');
+        return;
+      }
+      await addDoc(collection(db, 'links'), {
+        title: 'شاشة العرض المدرسية (Kiosk)',
+        icon: 'fa-tv',
+        url: '#/kiosk',
+        desc: 'البث المباشر لشاشات العرض الذكية: الإعلانات، الفعاليات المدرسية وجدول اليوم.',
+        createdAt: new Date().toISOString()
+      });
+      alert('🎉 تم بنجاح تثبيت وإضافة "شاشة العرض المدرسية (Kiosk)" إلى الروابط الخارجية في الصفحة الرئيسية!');
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
+    }
+  };
+
   const loadStemTeacherRequests = async () => {
     let list = [];
     try {
@@ -4259,6 +4287,16 @@ const AdminDashboard = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={handleSyncKioskToImportantLinks}
+                        className="btn"
+                        style={{ background: '#f59e0b', color: '#000', fontWeight: 900, padding: '0.75rem 1.4rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(245,158,11,0.3)' }}
+                        title="إضافة وتثبيت شاشة العرض كزر تفاعلي في الروابط الخارجية بالصفحة الرئيسية"
+                      >
+                        <i className="fas fa-plus-circle"></i> 🔗 تثبيت في الروابط الخارجية بالموقع
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleCopyKioskLink(selectedKioskChannel)}
