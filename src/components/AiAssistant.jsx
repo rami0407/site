@@ -15,6 +15,8 @@ const AiAssistant = () => {
   const [schoolContext, setSchoolContext] = useState('');
   const [apiKey, setApiKey] = useState(DEFAULT_GEMINI_KEY);
   const [xaiKey, setXaiKey] = useState(DEFAULT_XAI_KEY);
+  const [groqKey, setGroqKey] = useState('');
+  const [lastApiError, setLastApiError] = useState(null);
   
   const chatEndRef = useRef(null);
 
@@ -105,11 +107,11 @@ const AiAssistant = () => {
     const fetchApiKey = async () => {
       try {
         const keyDoc = await getDoc(doc(db, 'schoolGuide', 'gemini'));
-        if (keyDoc.exists() && keyDoc.data().apiKey && keyDoc.data().apiKey.trim()) {
-          setApiKey(keyDoc.data().apiKey.trim());
-        }
-        if (keyDoc.exists() && keyDoc.data().xaiKey && keyDoc.data().xaiKey.trim()) {
-          setXaiKey(keyDoc.data().xaiKey.trim());
+        if (keyDoc.exists()) {
+          const data = keyDoc.data();
+          if (data.apiKey && data.apiKey.trim()) setApiKey(data.apiKey.trim());
+          if (data.xaiKey && data.xaiKey.trim()) setXaiKey(data.xaiKey.trim());
+          if (data.groqKey && data.groqKey.trim()) setGroqKey(data.groqKey.trim());
         }
       } catch (e) {
         console.warn("Failed loading API keys for AI context:", e);
@@ -120,7 +122,7 @@ const AiAssistant = () => {
     compileContext();
   }, []);
 
-  const fetchWithTimeout = async (url, options = {}, timeoutMs = 2500) => {
+  const fetchWithTimeout = async (url, options = {}, timeoutMs = 6000) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -133,19 +135,12 @@ const AiAssistant = () => {
     }
   };
 
-  const promiseWithTimeout = (promise, ms = 2500) => {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms))
-    ]);
-  };
-
   const fetchAiText = async (promptText) => {
-    // 1. Try Google Gemini API (Primary Engine with direct browser CORS support)
+    // 1. Try Google Gemini API (Primary Engine)
     const activeGeminiKey = (apiKey && apiKey.trim()) || localStorage.getItem('db_gemini_key') || '';
     if (activeGeminiKey && activeGeminiKey.trim()) {
-      const targetModels = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
-      const fullPrompt = `${schoolContext ? schoolContext + '\n\n' : ''}أجب عن السؤال التالي باللغة العربية بطريقة تربوية، واضحة ومفيدة للطلاب وأولياء الأمور:\nالسؤال: ${promptText}`;
+      const targetModels = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+      const fullPrompt = `${schoolContext ? schoolContext + '\n\n' : ''}أجب عن السؤال التالي باللغة العربية بطريقة تربوية، واضحة وشاملة ومفيدة:\nالسؤال: ${promptText}`;
       
       for (const modelName of targetModels) {
         try {
@@ -158,16 +153,27 @@ const AiAssistant = () => {
                 contents: [{ parts: [{ text: fullPrompt }] }],
                 generationConfig: {
                   temperature: 0.7,
-                  maxOutputTokens: 800
+                  maxOutputTokens: 1000
                 }
               })
             },
-            6000
+            7000
           );
           if (res.ok) {
             const data = await res.json();
             const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (txt && txt.trim()) return txt.trim();
+            if (txt && txt.trim()) {
+              setLastApiError(null);
+              return txt.trim();
+            }
+          } else {
+            const errJson = await res.json().catch(() => ({}));
+            const errMsg = errJson.error?.message || '';
+            if (res.status === 429 && errMsg.includes('prepayment')) {
+              setLastApiError('prepayment_depleted');
+            } else if (res.status === 400 || res.status === 403) {
+              setLastApiError('invalid_key');
+            }
           }
         } catch (e) {
           console.warn(`Gemini ${modelName} error:`, e);
@@ -175,18 +181,41 @@ const AiAssistant = () => {
       }
     }
 
-    // 2. Try Direct Pollinations AI (Free, high-speed fallback with native CORS)
-    try {
-      const promptEncoded = encodeURIComponent(`أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب بلطف وباللغة العربية بأسلوب تعليمي مشجع: ${promptText}`);
-      const res = await fetchWithTimeout(`https://text.pollinations.ai/${promptEncoded}`, {}, 4500);
-      if (res.ok) {
-        const txt = await res.text();
-        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
-          return txt.trim();
+    // 2. Try Groq API (High-speed free LLaMA 3.3 with native CORS)
+    const activeGroqKey = (groqKey && groqKey.trim()) || localStorage.getItem('db_groq_key') || '';
+    if (activeGroqKey && activeGroqKey.trim()) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${activeGroqKey.trim()}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                { role: 'system', content: schoolContext ? schoolContext : 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب باللغة العربية بأسلوب تعليمي مشجع ومفيد.' },
+                { role: 'user', content: promptText }
+              ],
+              temperature: 0.7,
+              max_tokens: 1000
+            })
+          },
+          7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) {
+            setLastApiError(null);
+            return txt.trim();
+          }
         }
+      } catch (e) {
+        console.warn("Groq API error:", e);
       }
-    } catch (e) {
-      console.warn("Direct Pollinations error:", e);
     }
 
     // 3. Try xAI Grok API (if configured)
@@ -211,31 +240,18 @@ const AiAssistant = () => {
               stream: false
             })
           },
-          4500
+          5000
         );
         if (res.ok) {
           const data = await res.json();
           const txt = data.choices?.[0]?.message?.content;
-          if (txt && txt.trim()) return txt.trim();
+          if (txt && txt.trim()) {
+            setLastApiError(null);
+            return txt.trim();
+          }
         }
       } catch (e) {
         console.warn("xAI Grok API error:", e);
-      }
-    }
-
-    // 4. Try Puter.js Client AI SDK
-    if (window.puter && window.puter.ai) {
-      try {
-        const puterRes = await promiseWithTimeout(
-          window.puter.ai.chat(`أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.\n\nالسؤال: ${promptText}`),
-          4000
-        );
-        const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();
-        if (replyText && replyText.trim()) {
-          return replyText.trim();
-        }
-      } catch (e) {
-        console.warn("Puter.js AI error:", e);
       }
     }
 
@@ -287,8 +303,18 @@ const AiAssistant = () => {
         reply = '👨‍🏫 **إدارة مدرسة مشيرفة الابتدائية:**\nمدير المدرسة هو الأستاذ **رامي ارفاعية**، وترحب الإدارة دوماً بتواصل الأهالي عبر قسم "حجز موعد" أو الاتصال المباشر بالمدرسة.';
       } else if (qLower.includes('رزنامة') || qLower.includes('فعاليات') || qLower.includes('امتحان') || qLower.includes('نشاط')) {
         reply = '📅 **الرزنامة والفعاليات المدرسية:**\nيمكنكم متابعة جدول الامتحانات والفعاليات المدرسية والرحلات القادمة عبر صفحة "الرزنامة" في البوابة الرئيسية للموقع.';
+      } else if (qLower.includes('عاصمة') && (qLower.includes('فلسطين') || qLower.includes('قدس'))) {
+        reply = '🇵🇸 **عاصمة فلسطين:** القدس الشريف هي عاصمة فلسطين الأبدية.';
+      } else if (qLower.includes('عاصمة') && qLower.includes('فرنسا')) {
+        reply = '🇫🇷 **عاصمة فرنسا:** هي مدينة باريس.';
+      } else if (qLower.includes('أكبر كوكب') || qLower.includes('كواكب')) {
+        reply = '🪐 **المجموعة الشمسية:** أكبر كوكب في مجموعتنا الشمسية هو كوكب **المشتري** (Jupiter).';
+      } else if (lastApiError === 'prepayment_depleted') {
+        reply = '⚠️ **عذراً، محرك الذكاء الاصطناعي (Google Gemini) متوقف مؤقتاً:**\n\nالمفتاح المسجل حالياً في لوحة تحكم المدرسة نفد رصيده المسبق في Google Cloud (`Prepayment credits depleted`).\n\n💡 **لتفعيل الذكاء الاصطناعي مجاناً 100% بدون أي دفع:**\nيرجى من إدارة المدرسة:\n1. فتح [Google AI Studio](https://aistudio.google.com/app/apikey)\n2. الضغط على **Create API key**\n3. اختيار **Create API key in a new project** (مشروع جديد مجاني بالكامل).\n4. نسخ المفتاح ولصقه في **لوحة التحكم > إعدادات الذكاء الاصطناعي** والضغط على حفظ.\n\nبعدها سأجيبك فوراً عن أي سؤال عام أو علمي أو مدرسي! 🚀';
+      } else if (lastApiError === 'invalid_key') {
+        reply = '⚠️ **تنبيه:** مفتاح الذكاء الاصطناعي المسجل في لوحة التحكم غير صالح أو انتهت صلاحيته. يرجى من إدارة المدرسة إدخال مفتاح مجاني صالح من Google AI Studio في لوحة التحكم.';
       } else {
-        reply = `مرحباً بك! أنا مساعد مدرسة مشيرفة الابتدائية الذكي. أهلاً بك وسعدت بتلقي استفسارك: "${text}". يسعدني مساعدتك فوراً في كافة الأمور التعليمية والمدرسية! 😊`;
+        reply = `مرحباً بك! يسعدني تلقي استفسارك: "${text}".\n\n💡 للتمكن من الإجابة الذكية الموسوعية على كافة الأسئلة العامة والعلمية غير المدرسية، يرجى تزويد الموقع بمفتاح Google Gemini المجاني عبر لوحة التحكم (إعدادات الذكاء الاصطناعي).`;
       }
     }
 

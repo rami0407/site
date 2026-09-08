@@ -1384,22 +1384,26 @@ const AdminDashboard = () => {
     alert('تم حذف الفكرة بنجاح.');
   };
 
-  const handleSaveGeminiKey = async (newGeminiKey, newXaiKey) => {
+  const handleSaveGeminiKey = async (newGeminiKey, newXaiKey, newGroqKey) => {
     try {
       const gKey = newGeminiKey !== undefined ? newGeminiKey.trim() : geminiKey;
       const xKey = newXaiKey !== undefined ? newXaiKey.trim() : xaiKey;
+      const grKey = newGroqKey !== undefined ? newGroqKey.trim() : groqKey;
 
       await setDoc(doc(db, 'schoolGuide', 'gemini'), {
         apiKey: gKey,
         xaiKey: xKey,
+        groqKey: grKey,
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
       setGeminiKey(gKey);
       setXaiKey(xKey);
+      setGroqKey(grKey);
       localStorage.setItem('db_gemini_key', gKey);
       localStorage.setItem('db_xai_key', xKey);
-      alert('تم حفظ وتفعيل مفتاح الذكاء الاصطناعي (Google Gemini) بنجاح!');
+      localStorage.setItem('db_groq_key', grKey);
+      alert('تم حفظ وتفعيل مفاتيح الذكاء الاصطناعي بنجاح!');
     } catch (err) {
       alert('حدث خطأ أثناء حفظ مفاتيح الـ API: ' + err.message);
     }
@@ -1414,32 +1418,47 @@ const AdminDashboard = () => {
     setTestingGemini(true);
     setGeminiTestResult(null);
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "أجب بجملة ترحيبية واحدة قصيرة جداً: مرحباً بكم في مدرسة مشيرفة الابتدائية." }] }]
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        setGeminiTestResult({
-          success: true,
-          message: `✅ تم الاتصال بنجاح بمحرك Google Gemini! استجابة الذكاء الاصطناعي: "${reply.trim()}"`
-        });
-      } else {
-        const errJson = await res.json().catch(() => ({}));
-        const errMsg = errJson.error?.message || `كود الخطأ: ${res.status}`;
-        if (res.status === 429 && errMsg.includes('prepayment')) {
+      const testModels = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+      let lastErr = null;
+      let connected = false;
+
+      for (const m of testModels) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: "أجب بجملة ترحيبية واحدة قصيرة جداً: مرحباً بكم في مدرسة مشيرفة الابتدائية." }] }]
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            setGeminiTestResult({
+              success: true,
+              message: `✅ تم الاتصال بنجاح بمحرك Google Gemini (${m})! استجابة الذكاء الاصطناعي: "${reply.trim()}"`
+            });
+            connected = true;
+            break;
+          } else {
+            const errJson = await res.json().catch(() => ({}));
+            lastErr = { status: res.status, message: errJson.error?.message || `كود الخطأ: ${res.status}` };
+          }
+        } catch (e) {
+          lastErr = { status: 0, message: e.message };
+        }
+      }
+
+      if (!connected && lastErr) {
+        if (lastErr.status === 429 && lastErr.message.includes('prepayment')) {
           setGeminiTestResult({
             success: false,
-            message: `⚠️ تنبيه: المفتاح تم التحقق منه وهو صحيح، ولكن مشروع Google هذا يتطلب شحن رصيد مدفوع. للحصول على خطة مجانية 100% بدون دفع: افتح Google AI Studio واضغط "Create API key" ثم اختر "Create API key in a new project" (في مشروع جديد).`
+            message: `⚠️ تنبيه هام: تم التعرف على المفتاح وهو صالح، لكن المشروع المرتبط به في Google Cloud نفد رصيده المسبق (Prepayment Credits Depleted).\n\n💡 للحصول على مفتاح مجاني 100% بدون أي بطاقة بنكية:\n1. افتح https://aistudio.google.com/app/apikey\n2. اضغط "Create API key"\n3. اختر "Create API key in a new project" (في مشروع جديد مجاني بالكامل).\n4. انسخ المفتاح الجديد والصقه هنا واضغط حفظ!`
           });
         } else {
           setGeminiTestResult({
             success: false,
-            message: `❌ فشل الاتصال: ${errMsg}. يرجى التأكد من نسخ المفتاح بشكل صحيح من Google AI Studio.`
+            message: `❌ فشل الاتصال: ${lastErr.message}. يرجى التأكد من نسخ المفتاح بشكل صحيح من Google AI Studio.`
           });
         }
       }
@@ -1450,6 +1469,51 @@ const AdminDashboard = () => {
       });
     } finally {
       setTestingGemini(false);
+    }
+  };
+
+  const handleTestGroqKey = async (customKey) => {
+    const key = (customKey !== undefined ? customKey : groqKey).trim();
+    if (!key) {
+      alert('يرجى إدخال مفتاح Groq API أولاً لإجراء الاختبار.');
+      return;
+    }
+    setTestingGroq(true);
+    setGroqTestResult(null);
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: 'أجب بكلمة واحدة: مرحباً' }],
+          max_tokens: 30
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const reply = data.choices?.[0]?.message?.content || '';
+        setGroqTestResult({
+          success: true,
+          message: `✅ تم الاتصال بنجاح بمحرك Groq LLaMA 3.3! استجابة الذكاء الاصطناعي: "${reply.trim()}"`
+        });
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        setGroqTestResult({
+          success: false,
+          message: `❌ فشل الاتصال بمحرك Groq: ${errJson.error?.message || res.status}`
+        });
+      }
+    } catch (err) {
+      setGroqTestResult({
+        success: false,
+        message: `❌ خطأ في الاتصال: ${err.message}`
+      });
+    } finally {
+      setTestingGroq(false);
     }
   };
 
@@ -1573,9 +1637,12 @@ const AdminDashboard = () => {
 
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [geminiKey, setGeminiKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [isSavingGeminiKey, setIsSavingGeminiKey] = useState(false);
   const [testingGemini, setTestingGemini] = useState(false);
   const [geminiTestResult, setGeminiTestResult] = useState(null);
+  const [testingGroq, setTestingGroq] = useState(false);
+  const [groqTestResult, setGroqTestResult] = useState(null);
 
   // Editing state trackers
   const [editingEventId, setEditingEventId] = useState(null);
@@ -2343,6 +2410,8 @@ const AdminDashboard = () => {
       setNavigation(storedNav !== null ? JSON.parse(storedNav) : defaultNavigation);
       setPages(JSON.parse(localStorage.getItem('db_pages') || JSON.stringify(defaultPages)));
       setGeminiKey(localStorage.getItem('db_gemini_key') || '');
+      setXaiKey(localStorage.getItem('db_xai_key') || '');
+      setGroqKey(localStorage.getItem('db_groq_key') || '');
 
       setIsLoadingData(false);
       return;
@@ -2482,7 +2551,10 @@ const AdminDashboard = () => {
       const geminiDoc = doc(db, 'schoolGuide', 'gemini');
       const geminiSnap = await getDoc(geminiDoc);
       if (geminiSnap.exists()) {
-        setGeminiKey(geminiSnap.data().apiKey || '');
+        const dData = geminiSnap.data();
+        setGeminiKey(dData.apiKey || '');
+        setXaiKey(dData.xaiKey || '');
+        setGroqKey(dData.groqKey || '');
       }
 
       // 16. Load Worksheets & Auto-sync missing cloud chunks from IndexedDB
@@ -9575,11 +9647,11 @@ const AdminDashboard = () => {
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <button
                         type="button"
-                        onClick={() => handleSaveGeminiKey(geminiKey, xaiKey)}
+                        onClick={() => handleSaveGeminiKey(geminiKey, xaiKey, groqKey)}
                         className="btn"
                         style={{ background: '#4f46e5', color: 'white', padding: '0.85rem 1.8rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                       >
-                        <i className="fas fa-save"></i> 💾 حفظ وتفعيل المفتاح في الموقع
+                        <i className="fas fa-save"></i> 💾 حفظ وتفعيل المفاتيح في الموقع
                       </button>
 
                       <button
@@ -9589,7 +9661,74 @@ const AdminDashboard = () => {
                         className="btn"
                         style={{ background: testingGemini ? '#94a3b8' : '#059669', color: 'white', padding: '0.85rem 1.8rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: testingGemini || !geminiKey.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                       >
-                        <i className="fas fa-vial"></i> {testingGemini ? 'جاري فحص الاتصال...' : '🧪 اختبار الاتصال بالذكاء الاصطناعي الآن'}
+                        <i className="fas fa-vial"></i> {testingGemini ? 'جاري فحص الاتصال...' : '🧪 اختبار اتصال Google Gemini'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Groq LLaMA 3.3 High-Speed API Key Box */}
+                  <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <label style={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        ⚡ محرك Groq المجاني الفائق (Groq API Key - مجاني وسريع 100%):
+                      </label>
+                      <a
+                        href="https://console.groq.com/keys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#ea580c', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}
+                      >
+                        <i className="fas fa-external-link-alt"></i> الحصول على مفتاح Groq مجاني فوراً (بدون بطاقة)
+                      </a>
+                    </div>
+                    <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+                      يعمل محرك Groq بنموذج LLaMA 3.3 المتقدم ويتميز بسرعة فائقة ومجانية تامة. يعمل كبديل تلقائي وسريع لمساعد المدرسة.
+                    </p>
+
+                    <input
+                      type="text"
+                      placeholder="الصق مفتاح Groq هنا (مثال: gsk_...)"
+                      value={groqKey}
+                      onChange={(e) => {
+                        setGroqKey(e.target.value);
+                        setGroqTestResult(null);
+                      }}
+                      style={{ width: '100%', padding: '0.85rem 1.2rem', borderRadius: '12px', border: '2px solid #ea580c', fontSize: '1rem', fontWeight: 800, fontFamily: 'monospace', background: 'white', marginBottom: '1rem' }}
+                    />
+
+                    {groqTestResult && (
+                      <div style={{
+                        padding: '1rem 1.25rem',
+                        borderRadius: '14px',
+                        marginBottom: '1rem',
+                        background: groqTestResult.success ? '#f0fdf4' : '#fef2f2',
+                        border: `1.5px solid ${groqTestResult.success ? '#86efac' : '#fca5a5'}`,
+                        color: groqTestResult.success ? '#166534' : '#991b1b',
+                        fontWeight: 800,
+                        fontSize: '0.95rem'
+                      }}>
+                        {groqTestResult.message}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveGeminiKey(geminiKey, xaiKey, groqKey)}
+                        className="btn"
+                        style={{ background: '#ea580c', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer' }}
+                      >
+                        <i className="fas fa-save"></i> حفظ مفتاح Groq
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTestGroqKey(groqKey)}
+                        disabled={testingGroq || !groqKey.trim()}
+                        className="btn"
+                        style={{ background: testingGroq ? '#94a3b8' : '#0284c7', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: testingGroq || !groqKey.trim() ? 'not-allowed' : 'pointer' }}
+                      >
+                        <i className="fas fa-vial"></i> {testingGroq ? 'جاري الفحص...' : '🧪 اختبار اتصال Groq'}
                       </button>
                     </div>
                   </div>
@@ -9609,7 +9748,7 @@ const AdminDashboard = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => handleSaveGeminiKey(geminiKey, xaiKey)}
+                        onClick={() => handleSaveGeminiKey(geminiKey, xaiKey, groqKey)}
                         style={{ marginTop: '0.75rem', background: '#475569', color: 'white', padding: '0.5rem 1.2rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 800 }}
                       >
                         حفظ مفتاح xAI
