@@ -926,15 +926,47 @@ const AdminDashboard = () => {
   const loadGratitudeStars = async () => {
     setIsLoadingGratitudeStars(true);
     try {
-      const q = query(collection(db, 'gratitude_stars'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const list = [];
-        snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
-        setAdminGratitudeStars(list);
-      } else {
-        setAdminGratitudeStars([]);
+      const snapStars = await getDocs(collection(db, 'gratitude_stars'));
+      const list = [];
+      if (!snapStars.empty) {
+        snapStars.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
       }
+
+      // Also load messages from Emtnan app
+      try {
+        const snapMsgs = await getDocs(collection(db, 'messages'));
+        snapMsgs.forEach(docSnap => {
+          const m = docSnap.data();
+          let createdIso = new Date().toISOString();
+          if (m.timestamp) {
+            if (typeof m.timestamp.toDate === 'function') {
+              createdIso = m.timestamp.toDate().toISOString();
+            } else if (m.timestamp.seconds) {
+              createdIso = new Date(m.timestamp.seconds * 1000).toISOString();
+            }
+          }
+          list.push({
+            id: `msg_${docSnap.id}`,
+            originalMessageId: docSnap.id,
+            recipientName: m.receiver || 'طاقم ومعلمي المدرسة',
+            recipientRole: 'teacher',
+            senderName: m.sender || 'طالب/ولي أمر',
+            senderRole: 'student',
+            senderClass: 'مبادرة امتنان 💐',
+            color: 'pink',
+            message: m.text || (m.audioData ? '🎤 رسالة صوتية مسجلة' : 'رسالة شكر وامتنان'),
+            audioData: m.audioData || null,
+            likesCount: m.likes || (m.reactionCounts ? Object.values(m.reactionCounts).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0) : 1) || 1,
+            createdAt: createdIso,
+            isFromMessagesApp: true
+          });
+        });
+      } catch (e) {
+        console.warn("Could not load messages in admin dashboard:", e);
+      }
+
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setAdminGratitudeStars(list);
     } catch (err) {
       console.warn("Error loading gratitude stars for admin:", err);
     } finally {
@@ -943,11 +975,16 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteGratitudeStar = async (starId, recipientName) => {
-    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف هذه النجمة المهداة إلى "${recipientName}" من سماء المدرسة؟`)) return;
+    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف هذه النجمة/الرسالة المهداة إلى "${recipientName}"؟`)) return;
     try {
-      await deleteDoc(doc(db, 'gratitude_stars', starId));
+      if (starId.startsWith('msg_')) {
+        const origId = starId.replace('msg_', '');
+        await deleteDoc(doc(db, 'messages', origId));
+      } else {
+        await deleteDoc(doc(db, 'gratitude_stars', starId));
+      }
       setAdminGratitudeStars(prev => prev.filter(s => s.id !== starId));
-      alert('✨ تم حذف النجمة من سماء المدرسة بنجاح!');
+      alert('✨ تم حذف النجمة / الرسالة بنجاح!');
     } catch (err) {
       alert('حدث خطأ أثناء حذف النجمة: ' + err.message);
     }

@@ -87,7 +87,10 @@ const NewsPage = () => {
 
     fetchFacebookUrl();
 
-    return () => unsubscribeNews();
+    return () => {
+      unsubNews();
+      unsubFb();
+    };
   }, []);
 
   const safeFbUrl = (typeof facebookUrl === 'string' && facebookUrl.trim()) ? facebookUrl.trim() : 'https://www.facebook.com/MusheirifaElementarySchool';
