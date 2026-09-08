@@ -803,7 +803,26 @@ const StemCorner = ({ isStandalone = true }) => {
                         lineHeight: 1.7,
                         whiteSpace: 'pre-line'
                       }}>
-                        {aiStemIdeas}
+                        <div>{aiStemIdeas}</div>
+                        <div style={{ marginTop: '0.75rem', textAlign: 'left' }}>
+                          <button
+                            type="button"
+                            onClick={() => setSolutionDesc(prev => (prev ? prev + '\n\n' : '') + '💡 استلهام من موجه الـ STEM الذكي:\n' + aiStemIdeas)}
+                            style={{
+                              background: '#f0fdf4',
+                              color: '#15803d',
+                              border: '1px solid #86efac',
+                              padding: '0.35rem 0.85rem',
+                              borderRadius: '8px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <i className="fas fa-plus-circle" style={{ marginLeft: '4px' }}></i>
+                            أضف هذه المقترحات لصندوق وصفي ✍️
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
