@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
+import { generateStemSolutionIdeas } from '../utils/aiService';
 import './StemCorner.css';
 
 const DEFAULT_CHALLENGES = [
@@ -230,6 +231,25 @@ const StemCorner = ({ isStandalone = true }) => {
   const [solutionDesc, setSolutionDesc] = useState('');
   const [prototypeImage, setPrototypeImage] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+  const [aiStemIdeas, setAiStemIdeas] = useState('');
+  const [isLoadingAiStem, setIsLoadingAiStem] = useState(false);
+
+  const handleGenerateAiStemIdeas = async () => {
+    if (!selectedChallenge) return;
+    setIsLoadingAiStem(true);
+    try {
+      const ideas = await generateStemSolutionIdeas({
+        challengeTitle: selectedChallenge.title,
+        problemDesc: selectedChallenge.realProblem || selectedChallenge.desc,
+        studentNote: solutionDesc || customProblemText
+      });
+      setAiStemIdeas(ideas);
+    } catch (e) {
+      console.warn("AI STEM error:", e);
+    } finally {
+      setIsLoadingAiStem(false);
+    }
+  };
 
   // Follow-Up Update Modal State
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
@@ -734,6 +754,59 @@ const StemCorner = ({ isStandalone = true }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* AI STEM Innovation Assistant */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                    border: '1.5px solid #93c5fd',
+                    borderRadius: '16px',
+                    padding: '1.15rem',
+                    marginBottom: '1.5rem',
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: aiStemIdeas ? '0.75rem' : 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1.3rem' }}>🤖</span>
+                        <strong style={{ color: '#1e3a8a', fontSize: '0.95rem' }}>موجه الابتكار الذكي (AI STEM Mentor)</strong>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleGenerateAiStemIdeas}
+                        disabled={isLoadingAiStem}
+                        style={{
+                          background: isLoadingAiStem ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.45rem 1rem',
+                          borderRadius: '20px',
+                          fontWeight: 800,
+                          fontSize: '0.82rem',
+                          cursor: isLoadingAiStem ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
+                        }}
+                      >
+                        <i className={`fas ${isLoadingAiStem ? 'fa-spinner fa-spin' : 'fa-brain'}`}></i>
+                        <span>{isLoadingAiStem ? 'جاري توليد حلول ذكية...' : '💡 استشر الذكاء الاصطناعي لحلول إضافية'}</span>
+                      </button>
+                    </div>
+                    {aiStemIdeas && (
+                      <div style={{
+                        background: 'white',
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        border: '1px solid #bfdbfe',
+                        color: '#1e293b',
+                        fontSize: '0.88rem',
+                        lineHeight: 1.7,
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {aiStemIdeas}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Solution Submission Form & Team Operation Room */}
                   <div className="modal-form-wrapper">

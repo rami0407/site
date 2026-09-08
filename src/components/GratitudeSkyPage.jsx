@@ -12,6 +12,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { sanitizeText } from '../utils/security';
+import { composeGratitudeMessage } from '../utils/aiService';
 
 // Default starter stars representing Musheirifa's spirit of gratitude
 const DEFAULT_STARS = [
@@ -232,6 +233,30 @@ const GratitudeSkyPage = () => {
   const [message, setMessage] = useState('');
   const [starColor, setStarColor] = useState('gold');
   const [isLaunching, setIsLaunching] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const handleAiComposeGratitude = async () => {
+    if (!recipientName.trim()) {
+      alert('يرجى كتابة اسم الشخص المهدى إليه أولاً ليتمكن الذكاء الاصطناعي من صياغة رسالة تناسبه!');
+      return;
+    }
+    setIsGeneratingAi(true);
+    try {
+      const generated = await composeGratitudeMessage({
+        recipientName: recipientName.trim(),
+        recipientRole,
+        senderName: senderName.trim(),
+        contextNote: message.trim()
+      });
+      if (generated) {
+        setMessage(generated);
+      }
+    } catch (e) {
+      console.warn("AI Gratitude error:", e);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   // Canvas Starfield Ref
   const canvasRef = useRef(null);
@@ -1761,13 +1786,39 @@ const GratitudeSkyPage = () => {
 
               {/* Gratitude Message */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, color: '#fcd34d', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                  رسالة الشكر والإطراء من القلب *:
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <label style={{ fontWeight: 800, color: '#fcd34d', fontSize: '0.85rem' }}>
+                    رسالة الشكر والإطراء من القلب *:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAiComposeGratitude}
+                    disabled={isGeneratingAi || !recipientName.trim()}
+                    style={{
+                      background: isGeneratingAi ? '#475569' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.35rem 0.85rem',
+                      borderRadius: '20px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      cursor: isGeneratingAi || !recipientName.trim() ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title="صياغة رسالة شكر وامتنان راقية بالذكاء الاصطناعي"
+                  >
+                    <i className={`fas ${isGeneratingAi ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                    <span>{isGeneratingAi ? 'جاري الصياغة بالذكاء الاصطناعي...' : '✨ صياغة راقية بالذكاء الاصطناعي'}</span>
+                  </button>
+                </div>
                 <textarea
                   required
                   rows={3}
-                  placeholder="اكتب كلماتك الطيبة والصادقة التي ستنير هذه النجمة في سماء المدرسة..."
+                  placeholder="اكتب كلماتك الطيبة، أو اضغط على زر الصياغة بالذكاء الاصطناعي بالأعلى لمساعدتك فوراً..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   style={{ width: '100%', padding: '0.85rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: 'white', fontWeight: 600, fontSize: '0.9rem', outline: 'none', lineHeight: 1.6 }}

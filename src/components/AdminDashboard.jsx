@@ -26,6 +26,7 @@ import FormAnalyticsView from './FormAnalyticsView';
 import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
 import EduStaffingPortal from './EduStaffingPortal';
 import SchoolTasbihPortal from './SchoolTasbihPortal';
+import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -1643,6 +1644,53 @@ const AdminDashboard = () => {
   const [geminiTestResult, setGeminiTestResult] = useState(null);
   const [testingGroq, setTestingGroq] = useState(false);
   const [groqTestResult, setGroqTestResult] = useState(null);
+  const [isGeneratingNewsAi, setIsGeneratingNewsAi] = useState(false);
+  const [isGeneratingStarAi, setIsGeneratingStarAi] = useState(false);
+
+  const handleAiGenerateNewsDraft = async () => {
+    if (!newNews.title.trim()) {
+      alert('يرجى كتابة عنوان الخبر أولاً ليتمكن الذكاء الاصطناعي من صياغته!');
+      return;
+    }
+    setIsGeneratingNewsAi(true);
+    try {
+      const draft = await generateNewsArticleDraft({
+        title: newNews.title.trim(),
+        rawNotes: newNews.content.trim(),
+        category: newNews.category
+      });
+      if (draft) {
+        setNewNews(prev => ({ ...prev, content: draft }));
+      }
+    } catch (e) {
+      console.warn("AI News generation error:", e);
+    } finally {
+      setIsGeneratingNewsAi(false);
+    }
+  };
+
+  const handleAiComposeAdminStar = async () => {
+    if (!newAdminStar.recipientName.trim()) {
+      alert('يرجى كتابة اسم الشخص المكرّم أولاً!');
+      return;
+    }
+    setIsGeneratingStarAi(true);
+    try {
+      const msg = await composeGratitudeMessage({
+        recipientName: newAdminStar.recipientName.trim(),
+        recipientRole: newAdminStar.recipientRole,
+        senderName: 'إدارة مدرسة مشيرفة (أ. رامي ارفاعية)',
+        contextNote: newAdminStar.message.trim()
+      });
+      if (msg) {
+        setNewAdminStar(prev => ({ ...prev, message: msg }));
+      }
+    } catch (e) {
+      console.warn("AI Admin star error:", e);
+    } finally {
+      setIsGeneratingStarAi(false);
+    }
+  };
 
   // Editing state trackers
   const [editingEventId, setEditingEventId] = useState(null);
@@ -5608,9 +5656,30 @@ const AdminDashboard = () => {
                           </div>
 
                           <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem' }}>
-                              رسالة الشكر والتكريم الرسمية *:
-                            </label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                              <label style={{ fontWeight: 800, fontSize: '0.85rem', color: '#334155', margin: 0 }}>
+                                رسالة الشكر والتكريم الرسمية *:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={handleAiComposeAdminStar}
+                                disabled={isGeneratingStarAi || !newAdminStar.recipientName.trim()}
+                                style={{
+                                  background: isGeneratingStarAi ? '#94a3b8' : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                  color: '#000',
+                                  border: 'none',
+                                  padding: '0.35rem 0.85rem',
+                                  borderRadius: '10px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 900,
+                                  cursor: isGeneratingStarAi || !newAdminStar.recipientName.trim() ? 'not-allowed' : 'pointer'
+                                }}
+                                title="صياغة رسالة تكريم رسمية بأسلوب الإدارة المدرسية بالذكاء الاصطناعي"
+                              >
+                                <i className={`fas ${isGeneratingStarAi ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                                {isGeneratingStarAi ? 'جاري الصياغة...' : '✨ صياغة رسمية بالذكاء الاصطناعي'}
+                              </button>
+                            </div>
                             <textarea
                               required
                               rows={4}
@@ -6327,7 +6396,32 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="form-group">
-                          <label className="form-label">تفاصيل ومضمون الخبر *</label>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <label className="form-label" style={{ margin: 0 }}>تفاصيل ومضمون الخبر *</label>
+                            <button
+                              type="button"
+                              onClick={handleAiGenerateNewsDraft}
+                              disabled={isGeneratingNewsAi || !newNews.title.trim()}
+                              className="btn"
+                              style={{
+                                background: isGeneratingNewsAi ? '#94a3b8' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                color: 'white',
+                                padding: '0.35rem 0.95rem',
+                                borderRadius: '10px',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                border: 'none',
+                                cursor: isGeneratingNewsAi || !newNews.title.trim() ? 'not-allowed' : 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.4rem'
+                              }}
+                              title="صياغة مقال إخباري رسمي فصيح بالذكاء الاصطناعي بناءً على العنوان والملاحظات"
+                            >
+                              <i className={`fas ${isGeneratingNewsAi ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                              <span>{isGeneratingNewsAi ? 'جاري صياغة الخبر...' : '✨ صياغة الخبر بالذكاء الاصطناعي'}</span>
+                            </button>
+                          </div>
                           <textarea 
                             className="form-input" 
                             required

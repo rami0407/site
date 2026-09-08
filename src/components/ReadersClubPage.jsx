@@ -12,6 +12,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { sanitizeText } from '../utils/security';
+import { generateReadingSummaryAndMoral } from '../utils/aiService';
 
 // Default starter reading logs celebrating Musheirifa students
 const DEFAULT_READING_LOGS = [
@@ -145,8 +146,31 @@ const ReadersClubPage = () => {
   const [rating, setRating] = useState(5);
   const [takeaway, setTakeaway] = useState('');
   const [learnedExpressions, setLearnedExpressions] = useState('');
-  const [favoriteCharacter, setFavoriteCharacter] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiSummarizing, setIsAiSummarizing] = useState(false);
+
+  const handleAiSuggestSummary = async () => {
+    if (!bookTitle.trim()) {
+      alert('يرجى كتابة عنوان الكتاب أو القصة أولاً!');
+      return;
+    }
+    setIsAiSummarizing(true);
+    try {
+      const res = await generateReadingSummaryAndMoral({
+        bookTitle: bookTitle.trim(),
+        author: author.trim()
+      });
+      if (res) {
+        if (res.takeaway) setTakeaway(res.takeaway);
+        if (res.learnedExpressions) setLearnedExpressions(res.learnedExpressions);
+        if (res.rating) setRating(Number(res.rating) || 5);
+      }
+    } catch (e) {
+      console.warn("AI Book Summary Error:", e);
+    } finally {
+      setIsAiSummarizing(false);
+    }
+  };
 
   // Audio Chime Effect
   const playRewardChime = () => {
@@ -1140,6 +1164,36 @@ const ReadersClubPage = () => {
                     <option value={2}>⭐⭐ (متوسط)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* AI Summary Helper Button */}
+              <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleAiSuggestSummary}
+                  disabled={isAiSummarizing || !bookTitle.trim()}
+                  style={{
+                    width: '100%',
+                    background: isAiSummarizing ? '#64748b' : 'linear-gradient(135deg, #059669, #0d9488)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '14px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: isAiSummarizing || !bookTitle.trim() ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="استخراج العبرة والتراكيب البلاغية بالذكاء الاصطناعي"
+                >
+                  <i className={`fas ${isAiSummarizing ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                  <span>{isAiSummarizing ? 'جاري التحليل واستخراج العبرة بالذكاء الاصطناعي...' : '✨ مساعدة ذكية: استخراج العبرة والتعابير البلاغية بالذكاء الاصطناعي'}</span>
+                </button>
               </div>
 
               {/* Takeaway */}

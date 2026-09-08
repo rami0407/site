@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { generateDailyWisdomAndFact } from '../utils/aiService';
 import './KioskDisplayPage.css';
 
 const DEFAULT_CONFIGS = {
@@ -117,6 +118,15 @@ const KioskDisplayPage = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [aiWisdom, setAiWisdom] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    generateDailyWisdomAndFact().then(res => {
+      if (isMounted && res) setAiWisdom(res);
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
 
   // Detect channel from route hash or URL
   useEffect(() => {
@@ -524,7 +534,11 @@ const KioskDisplayPage = () => {
             </div>
             <div className="ticker-track">
               <div className="ticker-content">
-                {config.tickerText} &nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp; {config.tickerText}
+                {config.tickerText}
+                {aiWisdom && ` • 💡 حكمة اليوم: ${aiWisdom.wisdom} • 🔬 معلومة اليوم العلمية: ${aiWisdom.fact}`}
+                &nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;
+                {config.tickerText}
+                {aiWisdom && ` • 💡 حكمة اليوم: ${aiWisdom.wisdom} • 🔬 معلومة اليوم العلمية: ${aiWisdom.fact}`}
               </div>
             </div>
           </div>
