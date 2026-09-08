@@ -365,3 +365,104 @@ export const generateDailyWisdomAndFact = async () => {
     fact: 'كوكب المشتري هو أكبر كواكب المجموعة الشمسية ويمكنه استيعاب أكثر من 1300 كوكب بحجم الأرض!'
   };
 };
+
+/**
+ * 6. Socratic STEM Mentor for Kids ("المكتشف الصغير")
+ */
+export const askSocraticStemMentor = async ({ message, history = [] }) => {
+  const { geminiKey, groqKey, xaiKey } = await getActiveAiKeys();
+
+  const SYSTEM_INSTRUCTION = `أنت "المكتشف الصغير"، مرشد سقراطي مشجع لطلاب المرحلة الابتدائية (الصفوف 3 إلى 6) بمدرسة مشيرفة الابتدائية.
+القاعدة الذهبية الصارمة:
+- ممنوع منعاً باتاً إعطاء إجابات جاهزة، أو خطوات عمل كاملة، أو حلول علمية مباشرة.
+- إذا قال الطالب "أعطني الحل" أو "حلها أنت"، قل له بلطف: "أنا هنا لأفكر معك خطوة بخطوة! ما رأيك أن نبدأ بـ..."
+- أسلوب الإجابة: لغة عربية فصحى بسيطة وواضحة جداً، أقصى طول للإجابة جملتان أو ثلاث فقط.
+- اختم دائماً بسؤال تفكيري واحد فقط يربط المفهوم بشيء حسي ملموس من حياة الطفل اليومية.`;
+
+  // 1. Try Groq (Fastest & natively supports browser CORS)
+  if (groqKey) {
+    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    for (const gm of groqModels) {
+      try {
+        const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
+        if (Array.isArray(history)) {
+          history.forEach(h => {
+            const role = h.role === 'user' ? 'user' : 'assistant';
+            const content = h.parts?.[0]?.text || h.text || '';
+            if (content) groqMessages.push({ role, content });
+          });
+        }
+        groqMessages.push({ role: 'user', content: message });
+
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: gm,
+            messages: groqMessages,
+            temperature: 0.4,
+            max_tokens: 150
+          })
+        }, 7000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) {
+            return cleanAiResponse(txt.trim());
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq Socratic (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Google Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    let conversationText = '';
+    if (Array.isArray(history) && history.length > 0) {
+      history.forEach(h => {
+        const sender = h.role === 'user' ? 'الطالب' : 'المكتشف الصغير';
+        const text = h.parts?.[0]?.text || h.text || '';
+        if (text) conversationText += `${sender}: ${text}\n`;
+      });
+    }
+    const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nسياق الحوار السابق:\n${conversationText}\nالطالب: ${message}\nالمكتشف الصغير:`;
+
+    for (const model of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 150
+              }
+            })
+          },
+          7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) {
+            return cleanAiResponse(txt.trim());
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini Socratic (${model}) failed:`, e);
+      }
+    }
+  }
+
+  return 'فكرة رائعة للتفكير! ما رأيك أن نبدأ بملاحظة الأشياء حولك في البيت أو المدرسة، ما أكثر شيء يشبه هذا التحدي؟';
+};

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
-import { generateStemSolutionIdeas } from '../utils/aiService';
+import { generateStemSolutionIdeas, askSocraticStemMentor } from '../utils/aiService';
 import './StemCorner.css';
 
 const DEFAULT_CHALLENGES = [
@@ -251,7 +251,57 @@ const StemCorner = ({ isStandalone = true }) => {
     }
   };
 
-  // Follow-Up Update Modal State
+  // Socratic STEM Mentor ("المكتشف الصغير") State
+  const [socraticMessages, setSocraticMessages] = useState([
+    { role: 'bot', text: 'مرحباً يا بطل العلوم! 🌟 أنا "المكتشف الصغير" مرشدك السقراطي الذكي. ما هو المشروع أو الفكرة الرائعة التي تريد أن نفكر فيها ونكتشفها معاً اليوم؟' }
+  ]);
+  const [socraticHistory, setSocraticHistory] = useState([]);
+  const [socraticInput, setSocraticInput] = useState('');
+  const [isSocraticTyping, setIsSocraticTyping] = useState(false);
+  const socraticChatEndRef = useRef(null);
+
+  useEffect(() => {
+    if (activeTab === 'socratic' && socraticChatEndRef.current) {
+      socraticChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [socraticMessages, isSocraticTyping, activeTab]);
+
+  const handleSendSocraticMessage = async (textOverride = null) => {
+    const text = textOverride || socraticInput.trim();
+    if (!text || isSocraticTyping) return;
+
+    const newMsgs = [...socraticMessages, { role: 'user', text }];
+    setSocraticMessages(newMsgs);
+    if (!textOverride) setSocraticInput('');
+    setIsSocraticTyping(true);
+
+    try {
+      const reply = await askSocraticStemMentor({
+        message: text,
+        history: socraticHistory
+      });
+
+      setSocraticMessages(prev => [...prev, { role: 'bot', text: reply }]);
+      setSocraticHistory(prev => [
+        ...prev,
+        { role: 'user', parts: [{ text }] },
+        { role: 'model', parts: [{ text: reply }] }
+      ]);
+    } catch (e) {
+      console.warn("Socratic error:", e);
+      setSocraticMessages(prev => [...prev, { role: 'bot', text: 'عذراً يا بطل، حدث خطأ بسيط في الاتصال. ما رأيك أن تعيد كتابة سؤالك؟' }]);
+    } finally {
+      setIsSocraticTyping(false);
+    }
+  };
+
+  const handleResetSocratic = () => {
+    setSocraticHistory([]);
+    setSocraticMessages([
+      { role: 'bot', text: 'مرحباً يا بطل العلوم! 🌟 أنا "المكتشف الصغير" مرشدك السقراطي الذكي. ما هو المشروع أو الفكرة الرائعة التي تريد أن نفكر فيها ونكتشفها معاً اليوم؟' }
+    ]);
+    setSocraticInput('');
+  };
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [selectedSolForUpdate, setSelectedSolForUpdate] = useState(null);
   const [progressUpdateText, setProgressUpdateText] = useState('');
@@ -583,6 +633,20 @@ const StemCorner = ({ isStandalone = true }) => {
 
             <div className="teacher-access-hero-wrapper">
               <button 
+                onClick={() => setActiveTab('socratic')} 
+                className="teacher-portal-quick-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  boxShadow: '0 4px 14px rgba(37,99,235,0.3)',
+                  border: '1.5px solid #93c5fd',
+                  marginRight: '8px'
+                }}
+                title="حاور المكتشف الصغير الذكي لحل المشكلات بطريقة سقراطية"
+              >
+                <i className="fas fa-robot"></i> 🚀 حاور المكتشف الصغير (STEM) 💡
+              </button>
+
+              <button 
                 onClick={() => window.location.hash = '#/stem-teacher'} 
                 className="teacher-portal-quick-btn"
                 title="الانتقال المباشر لبوابة معلم المادة لمتابعة وتوجيه الطلاب"
@@ -601,6 +665,19 @@ const StemCorner = ({ isStandalone = true }) => {
           onClick={() => setActiveTab('challenges')}
         >
           <i className="fas fa-lightbulb"></i> 1. صناع الحلول (تحدي المشكلات)
+        </button>
+
+        <button 
+          className={`stem-tab-btn ${activeTab === 'socratic' ? 'active' : ''}`}
+          onClick={() => setActiveTab('socratic')}
+          style={{
+            background: activeTab === 'socratic' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : undefined,
+            color: activeTab === 'socratic' ? '#fff' : undefined,
+            border: '2px solid #3b82f6',
+            fontWeight: 800
+          }}
+        >
+          <i className="fas fa-robot"></i> 🤖 المكتشف الصغير (حوار ذكي)
         </button>
 
         <button 
@@ -1478,6 +1555,229 @@ const StemCorner = ({ isStandalone = true }) => {
                 <h3>حاوية تدوير العلب الذكية</h3>
                 <p>مجسم حاوية مجهزة بفتحات قياسية لفصل علب الألمنيوم عن البلاستيك.</p>
                 <div className="project-author">👨‍🎓 المبتكر: عمر أحمد - الصف الثالث</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: Socratic STEM Mentor ("المكتشف الصغير")             */}
+      {/* ======================================================== */}
+      {activeTab === 'socratic' && (
+        <section className="stem-section animate-fade">
+          <div className="section-header-box" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '6px 16px', borderRadius: '30px', color: '#1d4ed8', fontWeight: 800, fontSize: '0.9rem', marginBottom: '8px' }}>
+              <span>🚀</span> المرشد السقراطي للعلوم والابتكار
+            </div>
+            <h2 style={{ fontSize: '1.8rem', color: '#0f172a', margin: '4px 0' }}>
+              المكتشف الصغير <span style={{ color: '#2563eb' }}>STEM 🤖💡</span>
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+              فكر، جرب، واكتشف الحل بنفسك! لن أعطيك إجابات جاهزة، بل سأرشدك خطوة بخطوة لتفكر كعالم ومهندس حقيقي.
+            </p>
+          </div>
+
+          <div className="socratic-widget-wrapper" style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="socratic-chat-card" style={{
+              width: '100%',
+              maxWidth: '720px',
+              background: '#ffffff',
+              borderRadius: '24px',
+              boxShadow: '0 12px 36px rgba(37, 99, 235, 0.12)',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '75vh',
+              minHeight: '540px',
+              overflow: 'hidden',
+              border: '2px solid #d0e3ff'
+            }}>
+              {/* Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: 'white',
+                padding: '16px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '42px', height: '42px', background: 'white', color: '#2563eb', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.35rem', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                    🤖
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'white' }}>المكتشف الصغير (STEM)</h3>
+                    <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>مرشد التفكير العلمي السقراطي</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleResetSocratic}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 14px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'background 0.2s'
+                  }}
+                  title="بدء جلسة تفكير جديدة"
+                >
+                  <i className="fas fa-rotate-right"></i> جديد 🔄
+                </button>
+              </div>
+
+              {/* Chat Messages */}
+              <div style={{
+                flex: 1,
+                padding: '20px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                background: '#f8fafc'
+              }}>
+                {socraticMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      justifyContent: msg.role === 'user' ? 'flex-start' : 'flex-end',
+                      width: '100%'
+                    }}
+                  >
+                    <div style={{
+                      maxWidth: '82%',
+                      padding: '12px 18px',
+                      borderRadius: '18px',
+                      lineHeight: 1.6,
+                      fontSize: '0.96rem',
+                      wordBreak: 'break-word',
+                      background: msg.role === 'user' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#ffffff',
+                      color: msg.role === 'user' ? '#ffffff' : '#0369a1',
+                      borderBottomLeftRadius: msg.role === 'user' ? '4px' : '18px',
+                      borderBottomRightRadius: msg.role === 'bot' ? '4px' : '18px',
+                      border: msg.role === 'bot' ? '1.5px solid #bae6fd' : 'none',
+                      boxShadow: msg.role === 'bot' ? '0 2px 8px rgba(2, 132, 199, 0.08)' : '0 2px 8px rgba(37, 99, 235, 0.25)'
+                    }}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+
+                {isSocraticTyping && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      background: '#e0f2fe',
+                      borderRadius: '16px',
+                      borderBottomRightRadius: '4px',
+                      color: '#0369a1',
+                      fontSize: '0.9rem',
+                      fontWeight: 700
+                    }}>
+                      <span>يفكر المكتشف الصغير... 💭</span>
+                      <i className="fas fa-spinner fa-spin"></i>
+                    </div>
+                  </div>
+                )}
+                <div ref={socraticChatEndRef} />
+              </div>
+
+              {/* Quick Starters */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                overflowX: 'auto',
+                padding: '10px 16px',
+                background: '#ffffff',
+                borderTop: '1px solid #e2e8f0'
+              }}>
+                {[
+                  'كيف أصنع مجسماً لجسر قوي؟',
+                  'كيف أجعل سيارة اللعبة أسرع؟',
+                  'لماذا ينطفئ المصباح إذا انقطع السلك؟'
+                ].map((st, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSendSocraticMessage(st)}
+                    disabled={isSocraticTyping}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      padding: '7px 14px',
+                      borderRadius: '14px',
+                      fontSize: '0.85rem',
+                      cursor: isSocraticTyping ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 700,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    💡 {st}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Bar */}
+              <div style={{
+                display: 'flex',
+                padding: '12px 16px',
+                borderTop: '1px solid #e2e8f0',
+                background: 'white',
+                gap: '8px',
+                alignItems: 'center'
+              }}>
+                <input
+                  type="text"
+                  placeholder="اكتب فكرتك أو سؤالك العلمي هنا..."
+                  value={socraticInput}
+                  onChange={(e) => setSocraticInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSendSocraticMessage(); }}
+                  disabled={isSocraticTyping}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #cbd5e1',
+                    borderRadius: '14px',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    direction: 'rtl'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSendSocraticMessage()}
+                  disabled={!socraticInput.trim() || isSocraticTyping}
+                  style={{
+                    background: (!socraticInput.trim() || isSocraticTyping) ? '#94a3b8' : '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 22px',
+                    borderRadius: '14px',
+                    fontWeight: 800,
+                    cursor: (!socraticInput.trim() || isSocraticTyping) ? 'not-allowed' : 'pointer',
+                    fontSize: '0.95rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>إرسال</span>
+                  <i className="fas fa-paper-plane"></i>
+                </button>
               </div>
             </div>
           </div>
