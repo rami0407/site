@@ -144,32 +144,34 @@ const AiAssistant = () => {
     // 1. Try Google Gemini API (Primary Engine with direct browser CORS support)
     const activeGeminiKey = (apiKey && apiKey.trim()) || localStorage.getItem('db_gemini_key') || '';
     if (activeGeminiKey && activeGeminiKey.trim()) {
-      try {
-        const fullPrompt = `${schoolContext ? schoolContext + '\n\n' : ''}أجب عن السؤال التالي باللغة العربية بطريقة تربوية، واضحة ومفيدة للطلاب وأولياء الأمور:\nالسؤال: ${promptText}`;
-        const res = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeGeminiKey.trim()}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: fullPrompt }] }],
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 800
-              }
-            })
-          },
-          7000
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (txt && txt.trim()) return txt.trim();
-        } else {
-          console.warn("Gemini API non-200 response:", res.status);
+      const targetModels = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
+      const fullPrompt = `${schoolContext ? schoolContext + '\n\n' : ''}أجب عن السؤال التالي باللغة العربية بطريقة تربوية، واضحة ومفيدة للطلاب وأولياء الأمور:\nالسؤال: ${promptText}`;
+      
+      for (const modelName of targetModels) {
+        try {
+          const res = await fetchWithTimeout(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeGeminiKey.trim()}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: fullPrompt }] }],
+                generationConfig: {
+                  temperature: 0.7,
+                  maxOutputTokens: 800
+                }
+              })
+            },
+            6000
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (txt && txt.trim()) return txt.trim();
+          }
+        } catch (e) {
+          console.warn(`Gemini ${modelName} error:`, e);
         }
-      } catch (e) {
-        console.warn("Gemini API error:", e);
       }
     }
 

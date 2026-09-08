@@ -1352,7 +1352,7 @@ const AdminDashboard = () => {
     setTestingGemini(true);
     setGeminiTestResult(null);
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1369,10 +1369,17 @@ const AdminDashboard = () => {
       } else {
         const errJson = await res.json().catch(() => ({}));
         const errMsg = errJson.error?.message || `كود الخطأ: ${res.status}`;
-        setGeminiTestResult({
-          success: false,
-          message: `❌ فشل الاتصال: ${errMsg}. يرجى التأكد من نسخ المفتاح بشكل صحيح من Google AI Studio.`
-        });
+        if (res.status === 429 && errMsg.includes('prepayment')) {
+          setGeminiTestResult({
+            success: false,
+            message: `⚠️ تنبيه: المفتاح تم التحقق منه وهو صحيح، ولكن مشروع Google هذا يتطلب شحن رصيد مدفوع. للحصول على خطة مجانية 100% بدون دفع: افتح Google AI Studio واضغط "Create API key" ثم اختر "Create API key in a new project" (في مشروع جديد).`
+          });
+        } else {
+          setGeminiTestResult({
+            success: false,
+            message: `❌ فشل الاتصال: ${errMsg}. يرجى التأكد من نسخ المفتاح بشكل صحيح من Google AI Studio.`
+          });
+        }
       }
     } catch (err) {
       setGeminiTestResult({
