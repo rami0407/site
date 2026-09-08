@@ -1,9 +1,93 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { cleanAiResponse } from '../utils/aiService';
 
 const DEFAULT_GEMINI_KEY = "";
 const DEFAULT_XAI_KEY = "";
+
+const renderInlineFormatted = (str) => {
+  if (!str) return '';
+  const parts = str.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      return <strong key={i} className="chat-bold-highlight">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
+const FormattedChatMessage = ({ text, isUser }) => {
+  if (isUser) {
+    return <p className="chat-bubble-text user">{text}</p>;
+  }
+
+  const cleaned = cleanAiResponse(text);
+  const lines = cleaned.split('\n');
+
+  return (
+    <div className="ai-rendered-message">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="chat-spacer" />;
+        }
+
+        // Table row (| col1 | col2 |)
+        if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+          if (/^\|[\s\-:|]+\|$/.test(trimmed)) return null;
+          const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
+          return (
+            <div key={idx} className="chat-table-row">
+              {cells.map((cell, cIdx) => (
+                <div key={cIdx} className="chat-table-cell">{renderInlineFormatted(cell)}</div>
+              ))}
+            </div>
+          );
+        }
+
+        // Headings (###, ##, #)
+        if (/^#{1,4}\s+/.test(trimmed)) {
+          const heading = trimmed.replace(/^#{1,4}\s+/, '');
+          return (
+            <h5 key={idx} className="chat-message-heading">
+              {renderInlineFormatted(heading)}
+            </h5>
+          );
+        }
+
+        // Bullet item (- or * or •)
+        if (/^[-*•]\s+/.test(trimmed)) {
+          const item = trimmed.replace(/^[-*•]\s+/, '');
+          return (
+            <div key={idx} className="chat-bullet-row">
+              <span className="chat-bullet-dot">•</span>
+              <span className="chat-bullet-content">{renderInlineFormatted(item)}</span>
+            </div>
+          );
+        }
+
+        // Numbered list (1. or 1) )
+        const numMatch = trimmed.match(/^(\d+[\.\)])\s+(.*)/);
+        if (numMatch) {
+          return (
+            <div key={idx} className="chat-number-row">
+              <span className="chat-number-badge">{numMatch[1]}</span>
+              <span className="chat-number-content">{renderInlineFormatted(numMatch[2])}</span>
+            </div>
+          );
+        }
+
+        // Regular paragraph
+        return (
+          <p key={idx} className="chat-bubble-paragraph">
+            {renderInlineFormatted(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
 
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +115,13 @@ const AiAssistant = () => {
   useEffect(() => {
     const compileContext = async () => {
       try {
-        let context = "أنت المساعد الرقمي الذكي والموسوعة التعليمية والتربوية الشاملة لمدرسة مشيرفة الابتدائية (Musheirifa Elementary School). مدير المدرسة هو الأستاذ رامي ارفاعية.\n\nتوجيهات الإجابة:\n1. أجب عن كافة أسئلة الطلاب وأولياء الأمور باللغة العربية بأسلوب تعليمي مشجع، ودود، وواضح.\n2. أجب بذكاء موسوعي عن الأسئلة العامة الثقافية، العلمية، الفلكية، والرياضية، وسّع مدارك الطلاب وشجعهم على التفكير والابتكار.\n3. بالنسبة لاستفسارات المدرسة وشؤونها، اعتمد على البيانات الرسمية التالية:\n\n";
+        let context = "أنت المساعد الرقمي الذكي والموسوعة التعليمية والتربوية الشاملة لمدرسة مشيرفة الابتدائية (Musheirifa Elementary School). مدير المدرسة هو الأستاذ رامي ارفاعية.\n\n" +
+          "توجيهات الإجابة الصارمة:\n" +
+          "1. أجب باللغة العربية الفصحى الجميلة والواضحة بأسلوب تعليمي مشجع ومفيد.\n" +
+          "2. اكتب الإجابة النهائية المباشرة فقط للسائل، واستخدم تنسيقاً جميلاً بالنقاط والفقرات المرتبة مع رموز تعبيرية 🌟 💡 📚.\n" +
+          "3. ممنوع منعاً باتاً كتابة أي مسودات مراجعة، أو خطوات تفكير، أو قوائم تحقق باللغة الإنجليزية مثل (Check Against Guidelines أو I will output أو Ready).\n" +
+          "4. أجب بذكاء موسوعي عن الأسئلة العامة الثقافية، العلمية، الفلكية، والرياضية، وسّع مدارك الطلاب وشجعهم على التفكير والابتكار.\n" +
+          "5. بالنسبة لاستفسارات المدرسة وشؤونها، اعتمد على البيانات الرسمية التالية:\n\n";
 
         // 1. Fetch Uniforms
         try {
@@ -159,9 +249,15 @@ const AiAssistant = () => {
       else if ((trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) && !gKey) gKey = trimmed;
     });
 
-    // 1. Try Groq API (High-speed & natively supports browser CORS, with ALLaM Arabic LLM)
+    // 1. Try Groq API (Qwen 3.8, GPT-OSS 120B, ALLaM - High-speed & natively supports browser CORS)
     if (grKey) {
-      const groqModels = ['allam-2-7b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile'];
+      const groqModels = [
+        'qwen/qwen3.8-27b',
+        'openai/gpt-oss-120b',
+        'allam-2-7b',
+        'openai/gpt-oss-20b',
+        'qwen/qwen3.6-27b'
+      ];
       for (const gm of groqModels) {
         try {
           const res = await fetchWithTimeout(
@@ -175,7 +271,7 @@ const AiAssistant = () => {
               body: JSON.stringify({
                 model: gm,
                 messages: [
-                  { role: 'system', content: schoolContext ? schoolContext : 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب باللغة العربية بأسلوب تعليمي مشجع ومفيد وواضح.' },
+                  { role: 'system', content: schoolContext ? schoolContext : 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب باللغة العربية الفصحى المنسقة والمشجعة والمباشرة وبدون أي مسودة مراجعة أو نصوص إنجليزية.' },
                   { role: 'user', content: promptText }
                 ],
                 temperature: 0.7,
@@ -188,8 +284,11 @@ const AiAssistant = () => {
             const data = await res.json();
             const txt = data.choices?.[0]?.message?.content;
             if (txt && txt.trim()) {
-              setLastApiError(null);
-              return txt.trim();
+              const cleaned = cleanAiResponse(txt.trim());
+              if (cleaned) {
+                setLastApiError(null);
+                return cleaned;
+              }
             }
           }
         } catch (e) {
@@ -224,8 +323,11 @@ const AiAssistant = () => {
             const data = await res.json();
             const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (txt && txt.trim()) {
-              setLastApiError(null);
-              return txt.trim();
+              const cleaned = cleanAiResponse(txt.trim());
+              if (cleaned) {
+                setLastApiError(null);
+                return cleaned;
+              }
             }
           } else {
             const errJson = await res.json().catch(() => ({}));
@@ -270,8 +372,11 @@ const AiAssistant = () => {
           const data = await res.json();
           const txt = data.choices?.[0]?.message?.content;
           if (txt && txt.trim()) {
-            setLastApiError(null);
-            return txt.trim();
+            const cleaned = cleanAiResponse(txt.trim());
+            if (cleaned) {
+              setLastApiError(null);
+              return cleaned;
+            }
           }
         }
       } catch (e) {
@@ -400,7 +505,7 @@ const AiAssistant = () => {
           {messages.map((msg, index) => (
             <div key={index} className={`chat-message-row ${msg.role}`}>
               <div className="chat-bubble">
-                <p>{msg.text}</p>
+                <FormattedChatMessage text={msg.text} isUser={msg.role === 'user'} />
               </div>
             </div>
           ))}

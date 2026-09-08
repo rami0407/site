@@ -63,14 +63,60 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 7000) => {
 };
 
 /**
+ * Clean unwanted reasoning tags, guidelines checks, or metadata from AI outputs
+ */
+export const cleanAiResponse = (text) => {
+  if (!text) return '';
+  let cleaned = text;
+
+  // 1. Remove reasoning tags (<think>...</think> or unclosed <think>...)
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  cleaned = cleaned.replace(/<think>[\s\S]*/gi, '');
+
+  const lines = cleaned.split('\n');
+  const filtered = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const lower = trimmed.toLowerCase();
+
+    // If meta-checklist or guideline evaluation leaked, truncate
+    if (lower.includes('check against guidelines') || lower.includes('guidelines check')) {
+      break;
+    }
+    if (lower.includes("i'll output") || lower.includes('i will output') || lower.includes('refined response')) {
+      break;
+    }
+
+    if (/^[✓✔✅\-*•\s]*(language|tone|identity|scope|guidelines|check|ready):/i.test(trimmed)) continue;
+    if (/^[✓✔✅\-*•\s]*(friendly|clear|ready)/i.test(trimmed)) continue;
+    if (/^no extra fluff/i.test(trimmed)) continue;
+    if (trimmed === '✓' || trimmed === '✔' || trimmed === '✅') continue;
+    if (trimmed === '.Ready -' || trimmed === 'Ready -' || trimmed === '.Ready' || trimmed === 'Ready') continue;
+
+    filtered.push(line);
+  }
+
+  return filtered.join('\n').trim();
+};
+
+/**
  * Main General AI Text Generator
  */
 export const generateAiResponse = async (promptText, systemContext = '') => {
   const { geminiKey, groqKey, xaiKey } = await getActiveAiKeys();
+  const strictSystem = (systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.') +
+    '\nتعليمات صارمة: اكتب الرد النهائي المباشر باللغة العربية الفصحى الواضحة والجميلة. ممنوع منعاً باتاً كتابة أي خطوات تفكير أو مسودات مراجعة أو قوائم تحقق بالإنجليزية (مثل Check Against Guidelines أو I will output).';
 
-  // 1. Try Groq LLaMA & ALLaM (Fastest & natively supports browser CORS)
+  // 1. Try Groq (Qwen 3.8, GPT-OSS 120B, ALLaM) - High speed, browser CORS
   if (groqKey) {
-    const groqModels = ['allam-2-7b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile'];
+    const groqModels = [
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-120b',
+      'allam-2-7b',
+      'openai/gpt-oss-20b',
+      'qwen/qwen3.6-27b'
+    ];
     for (const gm of groqModels) {
       try {
         const res = await fetchWithTimeout(
@@ -84,7 +130,7 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
             body: JSON.stringify({
               model: gm,
               messages: [
-                { role: 'system', content: systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.' },
+                { role: 'system', content: strictSystem },
                 { role: 'user', content: promptText }
               ],
               temperature: 0.7,
@@ -96,7 +142,10 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
         if (res.ok) {
           const data = await res.json();
           const text = data.choices?.[0]?.message?.content;
-          if (text && text.trim()) return text.trim();
+          if (text && text.trim()) {
+            const cleaned = cleanAiResponse(text.trim());
+            if (cleaned) return cleaned;
+          }
         }
       } catch (e) {
         console.warn(`Groq (${gm}) failed:`, e);
@@ -129,7 +178,10 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
         if (res.ok) {
           const data = await res.json();
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text && text.trim()) return text.trim();
+          if (text && text.trim()) {
+            const cleaned = cleanAiResponse(text.trim());
+            if (cleaned) return cleaned;
+          }
         }
       } catch (e) {
         console.warn(`Gemini (${model}) failed:`, e);
@@ -151,7 +203,7 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
           body: JSON.stringify({
             model: 'grok-2-latest',
             messages: [
-              { role: 'system', content: systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.' },
+              { role: 'system', content: strictSystem },
               { role: 'user', content: promptText }
             ],
             temperature: 0.7
@@ -162,7 +214,10 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
       if (res.ok) {
         const data = await res.json();
         const text = data.choices?.[0]?.message?.content;
-        if (text && text.trim()) return text.trim();
+        if (text && text.trim()) {
+          const cleaned = cleanAiResponse(text.trim());
+          if (cleaned) return cleaned;
+        }
       }
     } catch (e) {
       console.warn('xAI failed:', e);
