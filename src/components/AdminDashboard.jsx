@@ -3780,8 +3780,8 @@ const AdminDashboard = () => {
                 boxShadow: '0 2px 6px rgba(245, 158, 11, 0.25)'
               }}
             >
-              <i className="fas fa-star" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#f59e0b' }}></i>
-              🌌 سماء الامتنان والنجوم ({adminGratitudeStars.length})
+              <i className="fas fa-heart" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#f59e0b' }}></i>
+              💌 إدارة رسائل ونجوم الامتنان ({adminGratitudeStars.length})
             </button>
 
             {/* TOP ITEM 5: READERS CLUB CONTROL */}
@@ -5098,7 +5098,8 @@ const AdminDashboard = () => {
                         { id: 'teacher', label: 'المعلمون 👨‍🏫' },
                         { id: 'peer', label: 'الزملاء 🤝' },
                         { id: 'management', label: 'الإدارة 🏛️' },
-                        { id: 'staff', label: 'الطاقم والعاملون 🌿' }
+                        { id: 'staff', label: 'الطاقم والعاملون 🌿' },
+                        { id: 'messages_only', label: 'رسائل امتنان تطبيق الشكر 💌' }
                       ].map(f => (
                         <button
                           key={f.id}
@@ -5123,7 +5124,7 @@ const AdminDashboard = () => {
                     <div style={{ minWidth: '260px' }}>
                       <input
                         type="text"
-                        placeholder="ابحث عن نجمة باسم المكرم أو المرسل..."
+                        placeholder="ابحث عن نجمة أو رسالة باسم المهدى إليه أو المرسل..."
                         value={gratitudeSearchFilter}
                         onChange={(e) => setGratitudeSearchFilter(e.target.value)}
                         style={{ width: '100%', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
@@ -5135,12 +5136,12 @@ const AdminDashboard = () => {
                   {isLoadingGratitudeStars ? (
                     <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                       <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#f59e0b' }}></i>
-                      <p>جاري تحميل وتحديث نجوم السماء...</p>
+                      <p>جاري تحميل وتحديث نجوم ورسائل الامتنان...</p>
                     </div>
                   ) : adminGratitudeStars.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
                       <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🌌✨</div>
-                      <h3 style={{ fontWeight: 900, color: '#1e293b' }}>لا توجد نجوم مسجلة حالياً في السماء</h3>
+                      <h3 style={{ fontWeight: 900, color: '#1e293b' }}>لا توجد رسائل أو نجوم مسجلة حالياً</h3>
                       <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto 1.5rem' }}>
                         كن أول من ينير سماء مشيرفة بإطلاق نجمة تكريم رسمية من الإدارة لمعلم أو طالب متميز!
                       </p>
@@ -5156,7 +5157,8 @@ const AdminDashboard = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                       {adminGratitudeStars
                         .filter(s => {
-                          if (gratitudeCategoryFilter !== 'all' && s.recipientRole !== gratitudeCategoryFilter) return false;
+                          if (gratitudeCategoryFilter === 'messages_only' && !s.isFromMessagesApp) return false;
+                          if (gratitudeCategoryFilter !== 'all' && gratitudeCategoryFilter !== 'messages_only' && s.recipientRole !== gratitudeCategoryFilter) return false;
                           if (gratitudeSearchFilter.trim()) {
                             const q = gratitudeSearchFilter.toLowerCase();
                             const r = (s.recipientName || '').toLowerCase();
@@ -5173,7 +5175,7 @@ const AdminDashboard = () => {
                               background: 'white', 
                               borderRadius: '20px', 
                               padding: '1.5rem', 
-                              border: '1px solid #e2e8f0', 
+                              border: star.isFromMessagesApp ? '1.5px solid #f472b6' : '1px solid #e2e8f0', 
                               boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
                               display: 'flex',
                               flexDirection: 'column',
@@ -5184,21 +5186,22 @@ const AdminDashboard = () => {
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                 <span style={{
-                                  background: star.color === 'gold' ? '#fef3c7' : star.color === 'pink' ? '#fdf2f8' : star.color === 'teal' ? '#ecfeff' : star.color === 'purple' ? '#f5f3ff' : '#ecfdf5',
-                                  color: star.color === 'gold' ? '#b45309' : star.color === 'pink' ? '#be185d' : star.color === 'teal' ? '#0e7490' : star.color === 'purple' ? '#6d28d9' : '#047857',
-                                  padding: '0.25rem 0.75rem',
+                                  background: star.isFromMessagesApp ? '#fdf2f8' : star.color === 'gold' ? '#fef3c7' : star.color === 'pink' ? '#fdf2f8' : star.color === 'teal' ? '#ecfeff' : star.color === 'purple' ? '#f5f3ff' : '#ecfdf5',
+                                  color: star.isFromMessagesApp ? '#be185d' : star.color === 'gold' ? '#b45309' : star.color === 'pink' ? '#be185d' : star.color === 'teal' ? '#0e7490' : star.color === 'purple' ? '#6d28d9' : '#047857',
+                                  padding: '0.3rem 0.85rem',
                                   borderRadius: '50px',
                                   fontSize: '0.78rem',
                                   fontWeight: 800,
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '0.3rem'
+                                  gap: '0.35rem',
+                                  border: `1px solid ${star.isFromMessagesApp ? '#f472b6' : 'transparent'}`
                                 }}>
-                                  <span>{star.color === 'gold' ? '🌟 نجمة ذهبية' : star.color === 'pink' ? '💖 نجمة وردية' : star.color === 'teal' ? '💎 نجمة تركواز' : star.color === 'purple' ? '🔮 نجمة بنفسج' : '🌿 نجمة زمردية'}</span>
+                                  <span>{star.isFromMessagesApp ? '💌 رسالة امتنان (تطبيق الشكر)' : star.color === 'gold' ? '🌟 نجمة ذهبية' : star.color === 'pink' ? '💖 نجمة وردية' : star.color === 'teal' ? '💎 نجمة تركواز' : star.color === 'purple' ? '🔮 نجمة بنفسج' : '🌿 نجمة زمردية'}</span>
                                 </span>
 
                                 <span style={{ fontSize: '0.8rem', color: '#e11d48', fontWeight: 800 }}>
-                                  <i className="fas fa-heart"></i> {star.likesCount || 1} بريق
+                                  <i className="fas fa-heart"></i> {star.likesCount || 1} إعجاب
                                 </span>
                               </div>
 
@@ -5213,12 +5216,22 @@ const AdminDashboard = () => {
                                 "{star.message}"
                               </div>
 
+                              {/* Audio Voice Player if available */}
+                              {star.audioData && (
+                                <div style={{ background: '#ecfeff', padding: '0.75rem', borderRadius: '12px', border: '1px solid #a5f3fc', marginBottom: '1rem' }}>
+                                  <div style={{ fontSize: '0.8rem', color: '#0891b2', fontWeight: 800, marginBottom: '0.4rem' }}>
+                                    🎙️ استمع للرسالة الصوتية المسجلة:
+                                  </div>
+                                  <audio controls src={star.audioData} style={{ width: '100%', height: '36px' }} />
+                                </div>
+                              )}
+
                               <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1.25rem' }}>
                                 <strong>المرسل:</strong> {star.senderName} {star.senderClass ? `(${star.senderClass})` : ''}
                               </div>
                             </div>
 
-                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                               <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                                 {star.createdAt ? new Date(star.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}
                               </span>
@@ -5227,20 +5240,22 @@ const AdminDashboard = () => {
                                 type="button"
                                 onClick={() => handleDeleteGratitudeStar(star.id, star.recipientName)}
                                 style={{
-                                  background: '#fee2e2',
-                                  color: '#dc2626',
-                                  border: '1px solid #fca5a5',
-                                  padding: '0.4rem 0.85rem',
+                                  background: '#dc2626',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '0.5rem 1rem',
                                   borderRadius: '10px',
                                   fontSize: '0.82rem',
-                                  fontWeight: 800,
+                                  fontWeight: 900,
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '0.35rem'
+                                  gap: '0.4rem',
+                                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)'
                                 }}
+                                title="حذف هذه الرسالة أو النجمة فورياً في حال كانت غير لائقة"
                               >
-                                <i className="fas fa-trash-alt"></i> حذف من السماء
+                                <i className="fas fa-trash-alt"></i> حذف الرسالة فوراً (محتوى غير لائق)
                               </button>
                             </div>
                           </div>
