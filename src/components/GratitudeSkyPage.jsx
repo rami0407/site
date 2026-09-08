@@ -155,28 +155,32 @@ const distributeStarCoordinates = (items) => {
   const total = items.length;
   if (total === 0) return [];
 
-  const cols = Math.max(3, Math.min(8, Math.ceil(Math.sqrt(total * 1.5))));
-  const rows = Math.max(2, Math.ceil(total / cols));
+  // Wider distribution matrix for large collections (100-200 stars)
+  const cols = Math.max(5, Math.min(15, Math.ceil(Math.sqrt(total * 1.8))));
+  const rows = Math.max(3, Math.ceil(total / cols));
 
-  const xSpacing = 72 / Math.max(1, cols - 1);
-  const ySpacing = 56 / Math.max(1, rows - 1);
+  const xSpacing = 88 / Math.max(1, cols - 1);
+  const ySpacing = 80 / Math.max(1, rows - 1);
 
   return items.map((item, idx) => {
     const row = Math.floor(idx / cols);
     const col = idx % cols;
 
-    // Organic offset using deterministic pseudo-random seeded by idx
-    const offsetX = ((idx * 19) % 13) - 6;
-    const offsetY = ((idx * 29) % 11) - 5;
+    // Alternating hexagonal stagger to keep stars away from each other
+    const staggerX = (row % 2 === 1) ? (xSpacing * 0.5) : 0;
 
-    const computedX = Math.round(Math.min(88, Math.max(12, 14 + (col * xSpacing) + offsetX)));
-    const computedY = Math.round(Math.min(78, Math.max(18, 20 + (row * ySpacing) + offsetY)));
+    // Organic offset using deterministic pseudo-random seeded by idx
+    const offsetX = (((idx * 19) % 13) - 6) * 0.35;
+    const offsetY = (((idx * 29) % 11) - 5) * 0.35;
+
+    const computedX = Math.round(Math.min(94, Math.max(6, 6 + (col * xSpacing) + staggerX + offsetX)));
+    const computedY = Math.round(Math.min(92, Math.max(8, 8 + (row * ySpacing) + offsetY)));
 
     return {
       ...item,
       x: computedX,
       y: computedY,
-      size: item.size || (Math.floor((idx * 5) % 8) + 26)
+      size: item.size || (Math.floor((idx * 5) % 8) + 24)
     };
   });
 };
@@ -207,6 +211,17 @@ const GratitudeSkyPage = () => {
 
   // Sound chime toggle
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Celestial Zoom & Pan State (زووم تفاعلي وتحريك السماء ثلاثي الأبعاد)
+  const [zoomLevel, setZoomLevel] = useState(1); // 0.7x to 3.5x
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [showAllLabels, setShowAllLabels] = useState(false);
+  const [hoveredStarId, setHoveredStarId] = useState(null);
+  const [currentVoyagerIndex, setCurrentVoyagerIndex] = useState(0);
+  const [isVoyagerActive, setIsVoyagerActive] = useState(false);
+  const skyContainerRef = useRef(null);
 
   // Form State
   const [recipientName, setRecipientName] = useState('');
@@ -245,6 +260,85 @@ const GratitudeSkyPage = () => {
       osc.stop(ctx.currentTime + 1.2);
     } catch (e) {
       // Audio context might be restricted before interaction
+    }
+  };
+
+  // Zoom & Pan Handlers
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(3.5, Number((prev + 0.3).toFixed(1))));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(0.7, Number((prev - 0.3).toFixed(1))));
+  };
+
+  const handleResetView = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    setIsVoyagerActive(false);
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('input')) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setPanOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.touches[0].clientX - panOffset.x, y: e.touches[0].clientY - panOffset.y });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    setPanOffset({
+      x: e.touches[0].clientX - dragStart.x,
+      y: e.touches[0].clientY - dragStart.y
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e) => {
+    const delta = e.deltaY < 0 ? 0.15 : -0.15;
+    setZoomLevel(prev => Math.min(3.5, Math.max(0.7, Number((prev + delta).toFixed(2)))));
+  };
+
+  // Guided Star Voyager (رحلة بين النجوم)
+  const navigateToStar = (index, itemsList) => {
+    const list = itemsList || filteredStars;
+    if (!list || !list.length) return;
+    const boundedIndex = (index + list.length) % list.length;
+    setCurrentVoyagerIndex(boundedIndex);
+    setIsVoyagerActive(true);
+    const targetStar = list[boundedIndex];
+    if (targetStar && skyContainerRef.current) {
+      const rect = skyContainerRef.current.getBoundingClientRect();
+      const starPixelX = (targetStar.x / 100) * rect.width;
+      const starPixelY = (targetStar.y / 100) * rect.height;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      setPanOffset({
+        x: Math.round(centerX - starPixelX),
+        y: Math.round(centerY - starPixelY)
+      });
+      playChimeSound(850 + (boundedIndex % 7) * 60);
     }
   };
 
@@ -1009,117 +1103,359 @@ const GratitudeSkyPage = () => {
           )}
         </main>
       ) : (
-        /* Main Celestial Sky Field */
-        <main style={{ position: 'relative', zIndex: 10, width: '100%', minHeight: '75vh', padding: '1rem' }}>
+        /* Main Celestial Sky Field with Interactive Zoom & Pan */
+        <main 
+          ref={skyContainerRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
+          style={{ 
+            position: 'relative', 
+            zIndex: 10, 
+            width: '100%', 
+            minHeight: '78vh', 
+            height: '78vh',
+            overflow: 'hidden', 
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none',
+            borderRadius: '24px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.6) 0%, rgba(2, 6, 23, 0.95) 100%)'
+          }}
+        >
           
-          {/* Constellation Decorative Lines (Connecting stars softly) */}
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
-            <defs>
-              <linearGradient id="constellationGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.1" />
-              </linearGradient>
-            </defs>
-            {filteredStars.slice(0, Math.min(filteredStars.length, 12)).map((s, idx, arr) => {
-              if (idx === arr.length - 1) return null;
-              const next = arr[idx + 1];
-              return (
-                <line
-                  key={`line-${s.id}`}
-                  x1={`${s.x}%`}
-                  y1={`${s.y}%`}
-                  x2={`${next.x}%`}
-                  y2={`${next.y}%`}
-                  stroke="url(#constellationGrad)"
-                  strokeWidth="1"
-                  strokeDasharray="4 4"
-                />
-              );
-            })}
-          </svg>
+          {/* Floating Cosmic Zoom & Control Bar */}
+          <div style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'rgba(15, 23, 42, 0.85)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '16px',
+            padding: '0.4rem 0.6rem',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.5)'
+          }}>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              style={{ background: 'rgba(255,255,255,0.08)', color: 'white', border: '1px solid rgba(255,255,255,0.15)', width: '32px', height: '32px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}
+              title="تكبير الرؤية وتباعد النجوم"
+            >
+              <i className="fas fa-plus"></i>
+            </button>
 
-          {/* Render Interactive Glowing Stars */}
-          {filteredStars.map((star) => {
-            const colorMeta = STAR_COLORS[star.color] || STAR_COLORS.gold;
-            const isLiked = likedStarIds.includes(star.id);
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              style={{ background: 'rgba(255,255,255,0.08)', color: 'white', border: '1px solid rgba(255,255,255,0.15)', width: '32px', height: '32px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}
+              title="تصغير الرؤية لعرض المجرة كاملة"
+            >
+              <i className="fas fa-minus"></i>
+            </button>
 
-            return (
-              <div
-                key={star.id}
-                onClick={() => {
-                  playChimeSound(1100);
-                  setSelectedStar(star);
-                }}
-                style={{
-                  position: 'absolute',
-                  left: `${star.x}%`,
-                  top: `${star.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  cursor: 'pointer',
-                  zIndex: 5,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                className="gratitude-star-item"
+            <button
+              type="button"
+              onClick={handleResetView}
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)', padding: '0 0.6rem', height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+              title="إعادة ضبط الرؤية لـ 100%"
+            >
+              <i className="fas fa-crosshairs"></i> {Math.round(zoomLevel * 100)}%
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAllLabels(!showAllLabels)}
+              style={{
+                background: showAllLabels ? '#38bdf8' : 'rgba(255,255,255,0.08)',
+                color: showAllLabels ? '#0f172a' : 'white',
+                border: '1px solid rgba(255,255,255,0.15)',
+                padding: '0 0.75rem',
+                height: '32px',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: 900,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title={showAllLabels ? 'إخفاء أسماء النجوم لتنظيف الرؤية' : 'إظهار أسماء جميع النجوم دفعة واحدة'}
+            >
+              <i className="fas fa-tags"></i> {showAllLabels ? 'إخفاء الأسماء' : 'إظهار الأسماء'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!isVoyagerActive) {
+                  navigateToStar(0, filteredStars);
+                } else {
+                  setIsVoyagerActive(false);
+                }
+              }}
+              style={{
+                background: isVoyagerActive ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.08)',
+                color: isVoyagerActive ? '#0f172a' : '#f59e0b',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                padding: '0 0.8rem',
+                height: '32px',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: 900,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="جولة فضائية بين رسائل ونجوم المدرسة واحدة تلو الأخرى"
+            >
+              <i className="fas fa-rocket"></i> {isVoyagerActive ? 'إنهاء الرحلة' : 'رحلة بين النجوم 🚀'}
+            </button>
+          </div>
+
+          {/* Hint Overlay for Pan & Zoom */}
+          <div style={{
+            position: 'absolute',
+            top: '1rem',
+            left: '1rem',
+            zIndex: 25,
+            fontSize: '0.75rem',
+            color: '#94a3b8',
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(8px)',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '20px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            pointerEvents: 'none'
+          }}>
+            🖱️ اسحب للتحرك في أرجاء السماء • عجلة الفأرة للتكبير والتباعد
+          </div>
+
+          {/* Floating Star Voyager Bar (رحلة بين النجوم) */}
+          {isVoyagerActive && filteredStars.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              bottom: '1.5rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 35,
+              background: 'rgba(15, 23, 42, 0.92)',
+              backdropFilter: 'blur(16px)',
+              border: '1.5px solid rgba(245, 158, 11, 0.6)',
+              borderRadius: '24px',
+              padding: '0.75rem 1.4rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.2rem',
+              boxShadow: '0 15px 40px rgba(0,0,0,0.6), 0 0 25px rgba(245, 158, 11, 0.25)',
+              maxWidth: '92%',
+              animation: 'slideUp 0.3s ease-out'
+            }}>
+              <button
+                type="button"
+                onClick={() => navigateToStar(currentVoyagerIndex - 1, filteredStars)}
+                style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', width: '38px', height: '38px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}
+                title="النجمة السابقة"
               >
-                {/* Pulsing Star Core */}
-                <div style={{
-                  position: 'relative',
-                  width: `${star.size || 28}px`,
-                  height: `${star.size || 28}px`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: `${(star.size || 28) * 0.85}px`,
-                  filter: `drop-shadow(0 0 16px ${colorMeta.hex}) drop-shadow(0 0 30px ${colorMeta.glow})`,
-                  animation: 'pulseTwinkle 3s infinite ease-in-out'
-                }}>
-                  {colorMeta.icon}
+                <i className="fas fa-chevron-right"></i>
+              </button>
 
-                  {/* Ambient Aura Ring */}
-                  <span style={{
-                    position: 'absolute',
-                    inset: '-6px',
-                    borderRadius: '50%',
-                    border: `1px solid ${colorMeta.hex}`,
-                    opacity: 0.4,
-                    animation: 'pingRing 3s infinite cubic-bezier(0, 0, 0.2, 1)'
-                  }}></span>
+              <div style={{ textAlign: 'center', minWidth: '180px' }}>
+                <div style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 800 }}>
+                  🌟 نجمة {currentVoyagerIndex + 1} من {filteredStars.length}
                 </div>
-
-                {/* Hovering Recipient Label */}
-                <div style={{
-                  marginTop: '0.4rem',
-                  background: 'rgba(15, 23, 42, 0.85)',
-                  backdropFilter: 'blur(8px)',
-                  border: `1px solid ${colorMeta.hex}`,
-                  borderRadius: '20px',
-                  padding: '0.2rem 0.65rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  color: '#f8fafc',
-                  whiteSpace: 'nowrap',
-                  boxShadow: `0 4px 12px rgba(0,0,0,0.5)`,
-                  pointerEvents: 'none'
-                }}>
-                  {star.recipientName}
-                </div>
-
-                {/* Likes Badge */}
-                <div style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 800,
-                  color: isLiked ? '#f43f5e' : '#94a3b8',
-                  marginTop: '0.15rem'
-                }}>
-                  <i className="fas fa-heart" style={{ fontSize: '0.6rem', marginLeft: '0.2rem' }}></i>
-                  {star.likesCount || 1}
+                <h4 style={{ margin: '0.15rem 0', color: 'white', fontSize: '1.05rem', fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '280px' }}>
+                  {filteredStars[currentVoyagerIndex]?.recipientName}
+                </h4>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  المرسل: {filteredStars[currentVoyagerIndex]?.senderName}
                 </div>
               </div>
-            );
-          })}
+
+              <button
+                type="button"
+                onClick={() => navigateToStar(currentVoyagerIndex + 1, filteredStars)}
+                style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', width: '38px', height: '38px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}
+                title="النجمة التالية"
+              >
+                <i className="fas fa-chevron-left"></i>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  playChimeSound(1100);
+                  setSelectedStar(filteredStars[currentVoyagerIndex]);
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #ec4899, #be185d)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.55rem 1.1rem',
+                  borderRadius: '14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)'
+                }}
+              >
+                <i className="fas fa-envelope-open-text"></i> قراءة الرسالة
+              </button>
+            </div>
+          )}
+
+          {/* Transform Layer for Pan & Zoom (طبقة التحريك والتكبير) */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+              transformOrigin: '50% 50%',
+              transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0, 0, 1)'
+            }}
+          >
+            {/* Constellation Decorative Lines (Connecting stars softly) */}
+            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
+              <defs>
+                <linearGradient id="constellationGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.1" />
+                </linearGradient>
+              </defs>
+              {filteredStars.slice(0, Math.min(filteredStars.length, 18)).map((s, idx, arr) => {
+                if (idx === arr.length - 1) return null;
+                const next = arr[idx + 1];
+                return (
+                  <line
+                    key={`line-${s.id}`}
+                    x1={`${s.x}%`}
+                    y1={`${s.y}%`}
+                    x2={`${next.x}%`}
+                    y2={`${next.y}%`}
+                    stroke="url(#constellationGrad)"
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Render Interactive Glowing Stars with Smart Density LOD */}
+            {filteredStars.map((star, starIdx) => {
+              const colorMeta = STAR_COLORS[star.color] || STAR_COLORS.gold;
+              const isLiked = likedStarIds.includes(star.id);
+              const isHovered = hoveredStarId === star.id;
+              const isCurrentVoyager = isVoyagerActive && currentVoyagerIndex === starIdx;
+
+              // Smart LOD: Show text badge if user enabled showAllLabels, OR if zoomed in >= 1.35, OR if hovered/current
+              const shouldShowLabel = showAllLabels || zoomLevel >= 1.35 || isHovered || isCurrentVoyager;
+
+              return (
+                <div
+                  key={star.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playChimeSound(1100);
+                    setSelectedStar(star);
+                  }}
+                  onMouseEnter={() => setHoveredStarId(star.id)}
+                  onMouseLeave={() => setHoveredStarId(null)}
+                  style={{
+                    position: 'absolute',
+                    left: `${star.x}%`,
+                    top: `${star.y}%`,
+                    transform: `translate(-50%, -50%) scale(${isHovered || isCurrentVoyager ? 1.3 : 1})`,
+                    cursor: 'pointer',
+                    zIndex: isHovered || isCurrentVoyager ? 20 : 5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                  className="gratitude-star-item"
+                >
+                  {/* Pulsing Star Core */}
+                  <div style={{
+                    position: 'relative',
+                    width: `${star.size || 24}px`,
+                    height: `${star.size || 24}px`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: `${(star.size || 24) * 0.9}px`,
+                    filter: `drop-shadow(0 0 16px ${colorMeta.hex}) drop-shadow(0 0 30px ${colorMeta.glow})`,
+                    animation: isCurrentVoyager ? 'pulseTwinkle 1.2s infinite ease-in-out' : 'pulseTwinkle 3.5s infinite ease-in-out'
+                  }}>
+                    {colorMeta.icon}
+
+                    {/* Ambient Aura Ring */}
+                    <span style={{
+                      position: 'absolute',
+                      inset: isCurrentVoyager ? '-10px' : '-6px',
+                      borderRadius: '50%',
+                      border: `${isCurrentVoyager ? '2px solid #f59e0b' : `1px solid ${colorMeta.hex}`}`,
+                      opacity: isCurrentVoyager ? 0.9 : 0.45,
+                      animation: 'pingRing 3s infinite cubic-bezier(0, 0, 0.2, 1)'
+                    }}></span>
+                  </div>
+
+                  {/* Smart Hovering Recipient Label (Visible on zoom in, hover, or when showAllLabels is ON) */}
+                  {shouldShowLabel && (
+                    <div style={{
+                      marginTop: '0.4rem',
+                      background: isCurrentVoyager ? 'rgba(245, 158, 11, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+                      backdropFilter: 'blur(8px)',
+                      border: `1.5px solid ${isCurrentVoyager ? '#fef08a' : colorMeta.hex}`,
+                      borderRadius: '20px',
+                      padding: '0.2rem 0.7rem',
+                      fontSize: '0.74rem',
+                      fontWeight: 900,
+                      color: isCurrentVoyager ? '#0f172a' : '#f8fafc',
+                      whiteSpace: 'nowrap',
+                      boxShadow: `0 4px 15px rgba(0,0,0,0.6)`,
+                      pointerEvents: 'none',
+                      animation: 'fadeIn 0.2s ease-in-out',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}>
+                      <span>{star.recipientName}</span>
+                      {star.audioData && <span style={{ fontSize: '0.65rem' }}>🎙️</span>}
+                    </div>
+                  )}
+
+                  {/* Likes Badge (shown when label is visible) */}
+                  {shouldShowLabel && (
+                    <div style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      color: isLiked ? '#f43f5e' : '#cbd5e1',
+                      marginTop: '0.15rem'
+                    }}>
+                      <i className="fas fa-heart" style={{ fontSize: '0.6rem', marginLeft: '0.2rem' }}></i>
+                      {star.likesCount || 1}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
         </main>
       )}
