@@ -2,10 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
-const DEFAULT_GEMINI_KEY = "AIzaSyDGENg8Aity9L2bHr-XAgebNEOf_4YFP8Y";
-const DEFAULT_XAI_KEY = (function(){
-  return ["x" + "ai" + "-", "3GYKubvzcaPbelVsI5TFwWcITOQ1BQuo5OibJOWlC7n17wM7Geym7u1cIvMm8BW1Gs7xUZ17gWP9aqdX"].join('');
-})();
+const DEFAULT_GEMINI_KEY = "";
+const DEFAULT_XAI_KEY = "";
 
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -143,14 +141,55 @@ const AiAssistant = () => {
   };
 
   const fetchAiText = async (promptText) => {
-    const systemPrompt = "أنت المساعد الرقمي لمدرسة مشيرفة الابتدائية. أجب بوضوح ودقة عن التالي: ";
-    const fullQuery = systemPrompt + promptText;
-    const encodedQuery = encodeURIComponent(fullQuery);
-    const encodedRaw = encodeURIComponent(promptText);
+    // 1. Try Google Gemini API (Primary Engine with direct browser CORS support)
+    const activeGeminiKey = (apiKey && apiKey.trim()) || localStorage.getItem('db_gemini_key') || '';
+    if (activeGeminiKey && activeGeminiKey.trim()) {
+      try {
+        const fullPrompt = `${schoolContext ? schoolContext + '\n\n' : ''}أجب عن السؤال التالي باللغة العربية بطريقة تربوية، واضحة ومفيدة للطلاب وأولياء الأمور:\nالسؤال: ${promptText}`;
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeGeminiKey.trim()}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 800
+              }
+            })
+          },
+          7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return txt.trim();
+        } else {
+          console.warn("Gemini API non-200 response:", res.status);
+        }
+      } catch (e) {
+        console.warn("Gemini API error:", e);
+      }
+    }
 
-    // 1. Try xAI Grok API (High-performance xAI Grok Model)
+    // 2. Try Direct Pollinations AI (Free, high-speed fallback with native CORS)
+    try {
+      const promptEncoded = encodeURIComponent(`أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب بلطف وباللغة العربية بأسلوب تعليمي مشجع: ${promptText}`);
+      const res = await fetchWithTimeout(`https://text.pollinations.ai/${promptEncoded}`, {}, 4500);
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
+          return txt.trim();
+        }
+      }
+    } catch (e) {
+      console.warn("Direct Pollinations error:", e);
+    }
+
+    // 3. Try xAI Grok API (if configured)
     const activeXaiKey = xaiKey || DEFAULT_XAI_KEY;
-    if (activeXaiKey) {
+    if (activeXaiKey && activeXaiKey.trim()) {
       try {
         const res = await fetchWithTimeout(
           "https://corsproxy.io/?https://api.x.ai/v1/chat/completions",
@@ -163,7 +202,7 @@ const AiAssistant = () => {
             body: JSON.stringify({
               model: "grok-2-latest",
               messages: [
-                { role: "system", content: systemPrompt },
+                { role: "system", content: "أنت المساعد الرقمي لمدرسة مشيرفة الابتدائية." },
                 { role: "user", content: promptText }
               ],
               temperature: 0.7,
@@ -182,58 +221,11 @@ const AiAssistant = () => {
       }
     }
 
-    // 2. Try AllOrigins Proxy + Pollinations AI (100% CORS-Bypassing Server Proxy)
-    try {
-      const res = await fetchWithTimeout(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://text.pollinations.ai/${encodedQuery}`)}`,
-        {},
-        4000
-      );
-      if (res.ok) {
-        const txt = await res.text();
-        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
-          return txt.trim();
-        }
-      }
-    } catch (e) {
-      console.warn("AllOrigins Proxy Pollinations error:", e);
-    }
-
-    // 2. Try CorsProxy.io + Pollinations AI
-    try {
-      const res = await fetchWithTimeout(
-        `https://corsproxy.io/?https://text.pollinations.ai/${encodedQuery}`,
-        {},
-        4000
-      );
-      if (res.ok) {
-        const txt = await res.text();
-        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
-          return txt.trim();
-        }
-      }
-    } catch (e) {
-      console.warn("CorsProxy Pollinations error:", e);
-    }
-
-    // 3. Try Direct Pollinations AI (Raw)
-    try {
-      const res = await fetchWithTimeout(`https://text.pollinations.ai/${encodedRaw}`, {}, 3000);
-      if (res.ok) {
-        const txt = await res.text();
-        if (txt && txt.trim() && !txt.startsWith("<!DOCTYPE") && !txt.includes("Error") && !txt.includes("<html>")) {
-          return txt.trim();
-        }
-      }
-    } catch (e) {
-      console.warn("Direct Pollinations error:", e);
-    }
-
     // 4. Try Puter.js Client AI SDK
     if (window.puter && window.puter.ai) {
       try {
         const puterRes = await promiseWithTimeout(
-          window.puter.ai.chat(`${systemPrompt}\n\nالسؤال: ${promptText}`),
+          window.puter.ai.chat(`أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.\n\nالسؤال: ${promptText}`),
           4000
         );
         const replyText = typeof puterRes === 'string' ? puterRes : puterRes?.message?.content || puterRes?.toString();

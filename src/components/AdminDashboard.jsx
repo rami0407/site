@@ -1337,9 +1337,50 @@ const AdminDashboard = () => {
       setXaiKey(xKey);
       localStorage.setItem('db_gemini_key', gKey);
       localStorage.setItem('db_xai_key', xKey);
-      alert('تم حفظ وتفعيل مفاتيح الذكاء الاصطناعي (xAI Grok + Google Gemini) بنجاح!');
+      alert('تم حفظ وتفعيل مفتاح الذكاء الاصطناعي (Google Gemini) بنجاح!');
     } catch (err) {
       alert('حدث خطأ أثناء حفظ مفاتيح الـ API: ' + err.message);
+    }
+  };
+
+  const handleTestGeminiKey = async (customKey) => {
+    const key = (customKey !== undefined ? customKey : geminiKey).trim();
+    if (!key) {
+      alert('يرجى إدخال مفتاح Gemini API أولاً لإجراء الاختبار.');
+      return;
+    }
+    setTestingGemini(true);
+    setGeminiTestResult(null);
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "أجب بجملة ترحيبية واحدة قصيرة جداً: مرحباً بكم في مدرسة مشيرفة الابتدائية." }] }]
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        setGeminiTestResult({
+          success: true,
+          message: `✅ تم الاتصال بنجاح بمحرك Google Gemini! استجابة الذكاء الاصطناعي: "${reply.trim()}"`
+        });
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        const errMsg = errJson.error?.message || `كود الخطأ: ${res.status}`;
+        setGeminiTestResult({
+          success: false,
+          message: `❌ فشل الاتصال: ${errMsg}. يرجى التأكد من نسخ المفتاح بشكل صحيح من Google AI Studio.`
+        });
+      }
+    } catch (err) {
+      setGeminiTestResult({
+        success: false,
+        message: `❌ خطأ في الاتصال بالإنترنت: ${err.message}`
+      });
+    } finally {
+      setTestingGemini(false);
     }
   };
 
@@ -1464,6 +1505,8 @@ const AdminDashboard = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [geminiKey, setGeminiKey] = useState('');
   const [isSavingGeminiKey, setIsSavingGeminiKey] = useState(false);
+  const [testingGemini, setTestingGemini] = useState(false);
+  const [geminiTestResult, setGeminiTestResult] = useState(null);
 
   // Editing state trackers
   const [editingEventId, setEditingEventId] = useState(null);
@@ -9292,60 +9335,145 @@ const AdminDashboard = () => {
                     <div style={{ fontSize: '3rem', background: '#f5f3ff', padding: '1rem', borderRadius: '20px', color: '#8b5cf6' }}>🤖</div>
                     <div>
                       <h2 style={{ margin: 0, fontWeight: 900, color: '#0f172a', fontSize: '1.6rem' }}>
-                        إعدادات وتفعيل خادم الذكاء الاصطناعي (Google Gemini AI)
+                        إعدادات وربط الموقع بالذكاء الاصطناعي (Google Gemini AI)
                       </h2>
                       <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontWeight: 600 }}>
-                        ربط الموقع بمحرك الذكاء الاصطناعي للرد على أسئلة الطلاب وأولياء الأمور والشرح التعليمي التفاعلي!
+                        تفعيل محرك الذكاء الاصطناعي الفائق للرد التلقائي على استفسارات الطلاب وأولياء الأمور والمساعدة التربوية!
                       </p>
                     </div>
                   </div>
 
+                  {/* Step-by-step Guide Box */}
+                  <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%)', border: '1.5px solid #c7d2fe', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                    <h3 style={{ margin: '0 0 0.75rem 0', color: '#3730a3', fontSize: '1.15rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>🚀 خطوات ربط الموقع بالذكاء الاصطناعي مجاناً 100%:</span>
+                    </h3>
+                    <ol style={{ margin: '0 0 1.25rem 0', paddingRight: '1.5rem', color: '#1e1b4b', fontWeight: 700, fontSize: '0.95rem', lineHeight: '1.8' }}>
+                      <li>
+                        قم بزيارة استوديو ذكاء جوجل الاصطناعي <strong>Google AI Studio</strong> (مجاني تماماً وبدون أي دفع أو بطاقة بنكية):
+                      </li>
+                      <li>
+                        سجل دخولك بحساب Google، ثم اضغط على زر <strong>"Create API key"</strong> (إنشاء مفتاح).
+                      </li>
+                      <li>
+                        انسخ المفتاح الذي يبدأ بـ <code>AIzaSy...</code> والصقه في الخانة بالأسفل.
+                      </li>
+                      <li>
+                        اضغط على <strong>"حفظ وتفعيل المفتاح"</strong> ثم زر <strong>"اختبار الاتصال 🧪"</strong> للتأكد من عمله فوراً!
+                      </li>
+                    </ol>
+
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: '#4f46e5',
+                        color: 'white',
+                        padding: '0.75rem 1.4rem',
+                        borderRadius: '12px',
+                        textDecoration: 'none',
+                        fontWeight: 900,
+                        fontSize: '0.95rem',
+                        boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)'
+                      }}
+                    >
+                      <i className="fas fa-external-link-alt"></i> فتح صفحة استخراج مفتاح Google Gemini المجاني الآن
+                    </a>
+                  </div>
+
+                  {/* Gemini API Key Box */}
                   <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
-                        ⚡ مفتاح محرك xAI (Grok API Key):
+                      <label style={{ display: 'block', fontWeight: 900, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
+                        🔑 مفتاح محرك Google Gemini (Gemini API Key):
                       </label>
+                      <input
+                        type="text"
+                        placeholder="الصق المفتاح المجاني هنا (مثال: AIzaSy...)"
+                        value={geminiKey}
+                        onChange={(e) => {
+                          setGeminiKey(e.target.value);
+                          setGeminiTestResult(null);
+                        }}
+                        style={{ width: '100%', padding: '0.95rem 1.2rem', borderRadius: '14px', border: '2px solid #6366f1', fontSize: '1rem', fontWeight: 800, fontFamily: 'monospace', background: 'white' }}
+                      />
+                      <span style={{ fontSize: '0.85rem', color: geminiKey ? '#16a34a' : '#64748b', fontWeight: 700, display: 'block', marginTop: '0.4rem' }}>
+                        {geminiKey ? '🟢 تم إدخال المفتاح. يمكنك اختباره بالأسفل للتحقق من الاتصال.' : '⚪ لم يتم إدخال مفتاح بعد. (المساعد الذكي يعمل حالياً بالوضع الموسوعي الاحتياطي).'}
+                      </span>
+                    </div>
+
+                    {/* Test Results Message */}
+                    {geminiTestResult && (
+                      <div style={{
+                        padding: '1rem 1.25rem',
+                        borderRadius: '14px',
+                        marginBottom: '1.25rem',
+                        background: geminiTestResult.success ? '#f0fdf4' : '#fef2f2',
+                        border: `1.5px solid ${geminiTestResult.success ? '#86efac' : '#fca5a5'}`,
+                        color: geminiTestResult.success ? '#166534' : '#991b1b',
+                        fontWeight: 800,
+                        fontSize: '0.95rem'
+                      }}>
+                        {geminiTestResult.message}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveGeminiKey(geminiKey, xaiKey)}
+                        className="btn"
+                        style={{ background: '#4f46e5', color: 'white', padding: '0.85rem 1.8rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                      >
+                        <i className="fas fa-save"></i> 💾 حفظ وتفعيل المفتاح في الموقع
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTestGeminiKey(geminiKey)}
+                        disabled={testingGemini || !geminiKey.trim()}
+                        className="btn"
+                        style={{ background: testingGemini ? '#94a3b8' : '#059669', color: 'white', padding: '0.85rem 1.8rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: testingGemini || !geminiKey.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                      >
+                        <i className="fas fa-vial"></i> {testingGemini ? 'جاري فحص الاتصال...' : '🧪 اختبار الاتصال بالذكاء الاصطناعي الآن'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Optional xAI Grok Key Box */}
+                  <details style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+                    <summary style={{ fontWeight: 800, color: '#475569', cursor: 'pointer' }}>
+                      ⚡ خيار إضافي اختياري: مفتاح محرك xAI Grok
+                    </summary>
+                    <div style={{ marginTop: '1rem' }}>
                       <input
                         type="text"
                         placeholder="xai-..."
                         value={xaiKey}
                         onChange={(e) => setXaiKey(e.target.value)}
-                        style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '14px', border: '2px solid #8b5cf6', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'monospace', background: '#f5f3ff', color: '#5b21b6' }}
+                        style={{ width: '100%', padding: '0.8rem 1.2rem', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.95rem', fontFamily: 'monospace' }}
                       />
-                      <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 700, display: 'block', marginTop: '0.4rem' }}>
-                        🟢 مفتاح xAI Grok مفعل بنجاح (نموذج Grok-2 الفائق والذكي للغاية).
-                      </span>
-                    </div>
-
-                    <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
-                        🔑 مفتاح محرك Google Gemini (Gemini API Key):
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="أدخل مفتاح الـ API المجاني هنا (AIzaSy...)"
-                        value={geminiKey}
-                        onChange={(e) => setGeminiKey(e.target.value)}
-                        style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'monospace' }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <button
+                        type="button"
                         onClick={() => handleSaveGeminiKey(geminiKey, xaiKey)}
-                        className="btn"
-                        style={{ background: '#8b5cf6', color: 'white', padding: '0.8rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(139, 92, 246, 0.3)' }}
+                        style={{ marginTop: '0.75rem', background: '#475569', color: 'white', padding: '0.5rem 1.2rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 800 }}
                       >
-                        💾 حفظ وتفعيل مفاتيح الذكاء الاصطناعي (Grok + Gemini)
+                        حفظ مفتاح xAI
                       </button>
                     </div>
-                  </div>
+                  </details>
 
+                  {/* How it works Information */}
                   <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '18px', padding: '1.25rem', color: '#065f46' }}>
-                    <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900 }}>💡 كيف يعمل الذكاء الاصطناعي بالموقع؟</h4>
-                    <ul style={{ margin: 0, paddingRight: '1.25rem', fontWeight: 700, fontSize: '0.95rem' }}>
-                      <li>يقوم المساعد الإشعاعي (الروبوت العائم أسفل الشاشة) بالإجابة عن أسئلة المواد التعليمية (الرياضيات، العلوم، اللغة العربية، العبرية، الإنجليزية، الاجتماعيات، الفلك).</li>
-                      <li>يقرأ تلقائياً بيانات الكتب واللباس الموحد والرزنامة والفعاليات الرسمية لإجابة الزوار بذكاء موسوعي فوري!</li>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900 }}>💡 ماذا يفعل الذكاء الاصطناعي في موقع مدرسة مشيرفة؟</h4>
+                    <ul style={{ margin: 0, paddingRight: '1.25rem', fontWeight: 700, fontSize: '0.95rem', lineHeight: '1.8' }}>
+                      <li><strong>مساعد المدرسة الذكي (الروبوت العائم أسفل الموقع):</strong> يجيب الطلاب والأهالي عن كل ما يخص المدرسة (الزي الموحد، قائمة الكتب، الرزنامة، الفعاليات، دستور المدرسة) بذكاء ولباقة.</li>
+                      <li><strong>موسوعة تعليمية وشرح دراسي:</strong> يشرح للطلاب حل مسائل الرياضيات والعلوم، ويساعدهم في قواعد اللغة العربية والإنجليزية والدروس المختلفة.</li>
+                      <li><strong>التحدي الأسبوعي الذكي:</strong> يولد أسئلة ومسابقات ذكاء أسبوعية تفاعلية للطلاب بضغطة زر واحدة.</li>
                     </ul>
                   </div>
                 </div>
