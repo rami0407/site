@@ -302,6 +302,43 @@ const StemCorner = ({ isStandalone = true }) => {
     ]);
     setSocraticInput('');
   };
+
+  const handleStartSocraticForChallenge = (ch) => {
+    setModalOpen(false);
+    setActiveTab('socratic');
+    const introMsg = `أهلاً يا بطل العلوم! 🌟 هيا نطور معاً فكرة ومشروع: "${ch.title}".
+المشكلة الواقعية هي: "${ch.realProblem || ch.desc}".
+ما رأيك، ما أول شيء تلاحظه يسبب هذه المشكلة في مدرستنا أو بيتنا؟`;
+    setSocraticHistory([]);
+    setSocraticMessages([
+      { role: 'bot', text: introMsg }
+    ]);
+  };
+
+  const handleExportSocraticToSolution = () => {
+    const studentInputs = socraticMessages
+      .filter(m => m.role === 'user')
+      .map(m => m.text);
+
+    if (studentInputs.length > 0) {
+      const summaryText = `💡 مسار تفكيري في تطوير الفكرة مع المكتشف الصغير:\n` +
+        studentInputs.map((inp, idx) => `• خطوة ${idx + 1}: ${inp}`).join('\n') +
+        `\n\n🎯 توجه الحل النهائي:\n${socraticMessages.filter(m => m.role === 'bot').slice(-1)[0]?.text || ''}`;
+      setSolutionDesc(prev => (prev ? prev + '\n\n' : '') + summaryText);
+      if (!solutionTitle) {
+        setSolutionTitle('مشروع مبتكر تم تطويره بالحوار مع المكتشف الصغير');
+      }
+    }
+
+    setActiveTab('challenges');
+    if (selectedChallenge) {
+      setModalOpen(true);
+    } else {
+      const defaultCh = DEFAULT_CHALLENGES.find(c => c.id === 'custom') || DEFAULT_CHALLENGES[0];
+      handleOpenChallengeDetails(defaultCh);
+    }
+  };
+
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [selectedSolForUpdate, setSelectedSolForUpdate] = useState(null);
   const [progressUpdateText, setProgressUpdateText] = useState('');
@@ -846,28 +883,53 @@ const StemCorner = ({ isStandalone = true }) => {
                         <span style={{ fontSize: '1.3rem' }}>🤖</span>
                         <strong style={{ color: '#1e3a8a', fontSize: '0.95rem' }}>موجه الابتكار الذكي (AI STEM Mentor)</strong>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleGenerateAiStemIdeas}
-                        disabled={isLoadingAiStem}
-                        style={{
-                          background: isLoadingAiStem ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.45rem 1rem',
-                          borderRadius: '20px',
-                          fontWeight: 800,
-                          fontSize: '0.82rem',
-                          cursor: isLoadingAiStem ? 'not-allowed' : 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
-                        }}
-                      >
-                        <i className={`fas ${isLoadingAiStem ? 'fa-spinner fa-spin' : 'fa-brain'}`}></i>
-                        <span>{isLoadingAiStem ? 'جاري توليد حلول ذكية...' : '💡 استشر الذكاء الاصطناعي لحلول إضافية'}</span>
-                      </button>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={handleGenerateAiStemIdeas}
+                          disabled={isLoadingAiStem}
+                          style={{
+                            background: isLoadingAiStem ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.45rem 0.9rem',
+                            borderRadius: '20px',
+                            fontWeight: 800,
+                            fontSize: '0.82rem',
+                            cursor: isLoadingAiStem ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
+                          }}
+                        >
+                          <i className={`fas ${isLoadingAiStem ? 'fa-spinner fa-spin' : 'fa-brain'}`}></i>
+                          <span>{isLoadingAiStem ? 'جاري توليد حلول ذكية...' : '💡 حلول سريعة'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleStartSocraticForChallenge(selectedChallenge)}
+                          style={{
+                            background: 'linear-gradient(135deg, #059669, #047857)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.45rem 1rem',
+                            borderRadius: '20px',
+                            fontWeight: 800,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)'
+                          }}
+                          title="حاور المكتشف الصغير لتطوير فكرة هذا التحدي خطوة بخطوة بطريقة سقراطية"
+                        >
+                          <i className="fas fa-comments"></i>
+                          <span>🚀 حوار تطوير الفكرة مع المكتشف الصغير 💬</span>
+                        </button>
+                      </div>
                     </div>
                     {aiStemIdeas && (
                       <div style={{
@@ -1578,6 +1640,31 @@ const StemCorner = ({ isStandalone = true }) => {
             </p>
           </div>
 
+          {/* STEM Idea Development Stepper Guide */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+            margin: '0 auto 1.5rem',
+            maxWidth: '720px',
+            background: '#ffffff',
+            padding: '10px 16px',
+            borderRadius: '16px',
+            border: '1px solid #bfdbfe',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+          }}>
+            <span style={{ fontWeight: 800, color: '#1e3a8a', fontSize: '0.88rem' }}>🎯 مسار تطوير فكرتك:</span>
+            <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>1. فهم المشكلة 🔍</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
+            <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>2. المواد والخامات 📐</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
+            <span style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>3. آلية العمل 🛠️</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
+            <span style={{ background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>4. الاختبار والنموذج 💡</span>
+          </div>
+
           <div className="socratic-widget-wrapper" style={{ display: 'flex', justifyContent: 'center' }}>
             <div className="socratic-chat-card" style={{
               width: '100%',
@@ -1777,6 +1864,44 @@ const StemCorner = ({ isStandalone = true }) => {
                 >
                   <span>إرسال</span>
                   <i className="fas fa-paper-plane"></i>
+                </button>
+              </div>
+
+              {/* Bottom Action: Export to Challenge Submission */}
+              <div style={{
+                background: '#f8fafc',
+                padding: '10px 16px',
+                borderTop: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  💡 طورت فكرتك وتريد تسليمها ونيل وسام التميز؟
+                </span>
+                <button
+                  type="button"
+                  onClick={handleExportSocraticToSolution}
+                  style={{
+                    background: 'linear-gradient(135deg, #059669, #047857)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
+                  }}
+                  title="نقل الأفكار التي تم التوصل إليها إلى نموذج تسليم التحدي في صناع الحلول"
+                >
+                  <i className="fas fa-check-circle"></i>
+                  <span>اعتماد الفكرة وتسليمها في صناع الحلول (+100 نقطة ⭐)</span>
                 </button>
               </div>
             </div>
