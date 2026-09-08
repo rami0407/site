@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { auth, db, storage } from '../firebase';
+import { auth, db, storage, emtnanDb } from '../firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
@@ -932,9 +932,9 @@ const AdminDashboard = () => {
         snapStars.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
       }
 
-      // Also load messages from Emtnan app
+      // Load all messages from the live Emtnan app database (news-b3639)
       try {
-        const snapMsgs = await getDocs(collection(db, 'messages'));
+        const snapMsgs = await getDocs(collection(emtnanDb, 'messages'));
         snapMsgs.forEach(docSnap => {
           const m = docSnap.data();
           let createdIso = new Date().toISOString();
@@ -943,6 +943,8 @@ const AdminDashboard = () => {
               createdIso = m.timestamp.toDate().toISOString();
             } else if (m.timestamp.seconds) {
               createdIso = new Date(m.timestamp.seconds * 1000).toISOString();
+            } else if (typeof m.timestamp === 'string') {
+              createdIso = m.timestamp;
             }
           }
           list.push({
@@ -952,17 +954,19 @@ const AdminDashboard = () => {
             recipientRole: 'teacher',
             senderName: m.sender || 'طالب/ولي أمر',
             senderRole: 'student',
-            senderClass: 'مبادرة امتنان 💐',
+            senderClass: m.formattedTime ? `الساعة ${m.formattedTime}` : 'تطبيق امتنان 💐',
             color: 'pink',
             message: m.text || (m.audioData ? '🎤 رسالة صوتية مسجلة' : 'رسالة شكر وامتنان'),
             audioData: m.audioData || null,
             likesCount: m.likes || (m.reactionCounts ? Object.values(m.reactionCounts).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0) : 1) || 1,
             createdAt: createdIso,
+            isPinned: !!m.isPinned,
+            status: m.status || 'approved',
             isFromMessagesApp: true
           });
         });
       } catch (e) {
-        console.warn("Could not load messages in admin dashboard:", e);
+        console.warn("Could not load messages from emtnanDb in admin dashboard:", e);
       }
 
       list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -979,7 +983,7 @@ const AdminDashboard = () => {
     try {
       if (starId.startsWith('msg_')) {
         const origId = starId.replace('msg_', '');
-        await deleteDoc(doc(db, 'messages', origId));
+        await deleteDoc(doc(emtnanDb, 'messages', origId));
       } else {
         await deleteDoc(doc(db, 'gratitude_stars', starId));
       }
@@ -987,6 +991,36 @@ const AdminDashboard = () => {
       alert('✨ تم حذف النجمة / الرسالة بنجاح!');
     } catch (err) {
       alert('حدث خطأ أثناء حذف النجمة: ' + err.message);
+    }
+  };
+
+  const handleEditGratitudeMessage = async (star) => {
+    const newText = prompt('تعديل نص رسالة الامتنان:', star.message);
+    if (newText === null || !newText.trim()) return;
+    try {
+      if (star.isFromMessagesApp || star.id.startsWith('msg_')) {
+        const origId = star.originalMessageId || star.id.replace('msg_', '');
+        await updateDoc(doc(emtnanDb, 'messages', origId), { text: newText.trim() });
+      } else {
+        await updateDoc(doc(db, 'gratitude_stars', star.id), { message: newText.trim() });
+      }
+      setAdminGratitudeStars(prev => prev.map(s => s.id === star.id ? { ...s, message: newText.trim() } : s));
+      alert('✨ تم تعديل نص الرسالة وحفظها بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء تعديل الرسالة: ' + err.message);
+    }
+  };
+
+  const handleToggleApproveMessage = async (star) => {
+    if (!star.isFromMessagesApp && !star.id.startsWith('msg_')) return;
+    const origId = star.originalMessageId || star.id.replace('msg_', '');
+    const newStatus = star.status === 'pending' ? 'approved' : 'pending';
+    try {
+      await updateDoc(doc(emtnanDb, 'messages', origId), { status: newStatus });
+      setAdminGratitudeStars(prev => prev.map(s => s.id === star.id ? { ...s, status: newStatus } : s));
+      alert(`تم تحديث حالة الرسالة بنجاح: ${newStatus === 'approved' ? 'معتمدة ومنشورة للجميع ✅' : 'معلقة / مخفية ⏳'}`);
+    } catch (err) {
+      alert('حدث خطأ أثناء تغيير حالة الرسالة: ' + err.message);
     }
   };
 
@@ -5281,32 +5315,103 @@ const AdminDashboard = () => {
                               </div>
                             </div>
 
-                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                {star.createdAt ? new Date(star.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}
-                              </span>
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                  {star.createdAt ? new Date(star.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}
+                                </span>
+                                {star.isFromMessagesApp && (
+                                  <span style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '50px',
+                                    background: star.status === 'pending' ? '#fef3c7' : '#ecfdf5',
+                                    color: star.status === 'pending' ? '#b45309' : '#047857',
+                                    border: `1px solid ${star.status === 'pending' ? '#fcd34d' : '#a7f3d0'}`
+                                  }}>
+                                    {star.status === 'pending' ? '⏳ قيد المراجعة / معلقة' : '✅ معتمدة ومنشورة للجميع'}
+                                  </span>
+                                )}
+                              </div>
 
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteGratitudeStar(star.id, star.recipientName)}
-                                style={{
-                                  background: '#dc2626',
-                                  color: 'white',
-                                  border: 'none',
-                                  padding: '0.5rem 1rem',
-                                  borderRadius: '10px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: 900,
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.4rem',
-                                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)'
-                                }}
-                                title="حذف هذه الرسالة أو النجمة فورياً في حال كانت غير لائقة"
-                              >
-                                <i className="fas fa-trash-alt"></i> حذف الرسالة فوراً (محتوى غير لائق)
-                              </button>
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {/* Edit Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditGratitudeMessage(star)}
+                                  style={{
+                                    flex: 1,
+                                    background: '#f8fafc',
+                                    color: '#334155',
+                                    border: '1.5px solid #cbd5e1',
+                                    padding: '0.5rem 0.75rem',
+                                    borderRadius: '10px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.35rem'
+                                  }}
+                                  title="تعديل نص الرسالة في حال وجود أخطاء إملائية أو تصحيح"
+                                >
+                                  <i className="fas fa-edit"></i> تعديل النص
+                                </button>
+
+                                {/* Toggle Approve / Hide (if from app) */}
+                                {star.isFromMessagesApp && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleApproveMessage(star)}
+                                    style={{
+                                      flex: 1,
+                                      background: star.status === 'pending' ? '#059669' : '#e2e8f0',
+                                      color: star.status === 'pending' ? 'white' : '#475569',
+                                      border: 'none',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: '10px',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '0.35rem'
+                                    }}
+                                    title={star.status === 'pending' ? 'الموافقة ونشر الرسالة على موقع مشيرفة وتطبيق الامتنان' : 'إخفاء الرسالة مؤقتاً'}
+                                  >
+                                    <i className={`fas ${star.status === 'pending' ? 'fa-check' : 'fa-eye-slash'}`}></i>
+                                    {star.status === 'pending' ? 'اعتماد ونشر' : 'إخفاء'}
+                                  </button>
+                                )}
+
+                                {/* Delete Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteGratitudeStar(star.id, star.recipientName)}
+                                  style={{
+                                    flex: 1.3,
+                                    background: '#dc2626',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.5rem 0.85rem',
+                                    borderRadius: '10px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 900,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.35rem',
+                                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)'
+                                  }}
+                                  title="حذف هذه الرسالة نهائياً فوراً من خادم الامتنان وقاعدة البيانات"
+                                >
+                                  <i className="fas fa-trash-alt"></i> حذف نهائي (غير لائق)
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}

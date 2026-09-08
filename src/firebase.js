@@ -23,4 +23,23 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
+// Configuration for standalone Emtnan App Firebase project (news-b3639)
+const emtnanConfig = {
+  apiKey: "AIzaSyCqIfKRtgcvhmFSFUBppRoamnVQ-ZXp464",
+  authDomain: "news-b3639.firebaseapp.com",
+  projectId: "news-b3639",
+  storageBucket: "news-b3639.firebasestorage.app",
+  messagingSenderId: "1023744506196",
+  appId: "1:1023744506196:web:c198b9701c98481a84f0c1",
+  measurementId: "G-4GMWPJRQ5G"
+};
+
+let emtnanAppInstance;
+try {
+  emtnanAppInstance = initializeApp(emtnanConfig, "emtnanApp");
+} catch (e) {
+  emtnanAppInstance = app;
+}
+export const emtnanDb = emtnanAppInstance ? getFirestore(emtnanAppInstance) : db;
+
 export default app;

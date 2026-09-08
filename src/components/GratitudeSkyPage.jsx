@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
+import { db, emtnanDb } from '../firebase';
 import { 
   collection, 
   addDoc, 
@@ -319,10 +319,10 @@ const GratitudeSkyPage = () => {
       console.warn("gratitude_stars setup error:", e);
     }
 
-    // Listener 2: messages collection (from Emtnan app)
+    // Listener 2: messages collection (from live Emtnan app news-b3639)
     let unsubMessages = () => {};
     try {
-      unsubMessages = onSnapshot(collection(db, 'messages'), (snapshot) => {
+      unsubMessages = onSnapshot(collection(emtnanDb, 'messages'), (snapshot) => {
         listMessages = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
         mergeAndSetStars();
       }, (err) => {
@@ -345,7 +345,7 @@ const GratitudeSkyPage = () => {
     playChimeSound(1000);
     try {
       const snapStars = await getDocs(collection(db, 'gratitude_stars'));
-      const snapMsgs = await getDocs(collection(db, 'messages'));
+      const snapMsgs = await getDocs(collection(emtnanDb, 'messages'));
 
       const cloudStars = snapStars.docs.map(d => ({ id: d.id, ...d.data() }));
       const cloudMsgs = snapMsgs.docs.map((m, idx) => ({
@@ -534,7 +534,7 @@ const GratitudeSkyPage = () => {
 
     try {
       if (star.isFromMessagesApp && star.originalMessageId) {
-        const msgRef = doc(db, 'messages', star.originalMessageId);
+        const msgRef = doc(emtnanDb, 'messages', star.originalMessageId);
         await updateDoc(msgRef, { likes: increment(1) });
       } else if (!star.id.startsWith('star-')) {
         const starRef = doc(db, 'gratitude_stars', star.id);
