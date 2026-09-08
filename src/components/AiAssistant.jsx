@@ -109,9 +109,14 @@ const AiAssistant = () => {
         const keyDoc = await getDoc(doc(db, 'schoolGuide', 'gemini'));
         if (keyDoc.exists()) {
           const data = keyDoc.data();
-          if (data.apiKey && data.apiKey.trim()) setApiKey(data.apiKey.trim());
-          if (data.xaiKey && data.xaiKey.trim()) setXaiKey(data.xaiKey.trim());
-          if (data.groqKey && data.groqKey.trim()) setGroqKey(data.groqKey.trim());
+          const all = [data.apiKey, data.groqKey, data.xaiKey];
+          all.forEach(k => {
+            if (!k) return;
+            const trimmed = k.trim();
+            if (trimmed.startsWith('gsk_')) setGroqKey(trimmed);
+            else if (trimmed.startsWith('xai-')) setXaiKey(trimmed);
+            else if (trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) setApiKey(trimmed);
+          });
         }
       } catch (e) {
         console.warn("Failed loading API keys for AI context:", e);
@@ -136,16 +141,72 @@ const AiAssistant = () => {
   };
 
   const fetchAiText = async (promptText) => {
-    // 1. Try Google Gemini API (Primary Engine)
-    const activeGeminiKey = (apiKey && apiKey.trim()) || localStorage.getItem('db_gemini_key') || '';
-    if (activeGeminiKey && activeGeminiKey.trim()) {
+    // Collect and auto-route all available keys
+    let gKey = (apiKey && apiKey.trim()) || '';
+    let grKey = (groqKey && groqKey.trim()) || '';
+    let xKey = (xaiKey && xaiKey.trim()) || '';
+
+    const localCandidates = [
+      localStorage.getItem('db_gemini_key') || '',
+      localStorage.getItem('db_groq_key') || '',
+      localStorage.getItem('db_xai_key') || ''
+    ];
+    [gKey, grKey, xKey, ...localCandidates].forEach(k => {
+      if (!k) return;
+      const trimmed = k.trim();
+      if (trimmed.startsWith('gsk_') && !grKey) grKey = trimmed;
+      else if (trimmed.startsWith('xai-') && !xKey) xKey = trimmed;
+      else if ((trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) && !gKey) gKey = trimmed;
+    });
+
+    // 1. Try Groq API (High-speed & natively supports browser CORS, with ALLaM Arabic LLM)
+    if (grKey) {
+      const groqModels = ['allam-2-7b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile'];
+      for (const gm of groqModels) {
+        try {
+          const res = await fetchWithTimeout(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${grKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: gm,
+                messages: [
+                  { role: 'system', content: schoolContext ? schoolContext : 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب باللغة العربية بأسلوب تعليمي مشجع ومفيد وواضح.' },
+                  { role: 'user', content: promptText }
+                ],
+                temperature: 0.7,
+                max_tokens: 1000
+              })
+            },
+            7000
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const txt = data.choices?.[0]?.message?.content;
+            if (txt && txt.trim()) {
+              setLastApiError(null);
+              return txt.trim();
+            }
+          }
+        } catch (e) {
+          console.warn(`Groq (${gm}) error:`, e);
+        }
+      }
+    }
+
+    // 2. Try Google Gemini API
+    if (gKey) {
       const targetModels = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
       const fullPrompt = `${schoolContext ? schoolContext + '\n\n' : ''}أجب عن السؤال التالي باللغة العربية بطريقة تربوية، واضحة وشاملة ومفيدة:\nالسؤال: ${promptText}`;
       
       for (const modelName of targetModels) {
         try {
           const res = await fetchWithTimeout(
-            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeGeminiKey.trim()}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${gKey}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -178,43 +239,6 @@ const AiAssistant = () => {
         } catch (e) {
           console.warn(`Gemini ${modelName} error:`, e);
         }
-      }
-    }
-
-    // 2. Try Groq API (High-speed free LLaMA 3.3 with native CORS)
-    const activeGroqKey = (groqKey && groqKey.trim()) || localStorage.getItem('db_groq_key') || '';
-    if (activeGroqKey && activeGroqKey.trim()) {
-      try {
-        const res = await fetchWithTimeout(
-          'https://api.groq.com/openai/v1/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${activeGroqKey.trim()}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: schoolContext ? schoolContext : 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية. أجب باللغة العربية بأسلوب تعليمي مشجع ومفيد.' },
-                { role: 'user', content: promptText }
-              ],
-              temperature: 0.7,
-              max_tokens: 1000
-            })
-          },
-          7000
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const txt = data.choices?.[0]?.message?.content;
-          if (txt && txt.trim()) {
-            setLastApiError(null);
-            return txt.trim();
-          }
-        }
-      } catch (e) {
-        console.warn("Groq API error:", e);
       }
     }
 

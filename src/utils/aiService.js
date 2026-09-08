@@ -18,9 +18,14 @@ export const getActiveAiKeys = async () => {
       const snap = await getDoc(doc(db, 'schoolGuide', 'gemini'));
       if (snap.exists()) {
         const d = snap.data();
-        if (d.apiKey) cachedGeminiKey = d.apiKey.trim();
-        if (d.groqKey) cachedGroqKey = d.groqKey.trim();
-        if (d.xaiKey) cachedXaiKey = d.xaiKey.trim();
+        const rawList = [d.apiKey, d.groqKey, d.xaiKey];
+        rawList.forEach(k => {
+          if (!k) return;
+          const trimmed = k.trim();
+          if (trimmed.startsWith('gsk_')) cachedGroqKey = trimmed;
+          else if (trimmed.startsWith('xai-')) cachedXaiKey = trimmed;
+          else if (trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) cachedGeminiKey = trimmed;
+        });
       }
     } catch (e) {
       console.warn('Failed fetching AI keys from Firestore:', e);
@@ -28,9 +33,18 @@ export const getActiveAiKeys = async () => {
     lastKeyFetchTime = now;
   }
 
-  const geminiKey = cachedGeminiKey || localStorage.getItem('db_gemini_key') || '';
-  const groqKey = cachedGroqKey || localStorage.getItem('db_groq_key') || '';
-  const xaiKey = cachedXaiKey || localStorage.getItem('db_xai_key') || '';
+  let geminiKey = cachedGeminiKey || localStorage.getItem('db_gemini_key') || '';
+  let groqKey = cachedGroqKey || localStorage.getItem('db_groq_key') || '';
+  let xaiKey = cachedXaiKey || localStorage.getItem('db_xai_key') || '';
+
+  // Auto-detect from localStorage items too
+  [geminiKey, groqKey, xaiKey, localStorage.getItem('db_gemini_key') || '', localStorage.getItem('db_groq_key') || '', localStorage.getItem('db_xai_key') || ''].forEach(k => {
+    if (!k) return;
+    const trimmed = k.trim();
+    if (trimmed.startsWith('gsk_') && !groqKey) groqKey = trimmed;
+    else if (trimmed.startsWith('xai-') && !xaiKey) xaiKey = trimmed;
+    else if ((trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) && !geminiKey) geminiKey = trimmed;
+  });
 
   return { geminiKey, groqKey, xaiKey };
 };
@@ -54,7 +68,43 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 7000) => {
 export const generateAiResponse = async (promptText, systemContext = '') => {
   const { geminiKey, groqKey, xaiKey } = await getActiveAiKeys();
 
-  // 1. Try Google Gemini
+  // 1. Try Groq LLaMA & ALLaM (Fastest & natively supports browser CORS)
+  if (groqKey) {
+    const groqModels = ['allam-2-7b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile'];
+    for (const gm of groqModels) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: gm,
+              messages: [
+                { role: 'system', content: systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.' },
+                { role: 'user', content: promptText }
+              ],
+              temperature: 0.7,
+              max_tokens: 1000
+            })
+          },
+          7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content;
+          if (text && text.trim()) return text.trim();
+        }
+      } catch (e) {
+        console.warn(`Groq (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Google Gemini
   if (geminiKey) {
     const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
     const fullPrompt = `${systemContext ? systemContext + '\n\n' : ''}السؤال/الطلب: ${promptText}`;
@@ -84,39 +134,6 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
       } catch (e) {
         console.warn(`Gemini (${model}) failed:`, e);
       }
-    }
-  }
-
-  // 2. Try Groq LLaMA 3.3 (Native browser CORS)
-  if (groqKey) {
-    try {
-      const res = await fetchWithTimeout(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${groqKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.' },
-              { role: 'user', content: promptText }
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-          })
-        },
-        7000
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text && text.trim()) return text.trim();
-      }
-    } catch (e) {
-      console.warn('Groq failed:', e);
     }
   }
 
