@@ -9,6 +9,7 @@ import ContactForm from './components/ContactForm';
 import FloatingActions from './components/FloatingActions';
 import AiAssistant from './components/AiAssistant';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import SocraticHomeworkModal from './components/SocraticHomeworkModal';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
@@ -55,19 +56,24 @@ const PrincipalMessage = lazy(() => import('./components/PrincipalMessage'));
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
+  const [isGlobalHomeworkHelperOpen, setIsGlobalHomeworkHelperOpen] = useState(false);
 
-  // Clean event-driven hash routing listener
+  // Clean event-driven hash routing listener and homework helper trigger
   useEffect(() => {
     const handleHashChange = () => {
       setCurrentHash(window.location.hash);
     };
 
+    const handleOpenHomework = () => setIsGlobalHomeworkHelperOpen(true);
+
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('popstate', handleHashChange);
+    window.addEventListener('open-homework-helper', handleOpenHomework);
 
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);
+      window.removeEventListener('open-homework-helper', handleOpenHomework);
     };
   }, []);
 
@@ -457,6 +463,12 @@ function App() {
 
       {/* PWA Mobile App Installation Prompt */}
       <PwaInstallPrompt />
+
+      {/* Global Socratic Homework Helper Modal */}
+      <SocraticHomeworkModal
+        isOpen={isGlobalHomeworkHelperOpen}
+        onClose={() => setIsGlobalHomeworkHelperOpen(false)}
+      />
     </>
   );
 }

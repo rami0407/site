@@ -13,6 +13,8 @@ import {
 } from 'firebase/firestore';
 import { sanitizeText } from '../utils/security';
 import { generateReadingSummaryAndMoral } from '../utils/aiService';
+import BookBuddyModal from './BookBuddyModal';
+import StoryStudioModal from './StoryStudioModal';
 
 // Default starter reading logs celebrating Musheirifa students
 const DEFAULT_READING_LOGS = [
@@ -111,6 +113,9 @@ const ReadersClubPage = () => {
   // UI Modals
   const [showAddLogModal, setShowAddLogModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [showBookBuddyModal, setShowBookBuddyModal] = useState(false);
+  const [activeBuddyBook, setActiveBuddyBook] = useState({ title: '', author: '' });
+  const [showStoryStudioModal, setShowStoryStudioModal] = useState(false);
   const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'books' | 'leaders' | 'featured'
   const [isTreeAnimated, setIsTreeAnimated] = useState(true);
 
@@ -406,6 +411,51 @@ const ReadersClubPage = () => {
               >
                 <i className="fas fa-book-reader" style={{ fontSize: '1.25rem' }}></i>
                 <span>سجّل قصة قرأتها في رحلتك 🌿</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveBuddyBook({ title: '', author: '' });
+                  setShowBookBuddyModal(true);
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 1.8rem',
+                  borderRadius: '20px',
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  boxShadow: '0 8px 25px rgba(2, 132, 199, 0.4)'
+                }}
+              >
+                <i className="fas fa-comments" style={{ fontSize: '1.25rem', color: '#7dd3fc' }}></i>
+                <span>💬 حوار مع المحاور القرائي الذكي 🦉</span>
+              </button>
+
+              <button
+                onClick={() => setShowStoryStudioModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 1.8rem',
+                  borderRadius: '20px',
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  boxShadow: '0 8px 25px rgba(147, 51, 234, 0.4)'
+                }}
+              >
+                <i className="fas fa-feather-alt" style={{ fontSize: '1.25rem', color: '#f5d0fe' }}></i>
+                <span>✍️ مختبر الأديب الصغير (تأليف قصة) 🚀</span>
               </button>
 
               <button
@@ -1194,6 +1244,35 @@ const ReadersClubPage = () => {
                   <i className={`fas ${isAiSummarizing ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
                   <span>{isAiSummarizing ? 'جاري التحليل واستخراج العبرة بالذكاء الاصطناعي...' : '✨ مساعدة ذكية: استخراج العبرة والتعابير البلاغية بالذكاء الاصطناعي'}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveBuddyBook({ title: bookTitle, author });
+                    setShowAddLogModal(false);
+                    setShowBookBuddyModal(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    marginTop: '0.5rem',
+                    background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '14px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
+                  }}
+                >
+                  <i className="fas fa-comments"></i>
+                  <span>💬 أو حاور الصديق القرائي الذكي لتنال وسام القارئ المفكر!</span>
+                </button>
               </div>
 
               {/* Takeaway */}
@@ -1533,6 +1612,48 @@ const ReadersClubPage = () => {
           </div>
         </div>
       )}
+
+      {/* AI Book Buddy Modal */}
+      <BookBuddyModal
+        isOpen={showBookBuddyModal}
+        onClose={() => setShowBookBuddyModal(false)}
+        bookTitle={activeBuddyBook.title}
+        author={activeBuddyBook.author}
+        onCompleteLog={(logData) => {
+          setBookTitle(logData.bookTitle);
+          setAuthor(logData.author);
+          setTakeaway(logData.takeaway);
+          setLearnedExpressions(logData.learnedExpressions);
+          setRating(logData.rating);
+          setShowAddLogModal(true);
+        }}
+      />
+
+      {/* AI Story Studio Modal */}
+      <StoryStudioModal
+        isOpen={showStoryStudioModal}
+        onClose={() => setShowStoryStudioModal(false)}
+        onPublishToClub={async (story) => {
+          const newLogObj = {
+            studentName: story.author || studentName || 'أديب مشيرفة الصغير',
+            studentClass: `${studentGrade} (${studentSection})`,
+            bookTitle: story.title,
+            author: story.author || studentName,
+            category: 'قصص وعبر',
+            rating: 5,
+            takeaway: story.takeaway || 'قصة إبداعية من تأليف الطالب في مختبر الأديب الصغير.',
+            learnedExpressions: 'تأليف وتنسيق رقمي كامل، خيال علمي وأدبي، لغة فصيحة',
+            favoriteCharacter: 'أبطال القصة',
+            likesCount: 15,
+            createdAt: new Date().toISOString()
+          };
+          try {
+            await addDoc(collection(db, 'readers_club_logs'), newLogObj);
+          } catch {
+            setLogs(prev => [newLogObj, ...prev]);
+          }
+        }}
+      />
 
       {/* Print Stylesheet */}
       <style>{`

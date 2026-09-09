@@ -475,3 +475,249 @@ export const askSocraticStemMentor = async ({ message, history = [] }) => {
 
   return 'فكرة رائعة للتفكير! ما رأيك أن نبدأ بملاحظة الأشياء حولك في البيت أو المدرسة، ما أكثر شيء يشبه هذا التحدي؟';
 };
+
+/**
+ * 7. AI Book Buddy for Readers Club ("المحاور القرائي الذكي")
+ */
+export const askAiBookBuddy = async ({ bookTitle, author, message, history = [] }) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const SYSTEM_INSTRUCTION = `أنت "الصديق القرائي الذكي" لنادي القراء بمدرسة مشيرفة الابتدائية.
+مهمتك: إدارة حوار تفاعلي شيق مع الطالب حول كتاب أو قصة قرأها: "${bookTitle || 'القصة المختارة'}" ${author ? `للكاتب: ${author}` : ''}.
+
+القواعد التربوية:
+1. كن صديقاً قارئاً مرحاً، ودوداً ومشجعاً جداً.
+2. اسأل الطالب أسئلة تفكير عليا وتأملية:
+   - عن مشاعر وتصرفات الشخصيات ("هل تتفق مع تصرف البطل؟").
+   - عن ربط القصة بحياته اليومية ("لو كنت مكانه في مدرستنا مشيرفة، ماذا كنت ستفعل؟").
+   - عن العبرة والقيمة الأخلاقية التي شعر بها.
+3. التزم بلغة عربية فصحى مشوقة وبسيطة، في حدود جملتين إلى ثلاث جمل فقط، واختم بسؤال تفاعلي واحد مشوق.`;
+
+  // 1. Try Groq
+  if (groqKey) {
+    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    for (const gm of groqModels) {
+      try {
+        const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
+        if (Array.isArray(history)) {
+          history.forEach(h => {
+            const role = h.role === 'user' ? 'user' : 'assistant';
+            const content = h.parts?.[0]?.text || h.text || '';
+            if (content) groqMessages.push({ role, content });
+          });
+        }
+        groqMessages.push({ role: 'user', content: message });
+
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: gm, messages: groqMessages, temperature: 0.6, max_tokens: 180 })
+        }, 7000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Groq BookBuddy (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    let conv = '';
+    if (Array.isArray(history)) {
+      history.forEach(h => {
+        const sender = h.role === 'user' ? 'الطالب' : 'الصديق القرائي';
+        const txt = h.parts?.[0]?.text || h.text || '';
+        if (txt) conv += `${sender}: ${txt}\n`;
+      });
+    }
+    const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nالحوار:\n${conv}الطالب: ${message}\nالصديق القرائي:`;
+
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: { temperature: 0.6, maxOutputTokens: 180 }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Gemini BookBuddy (${m}) failed:`, e);
+      }
+    }
+  }
+
+  return `يا له من كتاب ممتع ورائع! ما هو أكثر موقف أو شخصية أثرت فيك وأنت تقرأ صفحات هذا الكتاب؟ 📖✨`;
+};
+
+/**
+ * 8. AI Story Studio Generator ("مختبر الأديب الصغير")
+ */
+export const developStudentStory = async ({ storyGenre, heroName, studentInput, currentChapter = 1, history = [] }) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const SYSTEM_INSTRUCTION = `أنت "المحرر الأدبي الحكيم" في "مختبر الأديب الصغير" بمدرسة مشيرفة الابتدائية.
+مهمتك: مساعدة الطالب في تأليف قصته الإبداعية الخاصة خطوة بخطوة باللغة العربية الفصحى الجميلة.
+- نوع القصة: "${storyGenre || 'مغامرة مشوقة'}".
+- بطل القصة: "${heroName || 'البطل الصغير'}".
+- المرحلة الحالية: الفصل ${currentChapter} من 3 (الفصل 1: البداية ووصف المكان، الفصل 2: التحدي والمغامرة، الفصل 3: الحل والعبرة).
+
+القواعد:
+1. اقرأ ما كتبه الطالب، واشهد بجمال خياله، ثم أعد صياغة أفكاره في فقرة أدبية فصيحة غنية بالتشبيهات الجميلة (بحدود 30-45 كلمة).
+2. اقترح عليه كلمتين أو تعبيراً فصيحاً لتغذية لغته (مثل: "يمتطي صهوة الشجاعة"، "انبلج الصباح").
+3. اختم بسؤال تشويقي يقوده لكتابة أحداث المحطة التالية!`;
+
+  // Try Groq
+  if (groqKey) {
+    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b'];
+    for (const gm of groqModels) {
+      try {
+        const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
+        if (Array.isArray(history)) {
+          history.forEach(h => {
+            const role = h.role === 'user' ? 'user' : 'assistant';
+            const content = h.parts?.[0]?.text || h.text || '';
+            if (content) groqMessages.push({ role, content });
+          });
+        }
+        groqMessages.push({ role: 'user', content: studentInput });
+
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: gm, messages: groqMessages, temperature: 0.7, max_tokens: 250 })
+        }, 7000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash'];
+    for (const m of models) {
+      try {
+        const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nما كتبه الطالب: "${studentInput}"\nالمحرر الأدبي:`;
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 250 }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {}
+    }
+  }
+
+  return `يا له من خيال خصب وبداية رائعة لقصتك! "انطلق ${heroName || 'البطل'} بكل شجاعة في دربه، وكانت الرياح تهمس بأسرار المغامرة القادمة." ما هو التحدي المفاجئ الذي ظهر أمامه فجأة؟`;
+};
+
+/**
+ * 9. Socratic Homework & Math Helper ("المعلم السقراطي للواجبات ومسائل التفكير")
+ */
+export const askSocraticHomeworkHelper = async ({ subject = 'الرياضيات والعلوم', grade = 'المرحلة الابتدائية', studentQuery, history = [] }) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const SYSTEM_INSTRUCTION = `أنت "المعلم السقراطي الصبور" لمساعدة طلاب المرحلة الابتدائية (الصفوف 1-6) بمدرسة مشيرفة في واجبات ${subject}.
+المهمة: مساعدة الطالب على فهم وحل مسألته خطوة بخطوة بنفسه دون إعطائه الجواب أبداً!
+
+القواعد التربوية الصارمة:
+1. ممنوع منعاً باتاً كتابة الحل النهائي أو النتيجة أو الإجابة المباشرة.
+2. فكك المسألة: اسأل الطالب أولاً عن المعطيات التي يراها أمامه.
+3. استخدم أمثلة حسية بسيطة جداً (قطع تفاح، خطوات بالأقدام، حبات حلوى، تجربة ماء وثلج).
+4. اكتب بلغة فصحى مشجعة ومرحة للأطفال (جملتان أو ثلاث فقط)، واختم دائماً بسؤال توجيهي يقود خطوته التالية.`;
+
+  if (groqKey) {
+    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    for (const gm of groqModels) {
+      try {
+        const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
+        if (Array.isArray(history)) {
+          history.forEach(h => {
+            const role = h.role === 'user' ? 'user' : 'assistant';
+            const content = h.parts?.[0]?.text || h.text || '';
+            if (content) groqMessages.push({ role, content });
+          });
+        }
+        groqMessages.push({ role: 'user', content: studentQuery });
+
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: gm, messages: groqMessages, temperature: 0.4, max_tokens: 160 })
+        }, 7000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash'];
+    for (const m of models) {
+      try {
+        let conv = '';
+        if (Array.isArray(history)) {
+          history.forEach(h => {
+            const sender = h.role === 'user' ? 'الطالب' : 'المعلم السقراطي';
+            const txt = h.parts?.[0]?.text || h.text || '';
+            if (txt) conv += `${sender}: ${txt}\n`;
+          });
+        }
+        const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nالحوار:\n${conv}الطالب: ${studentQuery}\nالمعلم السقراطي:`;
+
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 160 }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {}
+    }
+  }
+
+  return `أهلاً بك يا بطل! أنا هنا لنفكر معاً ونصل للحل كفريق. ما هي الأرقام أو المعطيات التي ذكرها السؤال أولاً؟ 💡`;
+};
