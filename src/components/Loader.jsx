@@ -6,7 +6,7 @@ const Loader = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setHidden(true);
-    }, 1200); // 1.2s load simulation
+    }, 150); // Fast smooth transition (was 1200ms delay)
     return () => clearTimeout(timer);
   }, []);
 

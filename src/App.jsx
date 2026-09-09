@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Loader from './components/Loader';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import Stats from './components/Stats';
 import Initiatives from './components/Initiatives';
-import InteractiveCalendar from './components/InteractiveCalendar';
 import Values from './components/Values';
-import NewsFeed from './components/NewsFeed';
-import PrincipalMessage from './components/PrincipalMessage';
 import ImportantLinks from './components/ImportantLinks';
-import Gallery from './components/Gallery';
 import ContactForm from './components/ContactForm';
 import FloatingActions from './components/FloatingActions';
-import AdminDashboard from './components/AdminDashboard';
+import AiAssistant from './components/AiAssistant';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
@@ -24,35 +19,37 @@ import {
   importantLinks, 
   galleryPhotos 
 } from './data/schoolData';
-import BooksGuide from './components/BooksGuide';
 import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideData';
-import CustomPageView from './components/CustomPageView';
 import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
-import AiAssistant from './components/AiAssistant';
-import WeeklyChallenge, { WeeklyChallengeBanner } from './components/WeeklyChallenge';
-import Worksheets, { WorksheetsBanner } from './components/Worksheets';
-import AstronomyPage, { AstronomyBanner } from './components/AstronomyPage';
-import ScientificArticles, { ScientificArticlesBanner } from './components/ScientificArticles';
-import ParentPolls from './components/ParentPolls';
-import AppointmentBooking from './components/AppointmentBooking';
-import AppointmentsLogPage from './components/AppointmentsLogPage';
-import GratitudeSkyPage from './components/GratitudeSkyPage';
-import ReadersClubPage from './components/ReadersClubPage';
-import ExcellenceYearPage from './components/ExcellenceYearPage';
-import LearningCorner from './components/LearningCorner';
-import StemCorner from './components/StemCorner';
-import TeacherStemPortal from './components/TeacherStemPortal';
-import WorldIdeasPage from './components/WorldIdeasPage';
-import FacebookFeed from './components/FacebookFeed';
-import NewsPage from './components/NewsPage';
-import GalleryPage from './components/GalleryPage';
-import CalendarPage from './components/CalendarPage';
-import KioskDisplayPage from './components/KioskDisplayPage';
-import SmartFormResponder from './components/SmartFormResponder';
-import PrepDayExcellencePage from './components/PrepDayExcellencePage';
-import AdminPanel from './components/AdminPanel';
-import SchoolTasbihPortal from './components/SchoolTasbihPortal';
 import './App.css';
+
+// Lazy loaded page components for optimal initial bundle performance
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const BooksGuide = lazy(() => import('./components/BooksGuide'));
+const CustomPageView = lazy(() => import('./components/CustomPageView'));
+const WeeklyChallenge = lazy(() => import('./components/WeeklyChallenge'));
+const Worksheets = lazy(() => import('./components/Worksheets'));
+const AstronomyPage = lazy(() => import('./components/AstronomyPage'));
+const ScientificArticles = lazy(() => import('./components/ScientificArticles'));
+const ParentPolls = lazy(() => import('./components/ParentPolls'));
+const AppointmentBooking = lazy(() => import('./components/AppointmentBooking'));
+const AppointmentsLogPage = lazy(() => import('./components/AppointmentsLogPage'));
+const GratitudeSkyPage = lazy(() => import('./components/GratitudeSkyPage'));
+const ReadersClubPage = lazy(() => import('./components/ReadersClubPage'));
+const ExcellenceYearPage = lazy(() => import('./components/ExcellenceYearPage'));
+const LearningCorner = lazy(() => import('./components/LearningCorner'));
+const StemCorner = lazy(() => import('./components/StemCorner'));
+const TeacherStemPortal = lazy(() => import('./components/TeacherStemPortal'));
+const WorldIdeasPage = lazy(() => import('./components/WorldIdeasPage'));
+const NewsPage = lazy(() => import('./components/NewsPage'));
+const GalleryPage = lazy(() => import('./components/GalleryPage'));
+const CalendarPage = lazy(() => import('./components/CalendarPage'));
+const KioskDisplayPage = lazy(() => import('./components/KioskDisplayPage'));
+const SmartFormResponder = lazy(() => import('./components/SmartFormResponder'));
+const PrepDayExcellencePage = lazy(() => import('./components/PrepDayExcellencePage'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const SchoolTasbihPortal = lazy(() => import('./components/SchoolTasbihPortal'));
+const PrincipalMessage = lazy(() => import('./components/PrincipalMessage'));
 
 
 function App() {
@@ -73,9 +70,14 @@ function App() {
     };
   }, []);
 
-  // Firebase Auto-Seeding on application mount
+  // Firebase Auto-Seeding on application mount (run once and cache in localStorage)
   useEffect(() => {
     const seedFirebaseIfEmpty = async () => {
+      // If already seeded in this browser, skip redundant queries to optimize load time
+      if (localStorage.getItem('db_firestore_seeded_v1') === 'true') {
+        return;
+      }
+
       try {
         // 1. Seed Events
         const eventsRef = collection(db, 'events');
@@ -241,7 +243,7 @@ function App() {
           createdAt: new Date().toISOString()
         });
 
-
+        localStorage.setItem('db_firestore_seeded_v1', 'true');
       } catch (error) {
         console.warn("Firebase auto-seeding skipped (normal for offline/unconfigured environments):", error.message);
       }
@@ -289,19 +291,27 @@ function App() {
 
   if (isAdminView) {
     return (
-      <>
+      <Suspense fallback={<Loader />}>
         <Loader />
         <AdminDashboard />
-      </>
+      </Suspense>
     );
   }
 
   if (isKioskView) {
-    return <KioskDisplayPage />;
+    return (
+      <Suspense fallback={<Loader />}>
+        <KioskDisplayPage />
+      </Suspense>
+    );
   }
 
   if (isFormView) {
-    return <SmartFormResponder />;
+    return (
+      <Suspense fallback={<Loader />}>
+        <SmartFormResponder />
+      </Suspense>
+    );
   }
 
   const isMonawaatAdminView = currentHash.includes('monawaat-admin') || currentHash.includes('monawat-admin');
@@ -329,41 +339,32 @@ function App() {
   const isTasbihView = currentHash.includes('tasbih');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
-  if (isAdminView) {
-    return (
-      <>
-        <Loader />
-        <AdminDashboard />
-      </>
-    );
-  }
-
   if (isGratitudeSkyView) {
     return (
-      <>
+      <Suspense fallback={<Loader />}>
         <Loader />
         <GratitudeSkyPage />
-      </>
+      </Suspense>
     );
   }
 
   if (isReadersClubView) {
     return (
-      <>
+      <Suspense fallback={<Loader />}>
         <Loader />
         <ReadersClubPage />
-      </>
+      </Suspense>
     );
   }
 
   if (isTasbihView) {
     return (
-      <>
+      <Suspense fallback={<Loader />}>
         <Loader />
         <div style={{ minHeight: '100vh', background: '#022c22', padding: '1rem' }}>
           <SchoolTasbihPortal />
         </div>
-      </>
+      </Suspense>
     );
   }
 
@@ -376,64 +377,66 @@ function App() {
       <Navbar />
 
       {/* Main Sections */}
-      {isMonawaatAdminView ? (
-        <AdminPanel />
-      ) : isPrepDayView ? (
-        <PrepDayExcellencePage />
-      ) : isCalendarView ? (
-        <CalendarPage />
-      ) : isGalleryView ? (
-        <GalleryPage />
-      ) : (isNewsView || isFacebookView) ? (
-        <NewsPage />
-      ) : isWorldIdeasView ? (
-        <WorldIdeasPage />
-      ) : isTeacherPortalView ? (
-        <TeacherStemPortal />
-      ) : isPrincipalView ? (
-        <PrincipalMessage isStandalone={true} />
-      ) : isStemView ? (
-        <StemCorner isStandalone={true} />
-      ) : isExcellenceView ? (
-        <ExcellenceYearPage isStandalone={true} />
-      ) : isLearningCornerView ? (
-        <LearningCorner isStandalone={true} />
-      ) : isArticlesView ? (
-        <ScientificArticles isStandalone={true} />
-      ) : isParentPollsView ? (
-        <ParentPolls isStandalone={true} />
-      ) : isGuardLogView ? (
-        <AppointmentsLogPage />
-      ) : isAppointmentsView ? (
-        <AppointmentBooking isStandalone={true} />
-      ) : isCustomPageView ? (
-        <CustomPageView pageId={customPageId} />
-      ) : isWorksheetsView ? (
-        <Worksheets isStandalone={true} />
-      ) : isAstronomyView ? (
-        <AstronomyPage isStandalone={true} />
-      ) : isChallengeView ? (
-        <WeeklyChallenge isStandalone={true} />
-      ) : isBooksView ? (
-        <BooksGuide isStandalone={true} />
-      ) : (
-        <main>
-          {/* Hero Banner */}
-          <Hero />
+      <Suspense fallback={<div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="loader-spinner"></div></div>}>
+        {isMonawaatAdminView ? (
+          <AdminPanel />
+        ) : isPrepDayView ? (
+          <PrepDayExcellencePage />
+        ) : isCalendarView ? (
+          <CalendarPage />
+        ) : isGalleryView ? (
+          <GalleryPage />
+        ) : (isNewsView || isFacebookView) ? (
+          <NewsPage />
+        ) : isWorldIdeasView ? (
+          <WorldIdeasPage />
+        ) : isTeacherPortalView ? (
+          <TeacherStemPortal />
+        ) : isPrincipalView ? (
+          <PrincipalMessage isStandalone={true} />
+        ) : isStemView ? (
+          <StemCorner isStandalone={true} />
+        ) : isExcellenceView ? (
+          <ExcellenceYearPage isStandalone={true} />
+        ) : isLearningCornerView ? (
+          <LearningCorner isStandalone={true} />
+        ) : isArticlesView ? (
+          <ScientificArticles isStandalone={true} />
+        ) : isParentPollsView ? (
+          <ParentPolls isStandalone={true} />
+        ) : isGuardLogView ? (
+          <AppointmentsLogPage />
+        ) : isAppointmentsView ? (
+          <AppointmentBooking isStandalone={true} />
+        ) : isCustomPageView ? (
+          <CustomPageView pageId={customPageId} />
+        ) : isWorksheetsView ? (
+          <Worksheets isStandalone={true} />
+        ) : isAstronomyView ? (
+          <AstronomyPage isStandalone={true} />
+        ) : isChallengeView ? (
+          <WeeklyChallenge isStandalone={true} />
+        ) : isBooksView ? (
+          <BooksGuide isStandalone={true} />
+        ) : (
+          <main>
+            {/* Hero Banner */}
+            <Hero />
 
-          {/* School Pedagogical Initiatives */}
-          <Initiatives />
+            {/* School Pedagogical Initiatives */}
+            <Initiatives />
 
-          {/* Institutional Values */}
-          <Values />
+            {/* Institutional Values */}
+            <Values />
 
-          {/* Fast Action Hyperlinks */}
-          <ImportantLinks />
+            {/* Fast Action Hyperlinks */}
+            <ImportantLinks />
 
-          {/* Dynamic Client Validation Contact Form */}
-          <ContactForm />
-        </main>
-      )}
+            {/* Dynamic Client Validation Contact Form */}
+            <ContactForm />
+          </main>
+        )}
+      </Suspense>
 
       {/* Footer Details */}
       <footer className="footer">
