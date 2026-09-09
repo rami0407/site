@@ -130,6 +130,7 @@ export const importantLinks = [
   { title: 'بوابة الطلاب وأولياء الأمور', icon: 'fa-user-check', url: 'https://parent.gov.il', desc: 'لمتابعة تحصيل الطالب، الحضور والغياب، والتقارير الأكاديمية.' },
   { title: 'منصة كلاسروم التعليمية (Classroom)', icon: 'fa-chalkboard', url: 'https://classroom.google.com', desc: 'الصف الدراسي الرقمي لحل الواجبات والتواصل مع المعلمين.' },
   { title: 'المعلم السقراطي للواجبات والتفكير', icon: 'fa-brain', url: '#/worksheets', action: 'open-homework-helper', desc: 'مرشد ذكي يعتمد الحوار السقراطي لمساعدتك في فهم المسائل والواجبات خطوة بخطوة.', badge: 'ذكاء اصطناعي 🤖', isAi: true },
+  { title: 'منبر الحوار والمناظرة الفكرية', icon: 'fa-balance-scale', url: '#/debate', desc: 'ساحة نقاش أسبوعية ذكية تطرح قضايا معاصرة، يوجهها الذكاء الاصطناعي سقراطياً لترسيخ أدب الحوار.', badge: 'ذكاء اصطناعي 🤖', isAi: true },
   { title: 'المحاور القرائي الذكي (نادي القراء)', icon: 'fa-book-reader', url: '#/readers-club?action=book-buddy', desc: 'حاور المرشد القرائي الذكي لمناقشة القصص التي قرأتها واستخلاص العِبر والتفكير الناقد.', badge: 'ذكاء اصطناعي 🤖', isAi: true },
   { title: 'مختبر الأديب الصغير (تأليف القصص)', icon: 'fa-feather-alt', url: '#/readers-club?action=story-studio', desc: 'مساحة لتأليف ونشر القصص والقصائد بمساعدة الذكاء الاصطناعي التوليدي الملهم للطالب.', badge: 'ذكاء اصطناعي 🤖', isAi: true },
   { title: 'موقع وزارة التربية والتعليم', icon: 'fa-landmark', url: 'https://edu.gov.il', desc: 'البوابة الرسمية للمناهج والتعليمات والرزنامة الوزارية السنوية.' },

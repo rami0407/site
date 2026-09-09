@@ -85,6 +85,22 @@ const ImportantLinks = () => {
             });
           }
 
+          const hasDebate = list.some(l => 
+            (l.title && (l.title.includes('المناظرة') || l.title.includes('الحوار'))) || 
+            (l.url && l.url.includes('debate'))
+          );
+          if (!hasDebate) {
+            list.push({
+              id: 'ai-debate-arena-default',
+              title: 'منبر الحوار والمناظرة الفكرية',
+              icon: 'fa-balance-scale',
+              url: '#/debate',
+              desc: 'ساحة نقاش أسبوعية ذكية تطرح قضايا معاصرة، يوجهها الذكاء الاصطناعي سقراطياً لترسيخ أدب الحوار.',
+              badge: 'ذكاء اصطناعي 🤖',
+              isAi: true
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {
@@ -108,7 +124,7 @@ const ImportantLinks = () => {
           {links.map((link, idx) => {
             const isInternal = link.url && (link.url.startsWith('#') || link.url.startsWith('/#'));
             const isKiosk = link.url && link.url.includes('kiosk');
-            const isAi = link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير');
+            const isAi = link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة');
 
             let iconGradient = undefined;
             if (isKiosk) {
@@ -119,6 +135,8 @@ const ImportantLinks = () => {
               iconGradient = 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)';
             } else if (link.icon === 'fa-feather-alt') {
               iconGradient = 'linear-gradient(135deg, #9333ea 0%, #c026d3 100%)';
+            } else if (link.icon === 'fa-balance-scale') {
+              iconGradient = 'linear-gradient(135deg, #4338ca 0%, #312e81 100%)';
             } else if (isAi) {
               iconGradient = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
             }
@@ -132,6 +150,12 @@ const ImportantLinks = () => {
                   if (link.action === 'open-homework-helper' || link.url?.includes('homework-helper')) {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-homework-helper'));
+                    return;
+                  }
+                  if (link.url?.includes('debate')) {
+                    e.preventDefault();
+                    window.location.hash = '#/debate';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
                   if (link.url?.includes('action=book-buddy')) {

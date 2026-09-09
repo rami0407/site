@@ -26,6 +26,7 @@ import FormAnalyticsView from './FormAnalyticsView';
 import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
 import EduStaffingPortal from './EduStaffingPortal';
 import SchoolTasbihPortal from './SchoolTasbihPortal';
+import DebateAdminTab from './DebateAdminTab';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 
 const CATEGORIES_CALENDAR = {
@@ -4062,6 +4063,27 @@ const AdminDashboard = () => {
               📿 بوابة الذكر ومسبحة مشيرفة (لوحة التحكم)
             </button>
 
+            {/* TOP ITEM: DEBATE ARENA CONTROL */}
+            <button 
+              onClick={() => setActiveTab('debate-admin')} 
+              className={`filter-chip ${activeTab === 'debate-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'debate-admin' ? 'linear-gradient(135deg, #4338ca, #312e81)' : '#e0e7ff',
+                color: activeTab === 'debate-admin' ? 'white' : '#3730a3',
+                fontWeight: 900,
+                border: '2px solid #818cf8',
+                boxShadow: '0 2px 6px rgba(67, 56, 202, 0.25)'
+              }}
+            >
+              <i className="fas fa-balance-scale" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#6366f1' }}></i>
+              ⚖️ منبر الحوار والمناظرة الفكرية
+            </button>
+
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
 
             <button 
@@ -7927,6 +7949,13 @@ const AdminDashboard = () => {
               {activeTab === 'tasbih-admin' && (
                 <div>
                   <SchoolTasbihPortal initialTab="admin-control" isAdminMode={true} />
+                </div>
+              )}
+
+              {/* تبويب: منبر الحوار والمناظرة الفكرية */}
+              {activeTab === 'debate-admin' && (
+                <div>
+                  <DebateAdminTab />
                 </div>
               )}
 

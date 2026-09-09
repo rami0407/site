@@ -52,6 +52,7 @@ const PrepDayExcellencePage = lazy(() => import('./components/PrepDayExcellenceP
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const SchoolTasbihPortal = lazy(() => import('./components/SchoolTasbihPortal'));
 const PrincipalMessage = lazy(() => import('./components/PrincipalMessage'));
+const DebateArenaPage = lazy(() => import('./components/DebateArenaPage'));
 
 
 function App() {
@@ -344,7 +345,17 @@ function App() {
   const isGalleryView = currentHash.includes('gallery');
   const isCalendarView = currentHash.includes('calendar');
   const isTasbihView = currentHash.includes('tasbih');
+  const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
+
+  if (isDebateView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <DebateArenaPage />
+      </Suspense>
+    );
+  }
 
   if (isGratitudeSkyView) {
     return (

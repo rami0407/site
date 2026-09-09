@@ -721,3 +721,270 @@ export const askSocraticHomeworkHelper = async ({ subject = 'الرياضيات 
 
   return `أهلاً بك يا بطل! أنا هنا لنفكر معاً ونصل للحل كفريق. ما هي الأرقام أو المعطيات التي ذكرها السؤال أولاً؟ 💡`;
 };
+
+/**
+ * AI Service for Debate Arena: Generate a weekly debate topic
+ */
+export const generateDebateTopic = async (themePreference = '') => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const prompt = `أنت فيلسوف تربوي وموجّه للمناظرات الفكرية للناشئة في مدرسة مشيرفة الابتدائية.
+المطلوب: اقتراح موضوع مناظرة أسبوعي مشوق ومثير للتفكير يناسب طلاب المرحلة الابتدائية (الصفوف 3 إلى 6).
+${themePreference ? `المجال المطلوب التركيز عليه: ${themePreference}` : ''}
+شروط الموضوع:
+1. يمس حياة الطلاب واهتماماتهم (التكنولوجيا، الأخلاق، الصداقة، البيئة، المدرسة، المستقبل، الذكاء الاصطناعي).
+2. لا يوجد فيه رأي مطلق واحد، بل يحتمل رأيين منطقيين (مؤيد ومعارض).
+3. ينمي التفكير الفلسفي والناقد وأدب الحوار.
+
+أخرج الإجابة بتنسيق JSON حصراً بدون أي نصوص تمهيدية:
+{
+  "title": "عنوان السؤال الجدلي المشوق والمباشر (مثال: هل يمكن للروبوت أن يكون صديقاً حقيقياً للإنسان؟)",
+  "category": "تصنيف الموضوع (تكنولوجيا وأخلاق / بيئة ومستقبل / حياة مدرسية / قيم وصداقة)",
+  "dilemma": "معضلة وسياق تشويقي قصير يوضح القضية (فقرة من 3-4 أسطر)",
+  "proPoints": ["حجة داعمة 1 للتفكير", "حجة داعمة 2 للتفكير"],
+  "conPoints": ["حجة معارضة 1 للتفكير", "حجة معارضة 2 للتفكير"],
+  "sparkQuestion": "سؤال ختامي محفز لتشجيع الطالب على كتابة رأيه"
+}`;
+
+  if (groqKey) {
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.6,
+            max_tokens: 500,
+            response_format: { type: "json_object" }
+          })
+        }, 7000);
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.title) return parsed;
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.6,
+                maxOutputTokens: 600,
+                responseMimeType: "application/json"
+              }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.title) return parsed;
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Robust Fallback Topic
+  return {
+    title: "هل يجب إلغاء الواجبات البيتية واستبدالها بنشاطات حرة واستكشافية؟",
+    category: "حياة مدرسية وتطوير التعليم",
+    dilemma: "يقضي الطالب عدة ساعات يومياً في المدرسة، وعند عودته للمنزل يطلب منه حل واجبات كثيرة. يرى البعض أن الواجبات تثبت المعلومات وتدرب على الانضباط، بينما يرى آخرون أنها تسرق وقت اللعب والرياضة والجلوس مع العائلة.",
+    proPoints: [
+      "إلغاء الواجبات يمنح الطالب وقتاً للاستكشاف والراحة وممارسة الهوايات والرياضة.",
+      "التعلم الحقيقي يحدث في الفصل بالتفاعل مع المعلم والزملاء."
+    ],
+    conPoints: [
+      "الواجبات تدرب الطالب على الاعتماد على نفسه وإدارة وقته ومراجعة ما تعلمه.",
+      "حل التدريبات يضمن عدم نسيان القوانين الحسابية والمهارات اللغوية."
+    ],
+    sparkQuestion: "أنت كطالب في مدرسة مشيرفة، ما رأيك؟ وكيف توازن بين الدراسة وممارسة هواياتك بحرية؟"
+  };
+};
+
+/**
+ * AI Service for Debate Arena: Socratic feedback for a student's argument
+ */
+export const coachDebateArgument = async ({ topicTitle, studentName, studentGrade, studentStance, studentArgument }) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const prompt = `أنت "محكّم الحوار السقراطي 🦉" في منبر المناظرة لمدرسة مشيرفة الابتدائية.
+مهمتك التعقيب بلطف وذكاء على مداخلة كتبها طالب في المرحلة الابتدائية.
+
+موضوع المناظرة: "${topicTitle}"
+اسم الطالب: ${studentName || 'البطل المفكر'} (${studentGrade || 'المرحلة الابتدائية'})
+موقف الطالب: ${studentStance}
+رأي وحجة الطالب: "${studentArgument}"
+
+القواعد الإلزامية:
+1. ابدأ بعبارة تشجيعية دافئة تثني فيها على شجاعته وأسلوبه المهذب في التعبير (سطر واحد).
+2. لخص نقطة القوة في حجته بأسلوب مبسط يدل على أنك استوعبت فكرته تماماً (سطر واحد).
+3. اطرح عليه سؤالاً سقراطياً عميقاً بلطف يجعله يفكر في الزاوية المعاكسة أو يستحضر موقفاً واقعياً (سطر واحد إلى سطرين).
+4. لا تخبره أن إجابته صحيحة أو خاطئة، فالهدف هو توسيع المدارك.
+5. الطول الإجمالي: 3-4 أسطر فقط باللغة العربية الفصحى الجميلة والمشجعة.`;
+
+  if (groqKey) {
+    try {
+      const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.5,
+          max_tokens: 220
+        })
+      }, 7000);
+      if (res.ok) {
+        const data = await res.json();
+        const txt = data.choices?.[0]?.message?.content;
+        if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+      }
+    } catch (e) {}
+  }
+
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.5, maxOutputTokens: 220 }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {}
+    }
+  }
+
+  return `تحية لرجاحة عقلك وحسن تعبيرك يا ${studentName || 'المفكر الصغير'}! أعجبني استدلالك الواضح وترتيبك لأفكارك. ولكن فكر معي: ماذا لو نظرنا للأمر من زاوية زميلك الذي يرى خلاف ذلك، ما هو الدليل الذي قد يجعله يغير وجهة نظره؟ 💡✨`;
+};
+
+/**
+ * AI Service for Debate Arena: Summarize the debate harvest before archiving
+ */
+export const summarizeDebateHarvest = async ({ topicTitle, topicDilemma, comments = [] }) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const commentsSnippet = comments.slice(0, 20).map((c, i) => 
+    `${i+1}. ${c.studentName} (${c.stance || 'رأي'}): ${c.argument}`
+  ).join('\n');
+
+  const prompt = `أنت فيلسوف تربوي في مدرسة مشيرفة الابتدائية. انتهى أسبوع المناظرة الفكرية حول الموضوع التالي:
+الموضوع: "${topicTitle}"
+السياق: "${topicDilemma}"
+
+مداخلات الطلاب خلال الأسبوع:
+${commentsSnippet || 'تناقش الطلاب حول أهمية الموضوع من جوانبه المختلفة.'}
+
+المطلوب: صياغة "حصاد المناظرة الفكرية" (Debate Harvest Summary) كتقرير ختامي ملهم للطلاب والمعلمين قبل أرشفة الموضوع.
+أخرج الإجابة بتنسيق JSON حصراً:
+{
+  "keyTakeaway": "خلاصة الحكمة الكبرى التي اتفق عليها العقل الجمعي للطلاب (فقرة من 3 أسطر)",
+  "proHighlights": "أقوى حجة قدمها الفريق الداعم وكيف أثرت النقاش",
+  "conHighlights": "أقوى حجة قدمها الفريق المعارض وكيف أظهرت زاوية أخرى مهمة",
+  "philosophicalMoral": "درس قيمي مستفاد حول قبول التنوع وأدب الحوار المشرفي",
+  "honoredStudents": ["اسم الطالب الأكثر إقناعاً 1", "اسم الطالب الأكثر إقناعاً 2"]
+}`;
+
+  if (groqKey) {
+    try {
+      const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.5,
+          max_tokens: 600,
+          response_format: { type: "json_object" }
+        })
+      }, 7000);
+      if (res.ok) {
+        const data = await res.json();
+        const txt = data.choices?.[0]?.message?.content;
+        if (txt) {
+          const parsed = JSON.parse(txt);
+          if (parsed.keyTakeaway) return parsed;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.5,
+                maxOutputTokens: 600,
+                responseMimeType: "application/json"
+              }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.keyTakeaway) return parsed;
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  return {
+    keyTakeaway: "أظهرت مناقشات طلاب مشيرفة نضجاً فكرياً عالياً؛ حيث اتضح أن لكل مسألة وجهين يكمل أحدهما الآخر، وأن النجاح يكمن في إيجاد التوازن الإيجابي دون إفراط أو تفريط.",
+    proHighlights: "التأكيد على أهمية الراحة والنشاطات الاستكشافية في بناء الشخصية السوية.",
+    conHighlights: "ضرورة التدريب المستمر لتثبيت المهارات الأساسية وبناء الانضباط الذاتي.",
+    philosophicalMoral: "الاختلاف في الرأي هو مرآة لتعدد العقول، وأعظم مناظرة هي التي تنتهي باحترام متبادل وفهم أعمق.",
+    honoredStudents: comments.slice(0, 3).map(c => c.studentName).filter(Boolean)
+  };
+};
