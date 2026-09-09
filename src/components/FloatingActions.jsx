@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 
 const FloatingActions = () => {
   const [scrollTopVisible, setScrollTopVisible] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone === true;
+    setIsStandalone(standalone);
+
     const toggleVisibility = () => {
       if (window.scrollY > 300) {
         setScrollTopVisible(true);
@@ -23,8 +28,25 @@ const FloatingActions = () => {
     });
   };
 
+  const handlePwaClick = () => {
+    window.dispatchEvent(new CustomEvent('trigger-pwa-install'));
+  };
+
   return (
     <>
+      {/* Floating PWA Install App Button */}
+      {!isStandalone && (
+        <button 
+          className="pwa-float-btn"
+          onClick={handlePwaClick}
+          aria-label="تثبيت تطبيق مدرسة مشيرفة"
+          title="تثبيت تطبيق المدرسة 📱"
+        >
+          <i className="fas fa-mobile-alt"></i>
+          <span className="pwa-float-badge">تطبيق</span>
+        </button>
+      )}
+
       {/* Floating WhatsApp Button */}
       <a 
         href="https://wa.me/972501234567" 

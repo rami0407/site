@@ -1,0 +1,178 @@
+/* PWA Install Banner Styling */
+.pwa-install-banner-wrapper {
+  position: fixed;
+  bottom: 85px;
+  left: 20px;
+  z-index: 99999;
+  max-width: 420px;
+  width: calc(100% - 40px);
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pwa-install-card {
+  position: relative;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #2563eb 100%);
+  color: #ffffff;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 35px rgba(30, 58, 138, 0.35), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  direction: rtl;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.pwa-close-btn {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.pwa-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: rotate(90deg);
+}
+
+.pwa-content-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding-left: 20px;
+}
+
+.pwa-app-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.pwa-text-info {
+  flex: 1;
+}
+
+.pwa-app-title {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pwa-app-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #e0e7ff;
+  opacity: 0.95;
+}
+
+.pwa-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pwa-btn-install {
+  flex: 1;
+  background: #fbbf24;
+  color: #1e3a8a;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+  transition: all 0.2s ease;
+}
+
+.pwa-btn-install:hover {
+  background: #f59e0b;
+  transform: translateY(-1px);
+}
+
+.pwa-btn-later {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pwa-btn-later:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* iOS Instructions */
+.pwa-ios-instructions {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pwa-ios-instructions ol {
+  margin: 6px 0 10px 0;
+  padding-right: 18px;
+}
+
+.pwa-ios-instructions li {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.pwa-btn-done {
+  width: 100%;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 7px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .pwa-install-banner-wrapper {
+    bottom: 75px;
+    left: 12px;
+    width: calc(100% - 24px);
+  }
+}

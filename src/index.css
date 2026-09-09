@@ -2193,6 +2193,41 @@ textarea.form-input {
   box-shadow: var(--shadow-lg);
 }
 
+.pwa-float-btn {
+  position: fixed;
+  bottom: 160px;
+  left: 24px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+  z-index: 9999;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pwa-float-btn:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.55);
+}
+
+.pwa-float-badge {
+  font-size: 8.5px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 1px;
+  color: #fbbf24;
+  font-family: 'Tajawal', sans-serif;
+}
+
 /* Event Detail Modal (Calendar) */
 .modal-backdrop {
   position: fixed;

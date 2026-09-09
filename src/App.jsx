@@ -8,6 +8,7 @@ import ImportantLinks from './components/ImportantLinks';
 import ContactForm from './components/ContactForm';
 import FloatingActions from './components/FloatingActions';
 import AiAssistant from './components/AiAssistant';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
@@ -448,11 +449,14 @@ function App() {
         </div>
       </footer>
 
-      {/* Floating Helpers (WhatsApp & ScrollToTop) */}
+      {/* Floating Helpers (WhatsApp, ScrollToTop, PWA button) */}
       <FloatingActions />
 
       {/* Gemini AI Assistant Chatbot */}
       <AiAssistant />
+
+      {/* PWA Mobile App Installation Prompt */}
+      <PwaInstallPrompt />
     </>
   );
 }

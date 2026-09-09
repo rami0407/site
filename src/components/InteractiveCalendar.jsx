@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { calendarEvents as fallbackEvents } from '../data/schoolData';
+import { getGoogleCalendarUrl, downloadIcsCalendar } from '../utils/calendarExport';
 
 const MONTH_NAMES_AR = [
   'كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران',
@@ -245,6 +246,59 @@ const InteractiveCalendar = () => {
                   <span>التصنيف: {CATEGORY_MAP[modalEvent.category].label}</span>
                 </div>
                 <p className="modal-desc">{modalEvent.desc}</p>
+
+                {/* Google Calendar & Phone Calendar Integration */}
+                <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.75rem' }}>
+                    <i className="fas fa-bell" style={{ marginLeft: '6px', color: '#2563eb' }}></i> حفظ الموعد وتفعيل التذكير في هاتفك:
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <a 
+                      href={getGoogleCalendarUrl(modalEvent)} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      style={{
+                        flex: '1',
+                        minWidth: '160px',
+                        padding: '0.6rem 0.9rem',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: '#ffffff',
+                        color: '#ea4335',
+                        border: '1.5px solid #ea4335',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <i className="fab fa-google"></i> تقويم Google
+                    </a>
+                    <button 
+                      onClick={() => downloadIcsCalendar(modalEvent, `${modalEvent.title || 'event'}.ics`)}
+                      style={{
+                        flex: '1',
+                        minWidth: '160px',
+                        padding: '0.6rem 0.9rem',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: '#0f172a',
+                        color: '#ffffff',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <i className="fas fa-calendar-plus"></i> تقويم الهاتف (Apple/Samsung)
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { calendarEvents as fallbackEvents } from '../data/schoolData';
+import { getGoogleCalendarUrl, downloadIcsCalendar } from '../utils/calendarExport';
 import './CalendarPage.css';
 
 const MONTH_NAMES_AR = [
@@ -220,9 +221,18 @@ const CalendarPage = () => {
                 </button>
               </div>
 
-              <button className="btn-today-shortcut" onClick={resetToToday}>
-                <i className="fas fa-calendar-day"></i> اليوم
-              </button>
+              <div className="calendar-toolbar-actions">
+                <button 
+                  className="btn-export-all-ics" 
+                  onClick={() => downloadIcsCalendar(events, 'رزنامة_مدرسة_مشيرفة_الابتدائية.ics')}
+                  title="تنزيل الروزنامة كاملة لتقويم الهاتف"
+                >
+                  <i className="fas fa-calendar-alt"></i> 📥 تصدير الروزنامة لتقويم هاتفي
+                </button>
+                <button className="btn-today-shortcut" onClick={resetToToday}>
+                  <i className="fas fa-calendar-day"></i> اليوم
+                </button>
+              </div>
             </div>
 
             {/* Calendar Grid Header (Days of week) */}
@@ -290,8 +300,18 @@ const CalendarPage = () => {
                     
                     <div className="event-card-footer">
                       <span className="btn-view-details">
-                        <i className="fas fa-info-circle"></i> عرض كافة التفاصيل ➔
+                        <i className="fas fa-info-circle"></i> التفاصيل ➔
                       </span>
+                      <a 
+                        href={getGoogleCalendarUrl(evt)} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn-quick-google-cal"
+                        onClick={(e) => e.stopPropagation()}
+                        title="إضافة فورية لتقويم Google وتفعيل التذكير"
+                      >
+                        <i className="fab fa-google"></i> تقويم Google
+                      </a>
                     </div>
                   </div>
                 ))}
@@ -321,11 +341,34 @@ const CalendarPage = () => {
               </span>
               <h2 className="modal-title">{modalEvent.title}</h2>
               <span className="modal-date">
-                <i className="far fa-calendar-alt"></i> التاريخ: {modalEvent.date}
+                <i className="far fa-calendar-alt"></i> التاريخ: {modalEvent.date} {modalEvent.endDate && modalEvent.endDate !== modalEvent.date ? ` إلى ${modalEvent.endDate}` : ''}
               </span>
             </div>
             <div className="modal-body-text">
               {modalEvent.description || 'لا يوجد تفاصيل إضافية مضافة لهذا الحدث.'}
+            </div>
+
+            {/* Google Calendar & Phone Calendar Integration */}
+            <div className="modal-cal-sync-box">
+              <span className="cal-sync-heading">
+                <i className="fas fa-bell"></i> حفظ الموعد وتفعيل التذكير في هاتفك:
+              </span>
+              <div className="cal-sync-buttons">
+                <a 
+                  href={getGoogleCalendarUrl(modalEvent)} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn-cal-sync btn-sync-google"
+                >
+                  <i className="fab fa-google"></i> إضافة لتقويم Google
+                </a>
+                <button 
+                  className="btn-cal-sync btn-sync-apple"
+                  onClick={() => downloadIcsCalendar(modalEvent, `${modalEvent.title || 'event'}.ics`)}
+                >
+                  <i className="fas fa-calendar-plus"></i> تقويم الهاتف (Apple / Samsung)
+                </button>
+              </div>
             </div>
           </div>
         </div>
