@@ -141,6 +141,37 @@ const ReadersClubPage = () => {
     return () => unsub();
   }, []);
 
+  // Listen for hash action or custom events from Important Links
+  useEffect(() => {
+    const handleUrlAction = () => {
+      const hash = window.location.hash || '';
+      if (hash.includes('action=book-buddy') || hash.includes('open-book-buddy')) {
+        setActiveBuddyBook({ title: '', author: '' });
+        setShowBookBuddyModal(true);
+      } else if (hash.includes('action=story-studio') || hash.includes('open-story-studio')) {
+        setShowStoryStudioModal(true);
+      }
+    };
+    handleUrlAction();
+    window.addEventListener('hashchange', handleUrlAction);
+
+    const onOpenBuddy = (e) => {
+      setActiveBuddyBook(e?.detail?.book || { title: '', author: '' });
+      setShowBookBuddyModal(true);
+    };
+    const onOpenStudio = () => {
+      setShowStoryStudioModal(true);
+    };
+    window.addEventListener('open-book-buddy', onOpenBuddy);
+    window.addEventListener('open-story-studio', onOpenStudio);
+
+    return () => {
+      window.removeEventListener('hashchange', handleUrlAction);
+      window.removeEventListener('open-book-buddy', onOpenBuddy);
+      window.removeEventListener('open-story-studio', onOpenStudio);
+    };
+  }, []);
+
   // New Log Form State
   const [studentName, setStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
   const [studentGrade, setStudentGrade] = useState('الصف الرابع');
@@ -411,51 +442,6 @@ const ReadersClubPage = () => {
               >
                 <i className="fas fa-book-reader" style={{ fontSize: '1.25rem' }}></i>
                 <span>سجّل قصة قرأتها في رحلتك 🌿</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveBuddyBook({ title: '', author: '' });
-                  setShowBookBuddyModal(true);
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '1rem 1.8rem',
-                  borderRadius: '20px',
-                  fontSize: '1.05rem',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  boxShadow: '0 8px 25px rgba(2, 132, 199, 0.4)'
-                }}
-              >
-                <i className="fas fa-comments" style={{ fontSize: '1.25rem', color: '#7dd3fc' }}></i>
-                <span>💬 حوار مع المحاور القرائي الذكي 🦉</span>
-              </button>
-
-              <button
-                onClick={() => setShowStoryStudioModal(true)}
-                style={{
-                  background: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '1rem 1.8rem',
-                  borderRadius: '20px',
-                  fontSize: '1.05rem',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  boxShadow: '0 8px 25px rgba(147, 51, 234, 0.4)'
-                }}
-              >
-                <i className="fas fa-feather-alt" style={{ fontSize: '1.25rem', color: '#f5d0fe' }}></i>
-                <span>✍️ مختبر الأديب الصغير (تأليف قصة) 🚀</span>
               </button>
 
               <button

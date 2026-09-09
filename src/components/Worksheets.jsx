@@ -680,56 +680,6 @@ const Worksheets = ({ isStandalone }) => {
           </div>
         )}
 
-        {/* Socratic Homework Helper Student Card */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-          borderRadius: '24px',
-          padding: '1.4rem 2rem',
-          color: 'white',
-          marginBottom: '2.5rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1.25rem',
-          boxShadow: '0 12px 30px rgba(37, 99, 235, 0.3)',
-          border: '2px solid rgba(255, 255, 255, 0.15)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
-            <span style={{ fontSize: '2.4rem', background: 'rgba(255,255,255,0.2)', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>🦉</span>
-            <div>
-              <h4 style={{ margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 900, color: '#ffffff' }}>
-                المعلم السقراطي الذكي لمساعدتك في فهم الواجبات 💡✨
-              </h4>
-              <p style={{ margin: 0, fontSize: '0.92rem', color: '#dbeafe', lineHeight: 1.6 }}>
-                هل تقف أمام مسألة في الحساب أو العلوم ولا تعرف كيف تبدأ؟ اسأل معلمك السقراطي ليفكر معك خطوة بخطوة حتى تكتشف الحل بنفسك!
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsSocraticModalOpen(true)}
-            style={{
-              background: '#fbbf24',
-              color: '#1e3a8a',
-              border: 'none',
-              padding: '0.9rem 1.8rem',
-              borderRadius: '16px',
-              fontSize: '1rem',
-              fontWeight: 900,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              boxShadow: '0 4px 15px rgba(251, 191, 36, 0.4)',
-              transition: 'all 0.2s'
-            }}
-          >
-            <i className="fas fa-brain"></i>
-            <span>ابدأ التفكير مع المعلم السقراطي ➔</span>
-          </button>
-        </div>
-
         {/* TEACHER PERSONAL WORKSPACE / DASHBOARD SECTION (When logged in & tab is my_dashboard) */}
         {activeTeacherSession && teacherViewTab === 'my_dashboard' && (
           <div style={{ background: '#ffffff', border: '2px solid #3b82f6', borderRadius: '24px', padding: '2rem', marginBottom: '2.5rem', boxShadow: '0 15px 40px rgba(59, 130, 246, 0.15)' }}>

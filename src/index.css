@@ -1682,6 +1682,12 @@ button, input, textarea, select {
   border-right-color: var(--primary);
 }
 
+.link-card.ai-highlight-card:hover {
+  border-right-color: #7c3aed !important;
+  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22) !important;
+  transform: translateY(-4px) !important;
+}
+
 .link-icon {
   width: 58px;
   height: 58px;
