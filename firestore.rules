@@ -311,6 +311,18 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
+    match /student_dismissals/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 🚪 جدول مواعيد وزوار المدرسة
+    match /teacher_appointments/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
     // ==========================================
     // 8. DEFAULT CATCH-ALL (DENY BY DEFAULT)
     // ==========================================

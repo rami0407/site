@@ -58,6 +58,7 @@ const DebateArenaPage = lazy(() => import('./components/DebateArenaPage'));
 const VirtualMuseumPage = lazy(() => import('./components/VirtualMuseumPage'));
 const LostAndFoundPage = lazy(() => import('./components/LostAndFoundPage'));
 const FamilyChallengePage = lazy(() => import('./components/FamilyChallengePage'));
+const StudentDismissalPage = lazy(() => import('./components/StudentDismissalPage'));
 
 
 function App() {
@@ -362,7 +363,17 @@ function App() {
   const isCalendarView = currentHash.includes('calendar');
   const isTasbihView = currentHash.includes('tasbih');
   const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
+  const isStudentDismissalView = currentHash.includes('student-dismissal') || currentHash.includes('tasreeh') || currentHash.includes('dismissal');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
+
+  if (isStudentDismissalView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <StudentDismissalPage />
+      </Suspense>
+    );
+  }
 
   if (isVirtualMuseumView) {
     return (

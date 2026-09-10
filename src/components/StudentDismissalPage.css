@@ -1,0 +1,361 @@
+/* Student Dismissal Page Styling */
+.dismissal-page-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  direction: rtl;
+  font-family: 'Tajawal', sans-serif;
+  padding: clamp(1.5rem, 4vw, 3rem) 1rem 4rem 1rem;
+}
+
+.dismissal-content-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.dismissal-hero-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0284c7 100%);
+  border-radius: 28px;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+  color: #ffffff;
+  box-shadow: 0 15px 35px rgba(2, 132, 199, 0.25);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.dismissal-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.35rem 1rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin-bottom: 0.8rem;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dismissal-hero-title {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 900;
+  margin: 0 0 0.6rem 0;
+}
+
+.dismissal-hero-desc {
+  font-size: 1.05rem;
+  color: #bae6fd;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.6;
+}
+
+.dismissal-hero-actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.dismissal-hero-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.dismissal-hero-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.dismissal-form-card {
+  background: #ffffff;
+  border-radius: 26px;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.dismissal-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.dismissal-section-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.dismissal-section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.dismissal-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.dismissal-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dismissal-field-label {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dismissal-field-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+}
+
+.dismissal-field-input:focus {
+  outline: none;
+  border-color: #0284c7;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+}
+
+.dismissal-gender-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.dismissal-gender-btn {
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.dismissal-gender-btn.active.male {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+.dismissal-gender-btn.active.female {
+  background: #fce7f3;
+  border-color: #ec4899;
+  color: #be185d;
+}
+
+.dismissal-submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 16px;
+  font-weight: 900;
+  font-size: 1.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.35);
+  transition: all 0.25s ease;
+  font-family: inherit;
+  margin-top: 1rem;
+}
+
+.dismissal-submit-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(16, 185, 129, 0.45);
+}
+
+/* Digital Gate Pass Ticket */
+.gate-pass-ticket-card {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+  border: 2px dashed #10b981;
+  position: relative;
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: ticketPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ticketPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.gate-pass-header-badge {
+  background: #ecfdf5;
+  color: #059669;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1.25rem;
+  border-radius: 50px;
+  font-weight: 900;
+  font-size: 1rem;
+  border: 1px solid #a7f3d0;
+  margin-bottom: 1rem;
+}
+
+.gate-pass-code {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #0f172a;
+  background: #f1f5f9;
+  padding: 0.5rem 1.5rem;
+  border-radius: 14px;
+  display: inline-block;
+  margin: 0.5rem 0 1.25rem 0;
+  font-family: monospace;
+  border: 1px solid #cbd5e1;
+}
+
+.gate-pass-details-table {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 1.75rem auto;
+  border-collapse: collapse;
+  text-align: right;
+}
+
+.gate-pass-details-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.95rem;
+}
+
+.gate-pass-details-table td:first-child {
+  font-weight: 800;
+  color: #64748b;
+  width: 35%;
+}
+
+.gate-pass-details-table td:last-child {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gate-pass-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.gate-pass-status-pill.pending {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.gate-pass-status-pill.exited {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.gate-pass-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gate-pass-action-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.gate-pass-btn-print {
+  background: #0284c7;
+  color: white;
+}
+
+.gate-pass-btn-new {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+@media print {
+  .dismissal-hero-card,
+  .dismissal-form-card,
+  .gate-pass-actions,
+  nav, footer {
+    display: none !important;
+  }
+  .gate-pass-ticket-card {
+    box-shadow: none;
+    border: 2px solid #000;
+    margin: 0 auto;
+  }
+}

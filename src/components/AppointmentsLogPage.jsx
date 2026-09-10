@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { 
   collection, 
@@ -33,15 +33,21 @@ const AppointmentsLogPage = () => {
     return `${year}-${month}-${day}`;
   };
 
+  // Main portal mode: 'dismissals' (تسريح الطلاب) or 'visitors' (المواعيد والزوار)
+  const [activePortalTab, setActivePortalTab] = useState('dismissals');
+
+  // Shared Date Filter
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [viewAllDates, setViewAllDates] = useState(false);
+
+  // Visitors State
   const [appointments, setAppointments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTeacher, setFilterTeacher] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all'); // all, entered, waiting
 
-  // Quick Walk-in Modal
+  // Quick Walk-in Modal for Visitors
   const [showAddModal, setShowAddModal] = useState(false);
   const [newParentName, setNewParentName] = useState('');
   const [newParentPhone, setNewParentPhone] = useState('');
@@ -56,9 +62,82 @@ const AppointmentsLogPage = () => {
     return `${h}:${m}`;
   });
 
-  // Real-time Firestore Listener
+  // Student Dismissals State
+  const [dismissals, setDismissals] = useState([]);
+  const [isLoadingDismissals, setIsLoadingDismissals] = useState(true);
+  const [dismissalSearch, setDismissalSearch] = useState('');
+  const [dismissalStatusFilter, setDismissalStatusFilter] = useState('all'); // all, waiting, dismissed
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const isFirstDismissalLoad = useRef(true);
+
+  // Sound chime synthesizer
+  const playAlertChime = () => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.55);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.55);
+    } catch (e) {
+      console.log('Audio chime error or blocked by browser policy:', e);
+    }
+  };
+
+  // Real-time Firestore Listener for Student Dismissals
   useEffect(() => {
-    setIsLoading(true);
+    setIsLoadingDismissals(true);
+    const dismissalsRef = collection(db, 'student_dismissals');
+    const q = query(dismissalsRef, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setDismissals(list);
+      setIsLoadingDismissals(false);
+
+      // Play alert if new dismissal was just added
+      if (!isFirstDismissalLoad.current) {
+        let hasNewWaiting = false;
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added' && change.doc.data().status !== 'dismissed') {
+            hasNewWaiting = true;
+          }
+        });
+        if (hasNewWaiting) {
+          playAlertChime();
+        }
+      }
+      isFirstDismissalLoad.current = false;
+    }, (err) => {
+      console.error('Error listening to dismissals:', err);
+      // Fallback one-time fetch
+      getDocs(dismissalsRef).then((snap) => {
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        setDismissals(list);
+        setIsLoadingDismissals(false);
+      }).catch(e => {
+        console.error('Dismissals fetch error:', e);
+        setIsLoadingDismissals(false);
+      });
+    });
+
+    return () => unsubscribe();
+  }, [soundEnabled]);
+
+  // Real-time Firestore Listener for Appointments
+  useEffect(() => {
+    setIsLoadingAppointments(true);
     const appRef = collection(db, 'teacher_appointments');
     const q = query(appRef, orderBy('createdAt', 'desc'));
 
@@ -68,18 +147,17 @@ const AppointmentsLogPage = () => {
         list.push({ id: docSnap.id, ...docSnap.data() });
       });
       setAppointments(list);
-      setIsLoading(false);
+      setIsLoadingAppointments(false);
     }, (err) => {
       console.error('Error listening to appointments:', err);
-      // Fallback one-time fetch
       getDocs(appRef).then((snap) => {
         const list = [];
         snap.forEach(d => list.push({ id: d.id, ...d.data() }));
         setAppointments(list);
-        setIsLoading(false);
+        setIsLoadingAppointments(false);
       }).catch(e => {
         console.error('Fallback fetch error:', e);
-        setIsLoading(false);
+        setIsLoadingAppointments(false);
       });
     });
 
@@ -116,20 +194,54 @@ const AppointmentsLogPage = () => {
     setSelectedDate(getTodayString());
   };
 
-  // Toggle Entry Status (Entered vs Not Entered)
+  // Dismissal Confirm Handler (Guard confirms student has exited through gate)
+  const handleConfirmStudentExit = async (dismissal) => {
+    const confirmMsg = `تأكيد خروج الطالب: ${dismissal.studentName}\nبرفقة: ${dismissal.companionName}\n\nهل غادر الطالب بوابة المدرسة الآن؟`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const now = new Date();
+      const timeFormatted = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const ref = doc(db, 'student_dismissals', dismissal.id);
+      await updateDoc(ref, {
+        status: 'dismissed',
+        actualExitTime: timeFormatted,
+        confirmedAt: new Date().toISOString(),
+        confirmedBy: 'حارس البوابة'
+      });
+    } catch (err) {
+      console.error('Error confirming student exit:', err);
+      alert('حدث خطأ أثناء تسجيل خروج الطالب.');
+    }
+  };
+
+  // Revert Student Dismissal
+  const handleRevertStudentExit = async (dismissalId) => {
+    if (!window.confirm('هل تريد التراجع عن تأكيد خروج الطالب وإعادته لحالة الانتظار؟')) return;
+    try {
+      const ref = doc(db, 'student_dismissals', dismissalId);
+      await updateDoc(ref, {
+        status: 'waiting',
+        actualExitTime: null,
+        confirmedAt: null
+      });
+    } catch (err) {
+      console.error('Error reverting dismissal:', err);
+    }
+  };
+
+  // Toggle Entry Status for Visitor Appointments
   const handleToggleEntry = async (appointment) => {
     try {
       const appDocRef = doc(db, 'teacher_appointments', appointment.id);
       const isCurrentlyEntered = appointment.entryStatus === 'entered';
 
       if (isCurrentlyEntered) {
-        // Toggle back to waiting
         await updateDoc(appDocRef, {
           entryStatus: 'waiting',
           enteredAt: null
         });
       } else {
-        // Mark as entered with current timestamp
         const now = new Date();
         const timeFormatted = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
         await updateDoc(appDocRef, {
@@ -187,21 +299,44 @@ const AppointmentsLogPage = () => {
     }
   };
 
-  // Filtered List
+  // Filtered Dismissals List
+  const filteredDismissals = dismissals.filter((item) => {
+    if (!viewAllDates && item.date !== selectedDate) {
+      return false;
+    }
+    if (dismissalStatusFilter === 'waiting' && item.status === 'dismissed') return false;
+    if (dismissalStatusFilter === 'dismissed' && item.status !== 'dismissed') return false;
+
+    if (dismissalSearch.trim()) {
+      const q = dismissalSearch.toLowerCase();
+      const sName = (item.studentName || '').toLowerCase();
+      const cName = (item.companionName || '').toLowerCase();
+      const sClass = (item.studentClass || '').toLowerCase();
+      const teacher = (item.teacherName || '').toLowerCase();
+      const pass = (item.passCode || '').toLowerCase();
+      const reason = (item.reason || '').toLowerCase();
+      if (!sName.includes(q) && !cName.includes(q) && !sClass.includes(q) && !teacher.includes(q) && !pass.includes(q) && !reason.includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  }).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+  // Calculate day dismissal stats
+  const dayDismissals = dismissals.filter(d => d.date === selectedDate);
+  const totalDismissalsCount = dayDismissals.length;
+  const waitingDismissalsCount = dayDismissals.filter(d => d.status !== 'dismissed').length;
+  const completedDismissalsCount = dayDismissals.filter(d => d.status === 'dismissed').length;
+
+  // Filtered Appointments List
   const filteredAppointments = appointments.filter((app) => {
-    // 1. Date match
     if (!viewAllDates && app.date !== selectedDate) {
       return false;
     }
-
-    // 2. Status match
     if (filterStatus === 'entered' && app.entryStatus !== 'entered') return false;
     if (filterStatus === 'waiting' && app.entryStatus === 'entered') return false;
-
-    // 3. Teacher match
     if (filterTeacher !== 'all' && app.teacherNameAr !== filterTeacher) return false;
 
-    // 4. Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const pName = (app.parentName || '').toLowerCase();
@@ -213,29 +348,23 @@ const AppointmentsLogPage = () => {
         return false;
       }
     }
-
     return true;
-  }).sort((a, b) => {
-    // Sort by timeSlot
-    return (a.timeSlot || '').localeCompare(b.timeSlot || '');
-  });
+  }).sort((a, b) => (a.timeSlot || '').localeCompare(b.timeSlot || ''));
 
-  // Calculate day stats
+  // Calculate day appointment stats
   const dayAppointments = appointments.filter(a => a.date === selectedDate);
-  const totalDayCount = dayAppointments.length;
-  const enteredDayCount = dayAppointments.filter(a => a.entryStatus === 'entered').length;
-  const waitingDayCount = totalDayCount - enteredDayCount;
+  const totalDayAppointments = dayAppointments.length;
+  const enteredDayAppointments = dayAppointments.filter(a => a.entryStatus === 'entered').length;
+  const waitingDayAppointments = totalDayAppointments - enteredDayAppointments;
 
-  // Extract unique teachers for filter
   const uniqueTeachers = Array.from(new Set(appointments.map(a => a.teacherNameAr).filter(Boolean)));
-
   const isToday = selectedDate === getTodayString();
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '1.5rem 1rem 4rem', fontFamily: 'Tajawal, sans-serif', direction: 'rtl' }}>
       
       {/* Top Container */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
         
         {/* Header Bar */}
         <div style={{
@@ -248,32 +377,80 @@ const AppointmentsLogPage = () => {
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          justifyContent: 'between',
+          justifyContent: 'space-between',
           gap: '1.25rem'
         }}>
           <div style={{ flex: '1 1 300px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '0.35rem 0.85rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8', marginBottom: '0.5rem' }}>
               <i className="fas fa-shield-alt"></i>
-              <span>بوابة الدخول والاستقبال اليومي</span>
+              <span>بوابة الدخول والاستقبال ومراقبة الخروج</span>
               <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }}></span>
             </div>
             <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 0.4rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span>سجل مواعيد وزوار المدرسة 🏫</span>
+              <span>لوحة حارس المدرسة والأمن 🛡️</span>
             </h1>
             <p style={{ margin: 0, fontSize: '0.95rem', color: '#94a3b8', fontWeight: 600 }}>
-              متابعة حية ومباشرة لدخول أولياء الأمور والزوار حسب المواعيد المعتمدة
+              متابعة فورية لأذونات تسريح الطلاب وحجوزات المواعيد والزوار اليومية
             </p>
           </div>
 
           {/* Header Quick Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            
+            {/* Sound Toggle */}
+            <button
+              onClick={() => {
+                setSoundEnabled(!soundEnabled);
+                if (!soundEnabled) playAlertChime();
+              }}
+              style={{
+                background: soundEnabled ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                color: soundEnabled ? '#4ade80' : '#f87171',
+                border: `1px solid ${soundEnabled ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                padding: '0.75rem 1rem',
+                borderRadius: '14px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              title={soundEnabled ? 'صوت التنبيه مفعل' : 'صوت التنبيه معطل'}
+            >
+              <i className={`fas ${soundEnabled ? 'fa-bell' : 'fa-bell-slash'}`}></i>
+              <span>{soundEnabled ? 'التنبيه الصوتي شغال 🔔' : 'الصوت مكتوم 🔕'}</span>
+            </button>
+
+            {/* Link to Dismissal Form (for teachers) */}
+            <a
+              href="#/student-dismissal"
+              style={{
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: 'white',
+                textDecoration: 'none',
+                padding: '0.75rem 1.15rem',
+                borderRadius: '14px',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)'
+              }}
+            >
+              <i className="fas fa-file-signature"></i>
+              <span>تسجيل إذن تسريح 🏃‍♂️</span>
+            </a>
+
+            {/* Quick Walkin */}
             <button
               onClick={() => setShowAddModal(true)}
               style={{
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: 'white',
                 border: 'none',
-                padding: '0.75rem 1.25rem',
+                padding: '0.75rem 1.15rem',
                 borderRadius: '14px',
                 fontWeight: 800,
                 fontSize: '0.9rem',
@@ -285,7 +462,7 @@ const AppointmentsLogPage = () => {
               }}
             >
               <i className="fas fa-user-plus"></i>
-              <span>تسجيل زائر طارئ ➕</span>
+              <span>تسجيل زائر ➕</span>
             </button>
 
             <button
@@ -303,31 +480,132 @@ const AppointmentsLogPage = () => {
                 alignItems: 'center',
                 gap: '0.5rem'
               }}
-              title="طباعة كشف المواعيد الرسمي"
+              title="طباعة الكشف الرسمي"
             >
               <i className="fas fa-print"></i>
-              <span className="hide-on-mobile">طباعة الكشف 🖨️</span>
+              <span>طباعة 🖨️</span>
             </button>
+          </div>
+        </div>
 
-            <a
-              href="#/appointments"
-              style={{
-                background: 'rgba(255, 255, 255, 0.12)',
-                color: 'white',
-                textDecoration: 'none',
-                padding: '0.75rem 1.1rem',
+        {/* PRIMARY MODE SWITCHER: DISMISSALS VS VISITORS */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1rem',
+          marginBottom: '1.5rem'
+        }}>
+          {/* TAB 1: STUDENT DISMISSALS */}
+          <button
+            onClick={() => setActivePortalTab('dismissals')}
+            style={{
+              padding: '1.1rem 1.5rem',
+              borderRadius: '20px',
+              border: activePortalTab === 'dismissals' ? '3px solid #0284c7' : '2px solid #e2e8f0',
+              background: activePortalTab === 'dismissals' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: activePortalTab === 'dismissals' ? '0 8px 20px rgba(2, 132, 199, 0.18)' : '0 2px 8px rgba(0,0,0,0.03)',
+              transition: 'all 0.2s ease',
+              textAlign: 'right'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
                 borderRadius: '14px',
-                fontWeight: 800,
-                fontSize: '0.9rem',
+                background: activePortalTab === 'dismissals' ? '#0284c7' : '#f1f5f9',
+                color: activePortalTab === 'dismissals' ? 'white' : '#64748b',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <i className="fas fa-calendar-plus"></i>
-              <span className="hide-on-mobile">حجز موعد</span>
-            </a>
-          </div>
+                justifyContent: 'center',
+                fontSize: '1.4rem'
+              }}>
+                <i className="fas fa-walking"></i>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: activePortalTab === 'dismissals' ? '#0369a1' : '#1e293b' }}>
+                  أذونات تسريح وخروج الطلاب 🏃‍♂️
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+                  تأكيد خروج الطلاب المسرحين مع الأولياء
+                </p>
+              </div>
+            </div>
+
+            {waitingDismissalsCount > 0 && (
+              <span style={{
+                background: '#ea580c',
+                color: 'white',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '50px',
+                fontWeight: 900,
+                fontSize: '0.85rem',
+                boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)',
+                animation: 'pulse 1.8s infinite'
+              }}>
+                {waitingDismissalsCount} بانتظار الخروج ⏳
+              </span>
+            )}
+          </button>
+
+          {/* TAB 2: VISITORS & APPOINTMENTS */}
+          <button
+            onClick={() => setActivePortalTab('visitors')}
+            style={{
+              padding: '1.1rem 1.5rem',
+              borderRadius: '20px',
+              border: activePortalTab === 'visitors' ? '3px solid #10b981' : '2px solid #e2e8f0',
+              background: activePortalTab === 'visitors' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' : 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: activePortalTab === 'visitors' ? '0 8px 20px rgba(16, 185, 129, 0.18)' : '0 2px 8px rgba(0,0,0,0.03)',
+              transition: 'all 0.2s ease',
+              textAlign: 'right'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: activePortalTab === 'visitors' ? '#10b981' : '#f1f5f9',
+                color: activePortalTab === 'visitors' ? 'white' : '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.4rem'
+              }}>
+                <i className="fas fa-address-book"></i>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: activePortalTab === 'visitors' ? '#047857' : '#1e293b' }}>
+                  سجل الزوار والمواعيد 🏫
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+                  حجوزات لقاء المعلمين والزيارات الطارئة
+                </p>
+              </div>
+            </div>
+
+            {waitingDayAppointments > 0 && (
+              <span style={{
+                background: '#047857',
+                color: 'white',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '50px',
+                fontWeight: 900,
+                fontSize: '0.85rem'
+              }}>
+                {waitingDayAppointments} في الانتظار
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Date Selector Navigation Bar */}
@@ -348,40 +626,34 @@ const AppointmentsLogPage = () => {
                 style={{
                   background: '#f1f5f9',
                   border: '1px solid #cbd5e1',
-                  borderRadius: '12px',
-                  padding: '0.6rem 0.9rem',
-                  fontWeight: 800,
-                  fontSize: '0.9rem',
+                  borderRadius: '10px',
+                  padding: '0.55rem 0.95rem',
                   cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  color: '#334155'
+                  gap: '0.3rem'
                 }}
               >
-                <i className="fas fa-arrow-right"></i>
+                <i className="fas fa-chevron-right"></i>
                 <span>اليوم السابق</span>
               </button>
 
               <button
                 onClick={goToToday}
                 style={{
-                  background: isToday && !viewAllDates ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#f8fafc',
-                  color: isToday && !viewAllDates ? 'white' : '#0284c7',
-                  border: `2px solid ${isToday && !viewAllDates ? '#0284c7' : '#bae6fd'}`,
-                  borderRadius: '12px',
-                  padding: '0.6rem 1.25rem',
-                  fontWeight: 900,
-                  fontSize: '0.95rem',
+                  background: isToday && !viewAllDates ? '#0284c7' : '#e0f2fe',
+                  color: isToday && !viewAllDates ? 'white' : '#0369a1',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '0.55rem 1.1rem',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  boxShadow: isToday && !viewAllDates ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none'
+                  fontWeight: 800,
+                  fontSize: '0.88rem'
                 }}
               >
-                <i className="fas fa-calendar-check"></i>
-                <span>مواعيد اليوم 🌟</span>
+                اليوم الحاضر 🎯
               </button>
 
               <button
@@ -389,41 +661,40 @@ const AppointmentsLogPage = () => {
                 style={{
                   background: '#f1f5f9',
                   border: '1px solid #cbd5e1',
-                  borderRadius: '12px',
-                  padding: '0.6rem 0.9rem',
-                  fontWeight: 800,
-                  fontSize: '0.9rem',
+                  borderRadius: '10px',
+                  padding: '0.55rem 0.95rem',
                   cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  color: '#334155'
+                  gap: '0.3rem'
                 }}
               >
                 <span>اليوم التالي</span>
-                <i className="fas fa-arrow-left"></i>
+                <i className="fas fa-chevron-left"></i>
               </button>
 
               <button
                 onClick={() => setViewAllDates(!viewAllDates)}
                 style={{
-                  background: viewAllDates ? '#475569' : '#f1f5f9',
+                  background: viewAllDates ? '#475569' : '#f8fafc',
                   color: viewAllDates ? 'white' : '#475569',
                   border: '1px solid #cbd5e1',
-                  borderRadius: '12px',
-                  padding: '0.6rem 1rem',
+                  borderRadius: '10px',
+                  padding: '0.55rem 1rem',
+                  cursor: 'pointer',
                   fontWeight: 800,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer'
+                  fontSize: '0.85rem'
                 }}
               >
-                {viewAllDates ? '✓ جاري عرض كل المواعيد' : '📋 عرض كل المواعيد'}
+                {viewAllDates ? 'عرض اليوم فقط 📅' : 'عرض كافة الأيام 🌐'}
               </button>
             </div>
 
-            {/* Date Picker Input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b' }}>اختر تاريخ:</span>
+            {/* Date Display */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 700 }}>التاريخ المختار:</span>
               <input
                 type="date"
                 value={selectedDate}
@@ -434,603 +705,775 @@ const AppointmentsLogPage = () => {
                 style={{
                   border: '2px solid #cbd5e1',
                   borderRadius: '12px',
-                  padding: '0.55rem 0.85rem',
+                  padding: '0.5rem 0.9rem',
+                  fontFamily: 'inherit',
                   fontWeight: 800,
+                  fontSize: '0.95rem',
                   color: '#0f172a',
-                  outline: 'none',
+                  background: '#f8fafc',
                   cursor: 'pointer'
                 }}
               />
-            </div>
-
-          </div>
-
-          {/* Current Date Display Badge */}
-          <div style={{
-            marginTop: '1rem',
-            paddingTop: '0.85rem',
-            borderTop: '1px solid #f1f5f9',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.75rem'
-          }}>
-            <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <i className="fas fa-calendar-day" style={{ color: '#0284c7' }}></i>
-              <span>{viewAllDates ? 'جميع المواعيد المسجلة في المنظومة' : `كشف مواعيد: ${formatDateArabic(selectedDate)}`}</span>
-              {isToday && !viewAllDates && (
-                <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.6rem', borderRadius: '50px', border: '1px solid #86efac' }}>
-                  اليوم الحالي
-                </span>
-              )}
-            </div>
-
-            {/* Quick Stats */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569' }}>
-                👥 المجموع: <strong style={{ color: '#0284c7', fontSize: '1rem' }}>{viewAllDates ? appointments.length : totalDayCount}</strong>
-              </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569' }}>
-                ✅ دخلوا: <strong style={{ color: '#16a34a', fontSize: '1rem' }}>{viewAllDates ? appointments.filter(a => a.entryStatus === 'entered').length : enteredDayCount}</strong>
-              </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569' }}>
-                ⏳ بانتظارهم: <strong style={{ color: '#d97706', fontSize: '1rem' }}>{viewAllDates ? appointments.filter(a => a.entryStatus !== 'entered').length : waitingDayCount}</strong>
-              </div>
+              <span style={{
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.9rem'
+              }}>
+                {viewAllDates ? 'كافة السجلات' : formatDateArabic(selectedDate)}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Filter and Search Bar */}
-        <div style={{
-          background: 'white',
-          borderRadius: '18px',
-          padding: '1rem 1.25rem',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-          border: '1px solid #e2e8f0',
-          marginBottom: '1.5rem',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '1rem'
-        }}>
-          {/* Search Box */}
-          <div style={{ flex: '1 1 240px', position: 'relative' }}>
-            <i className="fas fa-search" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}></i>
-            <input
-              type="text"
-              placeholder="ابحث باسم ولي الأمر، الطالب، أو المعلم..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.65rem 2.5rem 0.65rem 1rem',
-                borderRadius: '12px',
-                border: '2px solid #e2e8f0',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-                outline: 'none'
-              }}
-            />
-          </div>
+        {/* ========================================================= */}
+        {/* SECTION 1: STUDENT DISMISSALS INTERFACE */}
+        {/* ========================================================= */}
+        {activePortalTab === 'dismissals' && (
+          <div>
+            {/* Quick Stats Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>إجمالي الطلاب المسرحين</span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', marginTop: '0.25rem' }}>
+                  {totalDismissalsCount} طالب
+                </div>
+              </div>
 
-          {/* Filter by Teacher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>المعلم:</span>
-            <select
-              value={filterTeacher}
-              onChange={(e) => setFilterTeacher(e.target.value)}
-              style={{
-                padding: '0.65rem 1rem',
-                borderRadius: '12px',
-                border: '2px solid #e2e8f0',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                color: '#1e293b',
-                outline: 'none',
-                background: 'white'
-              }}
-            >
-              <option value="all">جميع المعلمين والإدارة</option>
-              {uniqueTeachers.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
+              <div style={{ background: '#fff7ed', padding: '1.25rem', borderRadius: '18px', border: '2px solid #fed7aa', boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)' }}>
+                <span style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 800 }}>⏳ بانتظار الخروج عند البوابة</span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', marginTop: '0.25rem' }}>
+                  {waitingDismissalsCount} طالب
+                </div>
+              </div>
 
-          {/* Filter by Entry Status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <button
-              onClick={() => setFilterStatus('all')}
-              style={{
-                padding: '0.5rem 0.85rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: filterStatus === 'all' ? '#0f172a' : '#f1f5f9',
-                color: filterStatus === 'all' ? 'white' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                cursor: 'pointer'
-              }}
-            >
-              الكل ({filteredAppointments.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus('waiting')}
-              style={{
-                padding: '0.5rem 0.85rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: filterStatus === 'waiting' ? '#d97706' : '#f1f5f9',
-                color: filterStatus === 'waiting' ? 'white' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                cursor: 'pointer'
-              }}
-            >
-              ⏳ قيد الانتظار
-            </button>
-            <button
-              onClick={() => setFilterStatus('entered')}
-              style={{
-                padding: '0.5rem 0.85rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: filterStatus === 'entered' ? '#16a34a' : '#f1f5f9',
-                color: filterStatus === 'entered' ? 'white' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                cursor: 'pointer'
-              }}
-            >
-              ✅ دخلوا المدرسة
-            </button>
-          </div>
-        </div>
-
-        {/* Loading Spinner */}
-        {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-            <i className="fas fa-circle-notch fa-spin" style={{ fontSize: '2.5rem', color: '#0284c7', marginBottom: '1rem' }}></i>
-            <h3 style={{ fontWeight: 800, color: '#334155', margin: 0 }}>جاري تحميل جدول المواعيد والزوار...</h3>
-          </div>
-        ) : filteredAppointments.length === 0 ? (
-          /* Empty State */
-          <div style={{
-            background: 'white',
-            borderRadius: '24px',
-            padding: '4rem 2rem',
-            textAlign: 'center',
-            border: '2px dashed #cbd5e1',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-          }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#f0f9ff', color: '#0284c7', fontSize: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-              <i className="fas fa-calendar-check"></i>
+              <div style={{ background: '#f0fdf4', padding: '1.25rem', borderRadius: '18px', border: '2px solid #bbf7d0', boxShadow: '0 2px 8px rgba(22, 163, 74, 0.08)' }}>
+                <span style={{ fontSize: '0.85rem', color: '#15803d', fontWeight: 800 }}>✅ خرجوا من المدرسة</span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#16a34a', marginTop: '0.25rem' }}>
+                  {completedDismissalsCount} طالب
+                </div>
+              </div>
             </div>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.5rem' }}>
-              لا توجد مواعيد مسجلة في هذا اليوم
-            </h3>
-            <p style={{ color: '#64748b', fontSize: '0.95rem', maxWidth: '400px', margin: '0 auto 1.5rem auto', fontWeight: 600 }}>
-              {viewAllDates ? 'لا توجد أي حجوزات مطابقة للبحث' : `لم يتم حجز أي موعد بعد لتاريخ (${formatDateArabic(selectedDate)}).`}
-            </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              style={{
-                background: '#0284c7',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '12px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                fontSize: '0.95rem'
-              }}
-            >
-              تسجيل زائر جديد الآن ➕
-            </button>
-          </div>
-        ) : (
-          /* Appointments Cards List */
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {filteredAppointments.map((app) => {
-              const isEntered = app.entryStatus === 'entered';
 
-              return (
-                <div
-                  key={app.id}
+            {/* Dismissal Controls Bar */}
+            <div style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '1.25rem',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #e2e8f0',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem'
+            }}>
+              {/* Search Bar */}
+              <div style={{ flex: '1 1 260px', position: 'relative' }}>
+                <i className="fas fa-search" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}></i>
+                <input
+                  type="text"
+                  value={dismissalSearch}
+                  onChange={(e) => setDismissalSearch(e.target.value)}
+                  placeholder="ابحث باسم الطالب، الصف، المرافق، رمز التأكيد..."
                   style={{
-                    background: 'white',
-                    borderRadius: '20px',
-                    padding: '1.25rem 1.5rem',
-                    boxShadow: isEntered ? '0 2px 10px rgba(22, 163, 74, 0.08)' : '0 4px 15px rgba(0,0,0,0.04)',
-                    border: `2px solid ${isEntered ? '#86efac' : '#e2e8f0'}`,
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '1.25rem',
-                    transition: 'all 0.2s ease',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    width: '100%',
+                    padding: '0.65rem 2.6rem 0.65rem 1rem',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    fontFamily: 'inherit',
+                    background: '#f8fafc'
+                  }}
+                />
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setDismissalStatusFilter('all')}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: dismissalStatusFilter === 'all' ? '#0f172a' : '#f1f5f9',
+                    color: dismissalStatusFilter === 'all' ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
                   }}
                 >
-                  {/* Status Color Strip */}
-                  <div style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: '6px',
-                    background: isEntered ? '#22c55e' : '#f59e0b'
-                  }}></div>
+                  الكل ({filteredDismissals.length})
+                </button>
 
-                  {/* Left Side: Time and Visitor Details */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem', flex: '1 1 350px' }}>
-                    
-                    {/* Time Slot Badge */}
-                    <div style={{
-                      background: isEntered ? '#dcfce7' : '#eff6ff',
-                      border: `2px solid ${isEntered ? '#bbf7d0' : '#bfdbfe'}`,
-                      color: isEntered ? '#15803d' : '#1d4ed8',
-                      borderRadius: '16px',
-                      padding: '0.75rem 1rem',
-                      textAlign: 'center',
-                      minWidth: '100px',
-                      flexShrink: 0
-                    }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.2rem' }}>
-                        <i className="far fa-clock"></i> الساعة
-                      </div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 900, direction: 'ltr' }}>
-                        {app.timeSlot || '09:00'}
-                      </div>
-                      {viewAllDates && (
-                        <div style={{ fontSize: '0.7rem', fontWeight: 800, marginTop: '0.25rem', color: '#475569' }}>
-                          {app.date}
-                        </div>
-                      )}
-                    </div>
+                <button
+                  onClick={() => setDismissalStatusFilter('waiting')}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: dismissalStatusFilter === 'waiting' ? '#ea580c' : '#f1f5f9',
+                    color: dismissalStatusFilter === 'waiting' ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⏳ بانتظار الخروج
+                </button>
 
-                    {/* Visitor Info */}
-                    <div style={{ flex: '1' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
-                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
-                          {app.parentName}
-                        </h3>
+                <button
+                  onClick={() => setDismissalStatusFilter('dismissed')}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: dismissalStatusFilter === 'dismissed' ? '#16a34a' : '#f1f5f9',
+                    color: dismissalStatusFilter === 'dismissed' ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✅ خرجوا بالفعل
+                </button>
+              </div>
+            </div>
 
-                        {app.isWalkIn && (
-                          <span style={{ background: '#fef3c7', color: '#b45309', fontSize: '0.7rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: '50px', border: '1px solid #fde68a' }}>
-                            زائر طارئ
-                          </span>
-                        )}
+            {/* Dismissals Cards List */}
+            {isLoadingDismissals ? (
+              <div style={{ textAlign: 'center', padding: '4rem', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+                <i className="fas fa-circle-notch fa-spin" style={{ fontSize: '2.5rem', color: '#0284c7', marginBottom: '1rem' }}></i>
+                <h3 style={{ fontWeight: 800, color: '#334155', margin: 0 }}>جاري تحميل أذونات تسريح الطلاب...</h3>
+              </div>
+            ) : filteredDismissals.length === 0 ? (
+              <div style={{
+                background: 'white',
+                borderRadius: '24px',
+                padding: '4rem 2rem',
+                textAlign: 'center',
+                border: '2px dashed #cbd5e1'
+              }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#eff6ff', color: '#0284c7', fontSize: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                  <i className="fas fa-user-graduate"></i>
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.5rem' }}>
+                  لا توجد أذونات تسريح مسجلة
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.95rem', maxWidth: '400px', margin: '0 auto 1.5rem auto', fontWeight: 600 }}>
+                  {viewAllDates ? 'لا توجد نتائج مطابقة لبحثك.' : `لم يسجل أي مربي إذن تسريح لهذا اليوم (${formatDateArabic(selectedDate)}).`}
+                </p>
+                <a
+                  href="#/student-dismissal"
+                  style={{
+                    display: 'inline-block',
+                    background: '#0284c7',
+                    color: 'white',
+                    textDecoration: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  تسجيل إذن تسريح جديد 🏃‍♂️
+                </a>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '1.25rem' }}>
+                {filteredDismissals.map((item) => {
+                  const isDismissed = item.status === 'dismissed';
+                  const isBoy = item.gender === 'male';
 
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8' }}>
-                          #{app.ticketCode}
-                        </span>
-                      </div>
-
-                      {/* Student & Class */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#334155', fontWeight: 700, marginBottom: '0.4rem' }}>
-                        <span>🎓 الطالب: <strong>{app.studentName}</strong></span>
-                        <span style={{ color: '#cbd5e1' }}>|</span>
-                        <span style={{ background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.8rem', color: '#475569' }}>
-                          {app.studentClass || 'الصف غير محدد'}
-                        </span>
-                      </div>
-
-                      {/* Teacher / Host */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.35rem' }}>
-                        <i className="fas fa-chalkboard-teacher"></i>
-                        <span>اللقاء مع: <strong>{app.teacherNameAr}</strong></span>
-                        {app.meetingTopic && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span style={{ color: '#64748b', fontWeight: 600 }}>({app.meetingTopic})</span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Contact Quick Buttons */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
-                        {app.parentPhone && app.parentPhone !== 'غير مسجل' && (
-                          <>
-                            <a
-                              href={`tel:${app.parentPhone}`}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.35rem',
-                                color: '#0284c7',
-                                textDecoration: 'none',
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: '#f0f9ff',
-                                padding: '0.3rem 0.65rem',
-                                borderRadius: '8px',
-                                border: '1px solid #bae6fd'
-                              }}
-                            >
-                              <i className="fas fa-phone-alt"></i>
-                              <span style={{ direction: 'ltr' }}>{app.parentPhone}</span>
-                            </a>
-
-                            <a
-                              href={`https://api.whatsapp.com/send?phone=972${app.parentPhone.replace(/\D/g, '').replace(/^0/, '')}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.35rem',
-                                color: '#16a34a',
-                                textDecoration: 'none',
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: '#f0fdf4',
-                                padding: '0.3rem 0.65rem',
-                                borderRadius: '8px',
-                                border: '1px solid #bbf7d0'
-                              }}
-                            >
-                              <i className="fab fa-whatsapp"></i>
-                              <span>واتساب</span>
-                            </a>
-                          </>
-                        )}
-                      </div>
-
-                    </div>
-                  </div>
-
-                  {/* Right Side: Gate Entry Action Button */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => handleToggleEntry(app)}
+                  return (
+                    <div
+                      key={item.id}
                       style={{
-                        background: isEntered 
-                          ? 'linear-gradient(135deg, #16a34a, #15803d)' 
-                          : 'linear-gradient(135deg, #0284c7, #0369a1)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.85rem 1.6rem',
-                        borderRadius: '16px',
-                        fontWeight: 900,
-                        fontSize: '1rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.6rem',
-                        boxShadow: isEntered ? '0 4px 14px rgba(22, 163, 74, 0.3)' : '0 4px 14px rgba(2, 132, 199, 0.3)',
-                        transition: 'transform 0.15s ease'
+                        background: 'white',
+                        borderRadius: '20px',
+                        border: isDismissed ? '2px solid #bbf7d0' : '2px solid #fed7aa',
+                        boxShadow: isDismissed ? '0 4px 14px rgba(34, 197, 94, 0.08)' : '0 8px 24px rgba(234, 88, 12, 0.12)',
+                        padding: '1.5rem',
+                        position: 'relative',
+                        transition: 'all 0.25s ease'
                       }}
                     >
-                      {isEntered ? (
-                        <>
-                          <i className="fas fa-check-circle" style={{ fontSize: '1.2rem' }}></i>
-                          <span>تم الدخول ({app.enteredAt || 'الآن'}) ✅</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-door-open" style={{ fontSize: '1.2rem' }}></i>
-                          <span>تسجيل دخول البوابة 🚪</span>
-                        </>
-                      )}
-                    </button>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                        
+                        {/* Student Details */}
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                          <div style={{
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '16px',
+                            background: isBoy ? '#e0f2fe' : '#fce7f3',
+                            color: isBoy ? '#0369a1' : '#be185d',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.8rem',
+                            flexShrink: 0
+                          }}>
+                            {isBoy ? '👦' : '👧'}
+                          </div>
 
-                    {isEntered && (
-                      <button
-                        onClick={() => handleToggleEntry(app)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#94a3b8',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          textDecoration: 'underline'
-                        }}
-                      >
-                        (تراجع - إلغاء تسجيل الدخول)
-                      </button>
-                    )}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                                {item.studentName}
+                              </h2>
+                              <span style={{
+                                background: '#f1f5f9',
+                                color: '#475569',
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '8px',
+                                fontWeight: 800,
+                                fontSize: '0.8rem'
+                              }}>
+                                عائلة: {item.familyName || 'غير محددة'}
+                              </span>
+                              <span style={{
+                                background: '#e0e7ff',
+                                color: '#3730a3',
+                                padding: '0.2rem 0.65rem',
+                                borderRadius: '8px',
+                                fontWeight: 800,
+                                fontSize: '0.85rem'
+                              }}>
+                                🏫 {item.studentClass}
+                              </span>
+                            </div>
+
+                            {/* Companion & Teacher Info */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', marginTop: '0.75rem', fontSize: '0.9rem', color: '#334155' }}>
+                              <div>
+                                <strong style={{ color: '#0f172a' }}>المرافق المستلم: </strong>
+                                <span>{item.companionName}</span>
+                                {item.companionRelation && <span style={{ color: '#64748b' }}> ({item.companionRelation})</span>}
+                              </div>
+
+                              {item.companionPhone && item.companionPhone !== 'غير مسجل' && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <strong>الهاتف: </strong>
+                                  <a href={`tel:${item.companionPhone}`} style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 800 }}>
+                                    📞 {item.companionPhone}
+                                  </a>
+                                  <a
+                                    href={`https://wa.me/${item.companionPhone.replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ color: '#16a34a', textDecoration: 'none', marginLeft: '0.3rem', fontSize: '1.05rem' }}
+                                    title="مراسلة واتساب"
+                                  >
+                                    💬
+                                  </a>
+                                </div>
+                              )}
+
+                              <div>
+                                <strong style={{ color: '#0f172a' }}>المربي المصرح: </strong>
+                                <span style={{ color: '#0369a1', fontWeight: 700 }}>👨‍🏫 {item.teacherName}</span>
+                              </div>
+                            </div>
+
+                            {/* Reason & Times */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.6rem', fontSize: '0.85rem' }}>
+                              <span style={{ background: '#fef3c7', color: '#92400e', padding: '0.25rem 0.65rem', borderRadius: '6px', fontWeight: 700 }}>
+                                السبب: {item.reason}
+                              </span>
+                              <span style={{ color: '#64748b', fontWeight: 700 }}>
+                                ⏰ وقت الإذن: <strong>{item.dismissalTime}</strong>
+                              </span>
+                              {item.actualExitTime && (
+                                <span style={{ color: '#16a34a', fontWeight: 800 }}>
+                                  🚪 وقت الخروج الفعلي من البوابة: <strong>{item.actualExitTime}</strong>
+                                </span>
+                              )}
+                              {item.passCode && (
+                                <span style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800, color: '#475569' }}>
+                                  رمز التأكيد: #{item.passCode}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Guard Action Button */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', minWidth: '180px' }}>
+                          {!isDismissed ? (
+                            <button
+                              onClick={() => handleConfirmStudentExit(item)}
+                              style={{
+                                background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.85rem 1.4rem',
+                                borderRadius: '14px',
+                                fontWeight: 900,
+                                fontSize: '0.95rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.6rem',
+                                boxShadow: '0 6px 18px rgba(22, 163, 74, 0.35)',
+                                transition: 'all 0.2s ease',
+                                width: '100%',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              <i className="fas fa-door-open"></i>
+                              <span>تأكيد خروج الطالب وفتح البوابة ✅</span>
+                            </button>
+                          ) : (
+                            <div style={{ textAlign: 'center', width: '100%' }}>
+                              <div style={{
+                                background: '#dcfce7',
+                                color: '#15803d',
+                                padding: '0.65rem 1rem',
+                                borderRadius: '12px',
+                                fontWeight: 900,
+                                fontSize: '0.9rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem',
+                                border: '1px solid #86efac'
+                              }}>
+                                <i className="fas fa-check-circle"></i>
+                                <span>خرج من المدرسة ({item.actualExitTime || item.dismissalTime})</span>
+                              </div>
+                              <button
+                                onClick={() => handleRevertStudentExit(item.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#94a3b8',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem',
+                                  marginTop: '0.35rem',
+                                  textDecoration: 'underline'
+                                }}
+                              >
+                                تراجع لحالة الانتظار
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* SECTION 2: VISITORS & APPOINTMENTS INTERFACE */}
+        {/* ========================================================= */}
+        {activePortalTab === 'visitors' && (
+          <div>
+            {/* Appointment Day Stats */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>إجمالي مواعيد اليوم</span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', marginTop: '0.25rem' }}>
+                  {totalDayAppointments} زائر
+                </div>
+              </div>
+
+              <div style={{ background: '#f0fdf4', padding: '1.25rem', borderRadius: '18px', border: '2px solid #bbf7d0' }}>
+                <span style={{ fontSize: '0.85rem', color: '#15803d', fontWeight: 800 }}>✅ دخلوا المدرسة</span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#16a34a', marginTop: '0.25rem' }}>
+                  {enteredDayAppointments} زائر
+                </div>
+              </div>
+
+              <div style={{ background: '#fff7ed', padding: '1.25rem', borderRadius: '18px', border: '2px solid #fed7aa' }}>
+                <span style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 800 }}>⏳ في الانتظار</span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', marginTop: '0.25rem' }}>
+                  {waitingDayAppointments} زائر
+                </div>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar for Visitors */}
+            <div style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '1.25rem',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #e2e8f0',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem'
+            }}>
+              {/* Search Bar */}
+              <div style={{ flex: '1 1 240px', position: 'relative' }}>
+                <i className="fas fa-search" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}></i>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ابحث باسم الزائر، الطالب، المعلم، الرمز..."
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 2.6rem 0.65rem 1rem',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    fontFamily: 'inherit',
+                    background: '#f8fafc'
+                  }}
+                />
+              </div>
+
+              {/* Status Filter */}
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setFilterStatus('all')}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: filterStatus === 'all' ? '#0f172a' : '#f1f5f9',
+                    color: filterStatus === 'all' ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  الكل ({filteredAppointments.length})
+                </button>
+                <button
+                  onClick={() => setFilterStatus('waiting')}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: filterStatus === 'waiting' ? '#d97706' : '#f1f5f9',
+                    color: filterStatus === 'waiting' ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⏳ قيد الانتظار
+                </button>
+                <button
+                  onClick={() => setFilterStatus('entered')}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: filterStatus === 'entered' ? '#16a34a' : '#f1f5f9',
+                    color: filterStatus === 'entered' ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✅ دخلوا المدرسة
+                </button>
+              </div>
+            </div>
+
+            {/* Appointments Cards List */}
+            {isLoadingAppointments ? (
+              <div style={{ textAlign: 'center', padding: '4rem', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+                <i className="fas fa-circle-notch fa-spin" style={{ fontSize: '2.5rem', color: '#0284c7', marginBottom: '1rem' }}></i>
+                <h3 style={{ fontWeight: 800, color: '#334155', margin: 0 }}>جاري تحميل جدول المواعيد والزوار...</h3>
+              </div>
+            ) : filteredAppointments.length === 0 ? (
+              <div style={{
+                background: 'white',
+                borderRadius: '24px',
+                padding: '4rem 2rem',
+                textAlign: 'center',
+                border: '2px dashed #cbd5e1'
+              }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#f0f9ff', color: '#0284c7', fontSize: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                  <i className="fas fa-calendar-check"></i>
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.5rem' }}>
+                  لا توجد مواعيد مسجلة في هذا اليوم
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.95rem', maxWidth: '400px', margin: '0 auto 1.5rem auto', fontWeight: 600 }}>
+                  {viewAllDates ? 'لا توجد أي حجوزات مطابقة للبحث' : `لم يتم حجز أي موعد بعد لتاريخ (${formatDateArabic(selectedDate)}).`}
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  style={{
+                    background: '#0284c7',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  تسجيل زائر جديد الآن ➕
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                {filteredAppointments.map((app) => {
+                  const isEntered = app.entryStatus === 'entered';
+
+                  return (
+                    <div
+                      key={app.id}
+                      style={{
+                        background: 'white',
+                        borderRadius: '20px',
+                        border: isEntered ? '2px solid #bbf7d0' : '2px solid #e2e8f0',
+                        boxShadow: isEntered ? '0 4px 14px rgba(34, 197, 94, 0.06)' : '0 4px 16px rgba(0,0,0,0.03)',
+                        padding: '1.35rem',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '1rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flex: '1 1 320px' }}>
+                        <div style={{
+                          width: '50px',
+                          height: '50px',
+                          borderRadius: '14px',
+                          background: isEntered ? '#dcfce7' : '#f1f5f9',
+                          color: isEntered ? '#15803d' : '#64748b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.3rem',
+                          flexShrink: 0
+                        }}>
+                          <i className={`fas ${isEntered ? 'fa-user-check' : 'fa-user-clock'}`}></i>
+                        </div>
+
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                              {app.parentName}
+                            </h3>
+                            {app.isWalkIn && (
+                              <span style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>
+                                زيارة طارئة
+                              </span>
+                            )}
+                            <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
+                              {app.ticketCode}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem', fontSize: '0.88rem', color: '#475569' }}>
+                            <div><strong>الطالب: </strong>{app.studentName} ({app.studentClass})</div>
+                            <div><strong>المعلم/الجهة: </strong>{app.teacherNameAr}</div>
+                            {app.parentPhone && app.parentPhone !== 'غير مسجل' && (
+                              <div><strong>الهاتف: </strong><a href={`tel:${app.parentPhone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>📞 {app.parentPhone}</a></div>
+                            )}
+                            <div><strong>الموضوع: </strong>{app.meetingTopic}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ textAlign: 'left' }}>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0284c7' }}>
+                            ⏰ {app.timeSlot}
+                          </span>
+                          {app.enteredAt && (
+                            <div style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700 }}>
+                              دخول: {app.enteredAt}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleEntry(app)}
+                          style={{
+                            background: isEntered ? '#15803d' : '#f1f5f9',
+                            color: isEntered ? 'white' : '#0f172a',
+                            border: isEntered ? 'none' : '1.5px solid #cbd5e1',
+                            padding: '0.7rem 1.25rem',
+                            borderRadius: '12px',
+                            fontWeight: 800,
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <i className={`fas ${isEntered ? 'fa-check-double' : 'fa-walking'}`}></i>
+                          <span>{isEntered ? 'تم الدخول ✅' : 'تسجيل دخول 🚪'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Modal: Add Walk-in Visitor */}
+        {showAddModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '24px',
+              padding: '2rem',
+              maxWidth: '520px',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#0f172a' }}>
+                  تسجيل زائر فوري للبوابة 🚪
+                </h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', color: '#64748b' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleAddWalkIn} style={{ display: 'grid', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                    اسم الزائر / ولي الأمر *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newParentName}
+                    onChange={(e) => setNewParentName(e.target.value)}
+                    placeholder="مثال: أحمد عبد الله محاميد"
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                      رقم هاتف الزائر
+                    </label>
+                    <input
+                      type="tel"
+                      value={newParentPhone}
+                      onChange={(e) => setNewParentPhone(e.target.value)}
+                      placeholder="050-0000000"
+                      style={{ width: '100%', padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontFamily: 'inherit' }}
+                    />
                   </div>
 
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                      وقت الدخول
+                    </label>
+                    <input
+                      type="time"
+                      value={newTimeSlot}
+                      onChange={(e) => setNewTimeSlot(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontFamily: 'inherit' }}
+                    />
+                  </div>
                 </div>
-              );
-            })}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                      اسم الطالب (إن وجد)
+                    </label>
+                    <input
+                      type="text"
+                      value={newStudentName}
+                      onChange={(e) => setNewStudentName(e.target.value)}
+                      placeholder="اسم الطالب"
+                      style={{ width: '100%', padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontFamily: 'inherit' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                      الجهة / المعلم المستهدف
+                    </label>
+                    <input
+                      type="text"
+                      value={newTeacherName}
+                      onChange={(e) => setNewTeacherName(e.target.value)}
+                      placeholder="مثال: الإدارة / السكرتاريا"
+                      style={{ width: '100%', padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                    سبب أو موضوع الزيارة
+                  </label>
+                  <input
+                    type="text"
+                    value={newMeetingTopic}
+                    onChange={(e) => setNewMeetingTopic(e.target.value)}
+                    placeholder="سبب الزيارة"
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    style={{ flex: 1, padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ flex: 2, padding: '0.75rem', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 900, cursor: 'pointer' }}
+                  >
+                    حفظ وتأكيد الدخول 🚪
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
       </div>
-
-      {/* Quick Add Walk-In Visitor Modal */}
-      {showAddModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.7)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '24px',
-            maxWidth: '520px',
-            width: '100%',
-            padding: '2rem',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>➕ تسجيل زائر / موعد فوري</span>
-              </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', color: '#64748b', fontWeight: 900 }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleAddWalkIn}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>اسم ولي الأمر / الزائر *:</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="مثال: صالح إغبارية"
-                  value={newParentName}
-                  onChange={(e) => setNewParentName(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>رقم الهاتف:</label>
-                  <input
-                    type="tel"
-                    placeholder="050-0000000"
-                    value={newParentPhone}
-                    onChange={(e) => setNewParentPhone(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>وقت الزيارة:</label>
-                  <input
-                    type="text"
-                    value={newTimeSlot}
-                    onChange={(e) => setNewTimeSlot(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>اسم الطالب:</label>
-                  <input
-                    type="text"
-                    placeholder="اسم الطالب (اختياري)"
-                    value={newStudentName}
-                    onChange={(e) => setNewStudentName(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>الصف:</label>
-                  <select
-                    value={newStudentClass}
-                    onChange={(e) => setNewStudentClass(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                  >
-                    <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-                    <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-                    <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-                    <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-                    <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-                    <option value="الصف الثالث (ب)">الصف الثالث (ب)</option>
-                    <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-                    <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-                    <option value="الصف السادس (أ)">الصف السادس (أ)</option>
-                    <option value="أخرى / عام">أخرى / عام</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>الجهة / المعلم المراد مقابلته:</label>
-                <input
-                  type="text"
-                  placeholder="مثال: إدارة المدرسة، المعلمة مريم..."
-                  value={newTeacherName}
-                  onChange={(e) => setNewTeacherName(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontWeight: 800, color: '#475569', fontSize: '0.85rem', marginBottom: '0.3rem' }}>سبب أو موضوع الزيارة:</label>
-                <input
-                  type="text"
-                  placeholder="مثال: استلام وثائق، استفسار تربوي..."
-                  value={newMeetingTopic}
-                  onChange={(e) => setNewMeetingTopic(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.85rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  style={{
-                    flex: '1',
-                    padding: '0.85rem',
-                    borderRadius: '12px',
-                    border: '1px solid #cbd5e1',
-                    background: '#f8fafc',
-                    fontWeight: 800,
-                    color: '#64748b',
-                    cursor: 'pointer'
-                  }}
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    flex: '2',
-                    padding: '0.85rem',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                    fontWeight: 900,
-                    color: 'white',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
-                  }}
-                >
-                  حفظ وتسجيل الدخول فوراً 🚪
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body {
-            background: white !important;
-            padding: 0 !important;
-          }
-          .hide-on-mobile, button, input, select, form {
-            display: none !important;
-          }
-          div[style*="boxShadow"] {
-            box-shadow: none !important;
-            border: 1px solid #ccc !important;
-          }
-        }
-        @media (max-width: 640px) {
-          .hide-on-mobile {
-            display: none !important;
-          }
-        }
-      `}</style>
-
     </div>
   );
 };

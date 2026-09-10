@@ -32,6 +32,7 @@ import VirtualMuseumAdminTab from './VirtualMuseumAdminTab';
 import LostFoundAdminTab from './LostFoundAdminTab';
 import FamilyChallengeAdminTab from './FamilyChallengeAdminTab';
 import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
+import StudentDismissalAdminTab from './StudentDismissalAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 
@@ -4503,6 +4504,27 @@ const AdminDashboard = () => {
               👨‍👩‍👧‍👦 تحدي العائلة الأسبوعي ولوحة الشرف
             </button>
 
+            {/* تبويب: تسريح الطلاب والتحليلات */}
+            <button 
+              onClick={() => setActiveTab('student-dismissal-admin')} 
+              className={`filter-chip ${activeTab === 'student-dismissal-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'student-dismissal-admin' ? '#0284c7' : '#f0f9ff',
+                color: activeTab === 'student-dismissal-admin' ? 'white' : '#0369a1',
+                fontWeight: 800,
+                border: '2px solid #bae6fd',
+                boxShadow: '0 2px 6px rgba(2,132,199,0.15)'
+              }}
+            >
+              <i className="fas fa-running" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🏃‍♂️ تسريح الطلاب (التوثيق والتحليلات)
+            </button>
+
           </div>
         </aside>
 
@@ -8085,6 +8107,13 @@ const AdminDashboard = () => {
               {activeTab === 'family-challenge-admin' && (
                 <div>
                   <FamilyChallengeAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: تسريح الطلاب - التوثيق والتحليلات */}
+              {activeTab === 'student-dismissal-admin' && (
+                <div>
+                  <StudentDismissalAdminTab />
                 </div>
               )}
 
