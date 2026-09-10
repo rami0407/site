@@ -11,6 +11,7 @@ const PwaInstallPrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
+  const [showFallbackGuide, setShowFallbackGuide] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -63,10 +64,8 @@ const PwaInstallPrompt = () => {
     const handleManualTrigger = () => {
       if (isIosDevice) {
         setShowIosGuide(true);
-        setShowPrompt(true);
-      } else {
-        setShowPrompt(true);
       }
+      setShowPrompt(true);
     };
 
     window.addEventListener('trigger-pwa-install', handleManualTrigger);
@@ -81,46 +80,53 @@ const PwaInstallPrompt = () => {
   const handleInstallAndNotify = async () => {
     setIsProcessing(true);
 
-    // 1. Request notification permission if supported and not yet granted
-    if (isNotificationSupported() && !isNotificationsEnabledLocally()) {
-      try {
-        await requestNotificationPermission();
-      } catch (err) {
-        console.warn('Notification permission optional notice:', err);
-      }
-    }
-
-    // 2. Handle iOS device flow
+    // 1. Handle iOS device flow
     if (isIos) {
       setShowIosGuide(true);
+      if (isNotificationSupported() && !isNotificationsEnabledLocally()) {
+        try {
+          await requestNotificationPermission();
+        } catch (e) {}
+      }
       setIsProcessing(false);
       return;
     }
 
-    // 3. Handle Android / Chromium native install prompt
+    // 2. Android / Chromium: Trigger native install prompt FIRST while user gesture is active
     if (deferredPrompt) {
       try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
+        await deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          setIsInstalled(true);
           setShowPrompt(false);
           setDeferredPrompt(null);
+          localStorage.setItem('pwa_app_installed', 'true');
         }
       } catch (err) {
         console.warn('Install prompt error:', err);
-      } finally {
-        setIsProcessing(false);
       }
     } else {
-      // Fallback instructions for browsers without native prompt
-      setIsProcessing(false);
-      alert('لتثبيت التطبيق على جهازك: افتح قائمة المتصفح (⋮ أو ⋯) بالأعلى واختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".');
-      setShowPrompt(false);
+      // Show smooth in-banner guide if native prompt is not available
+      setShowFallbackGuide(true);
     }
+
+    // 3. Enable notifications smoothly
+    if (isNotificationSupported() && !isNotificationsEnabledLocally()) {
+      try {
+        await requestNotificationPermission();
+      } catch (err) {
+        console.warn('Notification permission notice:', err);
+      }
+    }
+
+    setIsProcessing(false);
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
+    setShowIosGuide(false);
+    setShowFallbackGuide(false);
     // Snooze for 3 days so user is not annoyed
     localStorage.setItem('pwa_unified_dismissed_until', String(Date.now() + 3 * 24 * 60 * 60 * 1000));
   };
@@ -180,6 +186,26 @@ const PwaInstallPrompt = () => {
             </ol>
             <button className="pwa-btn-done" onClick={handleDismiss}>
               فهمت ذلك، تم بنجاح 👍
+            </button>
+          </div>
+        ) : showFallbackGuide ? (
+          <div className="pwa-ios-instructions">
+            <p className="pwa-ios-title">
+              <strong>📲 خطوات تثبيت التطبيق على جهازك:</strong>
+            </p>
+            <ol>
+              <li>
+                اضغط على قائمة خيارات المتصفح <i className="fas fa-ellipsis-v" style={{ color: '#38bdf8' }}></i> بالأعلى أو الأسفل.
+              </li>
+              <li>
+                اختر <strong>"تثبيت التطبيق"</strong> أو <strong>"إضافة إلى الشاشة الرئيسية" ➕</strong>.
+              </li>
+              <li>
+                اضغط <strong>"تثبيت"</strong> لتجده فوراً مع تطبيقات هاتفك!
+              </li>
+            </ol>
+            <button className="pwa-btn-done" onClick={handleDismiss}>
+              فهمت ذلك 👍
             </button>
           </div>
         ) : (
