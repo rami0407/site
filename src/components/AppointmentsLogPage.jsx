@@ -23,7 +23,49 @@ const WEEKDAYS_AR = {
   6: 'السبت'
 };
 
+const GUARD_PIN_CODE = '318212';
+
 const AppointmentsLogPage = () => {
+  // Security Authentication (Guard PIN Code: 318212)
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    try {
+      return localStorage.getItem('musherfe_guard_auth_pin') === GUARD_PIN_CODE;
+    } catch (e) {
+      return false;
+    }
+  });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
+
+  const handlePinSubmit = (e) => {
+    e.preventDefault();
+    if (pinInput.trim() === GUARD_PIN_CODE) {
+      setPinError('');
+      setIsAuthorized(true);
+      if (rememberDevice) {
+        try {
+          localStorage.setItem('musherfe_guard_auth_pin', GUARD_PIN_CODE);
+        } catch (err) {}
+      }
+      playAlertChime();
+    } else {
+      setPinError('❌ الرمز السري غير صحيح! يرجى إدخال رمز الحارس الصحيح للمتابعة.');
+      setPinInput('');
+    }
+  };
+
+  const handleLogoutGuard = () => {
+    if (window.confirm('هل تريد قفل الشاشة وتسجيل الخروج من لوحة الحارس؟')) {
+      try {
+        localStorage.removeItem('musherfe_guard_auth_pin');
+      } catch (err) {}
+      setIsAuthorized(false);
+      setPinInput('');
+    }
+  };
+
   // Get Today's Date String YYYY-MM-DD
   const getTodayString = () => {
     const d = new Date();
@@ -166,6 +208,7 @@ const AppointmentsLogPage = () => {
 
   // Real-time Firestore Listener for Student Dismissals
   useEffect(() => {
+    if (!isAuthorized) return;
     setIsLoadingDismissals(true);
     const dismissalsRef = collection(db, 'student_dismissals');
 
@@ -216,13 +259,14 @@ const AppointmentsLogPage = () => {
     }
 
     return () => unsubscribe();
-  }, [soundEnabled]);
+  }, [soundEnabled, isAuthorized]);
 
   // Track dismissals inside appointments for real-time chime alerts
   const prevDismissalIdsRef = useRef(new Set());
 
   // Real-time Firestore Listener for Appointments
   useEffect(() => {
+    if (!isAuthorized) return;
     setIsLoadingAppointments(true);
     const appRef = collection(db, 'teacher_appointments');
     const q = query(appRef, orderBy('createdAt', 'desc'));
@@ -262,7 +306,7 @@ const AppointmentsLogPage = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isAuthorized]);
 
   // Format Date to friendly Arabic text
   const formatDateArabic = (dateStr) => {
@@ -587,6 +631,181 @@ const AppointmentsLogPage = () => {
 
   const isToday = selectedDate === getTodayString();
 
+  // Security Lock Screen (Rendered if not authorized with PIN: 318212)
+  if (!isAuthorized) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'radial-gradient(circle at top, #1e293b 0%, #0f172a 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '6.5rem 1rem 3rem',
+        fontFamily: 'Tajawal, sans-serif',
+        direction: 'rtl'
+      }}>
+        <div style={{
+          background: 'rgba(30, 41, 59, 0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '28px',
+          padding: '2.5rem 2rem',
+          maxWidth: '460px',
+          width: '100%',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+          textAlign: 'center',
+          color: 'white'
+        }}>
+          {/* Shield Emblem */}
+          <div style={{
+            width: '74px',
+            height: '74px',
+            borderRadius: '22px',
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2.2rem',
+            margin: '0 auto 1.25rem',
+            boxShadow: '0 8px 25px rgba(2, 132, 199, 0.4)',
+            border: '2px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            🛡️
+          </div>
+
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: '0 0 0.4rem', color: '#f8fafc' }}>
+            بوابة الحارس والأمن المدرسي
+          </h2>
+          <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 800, marginBottom: '1.5rem', display: 'inline-block', background: 'rgba(56, 189, 248, 0.12)', padding: '0.3rem 0.9rem', borderRadius: '50px' }}>
+            🔒 منطقة أمنية خاصة بحارس المدرسة
+          </div>
+
+          <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 1.75rem 0', fontWeight: 500 }}>
+            هذه الشاشة مخصصة لمتابعة أذونات تسريح الطلاب وزوار المدرسة. يرجى إدخال الرمز السري للمتابعة.
+          </p>
+
+          <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                placeholder="أدخل رمز الدخول (PIN)..."
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value)}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '1rem 3rem 1rem 1rem',
+                  background: 'rgba(15, 23, 42, 0.85)',
+                  border: pinError ? '2px solid #ef4444' : '2px solid #334155',
+                  borderRadius: '16px',
+                  color: 'white',
+                  fontSize: '1.3rem',
+                  textAlign: 'center',
+                  letterSpacing: '5px',
+                  fontWeight: 800,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                style={{
+                  position: 'absolute',
+                  left: '14px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  fontSize: '1.1rem',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+                title={showPin ? 'إخفاء الرمز' : 'إظهار الرمز'}
+              >
+                <i className={`fas ${showPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
+
+            {pinError && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: '#fca5a5',
+                padding: '0.75rem',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                textAlign: 'center'
+              }}>
+                {pinError}
+              </div>
+            )}
+
+            {/* Remember Device Checkbox */}
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              justifyContent: 'center',
+              fontSize: '0.86rem',
+              color: '#cbd5e1',
+              cursor: 'pointer',
+              userSelect: 'none',
+              padding: '0.25rem 0'
+            }}>
+              <input
+                type="checkbox"
+                checked={rememberDevice}
+                onChange={(e) => setRememberDevice(e.target.checked)}
+                style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#0284c7' }}
+              />
+              <span>تذكر هذا الجهاز دائماً (هاتف الحارس الخاص)</span>
+            </label>
+
+            <button
+              type="submit"
+              style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '16px',
+                padding: '1rem',
+                fontSize: '1.05rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(2, 132, 199, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.6rem',
+                marginTop: '0.4rem',
+                transition: 'transform 0.15s ease'
+              }}
+            >
+              <span>دخول لوحة الحارس</span>
+              <i className="fas fa-arrow-left"></i>
+            </button>
+          </form>
+
+          <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <a
+              href="#/"
+              style={{ color: '#64748b', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <i className="fas fa-home"></i> العودة للصفحة الرئيسية للمدرسة
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '6.5rem 1rem 4rem', fontFamily: 'Tajawal, sans-serif', direction: 'rtl' }}>
       
@@ -780,6 +999,28 @@ const AppointmentsLogPage = () => {
             >
               <i className={`fas ${soundEnabled ? 'fa-bell' : 'fa-bell-slash'}`}></i>
               <span>{soundEnabled ? 'التنبيه الصوتي شغال 🔔' : 'الصوت مكتوم 🔕'}</span>
+            </button>
+
+            {/* Lock Screen Button */}
+            <button
+              onClick={handleLogoutGuard}
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#fca5a5',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                padding: '0.75rem 1rem',
+                borderRadius: '14px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              title="قفل الشاشة وتسجيل الخروج"
+            >
+              <i className="fas fa-lock"></i>
+              <span>قفل الشاشة 🔒</span>
             </button>
 
             {/* Link to Dismissal Form (for teachers) */}
