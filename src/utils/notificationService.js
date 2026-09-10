@@ -323,17 +323,33 @@ export const broadcastSchoolNotification = async ({
     active: true
   };
 
-  const docRef = await addDoc(collection(db, 'school_notifications'), notifData);
+  let docId = 'notif_' + Date.now();
+  try {
+    const docRef = await addDoc(collection(db, 'school_notifications'), notifData);
+    docId = docRef.id;
+  } catch (err) {
+    console.warn('school_notifications addDoc notice:', err);
+  }
+
+  // 🌟 Guaranteed Accessible Mirror on schoolGuide collection (allowed for all visitors & phones)
+  try {
+    await setDoc(doc(db, 'schoolGuide', 'latest_notification'), {
+      ...notifData,
+      id: docId
+    });
+  } catch (mirrorErr) {
+    console.warn('schoolGuide mirror notice:', mirrorErr);
+  }
 
   // Also trigger on current device immediately if subscribed
   showSystemNotification({
     title: notifData.title,
     body: notifData.body,
     url: notifData.url,
-    tag: docRef.id
+    tag: docId
   });
 
-  return docRef.id;
+  return docId;
 };
 
 /**
@@ -410,76 +426,135 @@ export const getNotificationViewers = async (notifId) => {
  * Toggle whether a notification appears as a center popup on phone/desktop
  */
 export const toggleNotificationPopupStatus = async (notifId, popupInCenter) => {
-  if (!notifId) return;
-  const notifRef = doc(db, 'school_notifications', notifId);
-  await updateDoc(notifRef, { popupInCenter });
+  if (notifId) {
+    try {
+      const notifRef = doc(db, 'school_notifications', notifId);
+      await updateDoc(notifRef, { popupInCenter });
+    } catch (e) {}
+  }
+  try {
+    const guideRef = doc(db, 'schoolGuide', 'latest_notification');
+    await setDoc(guideRef, { popupInCenter }, { merge: true });
+  } catch (e) {}
 };
 
 /**
  * Force re-alert all users by bumping the forceReshowKey
  */
 export const forceReshowNotification = async (notifId) => {
-  if (!notifId) return;
-  const notifRef = doc(db, 'school_notifications', notifId);
-  await updateDoc(notifRef, { 
-    forceReshowKey: Date.now().toString(),
-    popupInCenter: true
-  });
+  const newKey = Date.now().toString();
+  if (notifId) {
+    try {
+      const notifRef = doc(db, 'school_notifications', notifId);
+      await updateDoc(notifRef, { 
+        forceReshowKey: newKey,
+        popupInCenter: true
+      });
+    } catch (e) {}
+  }
+  try {
+    const guideRef = doc(db, 'schoolGuide', 'latest_notification');
+    await setDoc(guideRef, { 
+      forceReshowKey: newKey,
+      popupInCenter: true
+    }, { merge: true });
+  } catch (e) {}
 };
 
 /**
  * Listen for real-time notifications from Firestore and notify the device
  */
 export const subscribeToSchoolNotifications = (onUpdate) => {
-  const q = query(
-    collection(db, 'school_notifications'),
-    orderBy('createdAt', 'desc'),
-    limit(20)
-  );
-
   let isFirstLoad = true;
+  let collectionItems = [];
+  let mirrorItem = null;
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const list = [];
-    snapshot.forEach(docSnap => {
-      list.push({ id: docSnap.id, ...docSnap.data() });
-    });
+  const dispatchUpdate = () => {
+    // Combine items: collection items + mirror item if not already present
+    let combined = [...collectionItems];
+    if (mirrorItem) {
+      const exists = combined.some(item => item.id === mirrorItem.id || (item.title === mirrorItem.title && item.createdAt === mirrorItem.createdAt));
+      if (!exists) {
+        combined.unshift(mirrorItem);
+      }
+    }
+    // Sort descending by createdAt
+    combined.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     if (onUpdate) {
-      onUpdate(list);
+      onUpdate(combined);
     }
 
-    // If notifications are enabled locally, check if there's a new or recent unread notification:
-    if (list.length > 0 && isNotificationsEnabledLocally()) {
-      const latest = list[0];
+    // Trigger system notification if enabled locally
+    if (combined.length > 0 && isNotificationsEnabledLocally()) {
+      const latest = combined[0];
       const notifTime = new Date(latest.createdAt || 0).getTime();
       const lastSeenTime = parseInt(localStorage.getItem('last_seen_notification_timestamp') || '0', 10);
       const isRecent = (Date.now() - notifTime) < (12 * 60 * 60 * 1000); // Created within last 12 hours
+      const alertKey = `last_alerted_${latest.id || 'latest'}_${latest.forceReshowKey || 'v1'}`;
+      const alreadyAlerted = localStorage.getItem(alertKey) === 'true';
 
-      // Trigger if newer than last seen and created recently, OR if live incoming update
-      if (notifTime > lastSeenTime && (isRecent || !isFirstLoad)) {
-        showSystemNotification({
-          title: latest.title,
-          body: latest.body,
-          url: latest.url,
-          tag: latest.id
-        });
-        localStorage.setItem('last_seen_notification_timestamp', notifTime.toString());
+      // Trigger if not already alerted and either newer than last seen or forceReshowKey is set
+      if (!alreadyAlerted && (notifTime > lastSeenTime || latest.forceReshowKey)) {
+        if (isRecent || !isFirstLoad) {
+          showSystemNotification({
+            title: latest.title,
+            body: latest.body,
+            url: latest.url,
+            tag: `${latest.id || 'notif'}_${latest.forceReshowKey || 'v1'}`
+          });
+          localStorage.setItem(alertKey, 'true');
+          localStorage.setItem('last_seen_notification_timestamp', notifTime.toString());
+        }
       }
     }
 
-    // On initial load, ensure baseline timestamp is recorded if missing
-    if (isFirstLoad && list.length > 0) {
+    // On initial load, record baseline timestamp if missing
+    if (isFirstLoad && combined.length > 0) {
       if (!localStorage.getItem('last_seen_notification_timestamp')) {
-        const latestTime = new Date(list[0].createdAt || 0).getTime();
+        const latestTime = new Date(combined[0].createdAt || 0).getTime();
         localStorage.setItem('last_seen_notification_timestamp', latestTime.toString());
       }
     }
 
     isFirstLoad = false;
+  };
+
+  // 1. Guaranteed Accessible Channel: schoolGuide/latest_notification
+  const guideRef = doc(db, 'schoolGuide', 'latest_notification');
+  const unsubGuide = onSnapshot(guideRef, (docSnap) => {
+    if (docSnap.exists()) {
+      mirrorItem = { id: docSnap.id, ...docSnap.data() };
+      dispatchUpdate();
+    }
   }, (err) => {
-    console.warn('Notifications stream error:', err);
+    console.warn('Guide notification stream notice:', err);
   });
 
-  return unsubscribe;
+  // 2. Full school_notifications collection stream
+  let unsubCollection = () => {};
+  try {
+    const q = query(
+      collection(db, 'school_notifications'),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    unsubCollection = onSnapshot(q, (snapshot) => {
+      collectionItems = [];
+      snapshot.forEach(docSnap => {
+        collectionItems.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      dispatchUpdate();
+    }, (err) => {
+      console.warn('Notifications collection stream notice (relying on guide channel):', err);
+    });
+  } catch (err) {
+    console.warn('Failed to attach collection listener:', err);
+  }
+
+  return () => {
+    unsubGuide();
+    unsubCollection();
+  };
 };

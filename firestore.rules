@@ -269,6 +269,48 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    // 📢 منظومة إشعارات المدرسة للهواتف وشاشة العرض
+    match /school_notifications/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+      match /views/{viewId} {
+        allow read, create: if true;
+      }
+    }
+
+    match /notification_subscribers/{docId} {
+      allow read, write: if true;
+    }
+
+    // 🏛️ المعرض الافتراضي ثلاثي الأبعاد
+    match /museum_artworks/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+    }
+
+    // 🎒 ركن المفقودات والموجودات المدرسية
+    match /lost_and_found/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /lost_found_claims/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    // 👨‍👩‍👧‍👦 تحدي العائلة الأسبوعي
+    match /family_challenge_submissions/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    match /family_hall_of_fame/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
     // ==========================================
     // 8. DEFAULT CATCH-ALL (DENY BY DEFAULT)
     // ==========================================

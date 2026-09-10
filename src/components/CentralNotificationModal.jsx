@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './CentralNotificationModal.css';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, doc, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { logNotificationView, getYouTubeEmbedUrl } from '../utils/notificationService';
 
 // Audio format helper (e.g. 65s -> 1:05)
@@ -57,48 +57,71 @@ const CentralNotificationModal = () => {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    // 1. Listen for real-time central notifications from Firestore
-    const q = query(
-      collection(db, 'school_notifications'),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
+    // Helper to evaluate and trigger notification
+    const checkAndTrigger = (candidate) => {
+      if (!candidate || candidate.popupInCenter === false || candidate.active === false) {
+        return;
+      }
+      const ackKey = `ack_central_${candidate.id || 'latest'}_${candidate.forceReshowKey || 'v1'}`;
+      const alreadyAcked = localStorage.getItem(ackKey) === 'true';
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let candidate = null;
+      if (!alreadyAcked) {
+        setActiveNotification(candidate);
+        setIsPreviewMode(false);
+        setIsOpen(true);
 
-      snapshot.forEach(docSnap => {
-        const data = { id: docSnap.id, ...docSnap.data() };
-        if (!candidate && data.popupInCenter !== false && data.active !== false) {
-          candidate = data;
-        }
-      });
-
-      if (candidate) {
-        const ackKey = `ack_central_${candidate.id}_${candidate.forceReshowKey || 'v1'}`;
-        const alreadyAcked = localStorage.getItem(ackKey) === 'true';
-
-        if (!alreadyAcked) {
-          setActiveNotification(candidate);
-          setIsPreviewMode(false);
-          setIsOpen(true);
-
-          if (!hasTriggeredRef.current) {
-            hasTriggeredRef.current = true;
-            setTimeout(() => {
-              playGentleNotificationChime();
-              if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                try { navigator.vibrate([80, 40, 80]); } catch (e) {}
-              }
-            }, 400);
-          }
+        if (!hasTriggeredRef.current) {
+          hasTriggeredRef.current = true;
+          setTimeout(() => {
+            playGentleNotificationChime();
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try { navigator.vibrate([80, 40, 80]); } catch (e) {}
+            }
+          }, 400);
         }
       }
+    };
+
+    // 1. Guaranteed Accessible Channel: schoolGuide/latest_notification
+    const guideRef = doc(db, 'schoolGuide', 'latest_notification');
+    const unsubGuide = onSnapshot(guideRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = { id: docSnap.id, ...docSnap.data() };
+        checkAndTrigger(data);
+      }
     }, (err) => {
-      console.warn('Central notifications listener error:', err);
+      console.warn('Central guide listener notice:', err);
     });
 
-    // 2. Listen for Admin Preview custom event
+    // 2. Full real-time stream from school_notifications collection
+    let unsubCollection = () => {};
+    try {
+      const q = query(
+        collection(db, 'school_notifications'),
+        orderBy('createdAt', 'desc'),
+        limit(5)
+      );
+
+      unsubCollection = onSnapshot(q, (snapshot) => {
+        let candidate = null;
+        snapshot.forEach(docSnap => {
+          const data = { id: docSnap.id, ...docSnap.data() };
+          if (!candidate && data.popupInCenter !== false && data.active !== false) {
+            candidate = data;
+          }
+        });
+
+        if (candidate) {
+          checkAndTrigger(candidate);
+        }
+      }, (err) => {
+        console.warn('Central notifications listener error:', err);
+      });
+    } catch (err) {
+      console.warn('Failed to listen to school_notifications:', err);
+    }
+
+    // 3. Listen for Admin Preview custom event
     const handlePreviewEvent = (e) => {
       if (e.detail) {
         setActiveNotification(e.detail);
@@ -110,7 +133,8 @@ const CentralNotificationModal = () => {
     window.addEventListener('preview-central-notif', handlePreviewEvent);
 
     return () => {
-      unsubscribe();
+      unsubGuide();
+      unsubCollection();
       window.removeEventListener('preview-central-notif', handlePreviewEvent);
     };
   }, []);
