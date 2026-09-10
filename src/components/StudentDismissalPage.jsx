@@ -134,7 +134,7 @@ const StudentDismissalPage = () => {
         setLoginError('');
       }
     } else {
-      setLoginError('❌ رمز الدخول السري غير صحيح! (الرمز الأولي الموحد لجميع المعلمين هو 318212 ما لم تقم بتغييره)');
+      setLoginError('❌ رمز الدخول السري غير صحيح! يرجى مراجعة إدارة المدرسة في حال نسيان الرمز.');
     }
   };
 
@@ -443,11 +443,6 @@ const StudentDismissalPage = () => {
               </div>
             </div>
 
-            {/* Initial PIN notice */}
-            <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '12px', padding: '0.65rem 0.85rem', fontSize: '0.82rem', color: '#7dd3fc', lineHeight: '1.5' }}>
-              ℹ️ <strong>ملاحظة هامة:</strong> الرمز الأولي الموحد لجميع المربين هو <strong style={{ color: '#ffffff', letterSpacing: '1px' }}>318212</strong>. فور الدخول يمكنك تغيير الرمز إلى كودك الشخصي الذي تفضله.
-            </div>
-
             {loginError && (
               <div style={{
                 background: 'rgba(239, 68, 68, 0.15)',
@@ -665,7 +660,7 @@ const StudentDismissalPage = () => {
               <form onSubmit={handleChangePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                    الرمز الحالي (أو 318212 إذا لم تغيره مسبقاً): *
+                    الرمز السري الحالي: *
                   </label>
                   <input
                     type="password"
