@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../firebase';
 import { 
   collection, 
@@ -520,7 +520,6 @@ const AppointmentsLogPage = () => {
   const enteredDayAppointments = dayAppointments.filter(a => a.entryStatus === 'entered').length;
   const waitingDayAppointments = totalDayAppointments - enteredDayAppointments;
 
-  const uniqueTeachers = Array.from(new Set(visitorAppointments.map(a => a.teacherNameAr).filter(Boolean)));
   const isToday = selectedDate === getTodayString();
 
   return (
@@ -1054,7 +1053,6 @@ const AppointmentsLogPage = () => {
               <div style={{ display: 'grid', gap: '1.25rem' }}>
                 {filteredDismissals.map((item) => {
                   const isDismissed = item.status === 'dismissed' || item.gateStatus === 'exited';
-                  const isBoy = item.gender === 'male';
 
                   return (
                     <div
