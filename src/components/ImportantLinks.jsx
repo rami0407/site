@@ -292,45 +292,6 @@ const ImportantLinks = () => {
                   overflow: 'hidden'
                 } : undefined}
               >
-                {isKiosk && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '8px',
-                    left: '8px',
-                    background: '#ef4444',
-                    color: 'white',
-                    fontSize: '0.65rem',
-                    fontWeight: 900,
-                    padding: '2px 8px',
-                    borderRadius: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: '0 2px 6px rgba(239,68,68,0.3)'
-                  }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white', display: 'inline-block' }}></span>
-                    بث مباشر
-                  </span>
-                )}
-                {isAi && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '8px',
-                    left: '8px',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    color: 'white',
-                    fontSize: '0.65rem',
-                    fontWeight: 900,
-                    padding: '2px 8px',
-                    borderRadius: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: '0 2px 6px rgba(139,92,246,0.3)'
-                  }}>
-                    <span>🤖</span> ذكاء اصطناعي
-                  </span>
-                )}
                 <div 
                   className="link-icon"
                   style={iconGradient ? {
@@ -341,7 +302,58 @@ const ImportantLinks = () => {
                 >
                   <i className={`fas ${link.icon || 'fa-link'}`}></i>
                 </div>
-                <div className="link-text-wrapper">
+                <div className="link-text-wrapper" style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                    {isAi && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        color: 'white',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(139,92,246,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>🤖</span> ذكاء اصطناعي
+                      </span>
+                    )}
+                    {isKiosk && (
+                      <span style={{
+                        background: '#ef4444',
+                        color: 'white',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(239,68,68,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white', display: 'inline-block' }}></span>
+                        بث مباشر
+                      </span>
+                    )}
+                    {link.badge && !isAi && !isKiosk && (
+                      <span style={{
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        border: '1px solid #bfdbfe',
+                        lineHeight: 1.4
+                      }}>
+                        {link.badge}
+                      </span>
+                    )}
+                  </div>
                   <span className="link-text" style={isKiosk ? { color: '#b45309', fontWeight: 900 } : isAi ? { color: '#5b21b6', fontWeight: 900 } : undefined}>
                     {link.title}
                   </span>
