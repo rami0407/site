@@ -95,21 +95,24 @@ const AppointmentsLogPage = () => {
   useEffect(() => {
     setIsLoadingDismissals(true);
     const dismissalsRef = collection(db, 'student_dismissals');
-    const q = query(dismissalsRef, orderBy('createdAt', 'desc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    let unsubscribe = () => {};
+
+    const processSnapshot = (snapshot) => {
       const list = [];
       snapshot.forEach((docSnap) => {
         list.push({ id: docSnap.id, ...docSnap.data() });
       });
+      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       setDismissals(list);
       setIsLoadingDismissals(false);
 
-      // Play alert if new dismissal was just added
       if (!isFirstDismissalLoad.current) {
         let hasNewWaiting = false;
         snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added' && change.doc.data().status !== 'dismissed') {
+          const data = change.doc.data();
+          const isDone = data.status === 'dismissed' || data.gateStatus === 'exited';
+          if (change.type === 'added' && !isDone) {
             hasNewWaiting = true;
           }
         });
@@ -118,19 +121,26 @@ const AppointmentsLogPage = () => {
         }
       }
       isFirstDismissalLoad.current = false;
-    }, (err) => {
-      console.error('Error listening to dismissals:', err);
-      // Fallback one-time fetch
-      getDocs(dismissalsRef).then((snap) => {
-        const list = [];
-        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-        setDismissals(list);
-        setIsLoadingDismissals(false);
-      }).catch(e => {
-        console.error('Dismissals fetch error:', e);
-        setIsLoadingDismissals(false);
+    };
+
+    try {
+      const q = query(dismissalsRef, orderBy('createdAt', 'desc'));
+      unsubscribe = onSnapshot(q, processSnapshot, (err) => {
+        console.warn('Dismissals orderBy listener error, falling back to base listener:', err);
+        unsubscribe = onSnapshot(dismissalsRef, processSnapshot, (err2) => {
+          console.error('Dismissals base listener error:', err2);
+          getDocs(dismissalsRef).then((snap) => {
+            const list = [];
+            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+            setDismissals(list);
+            setIsLoadingDismissals(false);
+          });
+        });
       });
-    });
+    } catch (e) {
+      console.warn('Listener query setup error:', e);
+    }
 
     return () => unsubscribe();
   }, [soundEnabled]);
@@ -205,7 +215,9 @@ const AppointmentsLogPage = () => {
       const ref = doc(db, 'student_dismissals', dismissal.id);
       await updateDoc(ref, {
         status: 'dismissed',
+        gateStatus: 'exited',
         actualExitTime: timeFormatted,
+        gateExitTime: timeFormatted,
         confirmedAt: new Date().toISOString(),
         confirmedBy: 'حارس البوابة'
       });
@@ -222,7 +234,9 @@ const AppointmentsLogPage = () => {
       const ref = doc(db, 'student_dismissals', dismissalId);
       await updateDoc(ref, {
         status: 'waiting',
+        gateStatus: 'pending',
         actualExitTime: null,
+        gateExitTime: null,
         confirmedAt: null
       });
     } catch (err) {
@@ -301,18 +315,20 @@ const AppointmentsLogPage = () => {
 
   // Filtered Dismissals List
   const filteredDismissals = dismissals.filter((item) => {
-    if (!viewAllDates && item.date !== selectedDate) {
+    const itemDate = item.date || item.departureDate || (item.createdAt ? item.createdAt.split('T')[0] : '');
+    if (!viewAllDates && itemDate && itemDate !== selectedDate) {
       return false;
     }
-    if (dismissalStatusFilter === 'waiting' && item.status === 'dismissed') return false;
-    if (dismissalStatusFilter === 'dismissed' && item.status !== 'dismissed') return false;
+    const isExited = item.status === 'dismissed' || item.gateStatus === 'exited';
+    if (dismissalStatusFilter === 'waiting' && isExited) return false;
+    if (dismissalStatusFilter === 'dismissed' && !isExited) return false;
 
     if (dismissalSearch.trim()) {
       const q = dismissalSearch.toLowerCase();
       const sName = (item.studentName || '').toLowerCase();
       const cName = (item.companionName || '').toLowerCase();
-      const sClass = (item.studentClass || '').toLowerCase();
-      const teacher = (item.teacherName || '').toLowerCase();
+      const sClass = (item.classroom || item.studentClass || '').toLowerCase();
+      const teacher = (item.teacherName || item.teacherNameAr || '').toLowerCase();
       const pass = (item.passCode || '').toLowerCase();
       const reason = (item.reason || '').toLowerCase();
       if (!sName.includes(q) && !cName.includes(q) && !sClass.includes(q) && !teacher.includes(q) && !pass.includes(q) && !reason.includes(q)) {
@@ -323,10 +339,13 @@ const AppointmentsLogPage = () => {
   }).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
   // Calculate day dismissal stats
-  const dayDismissals = dismissals.filter(d => d.date === selectedDate);
+  const dayDismissals = dismissals.filter(d => {
+    const dDate = d.date || d.departureDate || (d.createdAt ? d.createdAt.split('T')[0] : '');
+    return !dDate || dDate === selectedDate;
+  });
   const totalDismissalsCount = dayDismissals.length;
-  const waitingDismissalsCount = dayDismissals.filter(d => d.status !== 'dismissed').length;
-  const completedDismissalsCount = dayDismissals.filter(d => d.status === 'dismissed').length;
+  const waitingDismissalsCount = dayDismissals.filter(d => d.status !== 'dismissed' && d.gateStatus !== 'exited').length;
+  const completedDismissalsCount = dayDismissals.filter(d => d.status === 'dismissed' || d.gateStatus === 'exited').length;
 
   // Filtered Appointments List
   const filteredAppointments = appointments.filter((app) => {
@@ -890,7 +909,7 @@ const AppointmentsLogPage = () => {
             ) : (
               <div style={{ display: 'grid', gap: '1.25rem' }}>
                 {filteredDismissals.map((item) => {
-                  const isDismissed = item.status === 'dismissed';
+                  const isDismissed = item.status === 'dismissed' || item.gateStatus === 'exited';
                   const isBoy = item.gender === 'male';
 
                   return (
@@ -950,7 +969,7 @@ const AppointmentsLogPage = () => {
                                 fontWeight: 800,
                                 fontSize: '0.85rem'
                               }}>
-                                🏫 {item.studentClass}
+                                🏫 {item.classroom || item.studentClass}
                               </span>
                             </div>
 
@@ -982,7 +1001,7 @@ const AppointmentsLogPage = () => {
 
                               <div>
                                 <strong style={{ color: '#0f172a' }}>المربي المصرح: </strong>
-                                <span style={{ color: '#0369a1', fontWeight: 700 }}>👨‍🏫 {item.teacherName}</span>
+                                <span style={{ color: '#0369a1', fontWeight: 700 }}>👨‍🏫 {item.teacherName || item.teacherNameAr}</span>
                               </div>
                             </div>
 
@@ -992,11 +1011,11 @@ const AppointmentsLogPage = () => {
                                 السبب: {item.reason}
                               </span>
                               <span style={{ color: '#64748b', fontWeight: 700 }}>
-                                ⏰ وقت الإذن: <strong>{item.dismissalTime}</strong>
+                                ⏰ وقت الإذن: <strong>{item.departureTime || item.dismissalTime || item.timeSlot}</strong>
                               </span>
-                              {item.actualExitTime && (
+                              {(item.actualExitTime || item.gateExitTime) && (
                                 <span style={{ color: '#16a34a', fontWeight: 800 }}>
-                                  🚪 وقت الخروج الفعلي من البوابة: <strong>{item.actualExitTime}</strong>
+                                  🚪 وقت الخروج الفعلي من البوابة: <strong>{item.actualExitTime || item.gateExitTime}</strong>
                                 </span>
                               )}
                               {item.passCode && (
@@ -1050,7 +1069,7 @@ const AppointmentsLogPage = () => {
                                 border: '1px solid #86efac'
                               }}>
                                 <i className="fas fa-check-circle"></i>
-                                <span>خرج من المدرسة ({item.actualExitTime || item.dismissalTime})</span>
+                                <span>خرج من المدرسة ({item.actualExitTime || item.gateExitTime || item.departureTime || item.dismissalTime})</span>
                               </div>
                               <button
                                 onClick={() => handleRevertStudentExit(item.id)}

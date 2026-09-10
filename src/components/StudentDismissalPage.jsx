@@ -41,10 +41,15 @@ const StudentDismissalPage = () => {
   const [companionName, setCompanionName] = useState('');
   
   // Date & Time
-  const [departureDate, setDepartureDate] = useState(() => {
+  const getTodayLocalString = () => {
     const d = new Date();
-    return d.toISOString().split('T')[0];
-  });
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [departureDate, setDepartureDate] = useState(getTodayLocalString);
   const [departureTime, setDepartureTime] = useState(() => {
     const now = new Date();
     const h = String(now.getHours()).padStart(2, '0');
@@ -88,6 +93,8 @@ const StudentDismissalPage = () => {
     const gradeLevel = classroom.split(' ')[1] || 'غير محدد'; // e.g. "الأول", "الرابع"
     const nameParts = studentName.trim().split(/\s+/);
     const autoFamilyName = nameParts.length >= 2 ? nameParts[nameParts.length - 1] : 'غير محدد';
+    const finalDate = departureDate || getTodayLocalString();
+    const finalTime = departureTime || `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
 
     const dismissalData = {
       passCode,
@@ -96,15 +103,22 @@ const StudentDismissalPage = () => {
       gender: 'unspecified',
       gradeLevel,
       classroom,
+      studentClass: classroom,
       teacherName: teacherName.trim(),
+      teacherNameAr: teacherName.trim(),
       reason,
       reasonDetails: reasonDetails.trim(),
       companionType,
       companionName: companionName.trim() || companionType,
       companionPhone: '',
-      departureDate,
-      departureTime,
-      gateStatus: 'pending', // 'pending' | 'exited'
+      departureDate: finalDate,
+      date: finalDate,
+      departureTime: finalTime,
+      dismissalTime: finalTime,
+      timeSlot: finalTime,
+      status: 'waiting',
+      gateStatus: 'pending',
+      actualExitTime: null,
       gateExitTime: null,
       createdAt: new Date().toISOString()
     };
