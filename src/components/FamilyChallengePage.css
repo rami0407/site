@@ -1,0 +1,237 @@
+/* Weekly Family Challenge Styling */
+.family-challenge-wrapper {
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 10%, #fff7ed 0%, #ffedd5 30%, #f8fafc 100%);
+  color: #1e293b;
+  font-family: 'Tajawal', sans-serif;
+  direction: rtl;
+  padding-bottom: 5rem;
+}
+
+/* Hero Section */
+.fc-hero {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
+  color: white;
+  padding: 4rem 1.5rem 3rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(234, 88, 12, 0.25);
+}
+
+.fc-hero-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.fc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.45rem 1.3rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fef08a;
+  margin-bottom: 1.2rem;
+  backdrop-filter: blur(8px);
+}
+
+.fc-title {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 900;
+  margin: 0 0 1rem 0;
+  line-height: 1.25;
+}
+
+.fc-subtitle {
+  font-size: 1.15rem;
+  color: #fed7aa;
+  max-width: 720px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+/* Container */
+.fc-container {
+  max-width: 1150px;
+  margin: -2rem auto 0;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 5;
+}
+
+/* Current Active Challenge Card */
+.fc-challenge-card {
+  background: white;
+  border-radius: 26px;
+  padding: 2.25rem;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+  border: 2px solid #fdba74;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.fc-challenge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 2px solid #ffedd5;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.fc-challenge-tag {
+  background: #ffedd5;
+  color: #c2410c;
+  padding: 0.4rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.fc-timer-badge {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.4rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fc-question-box {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border-radius: 18px;
+  padding: 1.75rem;
+  border-right: 6px solid #ea580c;
+  margin-bottom: 2rem;
+}
+
+.fc-question-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #9a3412;
+  margin: 0 0 0.75rem 0;
+}
+
+.fc-question-text {
+  font-size: 1.05rem;
+  color: #431407;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Submission Form */
+.fc-submit-card {
+  background: #fafafa;
+  border-radius: 20px;
+  padding: 1.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.fc-submit-title {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 1.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Hall of Fame (لوحة الشرف) */
+.fc-fame-section {
+  margin-top: 4rem;
+}
+
+.fc-section-heading {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.fc-section-heading h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.fc-section-heading p {
+  color: #64748b;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.fc-fame-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.fc-fame-card {
+  background: white;
+  border-radius: 22px;
+  padding: 1.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 2px solid #fef08a;
+  position: relative;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.fc-fame-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(234, 88, 12, 0.15);
+  border-color: #f59e0b;
+}
+
+.fc-crown-icon {
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin: -3.2rem auto 1rem;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  border: 4px solid white;
+}
+
+.fc-fame-name {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0 0 0.35rem 0;
+}
+
+.fc-fame-badge-honor {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 0.85rem;
+}
+
+.fc-fame-desc {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}

@@ -160,6 +160,54 @@ const ImportantLinks = () => {
             });
           }
 
+          // 1. Virtual 3D Museum
+          const hasMuseum = list.some(l => 
+            (l.title && l.title.includes('المعرض الافتراضي')) || 
+            (l.url && l.url.includes('virtual-museum'))
+          );
+          if (!hasMuseum) {
+            list.push({
+              id: 'school-virtual-museum-default',
+              title: 'المعرض الافتراضي ثلاثي الأبعاد 3D',
+              icon: 'fa-palette',
+              url: '#/virtual-museum',
+              desc: 'جولة ثلاثية الأبعاد تفاعلية بين إبداعات وأنامل الطلاب في الفنون التشكيلية ومجسمات الروبوت والعلوم.',
+              badge: 'معرض 3D تفاعلي 🎨'
+            });
+          }
+
+          // 2. Lost & Found Hub
+          const hasLostFound = list.some(l => 
+            (l.title && l.title.includes('المفقودات')) || 
+            (l.url && l.url.includes('lost-found'))
+          );
+          if (!hasLostFound) {
+            list.push({
+              id: 'school-lost-found-default',
+              title: 'ركن المفقودات والموجودات المدرسية',
+              icon: 'fa-search-location',
+              url: '#/lost-found',
+              desc: 'منظومة الأمانات المدرسية لتوثيق وتصوير الأغراض المعثور عليها وطلب استردادها للأهالي.',
+              badge: 'أمانات المدرسة 🎒'
+            });
+          }
+
+          // 3. Weekly Family Challenge
+          const hasFamilyChallenge = list.some(l => 
+            (l.title && l.title.includes('تحدي العائلة')) || 
+            (l.url && l.url.includes('family-challenge'))
+          );
+          if (!hasFamilyChallenge) {
+            list.push({
+              id: 'school-family-challenge-default',
+              title: 'تحدي العائلة الأسبوعي ولوحة الشرف',
+              icon: 'fa-users',
+              url: '#/family-challenge',
+              desc: 'تحدٍّ وألغاز STEM أسبوعية تجمع الطالب بأسرته نهاية كل أسبوع مع تكريم العائلات الفائزة.',
+              badge: 'شراكة عائلية 👨‍👩‍👧‍👦'
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {

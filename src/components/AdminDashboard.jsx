@@ -28,6 +28,9 @@ import EduStaffingPortal from './EduStaffingPortal';
 import SchoolTasbihPortal from './SchoolTasbihPortal';
 import DebateAdminTab from './DebateAdminTab';
 import NotificationAdminTab from './NotificationAdminTab';
+import VirtualMuseumAdminTab from './VirtualMuseumAdminTab';
+import LostFoundAdminTab from './LostFoundAdminTab';
+import FamilyChallengeAdminTab from './FamilyChallengeAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 
@@ -4436,6 +4439,68 @@ const AdminDashboard = () => {
               🔒 منصة التوظيف والخدمات (مسودة)
             </button>
 
+            {/* تبويب: المعرض الافتراضي ثلاثي الأبعاد */}
+            <button 
+              onClick={() => setActiveTab('virtual-museum-admin')} 
+              className={`filter-chip ${activeTab === 'virtual-museum-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'virtual-museum-admin' ? '#4f46e5' : '#eef2ff',
+                color: activeTab === 'virtual-museum-admin' ? 'white' : '#3730a3',
+                fontWeight: 800,
+                border: '2px solid #c7d2fe',
+                boxShadow: '0 2px 6px rgba(79,70,229,0.15)'
+              }}
+            >
+              <i className="fas fa-palette" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🏛️ المعرض الافتراضي ثلاثي الأبعاد 3D
+            </button>
+
+            {/* تبويب: ركن المفقودات والموجودات المدرسية */}
+            <button 
+              onClick={() => setActiveTab('lost-found-admin')} 
+              className={`filter-chip ${activeTab === 'lost-found-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'lost-found-admin' ? '#0d9488' : '#f0fdfa',
+                color: activeTab === 'lost-found-admin' ? 'white' : '#0f766e',
+                fontWeight: 800,
+                border: '2px solid #99f6e4',
+                boxShadow: '0 2px 6px rgba(13,148,136,0.15)'
+              }}
+            >
+              <i className="fas fa-search-location" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🎒 ركن المفقودات والموجودات
+            </button>
+
+            {/* تبويب: تحدي العائلة الأسبوعي */}
+            <button 
+              onClick={() => setActiveTab('family-challenge-admin')} 
+              className={`filter-chip ${activeTab === 'family-challenge-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'family-challenge-admin' ? '#ea580c' : '#fff7ed',
+                color: activeTab === 'family-challenge-admin' ? 'white' : '#c2410c',
+                fontWeight: 800,
+                border: '2px solid #fed7aa',
+                boxShadow: '0 2px 6px rgba(234,88,12,0.15)'
+              }}
+            >
+              <i className="fas fa-users" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              👨‍👩‍👧‍👦 تحدي العائلة الأسبوعي ولوحة الشرف
+            </button>
 
           </div>
         </aside>
@@ -7998,6 +8063,27 @@ const AdminDashboard = () => {
               {activeTab === 'notifications-admin' && (
                 <div>
                   <NotificationAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: المعرض الافتراضي ثلاثي الأبعاد */}
+              {activeTab === 'virtual-museum-admin' && (
+                <div>
+                  <VirtualMuseumAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: ركن المفقودات والموجودات المدرسية */}
+              {activeTab === 'lost-found-admin' && (
+                <div>
+                  <LostFoundAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: تحدي العائلة الأسبوعي */}
+              {activeTab === 'family-challenge-admin' && (
+                <div>
+                  <FamilyChallengeAdminTab />
                 </div>
               )}
 

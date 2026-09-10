@@ -55,6 +55,9 @@ const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const SchoolTasbihPortal = lazy(() => import('./components/SchoolTasbihPortal'));
 const PrincipalMessage = lazy(() => import('./components/PrincipalMessage'));
 const DebateArenaPage = lazy(() => import('./components/DebateArenaPage'));
+const VirtualMuseumPage = lazy(() => import('./components/VirtualMuseumPage'));
+const LostAndFoundPage = lazy(() => import('./components/LostAndFoundPage'));
+const FamilyChallengePage = lazy(() => import('./components/FamilyChallengePage'));
 
 
 function App() {
@@ -345,7 +348,10 @@ function App() {
   const isGratitudeSkyView = currentHash.includes('gratitude-sky') || currentHash.includes('stars-sky') || currentHash.includes('emtnan-sky') || currentHash.includes('stars');
   const isReadersClubView = currentHash.includes('readers-club') || currentHash.includes('readers') || currentHash.includes('reading-club');
   const isAstronomyView = currentHash.includes('astronomy');
-  const isChallengeView = currentHash.includes('challenge');
+  const isFamilyChallengeView = currentHash.includes('family-challenge') || currentHash.includes('family');
+  const isChallengeView = currentHash.includes('challenge') && !isFamilyChallengeView;
+  const isVirtualMuseumView = currentHash.includes('virtual-museum') || currentHash.includes('museum') || currentHash.includes('3d-gallery');
+  const isLostFoundView = currentHash.includes('lost-found') || currentHash.includes('lost-and-found') || currentHash.includes('mafqoodat');
   const isPrincipalView = currentHash.includes('principal');
   const isTeacherPortalView = currentHash.includes('stem-teacher') || currentHash.includes('teacher-portal');
   const isBooksView = currentHash.includes('books') && !isReadersClubView;
@@ -357,6 +363,33 @@ function App() {
   const isTasbihView = currentHash.includes('tasbih');
   const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
+
+  if (isVirtualMuseumView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <VirtualMuseumPage />
+      </Suspense>
+    );
+  }
+
+  if (isLostFoundView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <LostAndFoundPage />
+      </Suspense>
+    );
+  }
+
+  if (isFamilyChallengeView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <FamilyChallengePage />
+      </Suspense>
+    );
+  }
 
   if (isDebateView) {
     return (
