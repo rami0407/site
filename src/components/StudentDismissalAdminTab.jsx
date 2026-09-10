@@ -1,10 +1,40 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc, addDoc } from 'firebase/firestore';
 
 const StudentDismissalAdminTab = () => {
   const [dismissals, setDismissals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Sync to important links
+  const handleSyncDismissalToImportantLinks = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'links'));
+      let exists = false;
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.url?.includes('student-dismissal') || data.url?.includes('tasreeh') || data.title?.includes('تسريح')) {
+          exists = true;
+        }
+      });
+      if (exists) {
+        alert('ℹ️ رابط تسريح الطلاب مضاف ومثبت بالفعل ضمن قائمة الروابط الخارجية بالموقع!');
+        return;
+      }
+      await addDoc(collection(db, 'links'), {
+        title: 'منظومة تسريح الطلاب (إذن الخروج المدرسي)',
+        icon: 'fa-walking',
+        url: '#/student-dismissal',
+        desc: 'بوابة إلكترونية رسمية للمربين وأولياء الأمور لتسجيل وتوثيق خروج الطلاب ومتابعتها مع حارس البوابة.',
+        badge: 'إذن وخروج 🏃‍♂️',
+        createdAt: new Date().toISOString()
+      });
+      alert('🎉 تم بنجاح تثبيت وإضافة "منظومة تسريح الطلاب" إلى الروابط الخارجية في الصفحة الرئيسية!');
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
+    }
+  };
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -231,6 +261,28 @@ const StudentDismissalAdminTab = () => {
             >
               <i className="fas fa-print"></i>
               طباعة كشف التسريح الرسمي 🖨️
+            </button>
+
+            <button 
+              onClick={handleSyncDismissalToImportantLinks}
+              style={{
+                background: '#f59e0b',
+                border: 'none',
+                color: '#000',
+                padding: '0.7rem 1.2rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+              }}
+              title="تثبيت رابط تسريح الطلاب كزر تفاعلي في الروابط الخارجية بالصفحة الرئيسية"
+            >
+              <i className="fas fa-link"></i>
+              🔗 تثبيت في الروابط الخارجية بالموقع
             </button>
           </div>
         </div>

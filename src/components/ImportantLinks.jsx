@@ -208,6 +208,22 @@ const ImportantLinks = () => {
             });
           }
 
+          // 4. Student Early Dismissal Portal (منظومة تسريح الطلاب)
+          const hasDismissal = list.some(l => 
+            (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج'))) || 
+            (l.url && (l.url.includes('student-dismissal') || l.url.includes('tasreeh')))
+          );
+          if (!hasDismissal) {
+            list.push({
+              id: 'school-student-dismissal-default',
+              title: 'منظومة تسريح الطلاب (إذن الخروج المدرسي)',
+              icon: 'fa-walking',
+              url: '#/student-dismissal',
+              desc: 'بوابة إلكترونية رسمية للمربين وأولياء الأمور لتسجيل وتوثيق خروج الطلاب ومتابعتها مع حارس البوابة.',
+              badge: 'إذن وخروج 🏃‍♂️'
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {
