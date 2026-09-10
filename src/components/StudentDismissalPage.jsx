@@ -33,15 +33,12 @@ const COMPANION_TYPES = [
 const StudentDismissalPage = () => {
   // Form State
   const [studentName, setStudentName] = useState('');
-  const [familyName, setFamilyName] = useState('');
-  const [gender, setGender] = useState('male'); // 'male' or 'female'
   const [classroom, setClassroom] = useState('الصف الأول (أ)');
   const [teacherName, setTeacherName] = useState('رامي ارفاعية');
   const [reason, setReason] = useState('توعك صحي أو مرض مفاجئ 🤒');
   const [reasonDetails, setReasonDetails] = useState('');
   const [companionType, setCompanionType] = useState('الأب 👨');
   const [companionName, setCompanionName] = useState('');
-  const [companionPhone, setCompanionPhone] = useState('');
   
   // Date & Time
   const [departureDate, setDepartureDate] = useState(() => {
@@ -77,16 +74,6 @@ const StudentDismissalPage = () => {
     fetchTeachers();
   }, []);
 
-  // Auto-extract family name from full student name
-  const handleStudentNameChange = (e) => {
-    const val = e.target.value;
-    setStudentName(val);
-    const parts = val.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      setFamilyName(parts[parts.length - 1]);
-    }
-  };
-
   // Submit Dismissal Pass
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,12 +86,14 @@ const StudentDismissalPage = () => {
 
     const passCode = 'DIS-' + Math.floor(1000 + Math.random() * 9000);
     const gradeLevel = classroom.split(' ')[1] || 'غير محدد'; // e.g. "الأول", "الرابع"
+    const nameParts = studentName.trim().split(/\s+/);
+    const autoFamilyName = nameParts.length >= 2 ? nameParts[nameParts.length - 1] : 'غير محدد';
 
     const dismissalData = {
       passCode,
       studentName: studentName.trim(),
-      familyName: familyName.trim() || 'غير محدد',
-      gender,
+      familyName: autoFamilyName,
+      gender: 'unspecified',
       gradeLevel,
       classroom,
       teacherName: teacherName.trim(),
@@ -112,7 +101,7 @@ const StudentDismissalPage = () => {
       reasonDetails: reasonDetails.trim(),
       companionType,
       companionName: companionName.trim() || companionType,
-      companionPhone: companionPhone.trim(),
+      companionPhone: '',
       departureDate,
       departureTime,
       gateStatus: 'pending', // 'pending' | 'exited'
@@ -150,10 +139,8 @@ const StudentDismissalPage = () => {
   const handleResetForm = () => {
     setCompletedPass(null);
     setStudentName('');
-    setFamilyName('');
     setReasonDetails('');
     setCompanionName('');
-    setCompanionPhone('');
     const now = new Date();
     setDepartureTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
   };
@@ -224,48 +211,9 @@ const StudentDismissalPage = () => {
                   className="dismissal-field-input" 
                   placeholder="مثال: يوسف رامي ارفاعية" 
                   value={studentName}
-                  onChange={handleStudentNameChange}
+                  onChange={(e) => setStudentName(e.target.value)}
                   required
                 />
-              </div>
-
-              <div className="dismissal-field-group">
-                <label className="dismissal-field-label">
-                  <i className="fas fa-users" style={{ color: '#0284c7' }}></i>
-                  اسم العائلة (للتحليلات والإحصاء):
-                </label>
-                <input 
-                  type="text" 
-                  className="dismissal-field-input" 
-                  placeholder="مثال: ارفاعية / إغبارية" 
-                  value={familyName}
-                  onChange={(e) => setFamilyName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="dismissal-grid-2">
-              <div className="dismissal-field-group">
-                <label className="dismissal-field-label">
-                  <i className="fas fa-venus-mars" style={{ color: '#0284c7' }}></i>
-                  جنس الطالب:
-                </label>
-                <div className="dismissal-gender-toggle">
-                  <button 
-                    type="button" 
-                    className={`dismissal-gender-btn male ${gender === 'male' ? 'active' : ''}`}
-                    onClick={() => setGender('male')}
-                  >
-                    <span>👦</span> ذكر
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`dismissal-gender-btn female ${gender === 'female' ? 'active' : ''}`}
-                    onClick={() => setGender('female')}
-                  >
-                    <span>👧</span> أنثى
-                  </button>
-                </div>
               </div>
 
               <div className="dismissal-field-group">
@@ -357,7 +305,7 @@ const StudentDismissalPage = () => {
                   صفة المرافق المستلم: *
                 </label>
                 <select 
-                  className="dismissal-field-input"
+                  className="dismissal-field-input" 
                   value={companionType}
                   onChange={(e) => setCompanionType(e.target.value)}
                   required
@@ -371,46 +319,30 @@ const StudentDismissalPage = () => {
               <div className="dismissal-field-group">
                 <label className="dismissal-field-label">
                   <i className="fas fa-id-card" style={{ color: '#0284c7' }}></i>
-                  اسم المرافق المستلم:
+                  اسم المرافق المستلم (اختياري):
                 </label>
                 <input 
                   type="text" 
                   className="dismissal-field-input"
-                  placeholder="مثال: رامي ارفاعية (الأب)"
+                  placeholder="مثال: رامي ارفاعية"
                   value={companionName}
                   onChange={(e) => setCompanionName(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="dismissal-grid-2">
-              <div className="dismissal-field-group">
-                <label className="dismissal-field-label">
-                  <i className="fas fa-phone-alt" style={{ color: '#0284c7' }}></i>
-                  هاتف المرافق / ولي الأمر:
-                </label>
-                <input 
-                  type="tel" 
-                  className="dismissal-field-input"
-                  placeholder="0501234567"
-                  value={companionPhone}
-                  onChange={(e) => setCompanionPhone(e.target.value)}
-                />
-              </div>
-
-              <div className="dismissal-field-group">
-                <label className="dismissal-field-label">
-                  <i className="fas fa-clock" style={{ color: '#0284c7' }}></i>
-                  ساعة الخروج والتسريح: *
-                </label>
-                <input 
-                  type="time" 
-                  className="dismissal-field-input"
-                  value={departureTime}
-                  onChange={(e) => setDepartureTime(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="dismissal-field-group" style={{ marginBottom: '1.5rem' }}>
+              <label className="dismissal-field-label">
+                <i className="fas fa-clock" style={{ color: '#0284c7' }}></i>
+                ساعة الخروج والتسريح: *
+              </label>
+              <input 
+                type="time" 
+                className="dismissal-field-input"
+                value={departureTime}
+                onChange={(e) => setDepartureTime(e.target.value)}
+                required
+              />
             </div>
 
             <button type="submit" className="dismissal-submit-btn" disabled={isSubmitting}>

@@ -914,15 +914,15 @@ const AppointmentsLogPage = () => {
                             width: '56px',
                             height: '56px',
                             borderRadius: '16px',
-                            background: isBoy ? '#e0f2fe' : '#fce7f3',
-                            color: isBoy ? '#0369a1' : '#be185d',
+                            background: item.gender === 'female' ? '#fce7f3' : '#e0f2fe',
+                            color: item.gender === 'female' ? '#be185d' : '#0369a1',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '1.8rem',
                             flexShrink: 0
                           }}>
-                            {isBoy ? '👦' : '👧'}
+                            {item.gender === 'female' ? '👧' : (item.gender === 'male' ? '👦' : '🎓')}
                           </div>
 
                           <div>
@@ -930,16 +930,18 @@ const AppointmentsLogPage = () => {
                               <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
                                 {item.studentName}
                               </h2>
-                              <span style={{
-                                background: '#f1f5f9',
-                                color: '#475569',
-                                padding: '0.2rem 0.6rem',
-                                borderRadius: '8px',
-                                fontWeight: 800,
-                                fontSize: '0.8rem'
-                              }}>
-                                عائلة: {item.familyName || 'غير محددة'}
-                              </span>
+                              {item.familyName && item.familyName !== 'غير محدد' && (
+                                <span style={{
+                                  background: '#f1f5f9',
+                                  color: '#475569',
+                                  padding: '0.2rem 0.6rem',
+                                  borderRadius: '8px',
+                                  fontWeight: 800,
+                                  fontSize: '0.8rem'
+                                }}>
+                                  عائلة: {item.familyName}
+                                </span>
+                              )}
                               <span style={{
                                 background: '#e0e7ff',
                                 color: '#3730a3',
