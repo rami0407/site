@@ -115,6 +115,51 @@ const ImportantLinks = () => {
             });
           }
 
+          const hasPrincipal = list.some(l => 
+            (l.title && l.title.includes('المدير')) || 
+            (l.url && l.url.includes('principal'))
+          );
+          if (!hasPrincipal) {
+            list.push({
+              id: 'school-principal-message-default',
+              title: 'كلمة مدير المدرسة',
+              icon: 'fa-graduation-cap',
+              url: '#/principal',
+              desc: 'الرسالة التربوية، الرؤية المستقبلية وكلمة ترحيبية من إدارة مدرسة مشيرفة الابتدائية.',
+              badge: 'رسالة الإدارة 🎓'
+            });
+          }
+
+          const hasInitiatives = list.some(l => 
+            (l.title && l.title.includes('المبادرات')) || 
+            (l.url && l.url.includes('initiatives'))
+          );
+          if (!hasInitiatives) {
+            list.push({
+              id: 'school-initiatives-default',
+              title: 'المبادرات والمشاريع التربوية',
+              icon: 'fa-lightbulb',
+              url: '#initiatives',
+              desc: 'استكشف مبادرات المدرسة الرائدة: مشروع امتنان، مسرح الدمى، ومقصف المعرفة لمهارات القرن 21.',
+              badge: 'مبادرات نوعية 💡'
+            });
+          }
+
+          const hasArticles = list.some(l => 
+            (l.title && l.title.includes('المقالات')) || 
+            (l.url && l.url.includes('articles'))
+          );
+          if (!hasArticles) {
+            list.push({
+              id: 'school-articles-default',
+              title: 'المقالات والأبحاث العلمية',
+              icon: 'fa-book',
+              url: '#/articles',
+              desc: 'مكتبة المقالات والأبحاث التربوية والعلمية الموثقة لإثراء معارف الطلاب وأولياء الأمور.',
+              badge: 'أبحاث ومعرفة 📚'
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {
@@ -153,6 +198,12 @@ const ImportantLinks = () => {
               iconGradient = 'linear-gradient(135deg, #4338ca 0%, #312e81 100%)';
             } else if (link.icon === 'fa-book-open' || link.url?.includes('books')) {
               iconGradient = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+            } else if (link.url?.includes('principal')) {
+              iconGradient = 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)';
+            } else if (link.url?.includes('initiatives')) {
+              iconGradient = 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)';
+            } else if (link.url?.includes('articles')) {
+              iconGradient = 'linear-gradient(135deg, #0d9488 0%, #06b6d4 100%)';
             } else if (isAi) {
               iconGradient = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
             }
@@ -178,6 +229,32 @@ const ImportantLinks = () => {
                     e.preventDefault();
                     window.location.hash = '#/books';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('principal')) {
+                    e.preventDefault();
+                    window.location.hash = '#/principal';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('articles')) {
+                    e.preventDefault();
+                    window.location.hash = '#/articles';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('initiatives')) {
+                    e.preventDefault();
+                    if (window.location.hash.includes('/') && !window.location.hash.includes('home')) {
+                      window.location.hash = '#initiatives';
+                    } else {
+                      const el = document.getElementById('initiatives');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.hash = '#initiatives';
+                      }
+                    }
                     return;
                   }
                   if (link.url?.includes('action=book-buddy')) {

@@ -27,33 +27,30 @@ const Navbar = () => {
   useEffect(() => {
     const navRef = collection(db, 'navigation');
 
-    const updateNavState = (rawItems) => {
-      let items = [...rawItems];
-      // Filter out unwanted items from navigation (prep_day, excellence, astronomy, stem, tasbih, books)
-      items = items.filter(item => 
-        item.id !== 'nav_prep_day' && item.target !== 'prep-day' && 
-        item.target !== 'monawaat' && 
-        item.id !== 'nav_excellence' && item.target !== 'excellence' && 
-        item.id !== 'nav_astronomy' && item.target !== 'astronomy' && 
-        item.id !== 'nav_stem' && item.target !== 'stem' && 
-        item.id !== 'nav_tasbih' && item.target !== 'tasbih' &&
-        item.id !== 'top_books' && item.id !== 'nav_books' && item.target !== 'books' &&
-        !(item.label && item.label.includes('الكتب'))
-      );
-      
-      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'gratitude-sky', 'stars'];
-      items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
+    const isExcludedFromNavbar = (item) => {
+      if (!item) return true;
+      const id = item.id || '';
+      const target = item.target || '';
+      const label = item.label || '';
+      // Exclude: prep_day, monawaat, excellence, astronomy, stem, tasbih, appointments, books, principal, initiatives, articles
+      if (id === 'nav_prep_day' || target === 'prep-day' || target === 'monawaat') return true;
+      if (id === 'nav_excellence' || target === 'excellence') return true;
+      if (id === 'nav_astronomy' || target === 'astronomy') return true;
+      if (id === 'nav_stem' || target === 'stem') return true;
+      if (id === 'nav_tasbih' || target === 'tasbih') return true;
+      if (id === 'nav_appointments' || target === 'appointments') return true;
+      if (id === 'top_books' || id === 'nav_books' || target === 'books' || label.includes('الكتب')) return true;
+      if (id === 'nav_5' || id === 'nav_principal' || target === 'principal' || label.includes('المدير')) return true;
+      if (id === 'nav_2' || id === 'nav_initiatives' || target === 'initiatives' || label.includes('المبادرات')) return true;
+      if (id === 'nav_articles' || target === 'articles' || label.includes('مقالات')) return true;
+      return false;
+    };
 
-      if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
-        items.push({
-          id: "nav_articles",
-          label: "📚 مقالات علمية",
-          type: "page",
-          target: "articles",
-          category: "main",
-          order: 6
-        });
-      }
+    const updateNavState = (rawItems) => {
+      let items = [...rawItems].filter(item => !isExcludedFromNavbar(item));
+      
+      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'gratitude-sky', 'stars'];
+      items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
       if (!items.some(item => item.id === 'nav_parent_polls' || item.target === 'parent-polls')) {
         items.push({
@@ -66,14 +63,10 @@ const Navbar = () => {
         });
       }
 
-      const filteredItems = items.filter(item => 
-        item.id !== 'nav_appointments' && item.target !== 'appointments' &&
-        item.id !== 'top_books' && item.target !== 'books' &&
-        !(item.label && item.label.includes('الكتب'))
-      );
+      const filteredItems = items.filter(item => !isExcludedFromNavbar(item));
       filteredItems.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      // Deduplicate to avoid repeated items like duplicate gallery
+      // Deduplicate to avoid repeated items
       const uniqueItems = [];
       const seenKeys = new Set();
       filteredItems.forEach(item => {
@@ -85,11 +78,10 @@ const Navbar = () => {
       });
 
       const top = uniqueItems.filter(item => 
-        item.target !== 'books' && 
-        !item.label?.includes('الكتب') && 
+        !isExcludedFromNavbar(item) && 
         (item.category === 'top' || ['links', 'gallery', 'contact'].includes(item.target))
       );
-      const main = uniqueItems.filter(item => !top.includes(item) && item.target !== 'books' && !item.label?.includes('الكتب'));
+      const main = uniqueItems.filter(item => !top.includes(item) && !isExcludedFromNavbar(item));
 
       setTopNavItems(top);
       setMainNavItems(main);
