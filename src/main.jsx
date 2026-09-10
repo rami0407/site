@@ -9,8 +9,8 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Register PWA Service Worker for offline capabilities and app installation
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Register PWA Service Worker for offline capabilities, push notifications and app installation
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')

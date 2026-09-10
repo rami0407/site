@@ -222,8 +222,8 @@ export const showSystemNotification = async ({ title, body, icon, url, tag }) =>
   const notifTitle = title || 'مدرسة مشيرفة الابتدائية 🏫';
   const notifOptions = {
     body: body || 'إشعار جديد من المدرسة',
-    icon: icon || '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: icon || '/icon-192.png',
+    badge: '/icon-192.png',
     tag: tag || ('notif_' + Date.now()),
     vibrate: [200, 100, 200],
     requireInteraction: false,
@@ -232,26 +232,45 @@ export const showSystemNotification = async ({ title, body, icon, url, tag }) =>
   };
 
   try {
+    // Priority: Service Worker showNotification (Mandatory for Android Chrome & iOS PWA)
     if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration && registration.showNotification) {
-        await registration.showNotification(notifTitle, {
-          ...notifOptions,
-          data: { url: url || '/' }
-        });
-        return true;
+      let reg = null;
+      try {
+        reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) {
+          reg = await navigator.serviceWorker.register('/sw.js');
+        }
+      } catch (swErr) {
+        console.warn('SW get/reg error:', swErr);
+      }
+
+      if (reg) {
+        // Wait for ready if not yet active
+        const activeReg = reg.active ? reg : await navigator.serviceWorker.ready;
+        if (activeReg && activeReg.showNotification) {
+          await activeReg.showNotification(notifTitle, {
+            ...notifOptions,
+            data: { url: url || '/' }
+          });
+          return true;
+        }
       }
     }
 
-    const n = new Notification(notifTitle, notifOptions);
-    n.onclick = () => {
-      window.focus();
-      if (url) {
-        window.location.hash = url.startsWith('#') ? url : ('#' + url);
-      }
-      n.close();
-    };
-    return true;
+    // Fallback: Desktop browsers that support standard Notification constructor
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile && typeof Notification === 'function') {
+      const n = new Notification(notifTitle, notifOptions);
+      n.onclick = () => {
+        window.focus();
+        if (url) {
+          window.location.hash = url.startsWith('#') ? url : ('#' + url);
+        }
+        n.close();
+      };
+      return true;
+    }
+    return false;
   } catch (err) {
     console.warn('Could not display system notification:', err);
     return false;
@@ -430,13 +449,15 @@ export const subscribeToSchoolNotifications = (onUpdate) => {
       onUpdate(list);
     }
 
-    // If notifications are enabled locally and this is a NEW incoming document:
-    if (!isFirstLoad && list.length > 0 && isNotificationsEnabledLocally()) {
+    // If notifications are enabled locally, check if there's a new or recent unread notification:
+    if (list.length > 0 && isNotificationsEnabledLocally()) {
       const latest = list[0];
-      const lastSeenTime = parseInt(localStorage.getItem('last_seen_notification_timestamp') || '0', 10);
       const notifTime = new Date(latest.createdAt || 0).getTime();
+      const lastSeenTime = parseInt(localStorage.getItem('last_seen_notification_timestamp') || '0', 10);
+      const isRecent = (Date.now() - notifTime) < (12 * 60 * 60 * 1000); // Created within last 12 hours
 
-      if (notifTime > lastSeenTime) {
+      // Trigger if newer than last seen and created recently, OR if live incoming update
+      if (notifTime > lastSeenTime && (isRecent || !isFirstLoad)) {
         showSystemNotification({
           title: latest.title,
           body: latest.body,
@@ -447,11 +468,10 @@ export const subscribeToSchoolNotifications = (onUpdate) => {
       }
     }
 
-    // On initial load, track latest timestamp so we don't alert retroactively
+    // On initial load, ensure baseline timestamp is recorded if missing
     if (isFirstLoad && list.length > 0) {
-      const latestTime = new Date(list[0].createdAt || 0).getTime();
-      const currentStored = parseInt(localStorage.getItem('last_seen_notification_timestamp') || '0', 10);
-      if (latestTime > currentStored) {
+      if (!localStorage.getItem('last_seen_notification_timestamp')) {
+        const latestTime = new Date(list[0].createdAt || 0).getTime();
         localStorage.setItem('last_seen_notification_timestamp', latestTime.toString());
       }
     }
