@@ -1,44 +1,45 @@
-/* PWA Install Banner Styling */
+/* PWA Install Banner Styling - Unified & Elegant */
 .pwa-install-banner-wrapper {
   position: fixed;
-  bottom: 85px;
+  bottom: 80px;
   left: 20px;
+  right: 20px;
+  margin: 0 auto;
   z-index: 99999;
-  max-width: 420px;
-  width: calc(100% - 40px);
+  max-width: 440px;
+  width: calc(100% - 32px);
   animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slideUpFade {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(35px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .pwa-install-card {
   position: relative;
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #2563eb 100%);
+  background: linear-gradient(145deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
   color: #ffffff;
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 16px 18px;
-  box-shadow: 0 12px 35px rgba(30, 58, 138, 0.35), 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
   direction: rtl;
   font-family: 'Tajawal', sans-serif;
 }
 
 .pwa-close-btn {
   position: absolute;
-  top: 10px;
+  top: 12px;
   left: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
   width: 28px;
   height: 28px;
@@ -49,48 +50,83 @@
   justify-content: center;
   font-size: 13px;
   transition: all 0.2s ease;
+  z-index: 2;
 }
 
 .pwa-close-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(239, 68, 68, 0.7);
   transform: rotate(90deg);
 }
 
 .pwa-content-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   margin-bottom: 12px;
-  padding-left: 20px;
+  padding-left: 24px;
+}
+
+.pwa-icon-container {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .pwa-app-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
   background: #ffffff;
-  padding: 2px;
-  flex-shrink: 0;
+  padding: 3px;
+  display: block;
+}
+
+.pwa-badge-bell {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #f59e0b;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 2px solid #0f172a;
 }
 
 .pwa-text-info {
   flex: 1;
 }
 
+.pwa-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .pwa-app-title {
   margin: 0 0 4px 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14.5px;
+  font-weight: 800;
   color: #ffffff;
+  line-height: 1.35;
 }
 
 .pwa-app-desc {
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: #e0e7ff;
-  opacity: 0.95;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #c7d2fe;
 }
 
 .pwa-actions-row {
@@ -101,50 +137,65 @@
 
 .pwa-btn-install {
   flex: 1;
-  background: #fbbf24;
-  color: #1e3a8a;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #0f172a;
   border: none;
-  padding: 9px 14px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 13.5px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
-.pwa-btn-install:hover {
-  background: #f59e0b;
+.pwa-btn-install:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
+}
+
+.pwa-btn-install:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .pwa-btn-later {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 9px 14px;
-  border-radius: 10px;
-  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .pwa-btn-later:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* iOS Instructions */
 .pwa-ios-instructions {
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  border-radius: 14px;
   padding: 12px 14px;
   margin-top: 8px;
-  font-size: 12px;
+  font-size: 12.5px;
   border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pwa-ios-title {
+  margin: 0 0 6px 0;
+  color: #67e8f9;
+  font-size: 12.5px;
 }
 
 .pwa-ios-instructions ol {
@@ -154,7 +205,8 @@
 
 .pwa-ios-instructions li {
   margin-bottom: 6px;
-  line-height: 1.4;
+  line-height: 1.45;
+  color: #e2e8f0;
 }
 
 .pwa-btn-done {
@@ -162,17 +214,32 @@
   background: #10b981;
   color: white;
   border: none;
-  padding: 7px;
-  border-radius: 8px;
+  padding: 8px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 12.5px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pwa-btn-done:hover {
+  background: #059669;
 }
 
 @media (max-width: 600px) {
   .pwa-install-banner-wrapper {
-    bottom: 75px;
+    bottom: 74px;
     left: 12px;
-    width: calc(100% - 24px);
+    right: 12px;
+    width: auto;
+  }
+
+  .pwa-app-title {
+    font-size: 13.5px;
+  }
+
+  .pwa-btn-install {
+    font-size: 12.5px;
+    padding: 9px 12px;
   }
 }

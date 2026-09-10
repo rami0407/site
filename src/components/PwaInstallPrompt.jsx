@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  isNotificationSupported, 
+  isNotificationsEnabledLocally, 
+  requestNotificationPermission 
+} from '../utils/notificationService';
 import './PwaInstallPrompt.css';
 
 const PwaInstallPrompt = () => {
@@ -7,6 +12,7 @@ const PwaInstallPrompt = () => {
   const [isIos, setIsIos] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     // Check if app is already running in standalone (PWA) mode
@@ -17,8 +23,8 @@ const PwaInstallPrompt = () => {
       return;
     }
 
-    // Check if dismissed recently (within 5 days)
-    const dismissedAt = localStorage.getItem('pwa_prompt_dismissed_until');
+    // Check if dismissed recently (within 3 days)
+    const dismissedAt = localStorage.getItem('pwa_unified_dismissed_until');
     const isDismissed = dismissedAt && Date.now() < Number(dismissedAt);
 
     // Detect iOS
@@ -31,36 +37,35 @@ const PwaInstallPrompt = () => {
       e.preventDefault();
       setDeferredPrompt(e);
       if (!isDismissed) {
-        // Show after 3 seconds so the user can see the page first
-        setTimeout(() => setShowPrompt(true), 3000);
+        // Show after 2.5 seconds so visitor can see page content smoothly first
+        setTimeout(() => setShowPrompt(true), 2500);
       }
     };
 
-    // If on iOS and not dismissed, show prompt after 4 seconds
+    // If on iOS and not dismissed, show prompt after 3 seconds
     if (isIosDevice && !isDismissed && !isStandalone) {
-      const timer = setTimeout(() => setShowPrompt(true), 4000);
+      const timer = setTimeout(() => setShowPrompt(true), 3000);
       return () => clearTimeout(timer);
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Track successful install
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
-      console.log('Musheirifa PWA was installed successfully!');
-    });
+      localStorage.setItem('pwa_app_installed', 'true');
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Custom trigger listener to open from external button
+    // Custom trigger listener to open from floating button or menu
     const handleManualTrigger = () => {
       if (isIosDevice) {
         setShowIosGuide(true);
         setShowPrompt(true);
-      } else if (deferredPrompt) {
-        setShowPrompt(true);
       } else {
-        alert('لتثبيت التطبيق على جهازك: افتح قائمة المتصفح (⋮ أو ⋯) واختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".');
+        setShowPrompt(true);
       }
     };
 
@@ -68,82 +73,124 @@ const PwaInstallPrompt = () => {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('trigger-pwa-install', handleManualTrigger);
     };
-  }, [deferredPrompt]);
+  }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstallAndNotify = async () => {
+    setIsProcessing(true);
+
+    // 1. Request notification permission if supported and not yet granted
+    if (isNotificationSupported() && !isNotificationsEnabledLocally()) {
+      try {
+        await requestNotificationPermission();
+      } catch (err) {
+        console.warn('Notification permission optional notice:', err);
+      }
+    }
+
+    // 2. Handle iOS device flow
     if (isIos) {
       setShowIosGuide(true);
+      setIsProcessing(false);
       return;
     }
 
-    if (!deferredPrompt) {
-      alert('لتثبيت التطبيق: افتح قائمة المتصفح (⋮) بالأعلى واختر "تثبيت التطبيق" (Install App).');
-      return;
-    }
-
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowPrompt(false);
-        setDeferredPrompt(null);
+    // 3. Handle Android / Chromium native install prompt
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setShowPrompt(false);
+          setDeferredPrompt(null);
+        }
+      } catch (err) {
+        console.warn('Install prompt error:', err);
+      } finally {
+        setIsProcessing(false);
       }
-    } catch (err) {
-      console.warn('Install prompt error:', err);
+    } else {
+      // Fallback instructions for browsers without native prompt
+      setIsProcessing(false);
+      alert('لتثبيت التطبيق على جهازك: افتح قائمة المتصفح (⋮ أو ⋯) بالأعلى واختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".');
+      setShowPrompt(false);
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Snooze for 4 days
-    localStorage.setItem('pwa_prompt_dismissed_until', String(Date.now() + 4 * 24 * 60 * 60 * 1000));
+    // Snooze for 3 days so user is not annoyed
+    localStorage.setItem('pwa_unified_dismissed_until', String(Date.now() + 3 * 24 * 60 * 60 * 1000));
   };
 
   if (isInstalled || !showPrompt) return null;
 
   return (
-    <div className="pwa-install-banner-wrapper">
+    <div className="pwa-install-banner-wrapper" role="dialog" aria-label="تنزيل التطبيق وتفعيل الإشعارات">
       <div className="pwa-install-card">
         <button 
           className="pwa-close-btn" 
           onClick={handleDismiss} 
           aria-label="إغلاق التنبيه"
+          title="إغلاق"
         >
           <i className="fas fa-times"></i>
         </button>
 
         <div className="pwa-content-row">
-          <img 
-            src="/icon-192.png" 
-            alt="شعار مدرسة مشيرفة" 
-            className="pwa-app-icon"
-          />
+          <div className="pwa-icon-container">
+            <img 
+              src="/icon-192.png" 
+              alt="شعار مدرسة مشيرفة" 
+              className="pwa-app-icon"
+            />
+            <span className="pwa-badge-bell">🔔</span>
+          </div>
+
           <div className="pwa-text-info">
-            <h4 className="pwa-app-title">تطبيق مدرسة مشيرفة الابتدائية 📱</h4>
+            <div className="pwa-tag-pill">
+              <span>تطبيق مدرسة مشيرفة 📱</span>
+            </div>
+            <h4 className="pwa-app-title">
+              يمكنك تنزيل التطبيق على هاتفك وتلقي الإشعارات
+            </h4>
             <p className="pwa-app-desc">
-              ثبّت التطبيق مجاناً على هاتفك لفتحه كبرنامج مستقل وسريع بدون شريط المتصفح!
+              تصفح سريع بدون شريط المتصفح وتنبيهات مباشرة بالفعاليات والرسائل فور نشرها!
             </p>
           </div>
         </div>
 
         {isIos && showIosGuide ? (
           <div className="pwa-ios-instructions">
-            <p>
-              <strong>طريقة التثبيت على آيفون (Safari):</strong>
+            <p className="pwa-ios-title">
+              <strong>📲 خطوات التثبيت السريع على آيفون (Safari):</strong>
             </p>
             <ol>
-              <li>اضغط على زر المشاركة <i className="fas fa-share-square" style={{ color: '#007aff' }}></i> أسفل شاشة المتصفح.</li>
-              <li>انزل في القائمة واضغط على <strong>"إضافة إلى الشاشة الرئيسية" ➕</strong> (Add to Home Screen).</li>
-              <li>اضغط على <strong>"إضافة" (Add)</strong> في الزاوية العليا، وسيظهر التطبيق فوراً على شاشة هاتفك!</li>
+              <li>
+                اضغط على زر المشاركة <i className="fas fa-share-square" style={{ color: '#38bdf8' }}></i> أسفل شاشة المتصفح.
+              </li>
+              <li>
+                مرر للأسفل واختر <strong>"إضافة إلى الشاشة الرئيسية" ➕</strong> (Add to Home Screen).
+              </li>
+              <li>
+                اضغط على <strong>"إضافة" (Add)</strong> بالأعلى لتجد التطبيق فوراً بين برامج هاتفك!
+              </li>
             </ol>
-            <button className="pwa-btn-done" onClick={handleDismiss}>فهمت ذلك، تم 👍</button>
+            <button className="pwa-btn-done" onClick={handleDismiss}>
+              فهمت ذلك، تم بنجاح 👍
+            </button>
           </div>
         ) : (
           <div className="pwa-actions-row">
-            <button className="pwa-btn-install" onClick={handleInstallClick}>
-              <i className="fas fa-download"></i> تثبيت التطبيق الآن
+            <button 
+              className="pwa-btn-install" 
+              onClick={handleInstallAndNotify}
+              disabled={isProcessing}
+            >
+              <i className={`fas ${isProcessing ? 'fa-spinner fa-spin' : 'fa-download'}`}></i>
+              {isProcessing ? 'جاري التجهيز...' : 'تنزيل التطبيق وتفعيل الإشعارات ⚡'}
             </button>
             <button className="pwa-btn-later" onClick={handleDismiss}>
               لاحقاً

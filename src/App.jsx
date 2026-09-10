@@ -10,7 +10,6 @@ import FloatingActions from './components/FloatingActions';
 import AiAssistant from './components/AiAssistant';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import SocraticHomeworkModal from './components/SocraticHomeworkModal';
-import NotificationPromptBanner from './components/NotificationPromptBanner';
 import CentralNotificationModal from './components/CentralNotificationModal';
 import { subscribeToSchoolNotifications } from './utils/notificationService';
 import { db } from './firebase';
@@ -488,9 +487,6 @@ function App() {
 
       {/* Central Phone & Screen Notification Alert Modal */}
       <CentralNotificationModal />
-
-      {/* Phone Push Notification Activation Banner */}
-      <NotificationPromptBanner />
 
       {/* Global Socratic Homework Helper Modal */}
       <SocraticHomeworkModal
