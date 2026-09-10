@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { 
+  getAllTeachers, 
+  resetTeacherPinToDefault, 
+  isTeacherPinCustomized, 
+  DEFAULT_TEACHER_PIN 
+} from '../utils/teacherAuth';
 
 const StudentDismissalAdminTab = () => {
   const [dismissals, setDismissals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTeacherAccounts, setShowTeacherAccounts] = useState(false);
+  const [teacherListVer, setTeacherListVer] = useState(0);
+  const [teacherSearch, setTeacherSearch] = useState('');
+  const allTeachers = useMemo(() => getAllTeachers(), [teacherListVer]);
 
   // Sync to important links
   const handleSyncDismissalToImportantLinks = async () => {
@@ -348,9 +358,138 @@ const StudentDismissalAdminTab = () => {
               <i className="fas fa-link"></i>
               🔗 تثبيت في الروابط الخارجية بالموقع
             </button>
+
+            <button 
+              onClick={() => setShowTeacherAccounts(prev => !prev)}
+              style={{
+                background: showTeacherAccounts ? '#38bdf8' : 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: showTeacherAccounts ? '#0f172a' : 'white',
+                padding: '0.7rem 1.2rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}
+              title="عرض حسابات المربين وإعادة ضبط كلمات المرور (السيسما)"
+            >
+              <i className="fas fa-user-shield"></i>
+              {showTeacherAccounts ? 'إخفاء حسابات المعلمين 👥' : 'إدارة حسابات وكلمات مرور المعلمين 🔑'}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* TEACHER ACCOUNTS MANAGEMENT PANEL */}
+      {showTeacherAccounts && (
+        <div style={{
+          background: 'white',
+          borderRadius: '20px',
+          padding: '1.75rem',
+          border: '2px solid #38bdf8',
+          boxShadow: '0 8px 24px rgba(2, 132, 199, 0.12)',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>👥🔑</span> إدارة حسابات وكلمات مرور المعلمين ({allTeachers.length} معلماً ومعلمة)
+              </h3>
+              <p style={{ margin: '0.35rem 0 0 0', color: '#64748b', fontSize: '0.88rem' }}>
+                الرمز الأولي الموحد هو <strong>{DEFAULT_TEACHER_PIN}</strong>. يمكن للمعلم تغييره شخصياً، كما يمكن للمدير هنا إعادة تعيين رمز أي معلم نسيه إلى 318212 بضغطة زر.
+              </p>
+            </div>
+            <input
+              type="text"
+              placeholder="🔍 بحث بالاسم العربي أو العبري..."
+              value={teacherSearch}
+              onChange={(e) => setTeacherSearch(e.target.value)}
+              style={{
+                padding: '0.6rem 1rem',
+                borderRadius: '12px',
+                border: '1.5px solid #cbd5e1',
+                fontSize: '0.9rem',
+                minWidth: '240px',
+                outline: 'none'
+              }}
+            />
+          </div>
+
+          <div style={{ maxHeight: '380px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', color: '#475569' }}>
+                  <th style={{ padding: '0.75rem 1rem' }}>المربي / المعلم</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>الاسم بالعبرية</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>المسمى الوظيفي</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>حالة كلمة المرور (السيسما)</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>إجراءات الإدارة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allTeachers
+                  .filter(t => !teacherSearch || t.nameAr.includes(teacherSearch) || t.nameHe.includes(teacherSearch))
+                  .map(t => {
+                    const isCustom = isTeacherPinCustomized(t.id);
+                    return (
+                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '0.7rem 1rem', fontWeight: 800, color: '#0f172a' }}>
+                          👨‍🏫 {t.nameAr}
+                        </td>
+                        <td style={{ padding: '0.7rem 1rem', color: '#64748b', fontWeight: 600 }}>
+                          {t.nameHe}
+                        </td>
+                        <td style={{ padding: '0.7rem 1rem', color: '#475569', fontSize: '0.85rem' }}>
+                          {t.role || 'معلم ومربي'}
+                        </td>
+                        <td style={{ padding: '0.7rem 1rem' }}>
+                          {isCustom ? (
+                            <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800 }}>
+                              🔑 رمز شخصي مخصص
+                            </span>
+                          ) : (
+                            <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 9px', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800 }}>
+                              الرمز الافتراضي (318212)
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '0.7rem 1rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`هل تريد إعادة ضبط كلمة مرور (${t.nameAr}) إلى الرمز الافتراضي 318212؟`)) {
+                                resetTeacherPinToDefault(t.id);
+                                setTeacherListVer(v => v + 1);
+                                alert(`✅ تم بنجاح إعادة ضبط كلمة مرور ${t.nameAr} إلى ${DEFAULT_TEACHER_PIN}.`);
+                              }
+                            }}
+                            style={{
+                              background: '#f1f5f9',
+                              border: '1px solid #cbd5e1',
+                              color: '#334155',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                            title="إعادة ضبط الرمز إلى 318212"
+                          >
+                            🔄 إعادة ضبط إلى 318212
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* KPI STATS CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>

@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, doc, setDoc, getDocs, onSnapshot } from 'firebase/firestore';
-import { defaultSchoolTeachers } from '../data/schoolTeachersData';
+import { collection, addDoc, doc, setDoc, getDocs } from 'firebase/firestore';
+import { 
+  getAllTeachers, 
+  getTeacherById, 
+  verifyTeacherCredentials, 
+  updateTeacherPin, 
+  resetTeacherPinToDefault, 
+  getActiveTeacherSession, 
+  setActiveTeacherSession, 
+  logoutTeacherSession, 
+  DEFAULT_TEACHER_PIN 
+} from '../utils/teacherAuth';
 import './StudentDismissalPage.css';
 
 const CLASSROOM_OPTIONS = [
@@ -30,57 +40,47 @@ const COMPANION_TYPES = [
   'بمفرده (بموافقة هاتفية موثقة) 🚶'
 ];
 
-const TEACHER_DISMISSAL_PIN = '318212';
-
 const StudentDismissalPage = () => {
-  // Security Authentication (Teacher PIN Code: 318212)
-  const [isAuthorized, setIsAuthorized] = useState(() => {
+  const allTeachers = getAllTeachers();
+
+  // Active Authenticated Teacher Session
+  const [activeTeacher, setActiveTeacher] = useState(() => {
+    const session = getActiveTeacherSession();
+    if (session && session.id) return session;
     try {
-      return localStorage.getItem('musherfe_teacher_auth_pin') === TEACHER_DISMISSAL_PIN;
-    } catch (e) {
-      return false;
-    }
+      if (localStorage.getItem('musherfe_teacher_auth_pin') === DEFAULT_TEACHER_PIN) {
+        const defaultT = allTeachers.find(t => t.id === 'rami_irfaeya') || allTeachers[0];
+        setActiveTeacherSession(defaultT);
+        return defaultT;
+      }
+    } catch (e) {}
+    return null;
   });
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
+
+  // Login Form States
+  const [selectedTeacherId, setSelectedTeacherId] = useState(allTeachers[0]?.id || 'rami_irfaeya');
+  const [loginPin, setLoginPin] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
 
-  const handlePinSubmit = (e) => {
-    e.preventDefault();
-    if (pinInput.trim() === TEACHER_DISMISSAL_PIN) {
-      setPinError('');
-      setIsAuthorized(true);
-      if (rememberDevice) {
-        try {
-          localStorage.setItem('musherfe_teacher_auth_pin', TEACHER_DISMISSAL_PIN);
-        } catch (err) {}
-      }
-    } else {
-      setPinError('❌ الرمز السري غير صحيح! هذه البوابة مخصصة للمربين المعتمدين فقط.');
-      setPinInput('');
-    }
-  };
-
-  const handleLogoutTeacher = () => {
-    if (window.confirm('هل تريد قفل الشاشة وتسجيل خروج المربي؟')) {
-      try {
-        localStorage.removeItem('musherfe_teacher_auth_pin');
-      } catch (err) {}
-      setIsAuthorized(false);
-      setPinInput('');
-    }
-  };
+  // Change Password Modal States
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [changePinError, setChangePinError] = useState('');
+  const [changePinSuccess, setChangePinSuccess] = useState('');
+  const [isSavingPin, setIsSavingPin] = useState(false);
 
   // Form State
   const [studentName, setStudentName] = useState('');
   const [classroom, setClassroom] = useState('الصف الأول (أ)');
-  const [teacherName, setTeacherName] = useState('رامي ارفاعية');
   const [reason, setReason] = useState('توعك صحي أو مرض مفاجئ 🤒');
   const [reasonDetails, setReasonDetails] = useState('');
   const [companionType, setCompanionType] = useState('الأب 👨');
   const [companionName, setCompanionName] = useState('');
-  
+
   // Date & Time
   const getTodayLocalString = () => {
     const d = new Date();
@@ -98,33 +98,93 @@ const StudentDismissalPage = () => {
     return `${h}:${m}`;
   });
 
-  // Teachers List for selection
-  const [teachersList, setTeachersList] = useState(defaultSchoolTeachers);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedPass, setCompletedPass] = useState(null);
 
-  // Load teachers from Firestore
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'school_teachers'));
-        if (!snap.empty) {
-          const list = [];
-          snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-          setTeachersList(list);
+  // Handle Teacher Login
+  const handleTeacherLogin = (e) => {
+    e.preventDefault();
+    setLoginError('');
+
+    if (!selectedTeacherId) {
+      setLoginError('يرجى اختيار اسم المربي من القائمة.');
+      return;
+    }
+
+    const isValid = verifyTeacherCredentials(selectedTeacherId, loginPin);
+    if (isValid) {
+      const teacher = getTeacherById(selectedTeacherId) || allTeachers.find(t => t.id === selectedTeacherId);
+      if (teacher) {
+        if (rememberDevice) {
+          setActiveTeacherSession(teacher);
         }
-      } catch (err) {
-        console.warn('Teachers fetch fallback:', err);
+        setActiveTeacher(teacher);
+        setLoginPin('');
+        setLoginError('');
       }
-    };
-    fetchTeachers();
-  }, []);
+    } else {
+      setLoginError('❌ رمز الدخول السري غير صحيح! (الرمز الأولي الموحد لجميع المعلمين هو 318212 ما لم تقم بتغييره)');
+    }
+  };
+
+  // Handle Teacher Logout
+  const handleTeacherLogout = () => {
+    if (window.confirm('هل تريد قفل الشاشة وتسجيل خروج المربي الحالي؟')) {
+      logoutTeacherSession();
+      setActiveTeacher(null);
+      setLoginPin('');
+      setLoginError('');
+    }
+  };
+
+  // Handle Change PIN Modal Submit
+  const handleChangePinSubmit = async (e) => {
+    e.preventDefault();
+    setChangePinError('');
+    setChangePinSuccess('');
+
+    if (!activeTeacher) return;
+
+    // Verify current PIN
+    const isCurrentValid = verifyTeacherCredentials(activeTeacher.id, currentPinInput);
+    if (!isCurrentValid) {
+      setChangePinError('❌ كلمة المرور الحالية غير صحيحة.');
+      return;
+    }
+
+    if (newPinInput.trim().length < 4) {
+      setChangePinError('يجب أن تتكون كلمة المرور الجديدة من 4 خانات على الأقل.');
+      return;
+    }
+
+    if (newPinInput.trim() !== confirmPinInput.trim()) {
+      setChangePinError('كلمة المرور الجديدة وتأكيدها غير متطابقين.');
+      return;
+    }
+
+    try {
+      setIsSavingPin(true);
+      await updateTeacherPin(activeTeacher.id, newPinInput.trim());
+      setChangePinSuccess('🎉 تم تحديث وحفظ رمز الدخول السري الخاص بك بنجاح!');
+      setTimeout(() => {
+        setShowChangePinModal(false);
+        setCurrentPinInput('');
+        setNewPinInput('');
+        setConfirmPinInput('');
+        setChangePinSuccess('');
+      }, 1800);
+    } catch (err) {
+      setChangePinError(err.message || 'حدث خطأ أثناء حفظ الرمز الجديد.');
+    } finally {
+      setIsSavingPin(false);
+    }
+  };
 
   // Submit Dismissal Pass
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isAuthorized) {
-      alert('يرجى إدخال الرمز السري للمربي أولاً.');
+    if (!activeTeacher) {
+      alert('يرجى تسجيل دخول المربي أولاً.');
       return;
     }
     if (!studentName.trim()) {
@@ -135,7 +195,7 @@ const StudentDismissalPage = () => {
     setIsSubmitting(true);
 
     const passCode = 'DIS-' + Math.floor(1000 + Math.random() * 9000);
-    const gradeLevel = classroom.split(' ')[1] || 'غير محدد'; // e.g. "الأول", "الرابع"
+    const gradeLevel = classroom.split(' ')[1] || 'غير محدد';
     const nameParts = studentName.trim().split(/\s+/);
     const autoFamilyName = nameParts.length >= 2 ? nameParts[nameParts.length - 1] : 'غير محدد';
     const finalDate = departureDate || getTodayLocalString();
@@ -149,8 +209,10 @@ const StudentDismissalPage = () => {
       gradeLevel,
       classroom,
       studentClass: classroom,
-      teacherName: teacherName.trim(),
-      teacherNameAr: teacherName.trim(),
+      teacherId: activeTeacher.id,
+      teacherName: activeTeacher.nameAr,
+      teacherNameAr: activeTeacher.nameAr,
+      teacherRole: activeTeacher.role || 'مربي ومعلم',
       reason,
       reasonDetails: reasonDetails.trim(),
       companionType,
@@ -176,7 +238,7 @@ const StudentDismissalPage = () => {
     try {
       let docId = 'dis_' + Date.now();
       
-      // 1. Primary storage: teacher_appointments (guaranteed active Firestore permissions)
+      // 1. Primary storage: teacher_appointments
       try {
         const docRef = await addDoc(collection(db, 'teacher_appointments'), dismissalData);
         docId = docRef.id;
@@ -235,8 +297,10 @@ const StudentDismissalPage = () => {
     window.open(url, '_blank');
   };
 
-  // Security Lock Screen (Rendered if not authorized with Teacher PIN: 318212)
-  if (!isAuthorized) {
+  // ------------------------------------------------------------
+  // RENDER: Teacher Login Screen if not authenticated
+  // ------------------------------------------------------------
+  if (!activeTeacher) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -254,7 +318,7 @@ const StudentDismissalPage = () => {
           border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: '28px',
           padding: '2.5rem 2rem',
-          maxWidth: '460px',
+          maxWidth: '480px',
           width: '100%',
           boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
           textAlign: 'center',
@@ -262,14 +326,14 @@ const StudentDismissalPage = () => {
         }}>
           {/* Educator Emblem */}
           <div style={{
-            width: '74px',
-            height: '74px',
+            width: '76px',
+            height: '76px',
             borderRadius: '22px',
             background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '2.2rem',
+            fontSize: '2.3rem',
             margin: '0 auto 1.25rem',
             boxShadow: '0 8px 25px rgba(2, 132, 199, 0.4)',
             border: '2px solid rgba(255, 255, 255, 0.2)'
@@ -278,64 +342,102 @@ const StudentDismissalPage = () => {
           </div>
 
           <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: '0 0 0.4rem', color: '#f8fafc' }}>
-            منظومة تسريح الطلاب (خاص بالمربين)
+            بوابة المربين - تسريح الطلاب
           </h2>
-          <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 800, marginBottom: '1.5rem', display: 'inline-block', background: 'rgba(56, 189, 248, 0.12)', padding: '0.3rem 0.9rem', borderRadius: '50px' }}>
-            🔒 اعتماد وتوثيق الخروج المدرسي
+          <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 800, marginBottom: '1.3rem', display: 'inline-block', background: 'rgba(56, 189, 248, 0.12)', padding: '0.35rem 1rem', borderRadius: '50px' }}>
+            🔒 نظام الحسابات الموحد لمعلمي المدرسة
           </div>
 
-          <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 1.75rem 0', fontWeight: 500 }}>
-            هذه البوابة مخصصة للمربين والمعلمين المعتمدين في المدرسة لإصدار أذونات الخروج الرسمية. يرجى إدخال الرمز السري للمربي للمتابعة.
+          <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 1.5rem 0', fontWeight: 500 }}>
+            اختر اسمك من قائمة الهيئة التدريسية وأدخل الرمز السري الخاص بك لإصدار إذن تسريح وخروج رسمي للطالب.
           </p>
 
-          <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPin ? 'text' : 'password'}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={10}
-                placeholder="أدخل رمز المربي (PIN)..."
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                autoFocus
+          <form onSubmit={handleTeacherLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', textAlign: 'right' }}>
+            {/* Teacher Select */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
+                👤 اسم المربي / المعلم:
+              </label>
+              <select
+                value={selectedTeacherId}
+                onChange={(e) => setSelectedTeacherId(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '1rem 3rem 1rem 1rem',
-                  background: 'rgba(15, 23, 42, 0.85)',
-                  border: pinError ? '2px solid #ef4444' : '2px solid #334155',
+                  padding: '0.9rem 1rem',
+                  background: 'rgba(15, 23, 42, 0.9)',
+                  border: '2px solid #334155',
                   borderRadius: '16px',
                   color: 'white',
-                  fontSize: '1.3rem',
-                  textAlign: 'center',
-                  letterSpacing: '5px',
-                  fontWeight: 800,
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
                   outline: 'none',
                   boxSizing: 'border-box'
                 }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPin(!showPin)}
-                style={{
-                  position: 'absolute',
-                  left: '14px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  fontSize: '1.1rem',
-                  cursor: 'pointer',
-                  padding: '4px'
-                }}
-                title={showPin ? 'إخفاء الرمز' : 'إظهار الرمز'}
               >
-                <i className={`fas ${showPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </button>
+                {allTeachers.map((tch) => (
+                  <option key={tch.id} value={tch.id} style={{ background: '#1e293b', color: 'white' }}>
+                    {tch.nameAr} - {tch.nameHe} {tch.id === 'rami_irfaeya' ? '★ (مدير المدرسة)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {pinError && (
+            {/* Password PIN Input */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
+                🔑 رمز الدخول السري (السيسما):
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  placeholder="أدخل رمزك السري..."
+                  value={loginPin}
+                  onChange={(e) => setLoginPin(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem 3rem 0.9rem 1rem',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    border: loginError ? '2px solid #ef4444' : '2px solid #334155',
+                    borderRadius: '16px',
+                    color: 'white',
+                    fontSize: '1.25rem',
+                    textAlign: 'center',
+                    letterSpacing: '4px',
+                    fontWeight: 800,
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    padding: '4px'
+                  }}
+                  title={showPin ? 'إخفاء الرمز' : 'إظهار الرمز'}
+                >
+                  <i className={`fas ${showPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Initial PIN notice */}
+            <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '12px', padding: '0.65rem 0.85rem', fontSize: '0.82rem', color: '#7dd3fc', lineHeight: '1.5' }}>
+              ℹ️ <strong>ملاحظة هامة:</strong> الرمز الأولي الموحد لجميع المربين هو <strong style={{ color: '#ffffff', letterSpacing: '1px' }}>318212</strong>. فور الدخول يمكنك تغيير الرمز إلى كودك الشخصي الذي تفضله.
+            </div>
+
+            {loginError && (
               <div style={{
                 background: 'rgba(239, 68, 68, 0.15)',
                 border: '1px solid rgba(239, 68, 68, 0.35)',
@@ -346,7 +448,7 @@ const StudentDismissalPage = () => {
                 fontWeight: 700,
                 textAlign: 'center'
               }}>
-                {pinError}
+                {loginError}
               </div>
             )}
 
@@ -360,13 +462,13 @@ const StudentDismissalPage = () => {
               color: '#cbd5e1',
               cursor: 'pointer',
               userSelect: 'none',
-              padding: '0.25rem 0'
+              padding: '0.2rem 0'
             }}>
               <input
                 type="checkbox"
                 checked={rememberDevice}
                 onChange={(e) => setRememberDevice(e.target.checked)}
-                style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#0284c7' }}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#0284c7' }}
               />
               <span>تذكر هذا الجهاز دائماً (هاتف المربي الخاص)</span>
             </label>
@@ -390,7 +492,7 @@ const StudentDismissalPage = () => {
                 marginTop: '0.4rem'
               }}
             >
-              <span>دخول صفحة التسريح</span>
+              <span>تسجيل الدخول ومتابعة التسريح</span>
               <i className="fas fa-arrow-left"></i>
             </button>
           </form>
@@ -408,9 +510,266 @@ const StudentDismissalPage = () => {
     );
   }
 
+  // ------------------------------------------------------------
+  // RENDER: Authenticated Dismissal Page
+  // ------------------------------------------------------------
   return (
     <div className="dismissal-page-container">
       <div className="dismissal-content-wrapper">
+        
+        {/* Active Teacher Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: '20px',
+          padding: '1rem 1.5rem',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          marginBottom: '1.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '1.4rem'
+            }}>
+              👨‍🏫
+            </div>
+            <div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>
+                حساب المربي المعتمد المسجل حالياً:
+              </div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                {activeTeacher.nameAr} <span style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 700 }}>({activeTeacher.nameHe})</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowChangePinModal(true);
+                setChangePinError('');
+                setChangePinSuccess('');
+                setCurrentPinInput('');
+                setNewPinInput('');
+                setConfirmPinInput('');
+              }}
+              style={{
+                background: '#f0f9ff',
+                color: '#0284c7',
+                border: '1px solid #bae6fd',
+                padding: '0.55rem 1rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <i className="fas fa-key"></i>
+              تغيير كلمة المرور (السيسما)
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTeacherLogout}
+              style={{
+                background: '#fef2f2',
+                color: '#ef4444',
+                border: '1px solid #fecaca',
+                padding: '0.55rem 1rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+              title="تسجيل خروج أو تبديل الحساب"
+            >
+              <i className="fas fa-sign-out-alt"></i>
+              تبديل الحساب / خروج
+            </button>
+          </div>
+        </div>
+
+        {/* Change PIN Modal */}
+        {showChangePinModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+            direction: 'rtl'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '2rem',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+              position: 'relative'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🔑</span>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                    تغيير رمز الدخول السري (السيسما)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePinModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>
+                المربي/ة: <strong>{activeTeacher.nameAr}</strong>. يمكنك الآن تعيين رمزك السري الشخصي الخاص بك بدلاً من الرمز الافتراضي.
+              </p>
+
+              <form onSubmit={handleChangePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    الرمز الحالي (أو 318212 إذا لم تغيره مسبقاً): *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={currentPinInput}
+                    onChange={(e) => setCurrentPinInput(e.target.value)}
+                    placeholder="أدخل رمزك الحالي..."
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '12px',
+                      fontSize: '1rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    الرمز الجديد الخاص بك (4 خانات على الأقل): *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPinInput}
+                    onChange={(e) => setNewPinInput(e.target.value)}
+                    placeholder="مثال: 4488 أو أي رمز تختاره..."
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '12px',
+                      fontSize: '1rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    تأكيد الرمز الجديد: *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPinInput}
+                    onChange={(e) => setConfirmPinInput(e.target.value)}
+                    placeholder="أعد كتابة الرمز الجديد..."
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '12px',
+                      fontSize: '1rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {changePinError && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.65rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                    {changePinError}
+                  </div>
+                )}
+
+                {changePinSuccess && (
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '0.65rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                    {changePinSuccess}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
+                  <button
+                    type="submit"
+                    disabled={isSavingPin}
+                    style={{
+                      flex: 1,
+                      background: '#0284c7',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.85rem',
+                      borderRadius: '12px',
+                      fontWeight: 800,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isSavingPin ? 'جاري الحفظ...' : 'حفظ كلمة المرور الجديدة 💾'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePinModal(false)}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: 'none',
+                      padding: '0.85rem 1.25rem',
+                      borderRadius: '12px',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Hero Card */}
         <div className="dismissal-hero-card">
           <div className="dismissal-hero-badge">
@@ -434,16 +793,6 @@ const StudentDismissalPage = () => {
               <i className="fas fa-chart-pie"></i>
               لوحة التحكم وإحصائيات التسريح 📊
             </a>
-            <button
-              type="button"
-              onClick={handleLogoutTeacher}
-              className="dismissal-hero-btn"
-              style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.35)', cursor: 'pointer' }}
-              title="قفل الشاشة وتسجيل خروج المربي"
-            >
-              <i className="fas fa-lock"></i>
-              قفل الشاشة 🔒
-            </button>
           </div>
         </div>
 
@@ -497,23 +846,36 @@ const StudentDismissalPage = () => {
             </div>
 
             <div className="dismissal-grid-2">
+              {/* Locked to Active Logged-in Teacher */}
               <div className="dismissal-field-group">
                 <label className="dismissal-field-label">
                   <i className="fas fa-chalkboard-teacher" style={{ color: '#0284c7' }}></i>
-                  المربي / المعلم المصرح بالخروج: *
+                  المربي المصرح بالخروج (حسابك المعتمد):
                 </label>
-                <select 
-                  className="dismissal-field-input"
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  required
-                >
-                  {teachersList.map(tch => (
-                    <option key={tch.id} value={tch.nameAr}>
-                      {tch.nameAr} ({tch.role || 'معلم ومربي'})
-                    </option>
-                  ))}
-                </select>
+                <div style={{
+                  padding: '0.85rem 1rem',
+                  background: '#f8fafc',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem' }}>
+                    👨‍🏫 {activeTeacher.nameAr}
+                  </div>
+                  <span style={{
+                    background: '#ecfdf5',
+                    color: '#047857',
+                    border: '1px solid #a7f3d0',
+                    padding: '2px 8px',
+                    borderRadius: '50px',
+                    fontSize: '0.78rem',
+                    fontWeight: 800
+                  }}>
+                    🔒 موثق ومعتمد
+                  </span>
+                </div>
               </div>
 
               <div className="dismissal-field-group">
@@ -541,8 +903,8 @@ const StudentDismissalPage = () => {
               </label>
               <input 
                 type="text" 
-                className="dismissal-field-input"
-                placeholder="مثال: يعاني من ارتفاع حرارة، تم الاتصال بوالدته للحضور فوراً..."
+                className="dismissal-field-input" 
+                placeholder="مثال: يعاني من ارتفاع حرارة، تم الاتصال بوالدته للحضور فوراً..." 
                 value={reasonDetails}
                 onChange={(e) => setReasonDetails(e.target.value)}
               />
@@ -579,8 +941,8 @@ const StudentDismissalPage = () => {
                 </label>
                 <input 
                   type="text" 
-                  className="dismissal-field-input"
-                  placeholder="مثال: رامي ارفاعية"
+                  className="dismissal-field-input" 
+                  placeholder="مثال: رامي ارفاعية" 
                   value={companionName}
                   onChange={(e) => setCompanionName(e.target.value)}
                 />
@@ -594,7 +956,7 @@ const StudentDismissalPage = () => {
               </label>
               <input 
                 type="time" 
-                className="dismissal-field-input"
+                className="dismissal-field-input" 
                 value={departureTime}
                 onChange={(e) => setDepartureTime(e.target.value)}
                 required
