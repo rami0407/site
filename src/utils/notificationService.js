@@ -1,4 +1,4 @@
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 import { 
   collection, 
   addDoc, 
@@ -12,6 +12,83 @@ import {
   updateDoc,
   increment 
 } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+
+/**
+ * Extract YouTube embed URL from various formats
+ */
+export const getYouTubeEmbedUrl = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+
+  // Match standard youtu.be / watch?v= / shorts/
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+
+  if (match && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}`;
+  }
+  return null;
+};
+
+/**
+ * Upload audio, video, or document file to Firebase Storage with fallback
+ */
+export const uploadNotificationMedia = (file, folder = 'notifications_media', onProgress) => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('لم يتم تحديد أي ملف للرفع.'));
+      return;
+    }
+
+    try {
+      const cleanName = (file.name || ('media_' + Date.now())).replace(/[^a-zA-Z0-9._-]/g, '_');
+      const uniquePath = `${folder}/${Date.now()}_${cleanName}`;
+      const storageRef = ref(storage, uniquePath);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          if (snapshot.totalBytes > 0 && onProgress) {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            onProgress(progress);
+          }
+        },
+        (error) => {
+          console.warn('Storage upload error, attempting fallback to base64 for small file:', error);
+          // If file is under 12MB, fall back to base64 Data URL
+          if (file.size && file.size < 12 * 1024 * 1024) {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('فشل قراءة الملف المرفوع.'));
+            reader.readAsDataURL(file);
+          } else {
+            reject(error);
+          }
+        },
+        async () => {
+          try {
+            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadUrl);
+          } catch (err) {
+            reject(err);
+          }
+        }
+      );
+    } catch (err) {
+      // Fallback
+      if (file.size && file.size < 12 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(err);
+        reader.readAsDataURL(file);
+      } else {
+        reject(err);
+      }
+    }
+  });
+};
 
 /**
  * Get or create a persistent anonymous device identifier
@@ -192,7 +269,14 @@ export const broadcastSchoolNotification = async ({
   popupInCenter = true,
   priority = 'urgent',
   theme = 'red',
-  targetAudience = 'all'
+  targetAudience = 'all',
+  audioUrl = null,
+  audioDuration = null,
+  videoUrl = null,
+  videoType = null,
+  fileUrl = null,
+  fileName = null,
+  fileSize = null
 }) => {
   if (!title || !body) throw new Error('العنوان ونص الإشعار مطلوبان.');
 
@@ -205,6 +289,13 @@ export const broadcastSchoolNotification = async ({
     priority: priority || 'urgent',
     theme: theme || 'red',
     targetAudience: targetAudience || 'all',
+    audioUrl: audioUrl || null,
+    audioDuration: audioDuration || null,
+    videoUrl: videoUrl || null,
+    videoType: videoType || null,
+    fileUrl: fileUrl || null,
+    fileName: fileName || null,
+    fileSize: fileSize || null,
     createdAt: new Date().toISOString(),
     broadcastedBy: 'إدارة مدرسة مشيرفة',
     viewsCount: 0,

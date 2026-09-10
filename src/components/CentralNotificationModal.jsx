@@ -2,9 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import './CentralNotificationModal.css';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { logNotificationView } from '../utils/notificationService';
+import { logNotificationView, getYouTubeEmbedUrl } from '../utils/notificationService';
 
-// Pleasant subtle chime using Web Audio API without external file requirements
+// Audio format helper (e.g. 65s -> 1:05)
+const formatAudioTime = (secs) => {
+  if (isNaN(secs) || secs < 0) return '0:00';
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+};
+
+// Pleasant subtle chime using Web Audio API
 const playGentleNotificationChime = () => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -19,7 +27,7 @@ const playGentleNotificationChime = () => {
     osc.type = 'sine';
     const now = ctx.currentTime;
 
-    // Gentle two-tone bell chime (C6 to E6)
+    // Gentle two-tone bell chime
     osc.frequency.setValueAtTime(1046.5, now);
     osc.frequency.exponentialRampToValueAtTime(1318.5, now + 0.12);
 
@@ -32,7 +40,7 @@ const playGentleNotificationChime = () => {
     osc.start(now);
     osc.stop(now + 0.7);
   } catch (e) {
-    // AudioContext autoplay restrictions are handled gracefully
+    // Audio autoplay restrictions handled
   }
 };
 
@@ -41,6 +49,12 @@ const CentralNotificationModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const hasTriggeredRef = useRef(false);
+
+  // Custom Audio Player State
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     // 1. Listen for real-time central notifications from Firestore
@@ -55,14 +69,12 @@ const CentralNotificationModal = () => {
 
       snapshot.forEach(docSnap => {
         const data = { id: docSnap.id, ...docSnap.data() };
-        // Check if marked for central popup and is active
         if (!candidate && data.popupInCenter !== false && data.active !== false) {
           candidate = data;
         }
       });
 
       if (candidate) {
-        // Check acknowledgement in localStorage
         const ackKey = `ack_central_${candidate.id}_${candidate.forceReshowKey || 'v1'}`;
         const alreadyAcked = localStorage.getItem(ackKey) === 'true';
 
@@ -71,7 +83,6 @@ const CentralNotificationModal = () => {
           setIsPreviewMode(false);
           setIsOpen(true);
 
-          // Trigger audio chime & haptic feedback
           if (!hasTriggeredRef.current) {
             hasTriggeredRef.current = true;
             setTimeout(() => {
@@ -104,9 +115,49 @@ const CentralNotificationModal = () => {
     };
   }, []);
 
+  // Handle audio playback toggle
+  const togglePlayAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlayingAudio) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlayingAudio(true);
+      }).catch(err => console.warn('Audio play prevented:', err));
+    }
+  };
+
+  const handleAudioTimeUpdate = () => {
+    if (audioRef.current) {
+      setAudioCurrentTime(audioRef.current.currentTime);
+      if (audioRef.current.duration) {
+        setAudioDuration(audioRef.current.duration);
+      }
+    }
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlayingAudio(false);
+    setAudioCurrentTime(0);
+  };
+
+  const handleAudioSeek = (e) => {
+    const targetTime = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = targetTime;
+      setAudioCurrentTime(targetTime);
+    }
+  };
+
   const handleDismiss = (navigateUrl = null) => {
+    // Pause any playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlayingAudio(false);
+
     if (activeNotification) {
-      // In non-preview mode, record acknowledgment and log viewer statistics
       if (!isPreviewMode && activeNotification.id) {
         const ackKey = `ack_central_${activeNotification.id}_${activeNotification.forceReshowKey || 'v1'}`;
         localStorage.setItem(ackKey, 'true');
@@ -125,12 +176,13 @@ const CentralNotificationModal = () => {
 
   if (!isOpen || !activeNotification) return null;
 
-  // Derive theme styling
   const theme = activeNotification.theme || (activeNotification.priority === 'urgent' ? 'red' : 'blue');
   
-  // Icon based on category or theme
   let iconEmoji = '📢';
-  if (activeNotification.category === 'debate') iconEmoji = '⚖️';
+  if (activeNotification.audioUrl) iconEmoji = '🎙️';
+  else if (activeNotification.videoUrl) iconEmoji = '🎬';
+  else if (activeNotification.fileUrl) iconEmoji = '📎';
+  else if (activeNotification.category === 'debate') iconEmoji = '⚖️';
   else if (activeNotification.category === 'event') iconEmoji = '📅';
   else if (activeNotification.category === 'news') iconEmoji = '📰';
   else if (theme === 'red') iconEmoji = '🚨';
@@ -138,10 +190,15 @@ const CentralNotificationModal = () => {
   else if (theme === 'emerald') iconEmoji = '🌿';
 
   let badgeText = 'تنبيه إداري هام';
-  if (activeNotification.priority === 'urgent' || theme === 'red') badgeText = '🚨 تنبيه عاجل';
+  if (activeNotification.audioUrl) badgeText = '🎙️ رسالة صوتية مسجلة';
+  else if (activeNotification.videoUrl) badgeText = '🎬 مقطع فيديو مرفق';
+  else if (activeNotification.fileUrl) badgeText = '📎 ملف ومستند مرفق';
+  else if (activeNotification.priority === 'urgent' || theme === 'red') badgeText = '🚨 تنبيه عاجل';
   else if (activeNotification.category === 'debate') badgeText = '⚖️ مناظرة الأسبوع الفكرية';
   else if (activeNotification.category === 'event') badgeText = '📅 فعالية مدرسية';
   else if (activeNotification.category === 'news') badgeText = '📰 خبر وإعلان مدرسي';
+
+  const ytEmbedUrl = activeNotification.videoUrl ? getYouTubeEmbedUrl(activeNotification.videoUrl) : null;
 
   return (
     <div className="central-notif-backdrop" onClick={() => handleDismiss()}>
@@ -176,6 +233,110 @@ const CentralNotificationModal = () => {
           <p className="central-notif-text">
             {activeNotification.body}
           </p>
+
+          {/* 1. ATTACHED AUDIO VOICE NOTE */}
+          {activeNotification.audioUrl && (
+            <div className="central-audio-player-card">
+              <audio 
+                ref={audioRef} 
+                src={activeNotification.audioUrl} 
+                onTimeUpdate={handleAudioTimeUpdate} 
+                onLoadedMetadata={handleAudioTimeUpdate}
+                onEnded={handleAudioEnded} 
+              />
+              <div className="central-audio-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>🎙️ رسالة صوتية من إدارة المدرسة</span>
+                </div>
+                <div className={`audio-waves-container ${isPlayingAudio ? 'playing' : ''}`}>
+                  <div className="audio-wave-bar"></div>
+                  <div className="audio-wave-bar"></div>
+                  <div className="audio-wave-bar"></div>
+                  <div className="audio-wave-bar"></div>
+                </div>
+              </div>
+
+              <div className="central-audio-controls">
+                <button
+                  type="button"
+                  className="central-audio-play-btn"
+                  onClick={togglePlayAudio}
+                  title={isPlayingAudio ? 'إيقاف مؤقت' : 'تشغيل الرسالة الصوتية'}
+                >
+                  <i className={`fas ${isPlayingAudio ? 'fa-pause' : 'fa-play'}`}></i>
+                </button>
+
+                <div className="central-audio-track-wrap">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max={audioDuration || 100} 
+                    value={audioCurrentTime} 
+                    onChange={handleAudioSeek} 
+                    className="central-audio-slider" 
+                  />
+                  <div className="central-audio-time-row">
+                    <span>{formatAudioTime(audioCurrentTime)}</span>
+                    <span>{formatAudioTime(audioDuration || activeNotification.audioDuration || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 2. ATTACHED VIDEO PLAYER (YOUTUBE OR NATIVE MP4) */}
+          {activeNotification.videoUrl && (
+            <div className="central-video-container">
+              {ytEmbedUrl ? (
+                <div className="central-video-iframe-wrap">
+                  <iframe 
+                    src={ytEmbedUrl} 
+                    title="فيديو الإشعار" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen 
+                  />
+                </div>
+              ) : (
+                <video 
+                  controls 
+                  playsInline 
+                  preload="metadata" 
+                  src={activeNotification.videoUrl} 
+                  className="central-native-video" 
+                />
+              )}
+            </div>
+          )}
+
+          {/* 3. ATTACHED FILE DOWNLOAD CARD */}
+          {activeNotification.fileUrl && (
+            <a 
+              href={activeNotification.fileUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              download 
+              className="central-file-attachment-card"
+            >
+              <div className="central-file-info">
+                <div className="central-file-icon">
+                  <i className="fas fa-file-pdf"></i>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <span className="central-file-name">
+                    {activeNotification.fileName || 'ملف ومستند مرفق'}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 700 }}>
+                    انقر للفتح والتحميل المباشر
+                  </span>
+                </div>
+              </div>
+
+              <div className="central-file-action-badge">
+                <i className="fas fa-download"></i>
+                <span>تحميل الملف</span>
+              </div>
+            </a>
+          )}
 
           <div className="central-notif-meta-row">
             <span>

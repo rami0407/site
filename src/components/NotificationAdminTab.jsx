@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { 
   collection, 
@@ -13,7 +13,9 @@ import {
   broadcastSchoolNotification, 
   getNotificationViewers,
   toggleNotificationPopupStatus,
-  forceReshowNotification
+  forceReshowNotification,
+  uploadNotificationMedia,
+  getYouTubeEmbedUrl
 } from '../utils/notificationService';
 
 const NotificationAdminTab = () => {
@@ -21,9 +23,10 @@ const NotificationAdminTab = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [msg, setMsg] = useState('');
 
-  // Form state
+  // Form Basic Info
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [targetUrl, setTargetUrl] = useState('');
@@ -33,6 +36,26 @@ const NotificationAdminTab = () => {
   const [theme, setTheme] = useState('red');
   const [targetAudience, setTargetAudience] = useState('all');
 
+  // Media Tab & Attachment State
+  const [activeMediaTab, setActiveMediaTab] = useState('none'); // 'none' | 'audio' | 'video' | 'file'
+
+  // Audio Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const timerIntervalRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
+  // Video State
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+
+  // File/Document State
+  const [docFile, setDocFile] = useState(null);
+
   // Viewers Modal state
   const [activeViewerModalNotif, setActiveViewerModalNotif] = useState(null);
   const [viewersList, setViewersList] = useState([]);
@@ -40,7 +63,7 @@ const NotificationAdminTab = () => {
 
   const showSuccess = (text) => {
     setMsg(text);
-    setTimeout(() => setMsg(''), 4500);
+    setTimeout(() => setMsg(''), 5000);
   };
 
   useEffect(() => {
@@ -61,9 +84,106 @@ const NotificationAdminTab = () => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
   }, []);
 
+  // --- AUDIO RECORDING HANDLERS ---
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('المتصفح الحالي لا يدعم الوصول إلى الميكروفون.');
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        const previewUrl = URL.createObjectURL(blob);
+        setAudioPreviewUrl(previewUrl);
+
+        // Stop all tracks to release mic
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      alert('تعذر فتح الميكروفون، يرجى التأكد من إعطاء إذن الوصول للميكروفون: ' + err.message);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    }
+  };
+
+  const handleAudioFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAudioBlob(file);
+      setAudioPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const clearAudio = () => {
+    setAudioBlob(null);
+    if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl);
+    setAudioPreviewUrl(null);
+    setRecordingSeconds(0);
+  };
+
+  // --- VIDEO HANDLERS ---
+  const handleVideoFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setVideoFile(file);
+      setVideoPreviewUrl(URL.createObjectURL(file));
+      setVideoUrlInput(''); // clear link if uploading file
+    }
+  };
+
+  const clearVideo = () => {
+    setVideoFile(null);
+    if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+    setVideoPreviewUrl(null);
+    setVideoUrlInput('');
+  };
+
+  // --- FILE ATTACHMENT HANDLERS ---
+  const handleDocFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setDocFile(file);
+    }
+  };
+
+  const clearDocFile = () => {
+    setDocFile(null);
+  };
+
+  // --- BROADCAST SUBMIT HANDLER ---
   const handleBroadcast = async (e) => {
     e.preventDefault();
     if (!title.trim() || !body.trim()) {
@@ -72,7 +192,35 @@ const NotificationAdminTab = () => {
     }
 
     setIsSending(true);
+    setUploadProgress(0);
+
     try {
+      let finalAudioUrl = null;
+      let finalVideoUrl = null;
+      let finalFileUrl = null;
+
+      // 1. Upload Audio if attached
+      if (audioBlob) {
+        setMsg('جاري رفع التسجيل الصوتي...');
+        finalAudioUrl = await uploadNotificationMedia(audioBlob, 'notifications_audio', setUploadProgress);
+      }
+
+      // 2. Upload Video or use YouTube/direct URL
+      if (videoFile) {
+        setMsg('جاري رفع مقطع الفيديو...');
+        finalVideoUrl = await uploadNotificationMedia(videoFile, 'notifications_video', setUploadProgress);
+      } else if (videoUrlInput.trim()) {
+        finalVideoUrl = videoUrlInput.trim();
+      }
+
+      // 3. Upload File / Document if attached
+      if (docFile) {
+        setMsg('جاري رفع الملف المرفق...');
+        finalFileUrl = await uploadNotificationMedia(docFile, 'notifications_files', setUploadProgress);
+      }
+
+      setMsg('جاري بث الإشعار لجميع الهواتف...');
+
       await broadcastSchoolNotification({
         title: title.trim(),
         body: body.trim(),
@@ -81,13 +229,27 @@ const NotificationAdminTab = () => {
         popupInCenter,
         priority,
         theme,
-        targetAudience
+        targetAudience,
+        audioUrl: finalAudioUrl,
+        audioDuration: recordingSeconds || null,
+        videoUrl: finalVideoUrl,
+        videoType: videoUrlInput ? 'youtube' : 'direct',
+        fileUrl: finalFileUrl,
+        fileName: docFile ? docFile.name : null,
+        fileSize: docFile ? Math.round(docFile.size / 1024) + ' KB' : null
       });
 
+      // Reset form
       setTitle('');
       setBody('');
       setTargetUrl('');
-      showSuccess('🚀 تم بنجاح بث الإشعار وضبطه للظهور في وسط شاشة الهاتف لجميع الأولياء والزوار!');
+      clearAudio();
+      clearVideo();
+      clearDocFile();
+      setActiveMediaTab('none');
+      setUploadProgress(0);
+
+      showSuccess('🚀 تم بنجاح بث الإشعار بجميع وسائطه للظهور في وسط شاشة هاتف ولي الأمر!');
     } catch (err) {
       alert('حدث خطأ أثناء بث الإشعار: ' + err.message);
     } finally {
@@ -109,6 +271,11 @@ const NotificationAdminTab = () => {
       category,
       priority,
       theme,
+      audioUrl: audioPreviewUrl,
+      audioDuration: recordingSeconds || 30,
+      videoUrl: videoPreviewUrl || videoUrlInput,
+      fileUrl: docFile ? URL.createObjectURL(docFile) : null,
+      fileName: docFile ? docFile.name : null,
       createdAt: new Date().toISOString()
     };
 
@@ -172,6 +339,12 @@ const NotificationAdminTab = () => {
     setPriority(tplPrio || 'urgent');
   };
 
+  const formatSeconds = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   return (
     <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: '24px', direction: 'rtl' }}>
       
@@ -193,11 +366,11 @@ const NotificationAdminTab = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
             <span style={{ fontSize: '1.8rem' }}>📢</span>
             <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: '#1e1b4b' }}>
-              بث الإشعارات الفورية لوسط شاشة الهاتف (Mobile Popup & Push)
+              بث الإشعارات الفورية لوسط شاشة الهاتف (صوت، فيديو، ملفات)
             </h2>
           </div>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.96rem', lineHeight: 1.5 }}>
-            أرسل رسالة إدارية تنبثق مباشرة في <strong>وسط شاشة هاتف ولي الأمر</strong> عند فتح التطبيق مع تتبع دقيق للمشاهدين.
+            سجّل رسالة صوتية، أو ارفع فيديو، أو ارفع ملف تعميم، لينبثق مباشرة في <strong>وسط شاشة هاتف ولي الأمر</strong>.
           </p>
         </div>
 
@@ -257,6 +430,11 @@ const NotificationAdminTab = () => {
         }}>
           <i className="fas fa-check-circle" style={{ fontSize: '1.2rem' }}></i>
           <span>{msg}</span>
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <span style={{ marginRight: 'auto', background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '10px' }}>
+              {uploadProgress}%
+            </span>
+          )}
         </div>
       )}
 
@@ -312,24 +490,24 @@ const NotificationAdminTab = () => {
             </button>
             <button
               type="button"
-              onClick={() => applyTemplate('🚌 تذكير بموعد انطلاق الرحلة المدرسية', 'نذكركم بالالتزام بالزي المدرسي الموحد والتواجد في ساحة المدرسة الساعة 7:30 صباحاً.', '#/calendar', 'event', 'blue', 'normal')}
+              onClick={() => applyTemplate('🎙️ رسالة صوتية من مدير المدرسة للطلاب والأهالي', 'استمع إلى الكلمة التوجيهية الهامة المسجلة بصوت مدير المدرسة عبر المشغل الصوتي المرفق أدناه.', '/', 'announcement', 'blue', 'normal')}
               style={{ padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
             >
-              🚌 تذكير برحلة مدرسية
+              🎙️ رسالة صوتية إدارية
             </button>
             <button
               type="button"
-              onClick={() => applyTemplate('⚖️ قضية حوارية ومناظرة جديدة للأسبوع!', 'انطلقت اليوم مناظرة الأسبوع الفكرية، يسعدنا سماع صوت أبنائنا الطلاب وحججهم المنطقية.', '#/debate', 'debate', 'purple', 'normal')}
-              style={{ padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#7c3aed', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
-            >
-              ⚖️ مناظرة الأسبوع
-            </button>
-            <button
-              type="button"
-              onClick={() => applyTemplate('🏆 تهنئة بالتميز والريادة المدرسية', 'تبارك إدارة المدرسة لطلابنا الأبطال لحصولهم على مراتب الشرف، مزيداً من العطاء والتألق!', '#/news', 'news', 'amber', 'normal')}
+              onClick={() => applyTemplate('🎬 شاهد بالفيديو: تغطية فعاليات اليوم في المدرسة', 'يسرنا مشاركتكم هذا المقطع المرئي المميز الذي يوثق فعاليات وإبداعات أبنائنا الطلاب.', '/', 'event', 'amber', 'normal')}
               style={{ padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1px solid #fde68a', background: '#fffbeb', color: '#d97706', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
             >
-              🏆 تهنئة وتكريم
+              🎬 فيديو الفعاليات
+            </button>
+            <button
+              type="button"
+              onClick={() => applyTemplate('📎 ملف تعميم هام وقائمة المستندات المطلوبة', 'يرجى تحميل الملف والمستند المرفق بالأسفل للاطلاع على كافة التفاصيل الرسمية.', '/', 'announcement', 'emerald', 'normal')}
+              style={{ padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#16a34a', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+            >
+              📎 ملف وتعميم رسمي
             </button>
           </div>
         </div>
@@ -343,7 +521,7 @@ const NotificationAdminTab = () => {
               </label>
               <input 
                 type="text" 
-                placeholder="مثال: 📢 إعلان عاجل: مواعيد اللقاء مع أولياء الأمور"
+                placeholder="مثال: 📢 إعلان عاجل: رسالة من إدارة المدرسة"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '1.5px solid #cbd5e1', fontSize: '1rem' }}
@@ -372,16 +550,314 @@ const NotificationAdminTab = () => {
           {/* Row 2: Message Body */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.4rem' }}>
-              نص الرسالة التي سيقرؤها ولي الأمر عند فتح التطبيق: *
+              نص الرسالة التوضيحية: *
             </label>
             <textarea 
-              rows={4}
+              rows={3}
               placeholder="اكتب تفاصيل التنبيه أو الرسالة هنا بوضوح..."
               value={body}
               onChange={e => setBody(e.target.value)}
               style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '1.5px solid #cbd5e1', fontSize: '0.98rem', lineHeight: 1.6 }}
               required
             />
+          </div>
+
+          {/* MULTIMEDIA ATTACHMENTS SECTION */}
+          <div style={{ 
+            background: '#f1f5f9', 
+            borderRadius: '18px', 
+            padding: '1.25rem', 
+            marginBottom: '1.5rem',
+            border: '1.5px dashed #94a3b8' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 900, color: '#1e293b', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <i className="fas fa-paperclip" style={{ color: '#2563eb' }}></i>
+                <span>إرفاق وسائط (صوت / فيديو / ملف من الجهاز):</span>
+              </span>
+
+              {/* Media Type Switcher Tabs */}
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveMediaTab('audio')}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: activeMediaTab === 'audio' ? '#2563eb' : '#ffffff',
+                    color: activeMediaTab === 'audio' ? '#ffffff' : '#334155',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  🎙️ رسالة صوتية
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMediaTab('video')}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: activeMediaTab === 'video' ? '#2563eb' : '#ffffff',
+                    color: activeMediaTab === 'video' ? '#ffffff' : '#334155',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  🎬 فيديو
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMediaTab('file')}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: activeMediaTab === 'file' ? '#2563eb' : '#ffffff',
+                    color: activeMediaTab === 'file' ? '#ffffff' : '#334155',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  📎 ملف ومستند
+                </button>
+
+                {activeMediaTab !== 'none' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaTab('none')}
+                    style={{
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      background: '#f8fafc',
+                      color: '#64748b',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    إلغاء التحديد ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* TAB 1: AUDIO RECORD / UPLOAD */}
+            {activeMediaTab === 'audio' && (
+              <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontWeight: 800, color: '#1e3a8a', marginBottom: '0.75rem', fontSize: '0.92rem' }}>
+                  🎙️ تسجيل رسالة صوتية حية أو رفع تسجيل من الهاتف/الحاسوب:
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  {!isRecording ? (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      style={{
+                        background: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.65rem 1.25rem',
+                        borderRadius: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+                      }}
+                    >
+                      <i className="fas fa-microphone"></i>
+                      <span>بدء التسجيل الصوتي المباشر 🔴</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      style={{
+                        background: '#0f172a',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.65rem 1.25rem',
+                        borderRadius: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        animation: 'pulse 1s infinite'
+                      }}
+                    >
+                      <i className="fas fa-stop"></i>
+                      <span>إيقاف التسجيل ({formatSeconds(recordingSeconds)}) ⏹️</span>
+                    </button>
+                  )}
+
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>أو</span>
+
+                  <label style={{
+                    background: '#f1f5f9',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    padding: '0.65rem 1rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}>
+                    <i className="fas fa-upload"></i>
+                    <span>رفع ملف صوتي جاهز (MP3 / WAV)</span>
+                    <input 
+                      type="file" 
+                      accept="audio/*" 
+                      onChange={handleAudioFileUpload} 
+                      style={{ display: 'none' }} 
+                    />
+                  </label>
+                </div>
+
+                {audioPreviewUrl && (
+                  <div style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <audio controls src={audioPreviewUrl} style={{ height: '36px' }} />
+                      <span style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 800 }}>✓ تم تجهيز التسجيل الصوتي</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearAudio}
+                      style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      حذف التسجيل ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: VIDEO UPLOAD OR YOUTUBE URL */}
+            {activeMediaTab === 'video' && (
+              <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontWeight: 800, color: '#1e3a8a', marginBottom: '0.75rem', fontSize: '0.92rem' }}>
+                  🎬 إرفاق مقطع فيديو (رفع ملف من جهازك أو رابط يوتيوب):
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
+                      الخيار 1: رفع ملف فيديو (MP4, WebM) من هاتفك/حاسوبك:
+                    </label>
+                    <label style={{
+                      display: 'block',
+                      background: '#f8fafc',
+                      color: '#1d4ed8',
+                      border: '1.5px dashed #93c5fd',
+                      padding: '0.8rem',
+                      borderRadius: '12px',
+                      fontWeight: 800,
+                      textAlign: 'center',
+                      cursor: 'pointer'
+                    }}>
+                      <i className="fas fa-film" style={{ marginLeft: '6px' }}></i>
+                      <span>{videoFile ? videoFile.name : 'اختر ملف فيديو من جهازك 📁'}</span>
+                      <input 
+                        type="file" 
+                        accept="video/mp4,video/webm,video/ogg,video/quicktime" 
+                        onChange={handleVideoFileUpload} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
+                      الخيار 2: رابط فيديو من يوتيوب (YouTube):
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={videoUrlInput}
+                      onChange={e => {
+                        setVideoUrlInput(e.target.value);
+                        if (videoFile) clearVideo();
+                      }}
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem' }}
+                    />
+                  </div>
+                </div>
+
+                {(videoPreviewUrl || videoUrlInput) && (
+                  <div style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#16a34a', fontWeight: 800 }}>
+                      ✓ تم تجهيز الفيديو للعرض داخل الإشعار المنبثق
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearVideo}
+                      style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      إلغاء الفيديو ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: FILE ATTACHMENT */}
+            {activeMediaTab === 'file' && (
+              <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontWeight: 800, color: '#1e3a8a', marginBottom: '0.75rem', fontSize: '0.92rem' }}>
+                  📎 رفع ملف أو مستند من هاتفك أو حاسوبك (PDF / تعميم / صور):
+                </div>
+
+                <label style={{
+                  display: 'block',
+                  background: '#f8fafc',
+                  color: '#15803d',
+                  border: '1.5px dashed #86efac',
+                  padding: '1.1rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  textAlign: 'center',
+                  cursor: 'pointer'
+                }}>
+                  <i className="fas fa-file-upload" style={{ fontSize: '1.4rem', marginBottom: '0.3rem', display: 'block' }}></i>
+                  <span>{docFile ? `${docFile.name} (${Math.round(docFile.size / 1024)} KB)` : 'انقر هنا لاختيار ملف من هاتفك أو حاسوبك 📄'}</span>
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip" 
+                    onChange={handleDocFileUpload} 
+                    style={{ display: 'none' }} 
+                  />
+                </label>
+
+                {docFile && (
+                  <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={clearDocFile}
+                      style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      إلغاء الملف ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
 
           {/* Row 3: Styling & Behavior Settings */}
@@ -396,7 +872,6 @@ const NotificationAdminTab = () => {
             border: '1px solid #e2e8f0'
           }}>
             
-            {/* Theme & Color */}
             <div>
               <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.4rem', fontSize: '0.88rem' }}>
                 🎨 طابع ولون النافذة:
@@ -414,7 +889,6 @@ const NotificationAdminTab = () => {
               </select>
             </div>
 
-            {/* Target Audience */}
             <div>
               <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.4rem', fontSize: '0.88rem' }}>
                 👥 الفئة المستهدفة:
@@ -431,7 +905,6 @@ const NotificationAdminTab = () => {
               </select>
             </div>
 
-            {/* Target URL */}
             <div>
               <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.4rem', fontSize: '0.88rem' }}>
                 🔗 رابط مرفق للنقر (اختياري):
@@ -472,7 +945,7 @@ const NotificationAdminTab = () => {
                 📱 إظهار كنافذة تنبيه منبثقة في وسط الهاتف عند فتح التطبيق (موصى به)
               </div>
               <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                عند فتح الأب للتطبيق، تنبثق النافذة أمامه مباشرة في منتصف الشاشة مع نغمة هادئة وزر "تمت المشاهدة".
+                عند فتح الأب للتطبيق، تنبثق النافذة أمامه مباشرة في منتصف الشاشة مع مشغل الصوت أو الفيديو والملف.
               </div>
             </div>
           </div>
@@ -499,7 +972,7 @@ const NotificationAdminTab = () => {
               }}
             >
               <i className={`fas ${isSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
-              <span>{isSending ? 'جاري بث الإشعار للهواتف...' : 'بث الإشعار وحفظه الآن 🚀'}</span>
+              <span>{isSending ? (uploadProgress > 0 ? `جاري الرفع (${uploadProgress}%)... ⏳` : 'جاري بث الإشعار للهواتف...') : 'بث الإشعار والوسائط الآن 🚀'}</span>
             </button>
           </div>
         </form>
@@ -564,6 +1037,23 @@ const NotificationAdminTab = () => {
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isPopupActive ? '#22c55e' : '#94a3b8' }}></span>
                         {isPopupActive ? '📱 نشط بوسط شاشة الهاتف' : '⚪ متوقف عن الظهور بالوسط'}
                       </span>
+
+                      {/* Multimedia indicators */}
+                      {n.audioUrl && (
+                        <span style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                          🎙️ صوت
+                        </span>
+                      )}
+                      {n.videoUrl && (
+                        <span style={{ background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                          🎬 فيديو
+                        </span>
+                      )}
+                      {n.fileUrl && (
+                        <span style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                          📎 ملف
+                        </span>
+                      )}
 
                       <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '0.25rem 0.75rem', borderRadius: '10px', fontSize: '0.78rem', fontWeight: 800 }}>
                         {n.category === 'news' ? '📰 خبر' : n.category === 'event' ? '📅 فعالية' : n.category === 'debate' ? '⚖️ مناظرة' : '📢 إعلان'}
@@ -675,7 +1165,6 @@ const NotificationAdminTab = () => {
                     borderRadius: '14px',
                     border: '1px solid #e2e8f0'
                   }}>
-                    {/* View Stats counters */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0f172a', fontWeight: 900, fontSize: '0.95rem' }}>
@@ -700,7 +1189,6 @@ const NotificationAdminTab = () => {
 
                     </div>
 
-                    {/* View Details Button */}
                     <button
                       type="button"
                       onClick={() => handleOpenViewersModal(n)}
@@ -731,7 +1219,7 @@ const NotificationAdminTab = () => {
         )}
       </div>
 
-      {/* VIEWERS AUDIT MODAL (لوحة تفاصيل المشاهدين المحمية) */}
+      {/* VIEWERS AUDIT MODAL */}
       {activeViewerModalNotif && (
         <div style={{
           position: 'fixed',
@@ -760,7 +1248,6 @@ const NotificationAdminTab = () => {
           }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div style={{
               padding: '1.5rem 1.75rem',
               background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
@@ -800,7 +1287,6 @@ const NotificationAdminTab = () => {
               </button>
             </div>
 
-            {/* Quick Summary Bar */}
             <div style={{ 
               padding: '1rem 1.75rem', 
               background: '#f8fafc', 
@@ -829,7 +1315,6 @@ const NotificationAdminTab = () => {
               </div>
             </div>
 
-            {/* Viewers List */}
             <div style={{ padding: '1.5rem 1.75rem', overflowY: 'auto', flex: 1 }}>
               {isLoadingViewers ? (
                 <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
@@ -883,7 +1368,6 @@ const NotificationAdminTab = () => {
               )}
             </div>
 
-            {/* Modal Footer */}
             <div style={{ padding: '1rem 1.75rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', textAlign: 'left' }}>
               <button
                 type="button"

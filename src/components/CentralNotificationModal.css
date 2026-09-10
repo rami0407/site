@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   z-index: 999999;
-  padding: 1.25rem;
+  padding: 1rem;
   direction: rtl;
   animation: centralBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -23,10 +23,11 @@
 .central-notif-card {
   background: #ffffff;
   width: 100%;
-  max-width: 480px;
-  border-radius: 28px;
+  max-width: 520px;
+  max-height: 92vh;
+  border-radius: 26px;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.2);
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
   animation: centralCardScaleUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   display: flex;
@@ -46,7 +47,7 @@
 
 /* Header Themes */
 .central-notif-header {
-  padding: 1.75rem 1.5rem 1.25rem;
+  padding: 1.5rem 1.5rem 1.15rem;
   position: relative;
   text-align: center;
   color: #ffffff;
@@ -73,16 +74,16 @@
 }
 
 .central-notif-icon-bubble {
-  width: 68px;
-  height: 68px;
-  margin: 0 auto 0.85rem;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 0.75rem;
   background: rgba(255, 255, 255, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.85rem;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   animation: centralPulse 2s infinite ease-in-out;
 }
@@ -100,12 +101,12 @@
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.3px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   backdrop-filter: blur(4px);
 }
 
 .central-notif-school-label {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   opacity: 0.92;
   margin: 0;
@@ -136,12 +137,12 @@
 
 /* Body Content */
 .central-notif-body {
-  padding: 1.75rem 1.6rem 1.25rem;
+  padding: 1.5rem 1.4rem 1.15rem;
   text-align: center;
 }
 
 .central-notif-title {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: #0f172a;
   margin: 0 0 0.85rem 0;
@@ -149,12 +150,207 @@
 }
 
 .central-notif-text {
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1.65;
   color: #334155;
   margin: 0 0 1.25rem 0;
   white-space: pre-line;
   word-break: break-word;
+}
+
+/* AUDIO PLAYER COMPONENT */
+.central-audio-player-card {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 18px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0 1.25rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  text-align: right;
+}
+
+.central-audio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.central-audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.central-audio-play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+  transition: transform 0.15s;
+}
+
+.central-audio-play-btn:active {
+  transform: scale(0.95);
+}
+
+.central-audio-track-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.central-audio-slider {
+  width: 100%;
+  accent-color: #2563eb;
+  cursor: pointer;
+  height: 6px;
+}
+
+.central-audio-time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* Sound Wave Animation */
+.audio-waves-container {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+}
+
+.audio-wave-bar {
+  width: 3px;
+  background: #3b82f6;
+  border-radius: 3px;
+  height: 6px;
+  transition: height 0.2s;
+}
+
+.audio-waves-container.playing .audio-wave-bar:nth-child(1) { animation: soundWave 0.8s infinite ease-in-out; }
+.audio-waves-container.playing .audio-wave-bar:nth-child(2) { animation: soundWave 0.6s infinite 0.1s ease-in-out; }
+.audio-waves-container.playing .audio-wave-bar:nth-child(3) { animation: soundWave 0.9s infinite 0.2s ease-in-out; }
+.audio-waves-container.playing .audio-wave-bar:nth-child(4) { animation: soundWave 0.7s infinite 0.15s ease-in-out; }
+
+@keyframes soundWave {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+/* VIDEO PLAYER WRAPPER */
+.central-video-container {
+  margin: 1rem 0 1.25rem;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  background: #000;
+}
+
+.central-video-iframe-wrap {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 ratio */
+  height: 0;
+}
+
+.central-video-iframe-wrap iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.central-native-video {
+  width: 100%;
+  max-height: 280px;
+  display: block;
+  background: #000;
+}
+
+/* FILE ATTACHMENT CARD */
+.central-file-attachment-card {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 16px;
+  padding: 0.9rem 1.15rem;
+  margin: 1rem 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.central-file-attachment-card:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+  transform: translateY(-2px);
+}
+
+.central-file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: right;
+  min-width: 0;
+  flex: 1;
+}
+
+.central-file-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #16a34a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.central-file-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #14532d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.central-file-action-badge {
+  background: #15803d;
+  color: white;
+  padding: 0.45rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .central-notif-meta-row {
@@ -171,7 +367,7 @@
 
 /* Action Buttons */
 .central-notif-actions {
-  padding: 0 1.6rem 1.6rem;
+  padding: 0 1.4rem 1.4rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
@@ -180,7 +376,7 @@
 .central-notif-btn-confirm {
   width: 100%;
   border: none;
-  padding: 0.95rem 1.5rem;
+  padding: 0.9rem 1.4rem;
   border-radius: 16px;
   font-size: 1.05rem;
   font-weight: 900;
@@ -246,15 +442,19 @@
 
 @media (max-width: 480px) {
   .central-notif-backdrop {
-    padding: 1rem;
+    padding: 0.75rem;
   }
   .central-notif-card {
-    border-radius: 22px;
+    border-radius: 20px;
+    max-height: 94vh;
   }
   .central-notif-title {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
   }
   .central-notif-text {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+  }
+  .central-audio-player-card {
+    padding: 0.85rem 1rem;
   }
 }
