@@ -70,25 +70,98 @@ const AppointmentsLogPage = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const isFirstDismissalLoad = useRef(true);
 
-  // Sound chime synthesizer
+  // Notification Permission & Realtime Toast Alert State
+  const [notificationPermission, setNotificationPermission] = useState(() => {
+    return (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
+  });
+  const [latestDismissalAlert, setLatestDismissalAlert] = useState(null);
+
+  // Sound chime synthesizer (high-clarity dual-tone harmonic chime)
   const playAlertChime = () => {
     if (!soundEnabled) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
-      gain.gain.setValueAtTime(0.35, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.55);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.55);
+      const now = ctx.currentTime;
+
+      // Note 1: High crisp ding
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(659.25, now); // E5
+      osc1.frequency.setValueAtTime(880, now + 0.12); // A5
+      osc1.frequency.setValueAtTime(1174.66, now + 0.28); // D6
+      gain1.gain.setValueAtTime(0.4, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.85);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.85);
+
+      // Note 2: Warm undertone
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(440, now); // A4
+      osc2.frequency.setValueAtTime(587.33, now + 0.12); // D5
+      gain2.gain.setValueAtTime(0.3, now);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.85);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now);
+      osc2.stop(now + 0.85);
     } catch (e) {
-      console.log('Audio chime error or blocked by browser policy:', e);
+      console.log('Audio chime note:', e);
     }
+  };
+
+  // Request browser notification permission and unlock audio context
+  const requestNotificationAccess = async () => {
+    playAlertChime();
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        setNotificationPermission(perm);
+        if (perm === 'granted') {
+          new Notification('تم تفعيل إشعارات حارس المدرسة 🔔', {
+            body: 'ستصلك الآن تنبيهات ونغمات فورية بمجرد تسجيل المربي لإذن تسريح أي طالب.',
+            icon: '/favicon.ico'
+          });
+        }
+      } catch (e) {
+        console.warn('Notification permission error:', e);
+      }
+    } else {
+      alert('تم تفعيل التنبيه الصوتي بنجاح! المتصفح الحالي لا يدعم نوافذ النظام الخارجية، لكن الصوت والشاشة المباشرة يعملان فورياً.');
+    }
+  };
+
+  // Trigger comprehensive guard alert (Sound + Vibration + System Notification + Popup)
+  const notifyGuardOfNewDismissal = (item) => {
+    playAlertChime();
+
+    // 1. Mobile Phone Vibration (300ms vibration pulses)
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([300, 150, 300, 150, 400]);
+      } catch (e) {}
+    }
+
+    // 2. System Notification banner on phone/PC lock screen & notification center
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        const sName = item.studentName || 'طالب جديد';
+        const sClass = item.classroom || item.studentClass || '';
+        const cName = item.companionName || item.parentName || 'المرافق';
+        new Notification(`🚨 إذن تسريح طالب: ${sName}`, {
+          body: `الصف: ${sClass} | المرافق: ${cName} | الساعة: ${item.departureTime || item.dismissalTime || 'الآن'}`,
+          icon: '/favicon.ico',
+          tag: 'dismissal_' + (item.id || Date.now())
+        });
+      } catch (e) {}
+    }
+
+    // 3. Floating on-screen alert banner
+    setLatestDismissalAlert(item);
   };
 
   // Real-time Firestore Listener for Student Dismissals
@@ -108,17 +181,13 @@ const AppointmentsLogPage = () => {
       setIsLoadingDismissals(false);
 
       if (!isFirstDismissalLoad.current) {
-        let hasNewWaiting = false;
         snapshot.docChanges().forEach((change) => {
           const data = change.doc.data();
           const isDone = data.status === 'dismissed' || data.gateStatus === 'exited' || data.entryStatus === 'exited';
           if (change.type === 'added' && !isDone) {
-            hasNewWaiting = true;
+            notifyGuardOfNewDismissal({ id: change.doc.id, ...data });
           }
         });
-        if (hasNewWaiting) {
-          playAlertChime();
-        }
       }
       isFirstDismissalLoad.current = false;
     };
@@ -170,15 +239,11 @@ const AppointmentsLogPage = () => {
       // Check for incoming new student dismissals via teacher_appointments
       const waitingDismissals = list.filter(a => (a.isDismissal || a.type === 'student_dismissal') && a.entryStatus !== 'exited');
       if (!isFirstDismissalLoad.current && waitingDismissals.length > 0) {
-        let hasNew = false;
         waitingDismissals.forEach(w => {
           if (!prevDismissalIdsRef.current.has(w.id)) {
-            hasNew = true;
+            notifyGuardOfNewDismissal(w);
           }
         });
-        if (hasNew) {
-          playAlertChime();
-        }
       }
       prevDismissalIdsRef.current = new Set(waitingDismissals.map(w => w.id));
     }, (err) => {
@@ -525,9 +590,142 @@ const AppointmentsLogPage = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '6.5rem 1rem 4rem', fontFamily: 'Tajawal, sans-serif', direction: 'rtl' }}>
       
+      {/* Floating Instant Alert Banner for New Dismissals */}
+      {latestDismissalAlert && (
+        <div style={{
+          position: 'fixed',
+          top: '5.25rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          width: '92%',
+          maxWidth: '700px',
+          background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+          color: 'white',
+          borderRadius: '20px',
+          padding: '1.2rem 1.5rem',
+          boxShadow: '0 20px 45px rgba(194, 65, 12, 0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          border: '2px solid #fed7aa'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1 }}>
+            <div style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '50%',
+              background: 'white',
+              color: '#ea580c',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.4rem',
+              flexShrink: 0,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }}>
+              🚨
+            </div>
+            <div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 900, marginBottom: '0.2rem' }}>
+                وصل إذن تسريح جديد الآن! 🏃‍♂️
+              </div>
+              <div style={{ fontSize: '0.88rem', opacity: 0.95, fontWeight: 700 }}>
+                الطالب: <span style={{ textDecoration: 'underline' }}>{latestDismissalAlert.studentName}</span> | الصف: <strong>{latestDismissalAlert.classroom || latestDismissalAlert.studentClass}</strong> | المرافق: <strong>{latestDismissalAlert.companionName || latestDismissalAlert.parentName}</strong>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                handleConfirmStudentExit(latestDismissalAlert);
+                setLatestDismissalAlert(null);
+              }}
+              style={{
+                background: '#22c55e',
+                color: 'white',
+                border: 'none',
+                padding: '0.55rem 0.95rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 10px rgba(34, 197, 94, 0.3)'
+              }}
+            >
+              ✓ تأكيد خروج
+            </button>
+            <button
+              onClick={() => setLatestDismissalAlert(null)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: 'none',
+                padding: '0.55rem 0.8rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                cursor: 'pointer'
+              }}
+              title="إغلاق التنبيه"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Container */}
       <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
         
+        {/* Notification Permission Banner (if not yet granted by guard) */}
+        {notificationPermission !== 'granted' && (
+          <div style={{
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            color: 'white',
+            borderRadius: '18px',
+            padding: '1rem 1.4rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.85rem',
+            boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                🔔
+              </div>
+              <div>
+                <strong style={{ fontSize: '0.98rem', display: 'block', marginBottom: '0.15rem' }}>
+                  تفعيل التنبيه الصوتي وإشعارات الهاتف عند البوابة
+                </strong>
+                <p style={{ margin: 0, fontSize: '0.84rem', opacity: 0.9, fontWeight: 600 }}>
+                  اضغط هنا لتفعيل الصوت الفوري وإشعارات الشاشة حتى يصلك رنين وتنبيه تلقائي عند تسجيل أي مربي لخروج طالب.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={requestNotificationAccess}
+              style={{
+                background: '#fef08a',
+                color: '#854d0e',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.65rem 1.4rem',
+                fontWeight: 900,
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}
+            >
+              🔔 تفعيل الإشعارات والصوت الآن
+            </button>
+          </div>
+        )}
+
         {/* Header Bar */}
         <div style={{
           background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
