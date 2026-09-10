@@ -236,6 +236,22 @@ const Navbar = () => {
               </li>
             ))}
 
+            {/* Direct Quick Link for Teachers Dismissal */}
+            <li>
+              <a 
+                href="#/student-dismissal"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  color: '#38bdf8',
+                  fontWeight: 800
+                }}
+              >
+                <i className="fas fa-file-signature"></i> تسريح الطلاب 🏃‍♂️
+              </a>
+            </li>
+
             {/* Student/User Unified Single Sign-On Badge */}
             <li>
               {studentSession ? (
@@ -370,6 +386,16 @@ const Navbar = () => {
                     </a>
                   </li>
                 ))}
+                <li>
+                  <a href="#/student-dismissal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#38bdf8', fontWeight: 800 }}>
+                    <i className="fas fa-file-signature"></i> تسريح الطلاب (للمربين) 🏃‍♂️
+                  </a>
+                </li>
+                <li>
+                  <a href="#/guard" onClick={() => setMobileMenuOpen(false)} style={{ color: '#34d399', fontWeight: 800 }}>
+                    <i className="fas fa-shield-alt"></i> بوابة الحارس والأمن 🛡️
+                  </a>
+                </li>
                 <li>
                   <a href="#/admin" onClick={() => setMobileMenuOpen(false)} style={{ color: '#fbbf24', fontWeight: 800 }}>
                     <i className="fas fa-cog"></i> لوحة التحكم والإدارة
