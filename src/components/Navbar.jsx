@@ -29,10 +29,19 @@ const Navbar = () => {
 
     const updateNavState = (rawItems) => {
       let items = [...rawItems];
-      // Filter out nav_prep_day, nav_excellence, nav_astronomy, nav_stem, or nav_tasbih from top navbar
-      items = items.filter(item => item.id !== 'nav_prep_day' && item.target !== 'prep-day' && item.target !== 'monawaat' && item.id !== 'nav_excellence' && item.target !== 'excellence' && item.id !== 'nav_astronomy' && item.target !== 'astronomy' && item.id !== 'nav_stem' && item.target !== 'stem' && item.id !== 'nav_tasbih' && item.target !== 'tasbih');
+      // Filter out unwanted items from navigation (prep_day, excellence, astronomy, stem, tasbih, books)
+      items = items.filter(item => 
+        item.id !== 'nav_prep_day' && item.target !== 'prep-day' && 
+        item.target !== 'monawaat' && 
+        item.id !== 'nav_excellence' && item.target !== 'excellence' && 
+        item.id !== 'nav_astronomy' && item.target !== 'astronomy' && 
+        item.id !== 'nav_stem' && item.target !== 'stem' && 
+        item.id !== 'nav_tasbih' && item.target !== 'tasbih' &&
+        item.id !== 'top_books' && item.id !== 'nav_books' && item.target !== 'books' &&
+        !(item.label && item.label.includes('الكتب'))
+      );
       
-      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'books', 'gratitude-sky', 'stars'];
+      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'principal', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'articles', 'parent-polls', 'gratitude-sky', 'stars'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
       if (!items.some(item => item.id === 'nav_articles' || item.target === 'articles')) {
@@ -57,11 +66,30 @@ const Navbar = () => {
         });
       }
 
-      const filteredItems = items.filter(item => item.id !== 'nav_appointments' && item.target !== 'appointments');
+      const filteredItems = items.filter(item => 
+        item.id !== 'nav_appointments' && item.target !== 'appointments' &&
+        item.id !== 'top_books' && item.target !== 'books' &&
+        !(item.label && item.label.includes('الكتب'))
+      );
       filteredItems.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      const top = filteredItems.filter(item => item.category === 'top' || ['books', 'links', 'gallery', 'contact'].includes(item.target));
-      const main = filteredItems.filter(item => !top.includes(item));
+      // Deduplicate to avoid repeated items like duplicate gallery
+      const uniqueItems = [];
+      const seenKeys = new Set();
+      filteredItems.forEach(item => {
+        const key = item.target || item.id;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueItems.push(item);
+        }
+      });
+
+      const top = uniqueItems.filter(item => 
+        item.target !== 'books' && 
+        !item.label?.includes('الكتب') && 
+        (item.category === 'top' || ['links', 'gallery', 'contact'].includes(item.target))
+      );
+      const main = uniqueItems.filter(item => !top.includes(item) && item.target !== 'books' && !item.label?.includes('الكتب'));
 
       setTopNavItems(top);
       setMainNavItems(main);

@@ -101,6 +101,20 @@ const ImportantLinks = () => {
             });
           }
 
+          const hasBooks = list.some(l => 
+            (l.title && l.title.includes('الكتب')) || 
+            (l.url && l.url.includes('books'))
+          );
+          if (!hasBooks) {
+            list.push({
+              id: 'school-books-guide-default',
+              title: 'دليل الكتب واللباس الموحد',
+              icon: 'fa-book-open',
+              url: '#/books',
+              desc: 'قوائم الكتب الدراسية المقررة لكافة المراحل وتفاصيل الزي المدرسي المعتمد.'
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {
@@ -137,6 +151,8 @@ const ImportantLinks = () => {
               iconGradient = 'linear-gradient(135deg, #9333ea 0%, #c026d3 100%)';
             } else if (link.icon === 'fa-balance-scale') {
               iconGradient = 'linear-gradient(135deg, #4338ca 0%, #312e81 100%)';
+            } else if (link.icon === 'fa-book-open' || link.url?.includes('books')) {
+              iconGradient = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
             } else if (isAi) {
               iconGradient = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
             }
@@ -155,6 +171,12 @@ const ImportantLinks = () => {
                   if (link.url?.includes('debate')) {
                     e.preventDefault();
                     window.location.hash = '#/debate';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('books')) {
+                    e.preventDefault();
+                    window.location.hash = '#/books';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
