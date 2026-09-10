@@ -5,7 +5,9 @@ import {
   addDoc, 
   getDocs, 
   query, 
-  where 
+  where,
+  doc,
+  onSnapshot 
 } from 'firebase/firestore';
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { sanitizeText } from '../utils/security';
@@ -36,8 +38,8 @@ const STAFF_CATEGORIES = [
   { id: 'st_teachers', name: 'أصحاب الوظائف والمعلمين', role: 'طاقم المعلمين وأصحاب الوظائف (33 معلماً)', icon: '👨‍🏫', color: '#10b981' }
 ];
 
-// Helper generator for time slots based on start/end hours (20-minute interval slots)
-const generateTimeSlotsForSchedule = (startTime = '08:30', endTime = '13:30') => {
+// Helper generator for time slots based on start/end hours
+const generateTimeSlotsForSchedule = (startTime = '08:30', endTime = '13:30', intervalMinutes = 20) => {
   const slots = [];
   let [startH, startM] = startTime.split(':').map(Number);
   let [endH, endM] = endTime.split(':').map(Number);
@@ -45,21 +47,56 @@ const generateTimeSlotsForSchedule = (startTime = '08:30', endTime = '13:30') =>
   let currentMinutes = startH * 60 + startM;
   const totalEndMinutes = endH * 60 + endM;
 
-  while (currentMinutes + 20 <= totalEndMinutes) {
+  while (currentMinutes + intervalMinutes <= totalEndMinutes) {
     const sH = String(Math.floor(currentMinutes / 60)).padStart(2, '0');
     const sM = String(currentMinutes % 60).padStart(2, '0');
-    const eMinutes = currentMinutes + 20;
+    const eMinutes = currentMinutes + intervalMinutes;
     const eH = String(Math.floor(eMinutes / 60)).padStart(2, '0');
     const eM = String(eMinutes % 60).padStart(2, '0');
 
     slots.push(`${sH}:${sM} - ${eH}:${eM}`);
-    currentMinutes += 30; // 20 min slot + 10 min break
+    currentMinutes += (intervalMinutes + 10); // slot + 10 min break
   }
 
   return slots.length > 0 ? slots : ['08:30 - 08:50', '09:00 - 09:20', '09:30 - 09:50', '10:00 - 10:20', '11:00 - 11:20', '11:30 - 11:50', '12:00 - 12:20'];
 };
 
 const AppointmentBooking = ({ isStandalone = true }) => {
+  // Live Config for Principal, Counselor & System Settings
+  const [staffConfig, setStaffConfig] = useState({
+    principal: {
+      nameAr: 'إدارة المدرسة',
+      nameHe: 'הנהלת בית הספר',
+      role: 'مدير المدرسة والإدارة العامة',
+      phone: '04-6311000',
+      email: '',
+      enabled: true,
+      receptionSchedule: [
+        { day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '14:00' },
+        { day: 'Tuesday', dayAr: 'الثلاثاء', startTime: '08:30', endTime: '14:00' },
+        { day: 'Thursday', dayAr: 'الخميس', startTime: '08:30', endTime: '13:00' }
+      ]
+    },
+    counselor: {
+      nameAr: 'الاستشارة التربوية',
+      nameHe: 'ייעוץ חינוכי',
+      role: 'المستشار التربوي والدعم النفسي',
+      phone: '',
+      email: '',
+      enabled: true,
+      receptionSchedule: [
+        { day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '13:30' },
+        { day: 'Wednesday', dayAr: 'الأربعاء', startTime: '08:30', endTime: '13:30' }
+      ]
+    },
+    systemSettings: {
+      isOpen: true,
+      closedMessage: 'نظام حجز المواعيد مغلق مؤقتاً للتحديث أو خلال العطلة المدرسية.',
+      slotDurationMinutes: 20,
+      noticeText: 'اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!'
+    }
+  });
+
   // Category & Teachers State
   const [activeCategory, setActiveCategory] = useState('st_teachers');
   const [teachersList, setTeachersList] = useState(defaultSchoolTeachers);
@@ -89,6 +126,24 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   const [bookingTicket, setBookingTicket] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Real-time listener for appointment settings from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'schoolGuide', 'appointment_settings'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setStaffConfig(prev => ({
+          ...prev,
+          ...data,
+          principal: { ...prev.principal, ...(data.principal || {}) },
+          counselor: { ...prev.counselor, ...(data.counselor || {}) },
+          systemSettings: { ...prev.systemSettings, ...(data.systemSettings || {}) }
+        }));
+      }
+    }, (err) => console.warn('Appointment settings listener notice:', err));
+
+    return () => unsub();
+  }, []);
+
   // Fetch live teachers list from Firestore
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -110,11 +165,36 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     fetchTeachers();
   }, []);
 
-  // Selected Teacher Object
+  // Dynamic Categories based on live admin settings
+  const dynamicStaffCategories = [
+    ...(staffConfig.principal?.enabled !== false ? [{
+      id: 'st_principal',
+      name: staffConfig.principal.nameAr || 'إدارة المدرسة',
+      role: staffConfig.principal.role || 'مدير المدرسة والإدارة العامة',
+      icon: '🏛️',
+      color: '#0284c7'
+    }] : []),
+    ...(staffConfig.counselor?.enabled !== false ? [{
+      id: 'st_counselor',
+      name: staffConfig.counselor.nameAr || 'الاستشارة التربوية',
+      role: staffConfig.counselor.role || 'المستشار التربوي والدعم النفسي',
+      icon: '💡',
+      color: '#8b5cf6'
+    }] : []),
+    {
+      id: 'st_teachers',
+      name: 'أصحاب الوظائف والمعلمين',
+      role: `طاقم المعلمين وأصحاب الوظائف (${teachersList.length} معلماً)`,
+      icon: '👨‍🏫',
+      color: '#10b981'
+    }
+  ];
+
+  // Selected Staff / Teacher Object
   const selectedTeacher = activeCategory === 'st_principal' 
-    ? { id: 'st_principal', nameAr: 'إدارة المدرسة', nameHe: 'הנהלת בית הספר', role: 'مدير المدرسة والإدارة العامة', receptionSchedule: [{ day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '14:00' }, { day: 'Tuesday', dayAr: 'الثلاثاء', startTime: '08:30', endTime: '14:00' }, { day: 'Thursday', dayAr: 'الخميس', startTime: '08:30', endTime: '13:00' }] }
+    ? { id: 'st_principal', ...staffConfig.principal }
     : activeCategory === 'st_counselor'
-    ? { id: 'st_counselor', nameAr: 'الاستشارة التربوية', nameHe: 'ייעוץ חינוכי', role: 'المستشار التربوي والدعم النفسي', receptionSchedule: [{ day: 'Sunday', dayAr: 'الأحد', startTime: '08:30', endTime: '13:30' }, { day: 'Wednesday', dayAr: 'الأربعاء', startTime: '08:30', endTime: '13:30' }] }
+    ? { id: 'st_counselor', ...staffConfig.counselor }
     : (teachersList.find(t => t.id === selectedTeacherId) || teachersList[0]);
 
   // Calculate current date's day of week & matching schedule for selected teacher
@@ -122,9 +202,10 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   const dayNameEn = WEEKDAYS_MAP[dateObj.getDay()];
   const currentDaySchedule = (selectedTeacher?.receptionSchedule || []).find(s => s.day === dayNameEn);
 
-  // Dynamic Available Time Slots
+  // Dynamic Available Time Slots using configured duration
+  const slotDuration = staffConfig.systemSettings?.slotDurationMinutes || 20;
   const availableSlotsForDay = currentDaySchedule 
-    ? generateTimeSlotsForSchedule(currentDaySchedule.startTime, currentDaySchedule.endTime)
+    ? generateTimeSlotsForSchedule(currentDaySchedule.startTime, currentDaySchedule.endTime, slotDuration)
     : [];
 
   // Fetch booked slots whenever teacher or date changes
@@ -298,10 +379,10 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             نظام حجز اللقاءات والمواعيد الرسمية 🤝🏫
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '700px', margin: '0 auto', fontWeight: 500 }}>
-            اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!
+            {staffConfig.systemSettings?.noticeText || 'اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!'}
           </p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
             <a
               href="#/guard"
               style={{
@@ -322,8 +403,50 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               <i className="fas fa-shield-alt"></i>
               <span>📋 سجل مواعيد وزوار المدرسة (خاص بالحارس والإدارة) ⬅️</span>
             </a>
+
+            <a
+              href="#admin"
+              style={{
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                padding: '0.45rem 1.1rem',
+                borderRadius: '50px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.2s ease'
+              }}
+              title="تعديل ساعات استقبال الكوادر وإعدادات المواعيد من لوحة التحكم"
+            >
+              <i className="fas fa-cog"></i>
+              <span>لوحة التحكم وتعديل المواعيد ⚙️</span>
+            </a>
           </div>
         </div>
+
+        {staffConfig.systemSettings?.isOpen === false && (
+          <div style={{
+            background: '#fef2f2',
+            border: '2px solid #f87171',
+            borderRadius: '20px',
+            padding: '1.5rem 2rem',
+            textAlign: 'center',
+            marginBottom: '2rem',
+            color: '#991b1b',
+            boxShadow: '0 8px 24px rgba(239, 68, 68, 0.15)'
+          }}>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.25rem' }}>
+              📢 نلفت عنايتكم الكريمة: نظام حجز المواعيد مغلق مؤقتاً
+            </h3>
+            <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#b91c1c' }}>
+              {staffConfig.systemSettings.closedMessage || 'نظام حجز المواعيد مغلق مؤقتاً للتحديث أو خلال العطلة المدرسية.'}
+            </p>
+          </div>
+        )}
 
         {!bookingTicket ? (
           /* BOOKING FORM STEPS */
@@ -336,7 +459,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               </h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                {STAFF_CATEGORIES.map(cat => {
+                {dynamicStaffCategories.map(cat => {
                   const isSelected = activeCategory === cat.id;
                   return (
                     <div

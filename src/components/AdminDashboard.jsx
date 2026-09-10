@@ -31,6 +31,7 @@ import NotificationAdminTab from './NotificationAdminTab';
 import VirtualMuseumAdminTab from './VirtualMuseumAdminTab';
 import LostFoundAdminTab from './LostFoundAdminTab';
 import FamilyChallengeAdminTab from './FamilyChallengeAdminTab';
+import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 
@@ -4156,7 +4157,7 @@ const AdminDashboard = () => {
               📅 مواعيد الأهالي المحجوزة ({bookedAppointments.length})
             </button>
 
-            {/* TEACHERS MANAGEMENT TAB */}
+            {/* APPOINTMENTS & STAFF MANAGEMENT TAB */}
             <button 
               onClick={() => {
                 loadTeachersList();
@@ -4175,8 +4176,8 @@ const AdminDashboard = () => {
                 border: '2px solid #bae6fd'
               }}
             >
-              <i className="fas fa-user-tie" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              👨‍🏫 أيام وساعات المعلمين ({teachersList.length})
+              <i className="fas fa-handshake" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+              🤝 نظام المواعيد والكوادر التربوية
             </button>
 
             {/* AI ASSISTANT SETTINGS TAB */}
@@ -9429,235 +9430,9 @@ const AdminDashboard = () => {
 
 
 
-              {/* TAB 11: TEACHERS & RECEPTION SCHEDULE MANAGEMENT */}
+              {/* TAB 11: APPOINTMENTS, STAFF & TEACHERS MANAGEMENT */}
               {activeTab === 'teachers-management' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div>
-                      <h2 style={{ fontWeight: 900, color: 'var(--primary-dark)', margin: 0 }}>
-                        👨‍🏫 إدارة قائمة المعلمين وتحديد أيام الاستقبال
-                      </h2>
-                      <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
-                        إجمالي المعلمين المعرفين للنظام: <strong>({teachersList.length}) معلماً</strong>
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={handleRestoreAll33Teachers}
-                        className="btn"
-                        style={{ background: '#0284c7', color: 'white', fontWeight: 900, padding: '0.75rem 1.4rem', borderRadius: '12px', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)' }}
-                      >
-                        ⚡ 🔄 استعادة القائمة الكاملة (33 معلماً)
-                      </button>
-
-                      <button
-                        onClick={handleAddNewTeacher}
-                        className="btn"
-                        style={{ background: '#10b981', color: 'white', fontWeight: 800, padding: '0.75rem 1.4rem', borderRadius: '12px' }}
-                      >
-                        ➕ إضافة معلم جديد
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Teachers Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                    {teachersList.map((tch) => {
-                      const isEditing = editingTeacherId === tch.id;
-                      const activeData = isEditing ? editingTeacherData : tch;
-
-                      return (
-                        <div
-                          key={tch.id}
-                          style={{
-                            background: 'white',
-                            borderRadius: '20px',
-                            border: '2px solid #e2e8f0',
-                            padding: '1.5rem',
-                            boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
-                          }}
-                        >
-                          {!isEditing ? (
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                <div>
-                                  <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
-                                    👨‍🏫 {tch.nameAr} ({tch.nameHe})
-                                  </h3>
-                                  <span style={{ fontSize: '0.88rem', color: '#0284c7', fontWeight: 700 }}>{tch.role || 'معلم ومربي صف'}</span>
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                  <button
-                                    onClick={() => {
-                                      setEditingTeacherId(tch.id);
-                                      setEditingTeacherData(JSON.parse(JSON.stringify(tch)));
-                                    }}
-                                    style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
-                                  >
-                                    ✏️ تعديل الأيام
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleDeleteTeacher(tch.id, tch.nameAr)}
-                                    style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '6px 10px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
-                                  >
-                                    🗑️ حذف
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                <span>📱 <strong>الهاتف الشخصي:</strong> {tch.phone || 'غير مدخل'}</span>
-                                <span>✉️ <strong>البريد الإلكتروني:</strong> {tch.email || 'غير مدخل'}</span>
-                              </div>
-
-                              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '14px', borderRight: '4px solid #0284c7' }}>
-                                <div style={{ fontWeight: 800, color: '#475569', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                  🗓️ جدول أيام وساعات الاستقبال:
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                  {(tch.receptionSchedule || []).length === 0 ? (
-                                    <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>لم يتم تحديد مواعيد مخصصة (تلقائي من الأحد للخميس)</span>
-                                  ) : (
-                                    tch.receptionSchedule.map((s, sIdx) => (
-                                      <div key={sIdx} style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
-                                        🔹 <strong>{s.dayAr}:</strong> من الساعة {s.startTime} حتى الساعة {s.endTime}
-                                      </div>
-                                    ))
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            /* EDIT TEACHER SCHEDULE FORM */
-                            <div>
-                              <h4 style={{ margin: '0 0 1rem 0', color: '#0284c7', fontWeight: 900 }}>
-                                ✏️ تعديل مواعيد استقبال المعلم: {activeData.nameAr}
-                              </h4>
-
-                              <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>اسم المعلم بالعربية:</label>
-                                <input
-                                  type="text"
-                                  value={activeData.nameAr}
-                                  onChange={(e) => setEditingTeacherData({ ...activeData, nameAr: e.target.value })}
-                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                                />
-                              </div>
-
-                              <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>الوظيفة / التخصص:</label>
-                                <input
-                                  type="text"
-                                  value={activeData.role || ''}
-                                  onChange={(e) => setEditingTeacherData({ ...activeData, role: e.target.value })}
-                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                                />
-                              </div>
-
-                              <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>📱 رقم الهاتف الشخصي للمعلم (لتوجيه الواتساب إليه المباشرة):</label>
-                                <input
-                                  type="tel"
-                                  placeholder="مثال: 0501234567"
-                                  value={activeData.phone || ''}
-                                  onChange={(e) => setEditingTeacherData({ ...activeData, phone: e.target.value })}
-                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                                />
-                              </div>
-
-                              <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>✉️ البريد الإلكتروني للمعلم (الإيميل لتلقي الإشعارات):</label>
-                                <input
-                                  type="email"
-                                  placeholder="مثال: teacher@school.com"
-                                  value={activeData.email || ''}
-                                  onChange={(e) => setEditingTeacherData({ ...activeData, email: e.target.value })}
-                                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-                                />
-                              </div>
-
-                              <div style={{ marginBottom: '1.25rem' }}>
-                                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                  🗓️ الأيام والساعات المتاحة للاستقبال:
-                                </div>
-
-                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'].map((dayKey) => {
-                                  const dayNames = { Sunday: 'الأحد', Monday: 'الإثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس' };
-                                  const existing = (activeData.receptionSchedule || []).find(s => s.day === dayKey);
-                                  const isChecked = Boolean(existing);
-
-                                  return (
-                                    <div key={dayKey} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px' }}>
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={(e) => {
-                                          let current = [...(activeData.receptionSchedule || [])];
-                                          if (e.target.checked) {
-                                            current.push({ day: dayKey, dayAr: dayNames[dayKey], startTime: '08:00', endTime: '13:00' });
-                                          } else {
-                                            current = current.filter(s => s.day !== dayKey);
-                                          }
-                                          setEditingTeacherData({ ...activeData, receptionSchedule: current });
-                                        }}
-                                      />
-                                      <span style={{ fontWeight: 800, width: '70px', fontSize: '0.9rem' }}>{dayNames[dayKey]}</span>
-
-                                      {isChecked && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem' }}>
-                                          <input
-                                            type="time"
-                                            value={existing.startTime || '08:00'}
-                                            onChange={(ev) => {
-                                              const updatedSched = activeData.receptionSchedule.map(s => s.day === dayKey ? { ...s, startTime: ev.target.value } : s);
-                                              setEditingTeacherData({ ...activeData, receptionSchedule: updatedSched });
-                                            }}
-                                            style={{ padding: '2px 6px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                          />
-                                          <span>إلى</span>
-                                          <input
-                                            type="time"
-                                            value={existing.endTime || '13:00'}
-                                            onChange={(ev) => {
-                                              const updatedSched = activeData.receptionSchedule.map(s => s.day === dayKey ? { ...s, endTime: ev.target.value } : s);
-                                              setEditingTeacherData({ ...activeData, receptionSchedule: updatedSched });
-                                            }}
-                                            style={{ padding: '2px 6px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                          />
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button
-                                  onClick={() => handleSaveTeacher(activeData)}
-                                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', flex: 1 }}
-                                >
-                                  💾 حفظ التعديلات
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingTeacherId(null);
-                                    setEditingTeacherData(null);
-                                  }}
-                                  style={{ background: '#64748b', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
-                                >
-                                  إلغاء
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <AppointmentStaffAdminTab />
               )}
 
               {/* TAB 12: BOOKED APPOINTMENTS LIST */}
