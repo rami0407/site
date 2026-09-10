@@ -222,7 +222,7 @@ const Navbar = () => {
       <div className="top-utility-bar">
         <div className="container top-utility-container">
           <div className="top-bar-notice">
-            <span className="sparkle-icon">✨</span> أهلاً بكم في الموقع الرسمي لمدرسة مشيرفة الابتدائية
+            <span className="sparkle-icon">✨</span> أهلاً وسهلاً بكم
           </div>
           <ul className="top-bar-menu">
             {topNavItems.map((item) => (
