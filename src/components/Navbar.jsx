@@ -4,6 +4,7 @@ import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { defaultNavigation, defaultTopNavigation, defaultMainNavigation } from '../data/defaultNavigationData';
 import { getStudentSession, logoutStudent } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
+import NotificationCenter from './NotificationCenter';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -275,6 +276,11 @@ const Navbar = () => {
               )}
             </li>
 
+            {/* Top Notification Bell */}
+            <li className="hide-on-mobile">
+              <NotificationCenter />
+            </li>
+
             <li>
               <a href="#/admin" className="top-admin-link" title="بوابة الإدارة">
                 <i className="fas fa-user-shield"></i> لوحة التحكم
@@ -298,14 +304,19 @@ const Navbar = () => {
             </div>
           </a>
 
-          <div 
-            className={`menu-toggle ${mobileMenuOpen ? 'active' : ''}`} 
-            id="menuToggle" 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <span></span>
-            <span></span>
-            <span></span>
+          {/* Actions & Hamburger */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <NotificationCenter />
+
+            <div 
+              className={`menu-toggle ${mobileMenuOpen ? 'active' : ''}`} 
+              id="menuToggle" 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </div>
 
           <ul className={`nav-menu ${mobileMenuOpen ? 'active' : ''}`} id="navMenu">

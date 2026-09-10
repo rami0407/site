@@ -27,6 +27,8 @@ import { syncIncomingFacebookWebhookPost } from '../utils/facebookWebhookSync';
 import EduStaffingPortal from './EduStaffingPortal';
 import SchoolTasbihPortal from './SchoolTasbihPortal';
 import DebateAdminTab from './DebateAdminTab';
+import NotificationAdminTab from './NotificationAdminTab';
+import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 
 const CATEGORIES_CALENDAR = {
@@ -3108,9 +3110,15 @@ const AdminDashboard = () => {
 
       try {
         await addDoc(collection(db, 'events'), newEvent);
+        broadcastSchoolNotification({
+          title: `📅 فعالية جديدة: ${newEvent.title}`,
+          body: `${newEvent.date ? 'الموعد: ' + newEvent.date + ' - ' : ''}${newEvent.desc || 'اضغط للاطلاع على تفاصيل الفعالية المدرسية.'}`,
+          targetUrl: '#/calendar',
+          category: 'event'
+        }).catch(() => {});
         setNewEvent({ title: '', date: '', endDate: '', category: 'event', desc: '' });
         loadDashboardData();
-        alert('تم إضافة الفعالية بنجاح!');
+        alert('تم إضافة الفعالية وبث الإشعار بنجاح!');
       } catch (error) {
         alert('حدث خطأ أثناء إضافة الفعالية: ' + error.message);
       }
@@ -3206,9 +3214,15 @@ const AdminDashboard = () => {
 
       try {
         await addDoc(collection(db, 'news'), newsItem);
+        broadcastSchoolNotification({
+          title: `📰 خبر جديد: ${newsItem.title}`,
+          body: newsItem.content?.replace(/<[^>]*>?/gm, '').substring(0, 95) || 'اضغط لقراءة تفاصيل الخبر المدرسي.',
+          targetUrl: '#/news',
+          category: 'news'
+        }).catch(() => {});
         setNewNews({ title: '', category: 'activities', content: '' });
         loadDashboardData();
-        alert('تم نشر الخبر بنجاح!');
+        alert('تم نشر الخبر وبث الإشعار بنجاح!');
       } catch (error) {
         alert('حدث خطأ أثناء إضافة الخبر: ' + error.message);
       }
@@ -4082,6 +4096,27 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-balance-scale" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#6366f1' }}></i>
               ⚖️ منبر الحوار والمناظرة الفكرية
+            </button>
+
+            {/* TOP ITEM: MOBILE PUSH NOTIFICATIONS BROADCAST */}
+            <button 
+              onClick={() => setActiveTab('notifications-admin')} 
+              className={`filter-chip ${activeTab === 'notifications-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'notifications-admin' ? 'linear-gradient(135deg, #1d4ed8, #1e3a8a)' : '#eff6ff',
+                color: activeTab === 'notifications-admin' ? 'white' : '#1d4ed8',
+                fontWeight: 900,
+                border: '2px solid #60a5fa',
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+              }}
+            >
+              <i className="fas fa-bullhorn" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#2563eb' }}></i>
+              📢 بث إشعارات الهواتف (Push)
             </button>
 
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
@@ -7956,6 +7991,13 @@ const AdminDashboard = () => {
               {activeTab === 'debate-admin' && (
                 <div>
                   <DebateAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: بث الإشعارات الفورية للهواتف */}
+              {activeTab === 'notifications-admin' && (
+                <div>
+                  <NotificationAdminTab />
                 </div>
               )}
 

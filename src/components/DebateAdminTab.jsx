@@ -11,6 +11,7 @@ import {
   orderBy 
 } from 'firebase/firestore';
 import { generateDebateTopic, summarizeDebateHarvest } from '../utils/aiService';
+import { broadcastSchoolNotification } from '../utils/notificationService';
 
 const DebateAdminTab = () => {
   const [topics, setTopics] = useState([]);
@@ -204,6 +205,13 @@ const DebateAdminTab = () => {
         status: 'active',
         createdAt: new Date().toISOString()
       });
+
+      broadcastSchoolNotification({
+        title: `⚖️ مناظرة الأسبوع: ${newTopic.title.trim()}`,
+        body: newTopic.dilemma?.substring(0, 95) || 'شارك برأيك وحجتك وناقش زملاءك في المنبر الحواري.',
+        targetUrl: '#/debate',
+        category: 'debate'
+      }).catch(() => {});
 
       setShowNewTopicForm(false);
       setNewTopic({

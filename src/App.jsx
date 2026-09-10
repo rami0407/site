@@ -10,6 +10,8 @@ import FloatingActions from './components/FloatingActions';
 import AiAssistant from './components/AiAssistant';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import SocraticHomeworkModal from './components/SocraticHomeworkModal';
+import NotificationPromptBanner from './components/NotificationPromptBanner';
+import { subscribeToSchoolNotifications } from './utils/notificationService';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
@@ -75,6 +77,14 @@ function App() {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);
       window.removeEventListener('open-homework-helper', handleOpenHomework);
+    };
+  }, []);
+
+  // Background listener for incoming school announcements & new posts to trigger phone notifications
+  useEffect(() => {
+    const unsub = subscribeToSchoolNotifications();
+    return () => {
+      if (typeof unsub === 'function') unsub();
     };
   }, []);
 
@@ -474,6 +484,9 @@ function App() {
 
       {/* PWA Mobile App Installation Prompt */}
       <PwaInstallPrompt />
+
+      {/* Phone Push Notification Activation Banner */}
+      <NotificationPromptBanner />
 
       {/* Global Socratic Homework Helper Modal */}
       <SocraticHomeworkModal
