@@ -11,6 +11,7 @@ import AiAssistant from './components/AiAssistant';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import SocraticHomeworkModal from './components/SocraticHomeworkModal';
 import NotificationPromptBanner from './components/NotificationPromptBanner';
+import CentralNotificationModal from './components/CentralNotificationModal';
 import { subscribeToSchoolNotifications } from './utils/notificationService';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
@@ -484,6 +485,9 @@ function App() {
 
       {/* PWA Mobile App Installation Prompt */}
       <PwaInstallPrompt />
+
+      {/* Central Phone & Screen Notification Alert Modal */}
+      <CentralNotificationModal />
 
       {/* Phone Push Notification Activation Banner */}
       <NotificationPromptBanner />

@@ -8,8 +8,49 @@ import {
   orderBy, 
   limit, 
   doc, 
-  setDoc 
+  setDoc,
+  updateDoc,
+  increment 
 } from 'firebase/firestore';
+
+/**
+ * Get or create a persistent anonymous device identifier
+ */
+export const getOrCreateDeviceId = () => {
+  if (typeof window === 'undefined') return 'server_id';
+  let deviceId = localStorage.getItem('school_device_id');
+  if (!deviceId) {
+    deviceId = 'dev_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now().toString(36);
+    localStorage.setItem('school_device_id', deviceId);
+  }
+  return deviceId;
+};
+
+/**
+ * Detect device type, platform and browser for analytics
+ */
+export const detectDeviceMetadata = () => {
+  if (typeof window === 'undefined') return { deviceType: 'حاسوب شخصي 💻', isMobile: false, platform: 'Unknown', browser: 'Unknown' };
+
+  const ua = navigator.userAgent || '';
+  const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const isTablet = /iPad|Tablet|PlayBook/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  let deviceType = 'حاسوب شخصي 💻';
+  if (isMobile) deviceType = 'هاتف ذكي 📱';
+  else if (isTablet) deviceType = 'جهاز لوحي 📟';
+
+  // Simplified browser detection
+  let browser = 'متصفح ويب';
+  if (/CriOS|Chrome/i.test(ua) && !/Edge|Edg/i.test(ua)) browser = 'Google Chrome';
+  else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Apple Safari';
+  else if (/Firefox/i.test(ua)) browser = 'Mozilla Firefox';
+  else if (/Edge|Edg/i.test(ua)) browser = 'Microsoft Edge';
+
+  const platform = navigator.userAgentData?.platform || navigator.platform || (isMobile ? 'Mobile OS' : 'Desktop OS');
+
+  return { deviceType, isMobile, isTablet, browser, platform };
+};
 
 /**
  * Check if the current browser/device supports Web Notifications
@@ -48,19 +89,18 @@ export const requestNotificationPermission = async () => {
       localStorage.setItem('school_notifications_enabled', 'true');
 
       // Generate or retrieve persistent device ID
-      let deviceId = localStorage.getItem('school_device_id');
-      if (!deviceId) {
-        deviceId = 'dev_' + Math.random().toString(36).substring(2, 12) + '_' + Date.now();
-        localStorage.setItem('school_device_id', deviceId);
-      }
+      const deviceId = getOrCreateDeviceId();
+      const meta = detectDeviceMetadata();
 
       // Record subscriber in Firestore
       try {
         await setDoc(doc(db, 'notification_subscribers', deviceId), {
           deviceId,
-          platform: navigator.userAgentData?.platform || navigator.platform || 'unknown',
+          platform: meta.platform,
+          browser: meta.browser,
+          deviceType: meta.deviceType,
+          isMobile: meta.isMobile,
           userAgent: navigator.userAgent,
-          isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
           subscribedAt: new Date().toISOString(),
           active: true
         }, { merge: true });
@@ -102,31 +142,30 @@ export const showSystemNotification = async ({ title, body, icon, url, tag }) =>
     return false;
   }
 
-  const notifTitle = title || 'مدرسة مشيرفة الابتدائية 🔔';
+  const notifTitle = title || 'مدرسة مشيرفة الابتدائية 🏫';
   const notifOptions = {
-    body: body || 'هناك جديد في مدرسة مشيرفة، اضغط للاطلاع.',
-    icon: icon || '/icon-192.png',
-    badge: '/icon-192.png',
-    vibrate: [200, 100, 200, 100, 200],
-    data: {
-      url: url || '/',
-      dateOfArrival: Date.now()
-    },
+    body: body || 'إشعار جديد من المدرسة',
+    icon: icon || '/favicon.ico',
+    badge: '/favicon.ico',
     tag: tag || ('notif_' + Date.now()),
-    renotify: true
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    dir: 'rtl',
+    lang: 'ar'
   };
 
   try {
-    // 1. Try via Service Worker Registration (Required on Android / Mobile PWA)
     if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.getRegistration();
       if (registration && registration.showNotification) {
-        await registration.showNotification(notifTitle, notifOptions);
+        await registration.showNotification(notifTitle, {
+          ...notifOptions,
+          data: { url: url || '/' }
+        });
         return true;
       }
     }
 
-    // 2. Desktop Fallback
     const n = new Notification(notifTitle, notifOptions);
     n.onclick = () => {
       window.focus();
@@ -145,7 +184,16 @@ export const showSystemNotification = async ({ title, body, icon, url, tag }) =>
 /**
  * Broadcast a notification from Admin to all devices via Firestore
  */
-export const broadcastSchoolNotification = async ({ title, body, targetUrl, category = 'announcement' }) => {
+export const broadcastSchoolNotification = async ({ 
+  title, 
+  body, 
+  targetUrl, 
+  category = 'announcement',
+  popupInCenter = true,
+  priority = 'urgent',
+  theme = 'red',
+  targetAudience = 'all'
+}) => {
   if (!title || !body) throw new Error('العنوان ونص الإشعار مطلوبان.');
 
   const notifData = {
@@ -153,8 +201,16 @@ export const broadcastSchoolNotification = async ({ title, body, targetUrl, cate
     body: body.trim(),
     url: targetUrl || '/',
     category,
+    popupInCenter: popupInCenter === true,
+    priority: priority || 'urgent',
+    theme: theme || 'red',
+    targetAudience: targetAudience || 'all',
     createdAt: new Date().toISOString(),
-    broadcastedBy: 'إدارة مدرسة مشيرفة'
+    broadcastedBy: 'إدارة مدرسة مشيرفة',
+    viewsCount: 0,
+    mobileViewsCount: 0,
+    desktopViewsCount: 0,
+    active: true
   };
 
   const docRef = await addDoc(collection(db, 'school_notifications'), notifData);
@@ -168,6 +224,97 @@ export const broadcastSchoolNotification = async ({ title, body, targetUrl, cate
   });
 
   return docRef.id;
+};
+
+/**
+ * Record and log a notification view securely with device deduplication
+ */
+export const logNotificationView = async (notifId) => {
+  if (!notifId || typeof window === 'undefined') return false;
+
+  const deviceId = getOrCreateDeviceId();
+  const seenStorageKey = `seen_notif_${notifId}_${deviceId}`;
+  
+  // Prevent duplicate logging from the same device session
+  if (localStorage.getItem(seenStorageKey) === 'logged') {
+    return false;
+  }
+
+  const meta = detectDeviceMetadata();
+  const viewRecord = {
+    deviceId,
+    deviceType: meta.deviceType,
+    isMobile: meta.isMobile,
+    isTablet: meta.isTablet || false,
+    platform: meta.platform,
+    browser: meta.browser,
+    viewedAt: new Date().toISOString()
+  };
+
+  try {
+    // 1. Record individual view document in subcollection
+    const viewDocRef = doc(db, 'school_notifications', notifId, 'views', deviceId);
+    await setDoc(viewDocRef, viewRecord, { merge: true });
+
+    // 2. Increment aggregate counters on parent notification doc
+    const notifDocRef = doc(db, 'school_notifications', notifId);
+    const increments = {
+      viewsCount: increment(1)
+    };
+    if (meta.isMobile) {
+      increments.mobileViewsCount = increment(1);
+    } else {
+      increments.desktopViewsCount = increment(1);
+    }
+    await updateDoc(notifDocRef, increments);
+
+    localStorage.setItem(seenStorageKey, 'logged');
+    return true;
+  } catch (err) {
+    console.warn('Failed to log notification view:', err);
+    // Even if firestore write fails offline, mark locally to avoid repeated attempts
+    localStorage.setItem(seenStorageKey, 'logged');
+    return false;
+  }
+};
+
+/**
+ * Fetch detailed viewers log for an announcement (Admin only)
+ */
+export const getNotificationViewers = async (notifId) => {
+  if (!notifId) return [];
+  try {
+    const viewsRef = collection(db, 'school_notifications', notifId, 'views');
+    const q = query(viewsRef, orderBy('viewedAt', 'desc'), limit(100));
+    const snap = await getDocs(q);
+    const list = [];
+    snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+    return list;
+  } catch (err) {
+    console.warn('Failed to fetch notification viewers:', err);
+    return [];
+  }
+};
+
+/**
+ * Toggle whether a notification appears as a center popup on phone/desktop
+ */
+export const toggleNotificationPopupStatus = async (notifId, popupInCenter) => {
+  if (!notifId) return;
+  const notifRef = doc(db, 'school_notifications', notifId);
+  await updateDoc(notifRef, { popupInCenter });
+};
+
+/**
+ * Force re-alert all users by bumping the forceReshowKey
+ */
+export const forceReshowNotification = async (notifId) => {
+  if (!notifId) return;
+  const notifRef = doc(db, 'school_notifications', notifId);
+  await updateDoc(notifRef, { 
+    forceReshowKey: Date.now().toString(),
+    popupInCenter: true
+  });
 };
 
 /**
