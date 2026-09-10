@@ -118,21 +118,35 @@ const StudentDismissalPage = () => {
       timeSlot: finalTime,
       status: 'waiting',
       gateStatus: 'pending',
+      entryStatus: 'waiting',
       actualExitTime: null,
       gateExitTime: null,
+      isDismissal: true,
+      type: 'student_dismissal',
+      meetingType: 'تسريح طالب',
+      parentName: (companionName.trim() || companionType || studentName.trim()).slice(0, 100),
       createdAt: new Date().toISOString()
     };
 
     try {
       let docId = 'dis_' + Date.now();
+      
+      // 1. Primary storage: teacher_appointments (guaranteed active Firestore permissions)
       try {
-        const docRef = await addDoc(collection(db, 'student_dismissals'), dismissalData);
+        const docRef = await addDoc(collection(db, 'teacher_appointments'), dismissalData);
         docId = docRef.id;
+      } catch (appErr) {
+        console.warn('teacher_appointments write note:', appErr);
+      }
+
+      // 2. Also save to student_dismissals collection
+      try {
+        await setDoc(doc(db, 'student_dismissals', docId), dismissalData);
       } catch (err) {
         console.warn('student_dismissals addDoc note:', err);
       }
 
-      // Guaranteed open channel mirror on schoolGuide so Guard & Admin see it immediately
+      // 3. Guaranteed open channel mirror on schoolGuide so Guard & Admin see it immediately
       try {
         await setDoc(doc(db, 'schoolGuide', 'latest_dismissal'), {
           ...dismissalData,

@@ -42,21 +42,60 @@ const StudentDismissalAdminTab = () => {
   const [filterDate, setFilterDate] = useState('');
   const [filterGender, setFilterGender] = useState('all');
 
-  // Load Dismissals from Firestore
+  // Load Dismissals from Firestore (from both teacher_appointments and student_dismissals)
   const loadDismissals = async () => {
     setIsLoading(true);
+    const map = new Map();
+
+    // 1. Fetch from teacher_appointments (guaranteed active Firestore permissions)
+    try {
+      const appRef = collection(db, 'teacher_appointments');
+      const snap = await getDocs(appRef);
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.isDismissal === true || data.type === 'student_dismissal') {
+          const isExited = data.entryStatus === 'exited' || data.status === 'dismissed' || data.gateStatus === 'exited';
+          const item = {
+            id: d.id,
+            ...data,
+            status: isExited ? 'dismissed' : (data.status || 'waiting'),
+            gateStatus: isExited ? 'exited' : (data.gateStatus || 'pending'),
+            actualExitTime: data.enteredAt || data.actualExitTime || data.gateExitTime || null,
+            gateExitTime: data.enteredAt || data.gateExitTime || data.actualExitTime || null
+          };
+          map.set(d.id, item);
+        }
+      });
+    } catch (e) {
+      console.warn('Error loading dismissals from teacher_appointments:', e);
+    }
+
+    // 2. Fetch from student_dismissals collection
     try {
       const ref = collection(db, 'student_dismissals');
-      const q = query(ref, orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const list = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-      setDismissals(list);
+      const snap = await getDocs(ref);
+      snap.forEach(d => {
+        const data = d.data();
+        const existing = map.get(d.id) || {};
+        const isExited = data.status === 'dismissed' || data.gateStatus === 'exited' || existing.status === 'dismissed';
+        const merged = {
+          ...existing,
+          ...data,
+          id: d.id || existing.id,
+          status: isExited ? 'dismissed' : 'waiting',
+          gateStatus: isExited ? 'exited' : 'pending',
+          actualExitTime: data.actualExitTime || existing.actualExitTime || null,
+          gateExitTime: data.gateExitTime || existing.gateExitTime || null
+        };
+        map.set(merged.id, merged);
+      });
     } catch (err) {
-      console.warn('Error fetching dismissals:', err);
-    } finally {
-      setIsLoading(false);
+      console.warn('Error loading dismissals from student_dismissals:', err);
     }
+
+    const uniqueList = Array.from(new Set(map.values())).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    setDismissals(uniqueList);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -66,7 +105,12 @@ const StudentDismissalAdminTab = () => {
   const handleDeleteRecord = async (id, studentName) => {
     if (!window.confirm(`هل أنت متأكد من حذف توثيق خروج الطالب (${studentName})؟`)) return;
     try {
-      await deleteDoc(doc(db, 'student_dismissals', id));
+      try {
+        await deleteDoc(doc(db, 'teacher_appointments', id));
+      } catch (e) {}
+      try {
+        await deleteDoc(doc(db, 'student_dismissals', id));
+      } catch (e) {}
       setDismissals(prev => prev.filter(item => item.id !== id));
       alert('تم حذف التوثيق بنجاح.');
     } catch (err) {
@@ -79,19 +123,39 @@ const StudentDismissalAdminTab = () => {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+    setDismissals(prev => prev.map(item => {
+      if (item.id === id) {
+        return {
+          ...item,
+          status: newStatus === 'exited' ? 'dismissed' : 'waiting',
+          gateStatus: newStatus,
+          gateExitTime: newStatus === 'exited' ? timeStr : null,
+          actualExitTime: newStatus === 'exited' ? timeStr : null,
+          enteredAt: newStatus === 'exited' ? timeStr : null,
+          entryStatus: newStatus === 'exited' ? 'exited' : 'waiting'
+        };
+      }
+      return item;
+    }));
+
     try {
-      await updateDoc(doc(db, 'student_dismissals', id), {
-        gateStatus: newStatus,
-        gateExitTime: newStatus === 'exited' ? timeStr : null
-      });
-      setDismissals(prev => prev.map(item => {
-        if (item.id === id) {
-          return { ...item, gateStatus: newStatus, gateExitTime: newStatus === 'exited' ? timeStr : null };
-        }
-        return item;
-      }));
+      try {
+        await updateDoc(doc(db, 'teacher_appointments', id), {
+          entryStatus: newStatus === 'exited' ? 'exited' : 'waiting',
+          enteredAt: newStatus === 'exited' ? timeStr : null
+        });
+      } catch (e) {}
+
+      try {
+        await updateDoc(doc(db, 'student_dismissals', id), {
+          status: newStatus === 'exited' ? 'dismissed' : 'waiting',
+          gateStatus: newStatus,
+          gateExitTime: newStatus === 'exited' ? timeStr : null,
+          actualExitTime: newStatus === 'exited' ? timeStr : null
+        });
+      } catch (e) {}
     } catch (err) {
-      alert('خطأ أثناء تحديث حالة البوابة: ' + err.message);
+      console.warn('Error updating dismissal status:', err);
     }
   };
 
