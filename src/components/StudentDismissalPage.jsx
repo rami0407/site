@@ -10,6 +10,8 @@ import {
   getActiveTeacherSession, 
   setActiveTeacherSession, 
   logoutTeacherSession, 
+  fetchTeacherCloudAccounts,
+  listenToTeacherAccounts,
   DEFAULT_TEACHER_PIN 
 } from '../utils/teacherAuth';
 import './StudentDismissalPage.css';
@@ -100,6 +102,15 @@ const StudentDismissalPage = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedPass, setCompletedPass] = useState(null);
+
+  // Sync cloud teacher PINs
+  useEffect(() => {
+    fetchTeacherCloudAccounts();
+    const unsub = listenToTeacherAccounts();
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
 
   // Handle Teacher Login
   const handleTeacherLogin = (e) => {

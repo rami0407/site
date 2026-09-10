@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, updateDoc, addDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { 
   getAllTeachers, 
   resetTeacherPinToDefault, 
+  adminSetTeacherPin,
+  getTeacherPin,
+  getTeacherAccountDetails,
+  fetchTeacherCloudAccounts,
+  listenToTeacherAccounts,
   isTeacherPinCustomized, 
   DEFAULT_TEACHER_PIN 
 } from '../utils/teacherAuth';
@@ -11,12 +16,56 @@ import {
 const StudentDismissalAdminTab = () => {
   const [dismissals, setDismissals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showTeacherAccounts, setShowTeacherAccounts] = useState(false);
-  const [teacherListVer, setTeacherListVer] = useState(0);
+  
+  // Navigation & Sub-Tabs in Admin Monitoring Center
+  const [adminViewMode, setAdminViewMode] = useState('all'); // 'all' | 'accounts' | 'gate' | 'stats'
+  const [revealedPins, setRevealedPins] = useState({}); // { [teacherId]: true/false }
+  const [editingTeacher, setEditingTeacher] = useState(null); // teacher object to edit PIN
+  const [customPinInput, setCustomPinInput] = useState('');
+  const [savePinError, setSavePinError] = useState('');
+  const [savePinSuccess, setSavePinSuccess] = useState('');
+  
+  // Guard PIN State (configurable from admin)
+  const [guardPin, setGuardPin] = useState(DEFAULT_TEACHER_PIN);
+  const [isEditingGuardPin, setIsEditingGuardPin] = useState(false);
+  const [guardPinInput, setGuardPinInput] = useState(DEFAULT_TEACHER_PIN);
+  const [showGuardPin, setShowGuardPin] = useState(false);
+
+  // Sound Chime Notification
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const previousCountRef = useRef(null);
+
+  // Search & Filters
   const [teacherSearch, setTeacherSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterClass, setFilterClass] = useState('all');
+  const [filterDate, setFilterDate] = useState('');
+  const [filterGender, setFilterGender] = useState('all');
+  const [filterTeacher, setFilterTeacher] = useState('all');
+
+  const [teacherListVer, setTeacherListVer] = useState(0);
   const allTeachers = useMemo(() => getAllTeachers(), [teacherListVer]);
 
-  // Sync to important links
+  // Audio Beep for Live Dismissals
+  const playAlertSound = () => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+    } catch (e) {}
+  };
+
+  // Sync to Important Links on Homepage
   const handleSyncDismissalToImportantLinks = async () => {
     try {
       const snap = await getDocs(collection(db, 'links'));
@@ -41,86 +90,158 @@ const StudentDismissalAdminTab = () => {
       });
       alert('🎉 تم بنجاح تثبيت وإضافة "منظومة تسريح الطلاب" إلى الروابط الخارجية في الصفحة الرئيسية!');
     } catch (err) {
-      console.error(err);
       alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
     }
   };
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterClass, setFilterClass] = useState('all');
-  const [filterDate, setFilterDate] = useState('');
-  const [filterGender, setFilterGender] = useState('all');
+  // Load Dismissals Realtime & Initial Sync
+  useEffect(() => {
+    fetchTeacherCloudAccounts();
+    const unsubTeachers = listenToTeacherAccounts(() => {
+      setTeacherListVer(v => v + 1);
+    });
 
-  // Load Dismissals from Firestore (from both teacher_appointments and student_dismissals)
-  const loadDismissals = async () => {
-    setIsLoading(true);
-    const map = new Map();
-
-    // 1. Fetch from teacher_appointments (guaranteed active Firestore permissions)
-    try {
-      const appRef = collection(db, 'teacher_appointments');
-      const snap = await getDocs(appRef);
+    // Real-time listener on teacher_appointments
+    const unsubApp = onSnapshot(collection(db, 'teacher_appointments'), (snap) => {
+      const list = [];
       snap.forEach(d => {
         const data = d.data();
         if (data.isDismissal === true || data.type === 'student_dismissal') {
           const isExited = data.entryStatus === 'exited' || data.status === 'dismissed' || data.gateStatus === 'exited';
-          const item = {
+          list.push({
             id: d.id,
             ...data,
             status: isExited ? 'dismissed' : (data.status || 'waiting'),
             gateStatus: isExited ? 'exited' : (data.gateStatus || 'pending'),
             actualExitTime: data.enteredAt || data.actualExitTime || data.gateExitTime || null,
             gateExitTime: data.enteredAt || data.gateExitTime || data.actualExitTime || null
-          };
-          map.set(d.id, item);
+          });
         }
       });
-    } catch (e) {
-      console.warn('Error loading dismissals from teacher_appointments:', e);
-    }
 
-    // 2. Fetch from student_dismissals collection
-    try {
-      const ref = collection(db, 'student_dismissals');
-      const snap = await getDocs(ref);
-      snap.forEach(d => {
-        const data = d.data();
-        const existing = map.get(d.id) || {};
-        const isExited = data.status === 'dismissed' || data.gateStatus === 'exited' || existing.status === 'dismissed';
-        const merged = {
-          ...existing,
-          ...data,
-          id: d.id || existing.id,
-          status: isExited ? 'dismissed' : 'waiting',
-          gateStatus: isExited ? 'exited' : 'pending',
-          actualExitTime: data.actualExitTime || existing.actualExitTime || null,
-          gateExitTime: data.gateExitTime || existing.gateExitTime || null
-        };
-        map.set(merged.id, merged);
-      });
-    } catch (err) {
-      console.warn('Error loading dismissals from student_dismissals:', err);
-    }
+      // Sound notification on new dismissal
+      if (previousCountRef.current !== null && list.length > previousCountRef.current) {
+        playAlertSound();
+      }
+      previousCountRef.current = list.length;
 
-    const uniqueList = Array.from(new Set(map.values())).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-    setDismissals(uniqueList);
-    setIsLoading(false);
+      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      setDismissals(list);
+      setIsLoading(false);
+    }, (err) => {
+      console.warn('Dismissals listener error:', err);
+      setIsLoading(false);
+    });
+
+    // Fetch Guard PIN from Firestore
+    const fetchGuardPin = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'system_settings'));
+        snap.forEach(d => {
+          if (d.id === 'guard_config' && d.data().pin) {
+            setGuardPin(d.data().pin);
+            setGuardPinInput(d.data().pin);
+          }
+        });
+      } catch (e) {}
+    };
+    fetchGuardPin();
+
+    return () => {
+      if (typeof unsubTeachers === 'function') unsubTeachers();
+      if (typeof unsubApp === 'function') unsubApp();
+    };
+  }, [soundEnabled]);
+
+  // Toggle Reveal PIN
+  const handleToggleRevealPin = (teacherId) => {
+    setRevealedPins(prev => ({
+      ...prev,
+      [teacherId]: !prev[teacherId]
+    }));
   };
 
-  useEffect(() => {
-    loadDismissals();
-  }, []);
+  // Copy PIN to clipboard
+  const handleCopyPin = (teacherName, pin) => {
+    navigator.clipboard.writeText(pin);
+    alert(`📋 تم نسخ رمز الدخول للمربي/ة (${teacherName}): ${pin}`);
+  };
 
+  // Send PIN via WhatsApp
+  const handleSendWhatsAppPin = (teacher) => {
+    const pin = getTeacherPin(teacher.id);
+    const msg = `السلام عليكم ورحمة الله وبركاته، زميلنا المربي/ة الفاضل/ة *${teacher.nameAr}* 🌸\n\n` +
+      `نحيطك علماً ببيانات دخولك المعتمدة لمنظومة تسريح الطلاب والأدوات المدرسية في موقع مدرسة مشيرفة الابتدائية:\n\n` +
+      `👤 *اسم المستخدم:* ${teacher.nameAr}\n` +
+      `🔑 *رمز الدخول السري (السيسما):* ${pin}\n\n` +
+      `🔗 *رابط الدخول للبوابة:* https://rami0407.github.io/site/#/student-dismissal\n\n` +
+      `مع تحيات إدارة مدرسة مشيرفة الابتدائية.`;
+
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
+
+  // Admin Save Custom PIN
+  const handleAdminSavePin = async (e) => {
+    e.preventDefault();
+    if (!editingTeacher) return;
+    setSavePinError('');
+    setSavePinSuccess('');
+
+    if (customPinInput.trim().length < 4) {
+      setSavePinError('يجب أن يتكون الرمز من 4 خانات على الأقل.');
+      return;
+    }
+
+    try {
+      await adminSetTeacherPin(editingTeacher.id, customPinInput.trim());
+      setSavePinSuccess(`✅ تم بنجاح حفظ وتعيين الرمز الجديد (${customPinInput.trim()}) للمربي/ة ${editingTeacher.nameAr}`);
+      setTeacherListVer(v => v + 1);
+      setTimeout(() => {
+        setEditingTeacher(null);
+        setCustomPinInput('');
+        setSavePinSuccess('');
+      }, 1600);
+    } catch (err) {
+      setSavePinError('حدث خطأ أثناء حفظ الرمز: ' + err.message);
+    }
+  };
+
+  // Admin Reset PIN to Default 318212
+  const handleResetTeacherPin = async (teacher) => {
+    if (window.confirm(`هل أنت متأكد من رغبتك في إعادة ضبط رمز المربي/ة (${teacher.nameAr}) إلى الرمز الافتراضي 318212؟`)) {
+      await resetTeacherPinToDefault(teacher.id);
+      setTeacherListVer(v => v + 1);
+      alert(`✅ تم بنجاح إعادة ضبط رمز ${teacher.nameAr} إلى ${DEFAULT_TEACHER_PIN}.`);
+    }
+  };
+
+  // Save Guard PIN
+  const handleSaveGuardPin = async () => {
+    if (guardPinInput.trim().length < 4) {
+      alert('رمز الحارس يجب أن يتكون من 4 خانات على الأقل.');
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'system_settings', 'guard_config'), {
+        pin: guardPinInput.trim(),
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'الإدارة'
+      }, { merge: true });
+      setGuardPin(guardPinInput.trim());
+      setIsEditingGuardPin(false);
+      alert('✅ تم بنجاح تحديث رمز حارس المدرسة وسريانه على بوابة الحارس.');
+    } catch (err) {
+      alert('خطأ أثناء حفظ رمز الحارس: ' + err.message);
+    }
+  };
+
+  // Delete Dismissal Record
   const handleDeleteRecord = async (id, studentName) => {
     if (!window.confirm(`هل أنت متأكد من حذف توثيق خروج الطالب (${studentName})؟`)) return;
     try {
-      try {
-        await deleteDoc(doc(db, 'teacher_appointments', id));
-      } catch (e) {}
-      try {
-        await deleteDoc(doc(db, 'student_dismissals', id));
-      } catch (e) {}
+      try { await deleteDoc(doc(db, 'teacher_appointments', id)); } catch (e) {}
+      try { await deleteDoc(doc(db, 'student_dismissals', id)); } catch (e) {}
       setDismissals(prev => prev.filter(item => item.id !== id));
       alert('تم حذف التوثيق بنجاح.');
     } catch (err) {
@@ -128,6 +249,7 @@ const StudentDismissalAdminTab = () => {
     }
   };
 
+  // Toggle Gate Exit Status
   const handleToggleGateExit = async (id, currentStatus) => {
     const newStatus = currentStatus === 'exited' ? 'pending' : 'exited';
     const now = new Date();
@@ -169,153 +291,166 @@ const StudentDismissalAdminTab = () => {
     }
   };
 
-  // ==========================================
-  // SMART ANALYTICS & INSIGHTS CALCULATIONS
-  // ==========================================
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (dismissals.length === 0) {
+      alert('لا توجد سجلات للتصدير.');
+      return;
+    }
 
-  // 1. Gender Breakdown (الذكور والإناث)
-  const genderStats = useMemo(() => {
-    const total = dismissals.length;
-    if (total === 0) return { male: 0, female: 0, malePercent: 0, femalePercent: 0 };
-    const male = dismissals.filter(d => d.gender === 'male').length;
-    const female = dismissals.filter(d => d.gender === 'female').length;
-    return {
-      male,
-      female,
-      malePercent: Math.round((male / total) * 100),
-      femalePercent: Math.round((female / total) * 100)
-    };
+    const headers = ['رمز الإذن', 'اسم الطالب', 'الصف', 'المربي المصرح', 'المرافق المستلم', 'صلة القرابة', 'سبب الخروج', 'التاريخ', 'وقت التسريح', 'حالة الخروج من البوابة', 'وقت الخروج الفعلي'];
+    const rows = dismissals.map(d => [
+      d.passCode || 'DIS',
+      `"${d.studentName || ''}"`,
+      `"${d.classroom || ''}"`,
+      `"${d.teacherName || ''}"`,
+      `"${d.companionName || ''}"`,
+      `"${d.companionType || ''}"`,
+      `"${d.reason || ''}"`,
+      d.departureDate || '',
+      d.departureTime || '',
+      d.gateStatus === 'exited' ? 'خرج وتأكد الحارس' : 'قيد الانتظار',
+      d.gateExitTime || d.actualExitTime || ''
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `كشف_تسريح_الطلاب_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Analytics Calculations
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayDismissals = useMemo(() => dismissals.filter(d => d.departureDate === todayStr), [dismissals, todayStr]);
+  const todayExitedCount = useMemo(() => todayDismissals.filter(d => d.gateStatus === 'exited').length, [todayDismissals]);
+  const todayPendingCount = useMemo(() => todayDismissals.filter(d => d.gateStatus !== 'exited').length, [todayDismissals]);
+
+  // Teachers Ranking by Dismissals Count
+  const teacherStats = useMemo(() => {
+    const map = {};
+    dismissals.forEach(d => {
+      const t = d.teacherName || 'غير محدد';
+      map[t] = (map[t] || 0) + 1;
+    });
+    return Object.entries(map)
+      .map(([name, count]) => ({
+        name,
+        count,
+        percent: dismissals.length ? Math.round((count / dismissals.length) * 100) : 0
+      }))
+      .sort((a, b) => b.count - a.count);
   }, [dismissals]);
 
-  // 2. Class Breakdown (أكثر الصفوف تسريحاً للطلاب)
+  // Class Breakdown
   const classStats = useMemo(() => {
     const map = {};
     dismissals.forEach(d => {
       const cls = d.classroom || 'غير محدد';
       map[cls] = (map[cls] || 0) + 1;
     });
-
-    const list = Object.entries(map).map(([className, count]) => ({
-      className,
-      count,
-      percent: dismissals.length ? Math.round((count / dismissals.length) * 100) : 0
-    }));
-
-    // Sort descending by count
-    list.sort((a, b) => b.count - a.count);
-    return list;
-  }, [dismissals]);
-
-  // 3. Family Breakdown (أكثر العائلات تسريحاً للطلاب)
-  const familyStats = useMemo(() => {
-    const map = {};
-    dismissals.forEach(d => {
-      let fam = (d.familyName || '').trim();
-      if (!fam || fam === 'غير محدد') {
-        const parts = (d.studentName || '').trim().split(/\s+/);
-        if (parts.length >= 2) fam = parts[parts.length - 1];
-        else fam = 'غير محدد';
-      }
-      map[fam] = (map[fam] || 0) + 1;
-    });
-
-    const list = Object.entries(map)
-      .filter(([fam]) => fam && fam !== 'غير محدد')
-      .map(([familyName, count]) => ({
-        familyName,
+    return Object.entries(map)
+      .map(([className, count]) => ({
+        className,
         count,
         percent: dismissals.length ? Math.round((count / dismissals.length) * 100) : 0
-      }));
-
-    list.sort((a, b) => b.count - a.count);
-    return list.slice(0, 8); // Top 8 families
+      }))
+      .sort((a, b) => b.count - a.count);
   }, [dismissals]);
 
-  // 4. Reasons Breakdown (أسباب التسريح)
-  const reasonStats = useMemo(() => {
-    const map = {};
-    dismissals.forEach(d => {
-      const r = (d.reason || 'أخرى').split(' ')[0] || 'أخرى'; // Simplified label
-      map[r] = (map[r] || 0) + 1;
+  // Filtered Dismissals List
+  const filteredDismissals = useMemo(() => {
+    return dismissals.filter(d => {
+      const matchQuery = !searchQuery || 
+        d.studentName?.includes(searchQuery) || 
+        d.familyName?.includes(searchQuery) || 
+        d.teacherName?.includes(searchQuery) ||
+        d.companionName?.includes(searchQuery) ||
+        d.passCode?.includes(searchQuery);
+
+      const matchClass = filterClass === 'all' || d.classroom === filterClass;
+      const matchDate = !filterDate || d.departureDate === filterDate;
+      const matchGender = filterGender === 'all' || d.gender === filterGender;
+      const matchTeacher = filterTeacher === 'all' || d.teacherName?.includes(filterTeacher);
+
+      return matchQuery && matchClass && matchDate && matchGender && matchTeacher;
     });
-
-    const list = Object.entries(map).map(([reason, count]) => ({
-      reason,
-      count,
-      percent: dismissals.length ? Math.round((count / dismissals.length) * 100) : 0
-    }));
-    list.sort((a, b) => b.count - a.count);
-    return list;
-  }, [dismissals]);
-
-  // Today count
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayCount = dismissals.filter(d => d.departureDate === todayStr).length;
-
-  // Filtered List for Table
-  const filteredDismissals = dismissals.filter(d => {
-    const matchQuery = !searchQuery || 
-      d.studentName?.includes(searchQuery) || 
-      d.familyName?.includes(searchQuery) || 
-      d.teacherName?.includes(searchQuery) ||
-      d.companionName?.includes(searchQuery) ||
-      d.passCode?.includes(searchQuery);
-
-    const matchClass = filterClass === 'all' || d.classroom === filterClass;
-    const matchDate = !filterDate || d.departureDate === filterDate;
-    const matchGender = filterGender === 'all' || d.gender === filterGender;
-
-    return matchQuery && matchClass && matchDate && matchGender;
-  });
+  }, [dismissals, searchQuery, filterClass, filterDate, filterGender, filterTeacher]);
 
   return (
     <div style={{ direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
-      {/* Header Banner */}
+      
+      {/* HEADER BANNER */}
       <div style={{
         background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0284c7 100%)',
         borderRadius: '24px',
         padding: '2rem 2.5rem',
         color: 'white',
-        marginBottom: '2rem',
-        boxShadow: '0 12px 30px rgba(2, 132, 199, 0.25)'
+        marginBottom: '1.75rem',
+        boxShadow: '0 12px 30px rgba(2, 132, 199, 0.25)',
+        position: 'relative'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.35rem 0.9rem', borderRadius: '50px', fontSize: '0.88rem', fontWeight: 800, marginBottom: '0.6rem' }}>
-              <span>🏃‍♂️ نظام تسريح الطلاب</span>
+              <span>🛡️ مركز المراقبة والتحكم المتقدم</span>
               <span>•</span>
-              <span>الإحصائيات والتوثيق الرسمي</span>
+              <span>إدارة كلمات المرور وتوثيق البوابة</span>
             </div>
             <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: 900 }}>
-              لوحة تحليلات وتوثيق تسريح الطلاب
+              لوحة مراقبة وتحكم تسريح الطلاب وحسابات المعلمين
             </h1>
             <p style={{ margin: '0.5rem 0 0 0', color: '#bae6fd', fontSize: '0.95rem' }}>
-              رصد كامل لكل عمليات خروج الطلاب مع تحليلات ذكية لأكثر الصفوف، نسب الذكور والإناث، والعائلات.
+              رصد حي لحركة البوابة، استرجاع وكشف وتعديل رموز المعلمين، ومتابعة فورية لسلامة الطلاب.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <a 
-              href="#student-dismissal" 
-              target="_blank" 
-              rel="noopener noreferrer"
+          <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => setSoundEnabled(!soundEnabled)}
               style={{
-                background: '#10b981',
+                background: soundEnabled ? '#10b981' : 'rgba(255,255,255,0.2)',
                 color: 'white',
-                padding: '0.7rem 1.2rem',
+                border: 'none',
+                padding: '0.65rem 1.1rem',
                 borderRadius: '12px',
                 fontWeight: 800,
-                fontSize: '0.9rem',
-                textDecoration: 'none',
+                fontSize: '0.88rem',
+                cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                gap: '0.4rem'
+              }}
+              title={soundEnabled ? 'تنبيهات الصوت مفعلة' : 'تنبيهات الصوت معطلة'}
+            >
+              <i className={`fas ${soundEnabled ? 'fa-volume-up' : 'fa-volume-mute'}`}></i>
+              {soundEnabled ? 'صوت التنبيهات 🔔' : 'كتم الصوت 🔕'}
+            </button>
+
+            <button 
+              onClick={handleExportCSV}
+              style={{
+                background: '#059669',
+                color: 'white',
+                border: 'none',
+                padding: '0.65rem 1.1rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
               }}
             >
-              <i className="fas fa-plus-circle"></i>
-              تسجيل إذن تسريح جديد ➕
-            </a>
+              <i className="fas fa-file-excel"></i>
+              تصدير Excel 📊
+            </button>
 
             <button 
               onClick={() => window.print()}
@@ -323,18 +458,18 @@ const StudentDismissalAdminTab = () => {
                 background: 'rgba(255,255,255,0.2)',
                 border: '1px solid rgba(255,255,255,0.3)',
                 color: 'white',
-                padding: '0.7rem 1.2rem',
+                padding: '0.65rem 1.1rem',
                 borderRadius: '12px',
                 fontWeight: 800,
-                fontSize: '0.9rem',
+                fontSize: '0.88rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.4rem'
               }}
             >
               <i className="fas fa-print"></i>
-              طباعة كشف التسريح الرسمي 🖨️
+              طباعة التقرير 🖨️
             </button>
 
             <button 
@@ -343,144 +478,347 @@ const StudentDismissalAdminTab = () => {
                 background: '#f59e0b',
                 border: 'none',
                 color: '#000',
-                padding: '0.7rem 1.2rem',
+                padding: '0.65rem 1.1rem',
                 borderRadius: '12px',
                 fontWeight: 900,
-                fontSize: '0.9rem',
+                fontSize: '0.88rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+                gap: '0.4rem'
               }}
-              title="تثبيت رابط تسريح الطلاب كزر تفاعلي في الروابط الخارجية بالصفحة الرئيسية"
+              title="تثبيت الرابط في الروابط الخارجية بالموقع"
             >
               <i className="fas fa-link"></i>
-              🔗 تثبيت في الروابط الخارجية بالموقع
-            </button>
-
-            <button 
-              onClick={() => setShowTeacherAccounts(prev => !prev)}
-              style={{
-                background: showTeacherAccounts ? '#38bdf8' : 'rgba(255,255,255,0.2)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: showTeacherAccounts ? '#0f172a' : 'white',
-                padding: '0.7rem 1.2rem',
-                borderRadius: '12px',
-                fontWeight: 900,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-              }}
-              title="عرض حسابات المربين وإعادة ضبط كلمات المرور (السيسما)"
-            >
-              <i className="fas fa-user-shield"></i>
-              {showTeacherAccounts ? 'إخفاء حسابات المعلمين 👥' : 'إدارة حسابات وكلمات مرور المعلمين 🔑'}
+              🔗 تثبيت بالموقع
             </button>
           </div>
         </div>
+
+        {/* SUB-TABS NAVIGATION */}
+        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setAdminViewMode('all')}
+            style={{
+              background: adminViewMode === 'all' ? 'white' : 'rgba(255,255,255,0.15)',
+              color: adminViewMode === 'all' ? '#0f172a' : 'white',
+              border: 'none',
+              padding: '0.55rem 1.2rem',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <i className="fas fa-th-large"></i>
+            عرض شامل (الكل)
+          </button>
+
+          <button
+            onClick={() => setAdminViewMode('accounts')}
+            style={{
+              background: adminViewMode === 'accounts' ? '#38bdf8' : 'rgba(255,255,255,0.15)',
+              color: adminViewMode === 'accounts' ? '#0f172a' : 'white',
+              border: 'none',
+              padding: '0.55rem 1.2rem',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <i className="fas fa-key"></i>
+            🔑 استرجاع وإدارة رموز المعلمين ({allTeachers.length})
+          </button>
+
+          <button
+            onClick={() => setAdminViewMode('gate')}
+            style={{
+              background: adminViewMode === 'gate' ? '#38bdf8' : 'rgba(255,255,255,0.15)',
+              color: adminViewMode === 'gate' ? '#0f172a' : 'white',
+              border: 'none',
+              padding: '0.55rem 1.2rem',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <i className="fas fa-door-open"></i>
+            🚪 مراقبة البوابة المباشرة ({todayPendingCount} بالانتظار)
+          </button>
+
+          <button
+            onClick={() => setAdminViewMode('stats')}
+            style={{
+              background: adminViewMode === 'stats' ? '#38bdf8' : 'rgba(255,255,255,0.15)',
+              color: adminViewMode === 'stats' ? '#0f172a' : 'white',
+              border: 'none',
+              padding: '0.55rem 1.2rem',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <i className="fas fa-chart-pie"></i>
+            📊 تحليلات الصفوف والمعلمين
+          </button>
+        </div>
       </div>
 
-      {/* TEACHER ACCOUNTS MANAGEMENT PANEL */}
-      {showTeacherAccounts && (
+      {/* KPI STATS CARDS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>📅 تسريح اليوم:</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0284c7' }}>{todayDismissals.length} <span style={{ fontSize: '1rem' }}>طالباً</span></div>
+        </div>
+
+        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 800, marginBottom: '0.3rem' }}>✅ غادروا البوابة اليوم:</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981' }}>{todayExitedCount} <span style={{ fontSize: '1rem' }}>طالباً</span></div>
+        </div>
+
+        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: todayPendingCount > 0 ? '2px solid #f59e0b' : '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 800, marginBottom: '0.3rem' }}>⏳ قيد انتظار الخروج الآن:</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {todayPendingCount} <span style={{ fontSize: '1rem' }}>طالباً</span>
+            {todayPendingCount > 0 && <span style={{ fontSize: '0.8rem', background: '#fef3c7', padding: '2px 8px', borderRadius: '20px', color: '#b45309' }}>عند البوابة</span>}
+          </div>
+        </div>
+
+        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>👥 حسابات المعلمين:</div>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{allTeachers.length} <span style={{ fontSize: '1rem' }}>معلماً</span></div>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* SECTION 1: TEACHER PASSWORDS & CREDENTIALS RETRIEVAL      */}
+      {/* ========================================================= */}
+      {(adminViewMode === 'all' || adminViewMode === 'accounts') && (
         <div style={{
           background: 'white',
-          borderRadius: '20px',
+          borderRadius: '22px',
           padding: '1.75rem',
           border: '2px solid #38bdf8',
-          boxShadow: '0 8px 24px rgba(2, 132, 199, 0.12)',
+          boxShadow: '0 8px 24px rgba(2, 132, 199, 0.08)',
           marginBottom: '2rem'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '1rem' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>👥🔑</span> إدارة حسابات وكلمات مرور المعلمين ({allTeachers.length} معلماً ومعلمة)
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.6rem' }}>🔑</span>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+                  مركز استرجاع وإدارة رموز دخول المعلمين (السيسما)
+                </h2>
+              </div>
               <p style={{ margin: '0.35rem 0 0 0', color: '#64748b', fontSize: '0.88rem' }}>
-                الرمز الأولي الموحد هو <strong>{DEFAULT_TEACHER_PIN}</strong>. يمكن للمعلم تغييره شخصياً، كما يمكن للمدير هنا إعادة تعيين رمز أي معلم نسيه إلى 318212 بضغطة زر.
+                يمكنك كشف واسترجاع رمز أي معلم بنقرة واحدة، تعديل الرمز مباشرة، إرساله عبر واتساب، أو إعادة تعيينه للافتراضي (318212).
               </p>
             </div>
-            <input
-              type="text"
-              placeholder="🔍 بحث بالاسم العربي أو العبري..."
-              value={teacherSearch}
-              onChange={(e) => setTeacherSearch(e.target.value)}
-              style={{
-                padding: '0.6rem 1rem',
-                borderRadius: '12px',
-                border: '1.5px solid #cbd5e1',
-                fontSize: '0.9rem',
-                minWidth: '240px',
-                outline: 'none'
-              }}
-            />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="🔍 بحث باسم المعلم بالعربية أو العبرية..."
+                value={teacherSearch}
+                onChange={(e) => setTeacherSearch(e.target.value)}
+                style={{
+                  padding: '0.6rem 1rem',
+                  borderRadius: '12px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                  minWidth: '240px',
+                  outline: 'none'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  fetchTeacherCloudAccounts();
+                  setTeacherListVer(v => v + 1);
+                  alert('🔄 تم تحديث وقراءة جميع رموز المعلمين من السحابة بنجاح.');
+                }}
+                style={{
+                  background: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  color: '#0284c7',
+                  padding: '0.6rem 1rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                تحديث السحابة 🔄
+              </button>
+            </div>
           </div>
 
-          <div style={{ maxHeight: '380px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+          {/* TEACHERS TABLE WITH RECOVERY & EDIT */}
+          <div style={{ maxHeight: '450px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '0.75rem 1rem' }}>المربي / المعلم</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>الاسم بالعبرية</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>المسمى الوظيفي</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>حالة كلمة المرور (السيسما)</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>إجراءات الإدارة</th>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#334155' }}>
+                  <th style={{ padding: '0.85rem 1rem' }}>المربي / المعلم</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>الاسم بالعبرية</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>رمز الدخول (السيسما) 🔑</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>حالة الرمز ومصدره</th>
+                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>إجراءات الإدارة والمشاركة</th>
                 </tr>
               </thead>
               <tbody>
                 {allTeachers
                   .filter(t => !teacherSearch || t.nameAr.includes(teacherSearch) || t.nameHe.includes(teacherSearch))
                   .map(t => {
-                    const isCustom = isTeacherPinCustomized(t.id);
+                    const details = getTeacherAccountDetails(t.id);
+                    const isRevealed = !!revealedPins[t.id];
+                    const pin = details.pin || DEFAULT_TEACHER_PIN;
+
                     return (
-                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '0.7rem 1rem', fontWeight: 800, color: '#0f172a' }}>
+                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 800, color: '#0f172a' }}>
                           👨‍🏫 {t.nameAr}
-                        </td>
-                        <td style={{ padding: '0.7rem 1rem', color: '#64748b', fontWeight: 600 }}>
-                          {t.nameHe}
-                        </td>
-                        <td style={{ padding: '0.7rem 1rem', color: '#475569', fontSize: '0.85rem' }}>
-                          {t.role || 'معلم ومربي'}
-                        </td>
-                        <td style={{ padding: '0.7rem 1rem' }}>
-                          {isCustom ? (
-                            <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800 }}>
-                              🔑 رمز شخصي مخصص
-                            </span>
-                          ) : (
-                            <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 9px', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800 }}>
-                              الرمز الافتراضي (318212)
+                          {t.id === 'rami_irfaeya' && (
+                            <span style={{ marginRight: '6px', background: '#fef3c7', color: '#b45309', padding: '2px 7px', borderRadius: '6px', fontSize: '0.75rem' }}>
+                              مدير المدرسة
                             </span>
                           )}
                         </td>
-                        <td style={{ padding: '0.7rem 1rem' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`هل تريد إعادة ضبط كلمة مرور (${t.nameAr}) إلى الرمز الافتراضي 318212؟`)) {
-                                resetTeacherPinToDefault(t.id);
-                                setTeacherListVer(v => v + 1);
-                                alert(`✅ تم بنجاح إعادة ضبط كلمة مرور ${t.nameAr} إلى ${DEFAULT_TEACHER_PIN}.`);
-                              }
-                            }}
-                            style={{
-                              background: '#f1f5f9',
-                              border: '1px solid #cbd5e1',
-                              color: '#334155',
-                              padding: '4px 10px',
-                              borderRadius: '8px',
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                            title="إعادة ضبط الرمز إلى 318212"
-                          >
-                            🔄 إعادة ضبط إلى 318212
-                          </button>
+
+                        <td style={{ padding: '0.75rem 1rem', color: '#64748b', fontWeight: 600 }}>
+                          {t.nameHe}
+                        </td>
+
+                        {/* PIN DISPLAY & REVEAL TOGGLE */}
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '4px 10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '1.05rem', color: isRevealed ? '#0284c7' : '#94a3b8', letterSpacing: isRevealed ? '2px' : '4px' }}>
+                              {isRevealed ? pin : '••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleRevealPin(t.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: isRevealed ? '#0284c7' : '#64748b', padding: '2px', fontSize: '0.95rem' }}
+                              title={isRevealed ? 'إخفاء الرمز' : 'كشف واسترجاع الرمز السري'}
+                            >
+                              <i className={`fas ${isRevealed ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPin(t.nameAr, pin)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '2px', fontSize: '0.9rem' }}
+                              title="نسخ الرمز للحافظة"
+                            >
+                              <i className="fas fa-copy"></i>
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* STATUS & AUDIT */}
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div>
+                            {details.isCustom ? (
+                              <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 8px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800 }}>
+                                🔑 رمز مخصص ({details.updatedBy || 'المربي'})
+                              </span>
+                            ) : (
+                              <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800 }}>
+                                الرمز الافتراضي (318212)
+                              </span>
+                            )}
+                          </div>
+                          {details.updatedAt && (
+                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '3px' }}>
+                              آخر تحديث: {new Date(details.updatedAt).toLocaleDateString('ar-EG')}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* ACTIONS: EDIT, WHATSAPP, RESET */}
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingTeacher(t);
+                                setCustomPinInput(getTeacherPin(t.id));
+                                setSavePinError('');
+                                setSavePinSuccess('');
+                              }}
+                              style={{
+                                background: '#f0f9ff',
+                                border: '1px solid #bae6fd',
+                                color: '#0284c7',
+                                padding: '4px 9px',
+                                borderRadius: '8px',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="تعديل الرمز يدوياً لهذا المعلم"
+                            >
+                              <i className="fas fa-edit"></i> تعديل
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSendWhatsAppPin(t)}
+                              style={{
+                                background: '#ecfdf5',
+                                border: '1px solid #a7f3d0',
+                                color: '#059669',
+                                padding: '4px 9px',
+                                borderRadius: '8px',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="إرسال بيانات الدخول للمعلم عبر واتساب"
+                            >
+                              <i className="fab fa-whatsapp"></i> واتساب
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleResetTeacherPin(t)}
+                              style={{
+                                background: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                color: '#dc2626',
+                                padding: '4px 9px',
+                                borderRadius: '8px',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="إعادة ضبط كلمة المرور إلى 318212"
+                            >
+                              <i className="fas fa-undo"></i> 318212
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -491,203 +829,259 @@ const StudentDismissalAdminTab = () => {
         </div>
       )}
 
-      {/* KPI STATS CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>📅 تسريح اليوم:</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0284c7' }}>{todayCount} <span style={{ fontSize: '1rem' }}>طالباً</span></div>
-        </div>
-
-        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>📚 إجمالي التسريح الموثق:</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{dismissals.length} <span style={{ fontSize: '1rem' }}>حالة</span></div>
-        </div>
-
-        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>👦 نسبة الذكور:</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0369a1' }}>{genderStats.malePercent}% <span style={{ fontSize: '0.9rem', color: '#64748b' }}>({genderStats.male})</span></div>
-        </div>
-
-        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>👧 نسبة الإناث:</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#be185d' }}>{genderStats.femalePercent}% <span style={{ fontSize: '0.9rem', color: '#64748b' }}>({genderStats.female})</span></div>
-        </div>
-      </div>
-
-      {/* VISUAL ANALYTICS SECTION (The core request) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        
-        {/* CHART 1: CLASSROOM BREAKDOWN (أكثر الصفوف تسريحاً) */}
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '22px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>🏫</span>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
-              أكثر الصفوف خروجاً وتسريحاً للطلاب
-            </h3>
-          </div>
-
-          {classStats.length === 0 ? (
-            <div style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>لا توجد بيانات كافية بعد</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {classStats.slice(0, 6).map((item, idx) => (
-                <div key={item.className}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-                    <span style={{ color: idx === 0 ? '#b91c1c' : '#334155' }}>
-                      {idx === 0 && '🔥 '}<strong>{item.className}</strong>
-                    </span>
-                    <span style={{ color: '#0284c7' }}>
-                      {item.count} طلاب ({item.percent}%)
-                    </span>
-                  </div>
-                  <div style={{ width: '100%', height: '10px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${item.percent}%`,
-                      height: '100%',
-                      background: idx === 0 ? 'linear-gradient(90deg, #ef4444, #f97316)' : 'linear-gradient(90deg, #0284c7, #38bdf8)',
-                      borderRadius: '10px'
-                    }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* CHART 2: GENDER COMPARISON (مقارنة الذكور والإناث) */}
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '22px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>⚖️</span>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
-              التوزيع حسب الجنس (الذكور والإناث)
-            </h3>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1rem' }}>
-            {/* Visual Bar */}
-            <div style={{ width: '100%', height: '32px', background: '#f1f5f9', borderRadius: '16px', display: 'flex', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
-              <div 
-                style={{ 
-                  width: `${genderStats.malePercent}%`, 
-                  background: 'linear-gradient(135deg, #0284c7, #0369a1)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: 'white', 
-                  fontWeight: 900, 
-                  fontSize: '0.85rem' 
-                }}
+      {/* EDIT TEACHER PIN MODAL */}
+      {editingTeacher && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem',
+          direction: 'rtl'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '2rem',
+            maxWidth: '420px',
+            width: '100%',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.4rem' }}>✏️</span>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                  تعديل رمز الدخول للمعلم
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTeacher(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
               >
-                {genderStats.malePercent > 10 && `👦 ${genderStats.malePercent}%`}
-              </div>
-              <div 
-                style={{ 
-                  width: `${genderStats.femalePercent}%`, 
-                  background: 'linear-gradient(135deg, #ec4899, #be185d)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: 'white', 
-                  fontWeight: 900, 
-                  fontSize: '0.85rem' 
-                }}
-              >
-                {genderStats.femalePercent > 10 && `👧 ${genderStats.femalePercent}%`}
-              </div>
+                ✕
+              </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div style={{ background: '#e0f2fe', padding: '1rem', borderRadius: '14px', textAlign: 'center' }}>
-                <span style={{ fontSize: '1.5rem' }}>👦</span>
-                <div style={{ fontWeight: 900, color: '#0369a1', fontSize: '1.2rem' }}>{genderStats.male} طالباً</div>
-                <div style={{ fontSize: '0.82rem', color: '#0284c7', fontWeight: 800 }}>الذكور ({genderStats.malePercent}%)</div>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 1.25rem 0', lineHeight: '1.5' }}>
+              أنت الآن تقوم بتعيين رمز جديد للمربي/ة: <strong>{editingTeacher.nameAr}</strong> ({editingTeacher.nameHe}).
+            </p>
+
+            <form onSubmit={handleAdminSavePin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                  الرمز السري الجديد (4 أرقام أو حروف على الأقل): *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={customPinInput}
+                  onChange={(e) => setCustomPinInput(e.target.value)}
+                  placeholder="أدخل الرمز الجديد..."
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1rem',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '12px',
+                    fontSize: '1.15rem',
+                    fontWeight: 800,
+                    textAlign: 'center',
+                    letterSpacing: '3px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                  autoFocus
+                />
               </div>
 
-              <div style={{ background: '#fce7f3', padding: '1rem', borderRadius: '14px', textAlign: 'center' }}>
-                <span style={{ fontSize: '1.5rem' }}>👧</span>
-                <div style={{ fontWeight: 900, color: '#be185d', fontSize: '1.2rem' }}>{genderStats.female} طالبة</div>
-                <div style={{ fontSize: '0.82rem', color: '#ec4899', fontWeight: 800 }}>الإناث ({genderStats.femalePercent}%)</div>
-              </div>
-            </div>
-
-            <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, textAlign: 'center' }}>
-              {genderStats.male > genderStats.female 
-                ? '⚡ نسبة خروج الذكور أعلى من الإناث في الفترة الحالية'
-                : genderStats.female > genderStats.male
-                ? '⚡ نسبة خروج الإناث أعلى من الذكور في الفترة الحالية'
-                : '⚡ نسب الخروج متساوية تماماً بين الذكور والإناث'}
-            </div>
-          </div>
-        </div>
-
-        {/* CHART 3: FAMILY BREAKDOWN (أكثر العائلات تسريحاً للطلاب) */}
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '22px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>👨‍👩‍👧‍👦</span>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
-              أكثر العائلات تسريحاً للطلاب
-            </h3>
-          </div>
-
-          {familyStats.length === 0 ? (
-            <div style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>لا توجد بيانات كافية بعد</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              {familyStats.map((item, idx) => (
-                <div key={item.familyName} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.6rem 0.9rem', borderRadius: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: idx < 3 ? '#fbbf24' : '#e2e8f0', color: idx < 3 ? '#78350f' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900 }}>
-                      {idx + 1}
-                    </span>
-                    <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>عائلة {item.familyName}</strong>
-                  </div>
-                  <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 800 }}>
-                    {item.count} طلاب
-                  </span>
+              {savePinError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.65rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                  {savePinError}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
+
+              {savePinSuccess && (
+                <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '0.65rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                  {savePinSuccess}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    background: '#0284c7',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.85rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  حفظ الرمز وتحديثه في السحابة 💾
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingTeacher(null)}
+                  style={{
+                    background: '#f1f5f9',
+                    color: '#475569',
+                    border: 'none',
+                    padding: '0.85rem 1.25rem',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
+      )}
 
-      </div>
-
-      {/* FULL DOCUMENTATION & LOGS TABLE */}
-      <div style={{ background: 'white', borderRadius: '22px', padding: '1.75rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* ========================================================= */}
+      {/* SECTION 2: GUARD ACCESS CODE & SECURITY                   */}
+      {/* ========================================================= */}
+      <div style={{
+        background: 'white',
+        borderRadius: '18px',
+        padding: '1.25rem 1.5rem',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#f0f9ff', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>
+            🛡️
+          </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
-              📋 السجل الكامل لتوثيق تسريح الطلاب ({filteredDismissals.length} تسريحاً)
+            <div style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>أمان شاشة حارس المدرسة عند البوابة:</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>رمز قفل الحارس الحالي:</span>
+              <span style={{ fontFamily: 'monospace', color: '#0284c7', background: '#f8fafc', padding: '2px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                {showGuardPin ? guardPin : '••••••'}
+              </span>
+              <button
+                onClick={() => setShowGuardPin(!showGuardPin)}
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.95rem' }}
+                title={showGuardPin ? 'إخفاء' : 'كشف'}
+              >
+                <i className={`fas ${showGuardPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          {isEditingGuardPin ? (
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={guardPinInput}
+                onChange={(e) => setGuardPinInput(e.target.value)}
+                placeholder="رمز جديد..."
+                style={{ width: '110px', padding: '0.45rem 0.6rem', border: '1.5px solid #0284c7', borderRadius: '8px', textAlign: 'center', fontWeight: 800 }}
+              />
+              <button onClick={handleSaveGuardPin} style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.45rem 0.9rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}>حفظ</button>
+              <button onClick={() => setIsEditingGuardPin(false)} style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '0.45rem 0.7rem', borderRadius: '8px', cursor: 'pointer' }}>إلغاء</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsEditingGuardPin(true)}
+              style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#334155', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              تغيير رمز الحارس ✏️
+            </button>
+          )}
+          <a
+            href="#/guard"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ background: '#0284c7', color: 'white', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            فتح شاشة الحارس 🚪
+          </a>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* SECTION 3: DISMISSALS LOG & LIVE GATE MONITOR             */}
+      {/* ========================================================= */}
+      <div style={{
+        background: 'white',
+        borderRadius: '22px',
+        padding: '1.75rem',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
+              سجل وإحصائيات تسريح الطلاب التفصيلي
             </h2>
-            <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-              توثيق مفصل يوضح متى خرج كل طالب، ومن أي صف، والمربي المصرح، وحالة المرور بالبوابة.
+            <p style={{ margin: '0.35rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+              إجمالي السجلات: <strong>{dismissals.length}</strong> حالة • المطابق للبحث الحالي: <strong>{filteredDismissals.length}</strong> حالة
             </p>
           </div>
 
-          <button onClick={loadDismissals} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <i className="fas fa-sync-alt"></i> تحديث السجل
-          </button>
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <a
+              href="#student-dismissal"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: '#10b981',
+                color: 'white',
+                padding: '0.55rem 1rem',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              تسجيل إذن جديد ➕
+            </a>
+          </div>
         </div>
 
-        {/* Filters Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '14px' }}>
+        {/* FILTERS TOOLBAR */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem', background: '#f8fafc', padding: '1rem', borderRadius: '14px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>🔍 بحث بالاسم أو الكود:</label>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>🔍 بحث بالاسم أو الرمز:</label>
             <input 
               type="text" 
-              placeholder="اسم الطالب، المربي..." 
+              placeholder="اسم الطالب، المرافق، الرمز..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.88rem', boxSizing: 'border-box' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>🏫 تصفية بالصف:</label>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>🏫 الصف والشعبة:</label>
             <select 
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
-              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.88rem', boxSizing: 'border-box' }}
             >
               <option value="all">جميع الصفوف</option>
               {classStats.map(c => (
@@ -697,30 +1091,31 @@ const StudentDismissalAdminTab = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>📅 تصفية بالتاريخ:</label>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>👨‍🏫 المربي المصرح:</label>
+            <select 
+              value={filterTeacher}
+              onChange={(e) => setFilterTeacher(e.target.value)}
+              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.88rem', boxSizing: 'border-box' }}
+            >
+              <option value="all">جميع المربين</option>
+              {teacherStats.map(t => (
+                <option key={t.name} value={t.name}>{t.name} ({t.count})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>📅 تصفية بالتاريخ:</label>
             <input 
               type="date" 
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
+              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.88rem', boxSizing: 'border-box' }}
             />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>👦👧 الجنس:</label>
-            <select 
-              value={filterGender}
-              onChange={(e) => setFilterGender(e.target.value)}
-              style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700 }}
-            >
-              <option value="all">الكل (ذكور وإناث)</option>
-              <option value="male">ذكور فقط 👦</option>
-              <option value="female">إناث فقط 👧</option>
-            </select>
           </div>
         </div>
 
-        {/* Table */}
+        {/* DISMISSALS TABLE */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
             <thead>
@@ -740,7 +1135,7 @@ const StudentDismissalAdminTab = () => {
               {filteredDismissals.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: '#94a3b8' }}>
-                    لا توجد سجلات تطابق البحث المحدد.
+                    {isLoading ? 'جاري تحميل السجلات من السحابة...' : 'لا توجد سجلات تسريح تطابق الفلتر المحدد.'}
                   </td>
                 </tr>
               ) : (
@@ -751,7 +1146,6 @@ const StudentDismissalAdminTab = () => {
                     </td>
                     <td style={{ padding: '0.75rem' }}>
                       <strong>{d.studentName}</strong>
-                      <span style={{ marginRight: '6px', fontSize: '0.8rem' }}>{d.gender === 'male' ? '👦' : '👧'}</span>
                     </td>
                     <td style={{ padding: '0.75rem', fontWeight: 800, color: '#475569' }}>
                       {d.classroom}
@@ -765,7 +1159,7 @@ const StudentDismissalAdminTab = () => {
                     </td>
                     <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>
                       <div>{d.companionName}</div>
-                      {d.companionPhone && <div style={{ color: '#059669', direction: 'ltr' }}>{d.companionPhone}</div>}
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>({d.companionType})</div>
                     </td>
                     <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#64748b' }}>
                       {d.reason}
@@ -804,6 +1198,51 @@ const StudentDismissalAdminTab = () => {
           </table>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* SECTION 4: ANALYTICS BREAKDOWN                            */}
+      {/* ========================================================= */}
+      {(adminViewMode === 'all' || adminViewMode === 'stats') && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          {/* TEACHERS RANKING */}
+          <div style={{ background: 'white', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+              👨‍🏫 المربون الأكثر إصداراً لأذونات التسريح:
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {teacherStats.slice(0, 7).map((t, idx) => (
+                <div key={t.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: idx === 0 ? '#f0f9ff' : '#f8fafc', borderRadius: '10px' }}>
+                  <div style={{ fontWeight: 800, color: idx === 0 ? '#0284c7' : '#334155' }}>
+                    {idx + 1}. {t.name}
+                  </div>
+                  <div style={{ fontWeight: 900, color: '#0f172a' }}>
+                    {t.count} إذن <span style={{ fontSize: '0.75rem', color: '#64748b' }}>({t.percent}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CLASSROOM RANKING */}
+          <div style={{ background: 'white', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+              🏫 أكثر الصفوف تسريحاً للطلاب:
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {classStats.slice(0, 7).map((c, idx) => (
+                <div key={c.className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '10px' }}>
+                  <div style={{ fontWeight: 800, color: '#334155' }}>
+                    {idx + 1}. {c.className}
+                  </div>
+                  <div style={{ fontWeight: 900, color: '#0f172a' }}>
+                    {c.count} حالة <span style={{ fontSize: '0.75rem', color: '#64748b' }}>({c.percent}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

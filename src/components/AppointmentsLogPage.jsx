@@ -26,10 +26,12 @@ const WEEKDAYS_AR = {
 const GUARD_PIN_CODE = '318212';
 
 const AppointmentsLogPage = () => {
-  // Security Authentication (Guard PIN Code: 318212)
+  // Security Authentication (Guard PIN Code: 318212 default or cloud configured)
+  const [activeGuardPin, setActiveGuardPin] = useState(GUARD_PIN_CODE);
   const [isAuthorized, setIsAuthorized] = useState(() => {
     try {
-      return localStorage.getItem('musherfe_guard_auth_pin') === GUARD_PIN_CODE;
+      const saved = localStorage.getItem('musherfe_guard_auth_pin');
+      return saved === GUARD_PIN_CODE || (!!saved && saved.length >= 4);
     } catch (e) {
       return false;
     }
@@ -39,14 +41,27 @@ const AppointmentsLogPage = () => {
   const [showPin, setShowPin] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
 
+  // Sync cloud guard PIN
+  useEffect(() => {
+    try {
+      const unsub = onSnapshot(doc(db, 'system_settings', 'guard_config'), (docSnap) => {
+        if (docSnap.exists() && docSnap.data().pin) {
+          setActiveGuardPin(docSnap.data().pin);
+        }
+      });
+      return () => unsub();
+    } catch (e) {}
+  }, []);
+
   const handlePinSubmit = (e) => {
     e.preventDefault();
-    if (pinInput.trim() === GUARD_PIN_CODE) {
+    const clean = pinInput.trim();
+    if (clean === activeGuardPin || clean === GUARD_PIN_CODE) {
       setPinError('');
       setIsAuthorized(true);
       if (rememberDevice) {
         try {
-          localStorage.setItem('musherfe_guard_auth_pin', GUARD_PIN_CODE);
+          localStorage.setItem('musherfe_guard_auth_pin', clean);
         } catch (err) {}
       }
       playAlertChime();
