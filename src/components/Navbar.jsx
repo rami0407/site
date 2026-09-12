@@ -5,6 +5,7 @@ import { defaultNavigation, defaultTopNavigation, defaultMainNavigation } from '
 import { getStudentSession, logoutStudent } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
 import NotificationCenter from './NotificationCenter';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -311,6 +312,11 @@ const Navbar = () => {
               )}
             </li>
 
+            {/* Language Switcher (Arabic / Hebrew) */}
+            <li>
+              <LanguageSwitcher />
+            </li>
+
             {/* Top Notification Bell */}
             <li>
               <NotificationCenter />
@@ -353,6 +359,13 @@ const Navbar = () => {
           </div>
 
           <ul className={`nav-menu ${mobileMenuOpen ? 'active' : ''}`} id="navMenu">
+            {/* Mobile Language Switcher */}
+            {mobileMenuOpen && (
+              <li style={{ padding: '0.75rem 1rem', display: 'flex', justifyContent: 'center' }}>
+                <LanguageSwitcher />
+              </li>
+            )}
+
             {/* Mobile Header Label */}
             {mobileMenuOpen && (
               <li className="mobile-menu-category">القائمة الرئيسية</li>

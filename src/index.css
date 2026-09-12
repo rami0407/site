@@ -5788,6 +5788,46 @@ textarea.form-input {
   font-style: italic;
 }
 
+/* ==========================================================================
+   GOOGLE TRANSLATE SEAMLESS CLEANUP & SUPPRESSION
+   ========================================================================== */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+#google_translate_element {
+  display: none !important;
+}
+
+.skiptranslate:not(.language-switcher-wrapper) {
+  /* Prevent Google from adding arbitrary top padding or font changes */
+}
+
+
 
 
 
