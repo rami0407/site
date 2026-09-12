@@ -104,6 +104,36 @@ const StudentDismissalPage = () => {
   const [changePinSuccess, setChangePinSuccess] = useState('');
   const [isSavingPin, setIsSavingPin] = useState(false);
 
+  // Forgot PIN Modal for Teachers
+  const [showForgotPinModal, setShowForgotPinModal] = useState(false);
+  const [pinRecoveryStatus, setPinRecoveryStatus] = useState('');
+  const [isSendingRecovery, setIsSendingRecovery] = useState(false);
+
+  const handleRequestPinRecovery = async () => {
+    if (!selectedTeacherId) return;
+    const targetTeacher = getTeacherById(selectedTeacherId) || allTeachers.find(t => t.id === selectedTeacherId);
+    const teacherName = targetTeacher ? targetTeacher.nameAr : selectedTeacherId;
+    setIsSendingRecovery(true);
+    setPinRecoveryStatus('');
+    try {
+      await addDoc(collection(db, 'messages'), {
+        type: 'teacher_pin_reset_request',
+        teacherId: selectedTeacherId,
+        teacherName,
+        adminEmail: 'rami0407@gmail.com',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        note: `طلب استرجاع وإعادة تعيين الرمز السري للمربي/ة ${teacherName}`
+      });
+      setPinRecoveryStatus('success');
+    } catch (e) {
+      console.warn('Error sending pin recovery:', e);
+      setPinRecoveryStatus('error');
+    } finally {
+      setIsSendingRecovery(false);
+    }
+  };
+
   // Form State
   const [studentName, setStudentName] = useState('');
   const [classroom, setClassroom] = useState('الصف الأول (أ)');
@@ -864,7 +894,179 @@ const StudentDismissalPage = () => {
               <span>تسجيل الدخول ومتابعة التسريح</span>
               <i className="fas fa-arrow-left"></i>
             </button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPinRecoveryStatus('');
+                  setShowForgotPinModal(true);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#38bdf8',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline'
+                }}
+              >
+                ❓ نسيت الرمز السري؟
+              </button>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                الرمز الافتراضي: 318212
+              </span>
+            </div>
           </form>
+
+          {/* Teacher Forgot PIN Modal */}
+          {showForgotPinModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(15, 23, 42, 0.85)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 99999,
+              padding: '1rem',
+              direction: 'rtl'
+            }}>
+              <div style={{
+                maxWidth: '480px',
+                width: '100%',
+                background: '#1e293b',
+                borderRadius: '24px',
+                padding: '2rem',
+                border: '1.5px solid #334155',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                color: 'white',
+                textAlign: 'right'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', fontSize: '1.2rem' }}>
+                      <i className="fas fa-key"></i>
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>استرجاع الرمز السري للمربي</h3>
+                      <p style={{ margin: 0, fontSize: '0.76rem', color: '#94a3b8' }}>إرشادات وطلب إعادة التعيين</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPinModal(false)}
+                    style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#94a3b8', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '14px', padding: '1rem', marginBottom: '1.25rem' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8', marginBottom: '0.3rem' }}>
+                    💡 معلومة هامة:
+                  </div>
+                  <div style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.6' }}>
+                    الرمز السري الافتراضي والموحد لجميع المعلمين في المدرسة هو: <strong style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: '1.1rem', letterSpacing: '2px' }}>318212</strong>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.4rem' }}>
+                    إذا لم تكن قد غيرت رمزك مسبقاً، جرب إدخال هذا الرمز مباشرة في خانة السيسما.
+                  </div>
+                </div>
+
+                <p style={{ fontSize: '0.86rem', color: '#cbd5e1', lineHeight: '1.6', marginBottom: '1.25rem' }}>
+                  في حال قمت بتغيير الرمز ونسيته، يمكنك إرسال طلب استرجاع فوري لمدير المدرسة (الأستاذ رامي) لإعادة ضبط رمزك للافتراضي فوراً.
+                </p>
+
+                {pinRecoveryStatus === 'success' ? (
+                  <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#a7f3d0', padding: '0.9rem', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 700, marginBottom: '1.25rem', textAlign: 'center' }}>
+                    <i className="fas fa-check-circle" style={{ marginLeft: '0.4rem' }}></i>
+                    تم إرسال طلب استرجاع الرمز بنجاح إلى إدارة المدرسة (rami0407@gmail.com). سيقوم المدير بإعادة ضبط رمزك فوراً.
+                  </div>
+                ) : pinRecoveryStatus === 'error' ? (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '0.9rem', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 700, marginBottom: '1.25rem', textAlign: 'center' }}>
+                    حدث خطأ في الاتصال، يرجى التواصل مباشرة مع إدارة المدرسة.
+                  </div>
+                ) : null}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {pinRecoveryStatus !== 'success' && (
+                    <button
+                      type="button"
+                      disabled={isSendingRecovery}
+                      onClick={handleRequestPinRecovery}
+                      style={{
+                        width: '100%',
+                        padding: '0.85rem',
+                        borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: 'white',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      {isSendingRecovery ? (
+                        <><i className="fas fa-spinner fa-spin"></i> جاري إرسال الطلب...</>
+                      ) : (
+                        <><i className="fas fa-paper-plane"></i> إرسال طلب استرجاع الرمز للمدير 📩</>
+                      )}
+                    </button>
+                  )}
+
+                  <a
+                    href={`mailto:rami0407@gmail.com?subject=${encodeURIComponent('طلب استرجاع رمز الدخول للمربي')}&body=${encodeURIComponent(`تحية طيبة، أرجو إعادة تعيين رمز الدخول السري الخاص بي للمنظومة المدرسية.\nاسم المربي: ${allTeachers.find(t => t.id === selectedTeacherId)?.nameAr || ''}`)}`}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '14px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      color: '#e2e8f0',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      fontSize: '0.86rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <i className="fas fa-envelope"></i> مراسلة المدير عبر البريد (rami0407@gmail.com)
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPinModal(false)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '14px',
+                      background: 'transparent',
+                      color: '#94a3b8',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <a

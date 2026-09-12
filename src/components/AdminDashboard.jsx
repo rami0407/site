@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, storage, emtnanDb } from '../firebase';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
@@ -348,6 +348,48 @@ const AdminDashboard = () => {
   const [showAdmin2FAModal, setShowAdmin2FAModal] = useState(false);
   const [testAdmin2FACode, setTestAdmin2FACode] = useState('');
   const [testAdmin2FAMsg, setTestAdmin2FAMsg] = useState('');
+
+  // Admin Password Reset State (Recover to rami0407@gmail.com)
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('rami0407@gmail.com');
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetMessage, setResetMessage] = useState({ type: '', text: '' });
+
+  const handleSendPasswordReset = async (e) => {
+    if (e) e.preventDefault();
+    const emailToUse = (forgotEmail || loginEmail || 'rami0407@gmail.com').trim();
+    if (!emailToUse) {
+      setResetMessage({ type: 'error', text: 'يرجى إدخال البريد الإلكتروني.' });
+      return;
+    }
+    setIsSendingReset(true);
+    setResetMessage({ type: '', text: '' });
+    try {
+      await sendPasswordResetEmail(auth, emailToUse);
+      logSecurityEvent({
+        type: 'PASSWORD_RESET_REQUESTED',
+        severity: 'INFO',
+        actor: emailToUse,
+        actionKey: 'admin_password_reset',
+        details: `تم إرسال رابط استعادة كلمة المرور الإدارية إلى ${emailToUse}`
+      });
+      setResetMessage({
+        type: 'success',
+        text: `تم بنجاح إرسال رابط رسمي وآمن لإعادة تعيين كلمة المرور إلى: ${emailToUse}. تفقد صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam).`
+      });
+    } catch (err) {
+      console.error('Password reset error:', err);
+      let errText = 'تعذر إرسال الرابط: ' + err.message;
+      if (err.code === 'auth/user-not-found') {
+        errText = 'لم يتم العثور على حساب مسجل بهذا البريد.';
+      } else if (err.code === 'auth/invalid-email') {
+        errText = 'صيغة البريد الإلكتروني غير صحيحة.';
+      }
+      setResetMessage({ type: 'error', text: errText });
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
 
   // Sync Admin 2FA Configuration from Firestore
   useEffect(() => {
@@ -4062,8 +4104,30 @@ const AdminDashboard = () => {
               />
             </div>
             
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label htmlFor="password" className="form-label">كلمة المرور *</label>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <label htmlFor="password" className="form-label" style={{ margin: 0 }}>كلمة المرور *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(loginEmail.trim() || 'rami0407@gmail.com');
+                    setResetMessage({ type: '', text: '' });
+                    setShowForgotModal(true);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#4f46e5',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline'
+                  }}
+                >
+                  🔑 نسيت كلمة المرور؟
+                </button>
+              </div>
               <input 
                 type="password" 
                 id="password" 
@@ -4090,6 +4154,129 @@ const AdminDashboard = () => {
               )}
             </button>
           </form>
+
+          {/* Admin Password Reset Modal */}
+          {showForgotModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 99999,
+              padding: '1rem',
+              direction: 'rtl'
+            }}>
+              <div style={{
+                maxWidth: '460px',
+                width: '100%',
+                background: 'white',
+                borderRadius: '24px',
+                padding: '2rem',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5', fontSize: '1.25rem' }}>
+                      <i className="fas fa-envelope-open-text"></i>
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>استرجاع كلمة المرور</h3>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>إرسال رابط آمن ومباشر لإعادة التعيين</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.6', marginBottom: '1.25rem' }}>
+                  سيتم إرسال رابط رسمي ومشفر من خادم Google Firebase مباشرة إلى بريد المدير العام المعتمد: <strong>rami0407@gmail.com</strong>
+                </p>
+
+                <form onSubmit={handleSendPasswordReset}>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                      البريد الإلكتروني المعتمد للمدير:
+                    </label>
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      required
+                      className="form-input"
+                      style={{ direction: 'ltr', textAlign: 'left', fontWeight: 700 }}
+                    />
+                  </div>
+
+                  {resetMessage.text && (
+                    <div style={{
+                      marginBottom: '1.25rem',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      background: resetMessage.type === 'success' ? '#ecfdf5' : '#fef2f2',
+                      color: resetMessage.type === 'success' ? '#065f46' : '#991b1b',
+                      border: `1px solid ${resetMessage.type === 'success' ? '#a7f3d0' : '#fecaca'}`
+                    }}>
+                      <i className={`fas ${resetMessage.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} style={{ marginLeft: '0.4rem' }}></i>
+                      {resetMessage.text}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      type="submit"
+                      disabled={isSendingReset}
+                      className="btn"
+                      style={{
+                        flex: 1,
+                        background: '#4f46e5',
+                        color: 'white',
+                        padding: '0.75rem',
+                        borderRadius: '12px',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {isSendingReset ? (
+                        <><i className="fas fa-spinner fa-spin"></i> جاري الإرسال...</>
+                      ) : (
+                        <><i className="fas fa-paper-plane"></i> إرسال الرابط الآن</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      style={{
+                        padding: '0.75rem 1.25rem',
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        borderRadius: '12px',
+                        border: 'none',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      إغلاق
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
             <div style={{ background: '#ecfdf5', color: '#047857', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', width: '100%' }}>
