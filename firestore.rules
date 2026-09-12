@@ -158,9 +158,30 @@ service cloud.firestore {
     }
 
     match /messages/{docId} {
-      allow read, create: if true;
-      allow update: if true;
-      allow delete: if isSuperAdmin();
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    // 🛡️ سجلات الأمان والتدقيق السحابي (محمية حصراً للمدير العام)
+    match /security_audit_logs/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    // 🔐 إعدادات أمان النظام وأجهزة الحراسة
+    match /system_security/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /system_settings/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // 👨‍🏫 حسابات ورموز المعلمين السرية
+    match /teacher_accounts/{docId} {
+      allow read, write: if isSuperAdmin();
     }
 
     // ==========================================
