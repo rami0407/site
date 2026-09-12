@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import { uploadChunkedFile, downloadChunkedFile, downloadBase64OrBlob } from '../utils/chunkedStorage';
 import { sanitizeHtml } from '../utils/security';
+import { broadcastSchoolNotification } from '../utils/notificationService';
 
 const DEFAULT_ARTICLES = [
   {
@@ -165,37 +166,58 @@ const ScientificArticles = ({ isStandalone }) => {
       } catch(e){}
     }
 
-    // 2. Real-time Live Sync with Firestore students/scientific_articles_live
+    // 2. Real-time Live Sync with Firestore students/scientific_articles_live and scientific_articles collection
+    let liveList = [];
+    let colList = [];
+
+    const mergeAndSetArticles = () => {
+      const artMap = new Map();
+      // Default articles first
+      DEFAULT_ARTICLES.forEach(a => artMap.set(a.id, a));
+      // Overwrite with live document articles
+      liveList.forEach(a => artMap.set(a.id, a));
+      // Overwrite with dedicated collection articles
+      colList.forEach(a => artMap.set(a.id, a));
+
+      const merged = Array.from(artMap.values());
+      merged.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      if (merged.length > 0) {
+        setArticles(merged);
+        try {
+          localStorage.setItem('db_scientific_articles', JSON.stringify(merged));
+        } catch(e) {}
+      }
+    };
+
     const liveDocRef = doc(db, 'students', 'scientific_articles_live');
     const unsubLive = onSnapshot(liveDocRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        if (data?.articles && Array.isArray(data.articles) && data.articles.length > 0) {
-          setArticles(data.articles);
-          localStorage.setItem('db_scientific_articles', JSON.stringify(data.articles));
+        if (data?.articles && Array.isArray(data.articles)) {
+          liveList = data.articles;
+          mergeAndSetArticles();
         }
       }
     }, (err) => {
       console.warn("Live articles sync fallback:", err.message);
     });
 
-    // 3. Fallback check on scientific_articles collection
-    const checkCollection = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'scientific_articles'));
-        let fsList = [];
-        if (!snap.empty) {
-          snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
-          setArticles(fsList);
-          localStorage.setItem('db_scientific_articles', JSON.stringify(fsList));
-        }
-      } catch(e){}
-    };
-    checkCollection();
+    let unsubCol = () => {};
+    try {
+      unsubCol = onSnapshot(collection(db, 'scientific_articles'), (snap) => {
+        colList = [];
+        snap.forEach(d => colList.push({ ...d.data(), id: d.id }));
+        mergeAndSetArticles();
+      }, (err) => {
+        console.warn("Articles collection sync notice:", err.message);
+      });
+    } catch(e) {}
 
     return () => {
       unsubAuth();
       unsubLive();
+      unsubCol();
     };
   }, [isStandalone]);
 
@@ -440,25 +462,46 @@ const ScientificArticles = ({ isStandalone }) => {
     setArticles(updatedArticles);
     localStorage.setItem('db_scientific_articles', JSON.stringify(updatedArticles));
 
+    let firestoreSuccess = false;
+
     try {
       await setDoc(doc(db, 'students', 'scientific_articles_live'), {
         articles: updatedArticles,
         lastUpdated: new Date().toISOString()
       }, { merge: true });
+      firestoreSuccess = true;
     } catch(err) {
       console.warn("Live articles doc save warning:", err.message);
     }
 
     try {
       await setDoc(doc(db, 'scientific_articles', targetId), articleObj, { merge: true });
+      firestoreSuccess = true;
     } catch(err) {
       console.warn("Firestore save article warning:", err.message);
+    }
+
+    // Broadcast School Notification to all connected devices
+    try {
+      await broadcastSchoolNotification({
+        title: `🔬 مقالة جديدة: ${articleObj.title}`,
+        body: articleObj.summary ? articleObj.summary.substring(0, 95) : 'اضغط لقراءة تفاصيل المقالة العلمية الجديدة على موقع المدرسة.',
+        targetUrl: '#/articles',
+        category: 'announcement'
+      });
+    } catch (notifErr) {
+      console.warn("Broadcast article notification notice:", notifErr);
     }
 
     setIsUploading(false);
     setIsUploadModalOpen(false);
     setEditingArticleId(null);
-    alert(editingArticleId ? '✅ تم تحديث وتعديل المقالة العلمية بنجاح!' : (newArticle.type === 'written' ? '🎉 تم نشر المقالة المكتوبة المنسقة بنجاح وتوفيرها للزوار والطلاب!' : '🎉 تم نشر المجلة العلمية PDF بنجاح كمجلة تفاعلية!'));
+
+    if (firestoreSuccess) {
+      alert(editingArticleId ? '✅ تم تحديث وتعديل المقالة العلمية وبث الإشعار بنجاح!' : (newArticle.type === 'written' ? '🎉 تم نشر المقالة المكتوبة وبث الإشعار لجميع الأجهزة بنجاح!' : '🎉 تم نشر المجلة وبث الإشعار بنجاح!'));
+    } else {
+      alert('⚠️ تنبيه: تم حفظ المقالة محلياً على هاتفك فقط.\nلم يتم النشر لجميع الزوار على السيرفر لأنك غير مسجل كمدير رسمي أو بسبب عدم توفر اتصال بالإنترنت.');
+    }
     setNewArticle({
       type: 'written',
       title: '',

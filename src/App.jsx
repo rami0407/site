@@ -9,6 +9,7 @@ import ContactForm from './components/ContactForm';
 import FloatingActions from './components/FloatingActions';
 import AiAssistant from './components/AiAssistant';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import NotificationPromptBanner from './components/NotificationPromptBanner';
 import SocraticHomeworkModal from './components/SocraticHomeworkModal';
 import CentralNotificationModal from './components/CentralNotificationModal';
 import { subscribeToSchoolNotifications } from './utils/notificationService';
@@ -528,6 +529,9 @@ function App() {
 
       {/* PWA Mobile App Installation Prompt */}
       <PwaInstallPrompt />
+
+      {/* Global Phone Notification Permission Prompt Banner */}
+      <NotificationPromptBanner />
 
       {/* Central Phone & Screen Notification Alert Modal */}
       <CentralNotificationModal />

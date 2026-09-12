@@ -48,7 +48,7 @@ const NewsPage = () => {
     let unsubFb = () => {};
 
     try {
-      const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
+      const q = collection(db, 'news');
       unsubNews = onSnapshot(q, (snap) => {
         listNews = [];
         snap.forEach(docSnap => listNews.push({ ...docSnap.data(), id: docSnap.id }));

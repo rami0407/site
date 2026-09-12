@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { newsData as fallbackNews } from '../data/schoolData';
 
 const NEWS_CATEGORIES = {
@@ -19,45 +19,59 @@ const NewsFeed = () => {
   const [news, setNews] = useState([]);
 
   useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const list = [];
-        querySnapshot.forEach((doc) => {
-          list.push({ ...doc.data(), id: doc.id });
-        });
+    let listNews = [];
+    let listFb = [];
 
-        // Also fetch Facebook posts synchronized via Make HTTP module
-        try {
-          const qFb = query(collection(db, 'students'), where('isFacebookPost', '==', true));
-          const fbSnap = await getDocs(qFb);
-          fbSnap.forEach((doc) => {
-            list.push({ ...doc.data(), id: doc.id });
-          });
-        } catch(e) {}
+    const updateCombined = () => {
+      const combined = [...listNews, ...listFb];
+      combined.sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
 
-        list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-        // Fallback
-        if (list.length === 0) {
-          const localNews = localStorage.getItem('db_news');
-          if (localNews) {
+      if (combined.length > 0) {
+        setNews(combined);
+      } else {
+        const localNews = localStorage.getItem('db_news');
+        if (localNews) {
+          try {
             setNews(JSON.parse(localNews));
-          } else {
+          } catch (e) {
             setNews(fallbackNews);
           }
         } else {
-          setNews(list);
+          setNews(fallbackNews);
         }
-      } catch (error) {
-        console.error("Firestore loading news failed, using fallback: ", error);
-        const localNews = localStorage.getItem('db_news');
-        setNews(localNews ? JSON.parse(localNews) : fallbackNews);
       }
     };
 
-    fetchNews();
+    // 1. Real-time listener for news collection
+    const newsColRef = collection(db, 'news');
+    const unsubNews = onSnapshot(newsColRef, (snapshot) => {
+      listNews = [];
+      snapshot.forEach((docSnap) => {
+        listNews.push({ ...docSnap.data(), id: docSnap.id });
+      });
+      updateCombined();
+    }, (err) => {
+      console.warn("NewsFeed Firestore listener fallback:", err.message);
+      updateCombined();
+    });
+
+    // 2. Real-time listener for Facebook sync posts
+    let unsubFb = () => {};
+    try {
+      const qFb = query(collection(db, 'students'), where('isFacebookPost', '==', true));
+      unsubFb = onSnapshot(qFb, (snapshot) => {
+        listFb = [];
+        snapshot.forEach((docSnap) => {
+          listFb.push({ ...docSnap.data(), id: docSnap.id });
+        });
+        updateCombined();
+      }, () => {});
+    } catch(e) {}
+
+    return () => {
+      unsubNews();
+      unsubFb();
+    };
   }, []);
 
   const filteredNews = news.filter((item) => {
