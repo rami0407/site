@@ -312,7 +312,7 @@ const Navbar = () => {
             </li>
 
             {/* Top Notification Bell */}
-            <li className="hide-on-mobile">
+            <li>
               <NotificationCenter />
             </li>
 
@@ -341,8 +341,6 @@ const Navbar = () => {
 
           {/* Actions & Hamburger */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <NotificationCenter />
-
             <div 
               className={`menu-toggle ${mobileMenuOpen ? 'active' : ''}`} 
               id="menuToggle" 
