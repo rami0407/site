@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import RealisticSpacecraft from './RealisticSpacecraft';
 
 const MOTIVATIONAL_QUOTES = [
   // Arabic Quotes
@@ -356,98 +357,10 @@ const Hero = () => {
 
         {/* Hero Right/Rocket Visual Stage */}
         <div className="hero-rocket-stage">
-          <div 
-            className={`rocket-assembly ${isLaunching ? 'rocket-takeoff' : 'rocket-hover'}`}
-            onClick={handleRocketLaunch}
-            title="انقر لإطلاق الصاروخ نحو الفضاء!"
-          >
-            {/* Target Ring Glow */}
-            <div className="rocket-target-glow"></div>
-
-            {/* Custom SVG Rocket */}
-            <svg 
-              className="rocket-svg-graphic" 
-              viewBox="0 0 200 400" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Rocket Nosecone */}
-              <path d="M100 20C100 20 135 70 135 120H65C65 70 100 20 100 20Z" fill="url(#noseGradient)" />
-              <path d="M100 25C100 25 125 70 125 120H100V25Z" fill="white" opacity="0.3" />
-
-              {/* Rocket Body */}
-              <rect x="65" y="120" width="70" height="150" rx="10" fill="url(#bodyGradient)" />
-              {/* Body Highlights */}
-              <rect x="65" y="120" width="35" height="150" rx="5" fill="white" opacity="0.15" />
-              <rect x="75" y="140" width="50" height="8" rx="4" fill="#3b82f6" />
-              
-              {/* Excellence Emblem Text on Rocket Body */}
-              <circle cx="100" cy="180" r="20" fill="#1e3a8a" stroke="#fbbf24" strokeWidth="3" />
-              <text x="100" y="184" textAnchor="middle" fill="#fbbf24" fontSize="11" fontWeight="bold">تميز</text>
-
-              {/* Rocket Windows */}
-              <circle cx="100" cy="225" r="11" fill="#0284c7" stroke="#e0f2fe" strokeWidth="2.5" />
-              <circle cx="100" cy="225" r="7" fill="#38bdf8" />
-
-              {/* Left Fin */}
-              <path d="M65 200L30 270V280H65V200Z" fill="url(#finGradient)" />
-              {/* Right Fin */}
-              <path d="M135 200L170 270V280H135V200Z" fill="url(#finGradient)" />
-
-              {/* Thruster Nozzle */}
-              <rect x="80" y="270" width="40" height="18" rx="4" fill="#334155" />
-              <rect x="85" y="288" width="30" height="6" rx="2" fill="#1e293b" />
-
-              {/* Thruster Flames */}
-              <g className="rocket-flames-group">
-                <path d="M85 294C85 294 75 350 100 390C125 350 115 294 115 294H85Z" fill="url(#outerFlameGradient)" />
-                <path d="M90 294C90 294 83 335 100 365C117 335 110 294 110 294H90Z" fill="url(#innerFlameGradient)" />
-                <path d="M94 294C94 294 90 320 100 340C110 320 106 294 106 294H94Z" fill="#ffffff" />
-              </g>
-
-              {/* SVG Gradients Definitions */}
-              <defs>
-                <linearGradient id="noseGradient" x1="65" y1="20" x2="135" y2="120" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#ef4444" />
-                  <stop offset="100%" stopColor="#dc2626" />
-                </linearGradient>
-                <linearGradient id="bodyGradient" x1="65" y1="120" x2="135" y2="270" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#f8fafc" />
-                  <stop offset="50%" stopColor="#e2e8f0" />
-                  <stop offset="100%" stopColor="#cbd5e1" />
-                </linearGradient>
-                <linearGradient id="finGradient" x1="30" y1="200" x2="170" y2="280" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#1d4ed8" />
-                </linearGradient>
-                <linearGradient id="outerFlameGradient" x1="100" y1="294" x2="100" y2="390" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#f97316" />
-                  <stop offset="50%" stopColor="#ef4444" />
-                  <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" />
-                </linearGradient>
-                <linearGradient id="innerFlameGradient" x1="100" y1="294" x2="100" y2="365" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#facc15" />
-                  <stop offset="100%" stopColor="#f97316" />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            {/* Dynamic Smoke & Spark Particles */}
-            <div className="thruster-particles">
-              <span className="p-particle particle-1"></span>
-              <span className="p-particle particle-2"></span>
-              <span className="p-particle particle-3"></span>
-              <span className="p-particle particle-4"></span>
-              <span className="p-particle particle-5"></span>
-            </div>
-
-            {/* Launch Instructions Floating Tooltip */}
-            {!isLaunching && (
-              <div className="rocket-hint-badge">
-                <i className="fas fa-hand-pointer"></i> اضغط لإطلاق المركبة!
-              </div>
-            )}
-          </div>
+          <RealisticSpacecraft 
+            isLaunching={isLaunching} 
+            onLaunch={handleRocketLaunch} 
+          />
 
           {/* Trilingual Celebration Motivational Quote Card right under the rocket stage */}
           {showCelebration && currentQuote && (

@@ -867,6 +867,50 @@ button, input, textarea, select {
   transition: transform 0.3s ease;
 }
 
+/* Realistic Spacecraft Container & Animations */
+.spacecraft-container.idle-hover {
+  animation: floatSpacecraft 4.5s ease-in-out infinite;
+}
+
+@keyframes floatSpacecraft {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(1.2deg); }
+}
+
+.spacecraft-container:hover .spacecraft-hull-wrapper {
+  transform: scale(1.04) translateY(-4px);
+}
+
+.spacecraft-container.launch-liftoff {
+  animation: liftoffSpacecraftFlight 4.2s ease-in-out forwards;
+}
+
+@keyframes liftoffSpacecraftFlight {
+  0% { transform: translateY(0) scale(1); }
+  10% { transform: translateY(6px) scale(0.98) rotate(-1.5deg); }
+  18% { transform: translateY(-4px) scale(1.02) rotate(1.5deg); }
+  25% { transform: translateY(4px) scale(1.01) rotate(-1deg); }
+  35% { transform: translateY(-30px) scale(1.04) rotate(0.5deg); }
+  60% { transform: translateY(-750px) scale(1.15); opacity: 0.9; }
+  61% { transform: translateY(750px) scale(0.5); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes pulseRadar {
+  0% { transform: rotateX(60deg) scale(0.9); opacity: 0.5; }
+  100% { transform: rotateX(60deg) scale(1.15); opacity: 0.95; }
+}
+
+.spacecraft-plasma-plume {
+  animation: plasmaVibrate 0.08s infinite alternate ease-in-out;
+  transform-origin: 50% 0;
+}
+
+@keyframes plasmaVibrate {
+  0% { transform: scaleY(0.92) scaleX(0.95); opacity: 0.92; }
+  100% { transform: scaleY(1.10) scaleX(1.04); opacity: 1; }
+}
+
 .rocket-assembly:hover .rocket-svg-graphic {
   transform: scale(1.04);
 }
