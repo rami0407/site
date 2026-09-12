@@ -10,6 +10,9 @@ import {
   fetchTeacherCloudAccounts,
   listenToTeacherAccounts,
   isTeacherPinCustomized, 
+  isTeacher2FAEnabled,
+  generateAdminEmergencyCode,
+  disableTeacher2FA,
   DEFAULT_TEACHER_PIN 
 } from '../utils/teacherAuth';
 
@@ -25,6 +28,9 @@ const StudentDismissalAdminTab = () => {
   const [savePinError, setSavePinError] = useState('');
   const [savePinSuccess, setSavePinSuccess] = useState('');
   
+  // Emergency 2FA Code Modal State
+  const [emergencyModal, setEmergencyModal] = useState(null); // { teacher, code }
+
   // Guard PIN State (configurable from admin)
   const [guardPin, setGuardPin] = useState(DEFAULT_TEACHER_PIN);
   const [isEditingGuardPin, setIsEditingGuardPin] = useState(false);
@@ -101,7 +107,6 @@ const StudentDismissalAdminTab = () => {
       setTeacherListVer(v => v + 1);
     });
 
-    // Real-time listener on teacher_appointments
     const unsubApp = onSnapshot(collection(db, 'teacher_appointments'), (snap) => {
       const list = [];
       snap.forEach(d => {
@@ -119,7 +124,6 @@ const StudentDismissalAdminTab = () => {
         }
       });
 
-      // Sound notification on new dismissal
       if (previousCountRef.current !== null && list.length > previousCountRef.current) {
         playAlertSound();
       }
@@ -133,7 +137,6 @@ const StudentDismissalAdminTab = () => {
       setIsLoading(false);
     });
 
-    // Fetch Guard PIN from Firestore
     const fetchGuardPin = async () => {
       try {
         const snap = await getDocs(collection(db, 'system_settings'));
@@ -213,6 +216,26 @@ const StudentDismissalAdminTab = () => {
       await resetTeacherPinToDefault(teacher.id);
       setTeacherListVer(v => v + 1);
       alert(`✅ تم بنجاح إعادة ضبط رمز ${teacher.nameAr} إلى ${DEFAULT_TEACHER_PIN}.`);
+    }
+  };
+
+  // Admin Generate Emergency 2FA Code
+  const handleGenerateEmergencyCode = async (teacher) => {
+    try {
+      const code = await generateAdminEmergencyCode(teacher.id);
+      setEmergencyModal({ teacher, code });
+      setTeacherListVer(v => v + 1);
+    } catch (e) {
+      alert('خطأ أثناء توليد رمز الطوارئ: ' + e.message);
+    }
+  };
+
+  // Admin Reset / Disable 2FA for teacher
+  const handleReset2FA = async (teacher) => {
+    if (window.confirm(`هل تريد تعطيل وإعادة ضبط الأمان ذو المرحلتين (2FA) للمربي/ة (${teacher.nameAr})؟ سيتمكن المعلم بعدها من تسجيل الدخول بكلمة المرور فقط أو إعادة تهيئة التطبيق.`)) {
+      await disableTeacher2FA(teacher.id, 'مدير المدرسة');
+      setTeacherListVer(v => v + 1);
+      alert(`✅ تم بنجاح تعطيل الأمان الثنائي لحساب ${teacher.nameAr}.`);
     }
   };
 
@@ -399,13 +422,13 @@ const StudentDismissalAdminTab = () => {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.35rem 0.9rem', borderRadius: '50px', fontSize: '0.88rem', fontWeight: 800, marginBottom: '0.6rem' }}>
               <span>🛡️ مركز المراقبة والتحكم المتقدم</span>
               <span>•</span>
-              <span>إدارة كلمات المرور وتوثيق البوابة</span>
+              <span>الأمان الثنائي 2FA وتوثيق البوابة</span>
             </div>
             <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: 900 }}>
               لوحة مراقبة وتحكم تسريح الطلاب وحسابات المعلمين
             </h1>
             <p style={{ margin: '0.5rem 0 0 0', color: '#bae6fd', fontSize: '0.95rem' }}>
-              رصد حي لحركة البوابة، استرجاع وكشف وتعديل رموز المعلمين، ومتابعة فورية لسلامة الطلاب.
+              رصد حي لحركة البوابة، استرجاع وكشف وتعديل رموز المعلمين، إدارة الأمان الثنائي (2FA)، ومتابعة فورية لسلامة الطلاب.
             </p>
           </div>
 
@@ -533,8 +556,8 @@ const StudentDismissalAdminTab = () => {
               gap: '0.4rem'
             }}
           >
-            <i className="fas fa-key"></i>
-            🔑 استرجاع وإدارة رموز المعلمين ({allTeachers.length})
+            <i className="fas fa-shield-alt"></i>
+            🔑 رموز المعلمين والأمان الثنائي 2FA ({allTeachers.length})
           </button>
 
           <button
@@ -606,7 +629,7 @@ const StudentDismissalAdminTab = () => {
       </div>
 
       {/* ========================================================= */}
-      {/* SECTION 1: TEACHER PASSWORDS & CREDENTIALS RETRIEVAL      */}
+      {/* SECTION 1: TEACHER PASSWORDS & 2FA MANAGEMENT             */}
       {/* ========================================================= */}
       {(adminViewMode === 'all' || adminViewMode === 'accounts') && (
         <div style={{
@@ -620,13 +643,13 @@ const StudentDismissalAdminTab = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '1rem' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '1.6rem' }}>🔑</span>
+                <span style={{ fontSize: '1.6rem' }}>🛡️</span>
                 <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
-                  مركز استرجاع وإدارة رموز دخول المعلمين (السيسما)
+                  مركز استرجاع رموز المعلمين وإدارة الأمان الثنائي (2FA)
                 </h2>
               </div>
               <p style={{ margin: '0.35rem 0 0 0', color: '#64748b', fontSize: '0.88rem' }}>
-                يمكنك كشف واسترجاع رمز أي معلم بنقرة واحدة، تعديل الرمز مباشرة، إرساله عبر واتساب، أو إعادة تعيينه للافتراضي (318212).
+                يمكنك كشف الرمز السري، تعديله، توليد رمز طوارئ فوري لتخطي الـ 2FA في الحالات الاضطرارية، أو إعادة ضبط الحساب.
               </p>
             </div>
 
@@ -668,16 +691,17 @@ const StudentDismissalAdminTab = () => {
             </div>
           </div>
 
-          {/* TEACHERS TABLE WITH RECOVERY & EDIT */}
-          <div style={{ maxHeight: '450px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+          {/* TEACHERS TABLE WITH 2FA & RECOVERY */}
+          <div style={{ maxHeight: '480px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#334155' }}>
                   <th style={{ padding: '0.85rem 1rem' }}>المربي / المعلم</th>
                   <th style={{ padding: '0.85rem 1rem' }}>الاسم بالعبرية</th>
                   <th style={{ padding: '0.85rem 1rem' }}>رمز الدخول (السيسما) 🔑</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>حالة الرمز ومصدره</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>إجراءات الإدارة والمشاركة</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>الأمان الثنائي (2FA) 🛡️</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>حالة الرمز</th>
+                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>إجراءات الإدارة ورموز الطوارئ</th>
                 </tr>
               </thead>
               <tbody>
@@ -728,16 +752,36 @@ const StudentDismissalAdminTab = () => {
                           </div>
                         </td>
 
+                        {/* 2FA STATUS & EMERGENCY BADGE */}
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            {details.twoFactorEnabled ? (
+                              <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <span>🟢</span> مفعل (2FA)
+                              </span>
+                            ) : (
+                              <span style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', padding: '2px 8px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                ⚪ غير مفعل
+                              </span>
+                            )}
+                            {details.emergencyCode && !details.emergencyCode.used && (
+                              <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '1px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800 }}>
+                                كود طوارئ فعال: {details.emergencyCode.code}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
                         {/* STATUS & AUDIT */}
                         <td style={{ padding: '0.75rem 1rem' }}>
                           <div>
                             {details.isCustom ? (
                               <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 8px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800 }}>
-                                🔑 رمز مخصص ({details.updatedBy || 'المربي'})
+                                🔑 مخصص ({details.updatedBy || 'المربي'})
                               </span>
                             ) : (
                               <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800 }}>
-                                الرمز الافتراضي (318212)
+                                افتراضي (318212)
                               </span>
                             )}
                           </div>
@@ -748,9 +792,52 @@ const StudentDismissalAdminTab = () => {
                           )}
                         </td>
 
-                        {/* ACTIONS: EDIT, WHATSAPP, RESET */}
+                        {/* ACTIONS: EMERGENCY CODE, EDIT, WHATSAPP, RESET */}
                         <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            {/* Emergency 2FA Code Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateEmergencyCode(t)}
+                              style={{
+                                background: '#fef3c7',
+                                border: '1px solid #fde68a',
+                                color: '#b45309',
+                                padding: '4px 8px',
+                                borderRadius: '8px',
+                                fontSize: '0.78rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="توليد رمز طوارئ فوري لمرة واحدة لتخطي الـ 2FA في حال فقدان الهاتف"
+                            >
+                              <i className="fas fa-life-ring"></i> كود طوارئ 🚨
+                            </button>
+
+                            {/* Disable 2FA button if enabled */}
+                            {details.twoFactorEnabled && (
+                              <button
+                                type="button"
+                                onClick={() => handleReset2FA(t)}
+                                style={{
+                                  background: '#fff1f2',
+                                  border: '1px solid #fecdd3',
+                                  color: '#e11d48',
+                                  padding: '4px 8px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer'
+                                }}
+                                title="تعطيل الأمان الثنائي وإعادة ضبطه"
+                              >
+                                تعطيل 2FA 🔄
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={() => {
@@ -763,16 +850,13 @@ const StudentDismissalAdminTab = () => {
                                 background: '#f0f9ff',
                                 border: '1px solid #bae6fd',
                                 color: '#0284c7',
-                                padding: '4px 9px',
+                                padding: '4px 8px',
                                 borderRadius: '8px',
-                                fontSize: '0.8rem',
+                                fontSize: '0.78rem',
                                 fontWeight: 800,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px'
+                                cursor: 'pointer'
                               }}
-                              title="تعديل الرمز يدوياً لهذا المعلم"
+                              title="تعديل الرمز يدوياً"
                             >
                               <i className="fas fa-edit"></i> تعديل
                             </button>
@@ -784,14 +868,11 @@ const StudentDismissalAdminTab = () => {
                                 background: '#ecfdf5',
                                 border: '1px solid #a7f3d0',
                                 color: '#059669',
-                                padding: '4px 9px',
+                                padding: '4px 8px',
                                 borderRadius: '8px',
-                                fontSize: '0.8rem',
+                                fontSize: '0.78rem',
                                 fontWeight: 800,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px'
+                                cursor: 'pointer'
                               }}
                               title="إرسال بيانات الدخول للمعلم عبر واتساب"
                             >
@@ -805,18 +886,15 @@ const StudentDismissalAdminTab = () => {
                                 background: '#fef2f2',
                                 border: '1px solid #fecaca',
                                 color: '#dc2626',
-                                padding: '4px 9px',
+                                padding: '4px 8px',
                                 borderRadius: '8px',
-                                fontSize: '0.8rem',
+                                fontSize: '0.78rem',
                                 fontWeight: 800,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px'
+                                cursor: 'pointer'
                               }}
                               title="إعادة ضبط كلمة المرور إلى 318212"
                             >
-                              <i className="fas fa-undo"></i> 318212
+                              إعادة ضبط 🔄
                             </button>
                           </div>
                         </td>
@@ -825,6 +903,113 @@ const StudentDismissalAdminTab = () => {
                   })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* EMERGENCY CODE MODAL */}
+      {emergencyModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem',
+          direction: 'rtl'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '2rem',
+            maxWidth: '440px',
+            width: '100%',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2.4rem', marginBottom: '0.5rem' }}>🚨</div>
+            <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+              رمز الطوارئ الإداري لتخطي الـ 2FA
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 1.25rem 0', lineHeight: '1.5' }}>
+              تم توليد رمز طوارئ مؤقت لمرة واحدة للمربي/ة: <strong>{emergencyModal.teacher.nameAr}</strong>. يمكن للمعلم استخدامه لتخطي خطوة المصادقة الثنائية في حال فقدان الهاتف.
+            </p>
+
+            <div style={{
+              background: '#fef3c7',
+              border: '2px dashed #f59e0b',
+              padding: '1.25rem',
+              borderRadius: '16px',
+              marginBottom: '1.25rem'
+            }}>
+              <div style={{ fontSize: '0.8rem', color: '#b45309', fontWeight: 800, marginBottom: '0.4rem' }}>رمز الطوارئ المؤقت (للاستخدام مرة واحدة):</div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#b45309', fontFamily: 'monospace', letterSpacing: '6px' }}>
+                {emergencyModal.code}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(emergencyModal.code);
+                  alert(`📋 تم نسخ كود الطوارئ: ${emergencyModal.code}`);
+                }}
+                style={{
+                  flex: 1,
+                  background: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  color: '#334155',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className="fas fa-copy"></i> نسخ الكود
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `السلام عليكم زميلنا المربي/ة *${emergencyModal.teacher.nameAr}*،\n\nإليك رمز الطوارئ الإداري لتسجيل الدخول إلى منظومة التسريح: *${emergencyModal.code}* (يُستخدم لمرة واحدة فقط).`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                }}
+                style={{
+                  flex: 1,
+                  background: '#25d366',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className="fab fa-whatsapp"></i> إرسال عبر واتساب
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setEmergencyModal(null)}
+              style={{
+                marginTop: '1rem',
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              إغلاق النافذة
+            </button>
           </div>
         </div>
       )}

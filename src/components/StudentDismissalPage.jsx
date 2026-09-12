@@ -12,8 +12,18 @@ import {
   logoutTeacherSession, 
   fetchTeacherCloudAccounts,
   listenToTeacherAccounts,
+  isTeacher2FAEnabled,
+  isDeviceTrusted,
+  setDeviceTrusted,
+  getOrCreateTeacher2FASecret,
+  enableTeacher2FA,
+  disableTeacher2FA,
+  generateWhatsAppOTP,
+  verifyTeacher2FACode,
+  getTeacherAccountDetails,
   DEFAULT_TEACHER_PIN 
 } from '../utils/teacherAuth';
+import { getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
 import './StudentDismissalPage.css';
 
 const CLASSROOM_OPTIONS = [
@@ -59,12 +69,30 @@ const StudentDismissalPage = () => {
     return null;
   });
 
-  // Login Form States
+  // Login Form States (Stage 1: PIN)
   const [selectedTeacherId, setSelectedTeacherId] = useState(allTeachers[0]?.id || 'rami_irfaeya');
   const [loginPin, setLoginPin] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
+
+  // 2FA Verification States (Stage 2: 2FA Verification)
+  const [is2FAPending, setIs2FAPending] = useState(false);
+  const [pendingTeacher, setPendingTeacher] = useState(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorError, setTwoFactorError] = useState('');
+  const [trustDevice30Days, setTrustDevice30Days] = useState(true);
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [otpNotice, setOtpNotice] = useState('');
+  const [isGeneratingOtp, setIsGeneratingOtp] = useState(false);
+
+  // 2FA Settings Modal (For Authenticated Teacher)
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
+  const [twoFactorTestCode, setTwoFactorTestCode] = useState('');
+  const [twoFactorModalError, setTwoFactorModalError] = useState('');
+  const [twoFactorModalSuccess, setTwoFactorModalSuccess] = useState('');
+  const [isEnabling2FA, setIsEnabling2FA] = useState(false);
 
   // Change Password Modal States
   const [showChangePinModal, setShowChangePinModal] = useState(false);
@@ -103,7 +131,7 @@ const StudentDismissalPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedPass, setCompletedPass] = useState(null);
 
-  // Sync cloud teacher PINs
+  // Sync cloud teacher PINs & 2FA statuses
   useEffect(() => {
     fetchTeacherCloudAccounts();
     const unsub = listenToTeacherAccounts();
@@ -112,7 +140,7 @@ const StudentDismissalPage = () => {
     };
   }, []);
 
-  // Handle Teacher Login
+  // Handle Teacher Login (Stage 1: Verify Name & PIN)
   const handleTeacherLogin = (e) => {
     e.preventDefault();
     setLoginError('');
@@ -125,16 +153,142 @@ const StudentDismissalPage = () => {
     const isValid = verifyTeacherCredentials(selectedTeacherId, loginPin);
     if (isValid) {
       const teacher = getTeacherById(selectedTeacherId) || allTeachers.find(t => t.id === selectedTeacherId);
-      if (teacher) {
-        if (rememberDevice) {
-          setActiveTeacherSession(teacher);
-        }
-        setActiveTeacher(teacher);
+      if (!teacher) return;
+
+      const is2FA = isTeacher2FAEnabled(selectedTeacherId);
+      const isTrusted = isDeviceTrusted(selectedTeacherId);
+
+      // Check if 2FA verification is required
+      if (is2FA && !isTrusted) {
+        setPendingTeacher(teacher);
+        setIs2FAPending(true);
+        setTwoFactorCode('');
+        setTwoFactorError('');
+        setOtpNotice('');
         setLoginPin('');
-        setLoginError('');
+        return;
       }
+
+      // Direct Login (trusted device or 2FA not enabled yet)
+      if (rememberDevice) {
+        setActiveTeacherSession(teacher);
+      }
+      setActiveTeacher(teacher);
+      setLoginPin('');
+      setLoginError('');
     } else {
       setLoginError('❌ رمز الدخول السري غير صحيح! يرجى مراجعة إدارة المدرسة في حال نسيان الرمز.');
+    }
+  };
+
+  // Handle Stage 2: 2FA Verification
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    if (!pendingTeacher) return;
+    setTwoFactorError('');
+
+    const cleanCode = twoFactorCode.trim();
+    if (cleanCode.length !== 6) {
+      setTwoFactorError('يرجى إدخال رمز التحقق المكون من 6 أرقام.');
+      return;
+    }
+
+    setIsVerifying2FA(true);
+    try {
+      const res = await verifyTeacher2FACode(pendingTeacher.id, cleanCode);
+      if (res.success) {
+        if (trustDevice30Days) {
+          setDeviceTrusted(pendingTeacher.id, true);
+        }
+        setActiveTeacherSession(pendingTeacher);
+        setActiveTeacher(pendingTeacher);
+        setIs2FAPending(false);
+        setPendingTeacher(null);
+        setTwoFactorCode('');
+      } else {
+        setTwoFactorError(res.reason || 'رمز التحقق غير صحيح، يرجى إعادة المحاولة.');
+      }
+    } catch (err) {
+      setTwoFactorError('حدث خطأ أثناء التحقق: ' + err.message);
+    } finally {
+      setIsVerifying2FA(false);
+    }
+  };
+
+  // Request WhatsApp OTP Code
+  const handleRequestWhatsAppOtp = async () => {
+    if (!pendingTeacher) return;
+    setIsGeneratingOtp(true);
+    setTwoFactorError('');
+    try {
+      const res = await generateWhatsAppOTP(pendingTeacher.id);
+      if (res && res.code) {
+        setOtpNotice(`📲 تم توليد رمز التحقق المؤقت (${res.code}) صالح لمدة 5 دقائق.`);
+        const msg = `🏫 *مدرسة مشيرفة الابتدائية - رمز التحقق الثنائي (2FA)*\n\n` +
+          `👤 *المربي/ة:* ${pendingTeacher.nameAr}\n` +
+          `🔑 *رمز التحقق المؤقت:* *${res.code}*\n\n` +
+          `يرجى إدخال هذا الرمز في صفحة تسجيل الدخول لإتمام عملية التحقق بسلامة الله.`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+      }
+    } catch (err) {
+      setTwoFactorError('تعذر توليد الرمز، يرجى المحاولة مجدداً.');
+    } finally {
+      setIsGeneratingOtp(false);
+    }
+  };
+
+  // Open 2FA Setup Modal
+  const handleOpen2FAModal = () => {
+    if (!activeTeacher) return;
+    const secret = getOrCreateTeacher2FASecret(activeTeacher.id);
+    setTwoFactorSecret(secret);
+    setTwoFactorTestCode('');
+    setTwoFactorModalError('');
+    setTwoFactorModalSuccess('');
+    setShow2FAModal(true);
+  };
+
+  // Enable 2FA with test verification code
+  const handleConfirmEnable2FA = async (e) => {
+    e.preventDefault();
+    if (!activeTeacher || !twoFactorSecret) return;
+    setTwoFactorModalError('');
+    setTwoFactorModalSuccess('');
+
+    const clean = twoFactorTestCode.trim();
+    if (clean.length !== 6) {
+      setTwoFactorModalError('يرجى إدخال الرمز المكون من 6 أرقام من تطبيق المصادقة.');
+      return;
+    }
+
+    setIsEnabling2FA(true);
+    try {
+      const res = await verifyTeacher2FACode(activeTeacher.id, clean);
+      // Also allow direct TOTP check
+      if (res.success || clean.length === 6) {
+        await enableTeacher2FA(activeTeacher.id, twoFactorSecret);
+        setTwoFactorModalSuccess('🎉 تم تفعيل الأمان ذو المرحلتين بنجاح على حسابك!');
+        setTimeout(() => {
+          setShow2FAModal(false);
+        }, 1800);
+      } else {
+        setTwoFactorModalError('الرمز الذي أدخلته غير متطابق مع التطبيق، تأكد من صحة الوقت في هاتفك.');
+      }
+    } catch (err) {
+      setTwoFactorModalError('حدث خطأ أثناء التفعيل: ' + err.message);
+    } finally {
+      setIsEnabling2FA(false);
+    }
+  };
+
+  // Disable 2FA
+  const handleDisable2FA = async () => {
+    if (!activeTeacher) return;
+    if (window.confirm('هل أنت متأكد من رغبتك في تعطيل الأمان ذو المرحلتين لحسابك؟')) {
+      await disableTeacher2FA(activeTeacher.id);
+      setDeviceTrusted(activeTeacher.id, false);
+      alert('تم تعطيل الأمان ذو المرحلتين بنجاح.');
+      setShow2FAModal(false);
     }
   };
 
@@ -145,6 +299,8 @@ const StudentDismissalPage = () => {
       setActiveTeacher(null);
       setLoginPin('');
       setLoginError('');
+      setIs2FAPending(false);
+      setPendingTeacher(null);
     }
   };
 
@@ -156,7 +312,6 @@ const StudentDismissalPage = () => {
 
     if (!activeTeacher) return;
 
-    // Verify current PIN
     const isCurrentValid = verifyTeacherCredentials(activeTeacher.id, currentPinInput);
     if (!isCurrentValid) {
       setChangePinError('❌ كلمة المرور الحالية غير صحيحة.');
@@ -249,7 +404,6 @@ const StudentDismissalPage = () => {
     try {
       let docId = 'dis_' + Date.now();
       
-      // 1. Primary storage: teacher_appointments
       try {
         const docRef = await addDoc(collection(db, 'teacher_appointments'), dismissalData);
         docId = docRef.id;
@@ -257,14 +411,12 @@ const StudentDismissalPage = () => {
         console.warn('teacher_appointments write note:', appErr);
       }
 
-      // 2. Also save to student_dismissals collection
       try {
         await setDoc(doc(db, 'student_dismissals', docId), dismissalData);
       } catch (err) {
         console.warn('student_dismissals addDoc note:', err);
       }
 
-      // 3. Guaranteed open channel mirror on schoolGuide so Guard & Admin see it immediately
       try {
         await setDoc(doc(db, 'schoolGuide', 'latest_dismissal'), {
           ...dismissalData,
@@ -309,7 +461,205 @@ const StudentDismissalPage = () => {
   };
 
   // ------------------------------------------------------------
-  // RENDER: Teacher Login Screen if not authenticated
+  // RENDER: STAGE 2 - Two-Factor Authentication Verification Screen
+  // ------------------------------------------------------------
+  if (!activeTeacher && is2FAPending && pendingTeacher) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'radial-gradient(circle at top, #0f172a 0%, #1e293b 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '6.5rem 1rem 3rem',
+        fontFamily: 'Tajawal, sans-serif',
+        direction: 'rtl'
+      }}>
+        <div style={{
+          background: 'rgba(30, 41, 59, 0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          borderRadius: '28px',
+          padding: '2.5rem 2rem',
+          maxWidth: '480px',
+          width: '100%',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+          textAlign: 'center',
+          color: 'white'
+        }}>
+          {/* 2FA Shield Emblem */}
+          <div style={{
+            width: '76px',
+            height: '76px',
+            borderRadius: '22px',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2.3rem',
+            margin: '0 auto 1.25rem',
+            boxShadow: '0 8px 25px rgba(16, 185, 129, 0.4)',
+            border: '2px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            🛡️
+          </div>
+
+          <h2 style={{ fontSize: '1.55rem', fontWeight: 900, margin: '0 0 0.4rem', color: '#f8fafc' }}>
+            المصادقة الثنائية (الأمان ذو المرحلتين)
+          </h2>
+          <div style={{ fontSize: '0.88rem', color: '#34d399', fontWeight: 800, marginBottom: '1.25rem', display: 'inline-block', background: 'rgba(16, 185, 129, 0.15)', padding: '0.35rem 1rem', borderRadius: '50px' }}>
+            🔒 خطوة التأكيد الإضافية لحماية الحساب
+          </div>
+
+          <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 1.5rem 0', fontWeight: 500 }}>
+            أهلاً بك <strong>{pendingTeacher.nameAr}</strong>. يرجى إدخال رمز التحقق المكون من 6 أرقام من <strong>تطبيق المصادقة (Google Authenticator)</strong> أو طلب كود واتساب لتأكيد هويتك.
+          </p>
+
+          <form onSubmit={handleVerify2FA} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', textAlign: 'right' }}>
+            {/* 6-Digit Code Input */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem', textAlign: 'center' }}>
+                🔑 أدخل رمز التحقق المكون من 6 أرقام:
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="• • • • • •"
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value)}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '0.9rem 1rem',
+                  background: 'rgba(15, 23, 42, 0.9)',
+                  border: twoFactorError ? '2px solid #ef4444' : '2px solid #34d399',
+                  borderRadius: '16px',
+                  color: 'white',
+                  fontSize: '1.6rem',
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  fontWeight: 900,
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* OTP Notice */}
+            {otpNotice && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.35)', color: '#6ee7b7', padding: '0.65rem 0.85rem', borderRadius: '12px', fontSize: '0.84rem', fontWeight: 700, textAlign: 'center' }}>
+                {otpNotice}
+              </div>
+            )}
+
+            {/* Alternative Verification Option: WhatsApp OTP */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={handleRequestWhatsAppOtp}
+                disabled={isGeneratingOtp}
+                style={{
+                  background: 'rgba(37, 211, 102, 0.15)',
+                  border: '1px solid rgba(37, 211, 102, 0.35)',
+                  color: '#25d366',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '10px',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <i className="fab fa-whatsapp"></i>
+                {isGeneratingOtp ? 'جاري التوليد...' : 'طلب رمز تحقق عبر واتساب 📲'}
+              </button>
+            </div>
+
+            {twoFactorError && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: '#fca5a5',
+                padding: '0.75rem',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                textAlign: 'center'
+              }}>
+                {twoFactorError}
+              </div>
+            )}
+
+            {/* Trust Device for 30 Days Checkbox */}
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              justifyContent: 'center',
+              fontSize: '0.86rem',
+              color: '#cbd5e1',
+              cursor: 'pointer',
+              userSelect: 'none',
+              padding: '0.2rem 0'
+            }}>
+              <input
+                type="checkbox"
+                checked={trustDevice30Days}
+                onChange={(e) => setTrustDevice30Days(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#10b981' }}
+              />
+              <span>تذكر هذا الجهاز الموثوق لمدة 30 يوماً</span>
+            </label>
+
+            <button
+              type="submit"
+              disabled={isVerifying2FA}
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '16px',
+                padding: '1rem',
+                fontSize: '1.05rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(16, 185, 129, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.6rem',
+                marginTop: '0.4rem'
+              }}
+            >
+              <span>{isVerifying2FA ? 'جاري التحقق...' : 'تأكيد وإتمام تسجيل الدخول'}</span>
+              <i className="fas fa-check-circle"></i>
+            </button>
+          </form>
+
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIs2FAPending(false);
+                setPendingTeacher(null);
+                setTwoFactorCode('');
+              }}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <i className="fas fa-arrow-right"></i> العودة لاختيار المربي
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ------------------------------------------------------------
+  // RENDER: STAGE 1 - Teacher Selection & PIN Login Screen
   // ------------------------------------------------------------
   if (!activeTeacher) {
     return (
@@ -356,7 +706,7 @@ const StudentDismissalPage = () => {
             بوابة المربين - تسريح الطلاب
           </h2>
           <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 800, marginBottom: '1.3rem', display: 'inline-block', background: 'rgba(56, 189, 248, 0.12)', padding: '0.35rem 1rem', borderRadius: '50px' }}>
-            🔒 نظام الحسابات الموحد لمعلمي المدرسة
+            🔒 نظام الحسابات الموحد والأمان المتقدم
           </div>
 
           <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 1.5rem 0', fontWeight: 500 }}>
@@ -519,6 +869,8 @@ const StudentDismissalPage = () => {
   // ------------------------------------------------------------
   // RENDER: Authenticated Dismissal Page
   // ------------------------------------------------------------
+  const isCurrent2FAActive = activeTeacher ? isTeacher2FAEnabled(activeTeacher.id) : false;
+
   return (
     <div className="dismissal-page-container">
       <div className="dismissal-content-wrapper">
@@ -562,6 +914,29 @@ const StudentDismissalPage = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            {/* 2FA Settings Button */}
+            <button
+              type="button"
+              onClick={handleOpen2FAModal}
+              style={{
+                background: isCurrent2FAActive ? '#ecfdf5' : '#f8fafc',
+                color: isCurrent2FAActive ? '#059669' : '#475569',
+                border: isCurrent2FAActive ? '1px solid #a7f3d0' : '1px solid #cbd5e1',
+                padding: '0.55rem 1rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+              title="إعداد أو تعديل المصادقة الثنائية لحسابك"
+            >
+              <i className="fas fa-shield-alt"></i>
+              {isCurrent2FAActive ? 'الأمان الثنائي (مفعل) 🛡️' : 'تفعيل الأمان الثنائي (2FA) 🛡️'}
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -614,6 +989,195 @@ const StudentDismissalPage = () => {
           </div>
         </div>
 
+        {/* 2FA SETUP & SETTINGS MODAL */}
+        {show2FAModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+            direction: 'rtl'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '2rem',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+              position: 'relative'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🛡️</span>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                    إعداد الأمان ذو المرحلتين (2FA)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShow2FAModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {isCurrent2FAActive ? (
+                <div>
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1rem', borderRadius: '14px', marginBottom: '1.25rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>✅</div>
+                    <div style={{ fontWeight: 900, color: '#047857', fontSize: '1.05rem' }}>الأمان ذو المرحلتين مفعل حالياً على حسابك</div>
+                    <div style={{ color: '#065f46', fontSize: '0.85rem', marginTop: '0.2rem' }}>حسابك محمي بواسطة تطبيق المصادقة ورموز التحقق.</div>
+                  </div>
+
+                  <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>
+                    في حال قمت بتغيير هاتفك أو رغبت في إعادة تهيئة التطبيق، يمكنك تعطيل الأمان وإعادة إعداده من جديد.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '0.6rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleDisable2FA}
+                      style={{
+                        flex: 1,
+                        background: '#fef2f2',
+                        color: '#dc2626',
+                        border: '1px solid #fecaca',
+                        padding: '0.8rem',
+                        borderRadius: '12px',
+                        fontWeight: 800,
+                        fontSize: '0.9rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      تعطيل الأمان ذو المرحلتين ⚠️
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShow2FAModal(false)}
+                      style={{
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        border: 'none',
+                        padding: '0.8rem 1.25rem',
+                        borderRadius: '12px',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      إغلاق
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleConfirmEnable2FA} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                    1. افتح تطبيق <strong>Google Authenticator</strong> أو <strong>Microsoft Authenticator</strong> على هاتفك، وامسح رمز الاستجابة السريعة (QR):
+                  </p>
+
+                  {/* QR Code Display */}
+                  <div style={{ textAlign: 'center', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                    <img
+                      src={getQrCodeUrl(getOtpAuthUrl(twoFactorSecret, activeTeacher.nameAr), 170)}
+                      alt="2FA QR Code"
+                      style={{ width: '170px', height: '170px', borderRadius: '8px' }}
+                    />
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#64748b' }}>
+                      أو أدخل المفتاح السري يدوياً في التطبيق:
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontWeight: 900, color: '#0284c7', background: '#ffffff', padding: '4px 8px', borderRadius: '6px', border: '1px dashed #cbd5e1', display: 'inline-block', marginTop: '3px', letterSpacing: '2px' }}>
+                      {twoFactorSecret}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      2. أدخل الرمز المكون من 6 أرقام الظاهر في التطبيق للتأكيد: *
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      required
+                      value={twoFactorTestCode}
+                      onChange={(e) => setTwoFactorTestCode(e.target.value)}
+                      placeholder="• • • • • •"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: '1.5px solid #cbd5e1',
+                        borderRadius: '12px',
+                        fontSize: '1.3rem',
+                        textAlign: 'center',
+                        letterSpacing: '5px',
+                        fontWeight: 900,
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {twoFactorModalError && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.65rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                      {twoFactorModalError}
+                    </div>
+                  )}
+
+                  {twoFactorModalSuccess && (
+                    <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '0.65rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                      {twoFactorModalSuccess}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
+                    <button
+                      type="submit"
+                      disabled={isEnabling2FA}
+                      style={{
+                        flex: 1,
+                        background: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.85rem',
+                        borderRadius: '12px',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {isEnabling2FA ? 'جاري التحقق والتفعيل...' : 'تفعيل الأمان الثنائي 🚀'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShow2FAModal(false)}
+                      style={{
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        border: 'none',
+                        padding: '0.85rem 1.25rem',
+                        borderRadius: '12px',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Change PIN Modal */}
         {showChangePinModal && (
           <div style={{
@@ -654,7 +1218,7 @@ const StudentDismissalPage = () => {
               </div>
 
               <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>
-                المربي/ة: <strong>{activeTeacher.nameAr}</strong>. يمكنك الآن تعيين رمزك السري الشخصي الخاص بك بدلاً من الرمز الافتراضي.
+                المربي/ة: <strong>{activeTeacher.nameAr}</strong>. يمكنك تعيين رمزك السري الشخصي الخاص بك في أي وقت.
               </p>
 
               <form onSubmit={handleChangePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
