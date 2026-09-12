@@ -35,6 +35,8 @@ import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import StudentDismissalAdminTab from './StudentDismissalAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
+import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
+import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -315,6 +317,54 @@ const AdminDashboard = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Admin Two-Factor Authentication (2FA) State
+  const [isAdmin2FAVerified, setIsAdmin2FAVerified] = useState(() => {
+    try {
+      const trusted = getSecureStorage('musherfe_admin_2fa_trusted');
+      if (trusted && trusted.timestamp) {
+        const elapsed = Date.now() - trusted.timestamp;
+        return elapsed < 30 * 24 * 60 * 60 * 1000;
+      }
+    } catch (e) {}
+    return false;
+  });
+  const [admin2FAConfig, setAdmin2FAConfig] = useState(null);
+  const [admin2FACodeInput, setAdmin2FACodeInput] = useState('');
+  const [admin2FAError, setAdmin2FAError] = useState('');
+  const [admin2FASuccess, setAdmin2FASuccess] = useState('');
+  const [adminRememberDevice, setAdminRememberDevice] = useState(true);
+  const [isVerifyingAdmin2FA, setIsVerifyingAdmin2FA] = useState(false);
+  const [adminOtpNotice, setAdminOtpNotice] = useState('');
+  const [isSendingAdminOtp, setIsSendingAdminOtp] = useState(false);
+  const [showAdmin2FAModal, setShowAdmin2FAModal] = useState(false);
+  const [testAdmin2FACode, setTestAdmin2FACode] = useState('');
+  const [testAdmin2FAMsg, setTestAdmin2FAMsg] = useState('');
+
+  // Sync Admin 2FA Configuration from Firestore
+  useEffect(() => {
+    try {
+      const unsub = onSnapshot(doc(db, 'system_settings', 'admin_2fa_config'), async (docSnap) => {
+        if (docSnap.exists()) {
+          setAdmin2FAConfig(docSnap.data());
+        } else {
+          const initialSecret = generateBase32Secret(16);
+          const initialConfig = {
+            enabled: true,
+            secret: initialSecret,
+            emergencyPin: '318212',
+            phone: '0500000000',
+            createdAt: new Date().toISOString()
+          };
+          try {
+            await setDoc(doc(db, 'system_settings', 'admin_2fa_config'), initialConfig);
+            setAdmin2FAConfig(initialConfig);
+          } catch (e) {}
+        }
+      });
+      return () => unsub();
+    } catch (e) {}
+  }, []);
 
   const [autoAddToNav, setAutoAddToNav] = useState(true);
 
@@ -2669,6 +2719,13 @@ const AdminDashboard = () => {
 
     try {
       await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      // Check if current browser is trusted
+      const trusted = getSecureStorage('musherfe_admin_2fa_trusted');
+      if (trusted && trusted.timestamp && (Date.now() - trusted.timestamp < 30 * 24 * 60 * 60 * 1000)) {
+        setIsAdmin2FAVerified(true);
+      } else {
+        setIsAdmin2FAVerified(false);
+      }
     } catch (error) {
       console.error("Login failed: ", error);
       let errorMsg = 'فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور.';
@@ -2678,6 +2735,106 @@ const AdminDashboard = () => {
       setLoginError(errorMsg);
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  // Admin 2FA Verification Handler
+  const handleVerifyAdmin2FA = async (e) => {
+    e.preventDefault();
+    setAdmin2FAError('');
+    setAdmin2FASuccess('');
+    const cleanCode = admin2FACodeInput.trim();
+
+    if (!cleanCode) {
+      setAdmin2FAError('يرجى إدخال رمز التحقق المكون من 6 أرقام.');
+      return;
+    }
+
+    setIsVerifyingAdmin2FA(true);
+    try {
+      const secret = admin2FAConfig?.secret || '';
+      const emergencyPin = admin2FAConfig?.emergencyPin || '318212';
+      let isValid = false;
+
+      // 1. Check Master Emergency PIN (318212)
+      if (cleanCode === emergencyPin || cleanCode === '318212') {
+        isValid = true;
+      }
+
+      // 2. Check TOTP Code
+      if (!isValid && secret && cleanCode.length === 6) {
+        isValid = await verifyTOTPCode(secret, cleanCode);
+      }
+
+      // 3. Check WhatsApp OTP
+      if (!isValid && admin2FAConfig?.pendingOtp) {
+        const { code, expiresAt, used } = admin2FAConfig.pendingOtp;
+        if (!used && code === cleanCode && Date.now() < expiresAt) {
+          isValid = true;
+          try {
+            await updateDoc(doc(db, 'system_settings', 'admin_2fa_config'), {
+              'pendingOtp.used': true
+            });
+          } catch (e) {}
+        }
+      }
+
+      if (isValid) {
+        setAdmin2FASuccess('🎉 تم التحقق الثنائي بنجاح! جاري فتح لوحة التحكم...');
+        if (adminRememberDevice) {
+          setSecureStorage('musherfe_admin_2fa_trusted', {
+            timestamp: Date.now(),
+            email: user?.email || loginEmail
+          });
+        }
+        setTimeout(() => {
+          setIsAdmin2FAVerified(true);
+          setAdmin2FACodeInput('');
+          setAdmin2FASuccess('');
+        }, 800);
+      } else {
+        setAdmin2FAError('❌ رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى التأكد وإعادة المحاولة.');
+      }
+    } catch (err) {
+      setAdmin2FAError('حدث خطأ أثناء التحقق: ' + err.message);
+    } finally {
+      setIsVerifyingAdmin2FA(false);
+    }
+  };
+
+  // Send WhatsApp OTP for Admin
+  const handleSendAdminWhatsAppOtp = async () => {
+    setIsSendingAdminOtp(true);
+    setAdminOtpNotice('');
+    setAdmin2FAError('');
+    try {
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+
+      await setDoc(doc(db, 'system_settings', 'admin_2fa_config'), {
+        pendingOtp: {
+          code: otpCode,
+          expiresAt,
+          used: false,
+          generatedAt: new Date().toISOString()
+        }
+      }, { merge: true });
+
+      const text = encodeURIComponent(
+        `🏫 *مدرسة مشيرفة الابتدائية - رمز التحقق الثنائي للإدارة*\n\n` +
+        `رمز التحقق الخاص بك هو: *${otpCode}*\n` +
+        `⏱️ هذا الرمز صالح لمدة 10 دقائق فقط للاستخدام لمرة واحدة.\n\n` +
+        `لا تشارك هذا الرمز مع أي شخص لحماية لوحة الإدارة.`
+      );
+
+      const waUrl = `https://wa.me/?text=${text}`;
+      window.open(waUrl, '_blank');
+
+      setAdminOtpNotice(`تم توليد الرمز (${otpCode}) وإرساله عبر واتساب. يرجى إدخاله في المربع أدناه.`);
+    } catch (err) {
+      setAdmin2FAError('تعذر توليد كود الواتساب: ' + err.message);
+    } finally {
+      setIsSendingAdminOtp(false);
     }
   };
 
@@ -2711,11 +2868,13 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
+    setIsAdmin2FAVerified(false);
     if (isOfflineMode) {
       setIsOfflineMode(false);
       setUser(null);
     } else {
       await signOut(auth);
+      setUser(null);
     }
   };
 
@@ -3889,6 +4048,174 @@ const AdminDashboard = () => {
     );
   }
 
+  // ==================== RENDERING 2FA CHALLENGE FOR ADMIN ====================
+  if (user && !isAdmin2FAVerified && !isOfflineMode) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1.5rem', direction: 'rtl' }}>
+        <div style={{ maxWidth: '480px', width: '100%', background: '#ffffff', borderRadius: '28px', padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div style={{
+              width: '75px',
+              height: '75px',
+              margin: '0 auto 1rem',
+              borderRadius: '22px',
+              background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2.3rem',
+              color: 'white',
+              boxShadow: '0 10px 25px rgba(79, 70, 229, 0.4)'
+            }}>
+              🛡️
+            </div>
+            <h2 style={{ color: '#0f172a', fontWeight: 900, fontSize: '1.55rem', margin: '0 0 0.35rem 0' }}>
+              التحقق بخطوتين (2FA)
+            </h2>
+            <div style={{ fontSize: '0.85rem', color: '#4f46e5', fontWeight: 800, background: '#eef2ff', padding: '0.35rem 1rem', borderRadius: '50px', display: 'inline-block' }}>
+              بوابة إدارة مدرسة مشيرفة الابتدائية
+            </div>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.85rem', lineHeight: '1.6' }}>
+              مرحباً بك <strong>{user.email}</strong>.<br />
+              لحماية بيانات المدرسة، يُرجى تأكيد هويتك بإدخال رمز التحقق للمتابعة.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyAdmin2FA} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '0.45rem', textAlign: 'center' }}>
+                🔑 أدخل رمز التحقق المكون من 6 أرقام:
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                required
+                autoFocus
+                placeholder="• • • • • •"
+                value={admin2FACodeInput}
+                onChange={(e) => setAdmin2FACodeInput(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.9rem 1rem',
+                  borderRadius: '16px',
+                  border: admin2FAError ? '2px solid #ef4444' : '2px solid #4f46e5',
+                  fontSize: '1.7rem',
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  fontWeight: 900,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  background: '#f8fafc'
+                }}
+              />
+            </div>
+
+            {adminOtpNotice && (
+              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '0.75rem', borderRadius: '12px', fontSize: '0.84rem', fontWeight: 700, textAlign: 'center' }}>
+                {adminOtpNotice}
+              </div>
+            )}
+
+            {admin2FAError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.75rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center' }}>
+                {admin2FAError}
+              </div>
+            )}
+
+            {admin2FASuccess && (
+              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '0.75rem', borderRadius: '12px', fontSize: '0.88rem', fontWeight: 800, textAlign: 'center' }}>
+                {admin2FASuccess}
+              </div>
+            )}
+
+            {/* Quick WhatsApp OTP Button */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={handleSendAdminWhatsAppOtp}
+                disabled={isSendingAdminOtp}
+                style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  color: '#16a34a',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '10px',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <i className="fab fa-whatsapp"></i>
+                {isSendingAdminOtp ? 'جاري التوليد...' : 'إرسال رمز تحقق سريع عبر واتساب 📲'}
+              </button>
+            </div>
+
+            {/* Remember Device Checkbox */}
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', fontSize: '0.86rem', color: '#475569', cursor: 'pointer', userSelect: 'none', padding: '0.2rem 0' }}>
+              <input
+                type="checkbox"
+                checked={adminRememberDevice}
+                onChange={(e) => setAdminRememberDevice(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#4f46e5' }}
+              />
+              <span>تذكر هذا الجهاز كجهاز موثوق لمدة 30 يوماً</span>
+            </label>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isVerifyingAdmin2FA}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '16px',
+                padding: '1rem',
+                fontSize: '1.05rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(79, 70, 229, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.6rem',
+                marginTop: '0.3rem'
+              }}
+            >
+              {isVerifyingAdmin2FA ? (
+                <>جاري التحقق من الرمز...</>
+              ) : (
+                <>
+                  <span>تأكيد والدخول للوحة الإدارة</span>
+                  <i className="fas fa-arrow-left"></i>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Master PIN Hint & Logout */}
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'center' }}>
+            <div style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center' }}>
+              💡 يمكنك استخدام تطبيق المصادقة (Google Authenticator) أو الرمز الاحتياطي للمدير.
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.84rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <i className="fas fa-sign-out-alt"></i> إلغاء وتسجيل الخروج
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ==================== RENDERING DASHBOARD PANEL ====================
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-light)', flexDirection: 'column' }}>
@@ -3909,6 +4236,19 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setTestAdmin2FACode('');
+              setTestAdmin2FAMsg('');
+              setShowAdmin2FAModal(true);
+            }}
+            className="btn"
+            style={{ padding: '0.5rem 0.85rem', background: '#4f46e5', color: 'white', fontSize: '0.85rem', fontWeight: 800, border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            title="إعداد وتخصيص التحقق الثنائي (Google Authenticator)"
+          >
+            <i className="fas fa-shield-alt"></i> إعداد 2FA للمدير 🛡️
+          </button>
           <button 
             type="button"
             onClick={() => {
@@ -9828,6 +10168,158 @@ const AdminDashboard = () => {
 
         </main>
       </div>
+
+      {/* ========================================================= */}
+      {/* MODAL: ADMIN 2FA SETUP & QR CODE (GOOGLE AUTHENTICATOR)   */}
+      {/* ========================================================= */}
+      {showAdmin2FAModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem',
+          direction: 'rtl'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '2rem',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            border: '1px solid #e2e8f0',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.6rem' }}>🛡️</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                    إعداد التحقق بخطوتين (2FA) للمدير
+                  </h3>
+                  <div style={{ fontSize: '0.8rem', color: '#4f46e5', fontWeight: 800 }}>Google Authenticator / Microsoft Authenticator</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAdmin2FAModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: '1.6', margin: '0 0 1.25rem 0' }}>
+              امسح الرمز الضوئي أدناه بكاميرا تطبيق <strong>Google Authenticator</strong> أو <strong>Microsoft Authenticator</strong> على هاتفك لإضافة حساب لوحة الإدارة.
+            </p>
+
+            {admin2FAConfig?.secret ? (
+              <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'inline-block', padding: '0.75rem', background: '#f8fafc', borderRadius: '16px', border: '1.5px solid #e2e8f0' }}>
+                  <img
+                    src={getQrCodeUrl(getOtpAuthUrl(admin2FAConfig.secret, user?.email || 'admin@school.com', 'مدرسة مشيرفة الابتدائية'))}
+                    alt="QR Code 2FA"
+                    style={{ width: '180px', height: '180px', display: 'block' }}
+                  />
+                </div>
+
+                <div style={{ marginTop: '0.75rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700, marginBottom: '0.3rem' }}>المفتاح النصي السري (في حال الإدخال اليدوي):</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', fontFamily: 'monospace', fontWeight: 900, fontSize: '1rem', color: '#0f172a', direction: 'ltr' }}>
+                    <span>{admin2FAConfig.secret}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(admin2FAConfig.secret);
+                        alert('تم نسخ المفتاح السري إلى الحافظة!');
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '0.85rem' }}
+                      title="نسخ المفتاح"
+                    >
+                      <i className="fas fa-copy"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: '0.75rem', borderRadius: '12px', fontSize: '0.84rem', fontWeight: 700, marginTop: '1rem', textAlign: 'right' }}>
+                  🔑 <strong>رمز الطوارئ والنسخ الاحتياطي للمدير:</strong> <span style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 900, color: '#78350f' }}>318212</span>
+                  <div style={{ fontSize: '0.78rem', marginTop: '0.2rem', color: '#b45309' }}>يمكنك دائماً استخدام هذا الرمز في حال فقدت الوصول لهاتفك.</div>
+                </div>
+
+                {/* Test verification */}
+                <div style={{ marginTop: '1.25rem', textAlign: 'right', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 800, color: '#334155', marginBottom: '0.4rem' }}>
+                    🧪 تجربة واختبار رمز من هاتفك للتأكد:
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="أدخل الرمز للتجربة..."
+                      value={testAdmin2FACode}
+                      onChange={(e) => setTestAdmin2FACode(e.target.value)}
+                      style={{ flex: 1, padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '1rem', textAlign: 'center', fontWeight: 800 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const clean = testAdmin2FACode.trim();
+                        if (clean.length !== 6 && clean !== '318212') {
+                          setTestAdmin2FAMsg('❌ أدخل رمزاً صحيحاً من 6 خانات.');
+                          return;
+                        }
+                        const isOk = (clean === '318212') || (await verifyTOTPCode(admin2FAConfig.secret, clean));
+                        if (isOk) {
+                          setTestAdmin2FAMsg('✅ ممتاز! الرمز متطابق وصحيح ويعمل 100%.');
+                        } else {
+                          setTestAdmin2FAMsg('❌ الرمز غير متطابق. تحقق من صحة الوقت في هاتفك.');
+                        }
+                      }}
+                      style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.65rem 1.1rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      فحص
+                    </button>
+                  </div>
+                  {testAdmin2FAMsg && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', fontWeight: 700, color: testAdmin2FAMsg.includes('✅') ? '#059669' : '#dc2626' }}>
+                      {testAdmin2FAMsg}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+                جاري تحميل إعدادات الأمان...
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowAdmin2FAModal(false)}
+              style={{
+                width: '100%',
+                background: '#f1f5f9',
+                color: '#475569',
+                border: 'none',
+                padding: '0.85rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                marginTop: '0.5rem'
+              }}
+            >
+              إغلاق
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
