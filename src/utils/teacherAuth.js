@@ -2,6 +2,7 @@ import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { db } from '../firebase';
 import { collection, doc, setDoc, getDocs, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from './totp';
+import { setSecureStorage, getSecureStorage, removeSecureStorage } from './cryptoVault';
 
 export const DEFAULT_TEACHER_PIN = '318212';
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
@@ -62,7 +63,7 @@ export const fetchTeacherCloudAccounts = async () => {
       };
       if (data.pin) {
         try {
-          localStorage.setItem(`${STORAGE_PREFIX}${d.id}`, data.pin);
+          setSecureStorage(`${STORAGE_PREFIX}${d.id}`, data.pin);
         } catch (e) {}
       }
     });
@@ -90,7 +91,7 @@ export const listenToTeacherAccounts = (callback) => {
         };
         if (data.pin) {
           try {
-            localStorage.setItem(`${STORAGE_PREFIX}${d.id}`, data.pin);
+            setSecureStorage(`${STORAGE_PREFIX}${d.id}`, data.pin);
           } catch (e) {}
         }
       });
@@ -116,9 +117,9 @@ export const getTeacherPin = (teacherId) => {
   }
 
   try {
-    const custom = localStorage.getItem(`${STORAGE_PREFIX}${teacherId}`);
-    if (custom && custom.trim().length >= 4) {
-      return custom.trim();
+    const custom = getSecureStorage(`${STORAGE_PREFIX}${teacherId}`);
+    if (custom && String(custom).trim().length >= 4) {
+      return String(custom).trim();
     }
   } catch (e) {}
 
@@ -180,9 +181,9 @@ export const isTeacher2FAEnabled = (teacherId) => {
 export const isDeviceTrusted = (teacherId) => {
   if (!teacherId) return false;
   try {
-    const stored = localStorage.getItem(`${TRUSTED_DEVICE_PREFIX}${teacherId}`);
+    const stored = getSecureStorage(`${TRUSTED_DEVICE_PREFIX}${teacherId}`);
     if (!stored) return false;
-    const parsed = JSON.parse(stored);
+    const parsed = typeof stored === 'object' ? stored : JSON.parse(stored);
     if (parsed && parsed.timestamp) {
       const elapsed = Date.now() - parsed.timestamp;
       return elapsed < TRUSTED_DEVICE_DURATION;
@@ -200,12 +201,12 @@ export const setDeviceTrusted = (teacherId, isTrusted = true) => {
   if (!teacherId) return;
   try {
     if (isTrusted) {
-      localStorage.setItem(
+      setSecureStorage(
         `${TRUSTED_DEVICE_PREFIX}${teacherId}`,
-        JSON.stringify({ timestamp: Date.now() })
+        { timestamp: Date.now() }
       );
     } else {
-      localStorage.removeItem(`${TRUSTED_DEVICE_PREFIX}${teacherId}`);
+      removeSecureStorage(`${TRUSTED_DEVICE_PREFIX}${teacherId}`);
     }
   } catch (e) {}
 };
@@ -400,7 +401,7 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
   const nowStr = new Date().toISOString();
 
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}${teacherId}`, cleanPin);
+    setSecureStorage(`${STORAGE_PREFIX}${teacherId}`, cleanPin);
   } catch (e) {}
 
   cloudAccountsCache[teacherId] = {
@@ -454,7 +455,7 @@ export const adminSetTeacherPin = async (teacherId, newPin) => {
  */
 export const resetTeacherPinToDefault = async (teacherId, resetBy = 'إدارة المدرسة') => {
   try {
-    localStorage.removeItem(`${STORAGE_PREFIX}${teacherId}`);
+    removeSecureStorage(`${STORAGE_PREFIX}${teacherId}`);
   } catch (e) {}
 
   const teacher = getTeacherById(teacherId);
@@ -501,9 +502,9 @@ export const isTeacherPinCustomized = (teacherId) => {
  */
 export const getActiveTeacherSession = () => {
   try {
-    const raw = localStorage.getItem(ACTIVE_TEACHER_KEY);
+    const raw = getSecureStorage(ACTIVE_TEACHER_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    return typeof raw === 'object' ? raw : JSON.parse(raw);
   } catch (e) {
     return null;
   }
@@ -515,9 +516,9 @@ export const getActiveTeacherSession = () => {
 export const setActiveTeacherSession = (teacher) => {
   try {
     if (!teacher) {
-      localStorage.removeItem(ACTIVE_TEACHER_KEY);
+      removeSecureStorage(ACTIVE_TEACHER_KEY);
     } else {
-      localStorage.setItem(ACTIVE_TEACHER_KEY, JSON.stringify(teacher));
+      setSecureStorage(ACTIVE_TEACHER_KEY, teacher);
     }
   } catch (e) {
     console.warn('Session save error:', e);
@@ -529,6 +530,6 @@ export const setActiveTeacherSession = (teacher) => {
  */
 export const logoutTeacherSession = () => {
   try {
-    localStorage.removeItem(ACTIVE_TEACHER_KEY);
+    removeSecureStorage(ACTIVE_TEACHER_KEY);
   } catch (e) {}
 };

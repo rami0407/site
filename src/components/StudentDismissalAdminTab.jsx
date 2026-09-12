@@ -15,6 +15,7 @@ import {
   disableTeacher2FA,
   DEFAULT_TEACHER_PIN 
 } from '../utils/teacherAuth';
+import { encryptDataWithPassword, decryptDataWithPassword } from '../utils/cryptoVault';
 
 const StudentDismissalAdminTab = () => {
   const [dismissals, setDismissals] = useState([]);
@@ -30,6 +31,22 @@ const StudentDismissalAdminTab = () => {
   
   // Emergency 2FA Code Modal State
   const [emergencyModal, setEmergencyModal] = useState(null); // { teacher, code }
+
+  // Encrypted Backup Export Modal State
+  const [showExportEncModal, setShowExportEncModal] = useState(false);
+  const [exportPassword, setExportPassword] = useState('');
+  const [exportConfirmPassword, setExportConfirmPassword] = useState('');
+  const [isExportingEnc, setIsExportingEnc] = useState(false);
+  const [exportEncError, setExportEncError] = useState('');
+
+  // Encrypted Vault Decryptor / Viewer Modal State
+  const [showDecryptModal, setShowDecryptModal] = useState(false);
+  const [decryptPassword, setDecryptPassword] = useState('');
+  const [decryptFileRaw, setDecryptFileRaw] = useState(null);
+  const [decryptFileName, setDecryptFileName] = useState('');
+  const [decryptedRecords, setDecryptedRecords] = useState(null);
+  const [decryptError, setDecryptError] = useState('');
+  const [isDecrypting, setIsDecrypting] = useState(false);
 
   // Guard PIN State (configurable from admin)
   const [guardPin, setGuardPin] = useState(DEFAULT_TEACHER_PIN);
@@ -347,6 +364,127 @@ const StudentDismissalAdminTab = () => {
     document.body.removeChild(link);
   };
 
+  // Encrypted Backup Export Handler (AES-256-GCM + PBKDF2)
+  const handleConfirmExportEncrypted = async (e) => {
+    e.preventDefault();
+    setExportEncError('');
+    if (!exportPassword || exportPassword.length < 4) {
+      setExportEncError('يرجى إدخال كلمة مرور من 4 خانات على الأقل لحماية الملف.');
+      return;
+    }
+    if (exportPassword !== exportConfirmPassword) {
+      setExportEncError('كلمة المرور وتأكيدها غير متطابقين.');
+      return;
+    }
+    if (dismissals.length === 0) {
+      setExportEncError('لا توجد سجلات لتصديرها حالياً.');
+      return;
+    }
+
+    setIsExportingEnc(true);
+    try {
+      const payload = await encryptDataWithPassword({
+        school: 'مدرسة مشيرفة الابتدائية',
+        exportedAt: new Date().toISOString(),
+        totalRecords: dismissals.length,
+        records: dismissals
+      }, exportPassword);
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `نسخة_مشفرة_تسريح_الطلاب_${new Date().toISOString().split('T')[0]}.enc.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setShowExportEncModal(false);
+      setExportPassword('');
+      setExportConfirmPassword('');
+      alert('🔒 تم تشفير وتصدير نسخة البيانات العسكرية بنجاح! احتفظ بكلمة المرور لفك تشفيرها لاحقاً.');
+    } catch (err) {
+      setExportEncError(err.message || 'حدث خطأ أثناء التشفير.');
+    } finally {
+      setIsExportingEnc(false);
+    }
+  };
+
+  // Select File for Decryption
+  const handleFileSelectForDecrypt = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDecryptFileName(file.name);
+    setDecryptError('');
+    setDecryptedRecords(null);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        setDecryptFileRaw(ev.target?.result);
+      } catch (err) {
+        setDecryptError('تعذر قراءة محتوى الملف.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Confirm Decrypt
+  const handleConfirmDecrypt = async (e) => {
+    e.preventDefault();
+    setDecryptError('');
+    if (!decryptFileRaw) {
+      setDecryptError('يرجى اختيار ملف النسخة المشفرة (.enc.json) أولاً.');
+      return;
+    }
+    if (!decryptPassword) {
+      setDecryptError('يرجى إدخال كلمة المرور لفك التشفير.');
+      return;
+    }
+
+    setIsDecrypting(true);
+    try {
+      const result = await decryptDataWithPassword(decryptFileRaw, decryptPassword);
+      if (result && result.records && Array.isArray(result.records)) {
+        setDecryptedRecords(result.records);
+      } else if (Array.isArray(result)) {
+        setDecryptedRecords(result);
+      } else {
+        setDecryptError('تم فك التشفير ولكن صيغة السجلات غير متوقعة.');
+      }
+    } catch (err) {
+      setDecryptError(err.message || 'فشل فك التشفير. تأكد من صحة كلمة المرور.');
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
+
+  // Export Decrypted Records to CSV
+  const handleExportDecryptedCSV = () => {
+    if (!decryptedRecords || decryptedRecords.length === 0) return;
+    const headers = ['رمز الإذن', 'اسم الطالب', 'الصف', 'المربي المصرح', 'المرافق المستلم', 'صلة القرابة', 'سبب الخروج', 'التاريخ', 'وقت التسريح'];
+    const rows = decryptedRecords.map(d => [
+      d.passCode || 'DIS',
+      `"${d.studentName || ''}"`,
+      `"${d.classroom || ''}"`,
+      `"${d.teacherName || ''}"`,
+      `"${d.companionName || ''}"`,
+      `"${d.companionType || ''}"`,
+      `"${d.reason || ''}"`,
+      d.departureDate || '',
+      d.departureTime || ''
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `كشف_مستعاد_من_التشفير_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Analytics Calculations
   const todayStr = new Date().toISOString().split('T')[0];
   const todayDismissals = useMemo(() => dismissals.filter(d => d.departureDate === todayStr), [dismissals, todayStr]);
@@ -473,6 +611,58 @@ const StudentDismissalAdminTab = () => {
             >
               <i className="fas fa-file-excel"></i>
               تصدير Excel 📊
+            </button>
+
+            <button 
+              onClick={() => {
+                setExportEncError('');
+                setShowExportEncModal(true);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '0.65rem 1.1rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)'
+              }}
+              title="تصدير نسخة احتياطية مشفرة بتشفير عسكري AES-256 محمي بكلمة مرور"
+            >
+              <i className="fas fa-lock"></i>
+              تصدير مشفر (AES-256) 🔒
+            </button>
+
+            <button 
+              onClick={() => {
+                setDecryptError('');
+                setDecryptedRecords(null);
+                setDecryptFileName('');
+                setDecryptPassword('');
+                setShowDecryptModal(true);
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                padding: '0.65rem 1.1rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+              title="فك تشفير واستعراض نسخة احتياطية مشفرة محلياً في المتصفح"
+            >
+              <i className="fas fa-key"></i>
+              استعراض ملف مشفر 🔓
             </button>
 
             <button 
@@ -1425,6 +1615,367 @@ const StudentDismissalAdminTab = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL 1: ENCRYPTED BACKUP EXPORT (AES-256)                 */}
+      {/* ========================================================= */}
+      {showExportEncModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem',
+          direction: 'rtl'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '2rem',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.6rem' }}>🔒</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                    تصدير نسخة مشفرة فائقة الحماية
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: '#4f46e5', fontWeight: 800 }}>تشفير عسكري AES-256-GCM + PBKDF2</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExportEncModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: '1.6', margin: '0 0 1.25rem 0' }}>
+              سيتم تشفير ملف السجلات بالكامل. لا يمكن لأي شخص فتح أو قراءة الملف حتى لو تم نسخه على فلاشة أو قرص إلا بواسطة كلمة المرور التي تحددها الآن.
+            </p>
+
+            <form onSubmit={handleConfirmExportEncrypted} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                  تعيين كلمة مرور للتشفير: *
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="اكتب كلمة مرور قوية للملف..."
+                  value={exportPassword}
+                  onChange={(e) => setExportPassword(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1rem',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                  تأكيد كلمة المرور: *
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="أعد كتابة كلمة المرور..."
+                  value={exportConfirmPassword}
+                  onChange={(e) => setExportConfirmPassword(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1rem',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {exportEncError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.75rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700 }}>
+                  {exportEncError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button
+                  type="submit"
+                  disabled={isExportingEnc}
+                  style={{
+                    flex: 1,
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.9rem',
+                    borderRadius: '14px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(79, 70, 229, 0.35)'
+                  }}
+                >
+                  {isExportingEnc ? 'جاري التشفير والتجهيز...' : '🔒 تشفير وتحميل الملف الآن'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowExportEncModal(false)}
+                  style={{
+                    background: '#f1f5f9',
+                    color: '#475569',
+                    border: 'none',
+                    padding: '0.9rem 1.25rem',
+                    borderRadius: '14px',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL 2: VAULT VIEWER & DECRYPTOR                         */}
+      {/* ========================================================= */}
+      {showDecryptModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem',
+          direction: 'rtl'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '2rem',
+            maxWidth: decryptedRecords ? '900px' : '520px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            border: '1px solid #e2e8f0',
+            transition: 'max-width 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.6rem' }}>🔓</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                    استعراض وفك تشفير النسخ الاحتياطية
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: 700 }}>
+                    فك التشفير يتم محلياً بأمان تام داخل متصفحك دون رفع أي بيانات
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDecryptModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {!decryptedRecords ? (
+              <form onSubmit={handleConfirmDecrypt} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                {/* File Picker */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    📁 اختر ملف النسخة المشفرة (.enc.json):
+                  </label>
+                  <input
+                    type="file"
+                    accept=".json,.enc,.enc.json"
+                    onChange={handleFileSelectForDecrypt}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '12px',
+                      border: '1.5px dashed #0284c7',
+                      background: '#f0f9ff',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  {decryptFileName && (
+                    <div style={{ fontSize: '0.8rem', color: '#0284c7', marginTop: '0.35rem', fontWeight: 700 }}>
+                      الملف المحدد: {decryptFileName}
+                    </div>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    🔑 أدخل كلمة المرور الخاصة بالملف:
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="كلمة مرور فك التشفير..."
+                    value={decryptPassword}
+                    onChange={(e) => setDecryptPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.8rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '1rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {decryptError && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.75rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700 }}>
+                    {decryptError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button
+                    type="submit"
+                    disabled={isDecrypting}
+                    style={{
+                      flex: 1,
+                      background: '#0284c7',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.9rem',
+                      borderRadius: '14px',
+                      fontWeight: 800,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(2, 132, 199, 0.35)'
+                    }}
+                  >
+                    {isDecrypting ? 'جاري التحقق وفك التشفير...' : '🔓 فك التشفير واستعراض السجلات'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowDecryptModal(false)}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: 'none',
+                      padding: '0.9rem 1.25rem',
+                      borderRadius: '14px',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ color: '#059669', fontWeight: 800, fontSize: '0.95rem' }}>
+                    ✅ تم فك التشفير بنجاح! تم استرجاع {decryptedRecords.length} سجل.
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={handleExportDecryptedCSV}
+                      style={{
+                        background: '#059669',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <i className="fas fa-file-excel"></i> تنزيل كـ Excel
+                    </button>
+                    <button
+                      onClick={() => setDecryptedRecords(null)}
+                      style={{
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        border: 'none',
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      فتح ملف آخر
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ maxHeight: '450px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', color: '#475569', textAlign: 'right' }}>
+                        <th style={{ padding: '0.75rem' }}>كود الإذن</th>
+                        <th style={{ padding: '0.75rem' }}>اسم الطالب</th>
+                        <th style={{ padding: '0.75rem' }}>الصف</th>
+                        <th style={{ padding: '0.75rem' }}>المربي</th>
+                        <th style={{ padding: '0.75rem' }}>المرافق</th>
+                        <th style={{ padding: '0.75rem' }}>السبب</th>
+                        <th style={{ padding: '0.75rem' }}>التاريخ والوقت</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {decryptedRecords.map((r, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.65rem', fontWeight: 800, color: '#0284c7' }}>{r.passCode || 'DIS'}</td>
+                          <td style={{ padding: '0.65rem', fontWeight: 800, color: '#0f172a' }}>{r.studentName}</td>
+                          <td style={{ padding: '0.65rem' }}>{r.classroom}</td>
+                          <td style={{ padding: '0.65rem' }}>{r.teacherName}</td>
+                          <td style={{ padding: '0.65rem' }}>{r.companionName} ({r.companionType})</td>
+                          <td style={{ padding: '0.65rem' }}>{r.reason}</td>
+                          <td style={{ padding: '0.65rem', color: '#64748b' }}>{r.departureDate} {r.departureTime}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

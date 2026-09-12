@@ -12,6 +12,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { sanitizeText } from '../utils/security';
+import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
 
 const WEEKDAYS_AR = {
   0: 'الأحد',
@@ -30,8 +31,8 @@ const AppointmentsLogPage = () => {
   const [activeGuardPin, setActiveGuardPin] = useState(GUARD_PIN_CODE);
   const [isAuthorized, setIsAuthorized] = useState(() => {
     try {
-      const saved = localStorage.getItem('musherfe_guard_auth_pin');
-      return saved === GUARD_PIN_CODE || (!!saved && saved.length >= 4);
+      const saved = getSecureStorage('musherfe_guard_auth_pin');
+      return saved === GUARD_PIN_CODE || (!!saved && String(saved).length >= 4);
     } catch (e) {
       return false;
     }
@@ -61,7 +62,7 @@ const AppointmentsLogPage = () => {
       setIsAuthorized(true);
       if (rememberDevice) {
         try {
-          localStorage.setItem('musherfe_guard_auth_pin', clean);
+          setSecureStorage('musherfe_guard_auth_pin', clean);
         } catch (err) {}
       }
       playAlertChime();
@@ -74,7 +75,7 @@ const AppointmentsLogPage = () => {
   const handleLogoutGuard = () => {
     if (window.confirm('هل تريد قفل الشاشة وتسجيل الخروج من لوحة الحارس؟')) {
       try {
-        localStorage.removeItem('musherfe_guard_auth_pin');
+        removeSecureStorage('musherfe_guard_auth_pin');
       } catch (err) {}
       setIsAuthorized(false);
       setPinInput('');

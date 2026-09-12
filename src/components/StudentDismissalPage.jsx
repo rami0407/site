@@ -24,6 +24,7 @@ import {
   DEFAULT_TEACHER_PIN 
 } from '../utils/teacherAuth';
 import { getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
+import { generateDataSignature } from '../utils/cryptoVault';
 import './StudentDismissalPage.css';
 
 const CLASSROOM_OPTIONS = [
@@ -367,7 +368,7 @@ const StudentDismissalPage = () => {
     const finalDate = departureDate || getTodayLocalString();
     const finalTime = departureTime || `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
 
-    const dismissalData = {
+    const rawDismissal = {
       passCode,
       studentName: studentName.trim(),
       familyName: autoFamilyName,
@@ -399,6 +400,18 @@ const StudentDismissalPage = () => {
       meetingType: 'تسريح طالب',
       parentName: (companionName.trim() || companionType || studentName.trim()).slice(0, 100),
       createdAt: new Date().toISOString()
+    };
+
+    let digitalSig = '';
+    try {
+      digitalSig = await generateDataSignature(rawDismissal);
+    } catch (sigErr) {
+      console.warn('Signature warning:', sigErr);
+    }
+
+    const dismissalData = {
+      ...rawDismissal,
+      digitalSignature: digitalSig
     };
 
     try {
@@ -1591,6 +1604,17 @@ const StudentDismissalPage = () => {
                     </span>
                   </td>
                 </tr>
+                {completedPass.digitalSignature && (
+                  <tr>
+                    <td>التوثيق الرقمي:</td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#059669', fontWeight: 800, fontSize: '0.82rem', background: '#ecfdf5', padding: '0.25rem 0.6rem', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+                        <i className="fas fa-shield-alt"></i>
+                        مشفر وموثق رقمياً (SHA-256)
+                      </span>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
