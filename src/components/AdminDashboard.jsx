@@ -37,6 +37,14 @@ import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
 import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
+import SecurityHubAdminTab from './SecurityHubAdminTab';
+import { 
+  checkRateLimit, 
+  recordFailedAttempt, 
+  resetRateLimit, 
+  logSecurityEvent, 
+  decryptSensitiveField 
+} from '../utils/securityAudit';
 
 const CATEGORIES_CALENDAR = {
   exam: 'امتحان',
@@ -2715,10 +2723,27 @@ const AdminDashboard = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
+
+    // Rate Limiting check on Admin Login
+    const rateStatus = checkRateLimit('admin_auth');
+    if (!rateStatus.allowed) {
+      setLoginError(`🚨 تم قفل تسجيل الدخول مؤقتاً لمدة ${rateStatus.minutesLeft} دقيقة بعد 5 محاولات خاطئة متتالية.`);
+      return;
+    }
+
     setIsLoggingIn(true);
 
     try {
       await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      resetRateLimit('admin_auth');
+      logSecurityEvent({
+        type: 'ADMIN_AUTH_SUCCESS',
+        severity: 'INFO',
+        actor: loginEmail,
+        actionKey: 'admin_auth',
+        details: 'تم تسجيل دخول المدير بنجاح.'
+      });
+
       // Check if current browser is trusted
       const trusted = getSecureStorage('musherfe_admin_2fa_trusted');
       if (trusted && trusted.timestamp && (Date.now() - trusted.timestamp < 30 * 24 * 60 * 60 * 1000)) {
@@ -2728,9 +2753,19 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error("Login failed: ", error);
+      const failRes = await recordFailedAttempt('admin_auth', {
+        actor: loginEmail,
+        details: 'محاولة تسجيل دخول فاشلة للمدير.'
+      });
+
       let errorMsg = 'فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         errorMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+      }
+      if (failRes && failRes.isLocked) {
+        errorMsg = '🚨 تم قفل الحساب لمدة 15 دقيقة بعد 5 محاولات خاطئة متتالية.';
+      } else if (failRes) {
+        errorMsg += ` (المحاولات المتبقية: ${failRes.remainingAttempts})`;
       }
       setLoginError(errorMsg);
     } finally {
@@ -2744,6 +2779,12 @@ const AdminDashboard = () => {
     setAdmin2FAError('');
     setAdmin2FASuccess('');
     const cleanCode = admin2FACodeInput.trim();
+
+    const rateStatus = checkRateLimit('admin_2fa');
+    if (!rateStatus.allowed) {
+      setAdmin2FAError(`🚨 تم قفل محاولات التحقق مؤقتاً لمدة ${rateStatus.minutesLeft} دقيقة بعد 5 محاولات خاطئة متتالية.`);
+      return;
+    }
 
     if (!cleanCode) {
       setAdmin2FAError('يرجى إدخال رمز التحقق المكون من 6 أرقام.');
@@ -2780,6 +2821,14 @@ const AdminDashboard = () => {
       }
 
       if (isValid) {
+        resetRateLimit('admin_2fa');
+        logSecurityEvent({
+          type: 'ADMIN_2FA_SUCCESS',
+          severity: 'INFO',
+          actor: user?.email || loginEmail,
+          actionKey: 'admin_2fa',
+          details: 'تم اجتياز التحقق الثنائي للمدير بنجاح.'
+        });
         setAdmin2FASuccess('🎉 تم التحقق الثنائي بنجاح! جاري فتح لوحة التحكم...');
         if (adminRememberDevice) {
           setSecureStorage('musherfe_admin_2fa_trusted', {
@@ -2793,7 +2842,15 @@ const AdminDashboard = () => {
           setAdmin2FASuccess('');
         }, 800);
       } else {
-        setAdmin2FAError('❌ رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى التأكد وإعادة المحاولة.');
+        const failRes = await recordFailedAttempt('admin_2fa', {
+          actor: user?.email || loginEmail,
+          details: 'محاولة إدخال كود 2FA غير صحيح للمدير.'
+        });
+        if (failRes && failRes.isLocked) {
+          setAdmin2FAError('🚨 تم قفل محاولات التحقق لمدة 15 دقيقة بعد 5 محاولات خاطئة متتالية.');
+        } else {
+          setAdmin2FAError(`❌ رمز التحقق غير صحيح أو انتهت صلاحيته. (المحاولات المتبقية: ${failRes.remainingAttempts})`);
+        }
       }
     } catch (err) {
       setAdmin2FAError('حدث خطأ أثناء التحقق: ' + err.message);
@@ -4462,6 +4519,27 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-bullhorn" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#2563eb' }}></i>
               📢 بث إشعارات الهواتف (Push)
+            </button>
+
+            {/* 🛡️ CENTRAL SECURITY HUB & AUDIT */}
+            <button 
+              onClick={() => setActiveTab('security-hub')} 
+              className={`filter-chip ${activeTab === 'security-hub' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'security-hub' ? 'linear-gradient(135deg, #0f172a, #1e1b4b)' : '#f8fafc',
+                color: activeTab === 'security-hub' ? 'white' : '#0f172a',
+                fontWeight: 900,
+                border: '2px solid #334155',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)'
+              }}
+            >
+              <i className="fas fa-shield-alt" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#10b981' }}></i>
+              🛡️ مركز الأمان وسجل التدقيق
             </button>
 
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
@@ -7608,7 +7686,9 @@ const AdminDashboard = () => {
                               </div>
                               <div>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>رقم الهاتف</span>
-                                <a href={`tel:${msg.phone}`} style={{ textDecoration: 'none', color: 'var(--text-dark)', fontWeight: 700 }}>{msg.phone}</a>
+                                <a href={`tel:${decryptSensitiveField(msg.phone)}`} style={{ textDecoration: 'none', color: 'var(--text-dark)', fontWeight: 700 }}>
+                                  {decryptSensitiveField(msg.phone)}
+                                </a>
                               </div>
                               {msg.email && (
                                 <div>
@@ -7629,8 +7709,17 @@ const AdminDashboard = () => {
                             </div>
 
                             <div>
-                              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>مضمون الرسالة:</span>
-                              <p style={{ fontSize: '0.98rem', color: 'var(--text-dark)', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>{msg.message}</p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>مضمون الرسالة:</span>
+                                {(msg.isFieldEncrypted || (typeof msg.message === 'string' && msg.message.startsWith('ENC_V1:'))) && (
+                                  <span style={{ fontSize: '0.75rem', background: '#ede9fe', color: '#6d28d9', padding: '0.15rem 0.5rem', borderRadius: '50px', fontWeight: 800 }}>
+                                    🔒 مشفرة بحماية قصوى
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ fontSize: '0.98rem', color: 'var(--text-dark)', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+                                {decryptSensitiveField(msg.message)}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -8426,6 +8515,13 @@ const AdminDashboard = () => {
               {activeTab === 'notifications-admin' && (
                 <div>
                   <NotificationAdminTab />
+                </div>
+              )}
+
+              {/* 🛡️ تبويب: مركز الأمان والإنذار المبكر وسجل التدقيق */}
+              {activeTab === 'security-hub' && (
+                <div>
+                  <SecurityHubAdminTab />
                 </div>
               )}
 

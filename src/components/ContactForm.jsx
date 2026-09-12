@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { sanitizeObject } from '../utils/security';
+import { validateHoneypot, encryptSensitiveField, logSecurityEvent } from '../utils/securityAudit';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const ContactForm = () => {
     message: ''
   });
 
+  const [botTrapField, setBotTrapField] = useState('');
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: string }
@@ -86,6 +88,17 @@ const ContactForm = () => {
     e.preventDefault();
     setFeedback(null);
 
+    // 1. Invisible Honeypot Anti-Bot Check
+    if (!validateHoneypot(botTrapField, 'ContactForm')) {
+      // Fake success to keep bot trapped without exposing detection
+      setIsSubmitting(false);
+      setFeedback({
+        type: 'success',
+        text: 'شكرًا لتواصلك معنا! لقد تم استلام رسالتك بنجاح.'
+      });
+      return;
+    }
+
     if (!validateForm()) {
       setFeedback({
         type: 'error',
@@ -96,16 +109,32 @@ const ContactForm = () => {
 
     setIsSubmitting(true);
 
-    const messageData = sanitizeObject({
+    const rawMessageData = sanitizeObject({
       ...formData,
       date: new Date().toLocaleString('ar-EG'),
       createdAt: new Date().toISOString()
     });
 
+    // 2. Field-Level Transparent Encryption for personal data
+    const messageData = {
+      ...rawMessageData,
+      phone: encryptSensitiveField(rawMessageData.phone),
+      message: encryptSensitiveField(rawMessageData.message),
+      isFieldEncrypted: true
+    };
+
     try {
       // 1. Attempt Firestore write
       await addDoc(collection(db, 'contacts'), messageData);
       
+      logSecurityEvent({
+        type: 'CONTACT_FORM_SUBMITTED',
+        severity: 'INFO',
+        actor: formData.fullName || 'ولي أمر / زائر',
+        target: formData.subject,
+        details: 'تم إرسال رسالة تواصل جديدة مشفرة بنجاح.'
+      });
+
       // Also write locally as backup/offline sync simulation
       const submissions = JSON.parse(localStorage.getItem('school_contacts') || '[]');
       submissions.push({ ...messageData, id: Date.now() });
@@ -124,6 +153,7 @@ const ContactForm = () => {
         subject: 'عام',
         message: ''
       });
+      setBotTrapField('');
     } catch (error) {
       console.warn("Firestore write failed, falling back to local storage: ", error);
       
@@ -223,6 +253,18 @@ const ContactForm = () => {
           <div className="contact-form-container">
             <form onSubmit={handleSubmit} noValidate>
               
+              {/* 🍯 Invisible Honeypot Anti-Bot Trap */}
+              <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0, overflow: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
+                <input 
+                  type="text" 
+                  name="_school_hp_trap" 
+                  tabIndex={-1} 
+                  autoComplete="off" 
+                  value={botTrapField} 
+                  onChange={(e) => setBotTrapField(e.target.value)} 
+                />
+              </div>
+
               <div className="form-group-row">
                 <div className="form-group">
                   <label htmlFor="fullName" className="form-label">الاسم الكامل *</label>

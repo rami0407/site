@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, doc, setDoc, getDocs, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from './totp';
 import { setSecureStorage, getSecureStorage, removeSecureStorage } from './cryptoVault';
+import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
 
 export const DEFAULT_TEACHER_PIN = '318212';
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
@@ -152,13 +153,44 @@ export const getTeacherAccountDetails = (teacherId) => {
 };
 
 /**
- * Verify teacher login credentials (Stage 1: PIN)
+ * Check rate limit status for a teacher login
+ */
+export const checkTeacherLoginRateLimit = (teacherId) => {
+  return checkRateLimit(`teacher_login_${teacherId}`);
+};
+
+/**
+ * Verify teacher login credentials (Stage 1: PIN) with Brute-Force Rate Limiting
  */
 export const verifyTeacherCredentials = (teacherId, enteredPin) => {
   if (!teacherId || !enteredPin) return false;
+
+  const rateStatus = checkRateLimit(`teacher_login_${teacherId}`);
+  if (!rateStatus.allowed) {
+    return false; // Locked out!
+  }
+
   const cleanEntered = enteredPin.trim();
   const expectedPin = getTeacherPin(teacherId);
-  return cleanEntered === expectedPin || cleanEntered === DEFAULT_TEACHER_PIN;
+  const isValid = cleanEntered === expectedPin || cleanEntered === DEFAULT_TEACHER_PIN;
+
+  if (isValid) {
+    resetRateLimit(`teacher_login_${teacherId}`);
+    logSecurityEvent({
+      type: 'TEACHER_PIN_SUCCESS',
+      severity: 'INFO',
+      actor: `المربي (${teacherId})`,
+      actionKey: `teacher_login_${teacherId}`,
+      details: 'تم التحقق من رمز المربي بنجاح.'
+    });
+  } else {
+    recordFailedAttempt(`teacher_login_${teacherId}`, {
+      actor: `المربي (${teacherId})`,
+      details: 'محاولة إدخال رمز غير صحيح لمعلم.'
+    });
+  }
+
+  return isValid;
 };
 
 /**
@@ -346,8 +378,22 @@ export const generateAdminEmergencyCode = async (teacherId) => {
 /**
  * Verify Stage 2: 2FA Code (Supports Google Authenticator TOTP, WhatsApp OTP, and Admin Emergency Code)
  */
+/**
+ * Verify Stage 2: 2FA Code (Supports Google Authenticator TOTP, WhatsApp OTP, and Admin Emergency Code)
+ */
 export const verifyTeacher2FACode = async (teacherId, enteredCode) => {
   if (!teacherId || !enteredCode) return { success: false, reason: 'الرمز مطلوب' };
+
+  const rateStatus = checkRateLimit(`teacher_2fa_${teacherId}`);
+  if (!rateStatus.allowed) {
+    return { 
+      success: false, 
+      reason: `تم قفل الحساب لمدة ${rateStatus.minutesLeft} دقيقة بعد 5 محاولات خاطئة متتالية. يرجى الانتظار أو مراجعة المدير.`,
+      isLocked: true,
+      minutesLeft: rateStatus.minutesLeft
+    };
+  }
+
   const clean = enteredCode.toString().trim();
   const details = getTeacherAccountDetails(teacherId);
 
@@ -355,6 +401,14 @@ export const verifyTeacher2FACode = async (teacherId, enteredCode) => {
   if (details.twoFactorSecret) {
     const isTotpValid = await verifyTOTPCode(details.twoFactorSecret, clean);
     if (isTotpValid) {
+      resetRateLimit(`teacher_2fa_${teacherId}`);
+      logSecurityEvent({
+        type: 'TEACHER_2FA_SUCCESS',
+        severity: 'INFO',
+        actor: `المربي (${teacherId})`,
+        actionKey: `teacher_2fa_${teacherId}`,
+        details: 'تم التحقق الثنائي عبر Google Authenticator بنجاح.'
+      });
       return { success: true, method: 'totp' };
     }
   }
@@ -366,6 +420,14 @@ export const verifyTeacher2FACode = async (teacherId, enteredCode) => {
       try {
         await updateDoc(doc(db, 'teacher_accounts', teacherId), { pendingOtp: null });
       } catch (e) {}
+      resetRateLimit(`teacher_2fa_${teacherId}`);
+      logSecurityEvent({
+        type: 'TEACHER_2FA_SUCCESS',
+        severity: 'INFO',
+        actor: `المربي (${teacherId})`,
+        actionKey: `teacher_2fa_${teacherId}`,
+        details: 'تم التحقق الثنائي عبر WhatsApp OTP بنجاح.'
+      });
       return { success: true, method: 'whatsapp_otp' };
     } else {
       return { success: false, reason: 'انتهت صلاحية رمز التحقق المؤقت، يرجى طلب رمز جديد.' };
@@ -381,10 +443,37 @@ export const verifyTeacher2FACode = async (teacherId, enteredCode) => {
         'emergencyCode.usedAt': new Date().toISOString()
       });
     } catch (e) {}
+    resetRateLimit(`teacher_2fa_${teacherId}`);
+    logSecurityEvent({
+      type: 'TEACHER_2FA_EMERGENCY_USED',
+      severity: 'WARNING',
+      actor: `المربي (${teacherId})`,
+      actionKey: `teacher_2fa_${teacherId}`,
+      details: 'تم التحقق والدخول بواسطة رمز الطوارئ الإداري.'
+    });
     return { success: true, method: 'admin_emergency' };
   }
 
-  return { success: false, reason: 'رمز التحقق الثنائي غير صحيح، يرجى المحاولة مجدداً.' };
+  // Record failed attempt
+  const failRes = await recordFailedAttempt(`teacher_2fa_${teacherId}`, {
+    actor: `المربي (${teacherId})`,
+    details: 'محاولة إدخال كود 2FA غير صحيح للمعلم.'
+  });
+
+  if (failRes && failRes.isLocked) {
+    return {
+      success: false,
+      reason: 'تم قفل الحساب لمدة 15 دقيقة بعد 5 محاولات خاطئة متتالية. يرجى الانتظار أو مراجعة المدير.',
+      isLocked: true,
+      minutesLeft: 15
+    };
+  }
+
+  return { 
+    success: false, 
+    reason: `رمز التحقق الثنائي غير صحيح. (المحاولات المتبقية: ${failRes.remainingAttempts})`,
+    remainingAttempts: failRes.remainingAttempts
+  };
 };
 
 /**
@@ -424,9 +513,17 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
       updatedAt: nowStr,
       updatedBy
     }, { merge: true });
-  } catch (cloudErr) {
-    console.warn('Firestore teacher_accounts save note:', cloudErr);
+  } catch (err) {
+    console.warn('Teacher PIN cloud sync warning:', err);
   }
+
+  logSecurityEvent({
+    type: 'TEACHER_PIN_CHANGED',
+    severity: 'INFO',
+    actor: updatedBy,
+    target: teacherName,
+    details: `تم تحديث رمز الدخول للمعلم/ة ${teacherName}.`
+  });
 
   try {
     await addDoc(collection(db, 'messages'), {

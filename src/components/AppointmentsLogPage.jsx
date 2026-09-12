@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { sanitizeText } from '../utils/security';
 import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
+import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from '../utils/securityAudit';
 
 const WEEKDAYS_AR = {
   0: 'الأحد',
@@ -54,10 +55,25 @@ const AppointmentsLogPage = () => {
     } catch (e) {}
   }, []);
 
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = async (e) => {
     e.preventDefault();
+
+    const rateStatus = checkRateLimit('guard_pin');
+    if (!rateStatus.allowed) {
+      setPinError(`🚨 تم قفل شاشة الحارس مؤقتاً لمدة ${rateStatus.minutesLeft} دقيقة بعد 5 محاولات خاطئة متتالية.`);
+      return;
+    }
+
     const clean = pinInput.trim();
     if (clean === activeGuardPin || clean === GUARD_PIN_CODE) {
+      resetRateLimit('guard_pin');
+      logSecurityEvent({
+        type: 'GUARD_PIN_SUCCESS',
+        severity: 'INFO',
+        actor: 'حارس البوابة',
+        actionKey: 'guard_pin',
+        details: 'تم الدخول إلى لوحة الحارس بنجاح.'
+      });
       setPinError('');
       setIsAuthorized(true);
       if (rememberDevice) {
@@ -67,7 +83,16 @@ const AppointmentsLogPage = () => {
       }
       playAlertChime();
     } else {
-      setPinError('❌ الرمز السري غير صحيح! يرجى إدخال رمز الحارس الصحيح للمتابعة.');
+      const failRes = await recordFailedAttempt('guard_pin', {
+        actor: 'حارس البوابة / مستخدم مجهول',
+        details: 'محاولة إدخال رمز خاطئ للوحة الحارس.'
+      });
+
+      if (failRes && failRes.isLocked) {
+        setPinError('🚨 تم قفل شاشة الحارس لمدة 15 دقيقة بعد 5 محاولات خاطئة متتالية.');
+      } else {
+        setPinError(`❌ الرمز السري غير صحيح! (المحاولات المتبقية: ${failRes.remainingAttempts})`);
+      }
       setPinInput('');
     }
   };

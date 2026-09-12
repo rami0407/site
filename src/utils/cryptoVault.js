@@ -177,6 +177,37 @@ const transformString = (text, key) => {
 };
 
 /**
+ * Encrypt arbitrary string with transparent prefix
+ */
+export const encryptString = (text, key = APP_STORAGE_ENTROPY) => {
+  if (!text) return text;
+  try {
+    const encoded = encodeURIComponent(String(text));
+    const cipher = transformString(encoded, key);
+    return `${STORAGE_ENC_PREFIX}${window.btoa(cipher)}`;
+  } catch (e) {
+    return text;
+  }
+};
+
+/**
+ * Decrypt string encrypted with transparent prefix
+ */
+export const decryptString = (encryptedText, key = APP_STORAGE_ENTROPY) => {
+  if (!encryptedText || typeof encryptedText !== 'string' || !encryptedText.startsWith(STORAGE_ENC_PREFIX)) {
+    return encryptedText;
+  }
+  try {
+    const b64 = encryptedText.substring(STORAGE_ENC_PREFIX.length);
+    const cipher = window.atob(b64);
+    const decoded = transformString(cipher, key);
+    return decodeURIComponent(decoded);
+  } catch (e) {
+    return encryptedText;
+  }
+};
+
+/**
  * Save an item to LocalStorage encrypted
  */
 export const setSecureStorage = (key, value) => {

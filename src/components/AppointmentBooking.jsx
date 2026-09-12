@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { sanitizeText } from '../utils/security';
+import { validateHoneypot, logSecurityEvent } from '../utils/securityAudit';
 
 const WEEKDAYS_MAP = {
   0: 'Sunday',
@@ -113,6 +114,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   
   const [parentName, setParentName] = useState('');
   const [parentPhone, setParentPhone] = useState('');
+  const [botTrapField, setBotTrapField] = useState('');
   const [studentName, setStudentName] = useState('');
   const [studentClass, setStudentClass] = useState('الصف الأول (أ)');
   const [meetingTopic, setMeetingTopic] = useState('');
@@ -241,6 +243,30 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
+
+    // 🍯 Invisible Bot Honeypot Trap
+    if (!validateHoneypot(botTrapField, 'AppointmentBooking')) {
+      setIsSubmitting(false);
+      setBookingTicket({
+        ticketCode: `MUSH-BK-${Math.floor(10000 + Math.random() * 90000)}`,
+        teacherNameAr: selectedTeacher?.nameAr || 'المعلم',
+        teacherNameHe: selectedTeacher?.nameHe || '',
+        teacherRole: selectedTeacher?.role || 'طاقم المدرسة',
+        date: selectedDate,
+        dayAr: WEEKDAYS_AR[dayNameEn] || '',
+        timeSlot: selectedSlot || '10:00',
+        parentName: sanitizeText(parentName.trim()),
+        parentPhone: sanitizeText(parentPhone.trim()),
+        studentName: sanitizeText(studentName.trim()),
+        studentClass,
+        meetingTopic: sanitizeText(meetingTopic.trim()) || 'متابعة',
+        meetingType,
+        status: 'confirmed',
+        createdAt: new Date().toISOString()
+      });
+      return;
+    }
+
     if (!parentName.trim() || !parentPhone.trim() || !studentName.trim()) {
       alert('من فضلك أكمل جميع بيانات التواصل والاسم!');
       return;
@@ -691,6 +717,18 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
                 <span>3️⃣</span> أدخل بيانات التواصل والطالب:
               </h3>
+
+              {/* 🍯 Invisible Honeypot Anti-Bot Trap */}
+              <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0, overflow: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
+                <input 
+                  type="text" 
+                  name="_school_hp_trap" 
+                  tabIndex={-1} 
+                  autoComplete="off" 
+                  value={botTrapField} 
+                  onChange={(e) => setBotTrapField(e.target.value)} 
+                />
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
                 <div>
