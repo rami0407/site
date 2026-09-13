@@ -224,6 +224,54 @@ const ImportantLinks = () => {
             });
           }
 
+          // 5. Year of Excellence Portal (عام التميز والابتكار 2026 / 2027)
+          const hasExcellence = list.some(l => 
+            (l.title && l.title.includes('التميز') && (l.title.includes('عام') || l.title.includes('وثيقة') || l.title.includes('رؤية'))) || 
+            (l.url && l.url.includes('excellence'))
+          );
+          if (!hasExcellence) {
+            list.splice(1, 0, {
+              id: 'school-excellence-year-default',
+              title: 'عام التميز والابتكار 2026 / 2027 (وثيقة ورؤية المدرسة)',
+              icon: 'fa-award',
+              url: '#/excellence',
+              desc: 'استكشف رؤية المدرسة، ميثاق التميز، وخارطة طريق بناء جيل المبدعين وقادة المستقبل.',
+              badge: 'عام التميز 🌟'
+            });
+          }
+
+          // 6. Tasbih Portal (بوابة الذكر ومسبحة مشيرفة)
+          const hasTasbih = list.some(l => 
+            (l.title && (l.title.includes('مسبحة') || l.title.includes('الذكر') || l.title.includes('تسبيح'))) || 
+            (l.url && l.url.includes('tasbih'))
+          );
+          if (!hasTasbih) {
+            list.splice(2, 0, {
+              id: 'school-tasbih-portal-default',
+              title: 'بوابة الذكر ومسبحة مشيرفة الإلكترونية',
+              icon: 'fa-kaaba',
+              url: '#/tasbih',
+              desc: 'مسبحة إلكترونية وأذكار يومية تفاعلية مع عداد رقمي لغرس قيم الإيمان والذكر لدى الطلاب.',
+              badge: 'بوابة الذكر 📿'
+            });
+          }
+
+          // 7. Monawaat Portal (ركن المنوعات والأنشطة الإبداعية)
+          const hasMonawaat = list.some(l => 
+            (l.title && (l.title.includes('منوعات') || l.title.includes('إبداعية'))) || 
+            (l.url && l.url.includes('monawaat'))
+          );
+          if (!hasMonawaat) {
+            list.splice(3, 0, {
+              id: 'school-monawaat-default',
+              title: 'ركن المنوعات والأنشطة الإبداعية',
+              icon: 'fa-palette',
+              url: '#/monawaat',
+              desc: 'مساحة ثرية ومتنوعة من الأنشطة الإبداعية، المسابقات الترفيهية، والمعلومات الثقافية العامة.',
+              badge: 'منوعات وإبداع 🎨'
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {
@@ -247,11 +295,20 @@ const ImportantLinks = () => {
           {links.map((link, idx) => {
             const isInternal = link.url && (link.url.startsWith('#') || link.url.startsWith('/#'));
             const isKiosk = link.url && link.url.includes('kiosk');
+            const isExcellence = link.url?.includes('excellence') || link.badge?.includes('التميز');
+            const isTasbih = link.url?.includes('tasbih') || link.badge?.includes('الذكر') || link.title?.includes('مسبحة');
+            const isMonawaat = link.url?.includes('monawaat') || link.badge?.includes('منوعات') || link.title?.includes('منوعات');
             const isAi = link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة');
 
             let iconGradient = undefined;
             if (isKiosk) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            } else if (isExcellence) {
+              iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)';
+            } else if (isTasbih) {
+              iconGradient = 'linear-gradient(135deg, #059669 0%, #064e3b 100%)';
+            } else if (isMonawaat) {
+              iconGradient = 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)';
             } else if (link.icon === 'fa-brain') {
               iconGradient = 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)';
             } else if (link.icon === 'fa-book-reader') {
@@ -281,6 +338,24 @@ const ImportantLinks = () => {
                   if (link.action === 'open-homework-helper' || link.url?.includes('homework-helper')) {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-homework-helper'));
+                    return;
+                  }
+                  if (link.url?.includes('excellence')) {
+                    e.preventDefault();
+                    window.location.hash = '#/excellence';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('tasbih')) {
+                    e.preventDefault();
+                    window.location.hash = '#/tasbih';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('monawaat')) {
+                    e.preventDefault();
+                    window.location.hash = '#/monawaat';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
                   if (link.url?.includes('debate')) {
@@ -349,6 +424,24 @@ const ImportantLinks = () => {
                   background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
                   position: 'relative',
                   overflow: 'hidden'
+                } : isExcellence ? {
+                  borderRight: '4px solid #f59e0b',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.18)'
+                } : isTasbih ? {
+                  borderRight: '4px solid #059669',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 16px rgba(5, 150, 105, 0.18)'
+                } : isMonawaat ? {
+                  borderRight: '4px solid #ec4899',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 16px rgba(236, 72, 153, 0.18)'
                 } : isAi ? {
                   borderRight: '4px solid #8b5cf6',
                   background: 'linear-gradient(135deg, #ffffff 0%, #faf5ff 100%)',
@@ -361,7 +454,7 @@ const ImportantLinks = () => {
                   style={iconGradient ? {
                     background: iconGradient,
                     color: isKiosk ? '#000' : '#ffffff',
-                    boxShadow: isKiosk ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isAi ? '0 4px 12px rgba(139, 92, 246, 0.35)' : undefined
+                    boxShadow: isKiosk ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isExcellence ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isTasbih ? '0 4px 12px rgba(5, 150, 105, 0.35)' : isMonawaat ? '0 4px 12px rgba(236, 72, 153, 0.35)' : isAi ? '0 4px 12px rgba(139, 92, 246, 0.35)' : undefined
                   } : undefined}
                 >
                   <i className={`fas ${link.icon || 'fa-link'}`}></i>
@@ -403,7 +496,58 @@ const ImportantLinks = () => {
                         بث مباشر
                       </span>
                     )}
-                    {link.badge && !isAi && !isKiosk && (
+                    {isExcellence && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        color: '#0f172a',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(245,158,11,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>🌟</span> عام التميز
+                      </span>
+                    )}
+                    {isTasbih && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                        color: '#fef08a',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(5,150,105,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>📿</span> بوابة الذكر
+                      </span>
+                    )}
+                    {isMonawaat && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)',
+                        color: 'white',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(236,72,153,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>🎨</span> منوعات وإبداع
+                      </span>
+                    )}
+                    {link.badge && !isAi && !isKiosk && !isExcellence && !isTasbih && !isMonawaat && (
                       <span style={{
                         background: '#eff6ff',
                         color: '#1d4ed8',
@@ -418,7 +562,7 @@ const ImportantLinks = () => {
                       </span>
                     )}
                   </div>
-                  <span className="link-text" style={isKiosk ? { color: '#b45309', fontWeight: 900 } : isAi ? { color: '#5b21b6', fontWeight: 900 } : undefined}>
+                  <span className="link-text" style={isKiosk ? { color: '#b45309', fontWeight: 900 } : isExcellence ? { color: '#b45309', fontWeight: 900 } : isTasbih ? { color: '#047857', fontWeight: 900 } : isMonawaat ? { color: '#be185d', fontWeight: 900 } : isAi ? { color: '#5b21b6', fontWeight: 900 } : undefined}>
                     {link.title}
                   </span>
                   <span className="link-desc">{link.desc}</span>

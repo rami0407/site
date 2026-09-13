@@ -259,46 +259,6 @@ const Hero = () => {
               📚 رحلة الـ 10 كتب وشجرة التميز 🌿
             </button>
 
-            {isTasbihPublished && (
-              <button 
-                onClick={() => window.location.hash = '#/tasbih'} 
-                className="btn" 
-                style={{
-                  background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)',
-                  color: '#fef08a',
-                  border: '1.5px solid #fbbf24',
-                  fontWeight: 900,
-                  padding: '0.85rem 1.4rem',
-                  borderRadius: '16px',
-                  boxShadow: '0 8px 25px rgba(5, 150, 105, 0.45), 0 0 15px rgba(251, 191, 36, 0.35)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <span style={{ fontSize: '1.25rem' }}>📿</span>
-                <span>بوابة الذكر ومسبحة مشيرفة 👑</span>
-              </button>
-            )}
-
-            <button onClick={() => window.location.hash = '#/monawaat'} className="btn" style={{
-              background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)',
-              color: 'white',
-              border: 'none',
-              fontWeight: 900,
-              padding: '0.85rem 1.4rem',
-              borderRadius: '16px',
-              boxShadow: '0 8px 20px rgba(236, 72, 153, 0.4)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              cursor: 'pointer'
-            }}>
-              <i className="fas fa-palette" style={{ fontSize: '1.2rem' }}></i>
-              🎨 منوعات
-            </button>
-
             <button onClick={() => window.location.hash = '#/stem'} className="btn" style={{
               background: 'linear-gradient(135deg, #7209b7 0%, #4361ee 100%)',
               color: 'white',
@@ -326,11 +286,6 @@ const Hero = () => {
               ركن التعلم
             </button>
 
-            <button onClick={() => scrollToSection('contact')} className="btn btn-space-outline">
-              <i className="fas fa-paper-plane"></i>
-              تواصل معنا
-            </button>
-
             <button 
               onClick={() => window.location.hash = '#/appointments'} 
               className="btn"
@@ -352,7 +307,6 @@ const Hero = () => {
               📅 حجز لقاء مع المعلم
             </button>
           </div>
-
         </div>
 
         {/* Hero Right/Rocket Visual Stage */}
