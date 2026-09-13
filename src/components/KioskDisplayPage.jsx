@@ -303,9 +303,10 @@ const KioskDisplayPage = () => {
       <div className="kiosk-tv-launcher">
         <div className="tv-launcher-header">
           <img 
-            src="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" 
-            alt="شعار المدرسة" 
+            src={`${import.meta.env.BASE_URL}school_logo.png`} 
+            alt="شعار مدرسة مشيرفة" 
             className="tv-launcher-logo" 
+            onError={(e) => { e.currentTarget.src = `${import.meta.env.BASE_URL}icon-512.png`; }}
           />
           <h1 className="tv-launcher-title">📺 بوابة شاشات العرض الذكية</h1>
           <p className="tv-launcher-subtitle">مدرسة مشيرفة الابتدائية • اختر الشاشة المراد بثها على هذا التلفاز:</p>
@@ -345,9 +346,10 @@ const KioskDisplayPage = () => {
         <div className="kiosk-header-right">
           {config.showLogo && (
             <img 
-              src="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" 
-              alt="شعار المدرسة" 
+              src={`${import.meta.env.BASE_URL}school_logo.png`} 
+              alt="شعار مدرسة مشيرفة" 
               className="kiosk-logo" 
+              onError={(e) => { e.currentTarget.src = `${import.meta.env.BASE_URL}icon-512.png`; }}
             />
           )}
           <div className="kiosk-titles">

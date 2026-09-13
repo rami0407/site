@@ -188,9 +188,10 @@ const Hero = () => {
           <div className="hero-logo-wrapper">
             <div className="orbital-ring"></div>
             <img 
-              src="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" 
-              alt="شعار المدرسة" 
+              src={`${import.meta.env.BASE_URL}school_logo.png`} 
+              alt="شعار مدرسة مشيرفة الابتدائية" 
               className="hero-logo"
+              onError={(e) => { e.currentTarget.src = `${import.meta.env.BASE_URL}icon-512.png`; }}
             />
           </div>
 

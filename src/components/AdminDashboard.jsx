@@ -4080,8 +4080,9 @@ const AdminDashboard = () => {
         <div style={{ maxWidth: '420px', width: '100%', background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', padding: '2.5rem', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-light)' }}>
           <div style={{ textAlignment: 'center', marginBottom: '2rem', textAlign: 'center' }}>
             <img 
-              src="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" 
-              alt="شعار المدرسة" 
+              src={`${import.meta.env.BASE_URL}school_logo.png`} 
+              alt="شعار مدرسة مشيرفة" 
+              onError={(e) => { e.currentTarget.src = `${import.meta.env.BASE_URL}icon-512.png`; }}
               style={{ width: '80px', height: '80px', margin: '0 auto 1rem', borderRadius: '50%', border: '3px solid var(--primary)' }}
             />
             <h2 style={{ color: 'var(--primary-dark)', fontWeight: '900', fontSize: '1.6rem' }}>بوابة الإدارة المدرسية</h2>
@@ -4468,8 +4469,9 @@ const AdminDashboard = () => {
       <header style={{ background: 'var(--primary-dark)', color: 'var(--bg-white)', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <img 
-            src="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" 
-            alt="شعار المدرسة" 
+            src={`${import.meta.env.BASE_URL}school_logo.png`} 
+            alt="شعار مدرسة مشيرفة" 
+            onError={(e) => { e.currentTarget.src = `${import.meta.env.BASE_URL}icon-512.png`; }}
             style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white' }}
           />
           <div>
