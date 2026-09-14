@@ -12,7 +12,6 @@ import PwaInstallPrompt from './components/PwaInstallPrompt';
 import NotificationPromptBanner from './components/NotificationPromptBanner';
 import SocraticHomeworkModal from './components/SocraticHomeworkModal';
 import CentralNotificationModal from './components/CentralNotificationModal';
-import { subscribeToSchoolNotifications } from './utils/notificationService';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
@@ -85,19 +84,15 @@ function App() {
     };
   }, []);
 
-  // Background listener for incoming school announcements & new posts to trigger phone notifications
-  useEffect(() => {
-    const unsub = subscribeToSchoolNotifications();
-    return () => {
-      if (typeof unsub === 'function') unsub();
-    };
-  }, []);
-
-  // Firebase Auto-Seeding on application mount (run once and cache in localStorage)
+  // Firebase Auto-Seeding: only run in admin view to avoid freezing client visits
   useEffect(() => {
     const seedFirebaseIfEmpty = async () => {
-      // If already seeded in this browser, skip redundant queries to optimize load time
+      // If already seeded in this browser, skip redundant queries
       if (localStorage.getItem('db_firestore_seeded_v1') === 'true') {
+        return;
+      }
+      // Never perform mass seeding queries for normal visitors browsing the site
+      if (!window.location.hash.includes('admin')) {
         return;
       }
 

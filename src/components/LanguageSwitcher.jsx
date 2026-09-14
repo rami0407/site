@@ -20,9 +20,8 @@ const LanguageSwitcher = () => {
 
   const [isTranslating, setIsTranslating] = useState(false);
 
-  // Initialize Google Translate Element
-  useEffect(() => {
-    // 1. Define global init callback
+  // Lazy-load Google Translate script only when Hebrew translation is actually requested
+  const ensureGoogleTranslateLoaded = () => {
     if (!window.googleTranslateElementInit) {
       window.googleTranslateElementInit = () => {
         if (window.google && window.google.translate) {
@@ -39,7 +38,6 @@ const LanguageSwitcher = () => {
       };
     }
 
-    // 2. Inject script if not already present
     if (!document.getElementById('google-translate-script')) {
       const script = document.createElement('script');
       script.id = 'google-translate-script';
@@ -48,7 +46,14 @@ const LanguageSwitcher = () => {
       script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
       document.body.appendChild(script);
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    // Only load if the user already had Hebrew preference saved
+    if (currentLang === 'iw') {
+      ensureGoogleTranslateLoaded();
+    }
+  }, [currentLang]);
 
   const changeLanguage = (targetLang) => {
     if (targetLang === currentLang) return;
@@ -60,6 +65,8 @@ const LanguageSwitcher = () => {
     } catch (e) {}
 
     if (targetLang === 'iw') {
+      ensureGoogleTranslateLoaded();
+
       // Set cookie for Hebrew
       const domain = window.location.hostname;
       document.cookie = `googtrans=/ar/iw; path=/;`;
@@ -77,10 +84,10 @@ const LanguageSwitcher = () => {
         // Reload to apply cookie translation
         setTimeout(() => {
           window.location.reload();
-        }, 200);
+        }, 300);
       }
     } else {
-      // Revert to Arabic (native original)
+      // Revert to Arabic (native original - zero Google Translate overhead)
       const domain = window.location.hostname;
       document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;

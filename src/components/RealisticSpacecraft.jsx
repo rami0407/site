@@ -5,17 +5,45 @@ import React, { useRef, useEffect, useState } from 'react';
  * Features mathematically aligned twin supersonic plasma thrusters and real-time Canvas particle smoke physics.
  */
 const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
+  const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const animFrameId = useRef(null);
 
-  // Twin Nozzle Particle Physics Engine
+  // IntersectionObserver: Suspend rendering entirely when scrolled out of view
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Twin Nozzle Particle Physics Engine - Only runs when launching or hovered AND visible in viewport
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const width = (canvas.width = 320);
     const height = (canvas.height = 380);
+
+    // If not visible or completely idle, immediately stop loop and clear canvas
+    if (!isVisible || (!isLaunching && !isHovered)) {
+      ctx.clearRect(0, 0, width, height);
+      if (animFrameId.current) {
+        cancelAnimationFrame(animFrameId.current);
+        animFrameId.current = null;
+      }
+      return;
+    }
 
     const particles = [];
     const sparks = [];
@@ -24,13 +52,13 @@ const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
       constructor(x, y, speedY, spreadX, isHeavy = false) {
         this.x = x + (Math.random() - 0.5) * spreadX;
         this.y = y;
-        this.vx = (Math.random() - 0.5) * (isHeavy ? 3.2 : 1.4);
-        this.vy = speedY + Math.random() * 2.6;
-        this.radius = isHeavy ? Math.random() * 10 + 8 : Math.random() * 6 + 4;
-        this.maxRadius = isHeavy ? Math.random() * 42 + 28 : Math.random() * 20 + 12;
-        this.growthRate = isHeavy ? 0.65 : 0.35;
-        this.alpha = isHeavy ? 0.85 : 0.5;
-        this.decay = isHeavy ? 0.012 : 0.022;
+        this.vx = (Math.random() - 0.5) * (isHeavy ? 3.0 : 1.2);
+        this.vy = speedY + Math.random() * 2.2;
+        this.radius = isHeavy ? Math.random() * 8 + 6 : Math.random() * 5 + 3;
+        this.maxRadius = isHeavy ? Math.random() * 36 + 22 : Math.random() * 18 + 10;
+        this.growthRate = isHeavy ? 0.6 : 0.3;
+        this.alpha = isHeavy ? 0.8 : 0.45;
+        this.decay = isHeavy ? 0.015 : 0.025;
         this.rotation = Math.random() * Math.PI * 2;
         this.rotSpeed = (Math.random() - 0.5) * 0.04;
         this.heat = 1.0;
@@ -46,7 +74,7 @@ const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
         }
         this.rotation += this.rotSpeed;
         this.alpha -= this.decay;
-        this.heat = Math.max(0, this.heat - 0.04);
+        this.heat = Math.max(0, this.heat - 0.05);
       }
 
       draw(c) {
@@ -80,11 +108,11 @@ const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
       constructor(x, y, vy) {
         this.x = x + (Math.random() - 0.5) * 16;
         this.y = y;
-        this.vx = (Math.random() - 0.5) * 4.5;
-        this.vy = vy + Math.random() * 5.5;
-        this.length = Math.random() * 9 + 4;
+        this.vx = (Math.random() - 0.5) * 4.0;
+        this.vy = vy + Math.random() * 4.5;
+        this.length = Math.random() * 8 + 3;
         this.alpha = 1;
-        this.decay = Math.random() * 0.04 + 0.02;
+        this.decay = Math.random() * 0.05 + 0.03;
         this.color = Math.random() > 0.3 ? '#fef08a' : '#f97316';
       }
 
@@ -108,9 +136,6 @@ const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
       }
     }
 
-    // Exact nozzle centers within the 320px wide canvas (offset by 50px left margin)
-    // Left nozzle: 50 + 95.7 = 145.7px
-    // Right nozzle: 50 + 120.6 = 170.6px
     const nozzleLeftX = 145.7;
     const nozzleRightX = 170.6;
     const emitterY = 6;
@@ -119,27 +144,24 @@ const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
       ctx.clearRect(0, 0, width, height);
 
       if (isLaunching) {
-        for (let i = 0; i < 3; i++) {
-          particles.push(new SmokeParticle(nozzleLeftX, emitterY, 4.8, 14, true));
-          particles.push(new SmokeParticle(nozzleRightX, emitterY, 4.8, 14, true));
+        if (particles.length < 36) {
+          for (let i = 0; i < 2; i++) {
+            particles.push(new SmokeParticle(nozzleLeftX, emitterY, 4.8, 14, true));
+            particles.push(new SmokeParticle(nozzleRightX, emitterY, 4.8, 14, true));
+          }
         }
-        for (let i = 0; i < 2; i++) {
-          sparks.push(new SparkParticle(nozzleLeftX, emitterY, 6.0));
-          sparks.push(new SparkParticle(nozzleRightX, emitterY, 6.0));
+        if (sparks.length < 20) {
+          sparks.push(new SparkParticle(nozzleLeftX, emitterY, 5.5));
+          sparks.push(new SparkParticle(nozzleRightX, emitterY, 5.5));
         }
       } else if (isHovered) {
-        if (Math.random() < 0.55) {
-          particles.push(new SmokeParticle(nozzleLeftX, emitterY, 2.4, 10, false));
-          particles.push(new SmokeParticle(nozzleRightX, emitterY, 2.4, 10, false));
+        if (particles.length < 20 && Math.random() < 0.5) {
+          particles.push(new SmokeParticle(nozzleLeftX, emitterY, 2.2, 10, false));
+          particles.push(new SmokeParticle(nozzleRightX, emitterY, 2.2, 10, false));
         }
-        if (Math.random() < 0.28) {
-          sparks.push(new SparkParticle(nozzleLeftX, emitterY, 3.8));
-          sparks.push(new SparkParticle(nozzleRightX, emitterY, 3.8));
-        }
-      } else {
-        if (Math.random() < 0.2) {
-          const nX = Math.random() > 0.5 ? nozzleLeftX : nozzleRightX;
-          particles.push(new SmokeParticle(nX, emitterY, 1.2, 6, false));
+        if (sparks.length < 12 && Math.random() < 0.25) {
+          sparks.push(new SparkParticle(nozzleLeftX, emitterY, 3.5));
+          sparks.push(new SparkParticle(nozzleRightX, emitterY, 3.5));
         }
       }
 
@@ -163,20 +185,29 @@ const RealisticSpacecraft = ({ isLaunching, onLaunch }) => {
         }
       }
 
+      // If active state ceased and particles have finished fading, end loop to save CPU
+      if (!isLaunching && !isHovered && particles.length === 0 && sparks.length === 0) {
+        ctx.clearRect(0, 0, width, height);
+        animFrameId.current = null;
+        return;
+      }
+
       animFrameId.current = requestAnimationFrame(render);
     };
 
-    render();
+    animFrameId.current = requestAnimationFrame(render);
 
     return () => {
       if (animFrameId.current) {
         cancelAnimationFrame(animFrameId.current);
+        animFrameId.current = null;
       }
     };
-  }, [isLaunching, isHovered]);
+  }, [isLaunching, isHovered, isVisible]);
 
   return (
     <div 
+      ref={containerRef}
       className={`spacecraft-container ${isLaunching ? 'launch-liftoff' : 'idle-hover'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

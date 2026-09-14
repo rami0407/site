@@ -135,36 +135,38 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      if (window.scrollY > 40) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const isScrolled = window.scrollY > 40;
+          setScrolled(prev => (prev !== isScrolled ? isScrolled : prev));
 
-      const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
-      const isOnCustomPage = window.location.hash.startsWith('#/page/') || window.location.hash.startsWith('#page/') || systemTargets.some(t => window.location.hash.includes(t));
-      if (!isOnCustomPage && mainNavItems.length > 0) {
-        const sections = mainNavItems
-          .filter(item => item.type === 'section')
-          .map(item => document.getElementById(item.target));
+          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
+          const hash = window.location.hash;
+          const isOnCustomPage = hash.startsWith('#/page/') || hash.startsWith('#page/') || systemTargets.some(t => hash.includes(t));
 
-        const scrollPosition = window.scrollY + 120;
+          if (!isOnCustomPage && mainNavItems.length > 0) {
+            const sectionItems = mainNavItems.filter(item => item.type === 'section');
+            const scrollPosition = window.scrollY + 120;
 
-        for (let i = sections.length - 1; i >= 0; i--) {
-          const section = sections[i];
-          if (section && section.offsetTop <= scrollPosition) {
-            const sectionItem = mainNavItems.filter(item => item.type === 'section')[i];
-            if (sectionItem) {
-              setActiveSection(sectionItem.target);
+            for (let i = sectionItems.length - 1; i >= 0; i--) {
+              const item = sectionItems[i];
+              const section = document.getElementById(item.target);
+              if (section && section.offsetTop <= scrollPosition) {
+                setActiveSection(prev => (prev !== item.target ? item.target : prev));
+                break;
+              }
             }
-            break;
           }
-        }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [mainNavItems]);
 

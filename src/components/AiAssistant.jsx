@@ -103,6 +103,7 @@ const AiAssistant = () => {
   const [lastApiError, setLastApiError] = useState(null);
   
   const chatEndRef = useRef(null);
+  const contextLoadedRef = useRef(false);
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
@@ -111,8 +112,11 @@ const AiAssistant = () => {
     }
   }, [messages, isTyping]);
 
-  // Compile school data context on mount
+  // Lazy-load school data context and API keys ONLY when the user actually opens the chat modal
   useEffect(() => {
+    if (!isOpen || contextLoadedRef.current) return;
+    contextLoadedRef.current = true;
+
     const compileContext = async () => {
       try {
         let context = "أنت المساعد الرقمي الذكي والموسوعة التعليمية والتربوية الشاملة لمدرسة مشيرفة الابتدائية (Musheirifa Elementary School). مدير المدرسة هو الأستاذ رامي ارفاعية.\n\n" +
@@ -215,7 +219,7 @@ const AiAssistant = () => {
 
     fetchApiKey();
     compileContext();
-  }, []);
+  }, [isOpen]);
 
   const fetchWithTimeout = async (url, options = {}, timeoutMs = 6000) => {
     const controller = new AbortController();

@@ -9,15 +9,19 @@ const FloatingActions = () => {
                        window.navigator.standalone === true;
     setIsStandalone(standalone);
 
+    let ticking = false;
     const toggleVisibility = () => {
-      if (window.scrollY > 300) {
-        setScrollTopVisible(true);
-      } else {
-        setScrollTopVisible(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldShow = window.scrollY > 300;
+          setScrollTopVisible(prev => (prev !== shouldShow ? shouldShow : prev));
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
+    window.addEventListener('scroll', toggleVisibility, { passive: true });
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
