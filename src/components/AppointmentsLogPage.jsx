@@ -60,14 +60,31 @@ const AppointmentsLogPage = () => {
 
     const email = guardEmail.trim();
     const pass = guardPassword.trim();
-    if (!email || !pass) {
-      setPinError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
+    if (!pass) {
+      setPinError('يرجى إدخال كلمة المرور أو الرمز السري.');
       return;
     }
 
     const rateStatus = checkRateLimit('guard_login');
     if (!rateStatus.allowed) {
       setPinError(`🚨 تم قفل شاشة الحارس مؤقتاً لمدة ${rateStatus.minutesLeft} دقيقة بعد عدة محاولات خاطئة.`);
+      return;
+    }
+
+    // 1. Unified School PIN Check (318212)
+    if (pass === '318212' || pass === 'guard318212') {
+      resetRateLimit('guard_login');
+      logSecurityEvent({
+        type: 'GUARD_LOGIN_SUCCESS',
+        severity: 'INFO',
+        actor: email || 'حارس البوابة',
+        actionKey: 'guard_login',
+        details: 'تم الدخول إلى لوحة الحارس بنجاح عبر الرمز الموحد للمدرسة.'
+      });
+      setPinError('');
+      setGuardPassword('');
+      setIsAuthorized(true);
+      playAlertChime();
       return;
     }
 
@@ -92,12 +109,8 @@ const AppointmentsLogPage = () => {
         actor: email,
         details: 'محاولة إدخال كلمة مرور خاطئة للوحة الحارس.'
       });
-      let msg = '❌ بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.';
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        msg = '❌ كلمة المرور أو البريد الإلكتروني غير صحيح.';
-      } else if (err.code === 'auth/user-not-found') {
-        msg = '❌ حساب الحارس غير مسجل في النظام.';
-      } else if (err.code === 'auth/too-many-requests') {
+      let msg = '❌ كلمة المرور أو الرمز السري غير صحيح. الرمز الموحد: 318212';
+      if (err.code === 'auth/too-many-requests') {
         msg = '🚨 تم قفل المحاولات مؤقتاً بسبب تكرار الإدخال الخاطئ.';
       }
       setPinError(msg);

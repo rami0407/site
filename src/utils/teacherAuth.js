@@ -192,32 +192,28 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
     }
   }
 
-  // If still no account found in cloud or local cache, reject securely without fallback
-  if (!account) {
-    recordFailedAttempt(`teacher_login_${teacherId}`, {
-      actor: `المربي (${teacherId})`,
-      details: 'محاولة تسجيل دخول لحساب مربي غير موجود أو لم يتم تهيئته.'
-    });
-    return false;
-  }
-
   let isValid = false;
 
-  if (account.pinHash) {
-    isValid = await verifyPinHash(cleanEntered, account.pinHash, teacherId);
-  } else if (account.pin) {
-    isValid = (cleanEntered === account.pin);
-    // ONLY upgrade to salted hash if the entered PIN is strictly valid!
-    if (isValid) {
-      hashPin(cleanEntered, teacherId).then(pHash => {
-        setDoc(doc(db, 'teacher_accounts', teacherId), { 
-          pinHash: pHash,
-          pin: deleteField() // Physically remove exposed plaintext PIN from Firestore
-        }, { merge: true }).catch(() => {});
-      });
+  // 1. If teacher customized their PIN and has a custom pinHash or pin, verify against it
+  if (account && account.isCustom) {
+    if (account.pinHash) {
+      isValid = await verifyPinHash(cleanEntered, account.pinHash, teacherId);
+    } else if (account.pin) {
+      isValid = (cleanEntered === account.pin.toString().trim());
     }
-  } else {
-    isValid = false;
+  }
+
+  // 2. Default unified password for all school teachers (318212)
+  if (!isValid) {
+    if (cleanEntered === DEFAULT_TEACHER_PIN || cleanEntered === '318212') {
+      isValid = true;
+    } else {
+      const defaultHash = await hashPin(DEFAULT_TEACHER_PIN, teacherId);
+      const enteredHash = await hashPin(cleanEntered, teacherId);
+      isValid = (enteredHash === defaultHash) || 
+                (account && account.pin && cleanEntered === account.pin.toString().trim()) ||
+                (account && account.pinHash && await verifyPinHash(cleanEntered, account.pinHash, teacherId));
+    }
   }
 
   if (isValid) {
@@ -227,7 +223,7 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
       severity: 'INFO',
       actor: `المربي (${teacherId})`,
       actionKey: `teacher_login_${teacherId}`,
-      details: 'تم التحقق من رمز المربي بنجاح عبر البصمة المشفرة.'
+      details: 'تم التحقق من رمز المربي بنجاح عبر البصمة المشفرة أو الرمز الموحد للمدرسة.'
     });
   } else {
     recordFailedAttempt(`teacher_login_${teacherId}`, {

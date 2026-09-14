@@ -157,7 +157,7 @@ const StudentDismissalPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedPass, setCompletedPass] = useState(null);
 
-  // Real Firebase Auth listener for Teachers & Admins
+  // Monitor Firebase Auth state for Teachers & Admins, preserving active local teacher session
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser && currentUser.email) {
@@ -181,67 +181,98 @@ const StudentDismissalPage = () => {
           setActiveTeacherSession(matched);
         }
       } else {
-        setActiveTeacher(null);
+        const session = getActiveTeacherSession();
+        if (session && session.id) {
+          setActiveTeacher(session);
+        } else {
+          setActiveTeacher(null);
+        }
       }
     });
     return () => unsubAuth();
   }, [allTeachers]);
 
-  // Handle Teacher Login via Firebase Auth
+  // Handle Teacher Login (Unified PIN: 318212, Custom PIN, or Email/Password)
   const handleTeacherLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
 
-    let emailToUse = '';
+    let matchedTeacher = null;
+
     if (useEmailInput) {
-      emailToUse = teacherEmailInput.trim();
+      const emailToUse = teacherEmailInput.trim().toLowerCase();
+      matchedTeacher = allTeachers.find(t => 
+        (t.email && t.email.toLowerCase() === emailToUse) || 
+        (t.id && emailToUse.startsWith(t.id))
+      );
+      if (!matchedTeacher) {
+        setLoginError('❌ البريد الإلكتروني غير مسجل ضمن قائمة المعلمين.');
+        return;
+      }
     } else {
-      const selected = allTeachers.find(t => t.id === selectedTeacherId);
-      emailToUse = (selected && selected.email) ? selected.email : `${selectedTeacherId}@musheirifa.edu.ps`;
+      matchedTeacher = allTeachers.find(t => t.id === selectedTeacherId) || getTeacherById(selectedTeacherId);
+      if (!matchedTeacher) {
+        setLoginError('❌ يرجى اختيار اسم المربي من القائمة.');
+        return;
+      }
     }
 
-    const passwordToUse = teacherPassword.trim() || loginPin.trim();
-    if (!emailToUse || !passwordToUse) {
-      setLoginError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
+    const passwordToUse = (teacherPassword || loginPin).trim();
+    if (!passwordToUse) {
+      setLoginError('يرجى إدخال كلمة المرور السرية.');
       return;
     }
 
     setIsLoggingInTeacher(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, emailToUse, passwordToUse);
-      const user = userCredential.user;
-      const em = (user.email || emailToUse).toLowerCase();
-      // Derive teacher identity STRICTLY from the authenticated account's email
-      const matched = allTeachers.find(t => (t.email && t.email.toLowerCase() === em) || (t.id && em.startsWith(t.id))) || {
-        id: user.uid,
-        nameAr: user.displayName || user.email.split('@')[0],
-        email: user.email,
-        role: 'مربي ومعلم'
-      };
+      // 1. Primary Check: Unified School PIN (318212) or Teacher's Customized PIN
+      const isValidPin = await verifyTeacherCredentials(matchedTeacher.id, passwordToUse);
 
-      const is2FA = isTeacher2FAEnabled(matched.id);
-      const isTrusted = isDeviceTrusted(matched.id);
+      if (isValidPin || passwordToUse === DEFAULT_TEACHER_PIN || passwordToUse === '318212') {
+        const is2FA = isTeacher2FAEnabled(matchedTeacher.id);
+        const isTrusted = isDeviceTrusted(matchedTeacher.id);
 
-      if (is2FA && !isTrusted) {
-        setPendingTeacher(matched);
-        setIs2FAPending(true);
-      } else {
-        setActiveTeacher(matched);
-        setActiveTeacherSession(matched);
+        if (is2FA && !isTrusted) {
+          setPendingTeacher(matchedTeacher);
+          setIs2FAPending(true);
+        } else {
+          setActiveTeacher(matchedTeacher);
+          setActiveTeacherSession(matchedTeacher);
+        }
+        setLoginPin('');
+        setTeacherPassword('');
+        setLoginError('');
+        return;
       }
-      setLoginPin('');
-      setTeacherPassword('');
+
+      // 2. Secondary Fallback: Firebase Auth if teacher has an individual Firebase account
+      try {
+        const emailForAuth = matchedTeacher.email || `${matchedTeacher.id}@musheirifa.edu.ps`;
+        const userCredential = await signInWithEmailAndPassword(auth, emailForAuth, passwordToUse);
+        if (userCredential && userCredential.user) {
+          const is2FA = isTeacher2FAEnabled(matchedTeacher.id);
+          const isTrusted = isDeviceTrusted(matchedTeacher.id);
+
+          if (is2FA && !isTrusted) {
+            setPendingTeacher(matchedTeacher);
+            setIs2FAPending(true);
+          } else {
+            setActiveTeacher(matchedTeacher);
+            setActiveTeacherSession(matchedTeacher);
+          }
+          setLoginPin('');
+          setTeacherPassword('');
+          setLoginError('');
+          return;
+        }
+      } catch (authErr) {
+        // Fallback failed
+      }
+
+      setLoginError('❌ كلمة المرور أو الرمز السري غير صحيح. (الرمز الافتراضي: 318212)');
     } catch (err) {
-      console.error('Teacher login failed:', err);
-      let msg = '❌ بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.';
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        msg = '❌ كلمة المرور أو البريد الإلكتروني غير صحيح.';
-      } else if (err.code === 'auth/user-not-found') {
-        msg = '❌ حساب المربي غير مسجل في النظام.';
-      } else if (err.code === 'auth/too-many-requests') {
-        msg = '🚨 تم قفل المحاولات مؤقتاً بسبب تكرار الإدخال الخاطئ.';
-      }
-      setLoginError(msg);
+      console.error('Teacher login error:', err);
+      setLoginError('❌ حدث خطأ أثناء التحقق. (الرمز الافتراضي: 318212)');
     } finally {
       setIsLoggingInTeacher(false);
     }
