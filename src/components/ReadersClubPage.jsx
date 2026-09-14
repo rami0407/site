@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { 
   collection, 
   addDoc, 
-  getDocs, 
   updateDoc, 
   doc, 
   increment, 
@@ -117,19 +116,10 @@ const ReadersClubPage = () => {
   const [activeBuddyBook, setActiveBuddyBook] = useState({ title: '', author: '' });
   const [showStoryStudioModal, setShowStoryStudioModal] = useState(false);
   const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'books' | 'leaders' | 'featured'
-  const [isTreeAnimated, setIsTreeAnimated] = useState(true);
 
   // Passport / Certificate Student Selector
-  const [selectedStudentForCert, setSelectedStudentForCert] = useState(null);
   const [certStudentName, setCertStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
   const [certStudentClass, setCertStudentClass] = useState('الصف الرابع (أ)');
-
-  // Quick Celebration Toast
-  const [toastMessage, setToastMessage] = useState('');
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 4000);
-  };
 
   // Reader Log Form Config from Firestore (e.g., target goal)
   useEffect(() => {
@@ -182,6 +172,7 @@ const ReadersClubPage = () => {
   const [rating, setRating] = useState(5);
   const [takeaway, setTakeaway] = useState('');
   const [learnedExpressions, setLearnedExpressions] = useState('');
+  const [favoriteCharacter, setFavoriteCharacter] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiSummarizing, setIsAiSummarizing] = useState(false);
 
@@ -226,7 +217,9 @@ const ReadersClubPage = () => {
         osc.start(ctx.currentTime + idx * 0.12);
         osc.stop(ctx.currentTime + idx * 0.12 + 0.4);
       });
-    } catch (e) {}
+    } catch {
+      // Audio playback failure is non-fatal
+    }
   };
 
   // Real-time Firestore sync
@@ -265,7 +258,6 @@ const ReadersClubPage = () => {
   const targetGoal = config.targetGoal || 1000;
   const baseCount = config.baseCount !== undefined ? config.baseCount : 345;
   const totalBooksRead = baseCount + logs.length;
-  const progressPercent = Math.min(100, Math.round((totalBooksRead / targetGoal) * 100));
 
   // Filtered Logs
   const filteredLogs = logs.filter((item) => {
