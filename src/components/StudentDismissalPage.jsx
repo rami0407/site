@@ -22,7 +22,6 @@ import {
 } from '../utils/teacherAuth';
 import { getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
 import { generateDataSignature } from '../utils/cryptoVault';
-import { authenticateStaffSession } from '../utils/staffAuthBridge';
 import './StudentDismissalPage.css';
 
 const CLASSROOM_OPTIONS = [
@@ -162,13 +161,6 @@ const StudentDismissalPage = () => {
     };
   }, []);
 
-  // Ensure Firebase Auth session is active whenever teacher is logged in
-  useEffect(() => {
-    if (activeTeacher) {
-      authenticateStaffSession();
-    }
-  }, [activeTeacher]);
-
   // Handle Teacher Login (Stage 1: Verify Name & PIN)
   const handleTeacherLogin = async (e) => {
     e.preventDefault();
@@ -199,7 +191,6 @@ const StudentDismissalPage = () => {
       }
 
       // Direct Login (trusted device or 2FA not enabled yet)
-      authenticateStaffSession();
       if (rememberDevice) {
         setActiveTeacherSession(teacher);
       }
@@ -227,7 +218,6 @@ const StudentDismissalPage = () => {
     try {
       const res = await verifyTeacher2FACode(pendingTeacher.id, cleanCode);
       if (res.success) {
-        authenticateStaffSession();
         if (trustDevice30Days) {
           setDeviceTrusted(pendingTeacher.id, true);
         }
@@ -410,6 +400,7 @@ const StudentDismissalPage = () => {
       teacherName: activeTeacher.nameAr,
       teacherNameAr: activeTeacher.nameAr,
       teacherRole: activeTeacher.role || 'مربي ومعلم',
+      teacherEmail: activeTeacher.email || (activeTeacher.id + '@musheirifa.edu.ps'),
       reason,
       reasonDetails: reasonDetails.trim(),
       companionType,
@@ -445,7 +436,6 @@ const StudentDismissalPage = () => {
     };
 
     try {
-      await authenticateStaffSession();
       let docId = 'dis_' + Date.now();
       
       try {

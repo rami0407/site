@@ -1,6 +1,6 @@
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { db } from '../firebase';
-import { collection, doc, setDoc, getDocs, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, getDocs, onSnapshot, addDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { generateBase32Secret, verifyTOTPCode } from './totp';
 import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verifyPinHash } from './cryptoVault';
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
@@ -177,21 +177,47 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
   }
 
   const cleanEntered = enteredPin.trim();
-  const account = cloudAccountsCache[teacherId] || {};
-  let isValid;
+  let account = cloudAccountsCache[teacherId];
+
+  // If account is not yet loaded in cache, fetch directly from Firestore (never blindly fallback to default PIN)
+  if (!account) {
+    try {
+      const docSnap = await getDoc(doc(db, 'teacher_accounts', teacherId));
+      if (docSnap.exists()) {
+        account = docSnap.data();
+        cloudAccountsCache[teacherId] = account;
+      }
+    } catch (e) {
+      console.warn('Teacher cloud account direct fetch notice:', e);
+    }
+  }
+
+  // If still no account found in cloud or local cache, reject securely without fallback
+  if (!account) {
+    recordFailedAttempt(`teacher_login_${teacherId}`, {
+      actor: `المربي (${teacherId})`,
+      details: 'محاولة تسجيل دخول لحساب مربي غير موجود أو لم يتم تهيئته.'
+    });
+    return false;
+  }
+
+  let isValid = false;
 
   if (account.pinHash) {
     isValid = await verifyPinHash(cleanEntered, account.pinHash, teacherId);
-  } else if (account.pin && account.pin !== DEFAULT_TEACHER_PIN) {
-    isValid = cleanEntered === account.pin;
-    // Upgrade legacy plaintext to salted pinHash in background
-    hashPin(cleanEntered, teacherId).then(pHash => {
-      setDoc(doc(db, 'teacher_accounts', teacherId), { pinHash: pHash }, { merge: true }).catch(() => {});
-    });
+  } else if (account.pin) {
+    isValid = (cleanEntered === account.pin);
+    // ONLY upgrade to salted hash if the entered PIN is strictly valid!
+    if (isValid) {
+      hashPin(cleanEntered, teacherId).then(pHash => {
+        setDoc(doc(db, 'teacher_accounts', teacherId), { 
+          pinHash: pHash,
+          pin: deleteField() // Physically remove exposed plaintext PIN from Firestore
+        }, { merge: true }).catch(() => {});
+      });
+    }
   } else {
-    const defaultHash = await hashPin(DEFAULT_TEACHER_PIN, teacherId);
-    const enteredHash = await hashPin(cleanEntered, teacherId);
-    isValid = enteredHash === defaultHash;
+    isValid = false;
   }
 
   if (isValid) {
@@ -533,19 +559,18 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
     ...(cloudAccountsCache[teacherId] || {}),
     id: teacherId,
     teacherNameAr: teacherName,
-    pin: cleanPin,
+    pinHash,
     isCustom: cleanPin !== DEFAULT_TEACHER_PIN,
     updatedAt: nowStr,
     updatedBy
   };
-
-  const pinHash = await hashPin(cleanPin, teacherId);
 
   try {
     await setDoc(doc(db, 'teacher_accounts', teacherId), {
       id: teacherId,
       nameAr: teacherName,
       nameHe: teacher ? teacher.nameHe : '',
+      pin: deleteField(), // Physically delete legacy plaintext pin from Firestore
       pinHash,
       isCustom: cleanPin !== DEFAULT_TEACHER_PIN,
       updatedAt: nowStr,
@@ -618,6 +643,7 @@ export const resetTeacherPinToDefault = async (teacherId, resetBy = 'إدارة 
       id: teacherId,
       nameAr: teacherName,
       nameHe: teacher ? teacher.nameHe : '',
+      pin: deleteField(), // Physically delete legacy plaintext pin from Firestore
       pinHash: defaultHash,
       isCustom: false,
       updatedAt: nowStr,

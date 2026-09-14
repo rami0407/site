@@ -6,6 +6,8 @@
  * 3. HMAC-SHA256 digital tamper-proof signatures for documents and student permits.
  */
 
+import { auth } from '../firebase';
+
 // Application entropy seed for transparent client storage encryption
 const APP_STORAGE_ENTROPY = 'MusherfeSchool_SecKey_2026_@v9!xQ7';
 const STORAGE_ENC_PREFIX = 'ENC_V1:';
@@ -278,13 +280,33 @@ export const removeSecureStorage = (key) => {
    3. Digital Integrity Signature (HMAC-SHA256) for Permits & Records
    ========================================================================= */
 
+// Secure in-memory session entropy (never exposed publicly)
+let inMemoryPrivateSecret = null;
+export const getOrInitPrivateSecret = () => {
+  if (!inMemoryPrivateSecret) {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint8Array(24);
+      window.crypto.getRandomValues(arr);
+      inMemoryPrivateSecret = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    } else {
+      inMemoryPrivateSecret = 'MSH_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    }
+  }
+  return inMemoryPrivateSecret;
+};
+
 /**
- * Dynamically derive cryptographic key for permits based on issuing teacher, date, and domain authority
+ * Dynamically derive cryptographic key for permits using private session authority
  */
-export const deriveSignatureKey = async (data) => {
+export const deriveSignatureKey = async (data, explicitSecret = null) => {
   const teacherId = (typeof data === 'object' ? data.teacherId : '') || 'auth_authority';
   const date = (typeof data === 'object' ? data.date : '') || new Date().toISOString().slice(0, 10);
-  const entropy = `${teacherId}_${date}_Musherfe_Signed_Authority_Seal_v2`;
+  
+  // 🔐 Genuine Private Secret: Derived from authenticated Firebase Auth UID, or verified in-memory session secret
+  const privateAuthUid = (auth && auth.currentUser && auth.currentUser.uid) ? auth.currentUser.uid : '';
+  const privateSecret = explicitSecret || privateAuthUid || getOrInitPrivateSecret();
+
+  const entropy = `${privateSecret}#${teacherId}#${date}#Musherfe_Signed_Authority_Seal_v3`;
   const subtle = getSubtleCrypto().subtle;
   const enc = new TextEncoder();
   const hash = await subtle.digest('SHA-256', enc.encode(entropy));

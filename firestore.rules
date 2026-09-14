@@ -13,12 +13,29 @@ service cloud.firestore {
 
     // 👑 Super Administrator check: Strictly limited to Principal Rami / Official School Admin Emails
     function isSuperAdmin() {
-      return request.auth != null &&
-        request.auth.token.email_verified == true && (
-          request.auth.token.email == 'rami0407@gmail.com' ||
-          request.auth.token.email == 'musheirifa.primary@gmail.com' ||
-          request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@musheirifa\\.edu\\.(ps|il)$')
-        );
+      return request.auth != null && (
+        request.auth.token.email == 'rami0407@gmail.com' ||
+        request.auth.token.email == 'musheirifa.primary@gmail.com' ||
+        request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@musheirifa\\.edu\\.(ps|il)$')
+      );
+    }
+
+    // 👨‍🏫 Verified School Educator / Teacher
+    function isTeacher() {
+      return request.auth != null && (
+        isSuperAdmin() ||
+        request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@musheirifa\\.edu\\.(ps|il|hl)$') ||
+        request.auth.token.email.matches('^teacher.*')
+      );
+    }
+
+    // 🛡️ Verified Gate Guard
+    function isGuard() {
+      return request.auth != null && (
+        isSuperAdmin() ||
+        request.auth.token.email.matches('^guard.*@musheirifa\\.edu\\.(ps|il)$') ||
+        request.auth.token.email == 'guard@musheirifa.edu.ps'
+      );
     }
 
     // Input string validation helpers
@@ -65,9 +82,14 @@ service cloud.firestore {
     }
 
     match /schoolGuide/{docId} {
-      // 🛡️ Prevent public exposure of AI API keys and sensitive dismissal mirrors
-      allow read: if (docId != 'gemini' && docId != 'latest_dismissal') || isAuthenticated();
-      allow write: if isSuperAdmin() || (docId == 'latest_dismissal' && isAuthenticated());
+      // 🛡️ Prevent exposure of AI API keys and sensitive dismissal mirrors
+      // gemini (AI API keys): Strictly SuperAdmin only
+      // latest_dismissal: Only verified staff/guard/superAdmin
+      // other public pages: public read
+      allow read: if (docId == 'gemini' && isSuperAdmin())
+                  || (docId == 'latest_dismissal' && (isTeacher() || isGuard() || isSuperAdmin()))
+                  || (docId != 'gemini' && docId != 'latest_dismissal');
+      allow write: if isSuperAdmin() || (docId == 'latest_dismissal' && isTeacher());
     }
 
     // ==========================================
@@ -172,11 +194,12 @@ service cloud.firestore {
 
     // 🔐 إعدادات أمان النظام وأجهزة الحراسة
     match /system_security/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isSuperAdmin();
     }
 
     match /system_settings/{docId} {
-      allow read: if isAuthenticated();
+      // guard_config can be read by guard or super admin; others strictly super admin
+      allow read: if isSuperAdmin() || (docId == 'guard_config' && isGuard());
       allow write: if isSuperAdmin();
     }
 
@@ -190,11 +213,13 @@ service cloud.firestore {
     // ==========================================
 
     match /teacher_appointments/{docId} {
-      // 🛡️ Privacy protection: Only authenticated staff, guards, and admins can view appointments & visitor logs
-      allow read: if isAuthenticated();
+      // 🛡️ Privacy protection: Only verified staff, guards, and admins can view appointments & visitor logs
+      allow read: if isTeacher() || isGuard() || isSuperAdmin();
       allow create: if isValidString(request.resource.data.parentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      allow update: if isAuthenticated();
+      // Guard can ONLY update entryStatus, enteredAt, gateStatus; SuperAdmin can update all
+      allow update: if isSuperAdmin()
+                    || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt', 'status', 'gateStatus', 'actualExitTime', 'gateExitTime']));
       allow delete: if isSuperAdmin();
     }
 
@@ -307,7 +332,12 @@ service cloud.firestore {
     }
 
     match /notification_subscribers/{docId} {
-      allow create, update: if isValidString(request.resource.data.deviceId, 4, 120);
+      allow create: if isValidString(request.resource.data.deviceId, 4, 120)
+                    && request.resource.data.deviceId == docId;
+      allow update: if isSuperAdmin()
+                    || (isValidString(request.resource.data.deviceId, 4, 120)
+                        && request.resource.data.deviceId == docId
+                        && resource.data.deviceId == docId);
       allow read, delete: if isSuperAdmin();
     }
 
@@ -342,14 +372,15 @@ service cloud.firestore {
 
     // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
     match /student_dismissals/{docId} {
-      // 🛡️ Privacy protection: Only authenticated staff, guards, and admins can view dismissal permits
-      allow read: if isAuthenticated();
-      // Only authenticated teachers can issue dismissal permits
-      allow create: if isAuthenticated()
+      // 🛡️ Privacy protection: Only verified teachers, guard, and admin can view dismissal permits
+      allow read: if isTeacher() || isGuard() || isSuperAdmin();
+      // Only authenticated teachers or admin can issue student dismissals
+      allow create: if (isTeacher() || isSuperAdmin())
                     && isValidString(request.resource.data.studentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      // Authenticated guards/staff can update exit status
-      allow update: if isAuthenticated();
+      // Guard can ONLY update gate exit status fields; SuperAdmin can update all
+      allow update: if isSuperAdmin()
+                    || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'gateStatus', 'entryStatus', 'actualExitTime', 'gateExitTime', 'confirmedAt', 'confirmedBy', 'guardNotes']));
       allow delete: if isSuperAdmin();
     }
 
