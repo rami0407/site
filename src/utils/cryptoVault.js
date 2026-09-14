@@ -6,7 +6,8 @@
  * 3. HMAC-SHA256 digital tamper-proof signatures for documents and student permits.
  */
 
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Application entropy seed for transparent client storage encryption
 const APP_STORAGE_ENTROPY = 'MusherfeSchool_SecKey_2026_@v9!xQ7';
@@ -280,16 +281,37 @@ export const removeSecureStorage = (key) => {
    3. Digital Integrity Signature (HMAC-SHA256) for Permits & Records
    ========================================================================= */
 
+let cachedAuthorityKey = null;
+
 /**
- * Dynamically derive cryptographic signature key from authenticated staff session
+ * Retrieve shared school authority key from Firestore (readable only by authenticated staff/guard/admin)
+ */
+export const getOrFetchAuthorityKey = async () => {
+  if (cachedAuthorityKey) return cachedAuthorityKey;
+  try {
+    const snap = await getDoc(doc(db, 'system_security', 'authority_key'));
+    if (snap.exists() && snap.data().secretKey) {
+      cachedAuthorityKey = snap.data().secretKey;
+      return cachedAuthorityKey;
+    }
+  } catch (e) {
+    // Falls through to session authority
+  }
+  return null;
+};
+
+/**
+ * Dynamically derive cryptographic signature key using school authority secret or authenticated session
  */
 export const deriveSignatureKey = async (data, explicitSecret = null) => {
   const teacherId = (typeof data === 'object' ? data.teacherId : '') || 'auth_authority';
   const date = (typeof data === 'object' ? (data.date || data.departureDate) : '') || new Date().toISOString().slice(0, 10);
-  const sessionUid = (auth && auth.currentUser && auth.currentUser.uid) ? auth.currentUser.uid : 'auth_session';
-  const baseSecret = explicitSecret || sessionUid;
+  
+  const cloudAuthority = await getOrFetchAuthorityKey();
+  const sessionUid = (auth && auth.currentUser && auth.currentUser.uid) ? auth.currentUser.uid : '';
+  const baseSecret = explicitSecret || cloudAuthority || sessionUid || 'auth_session';
 
-  const entropy = `${baseSecret}#${teacherId}#${date}#Permit_Seal`;
+  const entropy = `${baseSecret}#${teacherId}#${date}#Musherfe_Authority_HMAC_v4`;
   const subtle = getSubtleCrypto().subtle;
   const enc = new TextEncoder();
   const hash = await subtle.digest('SHA-256', enc.encode(entropy));

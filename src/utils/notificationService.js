@@ -194,6 +194,7 @@ export const requestNotificationPermission = async () => {
         await setDoc(doc(db, 'notification_subscribers', deviceId), {
           deviceId,
           secretToken,
+          secretTokenProof: secretToken,
           platform: meta.platform,
           browser: meta.browser,
           deviceType: meta.deviceType,

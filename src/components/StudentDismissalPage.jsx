@@ -169,7 +169,19 @@ const StudentDismissalPage = () => {
           email: currentUser.email,
           role: 'مربي ومعلم'
         };
-        setActiveTeacher(matched);
+
+        const is2FA = isTeacher2FAEnabled(matched.id);
+        const isTrusted = isDeviceTrusted(matched.id);
+
+        if (is2FA && !isTrusted) {
+          setPendingTeacher(matched);
+          setIs2FAPending(true);
+        } else {
+          setActiveTeacher(matched);
+          setActiveTeacherSession(matched);
+        }
+      } else {
+        setActiveTeacher(null);
       }
     });
     return () => unsubAuth();
@@ -198,14 +210,25 @@ const StudentDismissalPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, emailToUse, passwordToUse);
       const user = userCredential.user;
-      const matched = allTeachers.find(t => t.id === selectedTeacherId) || {
+      const em = (user.email || emailToUse).toLowerCase();
+      // Derive teacher identity STRICTLY from the authenticated account's email
+      const matched = allTeachers.find(t => (t.email && t.email.toLowerCase() === em) || (t.id && em.startsWith(t.id))) || {
         id: user.uid,
         nameAr: user.displayName || user.email.split('@')[0],
         email: user.email,
         role: 'مربي ومعلم'
       };
-      setActiveTeacher(matched);
-      setActiveTeacherSession(matched);
+
+      const is2FA = isTeacher2FAEnabled(matched.id);
+      const isTrusted = isDeviceTrusted(matched.id);
+
+      if (is2FA && !isTrusted) {
+        setPendingTeacher(matched);
+        setIs2FAPending(true);
+      } else {
+        setActiveTeacher(matched);
+        setActiveTeacherSession(matched);
+      }
       setLoginPin('');
       setTeacherPassword('');
     } catch (err) {
@@ -423,10 +446,11 @@ const StudentDismissalPage = () => {
       classroom,
       studentClass: classroom,
       teacherId: activeTeacher.id,
+      teacherUid: (auth && auth.currentUser) ? auth.currentUser.uid : activeTeacher.id,
       teacherName: activeTeacher.nameAr,
       teacherNameAr: activeTeacher.nameAr,
       teacherRole: activeTeacher.role || 'مربي ومعلم',
-      teacherEmail: activeTeacher.email || (activeTeacher.id + '@musheirifa.edu.ps'),
+      teacherEmail: (auth && auth.currentUser && auth.currentUser.email) ? auth.currentUser.email : (activeTeacher.email || `${activeTeacher.id}@musheirifa.edu.ps`),
       reason,
       reasonDetails: reasonDetails.trim(),
       companionType,
@@ -681,7 +705,11 @@ const StudentDismissalPage = () => {
           <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'center' }}>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await signOut(auth);
+                } catch (e) {}
+                logoutTeacherSession();
                 setIs2FAPending(false);
                 setPendingTeacher(null);
                 setTwoFactorCode('');

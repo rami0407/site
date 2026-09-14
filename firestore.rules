@@ -22,12 +22,13 @@ service cloud.firestore {
         );
     }
 
-    // 🛡️ Verified Gate Guard: Dedicated gate guard account only
+    // 🛡️ Verified Gate Guard: Dedicated gate guard account only with verified email
     function isGuard() {
-      return request.auth != null && (
-        request.auth.token.email == 'guard@musheirifa.edu.ps' ||
-        request.auth.token.email == 'gate.guard@musheirifa.edu.ps'
-      );
+      return request.auth != null &&
+        request.auth.token.email_verified == true && (
+          request.auth.token.email == 'guard@musheirifa.edu.ps' ||
+          request.auth.token.email == 'gate.guard@musheirifa.edu.ps'
+        );
     }
 
     // 👨‍🏫 Verified School Educator / Teacher: Must be verified school domain email, excluding guard
@@ -340,8 +341,16 @@ service cloud.firestore {
       // Anonymous push notification subscription registration
       allow create: if isValidString(request.resource.data.deviceId, 4, 120)
                     && request.resource.data.deviceId == docId;
+      // Proved re-registration/update by legitimate device holding secretTokenProof
+      allow update: if isSuperAdmin() || (
+        isValidString(request.resource.data.deviceId, 4, 120)
+        && request.resource.data.deviceId == docId
+        && resource.data.deviceId == docId
+        && ('secretTokenProof' in request.resource.data)
+        && request.resource.data.secretTokenProof == resource.data.secretToken
+      );
       // Modifying or inspecting subscriber registry is strictly SuperAdmin
-      allow read, update, delete: if isSuperAdmin();
+      allow read, delete: if isSuperAdmin();
     }
 
     // 🏛️ المعرض الافتراضي ثلاثي الأبعاد
@@ -377,10 +386,14 @@ service cloud.firestore {
     match /student_dismissals/{docId} {
       // Privacy protection: Read access strictly limited to verified staff, guard, and superAdmin
       allow read: if isTeacher() || isGuard() || isSuperAdmin();
-      // Only authenticated teachers or SuperAdmin can issue student permits
-      allow create: if (isTeacher() || isSuperAdmin())
-                    && isValidString(request.resource.data.studentName, 2, 100)
-                    && isValidString(request.resource.data.date, 8, 20);
+      // Only authenticated teachers (strictly binding teacherEmail & teacherUid) or SuperAdmin can issue permits
+      allow create: if isSuperAdmin() || (
+        isTeacher()
+        && request.resource.data.teacherEmail == request.auth.token.email
+        && request.resource.data.teacherUid == request.auth.uid
+        && isValidString(request.resource.data.studentName, 2, 100)
+        && isValidString(request.resource.data.date, 8, 20)
+      );
       // Gate exit status update: ONLY verified gate guard or SuperAdmin can confirm exits
       allow update: if isSuperAdmin()
                     || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
