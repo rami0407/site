@@ -86,12 +86,9 @@ service cloud.firestore {
     }
 
     match /schoolGuide/{docId} {
-      // 🛡️ Prevent exposure of AI API keys
-      // gemini (AI API keys): Strictly SuperAdmin only
-      // other docs / latest_dismissal: public read
-      allow read: if (docId == 'gemini' && isSuperAdmin())
-                  || (docId != 'gemini');
-      allow write: if isSuperAdmin() || (docId == 'latest_dismissal' && isValidString(request.resource.data.studentName, 2, 100));
+      // 🛡️ Public pages can be read, except gemini AI secrets and latest_dismissal mirror
+      allow read: if docId != 'gemini' && docId != 'latest_dismissal';
+      allow write: if isSuperAdmin();
     }
 
     // ==========================================
@@ -207,15 +204,9 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // 👨‍🏫 حسابات وتراخيص المعلمين — قراءة التراخيص للتحقق من البصمات المشفرة، والتعديل للإدارة والتحديث الذاتي المشروط
+    // 👨‍🏫 حسابات وتراخيص المعلمين — إدارة مشددة للإدارة حصراً لمنع تسريب أي رموز أو أسرار
     match /teacher_accounts/{docId} {
-      allow read: if true;
-      allow create, delete: if isSuperAdmin();
-      allow update: if isSuperAdmin()
-                    || request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                        'pinHash', 'pin', 'updatedAt', 'updatedBy', 'isCustom', 'nameAr', 'nameHe', 'id',
-                        'twoFactorEnabled', 'twoFactorSecret', 'twoFactorEnabledAt', 'pendingOtp', 'emergencyCode'
-                       ]);
+      allow read, write: if isSuperAdmin();
     }
 
     // ==========================================
@@ -346,16 +337,11 @@ service cloud.firestore {
     }
 
     match /notification_subscribers/{docId} {
+      // Anonymous push notification subscription registration
       allow create: if isValidString(request.resource.data.deviceId, 4, 120)
                     && request.resource.data.deviceId == docId;
-      allow update: if isSuperAdmin()
-                    || (isValidString(request.resource.data.deviceId, 4, 120)
-                        && request.resource.data.deviceId == docId
-                        && resource.data.deviceId == docId
-                        && ('secretToken' in request.resource.data)
-                        && ('secretToken' in resource.data)
-                        && request.resource.data.secretToken == resource.data.secretToken);
-      allow read, delete: if isSuperAdmin();
+      // Modifying or inspecting subscriber registry is strictly SuperAdmin
+      allow read, update, delete: if isSuperAdmin();
     }
 
     // 🏛️ المعرض الافتراضي ثلاثي الأبعاد
@@ -387,25 +373,19 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
+    // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي — خاضعة كلياً للمصادقة الخادمية الصارمة
     match /student_dismissals/{docId} {
-      // 🛡️ Permitted read for guard tablet, teacher portal, and student pass verification
-      allow read: if true;
-      // Creation requires valid studentName, teacherId, date, waiting status, and HMAC digitalSignature
-      allow create: if isValidString(request.resource.data.studentName, 2, 100)
-                    && isValidString(request.resource.data.teacherId, 2, 60)
-                    && isValidString(request.resource.data.date, 8, 20)
-                    && isValidString(request.resource.data.digitalSignature, 16, 64)
-                    && request.resource.data.status == 'waiting'
-                    && (!('entryStatus' in request.resource.data) || request.resource.data.entryStatus == 'waiting')
-                    && (!('gateStatus' in request.resource.data) || request.resource.data.gateStatus == 'pending');
-      // Gate exit status update: Can only modify exit timestamps and gate status, never core permit fields
+      // Privacy protection: Read access strictly limited to verified staff, guard, and superAdmin
+      allow read: if isTeacher() || isGuard() || isSuperAdmin();
+      // Only authenticated teachers or SuperAdmin can issue student permits
+      allow create: if (isTeacher() || isSuperAdmin())
+                    && isValidString(request.resource.data.studentName, 2, 100)
+                    && isValidString(request.resource.data.date, 8, 20);
+      // Gate exit status update: ONLY verified gate guard or SuperAdmin can confirm exits
       allow update: if isSuperAdmin()
-                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                    || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                         'status', 'gateStatus', 'entryStatus', 'actualExitTime', 'gateExitTime', 'confirmedAt', 'confirmedBy', 'guardNotes'
-                       ])
-                       && (request.resource.data.status in ['waiting', 'dismissed'])
-                       && (request.resource.data.gateStatus in ['pending', 'exited']));
+                       ]));
       allow delete: if isSuperAdmin();
     }
 

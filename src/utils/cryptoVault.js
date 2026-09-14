@@ -280,18 +280,16 @@ export const removeSecureStorage = (key) => {
    3. Digital Integrity Signature (HMAC-SHA256) for Permits & Records
    ========================================================================= */
 
-// Robust School Digital Signature Authority Salt & Key (Uniform across teacher & guard devices)
-const SCHOOL_HMAC_AUTHORITY_SECRET = 'Musherfe_Signed_Authority_HMAC_Sha256_Authority_Key_2026_@Sec!';
-
 /**
- * Dynamically derive cryptographic key for permits using deterministic school authority secret
+ * Dynamically derive cryptographic signature key from authenticated staff session
  */
 export const deriveSignatureKey = async (data, explicitSecret = null) => {
   const teacherId = (typeof data === 'object' ? data.teacherId : '') || 'auth_authority';
   const date = (typeof data === 'object' ? (data.date || data.departureDate) : '') || new Date().toISOString().slice(0, 10);
-  const baseSecret = explicitSecret || SCHOOL_HMAC_AUTHORITY_SECRET;
+  const sessionUid = (auth && auth.currentUser && auth.currentUser.uid) ? auth.currentUser.uid : 'auth_session';
+  const baseSecret = explicitSecret || sessionUid;
 
-  const entropy = `${baseSecret}#${teacherId}#${date}#Musherfe_Signed_Authority_Seal_v3`;
+  const entropy = `${baseSecret}#${teacherId}#${date}#Permit_Seal`;
   const subtle = getSubtleCrypto().subtle;
   const enc = new TextEncoder();
   const hash = await subtle.digest('SHA-256', enc.encode(entropy));

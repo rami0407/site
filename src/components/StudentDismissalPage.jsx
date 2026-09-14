@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
   getAllTeachers, 
@@ -60,9 +61,13 @@ const StudentDismissalPage = () => {
     return null;
   });
 
-  // Login Form States (Stage 1: PIN)
+  // Login Form States (Real Firebase Auth)
   const [selectedTeacherId, setSelectedTeacherId] = useState(allTeachers[0]?.id || 'rami_irfaeya');
   const [loginPin, setLoginPin] = useState('');
+  const [teacherPassword, setTeacherPassword] = useState('');
+  const [teacherEmailInput, setTeacherEmailInput] = useState('');
+  const [useEmailInput, setUseEmailInput] = useState(false);
+  const [isLoggingInTeacher, setIsLoggingInTeacher] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
@@ -152,53 +157,70 @@ const StudentDismissalPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedPass, setCompletedPass] = useState(null);
 
-  // Sync cloud teacher PINs & 2FA statuses
+  // Real Firebase Auth listener for Teachers & Admins
   useEffect(() => {
-    fetchTeacherCloudAccounts();
-    const unsub = listenToTeacherAccounts();
-    return () => {
-      if (typeof unsub === 'function') unsub();
-    };
-  }, []);
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser && currentUser.email) {
+        const em = currentUser.email.toLowerCase();
+        const matched = allTeachers.find(t => (t.email && t.email.toLowerCase() === em) || (t.id && em.startsWith(t.id))) || {
+          id: currentUser.uid,
+          nameAr: currentUser.displayName || currentUser.email.split('@')[0],
+          nameHe: '',
+          email: currentUser.email,
+          role: 'مربي ومعلم'
+        };
+        setActiveTeacher(matched);
+      }
+    });
+    return () => unsubAuth();
+  }, [allTeachers]);
 
-  // Handle Teacher Login (Stage 1: Verify Name & PIN)
+  // Handle Teacher Login via Firebase Auth
   const handleTeacherLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
 
-    if (!selectedTeacherId) {
-      setLoginError('يرجى اختيار اسم المربي من القائمة.');
+    let emailToUse = '';
+    if (useEmailInput) {
+      emailToUse = teacherEmailInput.trim();
+    } else {
+      const selected = allTeachers.find(t => t.id === selectedTeacherId);
+      emailToUse = (selected && selected.email) ? selected.email : `${selectedTeacherId}@musheirifa.edu.ps`;
+    }
+
+    const passwordToUse = teacherPassword.trim() || loginPin.trim();
+    if (!emailToUse || !passwordToUse) {
+      setLoginError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
       return;
     }
 
-    const isValid = await verifyTeacherCredentials(selectedTeacherId, loginPin);
-    if (isValid) {
-      const teacher = getTeacherById(selectedTeacherId) || allTeachers.find(t => t.id === selectedTeacherId);
-      if (!teacher) return;
-
-      const is2FA = isTeacher2FAEnabled(selectedTeacherId);
-      const isTrusted = isDeviceTrusted(selectedTeacherId);
-
-      // Check if 2FA verification is required
-      if (is2FA && !isTrusted) {
-        setPendingTeacher(teacher);
-        setIs2FAPending(true);
-        setTwoFactorCode('');
-        setTwoFactorError('');
-        setOtpNotice('');
-        setLoginPin('');
-        return;
-      }
-
-      // Direct Login (trusted device or 2FA not enabled yet)
-      if (rememberDevice) {
-        setActiveTeacherSession(teacher);
-      }
-      setActiveTeacher(teacher);
+    setIsLoggingInTeacher(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, emailToUse, passwordToUse);
+      const user = userCredential.user;
+      const matched = allTeachers.find(t => t.id === selectedTeacherId) || {
+        id: user.uid,
+        nameAr: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        role: 'مربي ومعلم'
+      };
+      setActiveTeacher(matched);
+      setActiveTeacherSession(matched);
       setLoginPin('');
-      setLoginError('');
-    } else {
-      setLoginError('❌ رمز الدخول السري غير صحيح! يرجى مراجعة إدارة المدرسة في حال نسيان الرمز.');
+      setTeacherPassword('');
+    } catch (err) {
+      console.error('Teacher login failed:', err);
+      let msg = '❌ بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.';
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        msg = '❌ كلمة المرور أو البريد الإلكتروني غير صحيح.';
+      } else if (err.code === 'auth/user-not-found') {
+        msg = '❌ حساب المربي غير مسجل في النظام.';
+      } else if (err.code === 'auth/too-many-requests') {
+        msg = '🚨 تم قفل المحاولات مؤقتاً بسبب تكرار الإدخال الخاطئ.';
+      }
+      setLoginError(msg);
+    } finally {
+      setIsLoggingInTeacher(false);
     }
   };
 
@@ -314,11 +336,15 @@ const StudentDismissalPage = () => {
   };
 
   // Handle Teacher Logout
-  const handleTeacherLogout = () => {
+  const handleTeacherLogout = async () => {
     if (window.confirm('هل تريد قفل الشاشة وتسجيل خروج المربي الحالي؟')) {
+      try {
+        await signOut(auth);
+      } catch (e) {}
       logoutTeacherSession();
       setActiveTeacher(null);
       setLoginPin('');
+      setTeacherPassword('');
       setLoginError('');
       setIs2FAPending(false);
       setPendingTeacher(null);
@@ -438,16 +464,6 @@ const StudentDismissalPage = () => {
     try {
       const docRef = await addDoc(collection(db, 'student_dismissals'), dismissalData);
       const docId = docRef.id;
-
-      try {
-        await setDoc(doc(db, 'schoolGuide', 'latest_dismissal'), {
-          ...dismissalData,
-          id: docId
-        });
-      } catch (mirrorErr) {
-        console.warn('schoolGuide mirror note:', mirrorErr);
-      }
-
       setCompletedPass({ ...dismissalData, id: docId });
     } catch (error) {
       alert('حدث خطأ أثناء حفظ إذن التسريح: ' + error.message);
@@ -736,48 +752,110 @@ const StudentDismissalPage = () => {
           </p>
 
           <form onSubmit={handleTeacherLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', textAlign: 'right' }}>
-            {/* Teacher Select */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
-                👤 اسم المربي / المعلم:
-              </label>
-              <select
-                value={selectedTeacherId}
-                onChange={(e) => setSelectedTeacherId(e.target.value)}
+            {/* Toggle Input Mode */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.82rem', marginBottom: '0.2rem' }}>
+              <button
+                type="button"
+                onClick={() => setUseEmailInput(false)}
                 style={{
-                  width: '100%',
-                  padding: '0.9rem 1rem',
-                  background: 'rgba(15, 23, 42, 0.9)',
-                  border: '2px solid #334155',
-                  borderRadius: '16px',
-                  color: 'white',
-                  fontSize: '1.05rem',
-                  fontWeight: 700,
-                  outline: 'none',
-                  boxSizing: 'border-box'
+                  background: !useEmailInput ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                  color: !useEmailInput ? '#38bdf8' : '#94a3b8',
+                  border: !useEmailInput ? '1px solid #38bdf8' : '1px solid #334155',
+                  padding: '0.3rem 0.8rem',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  fontWeight: 700
                 }}
               >
-                {allTeachers.map((tch) => (
-                  <option key={tch.id} value={tch.id} style={{ background: '#1e293b', color: 'white' }}>
-                    {tch.nameAr} - {tch.nameHe} {tch.id === 'rami_irfaeya' ? '★ (مدير المدرسة)' : ''}
-                  </option>
-                ))}
-              </select>
+                👤 اختيار المربي من القائمة
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseEmailInput(true)}
+                style={{
+                  background: useEmailInput ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                  color: useEmailInput ? '#38bdf8' : '#94a3b8',
+                  border: useEmailInput ? '1px solid #38bdf8' : '1px solid #334155',
+                  padding: '0.3rem 0.8rem',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  fontWeight: 700
+                }}
+              >
+                📧 إدخال البريد المدرسي مباشرة
+              </button>
             </div>
+
+            {!useEmailInput ? (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
+                  👤 اسم المربي / المعلم:
+                </label>
+                <select
+                  value={selectedTeacherId}
+                  onChange={(e) => setSelectedTeacherId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem 1rem',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    border: '2px solid #334155',
+                    borderRadius: '16px',
+                    color: 'white',
+                    fontSize: '1.05rem',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {allTeachers.map((tch) => (
+                    <option key={tch.id} value={tch.id} style={{ background: '#1e293b', color: 'white' }}>
+                      {tch.nameAr} - {tch.nameHe} {tch.id === 'rami_irfaeya' ? '★ (مدير المدرسة)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
+                  📧 البريد الإلكتروني الرسمي للمربي:
+                </label>
+                <input
+                  type="email"
+                  placeholder="teacher@musheirifa.edu.ps"
+                  value={teacherEmailInput}
+                  onChange={(e) => setTeacherEmailInput(e.target.value)}
+                  required={useEmailInput}
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem 1rem',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    border: '2px solid #334155',
+                    borderRadius: '16px',
+                    color: 'white',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
 
             {/* Password PIN Input */}
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
-                🔑 رمز الدخول السري (السيسما):
+                🔑 كلمة المرور الخاصة بالمربي:
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPin ? 'text' : 'password'}
-                  inputMode="numeric"
-                  placeholder="أدخل رمزك السري..."
-                  value={loginPin}
-                  onChange={(e) => setLoginPin(e.target.value)}
+                  placeholder="أدخل كلمة المرور السرية..."
+                  value={teacherPassword || loginPin}
+                  onChange={(e) => {
+                    setTeacherPassword(e.target.value);
+                    setLoginPin(e.target.value);
+                  }}
                   autoFocus
+                  required
                   style={{
                     width: '100%',
                     padding: '0.9rem 3rem 0.9rem 1rem',
@@ -785,10 +863,7 @@ const StudentDismissalPage = () => {
                     border: loginError ? '2px solid #ef4444' : '2px solid #334155',
                     borderRadius: '16px',
                     color: 'white',
-                    fontSize: '1.25rem',
-                    textAlign: 'center',
-                    letterSpacing: '4px',
-                    fontWeight: 800,
+                    fontSize: '1.1rem',
                     outline: 'none',
                     boxSizing: 'border-box'
                   }}
@@ -808,7 +883,7 @@ const StudentDismissalPage = () => {
                     cursor: 'pointer',
                     padding: '4px'
                   }}
-                  title={showPin ? 'إخفاء الرمز' : 'إظهار الرمز'}
+                  title={showPin ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
                   <i className={`fas ${showPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                 </button>
@@ -830,29 +905,9 @@ const StudentDismissalPage = () => {
               </div>
             )}
 
-            {/* Remember Device Checkbox */}
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              justifyContent: 'center',
-              fontSize: '0.86rem',
-              color: '#cbd5e1',
-              cursor: 'pointer',
-              userSelect: 'none',
-              padding: '0.2rem 0'
-            }}>
-              <input
-                type="checkbox"
-                checked={rememberDevice}
-                onChange={(e) => setRememberDevice(e.target.checked)}
-                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#0284c7' }}
-              />
-              <span>تذكر هذا الجهاز دائماً (هاتف المربي الخاص)</span>
-            </label>
-
             <button
               type="submit"
+              disabled={isLoggingInTeacher}
               style={{
                 background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                 color: 'white',
@@ -861,16 +916,18 @@ const StudentDismissalPage = () => {
                 padding: '1rem',
                 fontSize: '1.05rem',
                 fontWeight: 800,
-                cursor: 'pointer',
+                cursor: isLoggingInTeacher ? 'not-allowed' : 'pointer',
+                opacity: isLoggingInTeacher ? 0.7 : 1,
                 boxShadow: '0 8px 24px rgba(2, 132, 199, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.6rem',
-                marginTop: '0.4rem'
+                marginTop: '0.4rem',
+                transition: 'transform 0.15s ease'
               }}
             >
-              <span>تسجيل الدخول ومتابعة التسريح</span>
+              <span>{isLoggingInTeacher ? 'جاري التحقق والاعتماد الخادمي...' : 'دخول المربي وإصدار التصريح'}</span>
               <i className="fas fa-arrow-left"></i>
             </button>
 

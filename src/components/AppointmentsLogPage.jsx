@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { 
   collection, 
   getDocs, 
@@ -8,7 +9,7 @@ import {
   addDoc, 
   deleteDoc, 
   query, 
-  orderBy,
+  orderBy, 
   onSnapshot 
 } from 'firebase/firestore';
 import { sanitizeText } from '../utils/security';
@@ -25,88 +26,93 @@ const WEEKDAYS_AR = {
   6: 'السبت'
 };
 
-const GUARD_PIN_CODE = '318212';
+const GUARD_DEFAULT_EMAIL = 'guard@musheirifa.edu.ps';
 
 const AppointmentsLogPage = () => {
-  // Security Authentication (Guard PIN Code: 318212 default or cloud configured)
-  const [activeGuardPin, setActiveGuardPin] = useState(GUARD_PIN_CODE);
-  const [isAuthorized, setIsAuthorized] = useState(() => {
-    try {
-      const saved = getSecureStorage('musherfe_guard_auth_pin');
-      return saved === GUARD_PIN_CODE || (!!saved && String(saved).length >= 4);
-    } catch (e) {
-      return false;
-    }
-  });
-  const [pinInput, setPinInput] = useState('');
+  // Security Authentication via Firebase Auth
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [guardEmail, setGuardEmail] = useState(GUARD_DEFAULT_EMAIL);
+  const [guardPassword, setGuardPassword] = useState('');
   const [pinError, setPinError] = useState('');
   const [showPin, setShowPin] = useState(false);
-  const [rememberDevice, setRememberDevice] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Sync cloud guard PIN (only when authorized)
+  // Monitor Firebase Auth state for verified Guard or Admin
   useEffect(() => {
-    if (!isAuthorized) return;
-    try {
-      const unsub = onSnapshot(doc(db, 'system_settings', 'guard_config'), (docSnap) => {
-        if (docSnap.exists() && docSnap.data().pin) {
-          setActiveGuardPin(docSnap.data().pin);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user && user.email) {
+        const em = user.email.toLowerCase();
+        const isOfficialGuard = em === 'guard@musheirifa.edu.ps' || em === 'gate.guard@musheirifa.edu.ps';
+        const isOfficialAdmin = em === 'rami0407@gmail.com' || em === 'musheirifa.primary@gmail.com' || em === 'admin@musheirifa.edu.ps' || em === 'principal@musheirifa.edu.ps';
+        if (isOfficialGuard || isOfficialAdmin) {
+          setIsAuthorized(true);
+          return;
         }
-      });
-      return () => unsub();
-    } catch (e) {}
-  }, [isAuthorized]);
+      }
+      setIsAuthorized(false);
+    });
+    return () => unsub();
+  }, []);
 
   const handlePinSubmit = async (e) => {
     e.preventDefault();
+    setPinError('');
 
-    const rateStatus = checkRateLimit('guard_pin');
-    if (!rateStatus.allowed) {
-      setPinError(`🚨 تم قفل شاشة الحارس مؤقتاً لمدة ${rateStatus.minutesLeft} دقيقة بعد 5 محاولات خاطئة متتالية.`);
+    const email = guardEmail.trim();
+    const pass = guardPassword.trim();
+    if (!email || !pass) {
+      setPinError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
       return;
     }
 
-    const clean = pinInput.trim();
-    const isCustom = activeGuardPin && activeGuardPin !== GUARD_PIN_CODE;
-    const isMatch = isCustom ? (clean === activeGuardPin) : (clean === GUARD_PIN_CODE);
-    if (isMatch) {
-      resetRateLimit('guard_pin');
+    const rateStatus = checkRateLimit('guard_login');
+    if (!rateStatus.allowed) {
+      setPinError(`🚨 تم قفل شاشة الحارس مؤقتاً لمدة ${rateStatus.minutesLeft} دقيقة بعد عدة محاولات خاطئة.`);
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      resetRateLimit('guard_login');
       logSecurityEvent({
-        type: 'GUARD_PIN_SUCCESS',
+        type: 'GUARD_LOGIN_SUCCESS',
         severity: 'INFO',
-        actor: 'حارس البوابة',
-        actionKey: 'guard_pin',
-        details: 'تم الدخول إلى لوحة الحارس بنجاح.'
+        actor: email,
+        actionKey: 'guard_login',
+        details: 'تم الدخول إلى لوحة الحارس بنجاح عبر الاعتماد الخادمي.'
       });
       setPinError('');
+      setGuardPassword('');
       setIsAuthorized(true);
-      if (rememberDevice) {
-        try {
-          setSecureStorage('musherfe_guard_auth_pin', clean);
-        } catch (err) {}
-      }
       playAlertChime();
-    } else {
-      const failRes = await recordFailedAttempt('guard_pin', {
-        actor: 'حارس البوابة / مستخدم مجهول',
-        details: 'محاولة إدخال رمز خاطئ للوحة الحارس.'
+    } catch (err) {
+      console.error('Guard auth error:', err);
+      recordFailedAttempt('guard_login', {
+        actor: email,
+        details: 'محاولة إدخال كلمة مرور خاطئة للوحة الحارس.'
       });
-
-      if (failRes && failRes.isLocked) {
-        setPinError('🚨 تم قفل شاشة الحارس لمدة 15 دقيقة بعد 5 محاولات خاطئة متتالية.');
-      } else {
-        setPinError(`❌ الرمز السري غير صحيح! (المحاولات المتبقية: ${failRes.remainingAttempts})`);
+      let msg = '❌ بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.';
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        msg = '❌ كلمة المرور أو البريد الإلكتروني غير صحيح.';
+      } else if (err.code === 'auth/user-not-found') {
+        msg = '❌ حساب الحارس غير مسجل في النظام.';
+      } else if (err.code === 'auth/too-many-requests') {
+        msg = '🚨 تم قفل المحاولات مؤقتاً بسبب تكرار الإدخال الخاطئ.';
       }
-      setPinInput('');
+      setPinError(msg);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const handleLogoutGuard = () => {
+  const handleLogoutGuard = async () => {
     if (window.confirm('هل تريد قفل الشاشة وتسجيل الخروج من لوحة الحارس؟')) {
       try {
-        removeSecureStorage('musherfe_guard_auth_pin');
+        await signOut(auth);
       } catch (err) {}
       setIsAuthorized(false);
-      setPinInput('');
+      setGuardPassword('');
     }
   };
 
@@ -662,55 +668,78 @@ const AppointmentsLogPage = () => {
           </div>
 
           <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 1.75rem 0', fontWeight: 500 }}>
-            هذه الشاشة مخصصة لمتابعة أذونات تسريح الطلاب وزوار المدرسة. يرجى إدخال الرمز السري للمتابعة.
+            هذه الشاشة مخصصة لأمن المدرسة والبوابة. يرجى تسجيل الدخول بحساب الحارس المعتمد للمتابعة.
           </p>
 
-          <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ position: 'relative' }}>
+          <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'right' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
+                📧 بريد الحارس أو المسؤول:
+              </label>
               <input
-                type={showPin ? 'text' : 'password'}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={10}
-                placeholder="أدخل رمز الدخول (PIN)..."
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                autoFocus
+                type="email"
+                placeholder="guard@musheirifa.edu.ps"
+                value={guardEmail}
+                onChange={(e) => setGuardEmail(e.target.value)}
+                required
                 style={{
                   width: '100%',
-                  padding: '1rem 3rem 1rem 1rem',
+                  padding: '0.9rem 1rem',
                   background: 'rgba(15, 23, 42, 0.85)',
-                  border: pinError ? '2px solid #ef4444' : '2px solid #334155',
-                  borderRadius: '16px',
+                  border: '2px solid #334155',
+                  borderRadius: '14px',
                   color: 'white',
-                  fontSize: '1.3rem',
-                  textAlign: 'center',
-                  letterSpacing: '5px',
-                  fontWeight: 800,
+                  fontSize: '0.95rem',
                   outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.2s ease'
+                  boxSizing: 'border-box'
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPin(!showPin)}
-                style={{
-                  position: 'absolute',
-                  left: '14px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  fontSize: '1.1rem',
-                  cursor: 'pointer',
-                  padding: '4px'
-                }}
-                title={showPin ? 'إخفاء الرمز' : 'إظهار الرمز'}
-              >
-                <i className={`fas ${showPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </button>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.4rem' }}>
+                🔑 كلمة المرور السرية:
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  placeholder="أدخل كلمة المرور..."
+                  value={guardPassword}
+                  onChange={(e) => setGuardPassword(e.target.value)}
+                  autoFocus
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem 2.8rem 0.9rem 1rem',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: pinError ? '2px solid #ef4444' : '2px solid #334155',
+                    borderRadius: '14px',
+                    color: 'white',
+                    fontSize: '1.05rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    padding: '4px'
+                  }}
+                  title={showPin ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                >
+                  <i className={`fas ${showPin ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                </button>
+              </div>
             </div>
 
             {pinError && (
@@ -728,29 +757,9 @@ const AppointmentsLogPage = () => {
               </div>
             )}
 
-            {/* Remember Device Checkbox */}
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              justifyContent: 'center',
-              fontSize: '0.86rem',
-              color: '#cbd5e1',
-              cursor: 'pointer',
-              userSelect: 'none',
-              padding: '0.25rem 0'
-            }}>
-              <input
-                type="checkbox"
-                checked={rememberDevice}
-                onChange={(e) => setRememberDevice(e.target.checked)}
-                style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#0284c7' }}
-              />
-              <span>تذكر هذا الجهاز دائماً (هاتف الحارس الخاص)</span>
-            </label>
-
             <button
               type="submit"
+              disabled={isLoggingIn}
               style={{
                 background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                 color: 'white',
@@ -759,7 +768,8 @@ const AppointmentsLogPage = () => {
                 padding: '1rem',
                 fontSize: '1.05rem',
                 fontWeight: 800,
-                cursor: 'pointer',
+                cursor: isLoggingIn ? 'not-allowed' : 'pointer',
+                opacity: isLoggingIn ? 0.7 : 1,
                 boxShadow: '0 8px 24px rgba(2, 132, 199, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
@@ -769,8 +779,8 @@ const AppointmentsLogPage = () => {
                 transition: 'transform 0.15s ease'
               }}
             >
-              <span>دخول لوحة الحارس</span>
-              <i className="fas fa-arrow-left"></i>
+              <span>{isLoggingIn ? 'جاري التحقق والدخول...' : 'دخول لوحة الحارس'}</span>
+              <i className="fas fa-shield-alt"></i>
             </button>
           </form>
 
