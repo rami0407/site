@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Musheirifa School - Central Security, Audit, and Threat Protection Engine
  * 
  * Features:
@@ -134,7 +134,9 @@ export const recordFailedAttempt = async (actionKey, meta = {}) => {
         priority: 'urgent',
         theme: 'red'
       });
-    } catch (e) {}
+    } catch {
+      // Notification fallback
+    }
   }
 
   return {
@@ -231,7 +233,9 @@ export const logSecurityEvent = async ({
     const localHistory = getSecureStorage('sec_audit_local_buffer') || [];
     const updated = [eventRecord, ...(Array.isArray(localHistory) ? localHistory.slice(0, 19) : [])];
     setSecureStorage('sec_audit_local_buffer', updated);
-  } catch (e) {}
+  } catch {
+    // Storage fallback
+  }
 
   return eventRecord;
 };
@@ -257,7 +261,7 @@ export const subscribeToSecurityAudit = (onUpdate, maxItems = 40) => {
       const local = getSecureStorage('sec_audit_local_buffer') || [];
       if (onUpdate) onUpdate(Array.isArray(local) ? local : []);
     });
-  } catch (e) {
+  } catch {
     const local = getSecureStorage('sec_audit_local_buffer') || [];
     if (onUpdate) onUpdate(Array.isArray(local) ? local : []);
     return () => {};
@@ -347,7 +351,7 @@ export const isGuardDeviceAuthorized = () => {
       return false;
     }
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -403,17 +407,7 @@ export const verifyAndPairGuardDevice = async (enteredCode) => {
   const clean = String(enteredCode || '').trim();
   if (clean.length < 4) return { success: false, reason: 'رمز الاقتران غير مكتمل.' };
 
-  // Master override code
-  if (clean === '318212') {
-    authorizeGuardDevice('TOKEN_MASTER_318212', 'جهاز حارس مصادق بالكود الرئيسي');
-    await logSecurityEvent({
-      type: 'GUARD_DEVICE_PAIRED',
-      severity: 'INFO',
-      actor: 'حارس البوابة',
-      details: 'تم اقتران واعتماد جهاز الحارس بنجاح بالكود الرئيسي.'
-    });
-    return { success: true };
-  }
+  // Verify pairing code strictly against active Firestore pairing code
 
   // Cloud check
   try {
@@ -440,7 +434,9 @@ export const verifyAndPairGuardDevice = async (enteredCode) => {
       });
       return { success: true };
     }
-  } catch (e) {}
+  } catch {
+    // Cloud pairing code check fallback
+  }
 
   return { success: false, reason: 'رمز الاقتران غير صالح أو منتهي الصلاحية.' };
 };

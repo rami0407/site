@@ -1,8 +1,8 @@
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { db } from '../firebase';
 import { collection, doc, setDoc, getDocs, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
-import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from './totp';
-import { setSecureStorage, getSecureStorage, removeSecureStorage } from './cryptoVault';
+import { generateBase32Secret, verifyTOTPCode } from './totp';
+import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin } from './cryptoVault';
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
 
 export const DEFAULT_TEACHER_PIN = '318212';
@@ -65,7 +65,9 @@ export const fetchTeacherCloudAccounts = async () => {
       if (data.pin) {
         try {
           setSecureStorage(`${STORAGE_PREFIX}${d.id}`, data.pin);
-        } catch (e) {}
+        } catch {
+          // Storage fallback
+        }
       }
     });
     cloudAccountsCache = { ...cloudAccountsCache, ...accounts };
@@ -93,7 +95,9 @@ export const listenToTeacherAccounts = (callback) => {
         if (data.pin) {
           try {
             setSecureStorage(`${STORAGE_PREFIX}${d.id}`, data.pin);
-          } catch (e) {}
+          } catch {
+            // Storage fallback
+          }
         }
       });
       cloudAccountsCache = { ...cloudAccountsCache, ...accounts };
@@ -122,7 +126,9 @@ export const getTeacherPin = (teacherId) => {
     if (custom && String(custom).trim().length >= 4) {
       return String(custom).trim();
     }
-  } catch (e) {}
+  } catch {
+    // Storage fallback
+  }
 
   return DEFAULT_TEACHER_PIN;
 };
@@ -172,7 +178,8 @@ export const verifyTeacherCredentials = (teacherId, enteredPin) => {
 
   const cleanEntered = enteredPin.trim();
   const expectedPin = getTeacherPin(teacherId);
-  const isValid = cleanEntered === expectedPin || cleanEntered === DEFAULT_TEACHER_PIN;
+  const isCustom = expectedPin && expectedPin !== DEFAULT_TEACHER_PIN;
+  const isValid = isCustom ? (cleanEntered === expectedPin) : (cleanEntered === DEFAULT_TEACHER_PIN);
 
   if (isValid) {
     resetRateLimit(`teacher_login_${teacherId}`);
@@ -220,7 +227,7 @@ export const isDeviceTrusted = (teacherId) => {
       const elapsed = Date.now() - parsed.timestamp;
       return elapsed < TRUSTED_DEVICE_DURATION;
     }
-  } catch (e) {
+  } catch {
     return false;
   }
   return false;
@@ -240,7 +247,9 @@ export const setDeviceTrusted = (teacherId, isTrusted = true) => {
     } else {
       removeSecureStorage(`${TRUSTED_DEVICE_PREFIX}${teacherId}`);
     }
-  } catch (e) {}
+  } catch {
+    // Storage fallback
+  }
 };
 
 /**
@@ -302,8 +311,16 @@ export const disableTeacher2FA = async (teacherId, by = 'المربي') => {
       },
       { merge: true }
     );
-  } catch (e) {
-    console.warn('Firestore 2FA disable error:', e);
+
+    logSecurityEvent({
+      type: 'TEACHER_2FA_DISABLED',
+      severity: 'WARNING',
+      actor: by,
+      target: teacherId,
+      details: `تم تعطيل التحقق الثنائي للمعلم (${teacherId}) بواسطة ${by}.`
+    });
+  } catch (err) {
+    console.warn('Firestore 2FA disable error:', err);
   }
   return true;
 };
@@ -419,7 +436,9 @@ export const verifyTeacher2FACode = async (teacherId, enteredCode) => {
       // Consume OTP
       try {
         await updateDoc(doc(db, 'teacher_accounts', teacherId), { pendingOtp: null });
-      } catch (e) {}
+      } catch {
+        // Non-fatal update error
+      }
       resetRateLimit(`teacher_2fa_${teacherId}`);
       logSecurityEvent({
         type: 'TEACHER_2FA_SUCCESS',
@@ -442,7 +461,9 @@ export const verifyTeacher2FACode = async (teacherId, enteredCode) => {
         'emergencyCode.used': true,
         'emergencyCode.usedAt': new Date().toISOString()
       });
-    } catch (e) {}
+    } catch {
+      // Non-fatal update error
+    }
     resetRateLimit(`teacher_2fa_${teacherId}`);
     logSecurityEvent({
       type: 'TEACHER_2FA_EMERGENCY_USED',
@@ -491,7 +512,9 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
 
   try {
     setSecureStorage(`${STORAGE_PREFIX}${teacherId}`, cleanPin);
-  } catch (e) {}
+  } catch {
+    // Storage fallback
+  }
 
   cloudAccountsCache[teacherId] = {
     ...(cloudAccountsCache[teacherId] || {}),
@@ -503,12 +526,15 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
     updatedBy
   };
 
+  const pinHash = await hashPin(cleanPin, teacherId);
+
   try {
     await setDoc(doc(db, 'teacher_accounts', teacherId), {
       id: teacherId,
       nameAr: teacherName,
       nameHe: teacher ? teacher.nameHe : '',
       pin: cleanPin,
+      pinHash,
       isCustom: cleanPin !== DEFAULT_TEACHER_PIN,
       updatedAt: nowStr,
       updatedBy
@@ -530,12 +556,14 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
       type: 'teacher_pwd_update',
       teacherId,
       teacherName,
-      newPin: cleanPin,
+      status: 'updated',
       updatedBy,
       updatedAt: nowStr,
       source: 'teacherAuth'
     });
-  } catch (e) {}
+  } catch {
+    // Non-fatal message log
+  }
 
   return true;
 };
@@ -553,7 +581,9 @@ export const adminSetTeacherPin = async (teacherId, newPin) => {
 export const resetTeacherPinToDefault = async (teacherId, resetBy = 'إدارة المدرسة') => {
   try {
     removeSecureStorage(`${STORAGE_PREFIX}${teacherId}`);
-  } catch (e) {}
+  } catch {
+    // Storage fallback
+  }
 
   const teacher = getTeacherById(teacherId);
   const teacherName = teacher ? teacher.nameAr : teacherId;
@@ -602,7 +632,7 @@ export const getActiveTeacherSession = () => {
     const raw = getSecureStorage(ACTIVE_TEACHER_KEY);
     if (!raw) return null;
     return typeof raw === 'object' ? raw : JSON.parse(raw);
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -617,8 +647,8 @@ export const setActiveTeacherSession = (teacher) => {
     } else {
       setSecureStorage(ACTIVE_TEACHER_KEY, teacher);
     }
-  } catch (e) {
-    console.warn('Session save error:', e);
+  } catch (err) {
+    console.warn('Session save error:', err);
   }
 };
 
@@ -628,5 +658,7 @@ export const setActiveTeacherSession = (teacher) => {
 export const logoutTeacherSession = () => {
   try {
     removeSecureStorage(ACTIVE_TEACHER_KEY);
-  } catch (e) {}
+  } catch {
+    // Logout fallback
+  }
 };

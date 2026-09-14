@@ -1,3 +1,5 @@
+import QRCode from 'qrcode';
+
 /**
  * Standard RFC 6238 Time-Based One-Time Password (TOTP) Implementation
  * Uses Web Crypto API (SubtleCrypto) natively available in modern browsers.
@@ -128,8 +130,27 @@ export const getOtpAuthUrl = (secret, teacherName, issuer = 'مدرسة مشير
 };
 
 /**
- * Generate QR Code Image URL (Using high-availability public QR generator)
+ * Generate QR Code Image Data URL (100% In-Browser Local Vector SVG, ZERO external 3rd-party requests)
  */
 export const getQrCodeUrl = (otpauthUrl, size = 200) => {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(otpauthUrl)}&margin=10`;
+  if (!otpauthUrl) return '';
+  try {
+    const qr = QRCode.create(otpauthUrl);
+    const modCount = qr.modules.size;
+    const margin = 4;
+    const totalSize = modCount + (margin * 2);
+    let rects = '';
+    for (let r = 0; r < modCount; r++) {
+      for (let c = 0; c < modCount; c++) {
+        if (qr.modules.get(r, c)) {
+          rects += `<rect x="${c + margin}" y="${r + margin}" width="1" height="1" fill="#0f172a"/>`;
+        }
+      }
+    }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" width="${size}" height="${size}"><rect width="100%" height="100%" fill="#ffffff"/>${rects}</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  } catch (err) {
+    console.error('Local QR Code Generation Error:', err);
+    return '';
+  }
 };

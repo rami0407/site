@@ -65,7 +65,9 @@ const AppointmentsLogPage = () => {
     }
 
     const clean = pinInput.trim();
-    if (clean === activeGuardPin || clean === GUARD_PIN_CODE) {
+    const isCustom = activeGuardPin && activeGuardPin !== GUARD_PIN_CODE;
+    const isMatch = isCustom ? (clean === activeGuardPin) : (clean === GUARD_PIN_CODE);
+    if (isMatch) {
       resetRateLimit('guard_pin');
       logSecurityEvent({
         type: 'GUARD_PIN_SUCCESS',

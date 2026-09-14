@@ -185,7 +185,7 @@ export const encryptString = (text, key = APP_STORAGE_ENTROPY) => {
     const encoded = encodeURIComponent(String(text));
     const cipher = transformString(encoded, key);
     return `${STORAGE_ENC_PREFIX}${window.btoa(cipher)}`;
-  } catch (e) {
+  } catch {
     return text;
   }
 };
@@ -202,7 +202,7 @@ export const decryptString = (encryptedText, key = APP_STORAGE_ENTROPY) => {
     const cipher = window.atob(b64);
     const decoded = transformString(cipher, key);
     return decodeURIComponent(decoded);
-  } catch (e) {
+  } catch {
     return encryptedText;
   }
 };
@@ -322,4 +322,33 @@ export const verifyDataSignature = async (data, signature) => {
   } catch {
     return false;
   }
+};
+
+/* =========================================================================
+   4. Cryptographic SHA-256 One-Way Salted Hash for Teacher PINs
+   ========================================================================= */
+
+const PIN_GLOBAL_SALT = 'Musherfe_Tch_Salt_V2_2026_Secure_Hash';
+
+export const hashPin = async (pin, saltSuffix = '') => {
+  if (!pin) return '';
+  try {
+    const subtle = getSubtleCrypto().subtle;
+    const enc = new TextEncoder();
+    const cleanPin = String(pin).trim();
+    const saltedString = `${PIN_GLOBAL_SALT}:${saltSuffix}:${cleanPin}`;
+    const hashBuffer = await subtle.digest('SHA-256', enc.encode(saltedString));
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  } catch (err) {
+    console.warn('PIN hash fallback:', err);
+    return `HASH_FALLBACK_${String(pin).trim()}`;
+  }
+};
+
+export const verifyPinHash = async (enteredPin, expectedHash, saltSuffix = '') => {
+  if (!enteredPin || !expectedHash) return false;
+  const computed = await hashPin(enteredPin, saltSuffix);
+  return computed === expectedHash;
 };

@@ -13,12 +13,12 @@ service cloud.firestore {
 
     // 👑 Super Administrator check: Strictly limited to Principal Rami / Official School Admin Emails
     function isSuperAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'rami0407@gmail.com' ||
-        request.auth.token.email == 'musheirifa.primary@gmail.com' ||
-        request.auth.token.email.matches('.*@musheirifa\\.edu.*') ||
-        request.auth.token.email.matches('rami.*@gmail\\.com')
-      );
+      return request.auth != null &&
+        request.auth.token.email_verified == true && (
+          request.auth.token.email == 'rami0407@gmail.com' ||
+          request.auth.token.email == 'musheirifa.primary@gmail.com' ||
+          request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@musheirifa\\.edu\\.(ps|il)$')
+        );
     }
 
     // Input string validation helpers
@@ -65,7 +65,8 @@ service cloud.firestore {
     }
 
     match /schoolGuide/{docId} {
-      allow read: if true;
+      // 🛡️ Prevent public exposure of AI API keys and sensitive dismissal mirrors
+      allow read: if (docId != 'gemini' && docId != 'latest_dismissal') || isSuperAdmin();
       allow write: if isSuperAdmin();
     }
 
@@ -164,7 +165,8 @@ service cloud.firestore {
 
     // 🛡️ سجلات الأمان والتدقيق السحابي (محمية حصراً للمدير العام)
     match /security_audit_logs/{docId} {
-      allow create: if true;
+      allow create: if isValidString(request.resource.data.type, 2, 100)
+                    && isValidString(request.resource.data.details, 2, 1200);
       allow read, update, delete: if isSuperAdmin();
     }
 
@@ -300,7 +302,8 @@ service cloud.firestore {
     }
 
     match /notification_subscribers/{docId} {
-      allow read, write: if true;
+      allow create: if isValidString(request.resource.data.token, 5, 600);
+      allow read, update, delete: if isSuperAdmin();
     }
 
     // 🏛️ المعرض الافتراضي ثلاثي الأبعاد
@@ -334,13 +337,11 @@ service cloud.firestore {
 
     // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
     match /student_dismissals/{docId} {
-      allow read, create, update: if true;
-      allow delete: if isSuperAdmin();
-    }
-
-    // 🚪 جدول مواعيد وزوار المدرسة
-    match /teacher_appointments/{docId} {
-      allow read, create, update: if true;
+      allow read: if true;
+      allow create: if isValidString(request.resource.data.studentName, 2, 100)
+                    && isValidString(request.resource.data.date, 8, 20);
+      allow update: if isSuperAdmin() 
+                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['exitStatus', 'exitedAt', 'guardNotes', 'gateStatus', 'entryStatus']));
       allow delete: if isSuperAdmin();
     }
 
