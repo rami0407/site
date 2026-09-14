@@ -104,6 +104,25 @@ export const getOrCreateDeviceId = () => {
 };
 
 /**
+ * Generate or retrieve persistent private secret token for device ownership verification
+ */
+export const getOrCreateDeviceSecretToken = () => {
+  if (typeof window === 'undefined') return 'server_sec';
+  let token = localStorage.getItem('school_device_secret_token');
+  if (!token) {
+    if (window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint8Array(24);
+      window.crypto.getRandomValues(arr);
+      token = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    } else {
+      token = 'sec_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    }
+    localStorage.setItem('school_device_secret_token', token);
+  }
+  return token;
+};
+
+/**
  * Detect device type, platform and browser for analytics
  */
 export const detectDeviceMetadata = () => {
@@ -165,14 +184,16 @@ export const requestNotificationPermission = async () => {
     if (permission === 'granted') {
       localStorage.setItem('school_notifications_enabled', 'true');
 
-      // Generate or retrieve persistent device ID
+      // Generate or retrieve persistent device ID and private secret token
       const deviceId = getOrCreateDeviceId();
+      const secretToken = getOrCreateDeviceSecretToken();
       const meta = detectDeviceMetadata();
 
-      // Record subscriber in Firestore
+      // Record subscriber in Firestore with verifiable device secret token
       try {
         await setDoc(doc(db, 'notification_subscribers', deviceId), {
           deviceId,
+          secretToken,
           platform: meta.platform,
           browser: meta.browser,
           deviceType: meta.deviceType,

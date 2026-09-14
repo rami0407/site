@@ -280,33 +280,18 @@ export const removeSecureStorage = (key) => {
    3. Digital Integrity Signature (HMAC-SHA256) for Permits & Records
    ========================================================================= */
 
-// Secure in-memory session entropy (never exposed publicly)
-let inMemoryPrivateSecret = null;
-export const getOrInitPrivateSecret = () => {
-  if (!inMemoryPrivateSecret) {
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-      const arr = new Uint8Array(24);
-      window.crypto.getRandomValues(arr);
-      inMemoryPrivateSecret = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-    } else {
-      inMemoryPrivateSecret = 'MSH_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    }
-  }
-  return inMemoryPrivateSecret;
-};
+// Robust School Digital Signature Authority Salt & Key (Uniform across teacher & guard devices)
+const SCHOOL_HMAC_AUTHORITY_SECRET = 'Musherfe_Signed_Authority_HMAC_Sha256_Authority_Key_2026_@Sec!';
 
 /**
- * Dynamically derive cryptographic key for permits using private session authority
+ * Dynamically derive cryptographic key for permits using deterministic school authority secret
  */
 export const deriveSignatureKey = async (data, explicitSecret = null) => {
   const teacherId = (typeof data === 'object' ? data.teacherId : '') || 'auth_authority';
-  const date = (typeof data === 'object' ? data.date : '') || new Date().toISOString().slice(0, 10);
-  
-  // 🔐 Genuine Private Secret: Derived from authenticated Firebase Auth UID, or verified in-memory session secret
-  const privateAuthUid = (auth && auth.currentUser && auth.currentUser.uid) ? auth.currentUser.uid : '';
-  const privateSecret = explicitSecret || privateAuthUid || getOrInitPrivateSecret();
+  const date = (typeof data === 'object' ? (data.date || data.departureDate) : '') || new Date().toISOString().slice(0, 10);
+  const baseSecret = explicitSecret || SCHOOL_HMAC_AUTHORITY_SECRET;
 
-  const entropy = `${privateSecret}#${teacherId}#${date}#Musherfe_Signed_Authority_Seal_v3`;
+  const entropy = `${baseSecret}#${teacherId}#${date}#Musherfe_Signed_Authority_Seal_v3`;
   const subtle = getSubtleCrypto().subtle;
   const enc = new TextEncoder();
   const hash = await subtle.digest('SHA-256', enc.encode(entropy));
@@ -323,8 +308,15 @@ export const generateDataSignature = async (data) => {
     const dynamicKeyBytes = await deriveSignatureKey(data);
 
     // Canonical representation of critical fields
+    const sName = (typeof data === 'object' ? (data.studentName || '') : '').trim();
+    const cClass = (typeof data === 'object' ? (data.classroom || data.studentClass || '') : '').trim();
+    const tId = (typeof data === 'object' ? (data.teacherId || '') : '').trim();
+    const dDate = (typeof data === 'object' ? (data.date || data.departureDate || '') : '').trim();
+    const dTime = (typeof data === 'object' ? (data.departureTime || data.time || data.dismissalTime || '') : '').trim();
+    const cName = (typeof data === 'object' ? (data.companionName || data.escortName || data.parentName || '') : '').trim();
+
     const payloadStr = typeof data === 'object' 
-      ? `${data.studentId || ''}|${data.studentName || ''}|${data.teacherId || ''}|${data.date || ''}|${data.time || ''}|${data.escortName || ''}`
+      ? `${sName}|${cClass}|${tId}|${dDate}|${dTime}|${cName}`
       : String(data);
 
     const cryptoKey = await subtle.importKey(

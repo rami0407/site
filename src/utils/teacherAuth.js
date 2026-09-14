@@ -555,6 +555,8 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
     // Storage fallback
   }
 
+  const pinHash = await hashPin(cleanPin, teacherId);
+
   cloudAccountsCache[teacherId] = {
     ...(cloudAccountsCache[teacherId] || {}),
     id: teacherId,

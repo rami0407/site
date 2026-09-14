@@ -436,20 +436,8 @@ const StudentDismissalPage = () => {
     };
 
     try {
-      let docId = 'dis_' + Date.now();
-      
-      try {
-        const docRef = await addDoc(collection(db, 'teacher_appointments'), dismissalData);
-        docId = docRef.id;
-      } catch (appErr) {
-        console.warn('teacher_appointments write note:', appErr);
-      }
-
-      try {
-        await setDoc(doc(db, 'student_dismissals', docId), dismissalData);
-      } catch (err) {
-        console.warn('student_dismissals addDoc note:', err);
-      }
+      const docRef = await addDoc(collection(db, 'student_dismissals'), dismissalData);
+      const docId = docRef.id;
 
       try {
         await setDoc(doc(db, 'schoolGuide', 'latest_dismissal'), {

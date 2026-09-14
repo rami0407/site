@@ -412,18 +412,7 @@ const AppointmentsLogPage = () => {
       confirmedBy: 'حارس البوابة'
     } : d));
 
-    // 1. Persist to teacher_appointments (permitted in Firestore security rules for entryStatus & enteredAt)
-    try {
-      const appRef = doc(db, 'teacher_appointments', dismissal.id);
-      await updateDoc(appRef, {
-        entryStatus: 'exited',
-        enteredAt: timeFormatted
-      });
-    } catch (e) {
-      console.warn('teacher_appointments exit update note:', e);
-    }
-
-    // 2. Also attempt update in student_dismissals collection
+    // Persist to student_dismissals collection
     try {
       const ref = doc(db, 'student_dismissals', dismissal.id);
       await updateDoc(ref, {
@@ -444,16 +433,6 @@ const AppointmentsLogPage = () => {
     if (!window.confirm('هل تريد التراجع عن تأكيد خروج الطالب وإعادته لحالة الانتظار؟')) return;
 
     // Update local state immediately
-    setAppointments(prev => prev.map(a => (a.id === dismissalId) ? {
-      ...a,
-      entryStatus: 'waiting',
-      enteredAt: null,
-      status: 'waiting',
-      gateStatus: 'pending',
-      actualExitTime: null,
-      gateExitTime: null
-    } : a));
-
     setDismissals(prev => prev.map(d => (d.id === dismissalId) ? {
       ...d,
       status: 'waiting',
@@ -463,17 +442,6 @@ const AppointmentsLogPage = () => {
       gateExitTime: null,
       confirmedAt: null
     } : d));
-
-    // Persist to teacher_appointments
-    try {
-      const appRef = doc(db, 'teacher_appointments', dismissalId);
-      await updateDoc(appRef, {
-        entryStatus: 'waiting',
-        enteredAt: null
-      });
-    } catch (e) {
-      console.warn('teacher_appointments revert note:', e);
-    }
 
     // Persist to student_dismissals
     try {
@@ -559,52 +527,21 @@ const AppointmentsLogPage = () => {
     }
   };
 
-  // Combined dismissals from appointments (teacher_appointments) and student_dismissals
+  // Student Dismissals list (derived exclusively from student_dismissals collection)
   const combinedDismissals = useMemo(() => {
-    const map = new Map();
-    // 1. From teacher_appointments collection (which has active Firestore permissions)
-    appointments.forEach((a) => {
-      if (a.isDismissal === true || a.type === 'student_dismissal') {
-        const key = a.id || a.passCode;
-        const isExited = a.entryStatus === 'exited' || a.status === 'dismissed' || a.gateStatus === 'exited';
-        map.set(key, {
-          ...a,
-          id: a.id,
-          passCode: a.passCode || 'DIS-' + (a.id || '').slice(-4),
-          studentName: a.studentName || '',
-          classroom: a.classroom || a.studentClass || '',
-          teacherName: a.teacherName || a.teacherNameAr || '',
-          companionName: a.companionName || a.parentName || '',
-          companionType: a.companionType || 'ولي أمر',
-          departureDate: a.departureDate || a.date,
-          departureTime: a.departureTime || a.dismissalTime || a.timeSlot,
-          status: isExited ? 'dismissed' : (a.status || 'waiting'),
-          gateStatus: isExited ? 'exited' : (a.gateStatus || 'pending'),
-          entryStatus: isExited ? 'exited' : 'waiting',
-          actualExitTime: a.enteredAt || a.actualExitTime || a.gateExitTime || null,
-          gateExitTime: a.enteredAt || a.gateExitTime || a.actualExitTime || null
-        });
-      }
-    });
-
-    // 2. From student_dismissals collection
-    dismissals.forEach((d) => {
-      const key = d.id || d.passCode;
-      const existing = map.get(key) || {};
-      const isExited = d.status === 'dismissed' || d.gateStatus === 'exited' || existing.status === 'dismissed';
-      map.set(key, {
-        ...existing,
+    return dismissals.map((d) => {
+      const isExited = d.status === 'dismissed' || d.gateStatus === 'exited' || d.entryStatus === 'exited';
+      return {
         ...d,
-        id: d.id || existing.id,
-        status: isExited ? 'dismissed' : 'waiting',
-        gateStatus: isExited ? 'exited' : 'pending',
-        actualExitTime: d.actualExitTime || existing.actualExitTime || null,
-        gateExitTime: d.gateExitTime || existing.gateExitTime || null
-      });
-    });
-
-    return Array.from(map.values()).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-  }, [appointments, dismissals]);
+        id: d.id,
+        status: isExited ? 'dismissed' : (d.status || 'waiting'),
+        gateStatus: isExited ? 'exited' : (d.gateStatus || 'pending'),
+        entryStatus: isExited ? 'exited' : (d.entryStatus || 'waiting'),
+        actualExitTime: d.actualExitTime || d.gateExitTime || null,
+        gateExitTime: d.gateExitTime || d.actualExitTime || null
+      };
+    }).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  }, [dismissals]);
 
   // Filtered Dismissals List
   const filteredDismissals = combinedDismissals.filter((item) => {
