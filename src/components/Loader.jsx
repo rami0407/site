@@ -2,13 +2,22 @@ import React, { useState, useEffect } from 'react';
 
 const Loader = () => {
   const [hidden, setHidden] = useState(false);
+  const [removed, setRemoved] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const hideTimer = setTimeout(() => {
       setHidden(true);
-    }, 150); // Fast smooth transition (was 1200ms delay)
-    return () => clearTimeout(timer);
+    }, 80);
+    const removeTimer = setTimeout(() => {
+      setRemoved(true);
+    }, 380);
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(removeTimer);
+    };
   }, []);
+
+  if (removed) return null;
 
   return (
     <div className={`loader-wrapper ${hidden ? 'hidden' : ''}`} id="loader">

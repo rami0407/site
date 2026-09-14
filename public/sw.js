@@ -1,4 +1,4 @@
-const CACHE_NAME = 'musheirifa-pwa-v2';
+const CACHE_NAME = 'musherfe-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -33,18 +33,20 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event: Stale-while-revalidate for static assets, network-first for pages
+// Fetch Event: Stale-while-revalidate for same-origin static assets, network-first for pages
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
-  // Do not intercept non-GET requests or Firebase / external APIs
-  if (
-    event.request.method !== 'GET' ||
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.hostname.includes('firebaseio.com') ||
-    url.hostname.includes('generativelanguage.googleapis.com') ||
-    url.hostname.includes('identitytoolkit.googleapis.com')
-  ) {
+  // ONLY intercept same-origin requests and Google Fonts/CDNs
+  const isSameOrigin = url.origin === self.location.origin;
+  const isAllowedCdn = url.hostname.includes('fonts.googleapis.com') ||
+                       url.hostname.includes('fonts.gstatic.com') ||
+                       url.hostname.includes('cdnjs.cloudflare.com');
+
+  if (!isSameOrigin && !isAllowedCdn) {
+    // Let browser handle all external APIs, Firebase, Groq, images natively!
     return;
   }
 
@@ -53,13 +55,17 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (response.status === 200) {
+          if (response && response.status === 200) {
             const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
           }
           return response;
         })
-        .catch(() => caches.match('/index.html') || caches.match('/'))
+        .catch(async () => {
+          const cached = await caches.match('/index.html') || await caches.match('/');
+          if (cached) return cached;
+          return new Response('Offline', { status: 503, statusText: 'Offline' });
+        })
     );
     return;
   }
@@ -68,28 +74,33 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch fresh copy in background
+        // Fetch fresh copy in background quietly
         fetch(event.request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse)).catch(() => {});
             }
           })
           .catch(() => {});
         return cachedResponse;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (
-          networkResponse &&
-          networkResponse.status === 200 &&
-          (event.request.url.startsWith(self.location.origin) || event.request.url.includes('fonts.googleapis.com'))
-        ) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-        }
-        return networkResponse;
-      });
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (
+            networkResponse &&
+            networkResponse.status === 200 &&
+            (event.request.url.startsWith(self.location.origin) || event.request.url.includes('fonts.googleapis.com'))
+          ) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // If offline and not cached, return graceful empty response instead of throwing unhandled rejection
+          return new Response('', { status: 408, statusText: 'Network Error' });
+        });
     })
   );
 });

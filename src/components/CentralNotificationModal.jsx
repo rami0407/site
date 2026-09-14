@@ -39,6 +39,9 @@ const playGentleNotificationChime = () => {
 
     osc.start(now);
     osc.stop(now + 0.7);
+    osc.onended = () => {
+      ctx.close().catch(() => {});
+    };
   } catch (e) {
     // Audio autoplay restrictions handled
   }
