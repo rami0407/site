@@ -177,20 +177,20 @@ const StudentDismissalPage = () => {
           setPendingTeacher(matched);
           setIs2FAPending(true);
         } else {
-          setActiveTeacher(matched);
+          setActiveTeacher(prev => (prev?.id === matched.id ? prev : matched));
           setActiveTeacherSession(matched);
         }
       } else {
         const session = getActiveTeacherSession();
         if (session && session.id) {
-          setActiveTeacher(session);
+          setActiveTeacher(prev => (prev?.id === session.id ? prev : session));
         } else {
-          setActiveTeacher(null);
+          setActiveTeacher(prev => (prev === null ? prev : null));
         }
       }
     });
     return () => unsubAuth();
-  }, [allTeachers]);
+  }, []);
 
   // Handle Teacher Login (Unified PIN: 318212, Custom PIN, or Email/Password)
   const handleTeacherLogin = async (e) => {

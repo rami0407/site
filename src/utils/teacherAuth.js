@@ -16,15 +16,16 @@ const TRUSTED_DEVICE_DURATION = 30 * 24 * 60 * 60 * 1000;
 // In-memory cache of cloud PINs & metadata
 let cloudAccountsCache = {};
 
+// In-memory cache of mapped teachers with stable reference
+const CACHED_TEACHERS = defaultSchoolTeachers.map(t => ({
+  ...t,
+  displayName: `${t.nameAr} (${t.nameHe})`
+}));
+
 /**
  * Get all available school teachers with bilingual display names
  */
-export const getAllTeachers = () => {
-  return defaultSchoolTeachers.map(t => ({
-    ...t,
-    displayName: `${t.nameAr} (${t.nameHe})`
-  }));
-};
+export const getAllTeachers = () => CACHED_TEACHERS;
 
 /**
  * Find a teacher by ID
