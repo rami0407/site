@@ -14,6 +14,7 @@ import {
 import { sanitizeText } from '../utils/security';
 import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from '../utils/securityAudit';
+import { authenticateGuardSession } from '../utils/staffAuthBridge';
 
 const WEEKDAYS_AR = {
   0: 'الأحد',
@@ -43,8 +44,16 @@ const AppointmentsLogPage = () => {
   const [showPin, setShowPin] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
 
-  // Sync cloud guard PIN
+  // Ensure Firebase Auth session is active when guard is authorized
   useEffect(() => {
+    if (isAuthorized) {
+      authenticateGuardSession();
+    }
+  }, [isAuthorized]);
+
+  // Sync cloud guard PIN (only when authorized)
+  useEffect(() => {
+    if (!isAuthorized) return;
     try {
       const unsub = onSnapshot(doc(db, 'system_settings', 'guard_config'), (docSnap) => {
         if (docSnap.exists() && docSnap.data().pin) {
@@ -53,7 +62,7 @@ const AppointmentsLogPage = () => {
       });
       return () => unsub();
     } catch (e) {}
-  }, []);
+  }, [isAuthorized]);
 
   const handlePinSubmit = async (e) => {
     e.preventDefault();
@@ -68,6 +77,7 @@ const AppointmentsLogPage = () => {
     const isCustom = activeGuardPin && activeGuardPin !== GUARD_PIN_CODE;
     const isMatch = isCustom ? (clean === activeGuardPin) : (clean === GUARD_PIN_CODE);
     if (isMatch) {
+      await authenticateGuardSession();
       resetRateLimit('guard_pin');
       logSecurityEvent({
         type: 'GUARD_PIN_SUCCESS',
@@ -413,6 +423,7 @@ const AppointmentsLogPage = () => {
 
     // 1. Persist to teacher_appointments (permitted in Firestore security rules for entryStatus & enteredAt)
     try {
+      await authenticateGuardSession();
       const appRef = doc(db, 'teacher_appointments', dismissal.id);
       await updateDoc(appRef, {
         entryStatus: 'exited',
@@ -424,6 +435,7 @@ const AppointmentsLogPage = () => {
 
     // 2. Also attempt update in student_dismissals collection
     try {
+      await authenticateGuardSession();
       const ref = doc(db, 'student_dismissals', dismissal.id);
       await updateDoc(ref, {
         status: 'dismissed',
@@ -465,6 +477,7 @@ const AppointmentsLogPage = () => {
 
     // Persist to teacher_appointments
     try {
+      await authenticateGuardSession();
       const appRef = doc(db, 'teacher_appointments', dismissalId);
       await updateDoc(appRef, {
         entryStatus: 'waiting',
@@ -476,6 +489,7 @@ const AppointmentsLogPage = () => {
 
     // Persist to student_dismissals
     try {
+      await authenticateGuardSession();
       const ref = doc(db, 'student_dismissals', dismissalId);
       await updateDoc(ref, {
         status: 'waiting',
@@ -492,6 +506,7 @@ const AppointmentsLogPage = () => {
   // Toggle Entry Status for Visitor Appointments
   const handleToggleEntry = async (appointment) => {
     try {
+      await authenticateGuardSession();
       const appDocRef = doc(db, 'teacher_appointments', appointment.id);
       const isCurrentlyEntered = appointment.entryStatus === 'entered';
 
@@ -523,6 +538,7 @@ const AppointmentsLogPage = () => {
     }
 
     try {
+      await authenticateGuardSession();
       const now = new Date();
       const timeFormatted = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
       const ticketCode = `GATE-${Math.floor(1000 + Math.random() * 9000)}`;

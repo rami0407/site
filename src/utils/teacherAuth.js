@@ -2,7 +2,7 @@ import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { db } from '../firebase';
 import { collection, doc, setDoc, getDocs, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
 import { generateBase32Secret, verifyTOTPCode } from './totp';
-import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin } from './cryptoVault';
+import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verifyPinHash } from './cryptoVault';
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
 
 export const DEFAULT_TEACHER_PIN = '318212';
@@ -168,7 +168,7 @@ export const checkTeacherLoginRateLimit = (teacherId) => {
 /**
  * Verify teacher login credentials (Stage 1: PIN) with Brute-Force Rate Limiting
  */
-export const verifyTeacherCredentials = (teacherId, enteredPin) => {
+export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
   if (!teacherId || !enteredPin) return false;
 
   const rateStatus = checkRateLimit(`teacher_login_${teacherId}`);
@@ -177,9 +177,22 @@ export const verifyTeacherCredentials = (teacherId, enteredPin) => {
   }
 
   const cleanEntered = enteredPin.trim();
-  const expectedPin = getTeacherPin(teacherId);
-  const isCustom = expectedPin && expectedPin !== DEFAULT_TEACHER_PIN;
-  const isValid = isCustom ? (cleanEntered === expectedPin) : (cleanEntered === DEFAULT_TEACHER_PIN);
+  const account = cloudAccountsCache[teacherId] || {};
+  let isValid;
+
+  if (account.pinHash) {
+    isValid = await verifyPinHash(cleanEntered, account.pinHash, teacherId);
+  } else if (account.pin && account.pin !== DEFAULT_TEACHER_PIN) {
+    isValid = cleanEntered === account.pin;
+    // Upgrade legacy plaintext to salted pinHash in background
+    hashPin(cleanEntered, teacherId).then(pHash => {
+      setDoc(doc(db, 'teacher_accounts', teacherId), { pinHash: pHash }, { merge: true }).catch(() => {});
+    });
+  } else {
+    const defaultHash = await hashPin(DEFAULT_TEACHER_PIN, teacherId);
+    const enteredHash = await hashPin(cleanEntered, teacherId);
+    isValid = enteredHash === defaultHash;
+  }
 
   if (isValid) {
     resetRateLimit(`teacher_login_${teacherId}`);
@@ -188,7 +201,7 @@ export const verifyTeacherCredentials = (teacherId, enteredPin) => {
       severity: 'INFO',
       actor: `المربي (${teacherId})`,
       actionKey: `teacher_login_${teacherId}`,
-      details: 'تم التحقق من رمز المربي بنجاح.'
+      details: 'تم التحقق من رمز المربي بنجاح عبر البصمة المشفرة.'
     });
   } else {
     recordFailedAttempt(`teacher_login_${teacherId}`, {
@@ -533,7 +546,6 @@ export const updateTeacherPin = async (teacherId, newPin, updatedBy = 'المر�
       id: teacherId,
       nameAr: teacherName,
       nameHe: teacher ? teacher.nameHe : '',
-      pin: cleanPin,
       pinHash,
       isCustom: cleanPin !== DEFAULT_TEACHER_PIN,
       updatedAt: nowStr,
@@ -589,11 +601,13 @@ export const resetTeacherPinToDefault = async (teacherId, resetBy = 'إدارة 
   const teacherName = teacher ? teacher.nameAr : teacherId;
   const nowStr = new Date().toISOString();
 
+  const defaultHash = await hashPin(DEFAULT_TEACHER_PIN, teacherId);
+
   cloudAccountsCache[teacherId] = {
     ...(cloudAccountsCache[teacherId] || {}),
     id: teacherId,
     teacherNameAr: teacherName,
-    pin: DEFAULT_TEACHER_PIN,
+    pinHash: defaultHash,
     isCustom: false,
     updatedAt: nowStr,
     updatedBy: resetBy
@@ -604,7 +618,7 @@ export const resetTeacherPinToDefault = async (teacherId, resetBy = 'إدارة 
       id: teacherId,
       nameAr: teacherName,
       nameHe: teacher ? teacher.nameHe : '',
-      pin: DEFAULT_TEACHER_PIN,
+      pinHash: defaultHash,
       isCustom: false,
       updatedAt: nowStr,
       updatedBy: resetBy

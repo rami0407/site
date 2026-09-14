@@ -66,8 +66,8 @@ service cloud.firestore {
 
     match /schoolGuide/{docId} {
       // 🛡️ Prevent public exposure of AI API keys and sensitive dismissal mirrors
-      allow read: if (docId != 'gemini' && docId != 'latest_dismissal') || isSuperAdmin();
-      allow write: if isSuperAdmin();
+      allow read: if (docId != 'gemini' && docId != 'latest_dismissal') || isAuthenticated();
+      allow write: if isSuperAdmin() || (docId == 'latest_dismissal' && isAuthenticated());
     }
 
     // ==========================================
@@ -172,12 +172,11 @@ service cloud.firestore {
 
     // 🔐 إعدادات أمان النظام وأجهزة الحراسة
     match /system_security/{docId} {
-      allow read: if true;
-      allow write: if isSuperAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /system_settings/{docId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
     }
 
@@ -191,12 +190,18 @@ service cloud.firestore {
     // ==========================================
 
     match /teacher_appointments/{docId} {
-      allow read: if true;
+      // 🛡️ Privacy protection: Only authenticated staff, guards, and admins can view appointments & visitor logs
+      allow read: if isAuthenticated();
       allow create: if isValidString(request.resource.data.parentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      allow update: if isSuperAdmin() 
-                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt']));
+      allow update: if isAuthenticated();
       allow delete: if isSuperAdmin();
+    }
+
+    // 📅 Public non-sensitive slot availability for booking calendar
+    match /appointment_slots/{slotId} {
+      allow read, create: if true;
+      allow update, delete: if isSuperAdmin();
     }
 
     // ==========================================
@@ -302,8 +307,8 @@ service cloud.firestore {
     }
 
     match /notification_subscribers/{docId} {
-      allow create: if isValidString(request.resource.data.token, 5, 600);
-      allow read, update, delete: if isSuperAdmin();
+      allow create, update: if isValidString(request.resource.data.deviceId, 4, 120);
+      allow read, delete: if isSuperAdmin();
     }
 
     // 🏛️ المعرض الافتراضي ثلاثي الأبعاد
@@ -337,11 +342,14 @@ service cloud.firestore {
 
     // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
     match /student_dismissals/{docId} {
-      allow read: if true;
-      allow create: if isValidString(request.resource.data.studentName, 2, 100)
+      // 🛡️ Privacy protection: Only authenticated staff, guards, and admins can view dismissal permits
+      allow read: if isAuthenticated();
+      // Only authenticated teachers can issue dismissal permits
+      allow create: if isAuthenticated()
+                    && isValidString(request.resource.data.studentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      allow update: if isSuperAdmin() 
-                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['exitStatus', 'exitedAt', 'guardNotes', 'gateStatus', 'entryStatus']));
+      // Authenticated guards/staff can update exit status
+      allow update: if isAuthenticated();
       allow delete: if isSuperAdmin();
     }
 

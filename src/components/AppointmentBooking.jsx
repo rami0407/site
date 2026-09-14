@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { 
   collection, 
@@ -7,11 +7,12 @@ import {
   query, 
   where,
   doc,
+  setDoc,
   onSnapshot 
 } from 'firebase/firestore';
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { sanitizeText } from '../utils/security';
-import { validateHoneypot, logSecurityEvent } from '../utils/securityAudit';
+import { validateHoneypot } from '../utils/securityAudit';
 
 const WEEKDAYS_MAP = {
   0: 'Sunday',
@@ -218,7 +219,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       setIsLoadingSlots(true);
       try {
         const q = query(
-          collection(db, 'teacher_appointments'),
+          collection(db, 'appointment_slots'),
           where('teacherId', '==', targetId),
           where('date', '==', selectedDate)
         );
@@ -226,13 +227,13 @@ const AppointmentBooking = ({ isStandalone = true }) => {
         const slots = [];
         snap.forEach(d => {
           const data = d.data();
-          if (data.status !== 'cancelled') {
+          if (data.timeSlot) {
             slots.push(data.timeSlot);
           }
         });
         setBookedSlots(slots);
       } catch (err) {
-        console.error('Error fetching booked slots:', err);
+        console.warn('Notice fetching booked slots:', err);
       } finally {
         setIsLoadingSlots(false);
       }
@@ -308,6 +309,17 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 
     try {
       await addDoc(collection(db, 'teacher_appointments'), newAppointment);
+      try {
+        const slotClean = selectedSlot.replace(/[^a-zA-Z0-9]/g, '_');
+        await setDoc(doc(db, 'appointment_slots', `${selectedTeacher.id}_${selectedDate}_${slotClean}`), {
+          teacherId: selectedTeacher.id,
+          date: selectedDate,
+          timeSlot: selectedSlot,
+          createdAt: new Date().toISOString()
+        });
+      } catch (slotErr) {
+        console.warn('Slot reservation notice:', slotErr);
+      }
       setBookingTicket(newAppointment);
     } catch (err) {
       console.error('Error booking appointment:', err);

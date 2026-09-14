@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, doc, setDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
   getAllTeachers, 
   getTeacherById, 
   verifyTeacherCredentials, 
   updateTeacherPin, 
-  resetTeacherPinToDefault, 
   getActiveTeacherSession, 
   setActiveTeacherSession, 
   logoutTeacherSession, 
@@ -19,12 +18,11 @@ import {
   enableTeacher2FA,
   disableTeacher2FA,
   generateWhatsAppOTP,
-  verifyTeacher2FACode,
-  getTeacherAccountDetails,
-  DEFAULT_TEACHER_PIN 
+  verifyTeacher2FACode
 } from '../utils/teacherAuth';
 import { getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
 import { generateDataSignature } from '../utils/cryptoVault';
+import { authenticateStaffSession } from '../utils/staffAuthBridge';
 import './StudentDismissalPage.css';
 
 const CLASSROOM_OPTIONS = [
@@ -60,13 +58,6 @@ const StudentDismissalPage = () => {
   const [activeTeacher, setActiveTeacher] = useState(() => {
     const session = getActiveTeacherSession();
     if (session && session.id) return session;
-    try {
-      if (localStorage.getItem('musherfe_teacher_auth_pin') === DEFAULT_TEACHER_PIN) {
-        const defaultT = allTeachers.find(t => t.id === 'rami_irfaeya') || allTeachers[0];
-        setActiveTeacherSession(defaultT);
-        return defaultT;
-      }
-    } catch (e) {}
     return null;
   });
 
@@ -151,7 +142,7 @@ const StudentDismissalPage = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const [departureDate, setDepartureDate] = useState(getTodayLocalString);
+  const [departureDate] = useState(getTodayLocalString);
   const [departureTime, setDepartureTime] = useState(() => {
     const now = new Date();
     const h = String(now.getHours()).padStart(2, '0');
@@ -171,8 +162,15 @@ const StudentDismissalPage = () => {
     };
   }, []);
 
+  // Ensure Firebase Auth session is active whenever teacher is logged in
+  useEffect(() => {
+    if (activeTeacher) {
+      authenticateStaffSession();
+    }
+  }, [activeTeacher]);
+
   // Handle Teacher Login (Stage 1: Verify Name & PIN)
-  const handleTeacherLogin = (e) => {
+  const handleTeacherLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
 
@@ -181,7 +179,7 @@ const StudentDismissalPage = () => {
       return;
     }
 
-    const isValid = verifyTeacherCredentials(selectedTeacherId, loginPin);
+    const isValid = await verifyTeacherCredentials(selectedTeacherId, loginPin);
     if (isValid) {
       const teacher = getTeacherById(selectedTeacherId) || allTeachers.find(t => t.id === selectedTeacherId);
       if (!teacher) return;
@@ -201,6 +199,7 @@ const StudentDismissalPage = () => {
       }
 
       // Direct Login (trusted device or 2FA not enabled yet)
+      authenticateStaffSession();
       if (rememberDevice) {
         setActiveTeacherSession(teacher);
       }
@@ -228,6 +227,7 @@ const StudentDismissalPage = () => {
     try {
       const res = await verifyTeacher2FACode(pendingTeacher.id, cleanCode);
       if (res.success) {
+        authenticateStaffSession();
         if (trustDevice30Days) {
           setDeviceTrusted(pendingTeacher.id, true);
         }
@@ -261,7 +261,7 @@ const StudentDismissalPage = () => {
           `يرجى إدخال هذا الرمز في صفحة تسجيل الدخول لإتمام عملية التحقق بسلامة الله.`;
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
       }
-    } catch (err) {
+    } catch {
       setTwoFactorError('تعذر توليد الرمز، يرجى المحاولة مجدداً.');
     } finally {
       setIsGeneratingOtp(false);
@@ -343,7 +343,7 @@ const StudentDismissalPage = () => {
 
     if (!activeTeacher) return;
 
-    const isCurrentValid = verifyTeacherCredentials(activeTeacher.id, currentPinInput);
+    const isCurrentValid = await verifyTeacherCredentials(activeTeacher.id, currentPinInput);
     if (!isCurrentValid) {
       setChangePinError('❌ كلمة المرور الحالية غير صحيحة.');
       return;
@@ -445,6 +445,7 @@ const StudentDismissalPage = () => {
     };
 
     try {
+      await authenticateStaffSession();
       let docId = 'dis_' + Date.now();
       
       try {
