@@ -988,3 +988,188 @@ ${commentsSnippet || 'تناقش الطلاب حول أهمية الموضوع �
     honoredStudents: comments.slice(0, 3).map(c => c.studentName).filter(Boolean)
   };
 };
+
+/**
+ * 12. Weekly Challenge AI Agent:
+ * Generates engaging, curriculum-aligned elementary puzzles across STEM, Math, Arabic & Science
+ */
+export const generateWeeklyChallengeAI = async ({ category = 'الرياضيات والمنطق', gradeLevel = 'الصفوف 3-4', customTopic = '' } = {}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const prompt = `أنت وكيل الذكاء الاصطناعي التعليمي لمدرسة مشيرفة الابتدائية.
+المطلوب إنشاء سؤال مسابقة ذكاء أسبوعية تفاعلية وممتعة لطلاب المرحلة الابتدائية.
+المجال: ${category}
+الفئة المستهدفة: ${gradeLevel}
+${customTopic ? `الموضوع المحدد: ${customTopic}` : ''}
+
+شروط السؤال:
+1. صياغة واضحة، مشوقة ومحفزة للتفكير باللغة العربية الفصحى الجميلة.
+2. يتضمن 4 خيارات إجابة (واحد منها فقط صحيح والباقي منطقي ومقنع).
+3. تحديد رقم الخيار الصحيح (correctIndex من 0 إلى 3).
+4. شرح علمي أو منطقي مبسط ومشجع يشرح سبب صحة الإجابة.
+5. تلميح ذكي (hint) يوجه التفكير بطريقة سقراطية دون كشف الجواب المباشر.
+6. عنوان وسام شرف مميز وجذاب للفائز.
+
+أعد النتيجة بتنسيق JSON حصراً بهذا المخطط دون أي نص إضافي:
+{
+  "category": "${category}",
+  "badgeTitle": "وسام عبقري الرياضيات 🌟",
+  "question": "نص السؤال هنا؟",
+  "options": ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
+  "correctIndex": 0,
+  "explanation": "الشرح العلمي والتشجيع هنا",
+  "hint": "تلميح ذكي لطيف يساعد في الوصول للحل"
+}`;
+
+  // 1. Try Groq
+  if (groqKey) {
+    try {
+      const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          max_tokens: 800,
+          response_format: { type: "json_object" }
+        })
+      }, 7000);
+      if (res.ok) {
+        const data = await res.json();
+        const txt = data.choices?.[0]?.message?.content;
+        if (txt) {
+          const parsed = JSON.parse(txt);
+          if (parsed.question && Array.isArray(parsed.options) && parsed.options.length === 4) {
+            return { ...parsed, id: `ch-ai-${Date.now()}` };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Groq challenge generation notice:', e);
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 800,
+                responseMimeType: "application/json"
+              }
+            })
+          }, 7000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.question && Array.isArray(parsed.options) && parsed.options.length === 4) {
+              return { ...parsed, id: `ch-ai-${Date.now()}` };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini (${m}) challenge generation notice:`, e);
+      }
+    }
+  }
+
+  // High Quality Creative Fallback Bank
+  const fallbackBank = [
+    {
+      id: `ch-fb-math-${Date.now()}`,
+      category: 'تحدي الرياضيات والمنطق 🧮',
+      badgeTitle: 'عبقري الحساب الذهني 🌟',
+      question: 'أنا عدد إذا ضاعفتني ثم طرحت مني 8 كان الناتج 20، فمن أكون؟',
+      options: ['العدد 14', 'العدد 12', 'العدد 10', 'العدد 16'],
+      correctIndex: 0,
+      explanation: 'رائع جداً! إذا أخذنا العدد 14 وضاعفناه يصبح 28، وبطرح 8 نحصل على 20. تفكير رياضي مذهل! 🧮✨',
+      hint: 'فكر بالعكس: ابدأ بالعدد 20 وأضف إليه 8، ثم اقسم الناتج على 2!'
+    },
+    {
+      id: `ch-fb-science-${Date.now()}`,
+      category: 'تحدي علوم الفضاء والاستكشاف 🚀',
+      badgeTitle: 'رائد فضاء المستقبل 🌌',
+      question: 'ما هو الكوكب الذي يُطلق عليه "الكوكب الأحمر" بسبب وفرة أكسيد الحديد على سطحه؟',
+      options: ['كوكب المريخ', 'كوكب المشتري', 'كوكب زحل', 'كوكب الزهرة'],
+      correctIndex: 0,
+      explanation: 'إجابة عبقرية! كوكب المريخ يظهر بلون أحمر قرمزي بسبب صدأ الحديد في صخوره وتربته. أحسنت يا مستكشف الفضاء! 🪐🚀',
+      hint: 'إنه الكوكب الرابع بعداً عن الشمس، وله قمران صغيران هما فوبوس وديموس!'
+    },
+    {
+      id: `ch-fb-arabic-${Date.now()}`,
+      category: 'تحدي فرسان اللغة العربية 📚',
+      badgeTitle: 'فارس الضاد والبلاغة ✍️',
+      question: 'أي من الكلمات التالية تُعد جمع تكسير صحيح لكلمة "سفينة"؟',
+      options: ['سُفُن وسَفائِن', 'سفينات', 'مَسافن', 'سِفان'],
+      correctIndex: 0,
+      explanation: 'أحسنت القراءة والبيان! جمع سفينة هو "سُفُن" و"سَفائِن". لغتنا العربية بحر واسع زاخر بالجواهر! 🌊⛵',
+      hint: 'تذكر الآية الكريمة: ﴿وَأَمَّا السَّفِينَةُ فَكَانَتْ لِمَسَاكِينَ يَعْمَلُونَ فِي الْبَحْرِ﴾!'
+    },
+    {
+      id: `ch-fb-logic-${Date.now()}`,
+      category: 'تحدي الذكاء والألغاز 💡',
+      badgeTitle: 'حلال الألغاز المبتكر 🔍',
+      question: 'شيء يملك أسناناً كثيرة ولكنه لا يعض ولا يأكل، ما هو؟',
+      options: ['المشط', 'المنشار', 'السحّاب (السوستة)', 'المفتاح'],
+      correctIndex: 0,
+      explanation: 'ذكاء لماح! المشط له أسنان متراصة لتسريح الشعر دون أن يعض أحداً. لغز لطيف وتفكير سريع! 💡👌',
+      hint: 'نستخدمه كل صباح أمام المرآة لترتيب مظهرنا!'
+    }
+  ];
+
+  const matched = fallbackBank.filter(b => b.category.includes((category || '').slice(0, 4)));
+  return matched.length > 0 
+    ? matched[Math.floor(Math.random() * matched.length)]
+    : fallbackBank[Math.floor(Math.random() * fallbackBank.length)];
+};
+
+/**
+ * 13. Socratic Hint AI for Weekly Challenge:
+ * Provides a gentle guiding hint without revealing the direct solution
+ */
+export const getChallengeSocraticHintAI = async ({ question, options, studentGrade }) => {
+  const prompt = `السؤال الموجه لطالب في ${studentGrade || 'المرحلة الابتدائية'}: "${question}"
+الخيارات: ${JSON.stringify(options)}
+
+المطلوب:
+أعطِ تلميحاً ذكياً ولطيفاً جداً بطريقة سقراطية في حدود 15 إلى 25 كلمة باللغة العربية الفصحى.
+القاعدة الصارمة: ممنوع منعاً باتاً ذكر الإجابة الصحيحة أو رقم الخيار. حفز الطالب على التفكير بخطوة مساعدة فقط.`;
+
+  const aiText = await generateAiResponse(prompt, 'أنت معلم ذكي ومحفز في مدرسة مشيرفة يقدم تلميحات سقراطية لطيفة دون حرق الحل.');
+  if (aiText) return aiText.replace(/^["']|["']$/g, '').trim();
+
+  return 'فكر بهدوء يا بطل: جرب فحص الخيارات واحداً تلو الآخر، واطرح على نفسك: ما الذي سيحدث لو طبقنا فكرة السؤال بالعكس؟ 💪✨';
+};
+
+/**
+ * 14. Personalized Winner Praise & Certificate Generator:
+ */
+export const generateStudentPraiseAI = async ({ studentName, studentGrade, badgeTitle, question }) => {
+  const prompt = `اسم الطالب البطل: ${studentName} (${studentGrade})
+الوسام المستحق: ${badgeTitle}
+السؤال الذي حله بنجاح: "${question}"
+
+المطلوب:
+صياغة عبارة تهنئة وتكريم فخرية شخصية وملهمة للطالب من مدرسة مشيرفة الابتدائية في حدود 20 إلى 35 كلمة باللغة العربية الفصحى الجميلة مع رموز تعبيرية 🏆🌟✨.`;
+
+  const aiText = await generateAiResponse(prompt, 'صياغة بطاقات تهنئة وتكريم فخرية لطلاب مدرسة مشيرفة المتميزين.');
+  if (aiText) return aiText.replace(/^["']|["']$/g, '').trim();
+
+  return `مبارك من القلب لبطلنا المتميز ${studentName}! لقد أثبتّ ذكاءً متقداً وسرعة بديهة استحققت بها وسام "${badgeTitle}". تفخر بك مدرسة مشيرفة دوماً! 🏆🌟`;
+};
