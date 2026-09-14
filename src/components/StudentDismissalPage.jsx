@@ -51,8 +51,11 @@ const COMPANION_TYPES = [
   'بمفرده (بموافقة هاتفية موثقة) 🚶'
 ];
 
+// Module-level stable reference (getAllTeachers() now returns a cached array)
+const ALL_TEACHERS = getAllTeachers();
+
 const StudentDismissalPage = () => {
-  const allTeachers = getAllTeachers();
+  const allTeachers = ALL_TEACHERS;
 
   // Active Authenticated Teacher Session
   const [activeTeacher, setActiveTeacher] = useState(() => {
