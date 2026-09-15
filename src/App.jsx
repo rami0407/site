@@ -405,10 +405,9 @@ function App() {
     );
   }
 
-  const isFullSchoolView = currentHash.includes('full-school') || currentHash.includes('school-home');
+  const isServicesPortalView = currentHash.includes('services') || currentHash.includes('staffing') || currentHash.includes('khadamat');
 
-  // Currently publish ONLY 'منصة الخدمات' (EduStaffingPortal) as requested
-  if (!isFullSchoolView) {
+  if (isServicesPortalView) {
     return (
       <Suspense fallback={<Loader />}>
         <Loader />

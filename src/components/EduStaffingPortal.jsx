@@ -545,9 +545,29 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     <div className="edu-portal-root">
       {/* شريط رأس الصفحة */}
       <div className="edu-secret-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <span className="edu-badge-secret">💼 منصة الخدمات</span>
           <span style={{ fontWeight: 900, fontSize: '1.15rem' }}>منصة الخدمات</span>
+          <a 
+            href="#" 
+            onClick={() => { window.location.hash = ''; }}
+            style={{
+              fontSize: '0.85rem',
+              color: '#93c5fd',
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.12)',
+              padding: '5px 12px',
+              borderRadius: '10px',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: '1px solid rgba(147, 197, 253, 0.4)',
+              marginRight: '10px'
+            }}
+          >
+            🏠 العودة لموقع المدرسة الرئيسي
+          </a>
         </div>
         <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
           بوابة تنسيق ساعات المساعدة الفردية (שעות בודדות) والخدمات التعليمية

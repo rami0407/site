@@ -319,6 +319,29 @@ const Navbar = () => {
               <LanguageSwitcher />
             </li>
 
+            {/* زر منصة الخدمات المدرسية */}
+            <li>
+              <a 
+                href="#/services" 
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                  color: 'white',
+                  padding: '5px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(124, 58, 237, 0.4)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)'
+                }}
+              >
+                💼 منصة الخدمات (שעות בודדות / מילוי מקום)
+              </a>
+            </li>
+
             {/* Top Notification Bell */}
             <li>
               <NotificationCenter />
@@ -400,6 +423,11 @@ const Navbar = () => {
                     </a>
                   </li>
                 ))}
+                <li>
+                  <a href="#/services" onClick={() => setMobileMenuOpen(false)} style={{ color: '#c084fc', fontWeight: 900, fontSize: '0.95rem' }}>
+                    <i className="fas fa-briefcase"></i> منصة الخدمات (שעות בודדות / מילוי מקום) 💼
+                  </a>
+                </li>
                 <li>
                   <a href="#/student-dismissal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#38bdf8', fontWeight: 800 }}>
                     <i className="fas fa-file-signature"></i> تسريح الطلاب (للمربين) 🏃‍♂️
