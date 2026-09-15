@@ -383,6 +383,12 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    // 💼 منصة الخدمات وتجنيد ساعات مساعدة (שעות בודדות)
+    match /service_platform_teachers/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isSuperAdmin();
+    }
+
     // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
     match /student_dismissals/{docId} {
       // القراءة محصورة في المعلمين والحارس والإدارة فقط (بيانات الطلاب حساسة)

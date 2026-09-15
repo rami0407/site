@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import './EduStaffingPortal.css';
 
 const SPECIALIZATIONS = [
@@ -22,7 +22,7 @@ const DEGREES_OPTIONS = [
   'لقب أول (B.Ed) + شهادة تدريس',
   'لقب أول (B.A / B.Sc) + شهادة تدريس',
   'لقب ثانٍ (M.A / M.Ed)',
-  'شهادة تدريس معتمدة (תעודת הוראה)',
+  'شهادة تدريس معتمدة (תעودת הוראה)',
   'طالب/ة لقب أول سنة متقدمة (ستاج)',
   'دبلوم تدريسي متخصص',
   'أخرى (تحديد مخصص)'
@@ -129,8 +129,8 @@ const INITIAL_PROGRAMS = [
   }
 ];
 
-const EduStaffingPortal = () => {
-  const [activeTab, setActiveTab] = useState('landing');
+const EduStaffingPortal = ({ initialTab = 'landing' }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [teachers, setTeachers] = useState(INITIAL_TEACHERS);
   const [jobs, setJobs] = useState(INITIAL_JOBS);
   const [programs, setPrograms] = useState(INITIAL_PROGRAMS);
@@ -139,6 +139,10 @@ const EduStaffingPortal = () => {
   const [teacherRegionFilter, setTeacherRegionFilter] = useState('all');
   const [teacherDayFilter, setTeacherDayFilter] = useState('all');
   const [teacherOnlyAvailable, setTeacherOnlyAvailable] = useState(false);
+
+  // States for Editing and Deleting Teachers
+  const [editingTeacher, setEditingTeacher] = useState(null);
+  const [teacherToDelete, setTeacherToDelete] = useState(null);
 
   // Form State for Registering a Teacher for Assistance Hours
   const [teacherRegForm, setTeacherRegForm] = useState({
@@ -277,6 +281,42 @@ const EduStaffingPortal = () => {
     setIsSubmittingTeacher(false);
     showToast('🎉 تم تسجيل بياناتك بنجاح في منصة الخدمات لساعات المساعدة!');
     setActiveTab('browse-teachers');
+  };
+
+  // Save Edited Teacher Data
+  const handleSaveEditTeacher = async () => {
+    if (!editingTeacher) return;
+
+    const updatedList = teachers.map(t => t.id === editingTeacher.id ? editingTeacher : t);
+    setTeachers(updatedList);
+    localStorage.setItem('musherfe_service_teachers_v1', JSON.stringify(updatedList));
+
+    try {
+      const docRef = doc(db, 'service_platform_teachers', editingTeacher.id);
+      await updateDoc(docRef, editingTeacher);
+    } catch (e) {
+      console.warn('Cloud update fallback:', e);
+    }
+
+    showToast('✅ تم حفظ وتحديث معطيات المعلم بنجاح!');
+    setEditingTeacher(null);
+  };
+
+  // Delete / Wipe Teacher Data
+  const handleDeleteTeacher = async (teacherId) => {
+    const updatedList = teachers.filter(t => t.id !== teacherId);
+    setTeachers(updatedList);
+    localStorage.setItem('musherfe_service_teachers_v1', JSON.stringify(updatedList));
+
+    try {
+      const docRef = doc(db, 'service_platform_teachers', teacherId);
+      await deleteDoc(docRef);
+    } catch (e) {
+      console.warn('Cloud delete fallback:', e);
+    }
+
+    showToast('🗑️ تم مسح وحذف سجل المعلم بنجاح!');
+    setTeacherToDelete(null);
   };
 
   const handleSendMessage = (e) => {
@@ -441,7 +481,7 @@ const EduStaffingPortal = () => {
                 <div className="edu-role-card" onClick={() => setActiveTab('browse-teachers')}>
                   <div className="edu-role-icon">👨‍🏫</div>
                   <h3>دليل المعلمين المؤهلين</h3>
-                  <p>استعرض قائمة المعلمين المسجلين وتفاصيلهم وتواصل معهم مباشرة لتنسيق ساعات المساعدة.</p>
+                  <p>استعرض قائمة المعلمين وتعديل أو مسح بيانات أي معلم مسجل بكل سهولة.</p>
                 </div>
 
                 <div className="edu-role-card" onClick={() => setActiveTab('principal-dash')}>
@@ -776,7 +816,7 @@ const EduStaffingPortal = () => {
                   👨‍🏫 دليل المعلمين المتقدمين لساعات المساعدة (שעות בודדות)
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>
-                  قائمة المعلمين المتاحين للعمل متضمنة أرقام الهويات، الهواتف، التخصصات، والشهادات
+                  قائمة المعلمين المتاحين للعمل مع إمكانية التعديل والمسح والتحكم بالمعطيات
                 </p>
               </div>
               <button className="edu-btn edu-btn-blue" onClick={() => setActiveTab('teacher-dash')}>
@@ -838,38 +878,67 @@ const EduStaffingPortal = () => {
                   return true;
                 })
                 .map(t => (
-                  <div key={t.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid #cbd5e1' }}>
+                  <div key={t.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid #cbd5e1', position: 'relative' }}>
                     <div>
+                      {/* رأس بطاقة المعلم مع شارة الحالة وأزرار الإدارة السريعة */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                         <div>
-                          <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{t.name}</h3>
+                          <h3 style={{ fontSize: '1.18rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{t.name}</h3>
                           {t.town && (
-                            <span style={{ fontSize: '0.82rem', color: '#0d9488', fontWeight: 800 }}>
+                            <span style={{ fontSize: '0.85rem', color: '#0d9488', fontWeight: 800 }}>
                               🏡 البلدة: {t.town}
                             </span>
                           )}
                         </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', background: t.isAvailable ? '#ecfdf5' : '#f1f5f9', color: t.isAvailable ? '#047857' : '#64748b' }}>
-                          {t.isAvailable ? '🟢 متاح فوراً' : '⚪ غير متاح'}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', background: t.isAvailable ? '#ecfdf5' : '#f1f5f9', color: t.isAvailable ? '#047857' : '#64748b' }}>
+                            {t.isAvailable ? '🟢 متاح' : '⚪ منشغل'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* شريط الإدارة والتحكم: تعديل ومسح معطيات المعلم */}
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', background: '#eff6ff', padding: '6px 10px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                        <button 
+                          type="button" 
+                          className="edu-btn" 
+                          style={{ flex: 1, background: '#2563eb', color: 'white', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                          onClick={() => setEditingTeacher({ ...t })}
+                        >
+                          ✏️ تعديل المعطيات
+                        </button>
+                        <button 
+                          type="button" 
+                          className="edu-btn" 
+                          style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                          onClick={() => setTeacherToDelete(t)}
+                        >
+                          🗑️ مسح / حذف
+                        </button>
                       </div>
 
                       {/* شريط البيانات الرسمية المطلوبة: الهوية والهاتف والإيميل */}
                       <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '12px', border: '1.5px solid #e2e8f0', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                        {t.idNumber && (
+                        {t.idNumber ? (
                           <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1e293b' }}>
                             🪪 رقم هوية المعلم: <span style={{ fontFamily: 'monospace', color: '#2563eb', fontWeight: 900 }}>{t.idNumber}</span>
                           </div>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>🪪 رقم الهوية: <em>غير محدد</em></div>
                         )}
-                        {t.phone && (
+                        {t.phone ? (
                           <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1e293b' }}>
                             📞 رقم الهاتف: <a href={'tel:' + t.phone} style={{ color: '#0d9488', textDecoration: 'none', fontWeight: 900 }}>{t.phone}</a>
                           </div>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>📞 رقم الهاتف: <em>غير محدد</em></div>
                         )}
-                        {t.email && t.email !== 'غير محدد' && (
+                        {t.email && t.email !== 'غير محدد' ? (
                           <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>
                             📧 الإيميل: <a href={'mailto:' + t.email} style={{ color: '#4338ca', textDecoration: 'none' }}>{t.email}</a>
                           </div>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>📧 الإيميل: <em>غير محدد</em></div>
                         )}
                       </div>
 
@@ -884,19 +953,21 @@ const EduStaffingPortal = () => {
                         ⏳ سنوات الخبرة: <span style={{ color: '#0f172a', fontWeight: 900 }}>{t.experience} سنوات</span>
                       </div>
 
-                      {/* التخصصات */}
+                      {/* التخصصات وموضوع التدريس */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px' }}>
                         {t.specializations && t.specializations.map(s => (
                           <span key={s} style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>{s}</span>
                         ))}
                       </div>
 
-                      <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
-                        {t.bio}
-                      </p>
+                      {t.bio && (
+                        <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
+                          {t.bio}
+                        </p>
+                      )}
 
                       <div style={{ fontSize: '0.82rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                        <div>🗓️ الأيام الملائمة: <span style={{ fontWeight: 800, color: '#1e293b' }}>{t.availableDays ? t.availableDays.join('، ') : 'مرن'}</span></div>
+                        <div>🗓️ الأيام الملائمة: <span style={{ fontWeight: 800, color: '#1e293b' }}>{t.availableDays && t.availableDays.length > 0 ? t.availableDays.join('، ') : 'مرن'}</span></div>
                         <div>⏱️ ساعات المساعدة الملائمة: <span style={{ fontWeight: 900, color: '#0d9488' }}>{t.hoursNeeded} ساعة أسبوعياً (שעות בודדות)</span></div>
                       </div>
                     </div>
@@ -928,6 +999,274 @@ const EduStaffingPortal = () => {
                     </div>
                   </div>
                 ))}
+            </div>
+          </div>
+        )}
+
+        {/* نافذة تعديل ومسح معطيات المعلم (Edit Modal) */}
+        {editingTeacher && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            direction: 'rtl'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '24px',
+              maxWidth: '680px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+              border: '2.5px solid #2563eb'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#1e40af' }}>
+                    ✏️ تعديل ومسح معطيات المعلم
+                  </h3>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>يمكنك تعديل أي معلومة أو إفراغها ومسحها بحرية ثم الحفظ</span>
+                </div>
+                <button 
+                  onClick={() => setEditingTeacher(null)} 
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', color: '#64748b' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>الاسم الكامل:</label>
+                      <button type="button" onClick={() => setEditingTeacher({...editingTeacher, name: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                    </div>
+                    <input className="edu-input" value={editingTeacher.name || ''} onChange={e => setEditingTeacher({...editingTeacher, name: e.target.value})} />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>🪪 رقم الهوية (ת.ז):</label>
+                      <button type="button" onClick={() => setEditingTeacher({...editingTeacher, idNumber: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                    </div>
+                    <input className="edu-input" value={editingTeacher.idNumber || ''} onChange={e => setEditingTeacher({...editingTeacher, idNumber: e.target.value})} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>📞 رقم الهاتف:</label>
+                      <button type="button" onClick={() => setEditingTeacher({...editingTeacher, phone: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                    </div>
+                    <input className="edu-input" value={editingTeacher.phone || ''} onChange={e => setEditingTeacher({...editingTeacher, phone: e.target.value})} />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>📧 البريد الإلكتروني:</label>
+                      <button type="button" onClick={() => setEditingTeacher({...editingTeacher, email: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                    </div>
+                    <input className="edu-input" value={editingTeacher.email || ''} onChange={e => setEditingTeacher({...editingTeacher, email: e.target.value})} />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>🏡 البلدة ومكان السكن:</label>
+                      <button type="button" onClick={() => setEditingTeacher({...editingTeacher, town: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                    </div>
+                    <input className="edu-input" value={editingTeacher.town || ''} onChange={e => setEditingTeacher({...editingTeacher, town: e.target.value})} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>🎓 الشهادات الجامعية:</label>
+                    <input className="edu-input" value={editingTeacher.degrees || ''} onChange={e => setEditingTeacher({...editingTeacher, degrees: e.target.value})} />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>⏳ سنوات الخبرة:</label>
+                    <input type="number" className="edu-input" min={0} max={40} value={editingTeacher.experience || 0} onChange={e => setEditingTeacher({...editingTeacher, experience: Number(e.target.value)})} />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>⏱️ ساعات المساعدة الملائمة:</label>
+                    <input type="number" className="edu-input" min={1} max={35} value={editingTeacher.hoursNeeded || 8} onChange={e => setEditingTeacher({...editingTeacher, hoursNeeded: Number(e.target.value)})} />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>
+                      📚 مواضيع التدريس والتخصص:
+                    </label>
+                    <button type="button" onClick={() => setEditingTeacher({...editingTeacher, specializations: []})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح التخصصات</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {SPECIALIZATIONS.map(s => {
+                      const curSpecs = editingTeacher.specializations || [];
+                      const isSel = curSpecs.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          className={'edu-chip ' + (isSel ? 'selected' : '')}
+                          onClick={() => {
+                            const updated = isSel ? curSpecs.filter(x => x !== s) : [...curSpecs, s];
+                            setEditingTeacher({...editingTeacher, specializations: updated});
+                          }}
+                        >
+                          {isSel ? '✓ ' : '+ '} {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>
+                      📍 المناطق الجغرافية الملائمة:
+                    </label>
+                    <button type="button" onClick={() => setEditingTeacher({...editingTeacher, regions: []})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح المناطق</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {REGIONS.map(r => {
+                      const curRegions = editingTeacher.regions || [];
+                      const isSel = curRegions.includes(r);
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          className={'edu-chip ' + (isSel ? 'selected' : '')}
+                          onClick={() => {
+                            const updated = isSel ? curRegions.filter(x => x !== r) : [...curRegions, r];
+                            setEditingTeacher({...editingTeacher, regions: updated});
+                          }}
+                        >
+                          {isSel ? '✓ ' : '+ '} {r}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>
+                      تعديل الأيام المتاحة:
+                    </label>
+                    <button type="button" onClick={() => setEditingTeacher({...editingTeacher, availableDays: []})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح الأيام</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {DAYS.map(day => {
+                      const curDays = editingTeacher.availableDays || [];
+                      const isSel = curDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          className={'edu-chip ' + (isSel ? 'selected' : '')}
+                          onClick={() => {
+                            const updated = isSel ? curDays.filter(d => d !== day) : [...curDays, day];
+                            setEditingTeacher({...editingTeacher, availableDays: updated});
+                          }}
+                        >
+                          {isSel ? '✓ ' : '+ '} {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>حالة التوفر:</label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 800, fontSize: '0.88rem' }}>
+                    <input type="checkbox" checked={!!editingTeacher.isAvailable} onChange={e => setEditingTeacher({...editingTeacher, isAvailable: e.target.checked})} />
+                    متاح للعمل الفوري (🟢)
+                  </label>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>النبذة والملاحظات:</label>
+                    <button type="button" onClick={() => setEditingTeacher({...editingTeacher, bio: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح النبذة</button>
+                  </div>
+                  <textarea className="edu-input" rows={2} value={editingTeacher.bio || ''} onChange={e => setEditingTeacher({...editingTeacher, bio: e.target.value})}></textarea>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button type="button" className="edu-btn edu-btn-blue" style={{ flex: 2, padding: '12px', fontWeight: 900 }} onClick={handleSaveEditTeacher}>
+                    💾 حفظ وتثبيت التعديلات
+                  </button>
+                  <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1, padding: '12px' }} onClick={() => setEditingTeacher(null)}>
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* نافذة تأكيد الحذف / المسح (Delete Modal) */}
+        {teacherToDelete && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            direction: 'rtl'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px 24px',
+              maxWidth: '440px',
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+              border: '2px solid #ef4444'
+            }}>
+              <div style={{ fontSize: '3.2rem', marginBottom: '10px' }}>🗑️</div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 900, color: '#991b1b' }}>
+                تأكيد حذف بيانات المعلم
+              </h3>
+              <p style={{ margin: '0 0 20px 0', color: '#475569', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                هل أنت متأكد من رغبتك في مسح وحذف سجل المعلم <strong>"{teacherToDelete.name}"</strong> نهائياً من منصة الخدمات؟
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button 
+                  type="button"
+                  className="edu-btn" 
+                  style={{ background: '#dc2626', color: 'white', padding: '10px 22px', fontWeight: 900, borderRadius: '10px' }}
+                  onClick={() => handleDeleteTeacher(teacherToDelete.id)}
+                >
+                  🗑️ نعم، احذف نهائياً
+                </button>
+                <button 
+                  type="button"
+                  className="edu-btn edu-btn-outline" 
+                  style={{ padding: '10px 22px', borderRadius: '10px' }}
+                  onClick={() => setTeacherToDelete(null)}
+                >
+                  إلغاء
+                </button>
+              </div>
             </div>
           </div>
         )}
