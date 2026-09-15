@@ -59,6 +59,7 @@ const VirtualMuseumPage = lazy(() => import('./components/VirtualMuseumPage'));
 const LostAndFoundPage = lazy(() => import('./components/LostAndFoundPage'));
 const FamilyChallengePage = lazy(() => import('./components/FamilyChallengePage'));
 const StudentDismissalPage = lazy(() => import('./components/StudentDismissalPage'));
+const EduStaffingPortal = lazy(() => import('./components/EduStaffingPortal'));
 
 
 function App() {
