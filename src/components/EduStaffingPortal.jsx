@@ -196,7 +196,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     if (savedLocal) {
       try {
         const parsed = JSON.parse(savedLocal);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setTeachers(parsed);
         }
       } catch (e) {
@@ -207,11 +207,10 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     try {
       const q = collection(db, 'service_platform_teachers');
       const unsub = onSnapshot(q, (snap) => {
-        if (!snap.empty) {
-          const cloudTeachers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setTeachers(cloudTeachers);
-          localStorage.setItem('musherfe_service_teachers_v1', JSON.stringify(cloudTeachers));
-        }
+        // Always sync cloud state, even if empty, to allow deleting all items
+        const cloudTeachers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTeachers(cloudTeachers);
+        localStorage.setItem('musherfe_service_teachers_v1', JSON.stringify(cloudTeachers));
       }, () => {
         // Fallback on local state
       });
