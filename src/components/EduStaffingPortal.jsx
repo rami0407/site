@@ -143,6 +143,8 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
   // States for Editing and Deleting Teachers
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
+  const [editingJob, setEditingJob] = useState(null);
+  const [jobToDelete, setJobToDelete] = useState(null);
 
   // Form State for Registering a Teacher for Assistance Hours
   const [teacherRegForm, setTeacherRegForm] = useState({
@@ -214,6 +216,33 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
       }, () => {
         // Fallback on local state
       });
+      return () => unsub();
+    } catch {
+      // Offline fallback
+    }
+  }, []);
+
+  // Load and sync jobs from localStorage & Firestore
+  useEffect(() => {
+    const savedJobs = localStorage.getItem('musherfe_service_jobs_v1');
+    if (savedJobs) {
+      try {
+        const parsed = JSON.parse(savedJobs);
+        if (Array.isArray(parsed)) {
+          setJobs(parsed);
+        }
+      } catch (e) {
+        console.warn('Local jobs parse error', e);
+      }
+    }
+
+    try {
+      const q = collection(db, 'service_platform_jobs');
+      const unsub = onSnapshot(q, (snap) => {
+        const cloudJobs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setJobs(cloudJobs);
+        localStorage.setItem('musherfe_service_jobs_v1', JSON.stringify(cloudJobs));
+      }, () => {});
       return () => unsub();
     } catch {
       // Offline fallback
@@ -329,16 +358,62 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     setNewChatText('');
   };
 
-  const handleAddJob = (e) => {
+  const handleAddJob = async (e) => {
     e.preventDefault();
+    if (!newJob.schoolName.trim()) {
+      showToast('⚠️ يرجى إدخال اسم المدرسة');
+      return;
+    }
     const created = {
       id: 'job_' + Date.now(),
       ...newJob,
       status: 'active'
     };
-    setJobs(prev => [created, ...prev]);
+    const updated = [created, ...jobs];
+    setJobs(updated);
+    localStorage.setItem('musherfe_service_jobs_v1', JSON.stringify(updated));
+
+    try {
+      await addDoc(collection(db, 'service_platform_jobs'), created);
+    } catch (err) {
+      console.warn('Cloud add job fallback:', err);
+    }
+
     showToast('تم نشر طلب ساعات المساعدة بنجاح! 📢');
     setActiveTab('browse-jobs');
+  };
+
+  const handleSaveEditJob = async () => {
+    if (!editingJob) return;
+    const updated = jobs.map(j => j.id === editingJob.id ? editingJob : j);
+    setJobs(updated);
+    localStorage.setItem('musherfe_service_jobs_v1', JSON.stringify(updated));
+
+    try {
+      const docRef = doc(db, 'service_platform_jobs', editingJob.id);
+      await updateDoc(docRef, editingJob);
+    } catch (e) {
+      console.warn('Cloud update job fallback:', e);
+    }
+
+    showToast('✅ تم حفظ وتحديث معطيات طلب ساعات المساعدة بنجاح!');
+    setEditingJob(null);
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    const updated = jobs.filter(j => j.id !== jobId);
+    setJobs(updated);
+    localStorage.setItem('musherfe_service_jobs_v1', JSON.stringify(updated));
+
+    try {
+      const docRef = doc(db, 'service_platform_jobs', jobId);
+      await deleteDoc(docRef);
+    } catch (e) {
+      console.warn('Cloud delete job fallback:', e);
+    }
+
+    showToast('🗑️ تم مسح وحذف طلب ساعات المساعدة بنجاح!');
+    setJobToDelete(null);
   };
 
   const handleAddProgram = (e) => {
@@ -1276,7 +1351,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
               <div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                  🏫 ساعات المساعدة المطلوبة للمدارس (שעות בודדות)
+                  🏫 ساعات المساعدة المطلوبة للمدارس (שעות בودדות)
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>
                   تصفح احتياجات المدارس لساعات مساعدة فردية وقدّم بياناتك مباشرة
@@ -1287,43 +1362,198 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
               </button>
             </div>
 
-            <div className="edu-grid">
-              {jobs.map(j => (
-                <div key={j.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#f0fdfa', color: '#0f766e', padding: '3px 8px', borderRadius: '8px' }}>
-                        📍 {j.region}
-                      </span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#2563eb' }}>
-                        ⏱️ {j.hoursNeeded} ساعة مساعدة
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>
-                      مطلوب: ساعات مساعدة في {j.specializationNeeded}
-                    </h3>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0d9488', marginBottom: '8px' }}>
-                      🏫 {j.schoolName}
-                    </div>
-
-                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
-                      {j.description}
-                    </p>
-
-                    {j.requiredDays && (
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '12px' }}>
-                        🗓️ الأيام المطلوبة: <span style={{ fontWeight: 800, color: '#1e293b' }}>{j.requiredDays.join('، ')}</span>
+            {jobs.length === 0 ? (
+              <div className="edu-card" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+                <h3 style={{ fontWeight: 800, color: '#1e293b' }}>لا توجد طلبات ساعات مساعدة معلنة حالياً</h3>
+                <p style={{ fontSize: '0.95rem' }}>تم مسح جميع الطلبات السابقة أو لم يتم طرح شواغر جديدة بعد.</p>
+                <button className="edu-btn edu-btn-teal" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('principal-dash')}>
+                  + إضافة ونشر طلب جديد الآن
+                </button>
+              </div>
+            ) : (
+              <div className="edu-grid">
+                {jobs.map(j => (
+                  <div key={j.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#f0fdfa', color: '#0f766e', padding: '3px 8px', borderRadius: '8px' }}>
+                          📍 {j.region}
+                        </span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#2563eb' }}>
+                          ⏱️ {j.hoursNeeded} ساعة مساعدة
+                        </span>
                       </div>
-                    )}
+
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>
+                        مطلوب: ساعات مساعدة في {j.specializationNeeded}
+                      </h3>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0d9488', marginBottom: '8px' }}>
+                        🏫 {j.schoolName}
+                      </div>
+
+                      {/* شريط الإدارة: تعديل ومسح الطلب */}
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', background: '#f0fdfa', padding: '6px 10px', borderRadius: '10px', border: '1px solid #ccfbf1' }}>
+                        <button 
+                          type="button" 
+                          className="edu-btn" 
+                          style={{ flex: 1, background: '#0d9488', color: 'white', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                          onClick={() => setEditingJob({ ...j })}
+                        >
+                          ✏️ تعديل المعطيات
+                        </button>
+                        <button 
+                          type="button" 
+                          className="edu-btn" 
+                          style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                          onClick={() => setJobToDelete(j)}
+                        >
+                          🗑️ مسح / حذف
+                        </button>
+                      </div>
+
+                      <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
+                        {j.description || 'لا يوجد شرح إضافي'}
+                      </p>
+
+                      {j.requiredDays && j.requiredDays.length > 0 && (
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '12px' }}>
+                          🗓️ الأيام المطلوبة: <span style={{ fontWeight: 800, color: '#1e293b' }}>{j.requiredDays.join('، ')}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <button className="edu-btn edu-btn-teal" style={{ width: '100%' }} onClick={() => startChatWith(j.schoolName)}>
+                      💬 تقديم وتنسيق الساعات مع المدرسة
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* نافذة تعديل بيانات طلب ساعات المساعدة (Edit Job Modal) */}
+            {editingJob && (
+              <div style={{
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
+                direction: 'rtl'
+              }}>
+                <div className="edu-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderTop: '5px solid #0d9488', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#0f172a', fontWeight: 900 }}>✏️ تعديل ومسح معطيات طلب ساعات المساعدة</h3>
+                    <button onClick={() => setEditingJob(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                      <i className="fas fa-times"></i>
+                    </button>
                   </div>
 
-                  <button className="edu-btn edu-btn-teal" style={{ width: '100%' }} onClick={() => startChatWith(j.schoolName)}>
-                    💬 تقديم وتنسيق الساعات مع المدرسة
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>اسم المدرسة:</label>
+                        <button type="button" onClick={() => setEditingJob({...editingJob, schoolName: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                      </div>
+                      <input className="edu-input" value={editingJob.schoolName || ''} onChange={e => setEditingJob({...editingJob, schoolName: e.target.value})} />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>التخصص المطلوب:</label>
+                        <select className="edu-input" value={editingJob.specializationNeeded || ''} onChange={e => setEditingJob({...editingJob, specializationNeeded: e.target.value})}>
+                          {SPECIALIZATIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>عدد الساعات الأسبوعية:</label>
+                          <button type="button" onClick={() => setEditingJob({...editingJob, hoursNeeded: 0})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                        </div>
+                        <input type="number" className="edu-input" min={1} max={40} value={editingJob.hoursNeeded || ''} onChange={e => setEditingJob({...editingJob, hoursNeeded: Number(e.target.value)})} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>المنطقة / البلدة:</label>
+                      <select className="edu-input" value={editingJob.region || ''} onChange={e => setEditingJob({...editingJob, region: e.target.value})}>
+                        {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>الأيام المطلوبة:</label>
+                        <button type="button" onClick={() => setEditingJob({...editingJob, requiredDays: []})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح الأيام</button>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {DAYS.map(day => {
+                          const curDays = editingJob.requiredDays || [];
+                          const isSel = curDays.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              className={'edu-chip ' + (isSel ? 'selected' : '')}
+                              onClick={() => {
+                                const updated = isSel ? curDays.filter(d => d !== day) : [...curDays, day];
+                                setEditingJob({...editingJob, requiredDays: updated});
+                              }}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>شرح وتفاصيل الاحتياج:</label>
+                        <button type="button" onClick={() => setEditingJob({...editingJob, description: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح الشرح</button>
+                      </div>
+                      <textarea className="edu-input" rows={3} value={editingJob.description || ''} onChange={e => setEditingJob({...editingJob, description: e.target.value})}></textarea>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                      <button type="button" className="edu-btn edu-btn-teal" style={{ flex: 2, padding: '12px', fontWeight: 900 }} onClick={handleSaveEditJob}>
+                        💾 حفظ وتثبيت التعديلات
+                      </button>
+                      <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1, padding: '12px' }} onClick={() => setEditingJob(null)}>
+                        إلغاء
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* نافذة تأكيد حذف طلب ساعات المساعدة (Delete Job Modal) */}
+            {jobToDelete && (
+              <div style={{
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
+                direction: 'rtl'
+              }}>
+                <div className="edu-card" style={{ width: '100%', maxWidth: '450px', background: 'white', textAlign: 'center', borderTop: '5px solid #ef4444' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '10px' }}>⚠️</div>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 900 }}>تأكيد مسح طلب ساعات المساعدة!</h3>
+                  <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                    هل أنت متأكد من رغبتك في مسح وحذف طلب ساعات المساعدة في مادة <strong>"{jobToDelete.specializationNeeded}"</strong> لمدرسة <strong>"{jobToDelete.schoolName}"</strong> نهائياً من المنصة؟
+                    <br/><br/>
+                    <span style={{ color: '#ef4444', fontWeight: 700 }}>هذا الإجراء لا يمكن التراجع عنه.</span>
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" className="edu-btn" style={{ flex: 1, background: '#ef4444', color: 'white' }} onClick={() => handleDeleteJob(jobToDelete.id)}>
+                      نعم، امسح الطلب
+                    </button>
+                    <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1 }} onClick={() => setJobToDelete(null)}>
+                      إلغاء وتراجع
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
