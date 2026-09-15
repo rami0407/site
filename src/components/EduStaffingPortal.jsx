@@ -115,19 +115,37 @@ const INITIAL_PROGRAMS = [
   {
     id: 'p_demo_1',
     companyName: 'أكاديمية المستقبل للروبوتيكا',
+    isGefen: 'مزود جيفين (ספק גפ״ן)',
+    gefenCode: '14820',
+    contactPerson: 'المهندس أحمد وتد',
+    phone: '052-8877665',
+    whatsapp: '052-8877665',
+    email: 'info@future-stem.co.il',
+    preferredContact: 'رسالة واتساب سريعة',
+    town: 'وادي عارة / المثلث الشمالي',
+    servicesProvided: 'ورشات روبوتيكا وبرمجة (STEM)',
     title: 'برنامج الروبوتيكا والذكاء الاصطناعي للمدارس الابتدائية',
     category: 'برامج علوم وتكنولوجيا (STEM)',
     targetGrades: ['الصف الرابع', 'الصف الخامس', 'الصف السادس'],
-    description: 'سلسلة ورشات عملية يتعلم فيها الطلاب تركيب وبرمجة الروبوتات الذكية وتطوير التفكير المنطقي والهندسي.',
-    price: 'حسب عرض السعر للمدرسة'
+    description: 'سلسلة ورشات عملية يتعلم فيها الطلاب تركيب وبرمجة الروبوتات الذكية وتطوير التفكير المنطقي والهندسي عبر منظومة جيفين المعتمدة.',
+    price: 'حسب ميزانية جيفين المعتمدة'
   },
   {
     id: 'p_demo_2',
     companyName: 'مركز الإبداع الفني والمسرحي',
+    isGefen: 'غير مزود لجيفين (ספק חיצוני)',
+    gefenCode: '',
+    contactPerson: 'الأستاذة سناء محاميد',
+    phone: '054-3322114',
+    whatsapp: '054-3322114',
+    email: 'contact@creativity-theater.org',
+    preferredContact: 'اتصال هاتفي مباشر',
+    town: 'أم الفحم ومشيرفة والمنطقة',
+    servicesProvided: 'مسرح مدرسي وتعبير درامي',
     title: 'ورشات المسرح المدرسي والتعبير الإبداعي',
     category: 'فنون وإبداع ومسرح',
     targetGrades: ['الصف الأول', 'الصف الثاني', 'الصف الثالث'],
-    description: 'برنامج لبناء الثقة بالنفس والطلاقة اللغوية والتعبير من خلال ألعاب درامية ومسرحيات تفاعلية.',
+    description: 'برنامج لبناء الثقة بالنفس والطلاقة اللغوية والتعبير من خلال ألعاب درامية ومسرحيات تفاعلية خاصة للمدارس.',
     price: '350 شيكل للورشة'
   }
 ];
@@ -183,12 +201,23 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
 
   const [newProg, setNewProg] = useState({
     companyName: '',
+    isGefen: 'مزود جيفين (ספק גפ״ן)',
+    gefenCode: '',
+    contactPerson: '',
+    phone: '',
+    whatsapp: '',
+    email: '',
+    preferredContact: 'اتصال هاتفي مباشر',
+    town: '',
+    servicesProvided: 'دورات وورشات تعليمية',
     title: '',
     category: PROVIDER_CATEGORIES[0],
     targetGrades: ['الصف الرابع', 'الصف الخامس'],
     description: '',
     price: 'حسب عرض السعر'
   });
+  
+  const [providerGefenFilter, setProviderGefenFilter] = useState('all');
 
   const [chatMessages, setChatMessages] = useState([
     { sender: 'مدير المدرسة', text: 'مرحباً أستاذ، رأينا ملفك في منصة الخدمات ونود الاستفسار عن إمكانية تقديم ساعات مساعدة (שעות בודדות) في الرياضيات يومي الأحد والثلاثاء.', time: '10:30 ص' },
@@ -1738,189 +1767,295 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         )}
 
         {/* التبويب 5: سوق البرامج والمحتوى */}
-        {activeTab === 'browse-providers' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
-              <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>🎨 سوق البرامج التعليمية ومزودي المحتوى (ספקי חוגים)</h2>
-                <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>دورات STEM، ورشات فنية، وبرامج إثرائية ومساندة للمدارس</p>
-              </div>
-              <button className="edu-btn edu-btn-purple" onClick={() => setActiveTab('provider-dash')}>
-                + إضافة برنامج تعليمي
-              </button>
-            </div>
+        {activeTab === 'browse-providers' && (() => {
+          const filteredPrograms = programs.filter(p => {
+            if (providerGefenFilter === 'gefen') return (p.isGefen || '').includes('גפ״ן');
+            if (providerGefenFilter === 'non-gefen') return !(p.isGefen || '').includes('גפ״ן');
+            return true;
+          });
 
-            {programs.length === 0 ? (
-              <div className="edu-card" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
-                <h3 style={{ fontWeight: 800, color: '#1e293b' }}>لا توجد برامج أو دورات معلنة حالياً</h3>
-                <p style={{ fontSize: '0.95rem' }}>تم مسح جميع البرامج السابقة أو لم يقم المزودون بنشر دورات جديدة بعد.</p>
-                <button className="edu-btn edu-btn-purple" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('provider-dash')}>
-                  + إضافة وتسجيل برنامج جديد الآن
+          return (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>🎨 سوق البرامج التعليمية ومزودي المحتوى (ספקי חוגים)</h2>
+                  <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>دورات STEM، ورشات فنية، وبرامج إثرائية معتمدة في جيفين وخارجها</p>
+                </div>
+                <button className="edu-btn edu-btn-purple" onClick={() => setActiveTab('provider-dash')}>
+                  + إضافة برنامج تعليمي
                 </button>
               </div>
-            ) : (
-              <div className="edu-grid">
-                {programs.map(p => (
-                  <div key={p.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#faf5ff', color: '#7e22ce', padding: '3px 8px', borderRadius: '8px' }}>
-                          {p.category}
-                        </span>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>
-                          💰 {p.price}
-                        </span>
-                      </div>
 
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-                        {p.title}
-                      </h3>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7e22ce', marginBottom: '10px' }}>
-                        مقدم من: {p.companyName}
-                      </div>
-
-                      {/* شريط الإدارة: تعديل ومسح البرنامج */}
-                      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', background: '#faf5ff', padding: '6px 10px', borderRadius: '10px', border: '1px solid #f3e8ff' }}>
-                        <button 
-                          type="button" 
-                          className="edu-btn" 
-                          style={{ flex: 1, background: '#9333ea', color: 'white', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
-                          onClick={() => setEditingProgram({ ...p })}
-                        >
-                          ✏️ تعديل المعطيات
-                        </button>
-                        <button 
-                          type="button" 
-                          className="edu-btn" 
-                          style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
-                          onClick={() => setProgramToDelete(p)}
-                        >
-                          🗑️ مسح / حذف
-                        </button>
-                      </div>
-
-                      <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
-                        {p.description || 'لا يوجد شرح إضافي'}
-                      </p>
-
-                      {p.targetGrades && p.targetGrades.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-                          {p.targetGrades.map(g => (
-                            <span key={g} style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{g}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <button className="edu-btn edu-btn-purple" style={{ width: '100%' }} onClick={() => startChatWith(p.companyName)}>
-                      💬 طلب عرض سعر واستفسار داخلي
+              {/* فلتر جيفين */}
+              <div style={{ background: '#f8fafc', padding: '10px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#334155' }}>🌿 تصفية حسب اعتماد جيفين:</span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'all', label: 'الكل (' + programs.length + ')' },
+                    { id: 'gefen', label: '🌿 مزودو جيفين فقط (' + programs.filter(p => (p.isGefen || '').includes('גפ״ן')).length + ')' },
+                    { id: 'non-gefen', label: '⚪ غير مزود لجيفين (' + programs.filter(p => !(p.isGefen || '').includes('גפ״ן')).length + ')' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={'edu-chip ' + (providerGefenFilter === f.id ? 'selected' : '')}
+                      onClick={() => setProviderGefenFilter(f.id)}
+                    >
+                      {f.label}
                     </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            )}
 
-            {/* نافذة تعديل بيانات البرنامج التعليمي (Edit Program Modal) */}
-            {editingProgram && (
-              <div style={{
-                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-                background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
-                direction: 'rtl'
-              }}>
-                <div className="edu-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderTop: '5px solid #9333ea', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#0f172a', fontWeight: 900 }}>✏️ تعديل ومسح معطيات البرنامج التعليمي</h3>
-                    <button onClick={() => setEditingProgram(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
+              {filteredPrograms.length === 0 ? (
+                <div className="edu-card" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
+                  <h3 style={{ fontWeight: 800, color: '#1e293b' }}>لا توجد برامج مطابقة للفلتر المحدد</h3>
+                  <p style={{ fontSize: '0.95rem' }}>يمكنك تغيير خيار الفلتر أعلاه أو إضافة برنامج جديد.</p>
+                  <button className="edu-btn edu-btn-purple" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('provider-dash')}>
+                    + إضافة وتسجيل برنامج جديد الآن
+                  </button>
+                </div>
+              ) : (
+                <div className="edu-grid">
+                  {filteredPrograms.map(p => {
+                    const isGefenProg = (p.isGefen || '').includes('גפ״ן');
+                    return (
+                      <div key={p.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          {/* شارة جيفين والتصنيف */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#faf5ff', color: '#7e22ce', padding: '3px 8px', borderRadius: '8px' }}>
+                              {p.category}
+                            </span>
+                            
+                            {/* شارة مزود جيفين أو غير مزود */}
+                            {isGefenProg ? (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 900, background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '3px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                🌿 مزود جيفين (ספק גפ״ן) {p.gefenCode ? `[${p.gefenCode}]` : ''}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', padding: '3px 8px', borderRadius: '8px' }}>
+                                ⚪ غير مزود لجيفين
+                              </span>
+                            )}
+                          </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>اسم المؤسسة / المزود:</label>
-                        <button type="button" onClick={() => setEditingProgram({...editingProgram, companyName: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                              {p.title}
+                            </h3>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>
+                              💰 {p.price}
+                            </span>
+                          </div>
+
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#7e22ce', marginBottom: '10px' }}>
+                            🏢 مقدم من: {p.companyName}
+                          </div>
+
+                          {/* أزرار الإدارة: تعديل ومسح البرنامج */}
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', background: '#faf5ff', padding: '6px 10px', borderRadius: '10px', border: '1px solid #f3e8ff' }}>
+                            <button 
+                              type="button" 
+                              className="edu-btn" 
+                              style={{ flex: 1, background: '#9333ea', color: 'white', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                              onClick={() => setEditingProgram({ ...p })}
+                            >
+                              ✏️ تعديل المعطيات
+                            </button>
+                            <button 
+                              type="button" 
+                              className="edu-btn" 
+                              style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                              onClick={() => setProgramToDelete(p)}
+                            >
+                              🗑️ مسح / حذف
+                            </button>
+                          </div>
+
+                          {/* تفاصيل الاتصال المباشر إن وجدت */}
+                          {(p.phone || p.email || p.contactPerson) && (
+                            <div style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px', fontSize: '0.8rem', color: '#334155' }}>
+                              {p.contactPerson && <div style={{ fontWeight: 700, marginBottom: '2px' }}>👤 المسؤول: {p.contactPerson}</div>}
+                              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                {p.phone && <div>📞 {p.phone}</div>}
+                                {p.whatsapp && (
+                                  <a href={`https://wa.me/${p.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" style={{ color: '#16a34a', textDecoration: 'none', fontWeight: 800 }}>
+                                    💬 واتساب
+                                  </a>
+                                )}
+                                {p.email && <div>📧 {p.email}</div>}
+                              </div>
+                            </div>
+                          )}
+
+                          <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
+                            {p.description || 'لا يوجد شرح إضافي'}
+                          </p>
+
+                          {p.targetGrades && p.targetGrades.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                              {p.targetGrades.map(g => (
+                                <span key={g} style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{g}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <button className="edu-btn edu-btn-purple" style={{ width: '100%' }} onClick={() => startChatWith(p.companyName)}>
+                          💬 طلب عرض سعر واستفسار داخلي
+                        </button>
                       </div>
-                      <input className="edu-input" value={editingProgram.companyName || ''} onChange={e => setEditingProgram({...editingProgram, companyName: e.target.value})} />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* نافذة تعديل بيانات البرنامج التعليمي (Edit Program Modal) */}
+              {editingProgram && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                  background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
+                  direction: 'rtl'
+                }}>
+                  <div className="edu-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderTop: '5px solid #9333ea', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#0f172a', fontWeight: 900 }}>✏️ تعديل ومسح معطيات البرنامج ومزود الخدمة</h3>
+                      <button onClick={() => setEditingProgram(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                        <i className="fas fa-times"></i>
+                      </button>
                     </div>
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>عنوان الدورة أو البرنامج:</label>
-                        <button type="button" onClick={() => setEditingProgram({...editingProgram, title: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
-                      </div>
-                      <input className="edu-input" value={editingProgram.title || ''} onChange={e => setEditingProgram({...editingProgram, title: e.target.value})} />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>التصنيف والمجال:</label>
-                        <select className="edu-input" value={editingProgram.category || ''} onChange={e => setEditingProgram({...editingProgram, category: e.target.value})}>
-                          {PROVIDER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {/* حقل مزود جيفين في التعديل */}
+                      <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '10px', border: '1px solid #86efac' }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#166534', marginBottom: '6px' }}>
+                          حالة الاعتماد في جيفين (תוכנית גפ״ן):
+                        </label>
+                        <select 
+                          className="edu-input" 
+                          value={editingProgram.isGefen || 'مزود جيفين (ספק גפ״ן)'} 
+                          onChange={e => setEditingProgram({...editingProgram, isGefen: e.target.value})}
+                        >
+                          <option value="مزود جيفين (ספק גפ״ן)">✅ مزود جيفين (ספק גפ״ן معتمد)</option>
+                          <option value="غير مزود لجيفين (ספק חיצוני)">⚪ غير مزود لجيفين (ספק חיצוני)</option>
                         </select>
+                        <div style={{ marginTop: '8px' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#166534', marginBottom: '2px' }}>
+                            رقم / كود البرنامج في جيفين:
+                          </label>
+                          <input 
+                            className="edu-input" 
+                            placeholder="كود جيفين" 
+                            value={editingProgram.gefenCode || ''} 
+                            onChange={e => setEditingProgram({...editingProgram, gefenCode: e.target.value})} 
+                          />
+                        </div>
                       </div>
+
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>التسعير التقديري:</label>
-                          <button type="button" onClick={() => setEditingProgram({...editingProgram, price: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>اسم المؤسسة / المزود:</label>
+                          <button type="button" onClick={() => setEditingProgram({...editingProgram, companyName: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
                         </div>
-                        <input className="edu-input" value={editingProgram.price || ''} onChange={e => setEditingProgram({...editingProgram, price: e.target.value})} />
+                        <input className="edu-input" value={editingProgram.companyName || ''} onChange={e => setEditingProgram({...editingProgram, companyName: e.target.value})} />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>عنوان الدورة أو البرنامج:</label>
+                          <button type="button" onClick={() => setEditingProgram({...editingProgram, title: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                        </div>
+                        <input className="edu-input" value={editingProgram.title || ''} onChange={e => setEditingProgram({...editingProgram, title: e.target.value})} />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>التصنيف والمجال:</label>
+                          <select className="edu-input" value={editingProgram.category || ''} onChange={e => setEditingProgram({...editingProgram, category: e.target.value})}>
+                            {PROVIDER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>التسعير التقديري:</label>
+                            <button type="button" onClick={() => setEditingProgram({...editingProgram, price: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                          </div>
+                          <input className="edu-input" value={editingProgram.price || ''} onChange={e => setEditingProgram({...editingProgram, price: e.target.value})} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>الهاتف:</label>
+                            <button type="button" onClick={() => setEditingProgram({...editingProgram, phone: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                          </div>
+                          <input className="edu-input" value={editingProgram.phone || ''} onChange={e => setEditingProgram({...editingProgram, phone: e.target.value})} />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>البريد الإلكتروني:</label>
+                            <button type="button" onClick={() => setEditingProgram({...editingProgram, email: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                          </div>
+                          <input className="edu-input" value={editingProgram.email || ''} onChange={e => setEditingProgram({...editingProgram, email: e.target.value})} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>شرح البرنامج والمخرجات التعليمية:</label>
+                          <button type="button" onClick={() => setEditingProgram({...editingProgram, description: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح الشرح</button>
+                        </div>
+                        <textarea className="edu-input" rows={3} value={editingProgram.description || ''} onChange={e => setEditingProgram({...editingProgram, description: e.target.value})}></textarea>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button type="button" className="edu-btn edu-btn-purple" style={{ flex: 2, padding: '12px', fontWeight: 900 }} onClick={handleSaveEditProgram}>
+                          💾 حفظ وتثبيت التعديلات
+                        </button>
+                        <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1, padding: '12px' }} onClick={() => setEditingProgram(null)}>
+                          إلغاء
+                        </button>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>شرح البرنامج والمخرجات التعليمية:</label>
-                        <button type="button" onClick={() => setEditingProgram({...editingProgram, description: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح الشرح</button>
-                      </div>
-                      <textarea className="edu-input" rows={3} value={editingProgram.description || ''} onChange={e => setEditingProgram({...editingProgram, description: e.target.value})}></textarea>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                      <button type="button" className="edu-btn edu-btn-purple" style={{ flex: 2, padding: '12px', fontWeight: 900 }} onClick={handleSaveEditProgram}>
-                        💾 حفظ وتثبيت التعديلات
+              {/* نافذة تأكيد حذف البرنامج التعليمي (Delete Program Modal) */}
+              {programToDelete && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                  background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
+                  direction: 'rtl'
+                }}>
+                  <div className="edu-card" style={{ width: '100%', maxWidth: '450px', background: 'white', textAlign: 'center', borderTop: '5px solid #ef4444' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '10px' }}>⚠️</div>
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 900 }}>تأكيد مسح البرنامج التعليمي!</h3>
+                    <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                      هل أنت متأكد من رغبتك في مسح وحذف برنامج <strong>"{programToDelete.title}"</strong> المقدم من <strong>"{programToDelete.companyName}"</strong> نهائياً من المنصة؟
+                      <br/><br/>
+                      <span style={{ color: '#ef4444', fontWeight: 700 }}>هذا الإجراء لا يمكن التراجع عنه.</span>
+                    </p>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="button" className="edu-btn" style={{ flex: 1, background: '#ef4444', color: 'white' }} onClick={() => handleDeleteProgram(programToDelete.id)}>
+                        نعم، امسح البرنامج
                       </button>
-                      <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1, padding: '12px' }} onClick={() => setEditingProgram(null)}>
-                        إلغاء
+                      <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1 }} onClick={() => setProgramToDelete(null)}>
+                        إلغاء وتراجع
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* نافذة تأكيد حذف البرنامج التعليمي (Delete Program Modal) */}
-            {programToDelete && (
-              <div style={{
-                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-                background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
-                direction: 'rtl'
-              }}>
-                <div className="edu-card" style={{ width: '100%', maxWidth: '450px', background: 'white', textAlign: 'center', borderTop: '5px solid #ef4444' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '10px' }}>⚠️</div>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 900 }}>تأكيد مسح البرنامج التعليمي!</h3>
-                  <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    هل أنت متأكد من رغبتك في مسح وحذف برنامج <strong>"{programToDelete.title}"</strong> المقدم من <strong>"{programToDelete.companyName}"</strong> نهائياً من المنصة؟
-                    <br/><br/>
-                    <span style={{ color: '#ef4444', fontWeight: 700 }}>هذا الإجراء لا يمكن التراجع عنه.</span>
-                  </p>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button type="button" className="edu-btn" style={{ flex: 1, background: '#ef4444', color: 'white' }} onClick={() => handleDeleteProgram(programToDelete.id)}>
-                      نعم، امسح البرنامج
-                    </button>
-                    <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1 }} onClick={() => setProgramToDelete(null)}>
-                      إلغاء وتراجع
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </div>
-        )}
+            </div>
+          );
+        })()}
 
         {/* التبويب 6: نشر طلب ساعات مساعدة (المدير) */}
         {activeTab === 'principal-dash' && (
@@ -1971,43 +2106,145 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
 
         {/* التبويب 7: لوحة مزود الدورات */}
         {activeTab === 'provider-dash' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <div className="edu-card">
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.25rem' }}>
-                🚀 إضافة برنامج ودورة تعليمية جديدة
+          <div style={{ maxWidth: '850px', margin: '0 auto' }}>
+            <div className="edu-card" style={{ borderTop: '5px solid #7e22ce' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🚀</span> إضافة برنامج ودورة تعليمية جديدة (سجل مزود محتوى / ספק חוגים)
               </h2>
 
-              <form onSubmit={handleAddProgram} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>اسم المؤسسة / الشركة المزودة:</label>
-                  <input className="edu-input" required value={newProg.companyName} onChange={e => setNewProg({...newProg, companyName: e.target.value})} />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>عنوان الدورة أو البرنامج:</label>
-                  <input className="edu-input" required placeholder="مثال: ورشات الذكاء الاصطناعي وصناعة المحتوى الرقمي" value={newProg.title} onChange={e => setNewProg({...newProg, title: e.target.value})} />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>التصنيف والمجال:</label>
-                    <select className="edu-input" value={newProg.category} onChange={e => setNewProg({...newProg, category: e.target.value})}>
-                      {PROVIDER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+              <form onSubmit={handleAddProgram} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                {/* 1. حقل مزود جيفين أو غير مزود لجيفين */}
+                <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1.5px solid #86efac' }}>
+                  <label style={{ display: 'block', fontSize: '1rem', fontWeight: 900, color: '#166534', marginBottom: '8px' }}>
+                    🌿 حالة الاعتماد في منظومة جيفين (תוכנית גפ״ן): <span style={{color: 'red'}}>*</span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                    {[
+                      { val: 'مزود جيفين (ספק גפ״ן)', label: '✅ مزود جيفين (ספק גפ״ן معتمد)', desc: 'البرنامج معتمد ويمكن الشراء عبر ميزانية جيفين' },
+                      { val: 'غير مزود لجيفين (ספק חיצוני)', label: '⚪ غير مزود لجيفين (ספק חיצוני)', desc: 'مزود مستقل / تعاقد خارجي مباشر' }
+                    ].map(opt => {
+                      const isSel = newProg.isGefen === opt.val;
+                      return (
+                        <div
+                          key={opt.val}
+                          onClick={() => setNewProg({...newProg, isGefen: opt.val})}
+                          style={{
+                            padding: '12px',
+                            borderRadius: '10px',
+                            border: isSel ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                            background: isSel ? '#dcfce7' : 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ fontWeight: 900, color: isSel ? '#15803d' : '#334155', fontSize: '0.95rem' }}>
+                            {opt.label}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
+                            {opt.desc}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>التسعير التقديري:</label>
-                    <input className="edu-input" value={newProg.price} onChange={e => setNewProg({...newProg, price: e.target.value})} />
+
+                  {newProg.isGefen.includes('גפ״ן') && (
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#166534', marginBottom: '4px' }}>
+                        رقم / كود البرنامج في جيفين (קוד תוכנית גפ״ן):
+                      </label>
+                      <input 
+                        className="edu-input" 
+                        placeholder="مثال: 14820 (اختياري)" 
+                        value={newProg.gefenCode || ''} 
+                        onChange={e => setNewProg({...newProg, gefenCode: e.target.value})} 
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. بيانات المؤسسة والاتصال والتواصل */}
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#334155', margin: '0 0 12px 0', borderBottom: '2px solid #e2e8f0', paddingBottom: '6px' }}>
+                    🏢 تفاصيل المزود وبيانات التواصل
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>اسم المؤسسة / الشركة / المزود: <span style={{color: 'red'}}>*</span></label>
+                      <input className="edu-input" required placeholder="مثال: أكاديمية المستقبل للروبوتيكا" value={newProg.companyName} onChange={e => setNewProg({...newProg, companyName: e.target.value})} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>الشخص المسؤول / الممثل:</label>
+                      <input className="edu-input" placeholder="مثال: أ. أحمد وتد" value={newProg.contactPerson || ''} onChange={e => setNewProg({...newProg, contactPerson: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>رقم الهاتف / الجوال الأساسي: <span style={{color: 'red'}}>*</span></label>
+                      <input className="edu-input" required placeholder="05X-XXXXXXX" value={newProg.phone || ''} onChange={e => setNewProg({...newProg, phone: e.target.value})} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>واتساب للتواصل السريع:</label>
+                      <input className="edu-input" placeholder="05X-XXXXXXX" value={newProg.whatsapp || ''} onChange={e => setNewProg({...newProg, whatsapp: e.target.value})} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>البريد الإلكتروني (Email):</label>
+                      <input type="email" className="edu-input" placeholder="provider@domain.com" value={newProg.email || ''} onChange={e => setNewProg({...newProg, email: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', marginTop: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>البلدة والمناطق المتاحة للخدمة:</label>
+                      <input className="edu-input" placeholder="مثال: مشيرفة، أم الفحم، المثلث الشمالي" value={newProg.town || ''} onChange={e => setNewProg({...newProg, town: e.target.value})} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>طريقة التواصل المفضلة:</label>
+                      <select className="edu-input" value={newProg.preferredContact || 'اتصال هاتفي مباشر'} onChange={e => setNewProg({...newProg, preferredContact: e.target.value})}>
+                        <option value="اتصال هاتفي مباشر">اتصال هاتفي مباشر</option>
+                        <option value="رسالة واتساب سريعة">رسالة واتساب سريعة</option>
+                        <option value="البريد الإلكتروني">البريد الإلكتروني</option>
+                        <option value="تنسيق زيارة ميدانية في المدرسة">تنسيق زيارة ميدانية في المدرسة</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>شرح البرنامج والمخرجات التعليمية:</label>
-                  <textarea className="edu-input" rows={3} placeholder="تفاصيل الخطة، عدد اللقاءات، الفئة العمرية..." value={newProg.description} onChange={e => setNewProg({...newProg, description: e.target.value})}></textarea>
+                {/* 3. تفاصيل الدورة والبرنامج */}
+                <div style={{ background: '#faf5ff', padding: '16px', borderRadius: '12px', border: '1px solid #e9d5ff' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#6b21a8', margin: '0 0 12px 0', borderBottom: '2px solid #e9d5ff', paddingBottom: '6px' }}>
+                    🎨 تفاصيل البرنامج التعليمي والمخرجات
+                  </h3>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#6b21a8', marginBottom: '4px' }}>عنوان الدورة أو البرنامج الرئيسي: <span style={{color: 'red'}}>*</span></label>
+                    <input className="edu-input" required placeholder="مثال: ورشات الذكاء الاصطناعي وصناعة المحتوى الرقمي" value={newProg.title} onChange={e => setNewProg({...newProg, title: e.target.value})} />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#6b21a8', marginBottom: '4px' }}>التصنيف والمجال:</label>
+                      <select className="edu-input" value={newProg.category} onChange={e => setNewProg({...newProg, category: e.target.value})}>
+                        {PROVIDER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#6b21a8', marginBottom: '4px' }}>التسعير التقديري وطريقة التعاقد:</label>
+                      <input className="edu-input" placeholder="حسب ميزانية جيفين / حسب عرض السعر" value={newProg.price} onChange={e => setNewProg({...newProg, price: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#6b21a8', marginBottom: '4px' }}>شرح البرنامج والمخرجات التعليمية:</label>
+                    <textarea className="edu-input" rows={3} placeholder="تفاصيل الخطة، عدد اللقاءات، الفئة العمرية المستهدفة، والفائدة المرجوة..." value={newProg.description} onChange={e => setNewProg({...newProg, description: e.target.value})}></textarea>
+                  </div>
                 </div>
 
-                <button type="submit" className="edu-btn edu-btn-purple">
-                  🚀 نشر البرنامج في سوق المحتوى
+                <button type="submit" className="edu-btn edu-btn-purple" style={{ padding: '14px', fontSize: '1.1rem', fontWeight: 900 }}>
+                  🚀 نشر وتسجيل المزود في سوق البرامج
                 </button>
               </form>
             </div>
