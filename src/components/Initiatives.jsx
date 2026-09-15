@@ -19,11 +19,15 @@ const Initiatives = () => {
   const [selectedGrade, setSelectedGrade] = useState(initialParsed.grade);
   const [selectedSection, setSelectedSection] = useState(initialParsed.section);
   const [studentClass, setStudentClass] = useState(localStorage.getItem('school_unified_student_class') || `${initialParsed.grade} (${initialParsed.section})`);
-  const [studentPassword, setStudentPassword] = useState(localStorage.getItem('school_unified_student_password') || '');
   const [isEditingProfile, setIsEditingProfile] = useState(!studentName);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
+    // Purge legacy password if stored in localStorage
+    try {
+      localStorage.removeItem('school_unified_student_password');
+    } catch (e) {}
+
     const fetchInitiatives = async () => {
       try {
         const q = query(collection(db, 'initiatives'), orderBy('createdAt', 'asc'));
@@ -57,9 +61,9 @@ const Initiatives = () => {
     setStudentClass(combinedClass);
     localStorage.setItem('school_unified_student_name', studentName.trim());
     localStorage.setItem('school_unified_student_class', combinedClass);
-    if (studentPassword) {
-      localStorage.setItem('school_unified_student_password', studentPassword.trim());
-    }
+    try {
+      localStorage.removeItem('school_unified_student_password');
+    } catch (err) {}
     setIsEditingProfile(false);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 4000);
@@ -69,7 +73,6 @@ const Initiatives = () => {
     if (!baseLink) return '#';
     const sName = studentName || localStorage.getItem('school_unified_student_name') || '';
     const sClass = studentClass || localStorage.getItem('school_unified_student_class') || '';
-    const sPass = studentPassword || localStorage.getItem('school_unified_student_password') || '';
 
     if (!sName) return baseLink;
 
@@ -77,13 +80,11 @@ const Initiatives = () => {
       const url = new URL(baseLink);
       url.searchParams.set('student_name', sName);
       url.searchParams.set('student_class', sClass);
-      if (sPass) url.searchParams.set('student_pass', sPass);
-      url.searchParams.set('auto_login', 'true');
       return url.toString();
     } catch (e) {
       // If relative URL or simple link
       const separator = baseLink.includes('?') ? '&' : '?';
-      return `${baseLink}${separator}student_name=${encodeURIComponent(sName)}&student_class=${encodeURIComponent(sClass)}&student_pass=${encodeURIComponent(sPass)}&auto_login=true`;
+      return `${baseLink}${separator}student_name=${encodeURIComponent(sName)}&student_class=${encodeURIComponent(sClass)}`;
     }
   };
 
