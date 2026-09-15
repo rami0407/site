@@ -412,7 +412,7 @@ function App() {
       <Suspense fallback={<Loader />}>
         <Loader />
         <div style={{ minHeight: '100vh', background: '#0f172a' }}>
-          <EduStaffingPortal />
+          <EduStaffingPortal isAdminMode={false} initialTab="landing" />
         </div>
       </Suspense>
     );

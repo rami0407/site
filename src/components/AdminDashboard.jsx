@@ -8682,7 +8682,7 @@ const AdminDashboard = () => {
               {/* تبويب سري: منصة التوظيف والخدمات التعليمية الذكية */}
               {activeTab === 'edu-staffing-admin' && (
                 <div>
-                  <EduStaffingPortal initialTab="browse-teachers" />
+                  <EduStaffingPortal initialTab="browse-teachers" isAdminMode={true} />
                 </div>
               )}
 

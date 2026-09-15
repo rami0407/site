@@ -150,7 +150,7 @@ const INITIAL_PROGRAMS = [
   }
 ];
 
-const EduStaffingPortal = ({ initialTab = 'landing' }) => {
+const EduStaffingPortal = ({ initialTab = 'landing', isAdminMode = false }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [teachers, setTeachers] = useState(INITIAL_TEACHERS);
   const [jobs, setJobs] = useState(INITIAL_JOBS);
@@ -228,8 +228,9 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
   const [successToast, setSuccessToast] = useState('');
   const [isSubmittingTeacher, setIsSubmittingTeacher] = useState(false);
 
-  // Load registered teachers from localStorage & Firestore
+  // Load registered teachers from localStorage & Firestore (Admin only for privacy)
   useEffect(() => {
+    if (!isAdminMode) return;
     const savedLocal = localStorage.getItem('musherfe_service_teachers_v1');
     if (savedLocal) {
       try {
@@ -370,8 +371,13 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     }
 
     setIsSubmittingTeacher(false);
-    showToast('🎉 تم تسجيل بياناتك بنجاح في منصة الخدمات لساعات المساعدة!');
-    setActiveTab('browse-teachers');
+    if (isAdminMode) {
+      showToast('🎉 تم تسجيل بيانات المعلم بنجاح في منصة الخدمات!');
+      setActiveTab('browse-teachers');
+    } else {
+      showToast('🎉 تم استلام بياناتك بنجاح وسرية تامة! سيتم مراجعة الطلب من قِبل إدارة المدرسة والتواصل معك.');
+      setActiveTab('landing');
+    }
   };
 
   // Save Edited Teacher Data
@@ -499,8 +505,13 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
       console.warn('Cloud add prog fallback:', err);
     }
 
-    showToast('تمت إضافة البرنامج التعليمي بنجاح! 🚀');
-    setActiveTab('browse-providers');
+    if (isAdminMode) {
+      showToast('تمت إضافة البرنامج التعليمي بنجاح! 🚀');
+      setActiveTab('browse-providers');
+    } else {
+      showToast('🚀 تم تسجيل بيانات البرنامج بنجاح! سيتم مراجعة العرض من قِبل إدارة المدرسة.');
+      setActiveTab('landing');
+    }
   };
 
   const handleSaveEditProgram = async () => {
@@ -627,8 +638,9 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         </div>
       </div>
 
-      {/* تبويبات المنصة */}
-      <div className="edu-nav-tabs">
+      {/* تبويبات المنصة - تظهر حصرياً في لوحة التحكم للإدارة */}
+      {isAdminMode && (
+        <div className="edu-nav-tabs">
         <button className={'edu-tab-btn ' + (activeTab === 'landing' ? 'active' : '')} onClick={() => setActiveTab('landing')}>
           🏠 الصفحة الرئيسية
         </button>
@@ -654,6 +666,24 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
           💬 المحادثات والتواصل
         </button>
       </div>
+      )}
+
+      {/* زر عودة بسيط للجمهور عند تعبئة الاستمارة */}
+      {!isAdminMode && activeTab !== 'landing' && (
+        <div style={{ maxWidth: '850px', margin: '0 auto 1.5rem auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', padding: '12px 20px', borderRadius: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+          <button
+            type="button"
+            className="edu-btn edu-btn-blue"
+            onClick={() => setActiveTab('landing')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: 800, padding: '8px 16px' }}
+          >
+            <span>←</span> العودة لاختيار مسار تسجيل آخر
+          </button>
+          <span style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 800 }}>
+            {activeTab === 'teacher-dash' ? '📝 استمارة تسجيل كفاءة تدريسية (بديل / ساعات مساعدة)' : '🎨 استمارة تسجيل مزود دورات ومحتوى'}
+          </span>
+        </div>
+      )}
 
       {successToast && (
         <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#166534', padding: '12px 20px', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
@@ -795,20 +825,40 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
               </div>
             </div>
 
-            <div className="edu-grid" style={{ marginBottom: '1.5rem' }}>
-              <div className="edu-card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#2563eb' }}>{teachers.length}</div>
-                <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>معلم مسجل لساعات المساعدة</div>
+            {isAdminMode ? (
+              <div className="edu-grid" style={{ marginBottom: '1.5rem' }}>
+                <div className="edu-card" style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#2563eb' }}>{teachers.length}</div>
+                  <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>معلم مسجل (خاص بالإدارة)</div>
+                </div>
+                <div className="edu-card" style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#0d9488' }}>{jobs.length}</div>
+                  <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>طلب ساعات مساعدة</div>
+                </div>
+                <div className="edu-card" style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#7e22ce' }}>{programs.length}</div>
+                  <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>برنامج ومزود مسجل</div>
+                </div>
               </div>
-              <div className="edu-card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#0d9488' }}>{jobs.length}</div>
-                <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>طلب ساعات مساعدة معلنة</div>
+            ) : (
+              <div style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                padding: '1.5rem 2rem',
+                textAlign: 'center',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                margin: '2rem 0',
+                border: '1.5px solid #e2e8f0'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔒</div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1e293b', margin: '0 0 6px 0' }}>
+                  أمان وسرية تامة لمعطيات جميع المتقدمين
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '680px', margin: '0 auto' }}>
+                  كافة التفاصيل والأرقام والشهادات التي يتم تسجيلها هنا لا تنشر للعلن، وتصل حصرياً وبأمان إلى إدارة مدرسة مشيرفة الابتدائية للمتابعة وفحص الملاءمة.
+                </p>
               </div>
-              <div className="edu-card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#7e22ce' }}>{programs.length}</div>
-                <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>برنامج ودورة إثرائية</div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1111,7 +1161,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         )}
 
         {/* التبويب 3: دليل المعلمين المتقدمين لساعات المساعدة */}
-        {activeTab === 'browse-teachers' && (
+        {isAdminMode && activeTab === 'browse-teachers' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
               <div>
@@ -1575,7 +1625,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         )}
 
         {/* التبويب 4: ساعات المساعدة المطلوبة (الشواغر) */}
-        {activeTab === 'browse-jobs' && (
+        {isAdminMode && activeTab === 'browse-jobs' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
               <div>
@@ -1787,7 +1837,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         )}
 
         {/* التبويب 5: سوق البرامج والمحتوى */}
-        {activeTab === 'browse-providers' && (() => {
+        {isAdminMode && activeTab === 'browse-providers' && (() => {
           const filteredPrograms = programs.filter(p => {
             if (providerGefenFilter === 'gefen') return (p.isGefen || '').includes('גפ״ן');
             if (providerGefenFilter === 'non-gefen') return !(p.isGefen || '').includes('גפ״ן');
@@ -2078,7 +2128,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         })()}
 
         {/* التبويب 6: نشر طلب ساعات مساعدة (المدير) */}
-        {activeTab === 'principal-dash' && (
+        {isAdminMode && activeTab === 'principal-dash' && (
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             <div className="edu-card">
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.25rem' }}>
@@ -2272,7 +2322,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         )}
 
         {/* التبويب 8: الشات والتواصل */}
-        {activeTab === 'chat' && (
+        {isAdminMode && activeTab === 'chat' && (
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             <div className="edu-chat-box">
               <div className="edu-chat-header">
