@@ -49,6 +49,7 @@ const INITIAL_TEACHERS = [
     availableDays: ['الأحد', 'الثلاثاء', 'الخميس'],
     hoursNeeded: 12,
     isAvailable: true,
+    roleType: 'שעות בודדות',
     bio: 'معلم أول للرياضيات، خبرة واسعة في تدريس الصفوف الابتدائية وساعات الدعم والمساندة الفردية.'
   },
   {
@@ -65,6 +66,7 @@ const INITIAL_TEACHERS = [
     availableDays: ['الاثنين', 'الأربعاء', 'الخميس'],
     hoursNeeded: 10,
     isAvailable: true,
+    roleType: 'שעות בודדות',
     bio: 'معلمة لغة عربية متخصصة في مهارات القراءة والكتابة والتمكين اللغوي للطلاب ضمن الساعات الفردية.'
   },
   {
@@ -81,6 +83,7 @@ const INITIAL_TEACHERS = [
     availableDays: ['الأحد', 'الاثنين', 'الثلاثاء'],
     hoursNeeded: 8,
     isAvailable: true,
+    roleType: 'שעות בודדות',
     bio: 'معلم لغة إنجليزية متمكن في تطوير أساليب تفاعلية بالمحادثة لساعات التقوية والمساعدة.'
   }
 ];
@@ -145,6 +148,8 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
   const [teacherToDelete, setTeacherToDelete] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const [jobToDelete, setJobToDelete] = useState(null);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [programToDelete, setProgramToDelete] = useState(null);
 
   // Form State for Registering a Teacher for Assistance Hours
   const [teacherRegForm, setTeacherRegForm] = useState({
@@ -162,7 +167,9 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     availableDays: ['الأحد', 'الثلاثاء', 'الخميس'],
     hoursNeeded: 10,
     isAvailable: true,
-    bio: ''
+    roleType: 'שעות בודדות',
+    bio: '',
+    roleType: 'שעות בודדות'
   });
 
   const [newJob, setNewJob] = useState({
@@ -242,6 +249,33 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
         const cloudJobs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setJobs(cloudJobs);
         localStorage.setItem('musherfe_service_jobs_v1', JSON.stringify(cloudJobs));
+      }, () => {});
+      return () => unsub();
+    } catch {
+      // Offline fallback
+    }
+  }, []);
+
+  // Load and sync programs from localStorage & Firestore
+  useEffect(() => {
+    const savedProgs = localStorage.getItem('musherfe_service_programs_v1');
+    if (savedProgs) {
+      try {
+        const parsed = JSON.parse(savedProgs);
+        if (Array.isArray(parsed)) {
+          setPrograms(parsed);
+        }
+      } catch (e) {
+        console.warn('Local programs parse error', e);
+      }
+    }
+
+    try {
+      const q = collection(db, 'service_platform_programs');
+      const unsub = onSnapshot(q, (snap) => {
+        const cloudProgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPrograms(cloudProgs);
+        localStorage.setItem('musherfe_service_programs_v1', JSON.stringify(cloudProgs));
       }, () => {});
       return () => unsub();
     } catch {
@@ -416,15 +450,61 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
     setJobToDelete(null);
   };
 
-  const handleAddProgram = (e) => {
+  const handleAddProgram = async (e) => {
     e.preventDefault();
+    if (!newProg.companyName.trim() || !newProg.title.trim()) {
+      showToast('⚠️ يرجى كتابة اسم المؤسسة / المزود وعنوان البرنامج على الأقل');
+      return;
+    }
     const created = {
       id: 'prog_' + Date.now(),
       ...newProg
     };
-    setPrograms(prev => [created, ...prev]);
+    const updated = [created, ...programs];
+    setPrograms(updated);
+    localStorage.setItem('musherfe_service_programs_v1', JSON.stringify(updated));
+
+    try {
+      await addDoc(collection(db, 'service_platform_programs'), created);
+    } catch (err) {
+      console.warn('Cloud add prog fallback:', err);
+    }
+
     showToast('تمت إضافة البرنامج التعليمي بنجاح! 🚀');
     setActiveTab('browse-providers');
+  };
+
+  const handleSaveEditProgram = async () => {
+    if (!editingProgram) return;
+    const updated = programs.map(p => p.id === editingProgram.id ? editingProgram : p);
+    setPrograms(updated);
+    localStorage.setItem('musherfe_service_programs_v1', JSON.stringify(updated));
+
+    try {
+      const docRef = doc(db, 'service_platform_programs', editingProgram.id);
+      await updateDoc(docRef, editingProgram);
+    } catch (e) {
+      console.warn('Cloud update prog fallback:', e);
+    }
+
+    showToast('✅ تم حفظ وتحديث معطيات البرنامج التعليمي بنجاح!');
+    setEditingProgram(null);
+  };
+
+  const handleDeleteProgram = async (progId) => {
+    const updated = programs.filter(p => p.id !== progId);
+    setPrograms(updated);
+    localStorage.setItem('musherfe_service_programs_v1', JSON.stringify(updated));
+
+    try {
+      const docRef = doc(db, 'service_platform_programs', progId);
+      await deleteDoc(docRef);
+    } catch (e) {
+      console.warn('Cloud delete prog fallback:', e);
+    }
+
+    showToast('🗑️ تم مسح وحذف البرنامج التعليمي بنجاح!');
+    setProgramToDelete(null);
   };
 
   const startChatWith = (partyName) => {
@@ -545,23 +625,123 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
                 بوابة مخصصة لتنسيق وتنظيم ساعات المساعدة الفردية (שעות בודדות)، والربط بين الكفاءات التدريسية المؤهلة والاحتياجات المدرسية ومزودي البرامج التعليمية الإثرائية.
               </p>
 
-              <div className="edu-role-cards">
-                <div className="edu-role-card" onClick={() => setActiveTab('teacher-dash')}>
-                  <div className="edu-role-icon">📝</div>
-                  <h3>أنا معلّم / أريد التسجيل لساعات مساعدة</h3>
-                  <p>سجّل رقم الهوية ورقم الهاتف، البلدة، الشهادات، وموضوع التدريس وساعات العمل الملائمة (שעות בודדות).</p>
+              <div style={{ marginTop: '2rem' }}>
+                <div style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  backdropFilter: 'blur(6px)',
+                  padding: '10px 20px',
+                  borderRadius: '14px',
+                  display: 'inline-block',
+                  marginBottom: '1.25rem',
+                  border: '1px solid rgba(255,255,255,0.25)'
+                }}>
+                  <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
+                    ✍️ أنا أريد التسجيل (אני רוצה להירشם) - اختر المسار المناسب:
+                  </span>
                 </div>
 
-                <div className="edu-role-card" onClick={() => setActiveTab('browse-teachers')}>
-                  <div className="edu-role-icon">👨‍🏫</div>
-                  <h3>دليل المعلمين المؤهلين</h3>
-                  <p>استعرض قائمة المعلمين وتعديل أو مسح بيانات أي معلم مسجل بكل سهولة.</p>
-                </div>
+                <div className="edu-role-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  {/* زر 1: מילוי מקום */}
+                  <div 
+                    className="edu-role-card" 
+                    style={{ 
+                      borderTop: '5px solid #3b82f6', 
+                      background: 'white', 
+                      color: '#0f172a',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s ease',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)'
+                    }} 
+                    onClick={() => {
+                      setTeacherRegForm(prev => ({ ...prev, roleType: 'מילוי מקום' }));
+                      setActiveTab('teacher-dash');
+                    }}
+                  >
+                    <div className="edu-role-icon" style={{ background: '#eff6ff', color: '#2563eb' }}>🔄</div>
+                    <div style={{ display: 'inline-block', background: '#dbeafe', color: '#1d4ed8', padding: '3px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '6px' }}>
+                      المسار الأول
+                    </div>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 900, margin: '4px 0 8px 0', color: '#1e3a8a' }}>
+                      1. מילוי מקום
+                    </h3>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#2563eb', marginBottom: '8px' }}>
+                      (معلم بديل لتغطية الغيابات والفراغات)
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                      تسجيل معلمين ومعلمات أكفاء متاحين للاستدعاء الفوري لتغطية حصص وغيابات المعلمين في المدرسة (מילוי מקום).
+                    </p>
+                    <div style={{ fontWeight: 900, color: '#2563eb', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>اضغط هنا للتسجيل كبديل</span>
+                      <span>←</span>
+                    </div>
+                  </div>
 
-                <div className="edu-role-card" onClick={() => setActiveTab('principal-dash')}>
-                  <div className="edu-role-icon">🏫</div>
-                  <h3>طلب ساعات مساعدة للمدرسة</h3>
-                  <p>اطرح احتياجاتك المدرسية لساعات مساعدة فردية في التخصصات المختلفة.</p>
+                  {/* زر 2: שעות בודדות */}
+                  <div 
+                    className="edu-role-card" 
+                    style={{ 
+                      borderTop: '5px solid #10b981', 
+                      background: 'white', 
+                      color: '#0f172a',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s ease',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)'
+                    }} 
+                    onClick={() => {
+                      setTeacherRegForm(prev => ({ ...prev, roleType: 'שעות בודדות' }));
+                      setActiveTab('teacher-dash');
+                    }}
+                  >
+                    <div className="edu-role-icon" style={{ background: '#ecfdf5', color: '#059669' }}>⏱️</div>
+                    <div style={{ display: 'inline-block', background: '#d1fae5', color: '#065f46', padding: '3px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '6px' }}>
+                      المسار الثاني
+                    </div>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 900, margin: '4px 0 8px 0', color: '#064e3b' }}>
+                      2. שעות בודדות
+                    </h3>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#059669', marginBottom: '8px' }}>
+                      (ساعات مساعدة وتقوية فردية)
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                      تسجيل خريجين ومعلمين لتقديم ساعات دعم ومساعدة فردية للطلاب ضمن الساعات الفردية والمساعدة المدرسية (שעות בודדות).
+                    </p>
+                    <div style={{ fontWeight: 900, color: '#059669', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>اضغط هنا للتسجيل لساعات مساعدة</span>
+                      <span>←</span>
+                    </div>
+                  </div>
+
+                  {/* زر 3: ספק חוגים */}
+                  <div 
+                    className="edu-role-card" 
+                    style={{ 
+                      borderTop: '5px solid #8b5cf6', 
+                      background: 'white', 
+                      color: '#0f172a',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s ease',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)'
+                    }} 
+                    onClick={() => setActiveTab('provider-dash')}
+                  >
+                    <div className="edu-role-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}>🎨</div>
+                    <div style={{ display: 'inline-block', background: '#ede9fe', color: '#5b21b6', padding: '3px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '6px' }}>
+                      المسار الثالث
+                    </div>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 900, margin: '4px 0 8px 0', color: '#4c1d95' }}>
+                      3. ספק חוגים
+                    </h3>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#7c3aed', marginBottom: '8px' }}>
+                      (مزود دورات وبرامج إثرائية ومحتوى)
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                      تسجيل المؤسسات، الشركات، والمزودين المستقلين لعرض البرامج وورشات العمل والدورات والفعاليات اللامنهجية (ספק חוגים).
+                    </p>
+                    <div style={{ fontWeight: 900, color: '#7c3aed', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>اضغط هنا للتسجيل كمزود دورات</span>
+                      <span>←</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1562,7 +1742,7 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>🎨 سوق البرامج التعليمية ومزودي المحتوى</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>🎨 سوق البرامج التعليمية ومزودي المحتوى (ספקי חוגים)</h2>
                 <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>دورات STEM، ورشات فنية، وبرامج إثرائية ومساندة للمدارس</p>
               </div>
               <button className="edu-btn edu-btn-purple" onClick={() => setActiveTab('provider-dash')}>
@@ -1570,45 +1750,175 @@ const EduStaffingPortal = ({ initialTab = 'landing' }) => {
               </button>
             </div>
 
-            <div className="edu-grid">
-              {programs.map(p => (
-                <div key={p.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#faf5ff', color: '#7e22ce', padding: '3px 8px', borderRadius: '8px' }}>
-                        {p.category}
-                      </span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>
-                        💰 {p.price}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-                      {p.title}
-                    </h3>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7e22ce', marginBottom: '8px' }}>
-                      مقدم من: {p.companyName}
-                    </div>
-
-                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
-                      {p.description}
-                    </p>
-
-                    {p.targetGrades && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-                        {p.targetGrades.map(g => (
-                          <span key={g} style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{g}</span>
-                        ))}
+            {programs.length === 0 ? (
+              <div className="edu-card" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
+                <h3 style={{ fontWeight: 800, color: '#1e293b' }}>لا توجد برامج أو دورات معلنة حالياً</h3>
+                <p style={{ fontSize: '0.95rem' }}>تم مسح جميع البرامج السابقة أو لم يقم المزودون بنشر دورات جديدة بعد.</p>
+                <button className="edu-btn edu-btn-purple" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('provider-dash')}>
+                  + إضافة وتسجيل برنامج جديد الآن
+                </button>
+              </div>
+            ) : (
+              <div className="edu-grid">
+                {programs.map(p => (
+                  <div key={p.id} className="edu-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#faf5ff', color: '#7e22ce', padding: '3px 8px', borderRadius: '8px' }}>
+                          {p.category}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>
+                          💰 {p.price}
+                        </span>
                       </div>
-                    )}
+
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                        {p.title}
+                      </h3>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7e22ce', marginBottom: '10px' }}>
+                        مقدم من: {p.companyName}
+                      </div>
+
+                      {/* شريط الإدارة: تعديل ومسح البرنامج */}
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', background: '#faf5ff', padding: '6px 10px', borderRadius: '10px', border: '1px solid #f3e8ff' }}>
+                        <button 
+                          type="button" 
+                          className="edu-btn" 
+                          style={{ flex: 1, background: '#9333ea', color: 'white', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                          onClick={() => setEditingProgram({ ...p })}
+                        >
+                          ✏️ تعديل المعطيات
+                        </button>
+                        <button 
+                          type="button" 
+                          className="edu-btn" 
+                          style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '5px 8px', fontSize: '0.8rem', borderRadius: '8px' }}
+                          onClick={() => setProgramToDelete(p)}
+                        >
+                          🗑️ مسح / حذف
+                        </button>
+                      </div>
+
+                      <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: '8px', borderRadius: '8px', margin: '0 0 10px 0' }}>
+                        {p.description || 'لا يوجد شرح إضافي'}
+                      </p>
+
+                      {p.targetGrades && p.targetGrades.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                          {p.targetGrades.map(g => (
+                            <span key={g} style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{g}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <button className="edu-btn edu-btn-purple" style={{ width: '100%' }} onClick={() => startChatWith(p.companyName)}>
+                      💬 طلب عرض سعر واستفسار داخلي
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* نافذة تعديل بيانات البرنامج التعليمي (Edit Program Modal) */}
+            {editingProgram && (
+              <div style={{
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
+                direction: 'rtl'
+              }}>
+                <div className="edu-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderTop: '5px solid #9333ea', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#0f172a', fontWeight: 900 }}>✏️ تعديل ومسح معطيات البرنامج التعليمي</h3>
+                    <button onClick={() => setEditingProgram(null)} style={{ background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                      <i className="fas fa-times"></i>
+                    </button>
                   </div>
 
-                  <button className="edu-btn edu-btn-purple" style={{ width: '100%' }} onClick={() => startChatWith(p.companyName)}>
-                    💬 طلب عرض سعر واستفسار داخلي
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>اسم المؤسسة / المزود:</label>
+                        <button type="button" onClick={() => setEditingProgram({...editingProgram, companyName: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                      </div>
+                      <input className="edu-input" value={editingProgram.companyName || ''} onChange={e => setEditingProgram({...editingProgram, companyName: e.target.value})} />
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>عنوان الدورة أو البرنامج:</label>
+                        <button type="button" onClick={() => setEditingProgram({...editingProgram, title: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                      </div>
+                      <input className="edu-input" value={editingProgram.title || ''} onChange={e => setEditingProgram({...editingProgram, title: e.target.value})} />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>التصنيف والمجال:</label>
+                        <select className="edu-input" value={editingProgram.category || ''} onChange={e => setEditingProgram({...editingProgram, category: e.target.value})}>
+                          {PROVIDER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>التسعير التقديري:</label>
+                          <button type="button" onClick={() => setEditingProgram({...editingProgram, price: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح</button>
+                        </div>
+                        <input className="edu-input" value={editingProgram.price || ''} onChange={e => setEditingProgram({...editingProgram, price: e.target.value})} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>شرح البرنامج والمخرجات التعليمية:</label>
+                        <button type="button" onClick={() => setEditingProgram({...editingProgram, description: ''})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>مسح الشرح</button>
+                      </div>
+                      <textarea className="edu-input" rows={3} value={editingProgram.description || ''} onChange={e => setEditingProgram({...editingProgram, description: e.target.value})}></textarea>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                      <button type="button" className="edu-btn edu-btn-purple" style={{ flex: 2, padding: '12px', fontWeight: 900 }} onClick={handleSaveEditProgram}>
+                        💾 حفظ وتثبيت التعديلات
+                      </button>
+                      <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1, padding: '12px' }} onClick={() => setEditingProgram(null)}>
+                        إلغاء
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* نافذة تأكيد حذف البرنامج التعليمي (Delete Program Modal) */}
+            {programToDelete && (
+              <div style={{
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem',
+                direction: 'rtl'
+              }}>
+                <div className="edu-card" style={{ width: '100%', maxWidth: '450px', background: 'white', textAlign: 'center', borderTop: '5px solid #ef4444' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '10px' }}>⚠️</div>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 900 }}>تأكيد مسح البرنامج التعليمي!</h3>
+                  <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                    هل أنت متأكد من رغبتك في مسح وحذف برنامج <strong>"{programToDelete.title}"</strong> المقدم من <strong>"{programToDelete.companyName}"</strong> نهائياً من المنصة؟
+                    <br/><br/>
+                    <span style={{ color: '#ef4444', fontWeight: 700 }}>هذا الإجراء لا يمكن التراجع عنه.</span>
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" className="edu-btn" style={{ flex: 1, background: '#ef4444', color: 'white' }} onClick={() => handleDeleteProgram(programToDelete.id)}>
+                      نعم، امسح البرنامج
+                    </button>
+                    <button type="button" className="edu-btn edu-btn-outline" style={{ flex: 1 }} onClick={() => setProgramToDelete(null)}>
+                      إلغاء وتراجع
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
