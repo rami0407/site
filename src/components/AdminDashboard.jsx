@@ -5027,7 +5027,7 @@ const AdminDashboard = () => {
               🎨 منوعات - مراقبة الصور ({monawaatDrawings.length})
             </button>
 
-            {/* زر سري: منصة التوظيف والخدمات التعليمية */}
+            {/* زر: منصة الخدمات */}
             <button 
               onClick={() => setActiveTab('edu-staffing-admin')} 
               className={`filter-chip ${activeTab === 'edu-staffing-admin' ? 'active' : ''}`}
@@ -5044,8 +5044,8 @@ const AdminDashboard = () => {
                 boxShadow: '0 2px 6px rgba(30,64,175,0.15)'
               }}
             >
-              <i className="fas fa-user-graduate" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
-              🔒 منصة التوظيف والخدمات (مسودة)
+              <i className="fas fa-briefcase" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              💼 منصة الخدمات
             </button>
 
             {/* تبويب: المعرض الافتراضي ثلاثي الأبعاد */}
