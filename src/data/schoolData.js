@@ -127,6 +127,13 @@ export const newsData = [
 ];
 
 export const importantLinks = [
+  { 
+    title: 'منصة الخدمات (שעות בודדות / מילוי מקום / ספק חוגים)', 
+    icon: 'fa-briefcase', 
+    url: '#/services', 
+    desc: 'بوابة تنظيم وتسجيل معلمين بدلاء (מילוי מקום)، ساعات مساعدة فردية (שעות בודדות)، ومزودي الدورات والمحتوى (سواء جيفين أو خارجي).', 
+    badge: 'منصة الخدمات 💼' 
+  },
   { title: 'بوابة الطلاب وأولياء الأمور', icon: 'fa-user-check', url: 'https://parent.gov.il', desc: 'لمتابعة تحصيل الطالب، الحضور والغياب، والتقارير الأكاديمية.' },
   { title: 'منصة كلاسروم التعليمية (Classroom)', icon: 'fa-chalkboard', url: 'https://classroom.google.com', desc: 'الصف الدراسي الرقمي لحل الواجبات والتواصل مع المعلمين.' },
   { title: 'المعلم السقراطي للواجبات والتفكير', icon: 'fa-brain', url: '#/worksheets', action: 'open-homework-helper', desc: 'مرشد ذكي يعتمد الحوار السقراطي لمساعدتك في فهم المسائل والواجبات خطوة بخطوة.', badge: 'ذكاء اصطناعي 🤖', isAi: true },

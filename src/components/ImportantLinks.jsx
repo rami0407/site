@@ -160,6 +160,22 @@ const ImportantLinks = () => {
             });
           }
 
+          // 0. Services Platform (منصة الخدمات)
+          const hasServices = list.some(l => 
+            (l.title && (l.title.includes('منصة الخدمات') || l.title.includes('שעות בודדות') || l.title.includes('ميلوي מקום'))) || 
+            (l.url && (l.url.includes('services') || l.url.includes('staffing')))
+          );
+          if (!hasServices) {
+            list.unshift({
+              id: 'school-services-platform-default',
+              title: 'منصة الخدمات (שעות בודדות / מילוי מקום / ספק חוגים)',
+              icon: 'fa-briefcase',
+              url: '#/services',
+              desc: 'بوابة تنظيم وتسجيل معلمين بدلاء (מילוי מקום)، ساعات مساعدة فردية (שעות בודדות)، ومزودي الدورات والبرامج التعليمية (سواء جيفين أو خارجي).',
+              badge: 'منصة الخدمات 💼'
+            });
+          }
+
           // 1. Virtual 3D Museum
           const hasMuseum = list.some(l => 
             (l.title && l.title.includes('المعرض الافتراضي')) || 
@@ -300,7 +316,11 @@ const ImportantLinks = () => {
             const isMonawaat = link.url?.includes('monawaat') || link.badge?.includes('منوعات') || link.title?.includes('منوعات');
             const isAi = link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة');
 
+            const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             let iconGradient = undefined;
+            if (isServices) {
+              iconGradient = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
+            } else 
             if (isKiosk) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
             } else if (isExcellence) {

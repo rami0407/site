@@ -319,29 +319,6 @@ const Navbar = () => {
               <LanguageSwitcher />
             </li>
 
-            {/* زر منصة الخدمات المدرسية */}
-            <li>
-              <a 
-                href="#/services" 
-                style={{
-                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-                  color: 'white',
-                  padding: '5px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.85rem',
-                  fontWeight: 900,
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(124, 58, 237, 0.4)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)'
-                }}
-              >
-                💼 منصة الخدمات (שעות בודדות / מילוי מקום)
-              </a>
-            </li>
-
             {/* Top Notification Bell */}
             <li>
               <NotificationCenter />
