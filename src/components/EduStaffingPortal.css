@@ -1,4 +1,4 @@
-﻿/* EduStaffingPortal.css - Modern RTL styles for Educational Staffing Platform */
+/* EduStaffingPortal.css - Modern RTL styles for Educational Staffing Platform */
 
 .edu-portal-root {
   font-family: 'Tajawal', sans-serif;
@@ -294,4 +294,55 @@
   color: #1e293b;
   border: 1px solid #e2e8f0;
   border-bottom-left-radius: 2px;
+}
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .edu-secret-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .edu-nav-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding: 6px;
+    width: 100%;
+  }
+
+  .edu-tab-btn {
+    white-space: nowrap;
+  }
+
+  .edu-hero {
+    padding: 2rem 1.25rem;
+  }
+
+  .edu-hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .edu-role-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .edu-content-area {
+    padding: 1rem 0.75rem;
+  }
+
+  .edu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .edu-chat-box {
+    height: 400px;
+  }
+
+  .edu-msg-bubble {
+    max-width: 90%;
+  }
 }

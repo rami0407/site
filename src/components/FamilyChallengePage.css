@@ -235,3 +235,84 @@
   line-height: 1.5;
   margin: 0;
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .fc-hero {
+    padding: 3rem 1rem 2.5rem;
+  }
+
+  .fc-title {
+    font-size: clamp(1.8rem, 6vw, 2.4rem);
+  }
+
+  .fc-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .fc-container {
+    padding: 0 1rem;
+    margin-top: -1.5rem;
+  }
+
+  .fc-challenge-card {
+    padding: 1.5rem 1.2rem;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+  }
+
+  .fc-challenge-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .fc-question-box {
+    padding: 1.25rem 1rem;
+  }
+
+  .fc-question-title {
+    font-size: 1.2rem;
+  }
+
+  .fc-submit-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .fc-fame-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .fc-fame-card {
+    padding: 1.5rem 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .fc-hero {
+    padding: 2.5rem 0.75rem 2rem;
+  }
+
+  .fc-badge {
+    font-size: 0.82rem;
+    padding: 0.35rem 1rem;
+  }
+
+  .fc-title {
+    font-size: 1.65rem;
+  }
+
+  .fc-timer-badge {
+    font-size: 0.82rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fc-section-heading h2 {
+    font-size: 1.6rem;
+  }
+}

@@ -332,3 +332,77 @@
   background: #fee2e2;
   color: #ef4444;
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .lost-found-hero {
+    padding: 2.5rem 1rem 2rem;
+  }
+
+  .lf-title {
+    font-size: clamp(1.7rem, 5vw, 2.3rem);
+  }
+
+  .lf-subtitle {
+    font-size: 0.98rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .lf-notice-box {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .lf-container {
+    padding: 0 1rem;
+  }
+
+  .lf-filter-card {
+    padding: 1rem;
+    border-radius: 16px;
+    margin-bottom: 1.75rem;
+  }
+
+  .lf-search-row {
+    flex-direction: column;
+  }
+
+  .lf-items-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .lf-modal-box {
+    padding: 1.5rem 1.25rem;
+    border-radius: 20px;
+    max-width: 95vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .lost-found-hero {
+    padding: 2rem 0.75rem 1.5rem;
+  }
+
+  .lf-badge {
+    font-size: 0.82rem;
+    padding: 0.35rem 1rem;
+  }
+
+  .lf-title {
+    font-size: 1.55rem;
+  }
+
+  .lf-item-img-wrap {
+    height: 180px;
+  }
+
+  .lf-chip-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}

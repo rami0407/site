@@ -396,3 +396,40 @@
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(114, 9, 183, 0.3);
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .teacher-portal-login-page {
+    padding: 15px 10px;
+    min-height: auto;
+  }
+
+  .teacher-login-card {
+    padding: 24px 16px;
+    border-radius: 20px;
+    max-width: 95vw;
+  }
+
+  .t-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .t-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .t-filters-card {
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .t-filter-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

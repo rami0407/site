@@ -191,3 +191,44 @@
 .auth-submit-btn:hover {
   transform: scale(1.02);
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .student-auth-overlay {
+    padding: 10px;
+  }
+
+  .student-auth-card {
+    padding: 24px 16px;
+    border-radius: 22px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .auth-icon-badge {
+    width: 56px;
+    height: 56px;
+    font-size: 2rem;
+  }
+
+  .auth-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .role-selector-tabs {
+    flex-wrap: wrap;
+  }
+
+  .role-tab-btn {
+    font-size: 0.8rem;
+    padding: 8px 6px;
+  }
+
+  .auth-submit-btn {
+    padding: 12px;
+    font-size: 1rem;
+  }
+}

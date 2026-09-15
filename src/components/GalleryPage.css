@@ -395,3 +395,100 @@
   color: #cbd5e1;
   margin-bottom: 1rem;
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .gallery-hero-banner {
+    padding: 3rem 1rem 4.5rem;
+  }
+
+  .gallery-hero-title {
+    font-size: clamp(1.8rem, 5vw, 2.3rem);
+  }
+
+  .gallery-hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .gallery-page-body {
+    padding: 2rem 0.75rem 4rem;
+  }
+
+  .gallery-controls-bar {
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
+    margin-bottom: 1.75rem;
+  }
+
+  .standalone-gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .gallery-image-wrapper {
+    height: 200px;
+  }
+
+  .lightbox-container {
+    max-width: 96vw;
+    border-radius: 20px;
+  }
+
+  .lightbox-image-box {
+    height: 50vh;
+  }
+
+  .lightbox-info-bar {
+    padding: 1rem 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .lightbox-nav-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-hero-banner {
+    padding: 2.5rem 0.75rem 3.5rem;
+  }
+
+  .gallery-hero-badge {
+    font-size: 0.82rem;
+    padding: 0.4rem 1rem;
+  }
+
+  .gallery-hero-title {
+    font-size: 1.65rem;
+    line-height: 1.3;
+  }
+
+  .gallery-hero-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .gallery-search-box input {
+    font-size: 0.92rem;
+    padding: 0.75rem 2.5rem 0.75rem 2.2rem;
+  }
+
+  .gallery-filter-pills .pill-btn {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.9rem;
+  }
+
+  .standalone-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery-image-wrapper {
+    height: 220px;
+  }
+}

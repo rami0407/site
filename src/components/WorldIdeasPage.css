@@ -660,3 +660,97 @@
 .btn-send-comment:hover {
   background: #0369a1;
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .ideas-hero-banner {
+    padding: 2.5rem 1rem 4rem;
+  }
+
+  .ideas-hero-content {
+    gap: 1.5rem;
+  }
+
+  .ideas-hero-text {
+    flex: 1 1 100%;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .btn-hero-play,
+  .btn-hero-login {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ideas-hero-visual {
+    flex: 1 1 100%;
+    margin-top: 1rem;
+  }
+
+  .hero-gif-card {
+    transform: none;
+    max-width: 90vw;
+  }
+
+  .hero-award-badge {
+    position: static;
+    margin-top: 0.75rem;
+    justify-content: center;
+  }
+
+  .ideas-main-body {
+    padding: 0 0.75rem;
+  }
+
+  .world-ideas-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .idea-card {
+    padding: 1.25rem 1rem;
+    border-radius: 20px;
+  }
+
+  .idea-modal-box {
+    padding: 1.5rem 1rem;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.6rem;
+  }
+
+  .hero-badge {
+    font-size: 0.82rem;
+    padding: 0.35rem 1rem;
+  }
+
+  .comment-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-send-comment {
+    width: 100%;
+    justify-content: center;
+  }
+}

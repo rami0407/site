@@ -5827,11 +5827,148 @@ body {
   /* Prevent Google from adding arbitrary top padding or font changes */
 }
 
+/* ==========================================================================
+   🌐 COMPREHENSIVE GLOBAL MOBILE RESPONSIVE ENGINE
+   Ensures 100% of pages fit all mobile and tablet viewports without horizontal overflow
+   ========================================================================== */
 
+/* Universal mobile-safe viewport rules */
+html, body, #root {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
+/* Ensure no media element pushes the page wider than the phone screen */
+img, video, canvas, iframe {
+  max-width: 100%;
+}
 
+/* Safe word wrapping for Arabic headlines & text across all pages */
+h1, h2, h3, h4, h5, h6, p, a, span, label, td, th {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
 
+/* Universal table responsiveness: never allow tables to break mobile width */
+@media (max-width: 991px) {
+  table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
+/* Responsive containers across the entire site */
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: clamp(0.75rem, 3.5vw, 1.25rem) !important;
+    padding-right: clamp(0.75rem, 3.5vw, 1.25rem) !important;
+  }
 
+  .section-header {
+    margin-bottom: 2.5rem !important;
+    padding: 0 0.5rem;
+  }
 
+  .section-title {
+    font-size: clamp(1.5rem, 5vw, 2rem) !important;
+    line-height: 1.35;
+  }
+
+  .section-subtitle {
+    font-size: clamp(0.9rem, 3.5vw, 1.05rem) !important;
+  }
+
+  /* Universal modal safety */
+  .modal-card,
+  .modal-box,
+  .modal-dialog,
+  .custom-modal-content,
+  .popup-card,
+  .dialog-box {
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    padding: clamp(1rem, 4vw, 1.75rem) !important;
+    border-radius: 20px !important;
+    margin: auto !important;
+  }
+
+  /* Universal form controls on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+  }
+
+  /* Grids safety: collapse multi-columns to 1 or 2 columns */
+  .initiatives-grid,
+  .values-grid,
+  .links-grid,
+  .books-grid,
+  .teachers-grid,
+  .articles-grid,
+  .worksheets-grid,
+  .card-grid,
+  .stats-grid,
+  .features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Hero sections padding on mobile */
+  .hero-section,
+  .page-hero,
+  .landing-hero {
+    padding: clamp(3rem, 8vw, 5rem) 1rem clamp(3rem, 8vw, 4.5rem) !important;
+  }
+
+  /* Floating action buttons adjustments for mobile */
+  .floating-actions-container {
+    bottom: 16px !important;
+    left: 16px !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .section-title {
+    font-size: 1.45rem !important;
+  }
+
+  /* Reduce overly large paddings inside cards */
+  .card,
+  .feature-card,
+  .initiative-card,
+  .info-box,
+  .details-panel {
+    padding: 1.25rem 1rem !important;
+  }
+
+  /* Flex rows that might push width on very small screens */
+  .flex-row-mobile-stack,
+  .actions-row,
+  .filter-row,
+  .button-group {
+    flex-wrap: wrap !important;
+  }
+}

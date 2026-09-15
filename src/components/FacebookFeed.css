@@ -251,3 +251,47 @@
   color: #0d65d9;
   text-decoration: underline;
 }
+
+/* ==========================================
+   MOBILE & TABLET RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+  .facebook-feed-section {
+    padding: 2.5rem 0.75rem;
+  }
+
+  .fb-section-title {
+    font-size: 1.7rem;
+  }
+
+  .fb-section-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .fb-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .btn-visit-fb {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fb-view-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-expand-fb {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fb-card-post {
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
+  }
+}
