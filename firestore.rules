@@ -205,10 +205,13 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // 👨‍🏫 حسابات وتراخيص المعلمين — قراءة التراخيص للتحقق من البصمات المشفرة، والتعديل للإدارة
+    // 👨‍🏫 حسابات وتراخيص المعلمين — الكتابة للمعلم المالك أو الإدارة فقط، القراءة محمية كذلك
     match /teacher_accounts/{docId} {
-      allow read: if true;
-      allow write: if isSuperAdmin() || request.auth != null;
+      // Only the owning authenticated teacher or SuperAdmin can read their own account
+      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == docId) || isTeacher();
+      // Teachers can only update their own account; SuperAdmin can write any account
+      allow update: if isSuperAdmin() || (isTeacher() && request.auth.uid == docId);
+      allow create, delete: if isSuperAdmin();
     }
 
     // ==========================================
@@ -218,12 +221,12 @@ service cloud.firestore {
     match /teacher_appointments/{docId} {
       // 🛡️ المواعيد واستقبال أولياء الأمور وحارس البوابة
       allow read: if true;
-      // Public appointment bookings for parents:
+      // Public appointment bookings for parents (with basic validation):
       allow create: if isValidString(request.resource.data.parentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      // Guard & Admin can update entryStatus, enteredAt, gateStatus
+      // Guard & Admin can update status fields ONLY (no auth bypass - any user restricted to diff check)
       allow update: if isSuperAdmin()
-                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt', 'status', 'gateStatus', 'actualExitTime', 'gateExitTime']));
+                    || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt', 'status', 'gateStatus', 'actualExitTime', 'gateExitTime']));
       allow delete: if isSuperAdmin();
     }
 
@@ -382,16 +385,21 @@ service cloud.firestore {
 
     // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
     match /student_dismissals/{docId} {
-      // السماح بالقراءة لشاشات الحارس والمربين والإدارة
-      allow read: if true;
-      // السماح بإنشاء إذن خروج عند توفر بيانات الطالب الأساسية
-      allow create: if isValidString(request.resource.data.studentName, 2, 100)
-                    && isValidString(request.resource.data.date, 8, 20);
-      // Gate exit status update: ONLY gate status fields can be updated
+      // القراءة محصورة في المعلمين والحارس والإدارة فقط (بيانات الطلاب حساسة)
+      allow read: if isTeacher() || isGuard() || isSuperAdmin();
+      // إنشاء إذن خروج: المعلم الموثق فقط ويجب تطابق هوية المعلم مع حسابه
+      allow create: if isSuperAdmin() || (
+        isTeacher()
+        && request.resource.data.teacherEmail == request.auth.token.email
+        && request.resource.data.teacherUid == request.auth.uid
+        && isValidString(request.resource.data.studentName, 2, 100)
+        && isValidString(request.resource.data.date, 8, 20)
+      );
+      // Gate exit status update: ONLY verified gate guard or SuperAdmin can confirm exits
       allow update: if isSuperAdmin()
-                    || request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                    || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                         'status', 'gateStatus', 'entryStatus', 'actualExitTime', 'gateExitTime', 'confirmedAt', 'confirmedBy', 'guardNotes'
-                       ]);
+                       ]));
       allow delete: if isSuperAdmin();
     }
 
