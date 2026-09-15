@@ -405,6 +405,20 @@ function App() {
     );
   }
 
+  const isFullSchoolView = currentHash.includes('full-school') || currentHash.includes('school-home');
+
+  // Currently publish ONLY 'منصة الخدمات' (EduStaffingPortal) as requested
+  if (!isFullSchoolView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <div style={{ minHeight: '100vh', background: '#0f172a' }}>
+          <EduStaffingPortal />
+        </div>
+      </Suspense>
+    );
+  }
+
   return (
     <>
       {/* Simulation Page Loader */}
