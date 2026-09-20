@@ -229,7 +229,7 @@ const GratitudeSkyPage = () => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [showAllLabels, setShowAllLabels] = useState(false);
+  const [showAllLabels, setShowAllLabels] = useState(true);
   const [hoveredStarId, setHoveredStarId] = useState(null);
   const [currentVoyagerIndex, setCurrentVoyagerIndex] = useState(0);
   const [isVoyagerActive, setIsVoyagerActive] = useState(false);
@@ -1781,6 +1781,31 @@ const GratitudeSkyPage = () => {
                   }}
                   className="gratitude-star-item"
                 >
+                  {/* Sender Name Badge (مقدم رسالة الامتنان فوق النجمة) */}
+                  {shouldShowLabel && star.senderName && (
+                    <div style={{
+                      marginBottom: '0.35rem',
+                      background: 'rgba(15, 23, 42, 0.9)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(56, 189, 248, 0.7)',
+                      borderRadius: '16px',
+                      padding: '0.18rem 0.65rem',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      color: '#38bdf8',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.6)',
+                      pointerEvents: 'none',
+                      animation: 'fadeIn 0.2s ease-in-out',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.85, color: '#94a3b8' }}>من:</span>
+                      <span>{star.senderName}</span>
+                    </div>
+                  )}
+
                   {/* Pulsing Star Core */}
                   <div style={{
                     position: 'relative',
@@ -1809,7 +1834,7 @@ const GratitudeSkyPage = () => {
                   {/* Smart Hovering Recipient Label (Visible on zoom in, hover, or when showAllLabels is ON) */}
                   {shouldShowLabel && (
                     <div style={{
-                      marginTop: '0.4rem',
+                      marginTop: '0.35rem',
                       background: isCurrentVoyager ? 'rgba(245, 158, 11, 0.95)' : 'rgba(15, 23, 42, 0.9)',
                       backdropFilter: 'blur(8px)',
                       border: `1.5px solid ${isCurrentVoyager ? '#fef08a' : colorMeta.hex}`,
@@ -1826,6 +1851,7 @@ const GratitudeSkyPage = () => {
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
+                      <span style={{ fontSize: '0.65rem', color: isCurrentVoyager ? '#0f172a' : '#94a3b8' }}>إلى:</span>
                       <span>{star.recipientName}</span>
                       {star.audioData && <span style={{ fontSize: '0.65rem' }}>🎙️</span>}
                     </div>
