@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db, emtnanDb } from '../firebase';
 import { 
   collection, 
@@ -199,7 +199,18 @@ const GratitudeSkyPage = () => {
   const [selectedStar, setSelectedStar] = useState(null);
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('sky'); // 'sky' or 'cards'
+  const [viewMode, setViewMode] = useState('sky'); // 'sky', 'cards', or 'archive'
+  
+  // Archiving & Time Scope State
+  const [timeScope, setTimeScope] = useState(() => {
+    return localStorage.getItem('gratitude_time_scope') || 'september';
+  });
+  const [archiveCutoff, setArchiveCutoff] = useState(() => {
+    return localStorage.getItem('gratitude_archive_cutoff') || null;
+  });
+  const [showArchiveSettings, setShowArchiveSettings] = useState(false);
+  const [archiveSelectedMonth, setArchiveSelectedMonth] = useState('all');
+  const [rawAllStars, setRawAllStars] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState('');
   const [likedStarIds, setLikedStarIds] = useState(() => {
@@ -367,6 +378,36 @@ const GratitudeSkyPage = () => {
     }
   };
 
+  
+  // Helper to determine if a star is Active vs Archived
+  const isStarActive = (star, scope = timeScope, cutoff = archiveCutoff) => {
+    // If an explicit cutoff date is set, anything before it moves to archive
+    if (cutoff && star.createdAt) {
+      const starTime = new Date(star.createdAt).getTime();
+      const cutoffTime = new Date(cutoff).getTime();
+      if (!isNaN(starTime) && !isNaN(cutoffTime) && starTime < cutoffTime) {
+        return false;
+      }
+    }
+
+    if (!star.createdAt) return true; // starter stars
+    const d = new Date(star.createdAt);
+    if (isNaN(d.getTime())) return true;
+
+    if (scope === 'all') return true;
+
+    if (scope === 'week') {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+      startOfWeek.setHours(0, 0, 0, 0);
+      return d >= startOfWeek;
+    }
+
+    // Default: 'september' (month 9 of 2026)
+    return d.getFullYear() === 2026 && d.getMonth() === 8;
+  };
+
   // Live Multi-Collection Real-time Firestore Listener
   useEffect(() => {
     let listStars = [];
@@ -381,7 +422,11 @@ const GratitudeSkyPage = () => {
             createdIso = m.timestamp.toDate().toISOString();
           } else if (m.timestamp.seconds) {
             createdIso = new Date(m.timestamp.seconds * 1000).toISOString();
+          } else if (typeof m.timestamp === 'string') {
+            createdIso = m.timestamp;
           }
+        } else if (m.createdAt) {
+          createdIso = typeof m.createdAt === 'string' ? m.createdAt : (m.createdAt.toDate ? m.createdAt.toDate().toISOString() : new Date().toISOString());
         }
         return {
           id: `msg_${m.id}`,
@@ -412,9 +457,13 @@ const GratitudeSkyPage = () => {
 
       // 4. Sort newest first
       allMerged.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setRawAllStars(allMerged);
 
-      // 5. Assign organic distributed celestial coordinates so no stars overlap
-      const positioned = distributeStarCoordinates(allMerged);
+      // 5. Separate Active vs Archived (Filter only active September/current week stars for the Sky)
+      const activeStars = allMerged.filter(s => isStarActive(s, timeScope, archiveCutoff));
+
+      // 6. Assign organic distributed celestial coordinates to active stars
+      const positioned = distributeStarCoordinates(activeStars);
       setStars(positioned);
       setLastSyncTime(new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
 
@@ -479,8 +528,19 @@ const GratitudeSkyPage = () => {
         message: m.data().text || (m.data().audioData ? '🎤 رسالة صوتية مسجلة' : 'رسالة شكر وامتنان'),
         audioData: m.data().audioData || null,
         likesCount: m.data().likes || 1,
-        createdAt: new Date().toISOString(),
-        isFromMessagesApp: true
+        createdAt: (() => {
+        const mData = m.data();
+        if (mData.timestamp) {
+          if (typeof mData.timestamp.toDate === 'function') return mData.timestamp.toDate().toISOString();
+          if (mData.timestamp.seconds) return new Date(mData.timestamp.seconds * 1000).toISOString();
+          if (typeof mData.timestamp === 'string') return mData.timestamp;
+        }
+        if (mData.createdAt) {
+          return typeof mData.createdAt === 'string' ? mData.createdAt : (mData.createdAt.toDate ? mData.createdAt.toDate().toISOString() : new Date().toISOString());
+        }
+        return new Date().toISOString();
+      })(),
+      isFromMessagesApp: true
       }));
 
       const combined = [...cloudStars, ...cloudMsgs];
@@ -490,7 +550,9 @@ const GratitudeSkyPage = () => {
       const allMerged = [...combined, ...baseStarsToAdd];
       allMerged.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-      const positioned = distributeStarCoordinates(allMerged);
+      setRawAllStars(allMerged);
+      const activeStars = allMerged.filter(s => isStarActive(s, timeScope, archiveCutoff));
+      const positioned = distributeStarCoordinates(activeStars);
       setStars(positioned);
       setLastSyncTime(new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
       localStorage.setItem('cached_gratitude_stars_v2', JSON.stringify(positioned));
@@ -613,6 +675,77 @@ const GratitudeSkyPage = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  
+  // Compute Archived Stars
+  const archivedStars = useMemo(() => {
+    return rawAllStars.filter(s => !isStarActive(s, timeScope, archiveCutoff));
+  }, [rawAllStars, timeScope, archiveCutoff]);
+
+  // Compute month groups in archive
+  const archiveMonthGroups = useMemo(() => {
+    const groups = {};
+    archivedStars.forEach(s => {
+      const d = new Date(s.createdAt || 0);
+      if (!isNaN(d.getTime())) {
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+        groups[key] = (groups[key] || 0) + 1;
+      }
+    });
+    return groups;
+  }, [archivedStars]);
+
+  // Filtered Archive Stars
+  const filteredArchivedStars = useMemo(() => {
+    return archivedStars.filter(s => {
+      if (archiveSelectedMonth !== 'all') {
+        const d = new Date(s.createdAt || 0);
+        if (!isNaN(d.getTime())) {
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+          if (key !== archiveSelectedMonth) return false;
+        }
+      }
+      if (activeCategory === 'messages_only' && !s.isFromMessagesApp) return false;
+      if (activeCategory !== 'all' && activeCategory !== 'messages_only' && s.recipientRole !== activeCategory) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const rName = (s.recipientName || '').toLowerCase();
+        const sName = (s.senderName || '').toLowerCase();
+        const msg = (s.message || '').toLowerCase();
+        if (!rName.includes(q) && !sName.includes(q) && !msg.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [archivedStars, archiveSelectedMonth, activeCategory, searchQuery]);
+
+  // Effect to re-filter stars whenever timeScope or archiveCutoff changes
+  useEffect(() => {
+    if (rawAllStars.length > 0) {
+      const active = rawAllStars.filter(s => isStarActive(s, timeScope, archiveCutoff));
+      const positioned = distributeStarCoordinates(active);
+      setStars(positioned);
+    }
+  }, [timeScope, archiveCutoff]);
+
+  // Handlers for weekly archiving
+  const handleArchiveCurrentWeek = () => {
+    const nowIso = new Date().toISOString();
+    setArchiveCutoff(nowIso);
+    localStorage.setItem('gratitude_archive_cutoff', nowIso);
+    setShowArchiveSettings(false);
+    playChimeSound(900);
+    alert('📦 تم أرشفة سماء هذا الأسبوع بنجاح! تم تفريغ السماء لتبدأ أسبوعاً جديداً من الامتنان.');
+  };
+
+  const handleResetArchiveToSeptember = () => {
+    setArchiveCutoff(null);
+    localStorage.removeItem('gratitude_archive_cutoff');
+    setTimeScope('september');
+    localStorage.setItem('gratitude_time_scope', 'september');
+    setShowArchiveSettings(false);
+    playChimeSound(1100);
+    alert('✨ تمت إعادة الضبط! تعرض السماء الآن جميع نجوم ورسائل شهر 9 (سبتمبر).');
+  };
 
   // Filter Stars & Messages
   const filteredStars = stars.filter((s) => {
@@ -831,7 +964,50 @@ const GratitudeSkyPage = () => {
               >
                 <span>💌 بطاقات ورسائل ({stars.length})</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('archive')}
+                style={{
+                  background: viewMode === 'archive' ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'transparent',
+                  color: viewMode === 'archive' ? 'white' : '#cbd5e1',
+                  border: 'none',
+                  padding: '0.55rem 0.9rem',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>📦 أرشيف الامتنان ({archivedStars.length})</span>
+              </button>
             </div>
+
+            {/* Archive Management / Weekly Reset Button */}
+            <button
+              onClick={() => setShowArchiveSettings(true)}
+              style={{
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.25))',
+                border: '1.5px solid #8b5cf6',
+                color: '#ddd6fe',
+                padding: '0.65rem 0.95rem',
+                borderRadius: '14px',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 900,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 2px 10px rgba(139, 92, 246, 0.25)'
+              }}
+              title="إدارة أرشفة النجوم وتفريغ السماء للأسبوع الجديد"
+            >
+              <span>⚙️ إدارة الأرشفة وتفريغ السماء</span>
+            </button>
 
             {/* Manual Live Sync Button */}
             <button
@@ -957,8 +1133,198 @@ const GratitudeSkyPage = () => {
         </div>
       </header>
 
-      {/* Main Content: Cards Grid Mode OR Celestial Interactive Sky Mode */}
-      {viewMode === 'cards' ? (
+      {/* Main Content: Archive Mode OR Cards Mode OR Celestial Interactive Sky Mode */}
+      {viewMode === 'archive' ? (
+        <main style={{ position: 'relative', zIndex: 10, width: '100%', minHeight: '75vh', padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
+          {/* Archive Header */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 41, 59, 0.85) 100%)',
+            border: '1.5px solid rgba(139, 92, 246, 0.4)',
+            borderRadius: '24px',
+            padding: '1.5rem 2rem',
+            marginBottom: '2rem',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(139, 92, 246, 0.25)', color: '#c4b5fd', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '6px' }}>
+                  <span>📦</span> أرشيف الامتنانات والرسائل السابقة
+                </div>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>
+                  سجل الامتنانات المحفوظة للأشهر والأسابيع السابقة
+                </h3>
+                <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
+                  جميع كلمات الشكر والرسائل الصوتية التي أضاءت سماء مدرسة مشيرفة في الفترات السابقة محفوظة هنا بكل فخر.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="edu-btn"
+                  onClick={() => setViewMode('sky')}
+                  style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', padding: '8px 16px', fontSize: '0.85rem', fontWeight: 800, borderRadius: '12px' }}
+                >
+                  🌌 العودة لسماء شهر 9 النشطة
+                </button>
+              </div>
+            </div>
+
+            {/* Filter by Month */}
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 800 }}>تصفية حسب الفترة:</span>
+              <button
+                type="button"
+                onClick={() => setArchiveSelectedMonth('all')}
+                style={{
+                  background: archiveSelectedMonth === 'all' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'rgba(255, 255, 255, 0.08)',
+                  color: 'white',
+                  border: archiveSelectedMonth === 'all' ? '1px solid #c4b5fd' : '1px solid transparent',
+                  padding: '4px 12px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                كل الأرشيف ({archivedStars.length})
+              </button>
+              {Object.entries(archiveMonthGroups).map(([key, count]) => {
+                const [y, m] = key.split('-');
+                const monthNames = { '1': 'كانون الثاني (شهر 1)', '2': 'شباط (شهر 2)', '3': 'آذار (شهر 3)', '4': 'نيسان (شهر 4)', '5': 'أيار (شهر 5)', '6': 'حزيران (شهر 6)', '7': 'تموز (شهر 7)', '8': 'آب (شهر 8)', '9': 'أيلول (شهر 9)', '10': 'تشرين الأول (شهر 10)', '11': 'تشرين الثاني (شهر 11)', '12': 'كانون الأول (شهر 12)' };
+                const label = `${monthNames[m] || ('شهر ' + m)} ${y}`;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setArchiveSelectedMonth(key)}
+                    style={{
+                      background: archiveSelectedMonth === key ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'rgba(255, 255, 255, 0.08)',
+                      color: 'white',
+                      border: archiveSelectedMonth === key ? '1px solid #c4b5fd' : '1px solid transparent',
+                      padding: '4px 12px',
+                      borderRadius: '10px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📅 {label} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Archived Cards Grid */}
+          {filteredArchivedStars.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.2)' }}>
+              <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>📭</span>
+              <h4 style={{ margin: '0 0 0.5rem', color: 'white' }}>لا توجد امتنانات في هذا التصنيف بالأرشيف</h4>
+              <p style={{ color: '#94a3b8', margin: 0 }}>اختر فترة أخرى أو تصفح كل الأرشيف.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.4rem' }}>
+              {filteredArchivedStars.map((star) => {
+                const colorMeta = STAR_COLORS[star.color] || STAR_COLORS.gold;
+                const isLiked = likedStarIds.includes(star.id);
+                const starDate = new Date(star.createdAt || 0);
+                const dateStr = !isNaN(starDate.getTime()) ? starDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+                return (
+                  <div
+                    key={star.id}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.88) 100%)',
+                      border: `1.5px solid ${colorMeta.hex}44`,
+                      borderRadius: '22px',
+                      padding: '1.4rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.4)',
+                      backdropFilter: 'blur(10px)',
+                      position: 'relative'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            background: `${colorMeta.hex}22`,
+                            border: `1px solid ${colorMeta.hex}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.2rem'
+                          }}>
+                            {colorMeta.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 900, color: 'white', fontSize: '0.98rem' }}>
+                              {star.recipientName}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              {star.recipientRole === 'teacher' ? '👨‍🏫 معلم' : star.recipientRole === 'management' ? '🏛️ إدارة' : star.recipientRole === 'peer' ? '🤝 زميل' : '🌿 طاقم'}
+                            </div>
+                          </div>
+                        </div>
+                        {dateStr && (
+                          <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.08)', color: '#cbd5e1', padding: '3px 8px', borderRadius: '8px' }}>
+                            {dateStr}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{
+                        background: 'rgba(0,0,0,0.3)',
+                        borderRadius: '14px',
+                        padding: '1rem',
+                        fontSize: '0.92rem',
+                        lineHeight: 1.65,
+                        color: '#e2e8f0',
+                        marginBottom: '1rem'
+                      }}>
+                        "{star.message}"
+                      </div>
+
+                      {star.audioData && (
+                        <div style={{ marginBottom: '1rem', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid #06b6d4', borderRadius: '12px', padding: '0.6rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.35rem' }}>
+                            🎙️ رسالة صوتية مسجلة:
+                          </div>
+                          <audio controls src={star.audioData} style={{ width: '100%', height: '36px' }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>من:</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8' }}>
+                          {star.senderName} {star.senderClass ? `(${star.senderClass})` : ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#fda4af' }}>❤️ {star.likesCount || 1}</span>
+                        <button
+                          onClick={() => { playChimeSound(1100); setSelectedStar(star); }}
+                          style={{ background: 'rgba(255,255,255,0.08)', color: 'white', border: '1px solid rgba(255,255,255,0.15)', padding: '0.35rem 0.65rem', borderRadius: '10px', fontSize: '0.78rem', cursor: 'pointer' }}
+                        >
+                          <i className="fas fa-expand-alt"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      ) : viewMode === 'cards' ? (
         <main style={{ position: 'relative', zIndex: 10, width: '100%', minHeight: '75vh', padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
