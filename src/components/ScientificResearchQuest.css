@@ -1051,6 +1051,214 @@
   white-space: pre-line;
 }
 
+/* Interactive Socratic Chat Dialogue Chamber */
+.quest-socratic-chat-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.quest-socratic-chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 1rem 0.5rem;
+  scroll-behavior: smooth;
+}
+
+.quest-socratic-chat-history::-webkit-scrollbar {
+  width: 6px;
+}
+.quest-socratic-chat-history::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 10px;
+}
+
+.quest-chat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.quest-chat-row.bot {
+  flex-direction: row;
+}
+
+.quest-chat-row.user {
+  flex-direction: row-reverse;
+}
+
+.quest-chat-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.quest-chat-avatar.bot {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 2px solid #38bdf8;
+}
+
+.quest-chat-avatar.user {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border: 2px solid #c084fc;
+}
+
+.quest-chat-bubble-wrap {
+  max-width: 82%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quest-chat-bubble {
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  position: relative;
+  word-break: break-word;
+}
+
+.quest-chat-row.bot .quest-chat-bubble {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  color: #f8fafc;
+  border-top-right-radius: 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.quest-chat-row.user .quest-chat-bubble {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  border: 1.5px solid rgba(192, 132, 252, 0.4);
+  color: #ffffff;
+  border-top-left-radius: 4px;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+}
+
+.quest-chat-header-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.quest-chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.quest-suggestion-chip {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  color: #bae6fd;
+  padding: 0.45rem 0.9rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.quest-suggestion-chip:hover {
+  background: rgba(56, 189, 248, 0.3);
+  border-color: #38bdf8;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+
+.quest-chat-input-container {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.7);
+  border: 2px solid rgba(56, 189, 248, 0.35);
+  border-radius: 50px;
+  padding: 0.4rem 0.6rem 0.4rem 1.2rem;
+  transition: all 0.25s ease;
+}
+
+.quest-chat-input-container:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+}
+
+.quest-chat-text-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 0.98rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.quest-chat-text-input::placeholder {
+  color: #64748b;
+}
+
+.quest-chat-send-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 0.7rem 1.4rem;
+  font-weight: 800;
+  font-size: 0.92rem;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.quest-chat-send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  transform: scale(1.04);
+  box-shadow: 0 6px 15px rgba(14, 165, 233, 0.4);
+}
+
+.quest-chat-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quest-chat-approved-banner {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.9) 0%, rgba(2, 44, 34, 0.95) 100%);
+  border: 2px solid #10b981;
+  border-radius: var(--quest-radius-md);
+  padding: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: pulseGreenGlow 2.5s infinite;
+}
+
 /* ----------------------------------------- */
 /* STATION 3: Hypotheses Builder             */
 /* ----------------------------------------- */

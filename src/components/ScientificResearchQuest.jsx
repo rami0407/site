@@ -337,7 +337,7 @@ const ScientificResearchQuest = () => {
   });
 
   // -----------------------------------------------------------
-  // Station 2: Research Question State
+  // Station 2: Research Question & Socratic Dialogue State
   // -----------------------------------------------------------
   const [researchQuestion, setResearchQuestion] = useState(() => {
     return localStorage.getItem('quest_research_question') || '';
@@ -349,6 +349,28 @@ const ScientificResearchQuest = () => {
     return localStorage.getItem('quest_question_approved') === 'true';
   });
   const [isEvaluatingQuestion, setIsEvaluatingQuestion] = useState(false);
+  const [chatInputText, setChatInputText] = useState('');
+  const chatBottomRef = useRef(null);
+
+  const [socraticMessages, setSocraticMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_socratic_messages');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'msg-0',
+        sender: 'bot',
+        text: `مرحباً بك يا باحثنا المتألق ${studentName}! 🤖✨\nأنا صديقك مُشيرفي، وهنا في مختبر التساؤل لنتحاور معاً ونحول أي فكرة في ذهنك إلى سؤال بحث علمي استقصائي ممتاز وقابل للقياس والتجربة!\n\nما هي الفكرة أو الظاهرة التي تود استكشافها اليوم؟ اكتبها لي بالأسفل أو اضغط على إحدى الأفكار الملهمة!`,
+        suggestions: [
+          'لماذا النباتات تحب الشمس؟ 🌱',
+          'كيف يذوب السكر في الماء الساخن والبارد؟ ☕',
+          'ما الذي يجعل المظلة الورقية تهبط ببطء؟ 🪂',
+          'هل الرياضة تزيد من سرعة نبضات القلب؟ 🏃‍♂️'
+        ]
+      }
+    ];
+  });
 
   const QUESTION_IDEAS = [
     'كيف يؤثر مقدار ضوء الشمس على سرعة نمو نبات النعناع؟ 🌱☀️',
@@ -482,77 +504,155 @@ const ScientificResearchQuest = () => {
   };
 
   // -----------------------------------------------------------
-  // Station 2 Logic: Socratic Mentor Evaluation
+  // Station 2 Logic: Interactive Socratic Dialogue Engine
   // -----------------------------------------------------------
-  const handleEvaluateQuestion = async () => {
-    const q = researchQuestion.trim();
-    if (!q) {
-      alert('اكتب سؤالك العلمي أولاً في الصندوق يا بطل!');
-      return;
-    }
+  const handleSendSocraticMessage = async (customText) => {
+    const q = (typeof customText === 'string' ? customText : chatInputText).trim();
+    if (!q) return;
 
-    setIsEvaluatingQuestion(true);
     playSound('click');
+    setChatInputText('');
 
-    // Rule-based heuristic evaluation + Optional AI enhancement
-    let feedback = '';
+    const userMsg = {
+      id: 'msg-' + Date.now(),
+      sender: 'user',
+      text: q
+    };
+
+    const updatedMessages = [...socraticMessages, userMsg];
+    setSocraticMessages(updatedMessages);
+    setIsEvaluatingQuestion(true);
+
+    let botReply = '';
+    let suggestions = [];
     let isApproved = false;
 
-    // Check for "هل" (closed question)
-    if (q.startsWith('هل ') || q.startsWith('هل')) {
-      feedback = `سؤال جميل وتفكير لطيف يا ${studentName}! 🌟\n\nولكن لاحظ أن أسئلة "هل" تكون إجابتها عادة بكلمة واحدة مثل (نعم) أو (لا)، وهذا لا يفتح لنا مجالاً لإجراء تجارب متعددة وقياس التغيرات!\n\n💡 نصيحة مُشيرفي السقراطية:\nما رأيك أن نبدأ بـ "كيف يؤثر..." أو "ما العلاقة بين..."؟\nمثال: بدلاً من "هل ينمو النبات في الظلام؟"، جرب: "كيف تؤثر كمية الضوء على سرعة نمو النبات؟". هيا جرب تعديله! 🚀`;
-      isApproved = false;
-    } else if (q.length < 15) {
-      feedback = `سؤالك قصير جداً يا بطل! 🤔\n\nالسؤال العلمي الجيد يحتاج أن يوضح: ما هو الشيء الذي سنغيره؟ وما هو الشيء الذي سنقيسه بالأرقام أو الملاحظة؟\n\n💡 فكر معي: ما الذي تريد قياسه بالضبط في تجربتك؟ أضف مزيداً من التفاصيل.`;
-      isApproved = false;
-    } else if (
-      q.includes('كيف يؤثر') || 
-      q.includes('كيف تؤثر') || 
-      q.includes('ما أثر') || 
-      q.includes('ما العلاقة') || 
-      q.includes('ما تأثير') ||
-      q.includes('إلى أي مدى')
-    ) {
-      // Strong scientific formulation
-      feedback = `مذهل ورائع جداً يا عالمنا الصغير ${studentName}! 🏆✨\n\nهذا سؤال بحث علمي استقصائي من الطراز الرفيع! لأنه:\n1. يبدأ بأداة استقصائية ممتازة ومفتوحة.\n2. يحدد بوضوح متغيراً سنقوم بتغييره ومتغيراً سنقيسه.\n3. يمكن اختباره بالتجربة العملية والقياس!\n\nأنا فخور بك وسؤالك معتمد رسمياً للانتقال إلى المحطة التالية! 🚀`;
+    // Check if question meets scientific excellence
+    const isScientificQuestion = 
+      (q.includes('كيف يؤثر') || q.includes('كيف تؤثر') || q.includes('ما أثر') || q.includes('ما العلاقة') || q.includes('ما تأثير') || q.includes('إلى أي مدى')) &&
+      !q.includes('تحب') && !q.includes('تكره') && !q.includes('زعلانة') &&
+      q.length >= 16;
+
+    if (isScientificQuestion) {
       isApproved = true;
+      botReply = `🎉 مذهل ورائع جداً جداً يا عالمنا البطل ${studentName}! 🏆✨\n\nهذا سؤال بحث علمي استقصائي من الطراز الرفيع لأنه:\n1. يبدأ بصيغة استقصائية مفتوحة.\n2. يحدد بوضوح متغيراً سنقوم بتغييره ومتغيراً سنقيسه بالأرقام.\n3. يفتح الباب واسعاً لتجربة عملية ممتعة ومبهرة!\n\nأنا فخور بك وسؤالك معتمد رسمياً! لقد فزت بوسام "مفتاح التساؤل الذكي 🔍" وبوابتك للمحطة القادمة مفتوحة الآن! انطلق معي نحو الفرضيات 🚀!`;
+      setResearchQuestion(q);
+      setIsQuestionApproved(true);
+      localStorage.setItem('quest_research_question', q);
+      localStorage.setItem('quest_question_approved', 'true');
+      awardBadge('question');
+      unlockStation(3);
+      playSound('success');
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+    } else if (q.includes('تحب') || q.includes('تكره') || q.includes('مشاعر')) {
+      botReply = `سؤال جميل وفضول لطيف يا ${studentName}! 🌟\nولكن لاحظ أن كلمة "تحب" تعبر عن مشاعر لا يمكننا في المختبر قياسها بمسطرة أو ميزان 📏!\n\n💡 لنوجه فكرتك علمياً:\nما هو الشيء الملموس الذي يمكننا قياسه في النبتة عند تعرضها لضوء الشمس؟ اختر مما يلي لنبني به سؤالك:`;
+      suggestions = [
+        'سرعة نمو وطول ساق النبتة بالسنتمتر 📏',
+        'عدد الأوراق وخضار لونها 🍃',
+        'كيف يؤثر ضوء الشمس على سرعة نمو النبات؟ 🌱'
+      ];
+    } else if (q.startsWith('هل ') || q.startsWith('هل')) {
+      botReply = `تفكير ذكي وخطوة واعدة! 🤔\nولكن أسئلة "هل" تكون إجابتها محصورة بكلمة واحدة مثل (نعم) أو (لا)، وهذا لا يمنحنا تجربة ممتعة لاكتشاف المتغيرات!\n\n💡 جرب أن نبدأ بـ "كيف يؤثر..." أو "ما العلاقة بين...". اختر إحدى الصياغات المقترحة أو اكتب صياغتك:`;
+      suggestions = [
+        'كيف يؤثر ضوء الشمس على سرعة نمو النبات؟ 🌱',
+        'ما أثر درجة حرارة الماء على سرعة ذوبان السكر؟ ☕',
+        'ما أثر ممارسة الرياضة على عدد نبضات القلب؟ 🏃‍♂️'
+      ];
+    } else if (q.includes('طول') || q.includes('نمو') || q.includes('سرعة') || q.includes('حرارة') || q.includes('ذوبان') || q.includes('نبضات')) {
+      botReply = `أحسنت التفكير والتركيز! 👏 هذا متغير علمي رائع وقابل للملاحظة والقياس 🔬.\n\nوالآن لنركّب سؤال البحث الاستقصائي الكامل بهذا المتغير:\nاختر الصياغة الذهبية المكتملة لتعتمدها وتبدأ رحلة الفرضيات:`;
+      suggestions = [
+        `كيف يؤثر مقدار ضوء الشمس على سرعة نمو النبات؟ 🌱`,
+        `ما أثر عدد ساعات التعرض للشمس على طول ساق النبتة؟ ☀️`,
+        `ما العلاقة بين كمية الضوء وسرعة نمو أوراق النبات؟ 🍃`
+      ];
+    } else if (q.length < 12) {
+      botReply = `بداية فكرة لطيفة، لكن السؤال قصير جداً يا بطلنا! 🧐\nالسؤال العلمي الجيد يوضح ما هو الشيء الذي سنجرّبه؟ وما هو الشيء الذي سنقيسه؟\nجرب إضافة تفاصيل أو اختر من أفكار التجارب المقترحة:`;
+      suggestions = [
+        'كيف يؤثر ضوء الشمس على سرعة نمو نبات النعناع؟ 🌱',
+        'ما العلاقة بين درجة حرارة الماء وسرعة ذوبان مكعب السكر؟ ☕',
+        'كيف يؤثر حجم المظلة على سرعة هبوطها نحو الأرض؟ 🪂'
+      ];
     } else {
-      // Try AI or smart general socratic guide
+      // AI or fallback Socratic guidance
       try {
-        const prompt = `أنت الروبوت مُشيرفي، موجه سقراطي ودود للأطفال في المرحلة الابتدائية.
-الطالب كتب هذا السؤال لمشروعه العلمي: "${q}"
+        const historySnippet = updatedMessages.slice(-4).map(m => `${m.sender === 'bot' ? 'مُشيرفي' : studentName}: ${m.text}`).join('\n');
+        const prompt = `أنت الروبوت "مُشيرفي"، موجه سقراطي علمي ودود للأطفال في المدرسة الابتدائية (العمر 9-12 سنة).
+اسم الطالب: ${studentName}.
+سياق المحادثة: نساعد الطفل في بناء "سؤال بحث علمي استقصائي قابل للقياس والتجربة".
+حوار المحادثة الأخير:
+${historySnippet}
+الطالب قال الآن: "${q}".
 المطلوب:
-1. قدم تشجيعاً لطيفاً جداً.
-2. إذا كان السؤال يحتاج تحسيناً، اطرح عليه سؤالين توجيهيين لطيفين لصياغة سؤال استقصائي يبدأ بـ (كيف يؤثر / ما أثر).
-3. إذا كان السؤال ممتازاً وقابلاً للبحث، اعتمده وأثنِ عليه.
-اكتب الرد في حدود 40-60 كلمة بأسلوب مشوق ومناسب للأطفال.`;
+1. رد تشجيعي لطيف في جملتين بأسلوب سقراطي ذكي.
+2. وجهه بلطف لتحويل فكرته إلى سؤال يبدأ بـ (كيف يؤثر / ما العلاقة) ويكون قابلاً للقياس (مثل قياس الطول، السرعة، الوزن).
+3. إذا كان سؤاله مكتملاً وممتازاً فعلاً كبحث علمي، اعتمده واكتب في السطر الأخير حصراً: [APPROVED]
+كن مشوقاً ومناسباً للأطفال.`;
         const aiReply = await generateAiResponse(prompt, 'أنت الروبوت مُشيرفي الموجه السقراطي للبحث العلمي للأطفال.');
         if (aiReply) {
-          feedback = aiReply;
-          isApproved = q.includes('كيف') || q.includes('أثر') || q.includes('علاقة') || q.length > 25;
+          if (aiReply.includes('[APPROVED]')) {
+            isApproved = true;
+            botReply = aiReply.replace('[APPROVED]', '').trim();
+            setResearchQuestion(q);
+            setIsQuestionApproved(true);
+            localStorage.setItem('quest_research_question', q);
+            localStorage.setItem('quest_question_approved', 'true');
+            awardBadge('question');
+            unlockStation(3);
+            playSound('success');
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 5000);
+          } else {
+            botReply = aiReply;
+            suggestions = [
+              'كيف يؤثر ضوء الشمس على سرعة نمو النباتات؟ 🌱',
+              'ما العلاقة بين درجة حرارة الماء وسرعة ذوبان السكر؟ ☕',
+              'كيف يؤثر وزن الجسم على سرعة هبوطه؟ ⚡'
+            ];
+          }
         } else {
           throw new Error('AI fallback');
         }
       } catch {
-        feedback = `تفكير ذكي وخطوة رائعة يا ${studentName}! 💡\n\nسؤالك يحتوي على فكرة واعدة. لنجعله سؤالاً علمياً خارقاً، تأكد أنه يحدد بوضوح: ما الذي ستغيره في التجربة؟ وكيف ستقيس النتيجة؟\nإذا شعرت أنه جاهز، فلننطلق للمحطة القادمة!`;
-        isApproved = true;
+        botReply = `فكرة ملهمة جداً يا ${studentName}! 💡\nلنجعل هذا السؤال سؤال بحث علمي استقصائي لا يُقاوَم، نحتاج أن نربط بين شيئين:\n1. شيء نقوم بتغييره (مثل كمية الضوء أو الماء).\n2. شيء نقيسه بالأرقام (مثل طول النبتة أو عدد الأوراق).\n\nما رأيك أن نختاره بصيغة: "كيف يؤثر..."؟`;
+        suggestions = [
+          'كيف يؤثر مقدار ضوء الشمس على سرعة نمو النباتات؟ 🌱',
+          'ما العلاقة بين كمية السقي ونضارة أوراق النبتة؟ 💧'
+        ];
       }
     }
 
-    setSocraticFeedback(feedback);
-    setIsQuestionApproved(isApproved);
-    localStorage.setItem('quest_research_question', q);
-    localStorage.setItem('quest_socratic_feedback', feedback);
-    localStorage.setItem('quest_question_approved', String(isApproved));
-    setIsEvaluatingQuestion(false);
+    const botMsg = {
+      id: 'msg-' + (Date.now() + 1),
+      sender: 'bot',
+      text: botReply,
+      suggestions: isApproved ? [] : suggestions,
+      isApproved
+    };
 
-    if (isApproved) {
-      playSound('success');
-      awardBadge('question');
-      unlockStation(3);
-    } else {
-      playSound('click');
-    }
+    const finalMessages = [...updatedMessages, botMsg];
+    setSocraticMessages(finalMessages);
+    localStorage.setItem('quest_socratic_messages', JSON.stringify(finalMessages));
+    setSocraticFeedback(botReply);
+    localStorage.setItem('quest_socratic_feedback', botReply);
+    setIsEvaluatingQuestion(false);
+  };
+
+  const handleResetSocraticChat = () => {
+    playSound('click');
+    localStorage.removeItem('quest_socratic_messages');
+    setSocraticMessages([
+      {
+        id: 'msg-0',
+        sender: 'bot',
+        text: `أهلاً بك مجدداً يا ${studentName}! 🤖 لنبدأ فكرة وتساؤلاً جديداً. ما الظاهرة التي تود استكشافها؟`,
+        suggestions: [
+          'لماذا النباتات تحب الشمس؟ 🌱',
+          'كيف يذوب السكر في الماء الساخن والبارد؟ ☕',
+          'ما الذي يجعل المظلة الورقية تهبط ببطء؟ 🪂'
+        ]
+      }
+    ]);
   };
 
   // -----------------------------------------------------------
@@ -1191,12 +1291,39 @@ const ScientificResearchQuest = () => {
               </div>
             </div>
 
-            {/* Socratic Question Workspace */}
+            {/* Socratic Question Dialogue Chamber */}
             <div className="quest-socratic-workspace">
-              {/* Ideas Bank */}
-              <div className="quest-ideas-pills-wrap">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                    🤖
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#38bdf8' }}>
+                      غرفة المحاورة السقراطية مع مُشيرفي
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                      اطرح فكرتك وناقش مُشيرفي خطوة بخطوة ليصل معك إلى سؤال علمي دقيق!
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="quest-btn-secondary"
+                  style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem', borderRadius: '20px' }}
+                  onClick={handleResetSocraticChat}
+                  title="بدء حوار وتجربة جديدة"
+                >
+                  <i className="fas fa-redo-alt"></i>
+                  <span>بدء حوار جديد</span>
+                </button>
+              </div>
+
+              {/* Ideas Bank Shortcuts */}
+              <div className="quest-ideas-pills-wrap" style={{ marginBottom: '1rem' }}>
                 <div className="quest-ideas-title">
-                  💡 أفكار ملهمة للتجارب (اضغط على أي فكرة لتجربتها أو استلهم منها سؤالك):
+                  💡 أفكار ملهمة (اضغط على أي فكرة لمناقشتها مع مُشيرفي فوراً):
                 </div>
                 <div className="quest-ideas-pills">
                   {QUESTION_IDEAS.map((idea, idx) => (
@@ -1205,8 +1332,7 @@ const ScientificResearchQuest = () => {
                       type="button"
                       className="quest-idea-pill"
                       onClick={() => {
-                        playSound('click');
-                        setResearchQuestion(idea.replace(/[🌱☀️☕🧊🪂⏱️🏃‍♂️❤️🥚🌊]/g, '').trim());
+                        handleSendSocraticMessage(idea.replace(/[🌱☀️☕🧊🪂⏱️🏃‍♂️❤️🥚🌊]/g, '').trim());
                       }}
                     >
                       {idea}
@@ -1215,102 +1341,133 @@ const ScientificResearchQuest = () => {
                 </div>
               </div>
 
-              {/* Question Input */}
-              <div className="quest-input-box-wrap">
-                <label htmlFor="researchQ">
-                  ✍️ اكتب سؤال بحثك العلمي هنا يا {studentName}:
-                </label>
-                <textarea
-                  id="researchQ"
-                  className="quest-question-textarea"
-                  value={researchQuestion}
-                  onChange={(e) => setResearchQuestion(e.target.value)}
-                  placeholder="مثال: كيف يؤثر نوع السائل (ماء نقي، ماء بسكر، ماء بملح) على سرعة إنبات بذور الفاصولياء؟"
-                  rows={3}
-                />
+              {/* Socratic Chat History Area */}
+              <div className="quest-socratic-chat-history">
+                {socraticMessages.map((msg, idx) => (
+                  <div key={msg.id || idx} className={`quest-chat-row ${msg.sender}`}>
+                    <div className={`quest-chat-avatar ${msg.sender}`}>
+                      {msg.sender === 'bot' ? '🤖' : '🎓'}
+                    </div>
+
+                    <div className="quest-chat-bubble-wrap">
+                      <div className="quest-chat-bubble">
+                        <div className="quest-chat-header-info">
+                          <span>{msg.sender === 'bot' ? 'الروبوت مُشيرفي' : studentName}</span>
+                          {msg.sender === 'bot' && (
+                            <button
+                              type="button"
+                              className="quest-voice-btn"
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }}
+                              onClick={() => {
+                                playSound('click');
+                                speakText(msg.text);
+                              }}
+                              title="استمع لصوت مُشيرفي"
+                            >
+                              <i className="fas fa-volume-up"></i> استمع
+                            </button>
+                          )}
+                        </div>
+
+                        <div style={{ whiteSpace: 'pre-line' }}>{msg.text}</div>
+                      </div>
+
+                      {/* Interactive Suggestions under Bot replies */}
+                      {msg.suggestions && msg.suggestions.length > 0 && !isQuestionApproved && (
+                        <div className="quest-chat-suggestions">
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8', width: '100%', marginBottom: '0.2rem' }}>
+                            👇 ردود مقترحة (اضغط عليها أو اكتب ردك):
+                          </span>
+                          {msg.suggestions.map((sug, sIdx) => (
+                            <button
+                              key={sIdx}
+                              type="button"
+                              className="quest-suggestion-chip"
+                              onClick={() => handleSendSocraticMessage(sug.replace(/[🌱☀️☕🧊🪂⏱️🏃‍♂️❤️🥚🌊📏🍃🍅⚡💧]/g, '').trim())}
+                            >
+                              <span>{sug}</span>
+                              <i className="fas fa-arrow-left" style={{ fontSize: '0.75rem' }}></i>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isEvaluatingQuestion && (
+                  <div className="quest-chat-row bot">
+                    <div className="quest-chat-avatar bot">🤖</div>
+                    <div className="quest-chat-bubble-wrap">
+                      <div className="quest-chat-bubble" style={{ color: '#38bdf8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        <span>مُشيرفي يفكر في إجابتك ويجهز التوجيه العلمي...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={chatBottomRef} />
               </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="quest-btn-primary"
-                  onClick={handleEvaluateQuestion}
-                  disabled={isEvaluatingQuestion || !researchQuestion.trim()}
-                >
-                  {isEvaluatingQuestion ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      <span>مُشيرفي يفكر في سؤالك...</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-magic"></i>
-                      <span>اطلب رأي وتوجيه الروبوت مُشيرفي السقراطي</span>
-                    </>
-                  )}
-                </button>
+              {/* Approval Success Banner with Next Station Button */}
+              {isQuestionApproved && (
+                <div className="quest-chat-approved-banner">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                    <div style={{ fontSize: '2.5rem' }}>🔍🏆</div>
+                    <div>
+                      <h4 style={{ margin: 0, color: '#a7f3d0', fontSize: '1.15rem', fontWeight: 900 }}>
+                        ألف مبارك يا {studentName}! تم اعتماد سؤالك العلمي بنجاح!
+                      </h4>
+                      <p style={{ margin: '0.3rem 0 0 0', color: '#e2e8f0', fontSize: '0.92rem' }}>
+                        السؤال المعتمد: <strong>"{researchQuestion}"</strong>
+                      </p>
+                    </div>
+                  </div>
 
-                {isQuestionApproved && (
                   <button
                     type="button"
-                    className="quest-btn-secondary"
-                    style={{ background: 'rgba(16, 185, 129, 0.2)', borderColor: '#10b981', color: '#6ee7b7' }}
+                    className="quest-btn-primary"
+                    style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 8px 25px rgba(16, 185, 129, 0.4)', padding: '0.85rem 1.8rem', fontSize: '1.05rem' }}
                     onClick={() => {
                       playSound('click');
                       setActiveStation(3);
                     }}
                   >
-                    <span>الانتقال للمحطة 3 (الفرضيات)</span>
+                    <span>الانتقال للمحطة 3 (بناء الفرضيات)</span>
                     <i className="fas fa-arrow-left"></i>
                   </button>
-                )}
-              </div>
-
-              {/* Socratic Mentor Feedback Reply Card */}
-              {socraticFeedback && (
-                <div className="quest-socratic-reply-card">
-                  <div className="quest-socratic-reply-header">
-                    <div className="quest-socratic-reply-title">
-                      <i className="fas fa-robot"></i>
-                      <span>تغذية مُشيرفي الراجعة لسؤالك:</span>
-                    </div>
-                    <button
-                      type="button"
-                      className="quest-voice-btn"
-                      onClick={() => {
-                        playSound('click');
-                        speakText(socraticFeedback);
-                      }}
-                    >
-                      <i className="fas fa-volume-up"></i> استمع لرأي مُشيرفي
-                    </button>
-                  </div>
-
-                  <div className="quest-socratic-text">
-                    {socraticFeedback}
-                  </div>
-
-                  {isQuestionApproved && (
-                    <div style={{ marginTop: '1.2rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                      <span style={{ color: '#fef08a', fontWeight: 900, fontSize: '0.95rem' }}>
-                        🎉 فزت بوسام "مفتاح التساؤل الذكي 🔍" وجاهز للفرضيات!
-                      </span>
-                      <button
-                        type="button"
-                        className="quest-btn-primary"
-                        style={{ padding: '0.6rem 1.4rem', fontSize: '0.92rem' }}
-                        onClick={() => {
-                          playSound('click');
-                          setActiveStation(3);
-                        }}
-                      >
-                        <span>تابع إلى ورشة الفرضيات</span>
-                        <i className="fas fa-arrow-left"></i>
-                      </button>
-                    </div>
-                  )}
                 </div>
+              )}
+
+              {/* Interactive Chat Input Bar */}
+              {!isQuestionApproved && (
+                <form
+                  className="quest-chat-input-container"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendSocraticMessage();
+                  }}
+                  style={{ marginTop: '1rem' }}
+                >
+                  <input
+                    type="text"
+                    className="quest-chat-text-input"
+                    value={chatInputText}
+                    onChange={(e) => setChatInputText(e.target.value)}
+                    placeholder="اكتب ردك أو صيغتك لسؤال البحث وناقش مُشيرفي..."
+                    disabled={isEvaluatingQuestion}
+                  />
+
+                  <button
+                    type="submit"
+                    className="quest-chat-send-btn"
+                    disabled={isEvaluatingQuestion || !chatInputText.trim()}
+                  >
+                    <span>إرسال</span>
+                    <i className="fas fa-paper-plane"></i>
+                  </button>
+                </form>
               )}
             </div>
           </main>
