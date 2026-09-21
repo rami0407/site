@@ -1,7 +1,9 @@
+import React, { useState, useEffect, useRef } from 'react';
 import { generateAiResponse } from '../utils/aiService';
 import { arabicTTS } from '../utils/arabicTTS';
 import { getStudentSession, logoutStudent, saveStudentSession } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
+import GenieAssistant from './GenieAssistant';
 import './ScientificResearchQuest.css';
 
 // -------------------------------------------------------------
@@ -1863,6 +1865,9 @@ ${historySnippet}
             </div>
           </main>
         )}
+
+        {/* 🧞‍♂️ Magical AI Research Genie Assistant */}
+        <GenieAssistant studentName={studentName} />
       </div>
     </div>
   );
