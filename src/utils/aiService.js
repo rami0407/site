@@ -49,7 +49,48 @@ export const getActiveAiKeys = async () => {
   return { geminiKey, groqKey, xaiKey };
 };
 
+// -------------------------------------------------------------
+// 🛡️ SECURITY GUARDS: Domain Lock, Rate Limiting & Abuse Shield
+// -------------------------------------------------------------
+const isAuthorizedDomain = () => {
+  if (typeof window === 'undefined' || !window.location) return true;
+  const host = (window.location.hostname || '').toLowerCase();
+  return (
+    host === 'musherfe.com' ||
+    host.endsWith('.musherfe.com') ||
+    host === 'rami0407.github.io' ||
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === ''
+  );
+};
+
+const _requestTimestamps = [];
+const checkRateLimit = () => {
+  const now = Date.now();
+  while (_requestTimestamps.length > 0 && _requestTimestamps[0] < now - 60000) {
+    _requestTimestamps.shift();
+  }
+  if (_requestTimestamps.length >= 15) {
+    return false; // Exceeded 15 requests per minute
+  }
+  _requestTimestamps.push(now);
+  return true;
+};
+
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 7000) => {
+  // 1. Block third-party origin theft / scraper sites
+  if (!isAuthorizedDomain()) {
+    console.error("Security Alert: Unauthorized domain blocked from utilizing AI endpoints:", window.location.hostname);
+    throw new Error("Unauthorized origin: AI service restricted to official school domains.");
+  }
+
+  // 2. Protect against automated bot flooding & quota drain
+  if (!checkRateLimit()) {
+    console.warn("Security Alert: Client AI rate limit exceeded (15 req/min). Cooldown applied.");
+    throw new Error("يرجى الانتظار بضع ثوانٍ قبل إرسال طلب جديد لحماية موارد المدرسة.");
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
