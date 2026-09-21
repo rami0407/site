@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { generateAiResponse } from '../utils/aiService';
 import { arabicTTS } from '../utils/arabicTTS';
+import { getStudentSession, logoutStudent, saveStudentSession } from '../utils/studentAuth';
+import StudentAuthModal from './StudentAuthModal';
 import './ScientificResearchQuest.css';
 
 // -------------------------------------------------------------
@@ -246,13 +247,35 @@ const ConfettiEffect = ({ active }) => {
 // Main Component: ScientificResearchQuest
 // -------------------------------------------------------------
 const ScientificResearchQuest = () => {
+  // Global Unified Session (Single Sign-On across entire school website)
+  const [studentSession, setStudentSession] = useState(() => getStudentSession());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   // Personalization & Journey State
   const [studentName, setStudentName] = useState(() => {
+    const sess = getStudentSession();
+    if (sess && sess.fullName) return sess.fullName;
     return localStorage.getItem('school_unified_student_name') || 'مستكشفنا البطل';
   });
   const [studentClass, setStudentClass] = useState(() => {
+    const sess = getStudentSession();
+    if (sess && sess.studentClass) return sess.studentClass;
     return localStorage.getItem('school_unified_student_class') || 'الصف الخامس';
   });
+
+  // Listen to global auth changes across the site
+  useEffect(() => {
+    const handleAuth = () => {
+      const sess = getStudentSession();
+      setStudentSession(sess);
+      if (sess && sess.fullName) {
+        setStudentName(sess.fullName);
+        setStudentClass(sess.studentClass || 'الصف الخامس');
+      }
+    };
+    window.addEventListener('studentAuthChanged', handleAuth);
+    return () => window.removeEventListener('studentAuthChanged', handleAuth);
+  }, []);
 
   // Active Station: 0 = Home, 1 = Station 1, 2 = Station 2, 3 = Station 3, 4 = Finale
   const [activeStation, setActiveStation] = useState(() => {
@@ -702,16 +725,66 @@ ${historySnippet}
           </a>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-            <div className="quest-user-tag">
-              <span>👤 المستكشف:</span>
-              <input
-                type="text"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                placeholder="اكتب اسمك هنا"
-                title="اضغط لتعديل اسمك"
-              />
-            </div>
+            {studentSession ? (
+              <div 
+                className="quest-user-tag"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(59, 130, 246, 0.25) 100%)',
+                  border: '1.5px solid #38bdf8'
+                }}
+              >
+                <span>{studentSession.roleIcon || '👤'} المستكشف:</span>
+                <strong style={{ color: '#ffffff', fontWeight: 900 }}>
+                  {studentName}
+                </strong>
+                <span style={{ fontSize: '0.78rem', color: '#93c5fd', opacity: 0.9 }}>
+                  ({studentClass})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('هل تريد تسجيل الخروج؟')) {
+                      logoutStudent();
+                    }
+                  }}
+                  title="تسجيل الخروج من البوابة الموحدة"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.25)',
+                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                    color: '#fca5a5',
+                    borderRadius: '50%',
+                    width: '22px',
+                    height: '22px',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '4px'
+                  }}
+                >
+                  <i className="fas fa-sign-out-alt"></i>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="quest-back-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  border: '1.5px solid #34d399',
+                  fontWeight: 900,
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+                }}
+                title="تسجيل الدخول بنفس اسم المستخدم ورمز الدخول الموحد لجميع صفحات الموقع"
+              >
+                <i className="fas fa-user-circle"></i>
+                <span>تسجيل الدخول الموحد 🔑</span>
+              </button>
+            )}
+
             <button
               onClick={() => setActiveStation(0)}
               className="quest-back-btn"
@@ -722,6 +795,19 @@ ${historySnippet}
             </button>
           </div>
         </header>
+
+        {/* Global Unified Authentication Modal */}
+        <StudentAuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={(sess) => {
+            if (sess?.fullName) {
+              setStudentName(sess.fullName);
+              setStudentClass(sess.studentClass || 'الصف الخامس');
+              playSound('success');
+            }
+          }}
+        />
 
         {/* Progress & Stations Trail */}
         <nav className="quest-trail-container">

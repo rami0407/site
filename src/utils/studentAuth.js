@@ -44,11 +44,20 @@ export const saveStudentSession = (sessionData) => {
     loginTime: new Date().toISOString()
   };
   localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  // Keep legacy localStorage keys in sync across all components
+  if (payload.fullName) {
+    localStorage.setItem('school_unified_student_name', payload.fullName);
+  }
+  if (payload.studentClass) {
+    localStorage.setItem('school_unified_student_class', payload.studentClass);
+  }
   window.dispatchEvent(new Event('studentAuthChanged'));
   return payload;
 };
 
 export const logoutStudent = () => {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('school_unified_student_name');
+  localStorage.removeItem('school_unified_student_class');
   window.dispatchEvent(new Event('studentAuthChanged'));
 };
