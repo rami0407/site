@@ -85,22 +85,6 @@ const ImportantLinks = () => {
             });
           }
 
-          const hasResearchQuest = list.some(l => 
-            (l.title && (l.title.includes('المستكشف') || l.title.includes('البحث العلمي'))) || 
-            (l.url && (l.url.includes('scientific-research') || l.url.includes('research-quest')))
-          );
-          if (!hasResearchQuest) {
-            list.push({
-              id: 'scientific-research-quest-default',
-              title: 'رحلة المستكشف الصغير (خطوات البحث العلمي)',
-              icon: 'fa-microscope',
-              url: '#/scientific-research',
-              desc: 'مغامرة تفاعلية مبهجة مع الروبوت سيم لتعليم أبطالنا خطوات البحث العلمي وصياغة الأسئلة والفرضيات.',
-              badge: 'منصة تفاعلية 🤖✨',
-              isAi: true
-            });
-          }
-
           const hasDebate = list.some(l => 
             (l.title && (l.title.includes('المناظرة') || l.title.includes('الحوار'))) || 
             (l.url && l.url.includes('debate'))
