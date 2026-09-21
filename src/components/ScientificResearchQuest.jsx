@@ -749,6 +749,7 @@ const ScientificResearchQuest = () => {
                 type="button"
                 className={`quest-voice-btn ${speakingText ? 'speaking' : ''}`}
                 onClick={() => {
+                  playSound('click');
                   let textToRead = '';
                   if (activeStation === 0) {
                     textToRead = `أهلاً بك يا بطلنا ${studentName}! أنا صديقك الروبوت مُشيرفي، وهنا لنكتشف معاً كيف يفكر العلماء، من طرح الأسئلة إلى التجربة والاكتشاف. هل أنت مستعد للرحلة؟`;
@@ -953,7 +954,10 @@ const ScientificResearchQuest = () => {
                     <button
                       type="button"
                       className="quest-comic-read-btn"
-                      onClick={() => speakText('المشهد الأول: لاحظ كنان أن نبتة النعناع في غرفته قد ذبلت واصفرّت، بينما نبتة الشرفة خضراء ومورقة! تساءل بدهشة: يا ترى ما السبب الخفي وراء ذلك؟')}
+                      onClick={() => {
+                        playSound('click');
+                        speakText('المشهد الأول: لاحظ كنان أن نبتة النعناع في غرفته قد ذبلت واصفرّت، بينما نبتة الشرفة خضراء ومورقة! تساءل بدهشة: يا ترى ما السبب الخفي وراء ذلك؟');
+                      }}
                     >
                       <i className="fas fa-volume-up"></i> استمع
                     </button>
@@ -977,7 +981,10 @@ const ScientificResearchQuest = () => {
                     <button
                       type="button"
                       className="quest-comic-read-btn"
-                      onClick={() => speakText('المشهد الثاني: ظهر الروبوت مُشيرفي بابتسامته اللطيفة وقال: لا تقلق يا كنان! هنا يأتي دور البحث العلمي.. العلم ليس مجرد كتب نحفظها، بل هو أسلوب تفكير منظم نستخدمه لفهم العالم وحل المشكلات!')}
+                      onClick={() => {
+                        playSound('click');
+                        speakText('المشهد الثاني: ظهر الروبوت مُشيرفي بابتسامته اللطيفة وقال: لا تقلق يا كنان! هنا يأتي دور البحث العلمي.. العلم ليس مجرد كتب نحفظها، بل هو أسلوب تفكير منظم نستخدمه لفهم العالم وحل المشكلات!');
+                      }}
                     >
                       <i className="fas fa-volume-up"></i> استمع
                     </button>
@@ -1001,7 +1008,10 @@ const ScientificResearchQuest = () => {
                     <button
                       type="button"
                       className="quest-comic-read-btn"
-                      onClick={() => speakText('المشهد الثالث: قام كنان بنقل النبتة بجانب نافذة مشمسة، وبدأ يسقيها بانتظام. بعد أيام، عادت النبتة نضرة ومخضرة! هكذا استطاع بالتجربة والملاحظة حل المشكلة واكتشاف حاجة النبات لضوء الشمس.')}
+                      onClick={() => {
+                        playSound('click');
+                        speakText('المشهد الثالث: قام كنان بنقل النبتة بجانب نافذة مشمسة، وبدأ يسقيها بانتظام. بعد أيام، عادت النبتة نضرة ومخضرة! هكذا استطاع بالتجربة والملاحظة حل المشكلة واكتشاف حاجة النبات لضوء الشمس.');
+                      }}
                     >
                       <i className="fas fa-volume-up"></i> استمع
                     </button>
@@ -1268,7 +1278,10 @@ const ScientificResearchQuest = () => {
                     <button
                       type="button"
                       className="quest-voice-btn"
-                      onClick={() => speakText(socraticFeedback)}
+                      onClick={() => {
+                        playSound('click');
+                        speakText(socraticFeedback);
+                      }}
                     >
                       <i className="fas fa-volume-up"></i> استمع لرأي مُشيرفي
                     </button>

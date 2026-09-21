@@ -1,7 +1,17 @@
 // src/utils/arabicTTS.js
 // Resilient, cross-platform Arabic Text-to-Speech Engine
-// Tier 1: High-fidelity natural Arabic audio stream via HTML5 Audio
-// Tier 2: Graceful fallback to Web Speech API (SpeechSynthesis)
+// Tier 1: Natural Arabic Audio Stream (Google TTS tw-ob / gtx without Referer)
+// Tier 2: Web Speech API (SpeechSynthesis)
+
+// Pre-warm Web Speech voices
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  try {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => {
+      try { window.speechSynthesis.getVoices(); } catch (e) {}
+    };
+  } catch (e) {}
+}
 
 class ArabicTTSPlayer {
   constructor() {
@@ -16,13 +26,13 @@ class ArabicTTSPlayer {
   }
 
   // Split text into chunks suitable for audio streaming (max ~150 chars, split on punctuation/spaces)
-  splitIntoChunks(text, maxChunkLen = 150) {
+  splitIntoChunks(text, maxChunkLen = 140) {
     if (!text) return [];
 
     // Clean emojis and decorative symbols
     const clean = text
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, ' ')
-      .replace(/[🔍💡🌍🌱🔄☀️🧊🪂⏱️🏃‍♂️❤️🥚🌊✨🤖🎙️🎉🎓🏅🔬📝📋💭💬⭐✔️❌⚠️🚨📚📖]/g, ' ')
+      .replace(/[🔍💡🌍🌱🔄☀️🧊🪂⏱️🏃‍♂️❤️🥚🌊✨🤖🎙️🎉🎓🏅🔬📝📋💭💬⭐✔️❌⚠️🚨📚📖☕]/g, ' ')
       .replace(/[\r\n]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -148,10 +158,37 @@ class ArabicTTSPlayer {
 
     const chunk = this.audioQueue[this.currentIndex];
     const encoded = encodeURIComponent(chunk);
-    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=ar&client=tw-ob`;
+    const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=ar&client=tw-ob`;
+    const fallbackUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encoded}&tl=ar&client=gtx`;
 
-    const audio = new Audio(audioUrl);
+    const audio = new Audio();
+    audio.preload = 'auto';
     this.currentAudio = audio;
+
+    let triedFallback = false;
+
+    const tryPlay = (url) => {
+      audio.src = url;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('Audio stream error for URL:', url, err);
+          handleError();
+        });
+      }
+    };
+
+    const handleError = () => {
+      if (!this.isPlaying) return;
+      if (!triedFallback) {
+        triedFallback = true;
+        tryPlay(fallbackUrl);
+      } else {
+        console.warn('All audio stream URLs failed, falling back to Web Speech API');
+        const remaining = this.audioQueue.slice(this.currentIndex).join(' ');
+        this.fallbackToSpeechSynthesis(remaining);
+      }
+    };
 
     audio.onended = () => {
       if (!this.isPlaying) return;
@@ -160,21 +197,10 @@ class ArabicTTSPlayer {
     };
 
     audio.onerror = () => {
-      if (!this.isPlaying) return;
-      console.warn('Audio stream failed, falling back to Web Speech API');
-      const remaining = this.audioQueue.slice(this.currentIndex).join(' ');
-      this.fallbackToSpeechSynthesis(remaining);
+      handleError();
     };
 
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(err => {
-        if (!this.isPlaying) return;
-        console.warn('Audio play error, falling back to Web Speech API:', err);
-        const remaining = this.audioQueue.slice(this.currentIndex).join(' ');
-        this.fallbackToSpeechSynthesis(remaining);
-      });
-    }
+    tryPlay(primaryUrl);
   }
 
   fallbackToSpeechSynthesis(text) {
@@ -198,7 +224,7 @@ class ArabicTTSPlayer {
       utterance.pitch = 1.05;
 
       const voices = window.speechSynthesis.getVoices();
-      const arVoice = voices.find(v => v.lang.startsWith('ar') || (v.name && v.name.toLowerCase().includes('arabic')));
+      const arVoice = voices.find(v => (v.lang && v.lang.startsWith('ar')) || (v.name && v.name.toLowerCase().includes('arabic')));
       if (arVoice) {
         utterance.voice = arVoice;
       }
