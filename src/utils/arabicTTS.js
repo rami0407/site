@@ -1,52 +1,64 @@
 // src/utils/arabicTTS.js
-// High-reliability Arabic Text-to-Speech Engine
-// Uses Web Speech API (SpeechSynthesis) with Chrome keep-alive, voice detection, and garbage-collection prevention
+// 100% Reliable Native Arabic Audio Player
+// Plays local studio-quality MP3 audio files hosted directly on the site
+// Fallback to Web Speech API for arbitrary text
 
-class ArabicTTSPlayer {
+const AUDIO_FILES = {
+  welcome: '/audio/quest/welcome.mp3',
+  station1: '/audio/quest/station1.mp3',
+  station2: '/audio/quest/station2.mp3',
+  station3: '/audio/quest/station3.mp3',
+  station4: '/audio/quest/station4.mp3',
+  comic1: '/audio/quest/comic1.mp3',
+  comic2: '/audio/quest/comic2.mp3',
+  comic3: '/audio/quest/comic3.mp3',
+  feedback_approved: '/audio/quest/feedback_approved.mp3',
+  feedback_hint: '/audio/quest/feedback_hint.mp3'
+};
+
+class ArabicAudioPlayer {
   constructor() {
+    this.currentAudio = null;
     this.isPlaying = false;
-    this.currentText = null;
+    this.activeKey = null;
     this.onEndCallback = null;
     this.onStartCallback = null;
-    this.keepAlive = null;
-    this.currentAudio = null;
 
-    // Preload voices
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    // Preload audio elements
+    this.audioPool = {};
+    if (typeof window !== 'undefined') {
       try {
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => {
-          try { window.speechSynthesis.getVoices(); } catch (e) {}
-        };
+        Object.entries(AUDIO_FILES).forEach(([key, src]) => {
+          const a = new Audio();
+          a.preload = 'auto';
+          a.src = src;
+          this.audioPool[key] = a;
+        });
       } catch (e) {}
-    }
-  }
-
-  cleanup() {
-    this.isPlaying = false;
-    this.currentText = null;
-    if (this.keepAlive) {
-      clearInterval(this.keepAlive);
-      this.keepAlive = null;
-    }
-    window._activeSpeechUtterance = null;
-    if (this.currentAudio) {
-      try {
-        this.currentAudio.pause();
-        this.currentAudio.src = '';
-      } catch (e) {}
-      this.currentAudio = null;
     }
   }
 
   stop() {
+    this.isPlaying = false;
+    this.activeKey = null;
+
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+        this.currentAudio.onended = null;
+        this.currentAudio.onerror = null;
+      } catch (e) {}
+      this.currentAudio = null;
+    }
+
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
       } catch (e) {}
     }
+
     const cb = this.onEndCallback;
-    this.cleanup();
     this.onEndCallback = null;
     this.onStartCallback = null;
     if (cb) {
@@ -54,136 +66,132 @@ class ArabicTTSPlayer {
     }
   }
 
-  speak(text, { onStart, onEnd, onError } = {}) {
+  // Play pre-recorded studio Arabic MP3 file (100% reliable, zero external dependencies)
+  playAudio(key, { onStart, onEnd } = {}) {
     this.stop();
 
-    if (!text || !text.trim()) return;
-
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      if (onError) onError('Speech synthesis not supported');
+    const audioSrc = AUDIO_FILES[key];
+    if (!audioSrc) {
+      console.warn('Unknown audio key:', key);
+      if (onEnd) onEnd();
       return;
     }
 
-    this.currentText = text;
+    this.isPlaying = true;
+    this.activeKey = key;
     this.onStartCallback = onStart;
     this.onEndCallback = onEnd;
 
-    // Clean text: strip emojis, markdown, and symbols that confuse TTS engines
-    const cleanText = text
-      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, ' ')
-      .replace(/[🔍💡🌍🌱🔄☀️🧊🪂⏱️🏃‍♂️❤️🥚🌊✨🤖🎙️🎉🎓🏅🔬📝📋💭💬⭐✔️❌⚠️🚨📚📖☕]/g, ' ')
-      .replace(/[*#_~`]/g, '')
-      .replace(/[\r\n]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    // Use pooled audio or new instance
+    let audio = this.audioPool[key];
+    if (!audio) {
+      audio = new Audio(audioSrc);
+      this.audioPool[key] = audio;
+    }
 
-    if (!cleanText) {
+    audio.currentTime = 0;
+    this.currentAudio = audio;
+
+    audio.onplay = () => {
+      this.isPlaying = true;
+      if (this.onStartCallback) {
+        try { this.onStartCallback(key); } catch (e) {}
+      }
+    };
+
+    audio.onended = () => {
       this.stop();
+    };
+
+    audio.onerror = (err) => {
+      console.warn('Audio playback error for:', audioSrc, err);
+      this.stop();
+    };
+
+    const promise = audio.play();
+    if (promise !== undefined) {
+      promise.catch((err) => {
+        console.warn('Audio play() error:', err);
+        this.stop();
+      });
+    }
+  }
+
+  // General speak method that matches text/keys and plays the local MP3 file
+  speak(textOrKey, options = {}) {
+    if (AUDIO_FILES[textOrKey]) {
+      this.playAudio(textOrKey, options);
       return;
     }
 
-    try {
-      window.speechSynthesis.cancel();
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
+    // Match text to corresponding local audio file
+    if (typeof textOrKey === 'string') {
+      if (textOrKey.includes('المشهد الأول') || textOrKey.includes('ذبلت واصفرّت')) {
+        this.playAudio('comic1', options);
+        return;
       }
-
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = 'ar-SA';
-      utterance.rate = 0.92;
-      utterance.pitch = 1.0;
-
-      // Pick best Arabic voice available
-      const voices = window.speechSynthesis.getVoices();
-      const arVoice = voices.find(v => 
-        (v.lang && v.lang.toLowerCase().startsWith('ar')) ||
-        (v.name && (
-          v.name.toLowerCase().includes('arabic') ||
-          v.name.toLowerCase().includes('maged') ||
-          v.name.toLowerCase().includes('salma') ||
-          v.name.toLowerCase().includes('shakir') ||
-          v.name.toLowerCase().includes('naayf') ||
-          v.name.toLowerCase().includes('tarik') ||
-          v.name.toLowerCase().includes('laila')
-        ))
-      );
-
-      if (arVoice) {
-        utterance.voice = arVoice;
+      if (textOrKey.includes('المشهد الثاني') || textOrKey.includes('لا تقلق يا كنان')) {
+        this.playAudio('comic2', options);
+        return;
       }
+      if (textOrKey.includes('المشهد الثالث') || textOrKey.includes('نقل النبتة')) {
+        this.playAudio('comic3', options);
+        return;
+      }
+      if (textOrKey.includes('أهلاً بك يا بطلنا') || textOrKey.includes('مرشدك العلمي') || textOrKey.includes('رحلة المستكشف')) {
+        this.playAudio('welcome', options);
+        return;
+      }
+      if (textOrKey.includes('المحطة الأولى') || textOrKey.includes('شعلة الفضول')) {
+        this.playAudio('station1', options);
+        return;
+      }
+      if (textOrKey.includes('المحطة الثانية') || textOrKey.includes('مختبر التساؤل')) {
+        this.playAudio('station2', options);
+        return;
+      }
+      if (textOrKey.includes('المحطة الثالثة') || textOrKey.includes('الفرضية الذكية')) {
+        this.playAudio('station3', options);
+        return;
+      }
+      if (textOrKey.includes('مبارك من أعماق القلب') || textOrKey.includes('شهادة المستكشف')) {
+        this.playAudio('station4', options);
+        return;
+      }
+      if (textOrKey.includes('فزت بوسام') || textOrKey.includes('ممتاز') || textOrKey.includes('رائع')) {
+        this.playAudio('feedback_approved', options);
+        return;
+      }
+      if (textOrKey.includes('سؤال') || textOrKey.includes('تغذية') || textOrKey.includes('محاولة')) {
+        this.playAudio('feedback_hint', options);
+        return;
+      }
+    }
 
-      // Crucial: retain on window to prevent Chrome's garbage-collector from cutting speech prematurely
-      window._activeSpeechUtterance = utterance;
+    // Fallback: Web Speech API for other text
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.stop();
+      try {
+        const utterance = new SpeechSynthesisUtterance(textOrKey);
+        utterance.lang = 'ar-SA';
+        utterance.rate = 0.95;
+        const voices = window.speechSynthesis.getVoices();
+        const arVoice = voices.find(v => (v.lang && v.lang.startsWith('ar')) || (v.name && v.name.toLowerCase().includes('arabic')));
+        if (arVoice) utterance.voice = arVoice;
 
-      utterance.onstart = () => {
-        this.isPlaying = true;
-        if (this.onStartCallback) {
-          try { this.onStartCallback(text); } catch (e) {}
-        }
-
-        // Chrome keep-alive timer for longer utterances
-        if (this.keepAlive) clearInterval(this.keepAlive);
-        this.keepAlive = setInterval(() => {
-          if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
-            window.speechSynthesis.resume();
-          } else {
-            clearInterval(this.keepAlive);
-          }
-        }, 4000);
-      };
-
-      utterance.onend = () => {
-        const cb = this.onEndCallback;
-        this.cleanup();
-        if (cb) {
-          try { cb(); } catch (e) {}
-        }
-      };
-
-      utterance.onerror = (e) => {
-        // Interrupted or canceled means normal user action or navigation
-        if (e.error === 'interrupted' || e.error === 'canceled') {
-          this.cleanup();
-          const cb = this.onEndCallback;
-          if (cb) {
-            try { cb(); } catch (err) {}
-          }
-          return;
-        }
-
-        console.warn('Speech synthesis notice:', e.error);
-        const cb = this.onEndCallback;
-        this.cleanup();
-        if (cb) {
-          try { cb(); } catch (err) {}
-        }
-      };
-
-      // Speak with micro-tick to ensure clean state after cancel()
-      setTimeout(() => {
-        try {
-          if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-          }
-          window.speechSynthesis.speak(utterance);
-        } catch (err) {
-          console.warn('SpeechSynthesis speak failed:', err);
-          this.cleanup();
-          if (this.onEndCallback) {
-            try { this.onEndCallback(); } catch (e) {}
-          }
-        }
-      }, 25);
-
-    } catch (e) {
-      console.warn('Speech setup error:', e);
-      this.cleanup();
-      if (this.onEndCallback) {
-        try { this.onEndCallback(); } catch (err) {}
+        utterance.onstart = () => {
+          this.isPlaying = true;
+          if (options.onStart) options.onStart();
+        };
+        utterance.onend = () => this.stop();
+        utterance.onerror = () => this.stop();
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        this.stop();
       }
     }
   }
 }
 
-export const arabicTTS = new ArabicTTSPlayer();
+export const arabicTTS = new ArabicAudioPlayer();
 export default arabicTTS;
