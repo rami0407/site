@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateAiResponse } from '../utils/aiService';
+import { arabicTTS } from '../utils/arabicTTS';
 import './ScientificResearchQuest.css';
 
 // -------------------------------------------------------------
@@ -7,8 +8,12 @@ import './ScientificResearchQuest.css';
 // -------------------------------------------------------------
 const playSound = (type = 'click') => {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (!ctx) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
 
     if (type === 'click') {
       const osc = ctx.createOscillator();
@@ -387,44 +392,34 @@ const ScientificResearchQuest = () => {
     localStorage.setItem('quest_badges', JSON.stringify(badges));
   }, [studentName, activeStation, unlockedStations, badges]);
 
-  // Handle Text-To-Speech
+  // Handle Text-To-Speech with resilient Arabic engine
   const speakText = (text) => {
-    if (!('speechSynthesis' in window)) {
-      alert('ميزة القراءة الصوتية غير مدعومة في متصفحك.');
-      return;
-    }
+    if (!text) return;
 
     if (speakingText === text) {
-      window.speechSynthesis.cancel();
+      arabicTTS.stop();
       setSpeakingText(null);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[🔍💡🌍🌱🔄☀️🧊🪂⏱️🏃‍♂️❤️🥚🌊✨🤖🎙️]/g, '').trim();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'ar-SA';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
-
-    // Pick best Arabic voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const arVoice = voices.find(v => v.lang.startsWith('ar') || v.name.includes('Arabic'));
-    if (arVoice) utterance.voice = arVoice;
-
-    utterance.onend = () => setSpeakingText(null);
-    utterance.onerror = () => setSpeakingText(null);
-
     setSpeakingText(text);
-    window.speechSynthesis.speak(utterance);
+    arabicTTS.speak(text, {
+      onStart: () => setSpeakingText(text),
+      onEnd: () => setSpeakingText(null),
+      onError: () => setSpeakingText(null)
+    });
   };
 
-  // Stop speaking when navigating or unmounting
+  // Stop speaking when switching stations
+  useEffect(() => {
+    arabicTTS.stop();
+    setSpeakingText(null);
+  }, [activeStation]);
+
+  // Stop speaking when unmounting
   useEffect(() => {
     return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      arabicTTS.stop();
     };
   }, []);
 

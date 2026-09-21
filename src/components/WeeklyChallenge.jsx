@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { generateWeeklyChallengeAI, getChallengeSocraticHintAI, generateStudentPraiseAI } from '../utils/aiService';
+import { arabicTTS } from '../utils/arabicTTS';
 import './WeeklyChallenge.css';
 
 const DEFAULT_CHALLENGE = {
@@ -157,15 +158,10 @@ const WeeklyChallenge = ({ isStandalone }) => {
     }
   };
 
-  // 4. AI Voice Read-Aloud
+  // 4. AI Voice Read-Aloud with resilient Arabic engine
   const handleToggleVoice = () => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      alert('ميزة القراءة الصوتية غير مدعومة في متصفحك.');
-      return;
-    }
-
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
+    if (isSpeaking) {
+      arabicTTS.stop();
       setIsSpeaking(false);
       return;
     }
@@ -173,16 +169,18 @@ const WeeklyChallenge = ({ isStandalone }) => {
     const optionsText = challenge.options.map((opt, i) => `الخيار ${String.fromCharCode(65 + i)}: ${opt}`).join('، ');
     const speechText = `${challenge.question}. ${optionsText}`;
 
-    const utterance = new SpeechSynthesisUtterance(speechText);
-    utterance.lang = 'ar-SA';
-    utterance.rate = 0.9;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
+    arabicTTS.speak(speechText, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false)
+    });
   };
+
+  useEffect(() => {
+    return () => {
+      arabicTTS.stop();
+    };
+  }, []);
 
   // 5. Generate New Challenge via AI Agent
   const handleGenerateAI = async () => {
