@@ -15,6 +15,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker
       .register('/sw.js')
       .then((registration) => {
+        registration.update().catch(() => {});
         console.log('Musheirifa PWA ServiceWorker active with scope:', registration.scope);
       })
       .catch((error) => {
