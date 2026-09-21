@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Root build artifacts and scratch scripts
+/assets
+/scratch
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

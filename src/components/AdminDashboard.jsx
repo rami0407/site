@@ -1030,9 +1030,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const [xaiKey, setXaiKey] = useState((function(){
-    return ["x" + "ai" + "-", "3GYKubvzcaPbelVsI5TFwWcITOQ1BQuo5OibJOWlC7n17wM7Geym7u1cIvMm8BW1Gs7xUZ17gWP9aqdX"].join('');
-  })());
+  const [xaiKey, setXaiKey] = useState('');
 
   // ==================== WORLD IDEAS ADMIN ACTIONS ====================
   const [worldIdeasConfig, setWorldIdeasConfig] = useState({
@@ -1747,6 +1745,9 @@ const AdminDashboard = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [geminiKey, setGeminiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
+  const [showXaiKey, setShowXaiKey] = useState(false);
   const [isSavingGeminiKey, setIsSavingGeminiKey] = useState(false);
   const [testingGemini, setTestingGemini] = useState(false);
   const [geminiTestResult, setGeminiTestResult] = useState(null);
@@ -10287,24 +10288,50 @@ const AdminDashboard = () => {
                     </a>
                   </div>
 
+                  {/* Security Notice Banner */}
+                  <div style={{ background: '#eff6ff', border: '1.5px solid #93c5fd', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ fontSize: '1.8rem' }}>🛡️</div>
+                    <div>
+                      <strong style={{ color: '#1e3a8a', fontSize: '0.98rem', display: 'block', marginBottom: '0.2rem' }}>
+                        نظام الحماية والأمان العالي للمفاتيح (API Security Masking):
+                      </strong>
+                      <span style={{ color: '#1e40af', fontSize: '0.86rem', fontWeight: 600 }}>
+                        لحماية مفاتيح الذكاء الاصطناعي من الاختراق أو التسريب أثناء مشاركة الشاشة أو التصوير، يتم حجب المفاتيح وتشفيرها بنجوم (••••••) بشكل تلقائي. يمكنك النقر على أيقونة العين 👁️ لإظهارها مؤقتاً عند الحاجة.
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Gemini API Key Box */}
                   <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontWeight: 900, color: '#0f172a', marginBottom: '0.5rem', fontSize: '1.05rem' }}>
-                        🔑 مفتاح محرك Google Gemini (Gemini API Key):
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="الصق المفتاح المجاني هنا (مثال: AIzaSy...)"
-                        value={geminiKey}
-                        onChange={(e) => {
-                          setGeminiKey(e.target.value);
-                          setGeminiTestResult(null);
-                        }}
-                        style={{ width: '100%', padding: '0.95rem 1.2rem', borderRadius: '14px', border: '2px solid #6366f1', fontSize: '1rem', fontWeight: 800, fontFamily: 'monospace', background: 'white' }}
-                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <label style={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          🔑 مفتاح محرك Google Gemini (Gemini API Key):
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowGeminiKey(!showGeminiKey)}
+                          style={{ background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.3rem 0.75rem', fontSize: '0.8rem', fontWeight: 800, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                          <i className={`fas ${showGeminiKey ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                          <span>{showGeminiKey ? 'إخفاء المفتاح' : 'إظهار المفتاح'}</span>
+                        </button>
+                      </div>
+
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showGeminiKey ? "text" : "password"}
+                          placeholder="الصق المفتاح المحمي هنا (مثال: AIzaSy...)"
+                          value={geminiKey}
+                          onChange={(e) => {
+                            setGeminiKey(e.target.value);
+                            setGeminiTestResult(null);
+                          }}
+                          style={{ width: '100%', padding: '0.95rem 1.2rem', borderRadius: '14px', border: '2px solid #6366f1', fontSize: '1rem', fontWeight: 800, fontFamily: 'monospace', background: 'white' }}
+                        />
+                      </div>
                       <span style={{ fontSize: '0.85rem', color: geminiKey ? '#16a34a' : '#64748b', fontWeight: 700, display: 'block', marginTop: '0.4rem' }}>
-                        {geminiKey ? '🟢 تم إدخال المفتاح. يمكنك اختباره بالأسفل للتحقق من الاتصال.' : '⚪ لم يتم إدخال مفتاح بعد. (المساعد الذكي يعمل حالياً بالوضع الموسوعي الاحتياطي).'}
+                        {geminiKey ? '🟢 تم إدخال المفتاح وحمايته بنجاح. يمكنك اختباره بالأسفل.' : '⚪ لم يتم إدخال مفتاح بعد. (المساعد الذكي يعمل حالياً بالوضع الموسوعي الاحتياطي).'}
                       </span>
                     </div>
 
@@ -10352,21 +10379,31 @@ const AdminDashboard = () => {
                       <label style={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         ⚡ محرك Groq المجاني الفائق (Groq API Key - مجاني وسريع 100%):
                       </label>
-                      <a
-                        href="https://console.groq.com/keys"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#ea580c', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}
-                      >
-                        <i className="fas fa-external-link-alt"></i> الحصول على مفتاح Groq مجاني فوراً (بدون بطاقة)
-                      </a>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowGroqKey(!showGroqKey)}
+                          style={{ background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.3rem 0.75rem', fontSize: '0.8rem', fontWeight: 800, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                          <i className={`fas ${showGroqKey ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                          <span>{showGroqKey ? 'إخفاء المفتاح' : 'إظهار المفتاح'}</span>
+                        </button>
+                        <a
+                          href="https://console.groq.com/keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#ea580c', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}
+                        >
+                          <i className="fas fa-external-link-alt"></i> الحصول على مفتاح Groq مجاني فوراً (بدون بطاقة)
+                        </a>
+                      </div>
                     </div>
                     <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
                       يعمل محرك Groq بنموذج LLaMA 3.3 المتقدم ويتميز بسرعة فائقة ومجانية تامة. يعمل كبديل تلقائي وسريع لمساعد المدرسة.
                     </p>
 
                     <input
-                      type="text"
+                      type={showGroqKey ? "text" : "password"}
                       placeholder="الصق مفتاح Groq هنا (مثال: gsk_...)"
                       value={groqKey}
                       onChange={(e) => {
@@ -10415,12 +10452,22 @@ const AdminDashboard = () => {
 
                   {/* Optional xAI Grok Key Box */}
                   <details style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
-                    <summary style={{ fontWeight: 800, color: '#475569', cursor: 'pointer' }}>
-                      ⚡ خيار إضافي اختياري: مفتاح محرك xAI Grok
+                    <summary style={{ fontWeight: 800, color: '#475569', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>⚡ خيار إضافي اختياري: مفتاح محرك xAI Grok</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowXaiKey(!showXaiKey);
+                        }}
+                        style={{ background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.2rem 0.6rem', fontSize: '0.75rem', fontWeight: 800, color: '#475569', cursor: 'pointer' }}
+                      >
+                        {showXaiKey ? 'إخفاء' : 'إظهار'}
+                      </button>
                     </summary>
                     <div style={{ marginTop: '1rem' }}>
                       <input
-                        type="text"
+                        type={showXaiKey ? "text" : "password"}
                         placeholder="xai-..."
                         value={xaiKey}
                         onChange={(e) => setXaiKey(e.target.value)}
