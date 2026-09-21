@@ -71,9 +71,9 @@ const playSound = (type = 'click') => {
 };
 
 // -------------------------------------------------------------
-// Robot Sim Animated SVG Avatar Component
+// Robot Musheirifi Animated SVG Avatar Component
 // -------------------------------------------------------------
-const RobotSimAvatar = ({ expression = 'happy', isSpeaking = false }) => {
+const RobotMusheirifiAvatar = ({ expression = 'happy', isSpeaking = false }) => {
   return (
     <div className="quest-avatar-graphic-wrap">
       <svg className="quest-avatar-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -505,7 +505,7 @@ const ScientificResearchQuest = () => {
 
     // Check for "هل" (closed question)
     if (q.startsWith('هل ') || q.startsWith('هل')) {
-      feedback = `سؤال جميل وتفكير لطيف يا ${studentName}! 🌟\n\nولكن لاحظ أن أسئلة "هل" تكون إجابتها عادة بكلمة واحدة مثل (نعم) أو (لا)، وهذا لا يفتح لنا مجالاً لإجراء تجارب متعددة وقياس التغيرات!\n\n💡 نصيحة سيم السقراطية:\nما رأيك أن نبدأ بـ "كيف يؤثر..." أو "ما العلاقة بين..."؟\nمثال: بدلاً من "هل ينمو النبات في الظلام؟"، جرب: "كيف تؤثر كمية الضوء على سرعة نمو النبات؟". هيا جرب تعديله! 🚀`;
+      feedback = `سؤال جميل وتفكير لطيف يا ${studentName}! 🌟\n\nولكن لاحظ أن أسئلة "هل" تكون إجابتها عادة بكلمة واحدة مثل (نعم) أو (لا)، وهذا لا يفتح لنا مجالاً لإجراء تجارب متعددة وقياس التغيرات!\n\n💡 نصيحة مُشيرفي السقراطية:\nما رأيك أن نبدأ بـ "كيف يؤثر..." أو "ما العلاقة بين..."؟\nمثال: بدلاً من "هل ينمو النبات في الظلام؟"، جرب: "كيف تؤثر كمية الضوء على سرعة نمو النبات؟". هيا جرب تعديله! 🚀`;
       isApproved = false;
     } else if (q.length < 15) {
       feedback = `سؤالك قصير جداً يا بطل! 🤔\n\nالسؤال العلمي الجيد يحتاج أن يوضح: ما هو الشيء الذي سنغيره؟ وما هو الشيء الذي سنقيسه بالأرقام أو الملاحظة؟\n\n💡 فكر معي: ما الذي تريد قياسه بالضبط في تجربتك؟ أضف مزيداً من التفاصيل.`;
@@ -524,14 +524,14 @@ const ScientificResearchQuest = () => {
     } else {
       // Try AI or smart general socratic guide
       try {
-        const prompt = `أنت الروبوت سيم، موجه سقراطي ودود للأطفال في المرحلة الابتدائية.
+        const prompt = `أنت الروبوت مُشيرفي، موجه سقراطي ودود للأطفال في المرحلة الابتدائية.
 الطالب كتب هذا السؤال لمشروعه العلمي: "${q}"
 المطلوب:
 1. قدم تشجيعاً لطيفاً جداً.
 2. إذا كان السؤال يحتاج تحسيناً، اطرح عليه سؤالين توجيهيين لطيفين لصياغة سؤال استقصائي يبدأ بـ (كيف يؤثر / ما أثر).
 3. إذا كان السؤال ممتازاً وقابلاً للبحث، اعتمده وأثنِ عليه.
 اكتب الرد في حدود 40-60 كلمة بأسلوب مشوق ومناسب للأطفال.`;
-        const aiReply = await generateAiResponse(prompt, 'أنت الروبوت سيم الموجه السقراطي للبحث العلمي للأطفال.');
+        const aiReply = await generateAiResponse(prompt, 'أنت الروبوت مُشيرفي الموجه السقراطي للبحث العلمي للأطفال.');
         if (aiReply) {
           feedback = aiReply;
           isApproved = q.includes('كيف') || q.includes('أثر') || q.includes('علاقة') || q.length > 25;
@@ -729,9 +729,9 @@ const ScientificResearchQuest = () => {
           </div>
         </nav>
 
-        {/* Dynamic Robot Sim Avatar Card (Present on every station) */}
+        {/* Dynamic Robot Musheirifi Avatar Card (Present on every station) */}
         <section className="quest-avatar-card">
-          <RobotSimAvatar
+          <RobotMusheirifiAvatar
             expression={
               activeStation === 4 || showConfetti
                 ? 'celebrating'
@@ -745,7 +745,7 @@ const ScientificResearchQuest = () => {
           <div className="quest-avatar-bubble">
             <div className="quest-avatar-header">
               <div className="quest-avatar-name">
-                <span>الروبوت سيم (Sim)</span>
+                <span>الروبوت مُشيرفي (Musheirifi)</span>
                 <span className="quest-avatar-badge-role">مرشدك العلمي الذكي 🤖</span>
               </div>
 
@@ -756,7 +756,7 @@ const ScientificResearchQuest = () => {
                 onClick={() => {
                   let textToRead = '';
                   if (activeStation === 0) {
-                    textToRead = `أهلاً بك يا بطلنا ${studentName}! أنا صديقك الروبوت سيم، وهنا لنكتشف معاً كيف يفكر العلماء، من طرح الأسئلة إلى التجربة والاكتشاف. هل أنت مستعد للرحلة؟`;
+                    textToRead = `أهلاً بك يا بطلنا ${studentName}! أنا صديقك الروبوت مُشيرفي، وهنا لنكتشف معاً كيف يفكر العلماء، من طرح الأسئلة إلى التجربة والاكتشاف. هل أنت مستعد للرحلة؟`;
                   } else if (activeStation === 1) {
                     textToRead = 'في المحطة الأولى، سنقرأ قصة النبتة العجيبة لنعرف ما هو البحث العلمي، ثم تجتاز اختباراً ذكياً من ثلاثة أسئلة لتنال وسام شعلة الفضول!';
                   } else if (activeStation === 2) {
@@ -770,14 +770,14 @@ const ScientificResearchQuest = () => {
                 }}
               >
                 <i className={`fas ${speakingText ? 'fa-stop-circle' : 'fa-volume-up'}`}></i>
-                <span>{speakingText ? 'إيقاف صوت سيم' : 'استمع لتوجيه سيم'}</span>
+                <span>{speakingText ? 'إيقاف صوت مُشيرفي' : 'استمع لتوجيه مُشيرفي'}</span>
               </button>
             </div>
 
             <p className="quest-avatar-text">
               {activeStation === 0 && (
                 <>
-                  مرحباً بك يا عالمنا المستقبلي <strong>{studentName}</strong> في مغامرة البحث العلمي! أنا صديقك <strong>سيم</strong>، وسأرافقك خطوة بخطوة لنتعلم كيف يفكر العلماء، ونحول فضولك إلى اكتشافات مذهلة. انطلق معي الآن! ✨
+                  مرحباً بك يا عالمنا المستقبلي <strong>{studentName}</strong> في مغامرة البحث العلمي! أنا صديقك <strong>مُشيرفي</strong>، وسأرافقك خطوة بخطوة لنتعلم كيف يفكر العلماء، ونحول فضولك إلى اكتشافات مذهلة. انطلق معي الآن! ✨
                 </>
               )}
               {activeStation === 1 && (
@@ -943,7 +943,7 @@ const ScientificResearchQuest = () => {
               <span className="quest-section-badge">المحطة 1 / 3</span>
               <h2 className="quest-section-title">مقدمة في البحث العلمي: قصة النبتة واختبار العبور</h2>
               <p className="quest-section-desc">
-                استمتع بقراءة القصة المصورة لتعرف كيف بدأ كنان والروبوت سيم رحلة التفكير العلمي، ثم أجب عن الأسئلة بدقة للعبور للمحطة التالية!
+                استمتع بقراءة القصة المصورة لتعرف كيف بدأ كنان والروبوت مُشيرفي رحلة التفكير العلمي، ثم أجب عن الأسئلة بدقة للعبور للمحطة التالية!
               </p>
             </div>
 
@@ -982,15 +982,15 @@ const ScientificResearchQuest = () => {
                     <button
                       type="button"
                       className="quest-comic-read-btn"
-                      onClick={() => speakText('المشهد الثاني: ظهر الروبوت سيم بابتسامته اللطيفة وقال: لا تقلق يا كنان! هنا يأتي دور البحث العلمي.. العلم ليس مجرد كتب نحفظها، بل هو أسلوب تفكير منظم نستخدمه لفهم العالم وحل المشكلات!')}
+                      onClick={() => speakText('المشهد الثاني: ظهر الروبوت مُشيرفي بابتسامته اللطيفة وقال: لا تقلق يا كنان! هنا يأتي دور البحث العلمي.. العلم ليس مجرد كتب نحفظها، بل هو أسلوب تفكير منظم نستخدمه لفهم العالم وحل المشكلات!')}
                     >
                       <i className="fas fa-volume-up"></i> استمع
                     </button>
                   </div>
                   <div className="quest-comic-body">
-                    <h4 className="quest-comic-panel-title">ظهور سيم وأهمية العلم 🤖</h4>
+                    <h4 className="quest-comic-panel-title">ظهور مُشيرفي وأهمية العلم 🤖</h4>
                     <p className="quest-comic-caption">
-                      ظهر <strong>الروبوت سيم</strong> وقال مبتسماً: <em>"لا تقلق يا كنان! هذا هو البحث العلمي؛ رحلة منظمة للبحث عن إجابات وحل المشكلات التي تواجهنا كل يوم!"</em>
+                      ظهر <strong>الروبوت مُشيرفي</strong> وقال مبتسماً: <em>"لا تقلق يا كنان! هذا هو البحث العلمي؛ رحلة منظمة للبحث عن إجابات وحل المشكلات التي تواجهنا كل يوم!"</em>
                     </p>
                     <div className="quest-comic-lesson">
                       💡 أهمية البحث العلمي: فهم الظواهر وتطوير حياتنا.
@@ -1147,9 +1147,9 @@ const ScientificResearchQuest = () => {
           <main>
             <div className="quest-section-header">
               <span className="quest-section-badge">المحطة 2 / 3</span>
-              <h2 className="quest-section-title">صياغة سؤال البحث العلمي ومختبر سيم السقراطي</h2>
+              <h2 className="quest-section-title">صياغة سؤال البحث العلمي ومختبر مُشيرفي السقراطي</h2>
               <p className="quest-section-desc">
-                السؤال الذكي هو بوصلة كل باحث! قارن بين الأسئلة، واكتب سؤالك الخاص ليقوم الروبوت سيم بدور الموجه السقراطي لمساعدتك في إتقانه.
+                السؤال الذكي هو بوصلة كل باحث! قارن بين الأسئلة، واكتب سؤالك الخاص ليقوم الروبوت مُشيرفي بدور الموجه السقراطي لمساعدتك في إتقانه.
               </p>
             </div>
 
@@ -1236,12 +1236,12 @@ const ScientificResearchQuest = () => {
                   {isEvaluatingQuestion ? (
                     <>
                       <i className="fas fa-spinner fa-spin"></i>
-                      <span>سيم يفكر في سؤالك...</span>
+                      <span>مُشيرفي يفكر في سؤالك...</span>
                     </>
                   ) : (
                     <>
                       <i className="fas fa-magic"></i>
-                      <span>اطلب رأي وتوجيه الروبوت سيم السقراطي</span>
+                      <span>اطلب رأي وتوجيه الروبوت مُشيرفي السقراطي</span>
                     </>
                   )}
                 </button>
@@ -1268,14 +1268,14 @@ const ScientificResearchQuest = () => {
                   <div className="quest-socratic-reply-header">
                     <div className="quest-socratic-reply-title">
                       <i className="fas fa-robot"></i>
-                      <span>تغذية سيم الراجعة لسؤالك:</span>
+                      <span>تغذية مُشيرفي الراجعة لسؤالك:</span>
                     </div>
                     <button
                       type="button"
                       className="quest-voice-btn"
                       onClick={() => speakText(socraticFeedback)}
                     >
-                      <i className="fas fa-volume-up"></i> استمع لرأي سيم
+                      <i className="fas fa-volume-up"></i> استمع لرأي مُشيرفي
                     </button>
                   </div>
 
@@ -1500,7 +1500,7 @@ const ScientificResearchQuest = () => {
               </div>
 
               <p className="quest-cert-praise">
-                لقد خاض الطالب رحلة استكشافية متكاملة برفقة <strong>الروبوت سيم</strong>، وأظهر فضولاً علمياً ناضجاً في فهم المنهج العلمي، وصياغة سؤال بحث استقصائي دقيق، وبناء فرضية علمية مبررة بالدليل والسبب.
+                لقد خاض الطالب رحلة استكشافية متكاملة برفقة <strong>الروبوت مُشيرفي</strong>، وأظهر فضولاً علمياً ناضجاً في فهم المنهج العلمي، وصياغة سؤال بحث استقصائي دقيق، وبناء فرضية علمية مبررة بالدليل والسبب.
               </p>
 
               {/* Research Project Summary */}
@@ -1547,7 +1547,7 @@ const ScientificResearchQuest = () => {
 
                 <div className="quest-cert-sig-box">
                   <span>مرشد البحث العلمي:</span>
-                  <strong>الروبوت سيم (Sim 🤖)</strong>
+                  <strong>الروبوت مُشيرفي (Musheirifi 🤖)</strong>
                 </div>
 
                 <div className="quest-cert-sig-box">
