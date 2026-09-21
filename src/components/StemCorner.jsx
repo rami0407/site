@@ -705,30 +705,10 @@ const StemCorner = ({ isStandalone = true }) => {
         </button>
 
         <button 
-          className={`stem-tab-btn ${activeTab === 'socratic' ? 'active' : ''}`}
-          onClick={() => setActiveTab('socratic')}
-          style={{
-            background: activeTab === 'socratic' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : undefined,
-            color: activeTab === 'socratic' ? '#fff' : undefined,
-            border: '2px solid #3b82f6',
-            fontWeight: 800
-          }}
-        >
-          <i className="fas fa-robot"></i> 🤖 المكتشف الصغير (حوار ذكي)
-        </button>
-
-        <button 
-          className={`stem-tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tracking')}
-        >
-          <i className="fas fa-bars-progress"></i> 5. متابعة ابتكراتي وتحدياتي 🔍
-        </button>
-
-        <button 
           className={`stem-tab-btn ${activeTab === 'experiments' ? 'active' : ''}`}
           onClick={() => setActiveTab('experiments')}
         >
-          <i className="fas fa-flask"></i> 2. تجارب علمية منزلية
+          <i className="fas fa-flask"></i> 2. تجارب علمية منزلية 🧪
         </button>
 
         <button 
@@ -743,6 +723,41 @@ const StemCorner = ({ isStandalone = true }) => {
           onClick={() => setActiveTab('gallery')}
         >
           <i className="fas fa-palette"></i> 4. معرض مشاريع الطلاب 🎨
+        </button>
+
+        <button 
+          className={`stem-tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tracking')}
+        >
+          <i className="fas fa-bars-progress"></i> 5. متابعة ابتكاراتي وتحدياتي 🔍
+        </button>
+
+        <button 
+          className="stem-tab-btn"
+          onClick={() => window.location.hash = '#/scientific-research'}
+          style={{
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            color: '#ffffff',
+            borderColor: '#0284c7',
+            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+            fontWeight: 800
+          }}
+          title="الانتقال لرحلة خطوات البحث العلمي التفاعلية مع الروبوت مشيرفي"
+        >
+          <i className="fas fa-microscope"></i> 6. خطوات البحث العلمي (المستكشف الصغير) 🔬✨
+        </button>
+
+        <button 
+          className={`stem-tab-btn ${activeTab === 'socratic' ? 'active' : ''}`}
+          onClick={() => setActiveTab('socratic')}
+          style={{
+            background: activeTab === 'socratic' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : undefined,
+            color: activeTab === 'socratic' ? '#fff' : undefined,
+            border: '2px solid #3b82f6',
+            fontWeight: 800
+          }}
+        >
+          <i className="fas fa-robot"></i> 🤖 المكتشف الصغير (حوار ذكي)
         </button>
 
         <button 
