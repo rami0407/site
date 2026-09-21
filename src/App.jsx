@@ -60,6 +60,7 @@ const LostAndFoundPage = lazy(() => import('./components/LostAndFoundPage'));
 const FamilyChallengePage = lazy(() => import('./components/FamilyChallengePage'));
 const StudentDismissalPage = lazy(() => import('./components/StudentDismissalPage'));
 const EduStaffingPortal = lazy(() => import('./components/EduStaffingPortal'));
+const ScientificResearchQuest = lazy(() => import('./components/ScientificResearchQuest'));
 
 
 function App() {
@@ -329,6 +330,11 @@ function App() {
   const isTasbihView = currentHash.includes('tasbih');
   const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
   const isStudentDismissalView = currentHash.includes('student-dismissal') || currentHash.includes('tasreeh') || currentHash.includes('dismissal');
+  const isResearchQuestView = currentHash.includes('scientific-research') || 
+    currentHash.includes('research-quest') || 
+    currentHash.includes('young-researcher') || 
+    currentHash.includes('bahth') || 
+    (currentHash.includes('research') && !currentHash.includes('stem'));
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
 
   if (isStudentDismissalView) {
@@ -414,6 +420,15 @@ function App() {
         <div style={{ minHeight: '100vh', background: '#0f172a' }}>
           <EduStaffingPortal isAdminMode={false} initialTab="landing" />
         </div>
+      </Suspense>
+    );
+  }
+
+  if (isResearchQuestView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <ScientificResearchQuest />
       </Suspense>
     );
   }
