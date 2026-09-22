@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateAiResponse } from '../utils/aiService';
 import { arabicTTS } from '../utils/arabicTTS';
+import genieImg from '../assets/genie.png';
 import './GenieAssistant.css';
 
 const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
@@ -129,7 +130,7 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
           {/* Genie Avatar Image */}
           <div className="genie-character-avatar">
             <img 
-              src="./images/genie.png" 
+              src={genieImg} 
               alt="جني البحث العلمي" 
               className="genie-img-interactive"
             />
@@ -150,7 +151,7 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
           <div className="genie-chat-header">
             <div className="genie-header-identity">
               <div className="genie-header-avatar-circle">
-                <img src="./images/genie.png" alt="جني البحث العلمي" />
+                <img src={genieImg} alt="جني البحث العلمي" />
               </div>
               <div>
                 <h3>جني البحث العلمي السحري 🧞‍♂️✨</h3>
@@ -176,7 +177,7 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
               <div key={msg.id} className={`genie-msg-row ${msg.sender === 'genie' ? 'genie-row' : 'user-row'}`}>
                 {msg.sender === 'genie' && (
                   <div className="genie-msg-icon">
-                    <img src="./images/genie.png" alt="Genie" />
+                    <img src={genieImg} alt="Genie" />
                   </div>
                 )}
                 <div className={`genie-msg-bubble ${msg.sender === 'genie' ? 'from-genie' : 'from-user'}`}>
@@ -199,7 +200,7 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
             {isLoading && (
               <div className="genie-msg-row genie-row">
                 <div className="genie-msg-icon">
-                  <img src="./images/genie.png" alt="Genie" />
+                  <img src={genieImg} alt="Genie" />
                 </div>
                 <div className="genie-msg-bubble from-genie loading-bubble">
                   <span className="magic-dot">🔮</span>
