@@ -11,6 +11,7 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isEmerging, setIsEmerging] = useState(true);
   const [messages, setMessages] = useState([
     {
       id: 'g-welcome',
@@ -20,14 +21,46 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
   ]);
   const chatMessagesEndRef = useRef(null);
 
-  // Auto-summon Genie on first page load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setHasPrompted(true);
-      setSpeechBubbleText(`شبيك لبيك يا ${studentName}! 🧞‍♂️ هل تريد المساعدة في البحث العلمي؟ اضغط عليّ لأي سؤال! ✨`);
-    }, 1200);
+  // Play magical chime when Genie emerges from the lamp
+  const playMagicChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const freqs = [392, 523.25, 659.25, 783.99, 1046.5, 1318.5];
+      freqs.forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, ctx.currentTime + i * 0.12);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.6);
+      });
+    } catch {}
+  };
 
-    return () => clearTimeout(timer);
+  // Auto-summon Genie emergence on page load
+  useEffect(() => {
+    setIsEmerging(true);
+    const audioTimer = setTimeout(() => {
+      playMagicChime();
+    }, 400);
+
+    const emergeTimer = setTimeout(() => {
+      setIsEmerging(false);
+      setHasPrompted(true);
+      setSpeechBubbleText(`شبيك لبيك يا ${studentName}! 🧞‍♂️ خرجت لك من الفانوس السحري لأساعدك في رحلة البحث العلمي! اسألني أي شيء! ✨`);
+    }, 2200);
+
+    return () => {
+      clearTimeout(audioTimer);
+      clearTimeout(emergeTimer);
+    };
   }, [studentName]);
 
   // Scroll to bottom when messages update
@@ -99,7 +132,10 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
     <div className="genie-master-wrapper" dir="rtl">
       {/* 🧞 Floating Genie Character & Speech Bubble */}
       {!isOpen && (
-        <div className="genie-floating-trigger" onClick={() => { setIsOpen(true); setHasPrompted(false); }}>
+        <div 
+          className={`genie-floating-trigger ${isEmerging ? 'genie-is-emerging' : ''}`} 
+          onClick={() => { setIsOpen(true); setHasPrompted(false); }}
+        >
           {/* Welcome Speech Bubble */}
           {hasPrompted && (
             <div className="genie-bubble-popup animate-bounce">
@@ -119,6 +155,16 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
             </div>
           )}
 
+          {/* Magical Smoke Clouds during emergence */}
+          {isEmerging && (
+            <div className="genie-lamp-smoke-container">
+              <div className="smoke-puff smoke-1">💨</div>
+              <div className="smoke-puff smoke-2">☁️</div>
+              <div className="smoke-puff smoke-3">✨</div>
+              <div className="smoke-puff smoke-4">💫</div>
+            </div>
+          )}
+
           {/* Genie Lamp Base Glow & Sparkles */}
           <div className="genie-aura-glow" />
           <div className="genie-sparkles-effect">
@@ -127,8 +173,8 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
             <span className="sparkle s3">💫</span>
           </div>
 
-          {/* Genie Avatar Image */}
-          <div className="genie-character-avatar">
+          {/* Genie Avatar Image (Emerges smoothly upwards out of the lamp) */}
+          <div className={`genie-character-avatar ${isEmerging ? 'anim-emerge-from-lamp' : ''}`}>
             <img 
               src={genieImg} 
               alt="جني البحث العلمي" 
