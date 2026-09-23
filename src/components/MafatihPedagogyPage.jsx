@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import LottieRobot from './LottieRobot';
-import { generateMafatihLessonPlanAI } from '../utils/aiService';
+import { generateMafatihLessonPlanAI, generateAiResponse } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
 import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
 import './MafatihPedagogyPage.css';
@@ -689,9 +689,10 @@ ${p.stations?.h || ''}
   const [isRobotModalOpen, setIsRobotModalOpen] = useState(false);
   const [robotChatInput, setRobotChatInput] = useState('');
   const [robotReply, setRobotReply] = useState(
-    'مرحباً بك في موديل "مَفَاتِيح"! أنا رفيقك الروبوت الذكي 🤖🗝️\nأنا هنا لأساعدك في تخطيط مسار حصتك، إشعال محطة الجذب، وتصميم تذكرة الخروج (الزوّادة). انقر على أي سؤال بالأسفل أو اكتب لي ما يشغل بالك!'
+    'مرحباً بك في موديل "مَفَاتِيح"! أنا رفيقك الروبوت الذكي المدعوم بالذكاء الاصطناعي 🤖🗝️\nأنا هنا لأساعدك في تخطيط مسار حصتك، إشعال محطة الجذب، وتصميم تذكرة الخروج (الزوّادة). انقر على أي سؤال بالأسفل أو اكتب لي ما يشغل بالك وسأجيبك فوراً!'
   );
   const [isVoiceSpeaking, setIsVoiceSpeaking] = useState(false);
+  const [isRobotThinking, setIsRobotThinking] = useState(false);
 
   const speakArabic = (text) => {
     if (!('speechSynthesis' in window)) {
@@ -703,7 +704,7 @@ ${p.stations?.h || ''}
       setIsVoiceSpeaking(false);
       return;
     }
-    const clean = text.replace(/[🤖🗝️✨💡🧠🛠️🎒🏅🌟❓✔️❌]/g, '');
+    const clean = text.replace(/[🤖🗝️✨💡🧠🛠️🎒🏅🌟❓✔️❌*#]/g, '');
     const utter = new SpeechSynthesisUtterance(clean);
     utter.lang = 'ar-SA';
     utter.rate = 0.95;
@@ -713,29 +714,55 @@ ${p.stations?.h || ''}
     window.speechSynthesis.speak(utter);
   };
 
-  const handleAskRobot = (query) => {
-    const q = (query || robotChatInput).trim().toLowerCase();
-    if (!q) return;
+  const handleAskRobot = async (query) => {
+    const q = (query || robotChatInput).trim();
+    if (!q || isRobotThinking) return;
 
-    let ans = '';
-    if (q.includes('جذب') || q.includes('تشويق') || q.includes('משו')) {
-      ans = '💡 نصيحة لمحطة الجذب [ م ]:\nلا تكشف الإجابة أو الحل! اطرح لغزاً أو صورة محيرة أو مشهداً مألوفاً من حياة الطلاب اليومية. هدفك أن يسأل الطلاب بعفوية: "لماذا يحدث هذا؟" أو "كيف نفسر هذا اللغز؟"';
-    } else if (q.includes('فهم') || q.includes('مفهوم') || q.includes('لقاء')) {
-      ans = '📖 نصيحة لمحطة الفهم [ ف ]:\nركز على المفهوم المركزي بدقة، وفكك الكلمات الصعبة. قدّم نمذجة واضحة (I Do) واطلب من الطلاب إعادة صياغة المفهوم بلغتهم الخاصة للتأكد من استيعابهم قبل الانتقال.';
-    } else if (q.includes('تبصر') || q.includes('تعمق') || q.includes('تفكير')) {
-      ans = '🧠 نصيحة لمحطة التبصر [ ت ]:\nاستخدم أسئلة تفكير عليا (HOTS) مثل "ماذا لو لم يحدث هذا؟" أو "لماذا اخترنا هذا الحل دون غيره؟". تجنب الإجابة بدلاً من الطلاب واجعلهم يستنتجون بأنفسهم.';
-    } else if (q.includes('يدوي') || q.includes('تطبيق') || q.includes('تمايز') || q.includes('udl')) {
-      ans = '🛠️ نصيحة لمحطة التطبيق [ ي ]:\nهنا قلب التمايز! وفر طاولة دعم مع المعلم للتمكين، ومجموعات عمل مستقلة للمتفوقين. نوّع في أشكال المخرجات (كتابي، مجسم، تسجيل، بطاقة تفاعلية).';
-    } else if (q.includes('حصاد') || q.includes('زوادة') || q.includes('تذكرة') || q.includes('exit')) {
-      ans = '🎒 سر "الزوّادة" [ ح ]:\nالحصة لا تنتهي برنين الجرس! بل بسؤالين سريعين:\n1. ما الذي تزودت به اليوم؟\n2. أين وكيف سأوظفه في حياتي أو دراستي القادمة؟\nاجعلها محددة ومختصرة (سطرين فقط).';
-    } else if (q.includes('مسطرة') || q.includes('وقت') || q.includes('זמן')) {
-      ans = '⏱️ نصيحة لمسطرة الحصة:\nفي الحصة العادية (45 دقيقة): امنح الجذب 7د، الفهم 10د، التبصر 10د، التطبيق 14د، والزوّادة 4د. أما في الحصة المضاعفة (90د) فوسع وقت الورشة التطبيقية إلى 35 دقيقة!';
-    } else {
-      ans = `رائع جداً! سؤالك حول "${q}" يرتبط بجوهر موديل مفاتيح. تذكر دائماً أن المفتاح يفتح أبواب التفكير، وأن نجاح الحصة يكمن في امتلاك الطالب لزوّادته الحياتية ونقل أثر التعلم!`;
-    }
-
-    setRobotReply(ans);
     setRobotChatInput('');
+    setIsRobotThinking(true);
+    setRobotReply('جاري التفكير وصياغة الاستشارة التربوية عبر محرك الذكاء الاصطناعي... 🤖⏳');
+
+    try {
+      const systemContext = `أنت "المستشار البيداغوجي الذكي لموديل مَفَاتِيح" بمدرسة مشيرفة الابتدائية.
+أنت مرتبط بنماذج الذكاء الاصطناعي لتقديم حلول واستشارات تعليمية إبداعية، علمية، وقابلة للتطبيق الصفي الفوري وفق فلسفة المحطات الخمس:
+[ م ] جذب وتشويق (משוך) — لغز، صورة محيرة، كسر الجليد.
+[ ف ] فهم وبناء المفهوم (פְּגִישָׁה) — القاموس العلمي ونمذجة المعلم I Do.
+[ ت ] تبصر وتفكير عليا (תְּבוּנָה) — أسئلة سقراطية عميقة وحوار نقدي.
+[ ي ] يدوي وتطبيق متمايز (יִשּׂוּם) — ورشة عمل وتمايز UDL لثلاثة مستويات.
+[ ح ] حصاد وزوّادة ونقل أثر (חֲתִימָה וְצֵידָה) — تذكرة الخروج ونقل الأثر للحياة اليومية والبيت.
+
+تعليمات الإجابة:
+- اكتب باللغة العربية الفصحى الواضحة والملهمة.
+- قدّم خطوات عملية ونماذج وأسئلة واقعية تفيد المعلم في صفه فوراً.
+- نسق الإجابة بفقرات قصيرة ونقاط مريحة للقراءة.`;
+
+      const aiAns = await generateAiResponse(q, systemContext);
+      if (aiAns && aiAns.trim()) {
+        setRobotReply(aiAns.trim());
+      } else {
+        throw new Error('Empty AI response');
+      }
+    } catch (err) {
+      console.warn('Robot live AI query failed, using built-in pedagogical knowledge base:', err);
+      const lower = q.toLowerCase();
+      if (lower.includes('جذب') || lower.includes('تشويق') || lower.includes('משו')) {
+        setRobotReply('💡 نصيحة لمحطة الجذب [ م ]:\nلا تكشف الإجابة أو الحل! اطرح لغزاً أو صورة محيرة أو مشهداً مألوفاً من حياة الطلاب اليومية. هدفك أن يسأل الطلاب بعفوية: "لماذا يحدث هذا؟" أو "كيف نفسر هذا اللغز؟"');
+      } else if (lower.includes('فهم') || lower.includes('مفهوم') || lower.includes('لقاء')) {
+        setRobotReply('📖 نصيحة لمحطة الفهم [ ف ]:\nركز على المفهوم المركزي بدقة، وفكك الكلمات الصعبة. قدّم نمذجة واضحة (I Do) واطلب من الطلاب إعادة صياغة المفهوم بلغتهم الخاصة للتأكد من استيعابهم قبل الانتقال.');
+      } else if (lower.includes('تبصر') || lower.includes('تعمق') || lower.includes('تفكير')) {
+        setRobotReply('🧠 نصيحة لمحطة التبصر [ ت ]:\nاستخدم أسئلة تفكير عليا (HOTS) مثل "ماذا لو لم يحدث هذا؟" أو "لماذا اخترنا هذا الحل دون غيره؟". تجنب الإجابة بدلاً من الطلاب واجعلهم يستنتجون بأنفسهم.');
+      } else if (lower.includes('يدوي') || lower.includes('تطبيق') || lower.includes('تمايز') || lower.includes('udl')) {
+        setRobotReply('🛠️ نصيحة لمحطة التطبيق [ ي ]:\nهنا قلب التمايز! وفر طاولة دعم مع المعلم للتمكين، ومجموعات عمل مستقلة للمتفوقين. نوّع في أشكال المخرجات (كتابي، مجسم، تسجيل، بطاقة تفاعلية).');
+      } else if (lower.includes('حصاد') || lower.includes('زوادة') || lower.includes('تذكرة') || lower.includes('exit')) {
+        setRobotReply('🎒 سر "الزوّادة" [ ح ]:\nالحصة لا تنتهي برنين الجرس! بل بسؤالين سريعين:\n1. ما الذي تزودت به اليوم؟\n2. أين وكيف سأوظفه في حياتي أو دراستي القادمة؟\nاجعلها محددة ومختصرة (سطرين فقط).');
+      } else if (lower.includes('مسطرة') || lower.includes('وقت') || lower.includes('זמן')) {
+        setRobotReply('⏱️ نصيحة لمسطرة الحصة:\nفي الحصة العادية (45 دقيقة): امنح الجذب 7د، الفهم 10د، التبصر 10د، التطبيق 14د، والزوّادة 4د. أما في الحصة المضاعفة (90د) فوسع وقت الورشة التطبيقية إلى 35 دقيقة!');
+      } else {
+        setRobotReply(`رائع جداً! استفسارك حول "${q}" يرتبط بجوهر موديل مفاتيح. تذكر دائماً أن المفتاح يفتح أبواب التفكير، وأن نجاح الحصة يكمن في امتلاك الطالب لزوّادته الحياتية ونقل أثر التعلم!`);
+      }
+    } finally {
+      setIsRobotThinking(false);
+    }
   };
 
   const selectedStation = STATIONS_DATA[selectedStationIndex];
@@ -3150,9 +3177,10 @@ ${p.stations?.h || ''}
                   <div className="robot-query-input-bar">
                     <input 
                       type="text"
-                      placeholder="اكتب استفسارك هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."
+                      placeholder={isRobotThinking ? "جاري استشارة الذكاء الاصطناعي..." : "اكتب استفسارك هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."}
                       value={robotChatInput}
                       onChange={(e) => setRobotChatInput(e.target.value)}
+                      disabled={isRobotThinking}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleAskRobot();
                       }}
@@ -3161,8 +3189,9 @@ ${p.stations?.h || ''}
                       type="button" 
                       className="robot-query-send-btn"
                       onClick={() => handleAskRobot()}
+                      disabled={isRobotThinking}
                     >
-                      <i className="fas fa-paper-plane"></i>
+                      <i className={`fas ${isRobotThinking ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
                     </button>
                   </div>
                 </div>
