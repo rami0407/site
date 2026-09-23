@@ -34,6 +34,7 @@ import FamilyChallengeAdminTab from './FamilyChallengeAdminTab';
 import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import StudentDismissalAdminTab from './StudentDismissalAdminTab';
 import ScientificResearchAdminTab from './ScientificResearchAdminTab';
+import MafatihAdminTab from './MafatihAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
@@ -5155,6 +5156,27 @@ const AdminDashboard = () => {
               🏃‍♂️ تسريح الطلاب (التوثيق والتحليلات)
             </button>
 
+            {/* تبويب: بيداغوجيا مفاتيح - إدارة وتعديل خطط الدروس */}
+            <button 
+              onClick={() => setActiveTab('mafatih-admin')} 
+              className={`filter-chip ${activeTab === 'mafatih-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'mafatih-admin' ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : '#eff6ff',
+                color: activeTab === 'mafatih-admin' ? 'white' : '#1e40af',
+                fontWeight: 900,
+                border: '2px solid #93c5fd',
+                boxShadow: '0 2px 6px rgba(37,99,235,0.2)'
+              }}
+            >
+              <i className="fas fa-key" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'mafatih-admin' ? '#fef08a' : '#2563eb' }}></i>
+              🗝️ مكتبة تخطيط الحصص (مفاتيح)
+            </button>
+
           </div>
         </aside>
 
@@ -8769,6 +8791,13 @@ const AdminDashboard = () => {
               {activeTab === 'scientific-research-admin' && (
                 <div>
                   <ScientificResearchAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: إدارة وتعديل ومسح خطط الدروس (بيداغوجيا مفاتيح) */}
+              {activeTab === 'mafatih-admin' && (
+                <div>
+                  <MafatihAdminTab />
                 </div>
               )}
 

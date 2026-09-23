@@ -1,7 +1,29 @@
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, setDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 
 const LOCAL_STORAGE_KEY = 'musheirifa_mafatih_library_plans_v1';
+const LOCAL_DELETED_KEY = 'musheirifa_mafatih_deleted_ids_v1';
+
+const getDeletedIds = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_DELETED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const markIdAsDeleted = (id) => {
+  try {
+    const list = getDeletedIds();
+    if (!list.includes(id)) {
+      list.push(id);
+      localStorage.setItem(LOCAL_DELETED_KEY, JSON.stringify(list));
+    }
+  } catch (e) {
+    console.error('Failed to mark plan as deleted:', e);
+  }
+};
 
 // Initial pre-loaded seed plans to ensure the library is immediately rich on day 1
 export const SEED_PLANS = [
@@ -97,6 +119,7 @@ export const SEED_PLANS = [
  */
 export const fetchSharedLessonPlans = async () => {
   let plans = [];
+  const deletedIds = getDeletedIds();
 
   // 1. Try fetching from Firestore
   try {
@@ -104,7 +127,9 @@ export const fetchSharedLessonPlans = async () => {
     const snap = await getDocs(q);
     if (!snap.empty) {
       snap.forEach((docSnap) => {
-        plans.push({ id: docSnap.id, ...docSnap.data() });
+        if (!deletedIds.includes(docSnap.id)) {
+          plans.push({ id: docSnap.id, ...docSnap.data() });
+        }
       });
     }
   } catch (err) {
@@ -118,7 +143,7 @@ export const fetchSharedLessonPlans = async () => {
       const parsed = JSON.parse(local);
       if (Array.isArray(parsed)) {
         parsed.forEach((lp) => {
-          if (!plans.some((p) => p.id === lp.id)) {
+          if (!deletedIds.includes(lp.id) && !plans.some((p) => p.id === lp.id)) {
             plans.unshift(lp);
           }
         });
@@ -128,9 +153,9 @@ export const fetchSharedLessonPlans = async () => {
     console.error('Error reading local lesson plans storage:', e);
   }
 
-  // 3. Ensure seed plans are included if not present
+  // 3. Ensure seed plans are included if not present and not deleted
   SEED_PLANS.forEach((seed) => {
-    if (!plans.some((p) => p.title === seed.title || p.id === seed.id)) {
+    if (!deletedIds.includes(seed.id) && !plans.some((p) => p.title === seed.title || p.id === seed.id)) {
       plans.push(seed);
     }
   });
@@ -146,7 +171,7 @@ export const saveLessonPlanToSharedLibrary = async (plan) => {
     title: plan.title || 'درس نموذجي جديد',
     subject: plan.subject || 'عام',
     grade: plan.grade || 'المرحلة الابتدائية',
-    duration: plan.duration || 45,
+    duration: Number(plan.duration) || 45,
     objective: plan.objective || '',
     author: plan.author || 'معلم في مدرسة مشيرفة',
     stations: {
@@ -188,10 +213,85 @@ export const saveLessonPlanToSharedLibrary = async (plan) => {
 };
 
 /**
- * Delete a lesson plan
+ * Update an existing lesson plan in Firestore and localStorage
+ */
+export const updateLessonPlanInLibrary = async (planId, updatedFields) => {
+  const updatedData = {
+    title: updatedFields.title || 'بدون عنوان',
+    subject: updatedFields.subject || 'عام',
+    grade: updatedFields.grade || 'المرحلة الابتدائية',
+    duration: Number(updatedFields.duration) || 45,
+    objective: updatedFields.objective || '',
+    author: updatedFields.author || 'معلم في مدرسة مشيرفة',
+    stations: {
+      m: updatedFields.stations?.m || '',
+      f: updatedFields.stations?.f || '',
+      t: updatedFields.stations?.t || '',
+      y: updatedFields.stations?.y || '',
+      h: updatedFields.stations?.h || ''
+    },
+    updatedAt: new Date().toISOString()
+  };
+
+  let finalId = planId;
+
+  // 1. If it was a seed plan or local plan, write it as a new/persisted doc in Firestore
+  if (planId.startsWith('seed-') || planId.startsWith('local-')) {
+    try {
+      const docRef = await addDoc(collection(db, 'mafatihLessonPlans'), {
+        ...updatedData,
+        createdAt: updatedFields.createdAt || new Date().toISOString(),
+        createdAtServer: serverTimestamp()
+      });
+      finalId = docRef.id;
+      // Mark old seed/local id as superseded/deleted so it doesn't duplicate
+      markIdAsDeleted(planId);
+    } catch (err) {
+      console.warn('Failed writing updated seed/local plan to Firestore:', err);
+    }
+  } else {
+    // Standard Firestore update
+    try {
+      await updateDoc(doc(db, 'mafatihLessonPlans', planId), updatedData);
+    } catch (err) {
+      console.warn('Failed updating Firestore doc, attempting setDoc merge:', err);
+      try {
+        await setDoc(doc(db, 'mafatihLessonPlans', planId), updatedData, { merge: true });
+      } catch (e2) {
+        console.error('Error setDoc update to Firestore:', e2);
+      }
+    }
+  }
+
+  const resultPlan = {
+    id: finalId,
+    ...updatedData,
+    createdAt: updatedFields.createdAt || new Date().toISOString()
+  };
+
+  // 2. Update localStorage
+  try {
+    const current = localStorage.getItem(LOCAL_STORAGE_KEY);
+    let parsed = current ? JSON.parse(current) : [];
+    // remove any old version with planId or finalId
+    parsed = parsed.filter((p) => p.id !== planId && p.id !== finalId);
+    parsed.unshift(resultPlan);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+  } catch (e) {
+    console.error('Error updating plan in localStorage:', e);
+  }
+
+  return resultPlan;
+};
+
+/**
+ * Delete a lesson plan from Firestore and localStorage permanently
  */
 export const deleteLessonPlanFromLibrary = async (planId) => {
-  // 1. Try deleting from Firestore
+  // 1. Mark id as permanently deleted so it doesn't reappear
+  markIdAsDeleted(planId);
+
+  // 2. Try deleting from Firestore
   if (!planId.startsWith('local-') && !planId.startsWith('seed-')) {
     try {
       await deleteDoc(doc(db, 'mafatihLessonPlans', planId));
@@ -200,7 +300,7 @@ export const deleteLessonPlanFromLibrary = async (planId) => {
     }
   }
 
-  // 2. Remove from local storage
+  // 3. Remove from local storage
   try {
     const current = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (current) {

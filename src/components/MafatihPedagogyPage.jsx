@@ -2057,16 +2057,14 @@ ${p.stations?.h || ''}
                         >
                           <i className="fas fa-file-pdf"></i> تحميل PDF
                         </button>
-                        {!plan.id?.startsWith('seed-') && (
-                          <button
-                            type="button"
-                            className="card-action-btn delete"
-                            onClick={() => handleDeletePlan(plan.id, plan.title)}
-                            title="حذف هذه الخطة من المكتبة"
-                          >
-                            <i className="fas fa-trash-alt"></i>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          className="card-action-btn delete"
+                          onClick={() => handleDeletePlan(plan.id, plan.title)}
+                          title="حذف هذه الخطة من المكتبة"
+                        >
+                          <i className="fas fa-trash-alt"></i> حذف
+                        </button>
                       </div>
                     </div>
                   );
