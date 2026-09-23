@@ -28,41 +28,58 @@ import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideD
 import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import './App.css';
 
+// Helper for lazy loading that automatically refreshes if a new deployment changed chunk hashes
+const lazyWithRetry = (componentImport) =>
+  lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      const isRefreshed = sessionStorage.getItem('chunk_retry_' + window.location.hash);
+      if (!isRefreshed) {
+        sessionStorage.setItem('chunk_retry_' + window.location.hash, 'true');
+        console.warn('Chunk failed to load (new deploy). Refreshing page...', error);
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
+
 // Lazy loaded page components for optimal initial bundle performance
-const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
-const BooksGuide = lazy(() => import('./components/BooksGuide'));
-const CustomPageView = lazy(() => import('./components/CustomPageView'));
-const WeeklyChallenge = lazy(() => import('./components/WeeklyChallenge'));
-const Worksheets = lazy(() => import('./components/Worksheets'));
-const AstronomyPage = lazy(() => import('./components/AstronomyPage'));
-const ScientificArticles = lazy(() => import('./components/ScientificArticles'));
-const ParentPolls = lazy(() => import('./components/ParentPolls'));
-const AppointmentBooking = lazy(() => import('./components/AppointmentBooking'));
-const AppointmentsLogPage = lazy(() => import('./components/AppointmentsLogPage'));
-const GratitudeSkyPage = lazy(() => import('./components/GratitudeSkyPage'));
-const ReadersClubPage = lazy(() => import('./components/ReadersClubPage'));
-const ExcellenceYearPage = lazy(() => import('./components/ExcellenceYearPage'));
-const LearningCorner = lazy(() => import('./components/LearningCorner'));
-const StemCorner = lazy(() => import('./components/StemCorner'));
-const TeacherStemPortal = lazy(() => import('./components/TeacherStemPortal'));
-const WorldIdeasPage = lazy(() => import('./components/WorldIdeasPage'));
-const NewsPage = lazy(() => import('./components/NewsPage'));
-const GalleryPage = lazy(() => import('./components/GalleryPage'));
-const CalendarPage = lazy(() => import('./components/CalendarPage'));
-const KioskDisplayPage = lazy(() => import('./components/KioskDisplayPage'));
-const SmartFormResponder = lazy(() => import('./components/SmartFormResponder'));
-const PrepDayExcellencePage = lazy(() => import('./components/PrepDayExcellencePage'));
-const AdminPanel = lazy(() => import('./components/AdminPanel'));
-const SchoolTasbihPortal = lazy(() => import('./components/SchoolTasbihPortal'));
-const PrincipalMessage = lazy(() => import('./components/PrincipalMessage'));
-const DebateArenaPage = lazy(() => import('./components/DebateArenaPage'));
-const VirtualMuseumPage = lazy(() => import('./components/VirtualMuseumPage'));
-const LostAndFoundPage = lazy(() => import('./components/LostAndFoundPage'));
-const FamilyChallengePage = lazy(() => import('./components/FamilyChallengePage'));
-const StudentDismissalPage = lazy(() => import('./components/StudentDismissalPage'));
-const EduStaffingPortal = lazy(() => import('./components/EduStaffingPortal'));
-const ScientificResearchQuest = lazy(() => import('./components/ScientificResearchQuest'));
-const MafatihPedagogyPage = lazy(() => import('./components/MafatihPedagogyPage'));
+const AdminDashboard = lazyWithRetry(() => import('./components/AdminDashboard'));
+const BooksGuide = lazyWithRetry(() => import('./components/BooksGuide'));
+const CustomPageView = lazyWithRetry(() => import('./components/CustomPageView'));
+const WeeklyChallenge = lazyWithRetry(() => import('./components/WeeklyChallenge'));
+const Worksheets = lazyWithRetry(() => import('./components/Worksheets'));
+const AstronomyPage = lazyWithRetry(() => import('./components/AstronomyPage'));
+const ScientificArticles = lazyWithRetry(() => import('./components/ScientificArticles'));
+const ParentPolls = lazyWithRetry(() => import('./components/ParentPolls'));
+const AppointmentBooking = lazyWithRetry(() => import('./components/AppointmentBooking'));
+const AppointmentsLogPage = lazyWithRetry(() => import('./components/AppointmentsLogPage'));
+const GratitudeSkyPage = lazyWithRetry(() => import('./components/GratitudeSkyPage'));
+const ReadersClubPage = lazyWithRetry(() => import('./components/ReadersClubPage'));
+const ExcellenceYearPage = lazyWithRetry(() => import('./components/ExcellenceYearPage'));
+const LearningCorner = lazyWithRetry(() => import('./components/LearningCorner'));
+const StemCorner = lazyWithRetry(() => import('./components/StemCorner'));
+const TeacherStemPortal = lazyWithRetry(() => import('./components/TeacherStemPortal'));
+const WorldIdeasPage = lazyWithRetry(() => import('./components/WorldIdeasPage'));
+const NewsPage = lazyWithRetry(() => import('./components/NewsPage'));
+const GalleryPage = lazyWithRetry(() => import('./components/GalleryPage'));
+const CalendarPage = lazyWithRetry(() => import('./components/CalendarPage'));
+const KioskDisplayPage = lazyWithRetry(() => import('./components/KioskDisplayPage'));
+const SmartFormResponder = lazyWithRetry(() => import('./components/SmartFormResponder'));
+const PrepDayExcellencePage = lazyWithRetry(() => import('./components/PrepDayExcellencePage'));
+const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'));
+const SchoolTasbihPortal = lazyWithRetry(() => import('./components/SchoolTasbihPortal'));
+const PrincipalMessage = lazyWithRetry(() => import('./components/PrincipalMessage'));
+const DebateArenaPage = lazyWithRetry(() => import('./components/DebateArenaPage'));
+const VirtualMuseumPage = lazyWithRetry(() => import('./components/VirtualMuseumPage'));
+const LostAndFoundPage = lazyWithRetry(() => import('./components/LostAndFoundPage'));
+const FamilyChallengePage = lazyWithRetry(() => import('./components/FamilyChallengePage'));
+const StudentDismissalPage = lazyWithRetry(() => import('./components/StudentDismissalPage'));
+const EduStaffingPortal = lazyWithRetry(() => import('./components/EduStaffingPortal'));
+const ScientificResearchQuest = lazyWithRetry(() => import('./components/ScientificResearchQuest'));
+const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPedagogyPage'));
 
 
 function App() {
