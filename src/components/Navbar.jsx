@@ -208,7 +208,7 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh', 'mafatih', 'mafateeh'];
     if (systemPages.includes(item.target)) {
       return `#/${item.target}`;
     }
@@ -252,6 +252,22 @@ const Navbar = () => {
                 }}
               >
                 <i className="fas fa-file-signature"></i> تسريح الطلاب 🏃‍♂️
+              </a>
+            </li>
+
+            {/* Direct Quick Link for Mafatih Pedagogical Model */}
+            <li>
+              <a 
+                href="#/mafatih"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  color: '#fbbf24',
+                  fontWeight: 800
+                }}
+              >
+                <i className="fas fa-key"></i> موديل مَفَاتِيح 🗝️
               </a>
             </li>
 

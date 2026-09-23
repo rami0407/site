@@ -61,6 +61,7 @@ const FamilyChallengePage = lazy(() => import('./components/FamilyChallengePage'
 const StudentDismissalPage = lazy(() => import('./components/StudentDismissalPage'));
 const EduStaffingPortal = lazy(() => import('./components/EduStaffingPortal'));
 const ScientificResearchQuest = lazy(() => import('./components/ScientificResearchQuest'));
+const MafatihPedagogyPage = lazy(() => import('./components/MafatihPedagogyPage'));
 
 
 function App() {
@@ -429,6 +430,17 @@ function App() {
       <Suspense fallback={<Loader />}>
         <Loader />
         <ScientificResearchQuest />
+      </Suspense>
+    );
+  }
+
+  const isMafatihView = currentHash.includes('mafatih') || currentHash.includes('mafateeh') || currentHash.includes('pedagogy');
+
+  if (isMafatihView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <MafatihPedagogyPage />
       </Suspense>
     );
   }
