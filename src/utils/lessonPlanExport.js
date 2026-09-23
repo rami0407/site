@@ -34,10 +34,10 @@ export const exportLessonPlanToWord = ({
 }) => {
   const fileName = `${sanitizeFilename(title)}_خطة_درس_مفاتيح.doc`;
 
-  const mContent = stations.m || 'محطة الجذب والتشويق...';
-  const fContent = stations.f || 'محطة الفهم وتفكيك المفهوم...';
-  const tContent = stations.t || 'محطة التبصر وأسئلة التفكير العليا...';
-  const yContent = stations.y || 'محطة اليدوي والتطبيق والتمايز...';
+  const mContent = stations.m || 'محطة المدخل المحفّز...';
+  const fContent = stations.f || 'محطة فهم وبناء المعنى...';
+  const tContent = stations.t || 'محطة التفكير والتبصّر وأسئلة التفكير العليا...';
+  const yContent = stations.y || 'محطة الإنجاز والتطبيق والتمايز...';
   const hContent = stations.h || 'محطة الحصاد والزوّادة ونقل الأثر...';
 
   const wordHTML = `
@@ -316,7 +316,7 @@ export const exportLessonPlanToWord = ({
         <!-- Station 1: M -->
         <tr class="station-row">
           <td class="station-header-cell bg-m">
-            [ م ] مَحَطَّةُ الجَذْبِ وَالإِشْعَال (משוך — جَذْب الاهتمام واللغز)
+            [ م ] مَحَطَّةُ المَدْخَلِ المُحَفِّز (משיכה וסקרנות — إثارة الفضول وكسر الجمود)
             <div class="station-subinfo">الوقت التقديري: 3 - 5 دقائق | دور المعلم: محفز ومستفز للتفكير ومثير للفضول</div>
           </td>
         </tr>
@@ -329,7 +329,7 @@ export const exportLessonPlanToWord = ({
         <!-- Station 2: F -->
         <tr class="station-row">
           <td class="station-header-cell bg-f">
-            [ ف ] مَحَطَّةُ الفَهْمِ وَتَفْكِيكِ المَفْهُوم (פְּגִישָׁה / הֲבָנָה — نمذجة ومصطلحات)
+            [ ف ] مَحَطَّةُ فَهْمِ وَبِنَاءِ المَعْنَى (פיתוח הבנה — تطوير الفهم والقاموس والنمذجة)
             <div class="station-subinfo">الوقت التقديري: 8 - 10 دقائق | دور المعلم: وسيط معرفي يوضح القاموس العلمي ونمذجة I Do</div>
           </td>
         </tr>
@@ -342,8 +342,8 @@ export const exportLessonPlanToWord = ({
         <!-- Station 3: T -->
         <tr class="station-row">
           <td class="station-header-cell bg-t">
-            [ ت ] مَحَطَّةُ التَّبَصُّرِ وَالتَّعَمُّق (תְּבוּנָה — أسئلة تفكير عليا وحوار سقراطي)
-            <div class="station-subinfo">الوقت التقديري: 8 - 10 دقائق | دور المعلم: ميسر للحوار الفكري يطرح أسئلة غير مغلقة</div>
+            [ ت ] مَحَطَّةُ التَّفْكِيرِ وَالتَّبَصُّر (תובנה והעמקה — أسئلة تفكير عليا وحوار سقراطي)
+            <div class="station-subinfo">الوقت التقديري: 8 - 10 دقائق | دور المعلم: ميسر للحوار الفكري يطرح أسئلة غير مغلقة وتبصّر</div>
           </td>
         </tr>
         <tr class="station-row">
@@ -355,7 +355,7 @@ export const exportLessonPlanToWord = ({
         <!-- Station 4: Y -->
         <tr class="station-row">
           <td class="station-header-cell bg-y">
-            [ ي ] مَحَطَّةُ اليَدَوِيِّ وَالتَّطْبِيق (יִשּׂוּם — ورشة عمل وتمايز تعليمي UDL)
+            [ ي ] مَحَطَّةُ الإِنْجَازِ وَالتَّطْبِيق (יצירה ויישום — ورشة عمل وإنجاز ملموس وتمايز UDL)
             <div class="station-subinfo">الوقت التقديري: 12 - 15 دقيقة | دور المعلم: مدرب وموجه يراعي الفروق الفردية</div>
           </td>
         </tr>
@@ -368,7 +368,7 @@ export const exportLessonPlanToWord = ({
         <!-- Station 5: H -->
         <tr class="station-row">
           <td class="station-header-cell bg-h">
-            [ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חֲתִימָה וְצֵידָה לַדֶּרֶךְ — تذكرة الخروج ونقل الأثر)
+            [ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חתימה וצידה לדרך — تذكرة الخروج ونقل الأثر)
             <div class="station-subinfo">الوقت التقديري: 4 - 5 دقائق | دور الطالب: مقيم ذاتي يستخلص زوّادته لغده وحياته الواقعية</div>
           </td>
         </tr>
@@ -447,10 +447,10 @@ export const exportLessonPlanToPdf = ({
     return;
   }
 
-  const mContent = stations.m || 'محطة الجذب والتشويق...';
-  const fContent = stations.f || 'محطة الفهم وتفكيك المفهوم...';
-  const tContent = stations.t || 'محطة التبصر وأسئلة التفكير العليا...';
-  const yContent = stations.y || 'محطة اليدوي والتطبيق والتمايز...';
+  const mContent = stations.m || 'محطة المدخل المحفّز...';
+  const fContent = stations.f || 'محطة فهم وبناء المعنى...';
+  const tContent = stations.t || 'محطة التفكير والتبصّر وأسئلة التفكير العليا...';
+  const yContent = stations.y || 'محطة الإنجاز والتطبيق والتمايز...';
   const hContent = stations.h || 'محطة الحصاد والزوّادة ونقل الأثر...';
 
   const html = `
@@ -776,8 +776,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 1 -->
     <div class="station-block">
       <div class="station-head m">
-        <span>[ م ] مَحَطَّةُ الجَذْبِ وَالإِشْعَال (משוך)</span>
-        <small>3 - 5 دقائق | سؤال البداية واللغز الصفي</small>
+        <span>[ م ] مَحَطَّةُ المَدْخَلِ المُحَفِّز (משיכה וסקרנות)</span>
+        <small>3 - 5 دقائق | سؤال البداية واللغز الصفي وكسر الجمود</small>
       </div>
       <div class="station-body">${mContent}</div>
     </div>
@@ -785,8 +785,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 2 -->
     <div class="station-block">
       <div class="station-head f">
-        <span>[ ف ] مَحَطَّةُ الفَهْمِ وَتَفْكِيكِ المَفْهُوم (פְּגִישָׁה / הֲבָנָה)</span>
-        <small>8 - 10 دقائق | نمذجة المعلم وتأسيس القاموس العلمي</small>
+        <span>[ ف ] مَحَطَّةُ فَهْمِ وَبِنَاءِ المَعْنَى (פיתוח הבנה)</span>
+        <small>8 - 10 دقائق | نمذجة المعلم وتطوير الفهم وتأسيس القاموس العلمي</small>
       </div>
       <div class="station-body">${fContent}</div>
     </div>
@@ -794,8 +794,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 3 -->
     <div class="station-block">
       <div class="station-head t">
-        <span>[ ت ] مَحَطَّةُ التَّبَصُّرِ وَالتَّعَمُّق (תְּבוּנָה)</span>
-        <small>8 - 10 دقائق | أسئلة التفكير العليا وحوار سقراطي</small>
+        <span>[ ت ] مَحَطَّةُ التَّفْكِيرِ وَالتَّبَصُّر (תובנה והעמקה)</span>
+        <small>8 - 10 دقائق | أسئلة التفكير العليا، التبصر وحوار سقراطي</small>
       </div>
       <div class="station-body">${tContent}</div>
     </div>
@@ -803,8 +803,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 4 -->
     <div class="station-block">
       <div class="station-head y">
-        <span>[ ي ] مَحَطَّةُ اليَدَوِيِّ وَالتَّطْبِيق (יִשּׂוּם)</span>
-        <small>12 - 15 دقيقة | ورشة العمل وتمايز المستويات UDL</small>
+        <span>[ ي ] مَحَطَّةُ الإِنْجَازِ وَالتَّطْبِيق (יצירה ויישום)</span>
+        <small>12 - 15 دقيقة | ورشة العمل، إنجاز ملموس وتمايز المستويات UDL</small>
       </div>
       <div class="station-body">${yContent}</div>
     </div>
@@ -812,7 +812,7 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 5 -->
     <div class="station-block">
       <div class="station-head h">
-        <span>[ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חֲתִימָה וְצֵידָה לַדֶּרֶךְ)</span>
+        <span>[ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חתימה וצידה לדרך)</span>
         <small>4 - 5 دقائق | تذكرة الخروج ونقل الأثر للواقع</small>
       </div>
       <div class="station-body">${hContent}</div>
