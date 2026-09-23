@@ -1324,9 +1324,16 @@ ${p.stations?.h || ''}
               {/* Printable Lesson Plan Preview */}
               <div className="planner-preview-card printable-sheet">
                 <div className="sheet-header">
-                  <div className="school-brand">
-                    <h4>مدرسة مشيرفة الابتدائية</h4>
-                    <small>خطة درس نموذجية — موديل مَفَاتِيح (מודל מַפְתֵּ"חַ)</small>
+                  <div className="school-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img 
+                      src="/school_logo.png" 
+                      alt="شعار مدرسة مشيرفة" 
+                      style={{ width: '46px', height: '46px', borderRadius: '50%', objectFit: 'contain' }} 
+                    />
+                    <div>
+                      <h4 style={{ margin: 0 }}>مدرسة مشيرفة الابتدائية — لواء حيفا</h4>
+                      <small>خطة درس نموذجية — موديل مَفَاتِيح (מודל מַפְתֵּ"חַ)</small>
+                    </div>
                   </div>
                   <div className="sheet-actions-group">
                     <button 

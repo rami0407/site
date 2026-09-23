@@ -1,3 +1,5 @@
+import { SCHOOL_LOGO_BASE64 } from './schoolLogoBase64';
+
 /**
  * =========================================================================
  * LESSON PLAN EXPORT UTILITIES (موديل مَفَاتِيح — מודל מַפְתֵּ"חַ)
@@ -250,12 +252,17 @@ export const exportLessonPlanToWord = ({
       <!-- Official Header -->
       <table class="header-table" border="0" cellpadding="0" cellspacing="0">
         <tr>
+          <td style="width: 85px; text-align: right; vertical-align: middle; padding-left: 10pt;">
+            <img src="${SCHOOL_LOGO_BASE64}" alt="شعار مدرسة مشيرفة" width="75" height="75" style="width: 75px; height: 75px; border-radius: 50%;" />
+          </td>
           <td style="text-align: right; vertical-align: middle;">
             <div class="school-title">دولة إسرائيل — وزارة التربية والتعليم</div>
-            <div class="school-title" style="font-size: 13pt; color: #0284c7;">مدرسة مشيرفة الابتدائية — لواء الشمال</div>
+            <div class="school-title" style="font-size: 13.5pt; color: #0284c7; margin-top: 2pt;">
+              لواء حيفا — مدرسة مشيرفة الابتدائية
+            </div>
             <div class="school-subtitle">الإطار التربوي والتعليمي الموحد لرسم مسار الحصة (الشيفرة الوراثية الصفية)</div>
           </td>
-          <td style="text-align: left; vertical-align: middle;">
+          <td style="text-align: left; vertical-align: middle; width: 135px;">
             <div class="model-badge">
               موديل מַפְתֵּ"חַ 🗝️
             </div>
@@ -706,9 +713,13 @@ export const exportLessonPlanToPdf = ({
   <div class="sheet-wrapper">
     <!-- Header -->
     <div class="sheet-header">
-      <div class="school-info">
-        <h1>مدرسة مشيرفة الابتدائية — لواء الشمال</h1>
-        <p>الإطار التدريسي والتربوي الموحد لرسم مسار الحصة الصفية</p>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="${SCHOOL_LOGO_BASE64}" alt="شعار مدرسة مشيرفة" style="width: 75px; height: 75px; border-radius: 50%; object-fit: contain;" />
+        <div class="school-info">
+          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 2px;">دولة إسرائيل — وزارة التربية والتعليم</div>
+          <h1 style="margin: 0; font-size: 18.5px; font-weight: 900; color: #1e3a8a;">لواء حيفا — مدرسة مشيرفة الابتدائية</h1>
+          <p style="margin: 2px 0 0; font-size: 11px; color: #64748b; font-weight: 600;">الإطار التدريسي والتربوي الموحد لرسم مسار الحصة الصفية</p>
+        </div>
       </div>
       <div class="brand-key-badge">
         <span class="title">موديل מַפְתֵּ"חַ 🗝️</span>
