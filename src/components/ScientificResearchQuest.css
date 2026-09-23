@@ -2058,44 +2058,57 @@
   overflow: hidden !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0,0,0,0.06) !important;
   margin-bottom: 1.5rem !important;
-  direction: rtl !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* ── Top Toolbar ────────────────────────────── */
 .word-online-toolbar {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.5rem !important;
-  padding: 0.5rem 0.85rem !important;
+  justify-content: flex-start !important;
+  gap: 3px !important;
+  padding: 6px 12px !important;
   background: #f8fafc !important;
   border-bottom: 1.5px solid #e2e8f0 !important;
   flex-wrap: wrap !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  direction: ltr !important;
 }
 
 .word-online-tools {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 3px !important;
   flex-wrap: wrap !important;
+  flex: 1 !important;
 }
 
 .word-online-meta {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
-  gap: 0.5rem !important;
+  gap: 6px !important;
   font-size: 0.78rem !important;
   color: #94a3b8 !important;
   font-weight: 600 !important;
   white-space: nowrap !important;
+  margin-left: auto !important;
+  padding-left: 8px !important;
+  direction: ltr !important;
 }
 
 .word-online-divider {
+  display: inline-block !important;
   width: 1px !important;
-  height: 22px !important;
+  height: 20px !important;
   background: #dde3ec !important;
-  margin: 0 3px !important;
+  margin: 0 4px !important;
   flex-shrink: 0 !important;
+  align-self: center !important;
 }
 
 /* ── Toolbar Buttons ────────────────────────── */
@@ -2105,8 +2118,9 @@
   color: #374151 !important;
   width: 32px !important;
   height: 30px !important;
+  min-width: 32px !important;
   border-radius: 6px !important;
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 0.92rem !important;
@@ -2115,6 +2129,8 @@
   font-family: inherit !important;
   transition: all 0.12s ease !important;
   flex-shrink: 0 !important;
+  line-height: 1 !important;
+  flex-direction: row !important;
 }
 
 .word-online-btn:hover {
