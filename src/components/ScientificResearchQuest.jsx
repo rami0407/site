@@ -303,10 +303,11 @@ const ScientificResearchQuest = () => {
         curiosity: false,
         question: false,
         hypothesis: false,
+        background: false,
         explorer: false
       };
     } catch {
-      return { curiosity: false, question: false, hypothesis: false, explorer: false };
+      return { curiosity: false, question: false, hypothesis: false, background: false, explorer: false };
     }
   });
 
@@ -431,6 +432,69 @@ const ScientificResearchQuest = () => {
     }
   ];
 
+  // -----------------------------------------------------------
+  // Station 4: Scientific Background & Sources State (جديد!)
+  // -----------------------------------------------------------
+  const [bgParagraph1, setBgParagraph1] = useState(() => localStorage.getItem('quest_bg_p1') || '');
+  const [bgParagraph2, setBgParagraph2] = useState(() => localStorage.getItem('quest_bg_p2') || '');
+  const [bgParagraph3, setBgParagraph3] = useState(() => localStorage.getItem('quest_bg_p3') || '');
+  const [bgActiveTab, setBgActiveTab] = useState(1);
+  const [bgReviews, setBgReviews] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_bg_reviews');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [isReviewingParagraph, setIsReviewingParagraph] = useState(null);
+  const [isBgApproved, setIsBgApproved] = useState(() => {
+    return localStorage.getItem('quest_bg_approved') === 'true';
+  });
+
+  const [bgKeywords, setBgKeywords] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_bg_keywords');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      'تأثير ضوء الشمس على النباتات ☀️🌱',
+      'عملية التمثيل الضوئي (البناء الضوئي) 🍃',
+      'حاجة النبات للكلوروفيل والغذاء 🧪',
+      'سرعة نمو الساق وتفرع الأوراق 📏',
+      'مقارنة الظل والضوء في الطبيعة 🌳'
+    ];
+  });
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+
+  const [bgSources, setBgSources] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_bg_sources');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'src-1',
+        title: 'كتاب العلوم والتكنولوجيا للمرحلة الابتدائية',
+        author: 'وزارة التربية والتعليم',
+        type: 'كتاب مدرسي',
+        note: 'الفصل الخاص باحتياجات الكائنات الحية والنمو في النبات'
+      },
+      {
+        id: 'src-2',
+        title: 'موسوعة العلوم الميسرة للأطفال والمستكشفين',
+        author: 'مؤسسة الكويت للتقدم العلمي',
+        type: 'موسوعة علمية',
+        note: 'مقال عن تحويل الطاقة الضوئية إلى طاقة كيميائية'
+      }
+    ];
+  });
+  const [newSourceTitle, setNewSourceTitle] = useState('');
+  const [newSourceAuthor, setNewSourceAuthor] = useState('');
+  const [newSourceType, setNewSourceType] = useState('موقع إنترنت موثوق');
+  const [newSourceNote, setNewSourceNote] = useState('');
+  const [showAddSourceModal, setShowAddSourceModal] = useState(false);
+
   // Sync state changes to LocalStorage
   useEffect(() => {
     localStorage.setItem('school_unified_student_name', studentName);
@@ -438,6 +502,27 @@ const ScientificResearchQuest = () => {
     localStorage.setItem('quest_unlocked_stations', JSON.stringify(unlockedStations));
     localStorage.setItem('quest_badges', JSON.stringify(badges));
   }, [studentName, activeStation, unlockedStations, badges]);
+
+  // Sync Station 4 state changes
+  useEffect(() => {
+    localStorage.setItem('quest_bg_p1', bgParagraph1);
+    localStorage.setItem('quest_bg_p2', bgParagraph2);
+    localStorage.setItem('quest_bg_p3', bgParagraph3);
+    localStorage.setItem('quest_bg_sources', JSON.stringify(bgSources));
+    localStorage.setItem('quest_bg_reviews', JSON.stringify(bgReviews));
+    localStorage.setItem('quest_bg_approved', String(isBgApproved));
+    localStorage.setItem('quest_bg_keywords', JSON.stringify(bgKeywords));
+  }, [bgParagraph1, bgParagraph2, bgParagraph3, bgSources, bgReviews, isBgApproved, bgKeywords]);
+
+  // Ensure seamless backward compatibility for unlocked stations
+  useEffect(() => {
+    if (badges.hypothesis && !unlockedStations.includes(4)) {
+      setUnlockedStations(prev => [...prev, 4]);
+    }
+    if (isBgApproved && !unlockedStations.includes(5)) {
+      setUnlockedStations(prev => [...prev, 5]);
+    }
+  }, [badges.hypothesis, isBgApproved]);
 
   // Handle Text-To-Speech with resilient Arabic engine
   const speakText = (text) => {
@@ -696,17 +781,194 @@ ${historySnippet}
     localStorage.setItem('quest_hypo_because', hypoBecause.trim());
     localStorage.setItem('quest_hypo_approved', 'true');
     awardBadge('hypothesis');
-    awardBadge('explorer');
     unlockStation(4);
     setActiveStation(4);
+  };
+
+  // -----------------------------------------------------------
+  // Station 4 Logic: Scientific Background, Sources & Step-by-Step Writing
+  // -----------------------------------------------------------
+  const handleGenerateKeywords = async () => {
+    setIsGeneratingKeywords(true);
+    playSound('click');
+    try {
+      const topic = researchQuestion || 'تأثير المتغيرات في العلوم';
+      const prompt = `أنت الروبوت "مُشيرفي"، مرشد البحث العلمي للأطفال بمدرسة مشيرفة الابتدائية.
+سؤال بحث الطالب: "${topic}".
+الفرضية: "${hypoIf} -> ${hypoThen}".
+المطلوب: اقترح 5 كلمات مفتاحية أو عناوين فرعية ذكية ومختصرة يستطيع الطالب البحث عنها في جوجل أو المكتبة المدرسية لكتابة الخلفية العلمية.
+اكتب الكلمات المفتاحية في سطر واحد مفصولة بعلامة الشحطة العمودية | فقط دون أي مقدمات أو ترقيم.
+مثال: التمثيل الضوئي | نمو النباتات | الكلوروفيل والطاقة | دور الشمس في الطبيعة | تجارب علمية بسيطة`;
+      const res = await generateAiResponse(prompt, 'أنت مُشيرفي المقترح الذكي للكلمات المفتاحية.');
+      if (res) {
+        const words = res.split('|').map(w => w.trim()).filter(w => w.length > 2);
+        if (words.length > 0) {
+          setBgKeywords(words);
+          localStorage.setItem('quest_bg_keywords', JSON.stringify(words));
+          playSound('success');
+        }
+      }
+    } catch {
+      const fallback = [
+        `مفهوم ${researchQuestion ? researchQuestion.slice(0, 25) : 'الظاهرة العلمية'}... 🔍`,
+        'العوامل المؤثرة والتجارب السابقة 🧪',
+        'التفسير العلمي للظاهرة في الطبيعة 🌍',
+        'تطبيقات في حياتنا وبيئتنا المدرسية 🌱',
+        'المصطلحات العلمية المركزية 📖'
+      ];
+      setBgKeywords(fallback);
+    } finally {
+      setIsGeneratingKeywords(false);
+    }
+  };
+
+  const handleAddSource = (e) => {
+    e.preventDefault();
+    if (!newSourceTitle.trim()) {
+      alert('يرجى إدخال اسم المصدر أو عنوان الكتاب/الموقع.');
+      return;
+    }
+    const newSrc = {
+      id: 'src-' + Date.now(),
+      title: newSourceTitle.trim(),
+      author: newSourceAuthor.trim() || 'غير محدد',
+      type: newSourceType,
+      note: newSourceNote.trim()
+    };
+    const updated = [...bgSources, newSrc];
+    setBgSources(updated);
+    localStorage.setItem('quest_bg_sources', JSON.stringify(updated));
+    setNewSourceTitle('');
+    setNewSourceAuthor('');
+    setNewSourceNote('');
+    setShowAddSourceModal(false);
+    playSound('success');
+  };
+
+  const handleDeleteSource = (srcId) => {
+    const updated = bgSources.filter(s => s.id !== srcId);
+    setBgSources(updated);
+    localStorage.setItem('quest_bg_sources', JSON.stringify(updated));
+    playSound('click');
+  };
+
+  const handleReviewParagraphWithAI = async (pIndex) => {
+    const text = pIndex === 1 ? bgParagraph1 : pIndex === 2 ? bgParagraph2 : bgParagraph3;
+    if (!text.trim()) {
+      alert('يرجى كتابة مسودة فقرتك أولاً يا بطل حتى يستطيع مُشيرفي مراجعتها معك وتصويبها!');
+      return;
+    }
+    setIsReviewingParagraph(pIndex);
+    playSound('click');
+
+    const pTypeName = pIndex === 1
+      ? 'المفهوم الأساسي والتعريف العلمي'
+      : pIndex === 2
+      ? 'التفسير العلمي والعلاقة بين المتغيرات'
+      : 'أهمية الموضوع وتطبيقاته في حياتنا';
+
+    try {
+      const prompt = `أنت الروبوت "مُشيرفي"، مرشد ودود وخبير في البحث العلمي للطلاب في المرحلة الابتدائية بمدرسة مشيرفة الابتدائية.
+اسم الطالب: ${studentName}.
+سؤال البحث العلمي: "${researchQuestion || 'سؤال البحث'}".
+الفقرة رقم ${pIndex} من الخلفية العلمية بعنوان (${pTypeName}):
+نص مسودة الطالب:
+"${text}"
+
+المطلوب:
+1. ملاحظة تشجيعية دافئة تثني على الطالب وتبين ما أعجبك في فكرته، مع تنبيه لطيف لأي خطأ إملائي أو صياغي (سطرين).
+2. قدم صياغة محسنة ومصقولة للفقرة تناسب مستوى طالب ابتدائي وتبرز الأسلوب العلمي الرصين، مع الحفاظ التام على فكرة الطالب ومشاركته.
+اكتب ردك بالتنسيق التالي حرفياً:
+[FEEDBACK]: ملاحظتك المشجعة وتوجيهك
+[POLISHED]: النص المصقول للفقرة`;
+
+      const aiReply = await generateAiResponse(prompt, 'أنت مُشيرفي مدقق ومساعد البحث العلمي للطلاب.');
+      if (aiReply && aiReply.includes('[POLISHED]')) {
+        const parts = aiReply.split('[POLISHED]');
+        const feedback = parts[0].replace('[FEEDBACK]:', '').trim();
+        const polished = parts[1].trim();
+
+        setBgReviews(prev => ({
+          ...prev,
+          [pIndex]: { feedback, polished, isApproved: false }
+        }));
+        playSound('success');
+      } else {
+        throw new Error('Fallback review');
+      }
+    } catch {
+      let fb = '';
+      let pol = '';
+      if (pIndex === 1) {
+        fb = `أحسنت يا ${studentName}! محاولة رائعة ومثمرة في تعريف المفهوم بكلماتك. قمت بتدقيق الصياغة لتكون أكثر وضوحاً ورصانة علمية كما يكتب الباحثون!`;
+        pol = `${text.trim()}، وهو مفهوم علمي أساسي يعبر عن الظاهرة بدقة ويساعدنا على فهم التغيرات التي نلاحظها في بيئتنا الطبيعية.`;
+      } else if (pIndex === 2) {
+        fb = `تفكير استقصائي متميز يا عالمنا الصغير! لقد بينت العلاقة العلمية بذكاء. قمت بربط الجمل لغوياً لتبدو كفقرة علمية متماسكة.`;
+        pol = `بناءً على التفسير العلمي والمصادر الموثوقة، فإن ${text.trim()}؛ حيث تؤدي هذه العوامل إلى حدوث تأثيرات مباشرة يمكن ملاحظتها وقياسها في التجربة.`;
+      } else {
+        fb = `رائع جداً يا ${studentName}! ربط البحث بالواقع والحياة اليومية يعكس فهماً عميقاً لقيمة العلم. صياغتك أصبحت جاهزة ومتقنة.`;
+        pol = `تتجلى أهمية هذا البحث في ${text.trim()}، مما يمنحنا وعياً علمياً يمكن تطبيقه في حياتنا اليومية للحفاظ على كوكبنا وحل المشكلات المحيطة بنا.`;
+      }
+      setBgReviews(prev => ({
+        ...prev,
+        [pIndex]: { feedback: fb, polished: pol, isApproved: false }
+      }));
+      playSound('success');
+    } finally {
+      setIsReviewingParagraph(null);
+    }
+  };
+
+  const handleApplyPolishedParagraph = (pIndex) => {
+    const rev = bgReviews[pIndex];
+    if (!rev || !rev.polished) return;
+    if (pIndex === 1) setBgParagraph1(rev.polished);
+    if (pIndex === 2) setBgParagraph2(rev.polished);
+    if (pIndex === 3) setBgParagraph3(rev.polished);
+
+    setBgReviews(prev => ({
+      ...prev,
+      [pIndex]: { ...prev[pIndex], isApproved: true }
+    }));
+    playSound('success');
+    if (pIndex < 3) setBgActiveTab(pIndex + 1);
+  };
+
+  const handleKeepStudentParagraph = (pIndex) => {
+    setBgReviews(prev => ({
+      ...prev,
+      [pIndex]: { ...prev[pIndex], isApproved: true }
+    }));
+    playSound('success');
+    if (pIndex < 3) setBgActiveTab(pIndex + 1);
+  };
+
+  const handleApproveBackground = () => {
+    if (!bgParagraph1.trim() || !bgParagraph2.trim() || !bgParagraph3.trim()) {
+      alert('يرجى كتابة الفقرات الثلاث كاملة أولاً للتأكد من شمولية الخلفية العلمية ومشاركتك الفعالة!');
+      return;
+    }
+
+    playSound('success');
+    setIsBgApproved(true);
+    localStorage.setItem('quest_bg_p1', bgParagraph1.trim());
+    localStorage.setItem('quest_bg_p2', bgParagraph2.trim());
+    localStorage.setItem('quest_bg_p3', bgParagraph3.trim());
+    localStorage.setItem('quest_bg_approved', 'true');
+    localStorage.setItem('quest_bg_reviews', JSON.stringify(bgReviews));
+    awardBadge('background');
+    awardBadge('explorer');
+    unlockStation(5);
+    setActiveStation(5);
   };
 
   // Calculate overall progress %
   const calculateProgress = () => {
     let p = 0;
-    if (quizPassed) p += 33;
-    if (isQuestionApproved) p += 33;
-    if (isHypoApproved) p += 34;
+    if (quizPassed) p += 25;
+    if (isQuestionApproved) p += 25;
+    if (isHypoApproved) p += 25;
+    if (isBgApproved) p += 25;
     return p;
   };
 
@@ -817,7 +1079,7 @@ ${historySnippet}
             <div className="quest-trail-title">
               <span>🚀 محطات مغامرة البحث العلمي</span>
               <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-                (محطة {activeStation === 0 ? 'البداية' : activeStation} من 3)
+                (محطة {activeStation === 0 ? 'البداية' : activeStation} من 4)
               </span>
             </div>
             <div className="quest-progress-meter">
@@ -890,15 +1152,35 @@ ${historySnippet}
               <span className="quest-step-name">بناء الفرضيات</span>
             </div>
 
-            {/* Step 4: Finale */}
+            {/* Step 4: Scientific Background */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(4) ? 'unlocked' : 'locked'} ${activeStation === 4 ? 'active' : ''} ${badges.explorer ? 'completed' : ''}`}
+              className={`quest-step-pill ${unlockedStations.includes(4) ? 'unlocked' : 'locked'} ${activeStation === 4 ? 'active' : ''} ${isBgApproved ? 'completed' : ''}`}
               onClick={() => {
                 if (unlockedStations.includes(4)) {
                   playSound('click');
                   setActiveStation(4);
                 } else {
-                  alert('🔒 أكمل المحطات الثلاث أولاً للحصول على شهادتك الذهبية ووسام التتويج!');
+                  alert('🔒 هذه المحطة مقفلة! أكمل بناء الفرضية في المحطة الثالثة لتفتح لك ورشة الخلفية العلمية.');
+                }
+              }}
+            >
+              {badges.background && <span className="quest-step-badge-tag">📚 تم الإنجاز</span>}
+              <div className="quest-step-icon">
+                {isBgApproved ? <i className="fas fa-check"></i> : <i className="fas fa-book-reader"></i>}
+              </div>
+              <span className="quest-step-num">المحطة الرابعة</span>
+              <span className="quest-step-name">الخلفية العلمية والمصادر</span>
+            </div>
+
+            {/* Step 5: Finale */}
+            <div
+              className={`quest-step-pill ${unlockedStations.includes(5) || (unlockedStations.includes(4) && badges.explorer) ? 'unlocked' : 'locked'} ${activeStation === 5 ? 'active' : ''} ${badges.explorer ? 'completed' : ''}`}
+              onClick={() => {
+                if (unlockedStations.includes(5) || (unlockedStations.includes(4) && badges.explorer)) {
+                  playSound('click');
+                  setActiveStation(5);
+                } else {
+                  alert('🔒 أكمل المحطات الأربع واعتمد الخلفية العلمية أولاً للحصول على شهادتك الذهبية ووسام التتويج!');
                 }
               }}
             >
@@ -916,9 +1198,9 @@ ${historySnippet}
         <section className="quest-avatar-card">
           <RobotMusheirifiAvatar
             expression={
-              activeStation === 4 || showConfetti
+              activeStation === 5 || showConfetti
                 ? 'celebrating'
-                : activeStation === 2
+                : activeStation === 2 || activeStation === 4
                 ? 'thinking'
                 : 'happy'
             }
@@ -947,6 +1229,8 @@ ${historySnippet}
                     textToRead = 'المحطة الثانية هي مختبر التساؤل! اكتب سؤال بحثك في الصندوق وسأقوم بدوري السقراطي لمساعدتك في صياغته بأعلى دقة علمية.';
                   } else if (activeStation === 3) {
                     textToRead = 'في المحطة الثالثة نتعلم كيف نصوغ الفرضية الذكية: إذا قمنا بكذا، نتوقع كذا، لأن كذا! هيا نبني فرضيتك معاً!';
+                  } else if (activeStation === 4) {
+                    textToRead = 'في المحطة الرابعة، ورشة كتابة الخلفية العلمية، سنستخرج المراجع الموثوقة، ونسترشد بمفاتيح البحث، ونكتب مسودة فقراتنا خطوة بخطوة وسأقوم بتدقيقها وصقلها معك!';
                   } else {
                     textToRead = `مبارك من أعماق القلب يا بطلنا المتألق ${studentName}! لقد أكملت خطوات البحث العلمي واستحققت شهادة المستكشف العلمي بجدارة!`;
                   }
@@ -976,12 +1260,17 @@ ${historySnippet}
               )}
               {activeStation === 3 && (
                 <>
-                  رائع جداً! وصلنا إلى <strong>ورشة الفرضيات العلمية</strong>. الفرضية هي توقعك الذكي للنتيجة مدعوماً بالسبب. ركّب أركان فرضيتك الذهبية وانتقل معي للتتويج! 🧪
+                  رائع جداً! وصلنا إلى <strong>ورشة الفرضيات العلمية</strong>. الفرضية هي توقعك الذكي للنتيجة مدعوماً بالسبب. ركّب أركان فرضيتك الذهبية وانتقل معي لكتابة الخلفية العلمية! 🧪
                 </>
               )}
               {activeStation === 4 && (
                 <>
-                  يا لك من فخر لمدرسة مشيرفة! مبارك إتمام الرحلة وحصولك على الأوسمة الثلاثة ولقب <strong>المستكشف العلمي المتوج</strong>. يمكنك الآن طباعة شهادتك الرسمية ومشاركتها مع أهلك ومعلميك! 🏆🎓
+                  أهلاً بك في <strong>المحطة الرابعة: ورشة كتابة الخلفية العلمية والمصادر</strong>! 📚🔍 لا باحث يبدأ من فراغ؛ سنستخرج المراجع، ونحدد عناوين البحث، وسأرافقك في صياغة وتصليح فقراتك فقرة بفقرة لنتأكد من فهمك وتميز صياغتك! ✨
+                </>
+              )}
+              {activeStation === 5 && (
+                <>
+                  يا لك من فخر لمدرسة مشيرفة! مبارك إتمام الرحلة وحصولك على الأوسمة الأربعة ولقب <strong>المستكشف العلمي المتوج</strong>. يمكنك الآن طباعة شهادتك الرسمية الشاملة مع خلفيتك العلمية ومشاركتها مع أهلك ومعلميك! 🏆🎓
                 </>
               )}
             </p>
@@ -1073,6 +1362,20 @@ ${historySnippet}
                   <strong>صانع الفرضيات العبقري 🧪</strong>
                 </div>
               </div>
+
+              <div className="quest-feature-card">
+                <div className="quest-feature-card-icon" style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
+                  📚
+                </div>
+                <h3>المحطة 4: كتابة وتوثيق الخلفية العلمية والمصادر</h3>
+                <p>
+                  استخراج المراجع الموثوقة، وتوجيه عناوين ومفاتيح البحث، وكتابة مسودة فقرات الخلفية العلمية خطوة بخطوة وتدقيقها بالذكاء الاصطناعي مع مُشيرفي.
+                </p>
+                <div className="quest-card-badge-preview">
+                  <span>🏅 وسام المحطة:</span>
+                  <strong>وسام التوثيق والخلفية العلمية 📜✨</strong>
+                </div>
+              </div>
             </div>
 
             {/* Badges Cabinet Showcase */}
@@ -1081,7 +1384,7 @@ ${historySnippet}
                 <i className="fas fa-medal"></i>
                 <span>خزانة أوسمتك وشاراتك العلمية</span>
               </div>
-              <div className="quest-badges-grid">
+              <div className="quest-badges-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 <div className={`quest-badge-slot ${badges.curiosity ? 'earned' : 'locked'}`}>
                   <div className="quest-badge-slot-icon">🌟</div>
                   <div className="quest-badge-info">
@@ -1106,11 +1409,19 @@ ${historySnippet}
                   </div>
                 </div>
 
+                <div className={`quest-badge-slot ${badges.background ? 'earned' : 'locked'}`}>
+                  <div className="quest-badge-slot-icon">📜</div>
+                  <div className="quest-badge-info">
+                    <h4>وسام التوثيق والخلفية العلمية</h4>
+                    <p>{badges.background ? 'تم الحصول عليه في المحطة الرابعة!' : 'يُفتح عند كتابة وتدقيق فقرات الخلفية العلمية وتوثيق المصادر.'}</p>
+                  </div>
+                </div>
+
                 <div className={`quest-badge-slot ${badges.explorer ? 'earned' : 'locked'}`}>
                   <div className="quest-badge-slot-icon">🏆</div>
                   <div className="quest-badge-info">
                     <h4>وسام المستكشف المتوج</h4>
-                    <p>{badges.explorer ? 'تم التتويج بنجاح!' : 'يُمنح عند إتمام المحطات الثلاث وإصدار الشهادة.'}</p>
+                    <p>{badges.explorer ? 'تم التتويج بنجاح!' : 'يُمنح عند إتمام المحطات الأربع وإصدار الشهادة.'}</p>
                   </div>
                 </div>
               </div>
@@ -1706,7 +2017,7 @@ ${historySnippet}
                   disabled={!hypoIf.trim() || !hypoThen.trim() || !hypoBecause.trim()}
                 >
                   <i className="fas fa-check-circle"></i>
-                  <span>اعتماد الفرضية والتوجه لمنصة التكريم والشهادة 🏆</span>
+                  <span>اعتماد الفرضية والانتقال للمحطة 4 (كتابة وتوثيق الخلفية العلمية) 📚</span>
                 </button>
               </div>
             </div>
@@ -1714,9 +2025,531 @@ ${historySnippet}
         )}
 
         {/* ========================================================= */}
-        {/* STATION 4: Finale & Explorer Certificate                  */}
+        {/* STATION 4: Scientific Background & Literature Review (جديد) */}
         {/* ========================================================= */}
         {activeStation === 4 && (
+          <main>
+            <div className="quest-section-header">
+              <span className="quest-section-badge" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', borderColor: '#a855f7' }}>
+                المحطة 4 / 4 📚
+              </span>
+              <h2 className="quest-section-title">
+                ورشة كتابة وتوثيق الخلفية العلمية والمصادر 📖✍️
+              </h2>
+              <p className="quest-section-desc">
+                العالِم الحقيقي لا يبدأ من الصفر، بل يقرأ ما اكتشفه الآخرون ويبني عليه! هنا سنساعدك على استخراج المصادر، واختيار عناوين ومفاتيح البحث، وصياغة فقراتك وتدقيقها خطوة بخطوة مع الروبوت مُشيرفي.
+              </p>
+            </div>
+
+            {/* Context Reminder Banner */}
+            <div className="quest-bg-context-banner">
+              <div className="context-item">
+                <span className="label"><i className="fas fa-question-circle"></i> سؤال بحثك المعتمد:</span>
+                <strong className="val">"{researchQuestion || 'سؤال بحثك العلمي'}"</strong>
+              </div>
+              {hypoIf && (
+                <div className="context-item">
+                  <span className="label"><i className="fas fa-flask"></i> فرضيتك المصاغة:</span>
+                  <strong className="val">"إذا قمنا بـ {hypoIf}، فإننا نتوقع أن {hypoThen}، لأن {hypoBecause}."</strong>
+                </div>
+              )}
+            </div>
+
+            {/* PART 1: Search Compass & Keywords (توجيه الطالب لعناوين ومفاتيح البحث) */}
+            <section className="quest-card quest-bg-compass-card">
+              <div className="quest-card-header">
+                <div className="quest-card-header-icon" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                  🧭
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#38bdf8' }}>
+                    1. بوصلة الاستكشاف: عناوين ومفاتيح البحث الموجهة
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                    استخدم هذه الكلمات والمحاور المقترحة للبحث في محركات البحث أو المكتبة المدرسية لتجمع معلومات موثوقة:
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="quest-btn-secondary"
+                  onClick={handleGenerateKeywords}
+                  disabled={isGeneratingKeywords}
+                  style={{ marginRight: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.82rem', borderRadius: '20px' }}
+                >
+                  <i className={`fas ${isGeneratingKeywords ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
+                  <span>{isGeneratingKeywords ? 'جاري التوليد...' : 'اقترح مفاتيح جديدة 🤖'}</span>
+                </button>
+              </div>
+
+              {/* Keywords Pills */}
+              <div className="quest-bg-keywords-grid">
+                {bgKeywords.map((kw, idx) => (
+                  <div key={idx} className="quest-bg-kw-pill">
+                    <span className="kw-icon">🔍</span>
+                    <span className="kw-text">{kw}</span>
+                    <a
+                      href={`https://ar.wikipedia.org/w/index.php?search=${encodeURIComponent(kw.replace(/[^\u0600-\u06FF\s]/g, '').trim())}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="kw-search-link"
+                      title="ابحث في ويكيبيديا العربية الآمنة"
+                    >
+                      <i className="fas fa-external-link-alt"></i>
+                    </a>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick Trusted Portals for Kids */}
+              <div className="quest-trusted-portals-row">
+                <span className="portals-title">🌐 بوابات معرفية موثوقة وآمنة للطلاب:</span>
+                <div className="portal-links">
+                  <a href="https://ar.wikipedia.org" target="_blank" rel="noopener noreferrer" className="portal-chip">
+                    📚 ويكيبيديا العربية
+                  </a>
+                  <a href="https://kids.nationalgeographic.com" target="_blank" rel="noopener noreferrer" className="portal-chip">
+                    🌍 ناشيونال جيوغرافيك كيدز
+                  </a>
+                  <a href="https://ar.brainpop.com" target="_blank" rel="noopener noreferrer" className="portal-chip">
+                    💡 براين بوب التعليمي
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            {/* PART 2: Sources Radar & Documentation (مساعدة الطالب في استخراج وتوثيق المصادر) */}
+            <section className="quest-card quest-bg-sources-card">
+              <div className="quest-card-header">
+                <div className="quest-card-header-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                  📖
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>
+                    2. رادار المصادر والمراجع المعتمدة (الأمانة العلمية)
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                    وثّق الكتب، الموسوعات، أو المواقع التي استعنت بها. الباحث الأمين يذكر دائماً من أين حصل على معلومته!
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="quest-btn-primary"
+                  onClick={() => setShowAddSourceModal(true)}
+                  style={{ marginRight: 'auto', padding: '0.45rem 1rem', fontSize: '0.85rem' }}
+                >
+                  <i className="fas fa-plus"></i>
+                  <span>إضافة مرجع جديد</span>
+                </button>
+              </div>
+
+              {/* Golden Rule Tip */}
+              <div className="quest-source-golden-tip">
+                <div className="tip-badge">💡 قاعدة ذهبية للمستكشف</div>
+                <p>
+                  <strong>كيف أعرف أن المصدر موثوق؟</strong> المصدر الموثوق هو كتاب مدرسي، أو موقع تشرف عليه وزارة التربية والتعليم، أو موسوعة علمية معروفة. تجنب المنتديات والمنشورات العشوائية في وسائل التواصل التي لا يُعرف كاتبها!
+                </p>
+              </div>
+
+              {/* Sources List */}
+              <div className="quest-sources-list">
+                {bgSources.map((src, idx) => (
+                  <div key={src.id || idx} className="quest-source-item">
+                    <div className="src-num">[{idx + 1}]</div>
+                    <div className="src-details">
+                      <div className="src-title-row">
+                        <span className="src-type-tag">{src.type}</span>
+                        <strong className="src-title">{src.title}</strong>
+                      </div>
+                      <div className="src-meta">
+                        <span>المؤلف / الجهة: <strong>{src.author}</strong></span>
+                        {src.note && <span className="src-note">📝 {src.note}</span>}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="src-delete-btn"
+                      onClick={() => handleDeleteSource(src.id)}
+                      title="حذف هذا المرجع"
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Source Modal / Inline Form */}
+              {showAddSourceModal && (
+                <form className="quest-add-source-modal-box" onSubmit={handleAddSource}>
+                  <div className="modal-inner-header">
+                    <h4>➕ توثيق مرجع جديد في بحثك العلمي</h4>
+                    <button type="button" onClick={() => setShowAddSourceModal(false)}>×</button>
+                  </div>
+                  <div className="modal-inner-grid">
+                    <div>
+                      <label>عنوان الكتاب أو المقال أو الموقع:</label>
+                      <input
+                        type="text"
+                        value={newSourceTitle}
+                        onChange={(e) => setNewSourceTitle(e.target.value)}
+                        placeholder="مثال: كتاب العلوم للصف الخامس - الوحدة الثانية"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label>اسم المؤلف أو الجهة الناشرة:</label>
+                      <input
+                        type="text"
+                        value={newSourceAuthor}
+                        onChange={(e) => setNewSourceAuthor(e.target.value)}
+                        placeholder="مثال: وزارة التربية والتعليم أو د. أحمد زويل"
+                      />
+                    </div>
+                    <div>
+                      <label>نوع المصدر:</label>
+                      <select value={newSourceType} onChange={(e) => setNewSourceType(e.target.value)}>
+                        <option value="كتاب مدرسي">كتاب مدرسي 📚</option>
+                        <option value="موسوعة علمية">موسوعة علمية 🏛️</option>
+                        <option value="موقع إنترنت موثوق">موقع إنترنت موثوق 🌐</option>
+                        <option value="مقال في مجلة علمية">مقال في مجلة علمية 📰</option>
+                        <option value="معلم أو خبير مختص">معلم أو خبير مختص 👨‍🏫</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label>ما الفكرة الرئيسية التي استفدتها من هذا المرجع؟</label>
+                      <input
+                        type="text"
+                        value={newSourceNote}
+                        onChange={(e) => setNewSourceNote(e.target.value)}
+                        placeholder="مثال: تعريف مفهوم البناء الضوئي وأهمية الضوء"
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-actions">
+                    <button type="submit" className="quest-btn-primary">حفظ المرجع ✅</button>
+                    <button type="button" className="quest-btn-secondary" onClick={() => setShowAddSourceModal(false)}>إلغاء</button>
+                  </div>
+                </form>
+              )}
+            </section>
+
+            {/* PART 3: Step-by-Step Interactive Paragraph Writing (مساعد الطالب وتصليح الفقرات فقرة فقرة) */}
+            <section className="quest-card quest-bg-writer-card">
+              <div className="quest-card-header">
+                <div className="quest-card-header-icon" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899' }}>
+                  ✍️
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#ec4899' }}>
+                    3. ورشة الصياغة الذكية: كتابة الخلفية العلمية فقرة بفقرة
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                    لا ننسخ نصوصاً جاهزة! اكتب مسودتك بأسلوبك وكلماتك، وسيقوم الروبوت "مُشيرفي" بفحصها وتصحيحها لغوياً وعلمياً معك لضمان تميزك ومشاركتك الفعالة:
+                  </p>
+                </div>
+              </div>
+
+              {/* 3 Paragraphs Nav Tabs */}
+              <div className="quest-p-tabs">
+                <button
+                  type="button"
+                  className={`quest-p-tab ${bgActiveTab === 1 ? 'active' : ''} ${bgParagraph1.trim() && bgReviews[1]?.isApproved ? 'done' : ''}`}
+                  onClick={() => setBgActiveTab(1)}
+                >
+                  <span className="p-num">1</span>
+                  <span>الفقرة الأولى: المفهوم والتعريف</span>
+                  {bgReviews[1]?.isApproved && <i className="fas fa-check-circle done-icon"></i>}
+                </button>
+                <button
+                  type="button"
+                  className={`quest-p-tab ${bgActiveTab === 2 ? 'active' : ''} ${bgParagraph2.trim() && bgReviews[2]?.isApproved ? 'done' : ''}`}
+                  onClick={() => setBgActiveTab(2)}
+                >
+                  <span className="p-num">2</span>
+                  <span>الفقرة الثانية: التفسير العلمي والعلاقة</span>
+                  {bgReviews[2]?.isApproved && <i className="fas fa-check-circle done-icon"></i>}
+                </button>
+                <button
+                  type="button"
+                  className={`quest-p-tab ${bgActiveTab === 3 ? 'active' : ''} ${bgParagraph3.trim() && bgReviews[3]?.isApproved ? 'done' : ''}`}
+                  onClick={() => setBgActiveTab(3)}
+                >
+                  <span className="p-num">3</span>
+                  <span>الفقرة الثالثة: الأهمية والتطبيق الواقعي</span>
+                  {bgReviews[3]?.isApproved && <i className="fas fa-check-circle done-icon"></i>}
+                </button>
+              </div>
+
+              {/* Paragraph 1 Tab Panel */}
+              {bgActiveTab === 1 && (
+                <div className="quest-p-panel">
+                  <div className="quest-p-instruction">
+                    <span className="inst-badge">🎯 مهمتك في الفقرة الأولى:</span>
+                    <strong>عرّف المفهوم الأساسي لسؤال بحثك بأسلوبك الخاص.</strong>
+                    <p>ما هي الظاهرة التي تدرسها؟ ما هي المصطلحات العلمية المركزية التي يحتاجها القارئ ليفهم موضوعك؟</p>
+                  </div>
+
+                  <div className="quest-p-textarea-wrap">
+                    <textarea
+                      className="quest-p-textarea"
+                      rows={4}
+                      value={bgParagraph1}
+                      onChange={(e) => setBgParagraph1(e.target.value)}
+                      placeholder="اكتب مسودتك هنا... مثال: يتناول بحثي ظاهرة نمو النباتات وعلاقتها بضوء الشمس، حيث يعتبر الضوء عاملاً حيوياً أساسياً تحتاجه النباتات..."
+                    />
+                    <div className="textarea-footer">
+                      <span className="char-count">{bgParagraph1.length} حرفاً</span>
+                      <button
+                        type="button"
+                        className="quest-check-btn"
+                        onClick={() => handleReviewParagraphWithAI(1)}
+                        disabled={isReviewingParagraph === 1 || !bgParagraph1.trim()}
+                      >
+                        <i className={`fas ${isReviewingParagraph === 1 ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                        <span>{isReviewingParagraph === 1 ? 'مُشيرفي يفحص فقرتك...' : '🤖 صلّح ودقّق فقرّتي مع مُشيرفي'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* AI Feedback for Paragraph 1 */}
+                  {bgReviews[1] && (
+                    <div className="quest-ai-review-box">
+                      <div className="review-header">
+                        <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي:</span>
+                      </div>
+                      <p className="review-feedback">{bgReviews[1].feedback}</p>
+                      {bgReviews[1].polished && (
+                        <div className="review-polished-wrap">
+                          <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
+                          <div className="polished-text">"{bgReviews[1].polished}"</div>
+                          <div className="polished-actions">
+                            <button
+                              type="button"
+                              className="quest-btn-primary"
+                              onClick={() => handleApplyPolishedParagraph(1)}
+                            >
+                              <i className="fas fa-check"></i>
+                              <span>اعتماد الصياغة المصقولة والانتقال للفقرة 2 ➔</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="quest-btn-secondary"
+                              onClick={() => handleKeepStudentParagraph(1)}
+                            >
+                              <span>أفضّل الاستمرار بصياغتي الحالية والتقدم ➔</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Paragraph 2 Tab Panel */}
+              {bgActiveTab === 2 && (
+                <div className="quest-p-panel">
+                  <div className="quest-p-instruction">
+                    <span className="inst-badge">🎯 مهمتك في الفقرة الثانية:</span>
+                    <strong>اشرح التفسير العلمي والعلاقة بين المتغيرات.</strong>
+                    <p>بناءً على ما قرأته في المراجع، كيف تؤثر المتغيرات ببعضها؟ ما السبب العلمي الذي يفسر حدوث هذه الظاهرة في الطبيعة؟</p>
+                  </div>
+
+                  <div className="quest-p-textarea-wrap">
+                    <textarea
+                      className="quest-p-textarea"
+                      rows={4}
+                      value={bgParagraph2}
+                      onChange={(e) => setBgParagraph2(e.target.value)}
+                      placeholder="اكتب مسودتك هنا... مثال: تفسر المراجع العلمية أن أوراق النبات تحتوي على مادة الكلوروفيل التي تمتص أشعة الشمس لتصنع الغذاء عبر البناء الضوئي..."
+                    />
+                    <div className="textarea-footer">
+                      <span className="char-count">{bgParagraph2.length} حرفاً</span>
+                      <button
+                        type="button"
+                        className="quest-check-btn"
+                        onClick={() => handleReviewParagraphWithAI(2)}
+                        disabled={isReviewingParagraph === 2 || !bgParagraph2.trim()}
+                      >
+                        <i className={`fas ${isReviewingParagraph === 2 ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                        <span>{isReviewingParagraph === 2 ? 'مُشيرفي يفحص فقرتك...' : '🤖 صلّح ودقّق فقرّتي مع مُشيرفي'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* AI Feedback for Paragraph 2 */}
+                  {bgReviews[2] && (
+                    <div className="quest-ai-review-box">
+                      <div className="review-header">
+                        <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي:</span>
+                      </div>
+                      <p className="review-feedback">{bgReviews[2].feedback}</p>
+                      {bgReviews[2].polished && (
+                        <div className="review-polished-wrap">
+                          <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
+                          <div className="polished-text">"{bgReviews[2].polished}"</div>
+                          <div className="polished-actions">
+                            <button
+                              type="button"
+                              className="quest-btn-primary"
+                              onClick={() => handleApplyPolishedParagraph(2)}
+                            >
+                              <i className="fas fa-check"></i>
+                              <span>اعتماد الصياغة المصقولة والانتقال للفقرة 3 ➔</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="quest-btn-secondary"
+                              onClick={() => handleKeepStudentParagraph(2)}
+                            >
+                              <span>أفضّل الاستمرار بصياغتي الحالية والتقدم ➔</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Paragraph 3 Tab Panel */}
+              {bgActiveTab === 3 && (
+                <div className="quest-p-panel">
+                  <div className="quest-p-instruction">
+                    <span className="inst-badge">🎯 مهمتك في الفقرة الثالثة:</span>
+                    <strong>وضّح أهمية هذا البحث وتطبيقاته في حياتنا وبيئتنا.</strong>
+                    <p>لماذا قمت باختيار هذا الموضوع؟ كيف يساعدنا هذا الفهم في الزراعة، الصحة، البيئة، أو حل مشكلات في مدرستنا ومجتمعنا؟</p>
+                  </div>
+
+                  <div className="quest-p-textarea-wrap">
+                    <textarea
+                      className="quest-p-textarea"
+                      rows={4}
+                      value={bgParagraph3}
+                      onChange={(e) => setBgParagraph3(e.target.value)}
+                      placeholder="اكتب مسودتك هنا... مثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل وزيادة الإنتاج..."
+                    />
+                    <div className="textarea-footer">
+                      <span className="char-count">{bgParagraph3.length} حرفاً</span>
+                      <button
+                        type="button"
+                        className="quest-check-btn"
+                        onClick={() => handleReviewParagraphWithAI(3)}
+                        disabled={isReviewingParagraph === 3 || !bgParagraph3.trim()}
+                      >
+                        <i className={`fas ${isReviewingParagraph === 3 ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                        <span>{isReviewingParagraph === 3 ? 'مُشيرفي يفحص فقرتك...' : '🤖 صلّح ودقّق فقرّتي مع مُشيرفي'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* AI Feedback for Paragraph 3 */}
+                  {bgReviews[3] && (
+                    <div className="quest-ai-review-box">
+                      <div className="review-header">
+                        <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي:</span>
+                      </div>
+                      <p className="review-feedback">{bgReviews[3].feedback}</p>
+                      {bgReviews[3].polished && (
+                        <div className="review-polished-wrap">
+                          <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
+                          <div className="polished-text">"{bgReviews[3].polished}"</div>
+                          <div className="polished-actions">
+                            <button
+                              type="button"
+                              className="quest-btn-primary"
+                              onClick={() => handleApplyPolishedParagraph(3)}
+                            >
+                              <i className="fas fa-check"></i>
+                              <span>اعتماد الصياغة المصقولة ✅</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="quest-btn-secondary"
+                              onClick={() => handleKeepStudentParagraph(3)}
+                            >
+                              <span>أفضّل الاستمرار بصياغتي الحالية ✅</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* PART 4: Consolidated Scientific Background & Approval */}
+            <section className="quest-card quest-bg-consolidated-preview">
+              <div className="consolidated-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                  <span style={{ fontSize: '2rem' }}>📜</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#fef08a' }}>
+                      معاينة ورقة الخلفية العلمية الكاملة لبحثك
+                    </h3>
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                      هكذا ستظهر خلفيتك العلمية الموثقة في تقرير بحثك النهائي وشهادتك المدرسية:
+                    </p>
+                  </div>
+                </div>
+                <div className="completion-status-chip">
+                  <span>الفقرات المكتملة: </span>
+                  <strong>{[bgParagraph1, bgParagraph2, bgParagraph3].filter(p => p.trim()).length} من 3</strong>
+                </div>
+              </div>
+
+              <div className="consolidated-paper">
+                <h4 className="paper-title">الخلفية العلمية: {researchQuestion || 'موضوع البحث العلمي'}</h4>
+                <div className="paper-body">
+                  <p className="paper-paragraph">
+                    <strong>[ 1 ] المفهوم المركزي:</strong> {bgParagraph1.trim() || <span className="empty-hint">(لم تُكتب الفقرة الأولى بعد...)</span>}
+                  </p>
+                  <p className="paper-paragraph">
+                    <strong>[ 2 ] التفسير العلمي والعلاقة:</strong> {bgParagraph2.trim() || <span className="empty-hint">(لم تُكتب الفقرة الثانية بعد...)</span>}
+                  </p>
+                  <p className="paper-paragraph">
+                    <strong>[ 3 ] الأهمية والتطبيق الواقعي:</strong> {bgParagraph3.trim() || <span className="empty-hint">(لم تُكتب الفقرة الثالثة بعد...)</span>}
+                  </p>
+                </div>
+
+                <div className="paper-sources">
+                  <h5>📖 المراجع والمصادر المستفاد منها ({bgSources.length}):</h5>
+                  <ol>
+                    {bgSources.map((s, idx) => (
+                      <li key={s.id || idx}>
+                        <strong>{s.title}</strong> — {s.author} ({s.type})
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              {/* Approval Button */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="quest-btn-primary"
+                  onClick={handleApproveBackground}
+                  disabled={!bgParagraph1.trim() || !bgParagraph2.trim() || !bgParagraph3.trim()}
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    boxShadow: '0 8px 30px rgba(16, 185, 129, 0.45)',
+                    padding: '1rem 2.2rem',
+                    fontSize: '1.15rem'
+                  }}
+                >
+                  <i className="fas fa-award"></i>
+                  <span>🌟 اعتماد الخلفية العلمية والتتويج بالشهادة الذهبية 🏆</span>
+                </button>
+              </div>
+            </section>
+          </main>
+        )}
+
+        {/* ========================================================= */}
+        {/* STATION 5: Finale & Explorer Certificate                  */}
+        {/* ========================================================= */}
+        {activeStation === 5 && (
           <main>
             <div className="quest-section-header">
               <span className="quest-section-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', borderColor: '#f59e0b' }}>
@@ -1724,7 +2557,7 @@ ${historySnippet}
               </span>
               <h2 className="quest-section-title">شهادة المستكشف العلمي الصغير</h2>
               <p className="quest-section-desc">
-                ألف مبارك يا بطلنا المتألق! لقد أتقنت خطوات البحث العلمي الثلاث (الملاحظة والأساسيات، صياغة السؤال، وبناء الفرضية).
+                ألف مبارك يا بطلنا المتألق! لقد أتقنت خطوات البحث العلمي الأربع (الملاحظة والأساسيات، صياغة السؤال، بناء الفرضية، وتوثيق الخلفية العلمية والمصادر).
               </p>
             </div>
 
@@ -1753,7 +2586,7 @@ ${historySnippet}
               </div>
 
               <p className="quest-cert-praise">
-                لقد خاض الطالب رحلة استكشافية متكاملة برفقة <strong>الروبوت مُشيرفي</strong>، وأظهر فضولاً علمياً ناضجاً في فهم المنهج العلمي، وصياغة سؤال بحث استقصائي دقيق، وبناء فرضية علمية مبررة بالدليل والسبب.
+                لقد خاض الطالب رحلة استكشافية متكاملة برفقة <strong>الروبوت مُشيرفي</strong>، وأظهر فضولاً علمياً ناضجاً في فهم المنهج العلمي، وصياغة سؤال بحث استقصائي دقيق، وبناء فرضية مبررة، وتوثيق خلفية علمية رصينة مستندة إلى مصادر ومراجع موثوقة.
               </p>
 
               {/* Research Project Summary */}
@@ -1769,6 +2602,32 @@ ${historySnippet}
                     {hypoBecause || 'الضوء ضروري لعملية البناء الضوئي'}."
                   </span>
                 </div>
+
+                {/* Scientific Background in Certificate */}
+                {(bgParagraph1 || bgParagraph2 || bgParagraph3) && (
+                  <div className="quest-cert-summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.8rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.8rem' }}>
+                    <strong style={{ color: '#0369a1', marginBottom: '0.4rem' }}>📚 ملخص الخلفية العلمية للبحث:</strong>
+                    <div style={{ fontSize: '0.92rem', lineHeight: '1.75', color: '#1e293b', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', width: '100%' }}>
+                      {bgParagraph1 && <p style={{ margin: '0 0 6px 0' }}>• {bgParagraph1}</p>}
+                      {bgParagraph2 && <p style={{ margin: '0 0 6px 0' }}>• {bgParagraph2}</p>}
+                      {bgParagraph3 && <p style={{ margin: 0 }}>• {bgParagraph3}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sources in Certificate */}
+                {bgSources && bgSources.length > 0 && (
+                  <div className="quest-cert-summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.6rem' }}>
+                    <strong style={{ color: '#059669', marginBottom: '0.3rem', fontSize: '0.85rem' }}>📖 المراجع والمصادر الموثقة:</strong>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                      {bgSources.map((s, idx) => (
+                        <span key={s.id || idx} style={{ background: '#ecfdf5', padding: '3px 8px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+                          [{idx + 1}] {s.title} ({s.author})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Badges Earned */}
@@ -1784,6 +2643,10 @@ ${historySnippet}
                 <div className="quest-cert-badge-item">
                   <div className="quest-cert-badge-circle">🧪</div>
                   <span>صانع الفرضيات</span>
+                </div>
+                <div className="quest-cert-badge-item">
+                  <div className="quest-cert-badge-circle">📜</div>
+                  <span>الخلفية والمصادر</span>
                 </div>
                 <div className="quest-cert-badge-item">
                   <div className="quest-cert-badge-circle">🏆</div>
@@ -1821,7 +2684,7 @@ ${historySnippet}
                 }}
               >
                 <i className="fas fa-print"></i>
-                <span>طباعة أو حفظ الشهادة (PDF)</span>
+                <span>طباعة أو حفظ الشهادة والتقرير (PDF)</span>
               </button>
 
               <button
@@ -1848,6 +2711,11 @@ ${historySnippet}
                     setHypoThen('');
                     setHypoBecause('');
                     setIsHypoApproved(false);
+                    setBgParagraph1('');
+                    setBgParagraph2('');
+                    setBgParagraph3('');
+                    setIsBgApproved(false);
+                    setBgReviews({});
                     localStorage.removeItem('quest_research_question');
                     localStorage.removeItem('quest_socratic_feedback');
                     localStorage.removeItem('quest_question_approved');
@@ -1855,6 +2723,11 @@ ${historySnippet}
                     localStorage.removeItem('quest_hypo_then');
                     localStorage.removeItem('quest_hypo_because');
                     localStorage.removeItem('quest_hypo_approved');
+                    localStorage.removeItem('quest_bg_p1');
+                    localStorage.removeItem('quest_bg_p2');
+                    localStorage.removeItem('quest_bg_p3');
+                    localStorage.removeItem('quest_bg_approved');
+                    localStorage.removeItem('quest_bg_reviews');
                     setActiveStation(2);
                   }
                 }}
