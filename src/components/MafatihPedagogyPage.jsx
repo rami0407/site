@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import LottieRobot from './LottieRobot';
 import { generateMafatihLessonPlanAI } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
+import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
 import './MafatihPedagogyPage.css';
 
 const STATIONS_DATA = [
@@ -228,8 +229,30 @@ export const FULL_LESSON_PLANS_LIBRARY = [
   }
 ];
 
+const LIBRARY_SUBJECTS = [
+  'الكل',
+  'لغة عربية',
+  'رياضيات',
+  'علوم وتكنولوجيا',
+  'لغة إنجليزية',
+  'موطن ومجتمع ومدنيات',
+  'تربية إسلامية',
+  'فنون وإبداع',
+  'تربية بدنية'
+];
+
+const LIBRARY_GRADES = [
+  'الكل',
+  'الصف الأول',
+  'الصف الثاني',
+  'الصف الثالث',
+  'الصف الرابع',
+  'الصف الخامس',
+  'الصف السادس'
+];
+
 const MafatihPedagogyPage = () => {
-  const [activeTab, setActiveTab] = useState('stations'); // 'stations', 'ruler', 'pedagogy', 'toolkit', 'planner', 'rubric', 'vision'
+  const [activeTab, setActiveTab] = useState('stations'); // 'stations', 'ruler', 'pedagogy', 'toolkit', 'planner', 'library', 'rubric', 'vision'
   const [selectedStationIndex, setSelectedStationIndex] = useState(0);
   const [lessonDurationMode, setLessonDurationMode] = useState(45); // 45 or 90
   const [activeTimerSeconds, setActiveTimerSeconds] = useState(0);
@@ -245,6 +268,136 @@ const MafatihPedagogyPage = () => {
     t: 'مقارنة بين: "هذه الشجرة عظيمة" و "ما أعظمَ الشجرةَ!". ما الفرق في الأثر النفسي بين الجملتين؟',
     y: 'مهمة ثنائية: بطاقات صور لمناظر طبيعية ومشاهد، ويكتب كل ثنائي 3 جمل تعجب مضبوطة بالشكل.',
     h: 'كتابة تذكرة الخروج: "زوّادتي اليوم: صيغة التعجب، وسأستخدمها الليلة لأعبر لوالدتي عن إعجابي بطعام العشاء".'
+  });
+
+  // Shared Lesson Plans Library State (مكتبة تخطيط الحصص المدرسية)
+  const [libraryPlans, setLibraryPlans] = useState([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [librarySubjectFilter, setLibrarySubjectFilter] = useState('الكل');
+  const [libraryGradeFilter, setLibraryGradeFilter] = useState('الكل');
+  const [expandedPlanId, setExpandedPlanId] = useState(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [planToSave, setPlanToSave] = useState(null);
+  const [saveAuthorName, setSaveAuthorName] = useState('معلم في مدرسة مشيرفة');
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [libraryNotification, setLibraryNotification] = useState(null);
+
+  const loadLibraryPlans = async () => {
+    setLibraryLoading(true);
+    try {
+      const data = await fetchSharedLessonPlans();
+      setLibraryPlans(data);
+    } catch (err) {
+      console.error('Error loading library plans:', err);
+    } finally {
+      setLibraryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLibraryPlans();
+  }, []);
+
+  const handleOpenSaveModal = (sourcePlan) => {
+    let target = sourcePlan;
+    if (!target) {
+      target = {
+        subject: plannerSubject,
+        grade: plannerGrade,
+        title: plannerTitle,
+        objective: '',
+        duration: 45,
+        stations: { ...plannerStations }
+      };
+    }
+    setPlanToSave(target);
+    setSaveAuthorName('معلم في مدرسة مشيرفة');
+    setIsSaveModalOpen(true);
+  };
+
+  const handleConfirmSaveToLibrary = async (e) => {
+    if (e) e.preventDefault();
+    if (!planToSave) return;
+    setIsSavingPlan(true);
+    try {
+      const finalToSave = {
+        ...planToSave,
+        author: saveAuthorName.trim() || 'معلم في مدرسة مشيرفة'
+      };
+      const saved = await saveLessonPlanToSharedLibrary(finalToSave);
+      setLibraryPlans((prev) => [saved, ...prev.filter(p => p.id !== saved.id)]);
+      setIsSaveModalOpen(false);
+      setLibraryNotification(`تم حفظ الدرس "${finalToSave.title}" بنجاح في مكتبة الحصص المدرسية! 🎉`);
+      setTimeout(() => setLibraryNotification(null), 6000);
+    } catch (err) {
+      console.error('Error saving plan to library:', err);
+      alert('حدث خطأ أثناء حفظ الخطة في المكتبة. يرجى المحاولة ثانية.');
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
+
+  const handleLoadPlanIntoEditor = (plan) => {
+    if (!plan) return;
+    setPlannerSubject(plan.subject || 'عام');
+    setPlannerGrade(plan.grade || 'المرحلة الابتدائية');
+    setPlannerTitle(plan.title || '');
+    if (plan.stations) {
+      setPlannerStations({
+        m: plan.stations.m || '',
+        f: plan.stations.f || '',
+        t: plan.stations.t || '',
+        y: plan.stations.y || '',
+        h: plan.stations.h || ''
+      });
+    }
+    setActiveTab('planner');
+    window.scrollTo({ top: 380, behavior: 'smooth' });
+    setLibraryNotification(`تم فتح خطة "${plan.title}" في صانع الدروس بنجاح! يمكنك الآن التعديل عليها بحرية.`);
+    setTimeout(() => setLibraryNotification(null), 6000);
+  };
+
+  const handleDeletePlan = async (planId, planTitle) => {
+    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف خطة "${planTitle}" من المكتبة؟`)) {
+      return;
+    }
+    try {
+      await deleteLessonPlanFromLibrary(planId);
+      setLibraryPlans((prev) => prev.filter((p) => p.id !== planId));
+      setLibraryNotification(`تمت إزالة الخطة من المكتبة بنجاح.`);
+      setTimeout(() => setLibraryNotification(null), 4000);
+    } catch (err) {
+      console.error('Error deleting plan:', err);
+      alert('حدث خطأ أثناء محاولة الحذف.');
+    }
+  };
+
+  const filteredLibraryPlans = libraryPlans.filter((plan) => {
+    if (librarySubjectFilter !== 'الكل') {
+      const sub = librarySubjectFilter.toLowerCase();
+      const planSub = (plan.subject || '').toLowerCase();
+      const matchSubject = planSub.includes(sub) || 
+        (sub === 'لغة إنجليزية' && (planSub.includes('english') || planSub.includes('إنجليزية'))) ||
+        (sub === 'موطن ومجتمع ومدنيات' && (planSub.includes('موطن') || planSub.includes('مدنيات')));
+      if (!matchSubject) return false;
+    }
+    if (libraryGradeFilter !== 'الكل') {
+      const cleanG = libraryGradeFilter.replace('الصف ', '');
+      const planG = plan.grade || '';
+      const matchGrade = planG.includes(libraryGradeFilter) || planG.includes(cleanG) || (libraryGradeFilter === 'الصف الخامس' && planG.includes('Grade 5'));
+      if (!matchGrade) return false;
+    }
+    if (librarySearch.trim()) {
+      const q = librarySearch.trim().toLowerCase();
+      const inTitle = (plan.title || '').toLowerCase().includes(q);
+      const inSubject = (plan.subject || '').toLowerCase().includes(q);
+      const inAuthor = (plan.author || '').toLowerCase().includes(q);
+      const inObjective = (plan.objective || '').toLowerCase().includes(q);
+      const inStations = Object.values(plan.stations || {}).some(txt => (txt || '').toLowerCase().includes(q));
+      if (!inTitle && !inSubject && !inAuthor && !inObjective && !inStations) return false;
+    }
+    return true;
   });
 
   // Digital Exit Ticket Simulator State
@@ -679,6 +832,12 @@ ${p.stations?.h || ''}
               <i className="fas fa-pen-nib"></i> مُخَطِّط الدروس الذكي
             </button>
             <button 
+              className="action-btn library-hero-btn"
+              onClick={() => setActiveTab('library')}
+            >
+              <i className="fas fa-book-open"></i> مكتبة تخطيط الحصص 📚
+            </button>
+            <button 
               className="action-btn outline"
               onClick={() => setActiveTab('rubric')}
             >
@@ -720,6 +879,13 @@ ${p.stations?.h || ''}
             onClick={() => setActiveTab('planner')}
           >
             <i className="fas fa-drafting-compass"></i> صانع درس مفاتيح
+          </button>
+          <button 
+            className={`tab-btn library-nav-tab ${activeTab === 'library' ? 'active' : ''}`}
+            onClick={() => setActiveTab('library')}
+          >
+            <i className="fas fa-book-reader"></i> مكتبة تخطيط الحصص 📚
+            {libraryPlans.length > 0 && <span className="tab-plans-counter">{libraryPlans.length}</span>}
           </button>
           <button 
             className={`tab-btn ${activeTab === 'rubric' ? 'active' : ''}`}
@@ -1554,6 +1720,14 @@ ${p.stations?.h || ''}
                   <div className="sheet-actions-group">
                     <button 
                       type="button"
+                      className="sheet-action-btn save-library" 
+                      onClick={() => handleOpenSaveModal()}
+                      title="حفظ ونشر الخطة في مكتبة الحصص المدرسية المشتركة"
+                    >
+                      <i className="fas fa-bookmark"></i> حفظ بالمكتبة 💾
+                    </button>
+                    <button 
+                      type="button"
                       className="sheet-action-btn word" 
                       onClick={() => handleDownloadWord()}
                       title="تحميل كملف Word قابل للتعديل والطباعة"
@@ -1624,6 +1798,254 @@ ${p.stations?.h || ''}
                 </div>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 5.5: LESSON PLANS SHARED LIBRARY (مكتبة تخطيط الحصص المدرسية المشتركة) */}
+        {/* ========================================================================= */}
+        {activeTab === 'library' && (
+          <section className="library-section fade-in">
+            <div className="library-hero-banner">
+              <div className="library-hero-icon">
+                <i className="fas fa-book-reader"></i>
+              </div>
+              <div className="library-hero-info">
+                <div className="library-badge">
+                  <i className="fas fa-university"></i> المستودع التربوي المشترك — مدرسة مشيرفة الابتدائية
+                </div>
+                <h2>مكتبة تخطيط الحصص النموذجية (بنك خطط مَفَاتِيح 📚)</h2>
+                <p>
+                  منصة تشاركية متكاملة تجمع كل خطط الحصص المصممة بموديل مفاتيح لكافة المواضيع والصفوف الدراسية. يمكن لأي معلم الاطلاع على أي خطة، تحميلها بصيغة Word أو PDF، أو فتحها في المحرر للتعديل عليها وتخصيصها لصفه بكل سهولة!
+                </p>
+              </div>
+              <div className="library-hero-stats">
+                <div className="lib-stat-box">
+                  <span className="lib-stat-num">{libraryPlans.length}</span>
+                  <span className="lib-stat-label">خطة منشورة</span>
+                </div>
+                <button 
+                  type="button" 
+                  className="lib-add-plan-btn"
+                  onClick={() => {
+                    setActiveTab('planner');
+                    window.scrollTo({ top: 380, behavior: 'smooth' });
+                  }}
+                >
+                  <i className="fas fa-plus-circle"></i> تخطيط درس جديد
+                </button>
+              </div>
+            </div>
+
+            {/* Filter by Subject Pills */}
+            <div className="library-filters-container">
+              <div className="subject-pills-bar">
+                {LIBRARY_SUBJECTS.map((sub) => {
+                  const count = sub === 'الكل' 
+                    ? libraryPlans.length 
+                    : libraryPlans.filter(p => {
+                        const ps = (p.subject || '').toLowerCase();
+                        const s = sub.toLowerCase();
+                        return ps.includes(s) || 
+                          (s === 'لغة إنجليزية' && (ps.includes('english') || ps.includes('إنجليزية'))) ||
+                          (s === 'موطن ومجتمع ومدنيات' && (ps.includes('موطن') || ps.includes('مدنيات')));
+                      }).length;
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      className={`subject-pill ${librarySubjectFilter === sub ? 'active' : ''}`}
+                      onClick={() => setLibrarySubjectFilter(sub)}
+                    >
+                      <span>{sub}</span>
+                      <span className="pill-count">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Secondary Search & Grade Filter Controls */}
+              <div className="library-search-controls">
+                <div className="search-input-wrap">
+                  <i className="fas fa-search"></i>
+                  <input
+                    type="text"
+                    placeholder="ابحث عن درس بالاسم، الكلمات الدلالية، أو اسم المعلم..."
+                    value={librarySearch}
+                    onChange={(e) => setLibrarySearch(e.target.value)}
+                  />
+                  {librarySearch && (
+                    <button type="button" className="clear-search-btn" onClick={() => setLibrarySearch('')}>
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
+                </div>
+
+                <div className="grade-filter-wrap">
+                  <label><i className="fas fa-graduation-cap"></i> الصف:</label>
+                  <select 
+                    value={libraryGradeFilter} 
+                    onChange={(e) => setLibraryGradeFilter(e.target.value)}
+                  >
+                    {LIBRARY_GRADES.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {(librarySearch || librarySubjectFilter !== 'الكل' || libraryGradeFilter !== 'الكل') && (
+                  <button 
+                    type="button" 
+                    className="reset-filters-btn"
+                    onClick={() => {
+                      setLibrarySearch('');
+                      setLibrarySubjectFilter('الكل');
+                      setLibraryGradeFilter('الكل');
+                    }}
+                  >
+                    <i className="fas fa-undo"></i> إعادة الضبط
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results indicator */}
+            <div className="library-results-indicator">
+              <span>
+                يتم عرض <strong>{filteredLibraryPlans.length}</strong> من أصل <strong>{libraryPlans.length}</strong> خطة درس معتمدة
+              </span>
+              {libraryLoading && <span className="lib-loading-spin"><i className="fas fa-spinner fa-spin"></i> جاري تحديث المكتبة...</span>}
+            </div>
+
+            {/* Plans Grid */}
+            {filteredLibraryPlans.length === 0 ? (
+              <div className="library-empty-state">
+                <div className="empty-icon"><i className="fas fa-folder-open"></i></div>
+                <h3>لم يتم العثور على خطط مطابقة</h3>
+                <p>لا توجد خطط تطابق شروط البحث أو الفلترة المحددة. يمكنك تعديل كلمات البحث أو إضافة خطة جديدة للمكتبة.</p>
+                <button 
+                  type="button" 
+                  className="empty-reset-btn"
+                  onClick={() => {
+                    setLibrarySearch('');
+                    setLibrarySubjectFilter('الكل');
+                    setLibraryGradeFilter('الكل');
+                  }}
+                >
+                  عرض جميع الخطط
+                </button>
+              </div>
+            ) : (
+              <div className="library-plans-grid">
+                {filteredLibraryPlans.map((plan) => {
+                  const isExpanded = expandedPlanId === plan.id;
+                  return (
+                    <div key={plan.id} className="library-plan-card">
+                      <div className="plan-card-header">
+                        <div className="plan-badges-row">
+                          <span className="plan-subject-badge">{plan.subject}</span>
+                          <span className="plan-grade-badge">{plan.grade}</span>
+                          <span className="plan-duration-badge">
+                            <i className="far fa-clock"></i> {plan.duration || 45} دقيقة
+                          </span>
+                        </div>
+                        <h3 className="plan-card-title">{plan.title}</h3>
+                        {plan.objective && (
+                          <p className="plan-card-objective">
+                            <strong>الهدف المركزي:</strong> {plan.objective}
+                          </p>
+                        )}
+                        <div className="plan-author-row">
+                          <span><i className="fas fa-user-edit"></i> {plan.author || 'طاقم مشيرفة'}</span>
+                          {plan.createdAt && (
+                            <span className="plan-date">
+                              <i className="far fa-calendar-alt"></i> {new Date(plan.createdAt).toLocaleDateString('ar-EG')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Stations Accordion Preview */}
+                      <div className="plan-stations-preview">
+                        <button
+                          type="button"
+                          className={`toggle-stations-btn ${isExpanded ? 'active' : ''}`}
+                          onClick={() => setExpandedPlanId(isExpanded ? null : plan.id)}
+                        >
+                          <span>
+                            <i className="fas fa-layer-group"></i> {isExpanded ? 'إخفاء تفاصيل المحطات الخمس' : 'استعراض المحطات الخمس [م • ف • ت • ي • ح]'}
+                          </span>
+                          <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="plan-stations-details-dropdown slide-down">
+                            <div className="mini-station-box yellow">
+                              <div className="mini-badge">🧲 [ م ] جَذْب وتَشْوِيق</div>
+                              <div className="mini-content">{plan.stations?.m || '—'}</div>
+                            </div>
+                            <div className="mini-station-box cyan">
+                              <div className="mini-badge">💡 [ ف ] فَهْم وتَفْكِيك المَفْهُوم</div>
+                              <div className="mini-content">{plan.stations?.f || '—'}</div>
+                            </div>
+                            <div className="mini-station-box purple">
+                              <div className="mini-badge">🧠 [ ت ] تَبَصُّر وتَفْكِير نَاقِد</div>
+                              <div className="mini-content">{plan.stations?.t || '—'}</div>
+                            </div>
+                            <div className="mini-station-box green">
+                              <div className="mini-badge">🛠️ [ ي ] يَدَوِيّ وتَطْبِيق مُتَمَايِز UDL</div>
+                              <div className="mini-content">{plan.stations?.y || '—'}</div>
+                            </div>
+                            <div className="mini-station-box pink">
+                              <div className="mini-badge">🎒 [ ح ] حَصَاد وزَوَّادَة حَيَاتِيَّة</div>
+                              <div className="mini-content">{plan.stations?.h || '—'}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Card Action Buttons: Edit in Planner, Download Word, Download PDF */}
+                      <div className="plan-card-actions">
+                        <button
+                          type="button"
+                          className="card-action-btn edit"
+                          onClick={() => handleLoadPlanIntoEditor(plan)}
+                          title="فتح وتعديل الخطة في صانع الدروس لتخصيصها لصفك"
+                        >
+                          <i className="fas fa-edit"></i> تعديل في المحرر ✏️
+                        </button>
+                        <button
+                          type="button"
+                          className="card-action-btn word"
+                          onClick={() => exportLessonPlanToWord(plan)}
+                          title="تنزيل الخطة كملف Word (.doc) قابل للطباعة والتعديل"
+                        >
+                          <i className="fas fa-file-word"></i> تحميل Word
+                        </button>
+                        <button
+                          type="button"
+                          className="card-action-btn pdf"
+                          onClick={() => exportLessonPlanToPdf(plan)}
+                          title="تنزيل أو طباعة كملف PDF عالي الدقة"
+                        >
+                          <i className="fas fa-file-pdf"></i> تحميل PDF
+                        </button>
+                        {!plan.id?.startsWith('seed-') && (
+                          <button
+                            type="button"
+                            className="card-action-btn delete"
+                            onClick={() => handleDeletePlan(plan.id, plan.title)}
+                            title="حذف هذه الخطة من المكتبة"
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
 
@@ -2348,6 +2770,29 @@ ${p.stations?.h || ''}
                       <div className="robot-export-actions">
                         <button 
                           type="button" 
+                          className="robot-export-btn save-library"
+                          onClick={() => {
+                            handleOpenSaveModal({
+                              subject: wizardPlan.subject,
+                              grade: wizardPlan.grade,
+                              title: wizardPlan.topic,
+                              objective: wizardPlan.objective || '',
+                              duration: wizardPlan.duration || 45,
+                              stations: {
+                                m: wizardPlan.m,
+                                f: wizardPlan.f,
+                                t: wizardPlan.t,
+                                y: wizardPlan.y,
+                                h: wizardPlan.h
+                              }
+                            });
+                          }}
+                          title="حفظ ونشر الخطة في مكتبة الحصص المدرسية المشتركة"
+                        >
+                          <i className="fas fa-bookmark"></i> حفظ بالمكتبة 💾
+                        </button>
+                        <button 
+                          type="button" 
                           className="robot-export-btn word"
                           onClick={() => handleDownloadWord()}
                           title="تحميل كملف Word منسق ومصمم جاهز للطباعة والتعديل"
@@ -2465,6 +2910,14 @@ ${p.stations?.h || ''}
 
                       {/* Export Action Bar */}
                       <div className="robot-export-actions">
+                        <button 
+                          type="button" 
+                          className="robot-export-btn save-library"
+                          onClick={() => handleOpenSaveModal(generatedPlan)}
+                          title="حفظ ونشر الخطة في مكتبة الحصص المدرسية المشتركة"
+                        >
+                          <i className="fas fa-bookmark"></i> حفظ بالمكتبة 💾
+                        </button>
                         <button 
                           type="button"
                           className="robot-export-btn word"
@@ -2715,6 +3168,167 @@ ${p.stations?.h || ''}
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. SAVE TO SHARED LIBRARY POPUP MODAL */}
+      {isSaveModalOpen && (
+        <div className="mafatih-modal-overlay" onClick={() => !isSavingPlan && setIsSaveModalOpen(false)}>
+          <div className="save-plan-modal-card scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="save-modal-header">
+              <div className="modal-title-with-icon">
+                <i className="fas fa-bookmark"></i>
+                <div>
+                  <h3>حفظ الخطة في مكتبة الحصص المدرسية المشتركة 📚</h3>
+                  <small>ستكون الخطة متاحة لكافة معلمي مدرسة مشيرفة للاطلاع والتنزيل والتعديل عليها</small>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="modal-close-btn" 
+                onClick={() => !isSavingPlan && setIsSaveModalOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmSaveToLibrary} className="save-modal-body">
+              <div className="modal-input-field">
+                <label>عنوان أو موضوع الدرس:</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={planToSave?.title || ''}
+                  onChange={(e) => setPlanToSave(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="مثال: أسلوب التعجب ودلالاته الجمالية"
+                />
+              </div>
+
+              <div className="modal-input-grid">
+                <div className="modal-input-field">
+                  <label>المادة الدراسية:</label>
+                  <select
+                    value={planToSave?.subject || 'لغة عربية'}
+                    onChange={(e) => setPlanToSave(prev => ({ ...prev, subject: e.target.value }))}
+                  >
+                    <option value="لغة عربية">لغة عربية</option>
+                    <option value="رياضيات">رياضيات</option>
+                    <option value="علوم وتكنولوجيا">علوم وتكنولوجيا</option>
+                    <option value="لغة إنجليزية">لغة إنجليزية</option>
+                    <option value="موطن ومجتمع ومدنيات">موطن ومجتمع ومدنيات</option>
+                    <option value="تربية إسلامية">تربية إسلامية</option>
+                    <option value="فنون وإبداع">فنون وإبداع</option>
+                    <option value="تربية بدنية">تربية بدنية</option>
+                    <option value="عام ومشاريع صفية">عام ومشاريع صفية</option>
+                  </select>
+                </div>
+
+                <div className="modal-input-field">
+                  <label>الصف المستهدف:</label>
+                  <select
+                    value={planToSave?.grade || 'الصف الخامس'}
+                    onChange={(e) => setPlanToSave(prev => ({ ...prev, grade: e.target.value }))}
+                  >
+                    <option value="الصف الأول">الصف الأول</option>
+                    <option value="الصف الثاني">الصف الثاني</option>
+                    <option value="الصف الثالث">الصف الثالث</option>
+                    <option value="الصف الرابع">الصف الرابع</option>
+                    <option value="الصف الخامس">الصف الخامس</option>
+                    <option value="الصف السادس">الصف السادس</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-input-field">
+                <label>اسم المعلم / المُعِدّ (ليظهر في توثيق المكتبة المدرسية):</label>
+                <input 
+                  type="text"
+                  required
+                  value={saveAuthorName}
+                  onChange={(e) => setSaveAuthorName(e.target.value)}
+                  placeholder="مثال: المعلم/ة فاطمة / طاقم العلوم"
+                />
+              </div>
+
+              <div className="modal-input-field">
+                <label>الهدف المركزي من الدرس (اختياري):</label>
+                <input 
+                  type="text"
+                  value={planToSave?.objective || ''}
+                  onChange={(e) => setPlanToSave(prev => ({ ...prev, objective: e.target.value }))}
+                  placeholder="مثال: أن يتعرف التلميذ على صياغة أسلوب التعجب ويوظفه للتعبير عن دهشته..."
+                />
+              </div>
+
+              <div className="save-modal-stations-summary">
+                <span className="summary-title">محطات الدرس المضمنة:</span>
+                <div className="stations-check-pills">
+                  <span className={planToSave?.stations?.m ? 'ready' : 'empty'}>[ م ] جذب وتشويق</span>
+                  <span className={planToSave?.stations?.f ? 'ready' : 'empty'}>[ ف ] بناء المفهوم</span>
+                  <span className={planToSave?.stations?.t ? 'ready' : 'empty'}>[ ت ] تفكير وتعمق</span>
+                  <span className={planToSave?.stations?.y ? 'ready' : 'empty'}>[ ي ] ورشة وتمايز UDL</span>
+                  <span className={planToSave?.stations?.h ? 'ready' : 'empty'}>[ ح ] حصاد وزوّادة</span>
+                </div>
+              </div>
+
+              <div className="save-modal-footer">
+                <button 
+                  type="button" 
+                  className="cancel-btn" 
+                  onClick={() => setIsSaveModalOpen(false)}
+                  disabled={isSavingPlan}
+                >
+                  إلغاء
+                </button>
+                <button 
+                  type="submit" 
+                  className="confirm-save-btn"
+                  disabled={isSavingPlan}
+                >
+                  {isSavingPlan ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i> جاري النشر في المكتبة...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-check-circle"></i> حفظ ونشر في المكتبة 💾
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. GLOBAL LIBRARY NOTIFICATION TOAST */}
+      {libraryNotification && (
+        <div className="library-toast-alert slide-in-up">
+          <div className="toast-content">
+            <i className="fas fa-check-circle"></i>
+            <span>{libraryNotification}</span>
+          </div>
+          <div className="toast-actions">
+            {activeTab !== 'library' && (
+              <button 
+                type="button" 
+                className="goto-lib-btn"
+                onClick={() => {
+                  setActiveTab('library');
+                  window.scrollTo({ top: 380, behavior: 'smooth' });
+                }}
+              >
+                الذهاب للمكتبة 📚
+              </button>
+            )}
+            <button 
+              type="button" 
+              className="close-toast-btn" 
+              onClick={() => setLibraryNotification(null)}
+            >
+              &times;
+            </button>
           </div>
         </div>
       )}
