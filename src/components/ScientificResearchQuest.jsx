@@ -1329,6 +1329,65 @@ ${historySnippet}
     );
   };
 
+  // Render Station Completion / Incompletion Banner
+  const renderStationStatusBar = (stationNum) => {
+    let isDone = false;
+    let doneText = '';
+    let pendingText = '';
+
+    switch (stationNum) {
+      case 1:
+        isDone = quizPassed;
+        doneText = 'هذه المحطة مكتملة بنجاح! تم اجتياز الاختبار والحصول على وسام شعلة الفضول 🌟';
+        pendingText = 'هذه المحطة قيد الإنجاز ولم تُكتمل بعد (يرجى قراءة القصة واجتياز أسئلة الاختبار 3/3). يمكنك التنقل بحرية لأي محطة في أي وقت!';
+        break;
+      case 2:
+        isDone = Boolean(isQuestionApproved);
+        doneText = `هذه المحطة مكتملة بنجاح! سؤال البحث المعتمد: "${researchQuestion}" 🏅`;
+        pendingText = 'هذه المحطة قيد الإنجاز ولم تُكتمل بعد (صغ سؤالك وناقش الموجه السقراطي لاعتماده). يمكنك التنقل بحرية لأي محطة والعودة لاحقاً!';
+        break;
+      case 3:
+        isDone = Boolean(isHypoApproved);
+        doneText = 'هذه المحطة مكتملة بنجاح! تم بناء واعتماد الفرضية العلمية الثلاثية 🧪';
+        pendingText = 'هذه المحطة قيد الإنجاز ولم تُكتمل بعد (قم بتركيب أركان الفرضية: إذا... فإن... لأن... واعتمدها). يمكنك الانتقال والمتابعة متى تشاء!';
+        break;
+      case 4:
+        isDone = Boolean(isBgApproved);
+        doneText = 'هذه المحطة مكتملة بنجاح! تم توثيق واعتماد فقرات الخلفية العلمية والمصادر 📚';
+        pendingText = 'هذه المحطة قيد الإنجاز ولم تُكتمل بعد (اكتب فقرات الخلفية العلمية ووثق مصادرك). يمكنك الانتقال لأي محطة أخرى بحرية!';
+        break;
+      case 5:
+        isDone = Boolean(isExpApproved);
+        doneText = 'هذه المحطة مكتملة بنجاح! تم توثيق أدوات التجربة والمقاييس البيانية والصور 📊📸';
+        pendingText = 'هذه المحطة قيد الإنجاز ولم تُكتمل بعد (سجل القياسات وارفع صور التجربة). يمكنك الانتقال لأي محطة وتحديث التجارب في أي وقت!';
+        break;
+      case 6:
+        isDone = Boolean(quizPassed && isQuestionApproved && isHypoApproved && isBgApproved && isExpApproved);
+        doneText = 'تهانينا الحارة! جميع محطات البحث العلمي مكتملة 100%! كتاب بحثك جاهز للتحميل والطباعة الرسمية 🏆';
+        pendingText = 'تنبيه لطيف: بعض محطات البحث السابقة لم تكتمل بعد. يمكنك الاطلاع على مسودة الكتاب وتنزيلها أو الضغط على أي محطة بالأعلى لإكمالها!';
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <div className={`quest-station-status-banner ${isDone ? 'done' : 'pending'}`}>
+        <div className="qssb-icon">
+          {isDone ? <i className="fas fa-check-circle"></i> : <i className="fas fa-hourglass-half"></i>}
+        </div>
+        <div className="qssb-content">
+          <div className="qssb-badge">
+            {isDone ? '✅ محطة مكتملة' : '⏳ محطة قيد الإنجاز (غير مكتملة)'}
+          </div>
+          <p className="qssb-desc">{isDone ? doneText : pendingText}</p>
+        </div>
+        <div className="qssb-free-nav-hint">
+          <i className="fas fa-route"></i> التنقل حر ومفتوح بين جميع المحطات
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="quest-container">
       {/* Cosmic background stars */}
@@ -1508,15 +1567,20 @@ ${historySnippet}
           <div className="quest-steps-grid">
             {/* Step 1 */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(1) ? 'unlocked' : 'locked'} ${activeStation === 1 ? 'active' : ''} ${quizPassed ? 'completed' : ''}`}
+              className={`quest-step-pill ${activeStation === 1 ? 'active' : ''} ${quizPassed ? 'status-completed' : 'status-incomplete'}`}
               onClick={() => {
-                if (unlockedStations.includes(1)) {
-                  playSound('click');
-                  setActiveStation(1);
-                }
+                playSound('click');
+                setActiveStation(1);
               }}
+              title={quizPassed ? 'المحطة 1 مكتملة - انقر للانتقال' : 'المحطة 1 قيد الإنجاز - انقر للانتقال'}
             >
-              {badges.curiosity && <span className="quest-step-badge-tag">🌟 تم الإنجاز</span>}
+              <span className={`quest-step-state-badge ${quizPassed ? 'completed' : 'incomplete'}`}>
+                {quizPassed ? (
+                  <><i className="fas fa-check-circle"></i> مكتملة ✔️</>
+                ) : (
+                  <><i className="fas fa-clock"></i> قيد الإنجاز ⏳</>
+                )}
+              </span>
               <div className="quest-step-icon">
                 {quizPassed ? <i className="fas fa-check"></i> : <i className="fas fa-book-open"></i>}
               </div>
@@ -1526,17 +1590,20 @@ ${historySnippet}
 
             {/* Step 2 */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(2) ? 'unlocked' : 'locked'} ${activeStation === 2 ? 'active' : ''} ${isQuestionApproved ? 'completed' : ''}`}
+              className={`quest-step-pill ${activeStation === 2 ? 'active' : ''} ${isQuestionApproved ? 'status-completed' : 'status-incomplete'}`}
               onClick={() => {
-                if (unlockedStations.includes(2)) {
-                  playSound('click');
-                  setActiveStation(2);
-                } else {
-                  alert('🔒 هذه المحطة مقفلة! اجتز اختبار المحطة الأولى أولاً لتفتح لك الطريق.');
-                }
+                playSound('click');
+                setActiveStation(2);
               }}
+              title={isQuestionApproved ? 'المحطة 2 مكتملة - انقر للانتقال' : 'المحطة 2 قيد الإنجاز - انقر للانتقال'}
             >
-              {badges.question && <span className="quest-step-badge-tag">🔍 تم الإنجاز</span>}
+              <span className={`quest-step-state-badge ${isQuestionApproved ? 'completed' : 'incomplete'}`}>
+                {isQuestionApproved ? (
+                  <><i className="fas fa-check-circle"></i> مكتملة ✔️</>
+                ) : (
+                  <><i className="fas fa-clock"></i> قيد الإنجاز ⏳</>
+                )}
+              </span>
               <div className="quest-step-icon">
                 {isQuestionApproved ? <i className="fas fa-check"></i> : <i className="fas fa-question-circle"></i>}
               </div>
@@ -1546,17 +1613,20 @@ ${historySnippet}
 
             {/* Step 3 */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(3) ? 'unlocked' : 'locked'} ${activeStation === 3 ? 'active' : ''} ${isHypoApproved ? 'completed' : ''}`}
+              className={`quest-step-pill ${activeStation === 3 ? 'active' : ''} ${isHypoApproved ? 'status-completed' : 'status-incomplete'}`}
               onClick={() => {
-                if (unlockedStations.includes(3)) {
-                  playSound('click');
-                  setActiveStation(3);
-                } else {
-                  alert('🔒 هذه المحطة مقفلة! اعتمد سؤال البحث في المحطة الثانية لتفتح لك.');
-                }
+                playSound('click');
+                setActiveStation(3);
               }}
+              title={isHypoApproved ? 'المحطة 3 مكتملة - انقر للانتقال' : 'المحطة 3 قيد الإنجاز - انقر للانتقال'}
             >
-              {badges.hypothesis && <span className="quest-step-badge-tag">🧪 تم الإنجاز</span>}
+              <span className={`quest-step-state-badge ${isHypoApproved ? 'completed' : 'incomplete'}`}>
+                {isHypoApproved ? (
+                  <><i className="fas fa-check-circle"></i> مكتملة ✔️</>
+                ) : (
+                  <><i className="fas fa-clock"></i> قيد الإنجاز ⏳</>
+                )}
+              </span>
               <div className="quest-step-icon">
                 {isHypoApproved ? <i className="fas fa-check"></i> : <i className="fas fa-vial"></i>}
               </div>
@@ -1566,17 +1636,20 @@ ${historySnippet}
 
             {/* Step 4: Scientific Background */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(4) ? 'unlocked' : 'locked'} ${activeStation === 4 ? 'active' : ''} ${isBgApproved ? 'completed' : ''}`}
+              className={`quest-step-pill ${activeStation === 4 ? 'active' : ''} ${isBgApproved ? 'status-completed' : 'status-incomplete'}`}
               onClick={() => {
-                if (unlockedStations.includes(4)) {
-                  playSound('click');
-                  setActiveStation(4);
-                } else {
-                  alert('🔒 هذه المحطة مقفلة! أكمل بناء الفرضية في المحطة الثالثة لتفتح لك ورشة الخلفية العلمية.');
-                }
+                playSound('click');
+                setActiveStation(4);
               }}
+              title={isBgApproved ? 'المحطة 4 مكتملة - انقر للانتقال' : 'المحطة 4 قيد الإنجاز - انقر للانتقال'}
             >
-              {badges.background && <span className="quest-step-badge-tag">📚 تم الإنجاز</span>}
+              <span className={`quest-step-state-badge ${isBgApproved ? 'completed' : 'incomplete'}`}>
+                {isBgApproved ? (
+                  <><i className="fas fa-check-circle"></i> مكتملة ✔️</>
+                ) : (
+                  <><i className="fas fa-clock"></i> قيد الإنجاز ⏳</>
+                )}
+              </span>
               <div className="quest-step-icon">
                 {isBgApproved ? <i className="fas fa-check"></i> : <i className="fas fa-file-word"></i>}
               </div>
@@ -1586,17 +1659,20 @@ ${historySnippet}
 
             {/* Step 5: Experiment, Measurements & Photos */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(5) ? 'unlocked' : 'locked'} ${activeStation === 5 ? 'active' : ''} ${isExpApproved ? 'completed' : ''}`}
+              className={`quest-step-pill ${activeStation === 5 ? 'active' : ''} ${isExpApproved ? 'status-completed' : 'status-incomplete'}`}
               onClick={() => {
-                if (unlockedStations.includes(5)) {
-                  playSound('click');
-                  setActiveStation(5);
-                } else {
-                  alert('🔒 هذه المحطة مقفلة! اعتمد الخلفية العلمية في المحطة الرابعة لتفتح لك مسار التجربة والمقاييس.');
-                }
+                playSound('click');
+                setActiveStation(5);
               }}
+              title={isExpApproved ? 'المحطة 5 مكتملة - انقر للانتقال' : 'المحطة 5 قيد الإنجاز - انقر للانتقال'}
             >
-              {isExpApproved && <span className="quest-step-badge-tag">📊 تم الرصد</span>}
+              <span className={`quest-step-state-badge ${isExpApproved ? 'completed' : 'incomplete'}`}>
+                {isExpApproved ? (
+                  <><i className="fas fa-check-circle"></i> مكتملة ✔️</>
+                ) : (
+                  <><i className="fas fa-clock"></i> قيد الإنجاز ⏳</>
+                )}
+              </span>
               <div className="quest-step-icon">
                 {isExpApproved ? <i className="fas fa-check"></i> : <i className="fas fa-chart-line"></i>}
               </div>
@@ -1606,17 +1682,20 @@ ${historySnippet}
 
             {/* Step 6: Grand Finale & Research Book */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(6) || (unlockedStations.includes(5) && badges.explorer) ? 'unlocked' : 'locked'} ${activeStation === 6 ? 'active' : ''} ${badges.explorer ? 'completed' : ''}`}
+              className={`quest-step-pill ${activeStation === 6 ? 'active' : ''} ${(quizPassed && isQuestionApproved && isHypoApproved && isBgApproved && isExpApproved) ? 'status-completed' : 'status-incomplete'}`}
               onClick={() => {
-                if (unlockedStations.includes(6) || (unlockedStations.includes(5) && badges.explorer)) {
-                  playSound('click');
-                  setActiveStation(6);
-                } else {
-                  alert('🔒 أكمل التجربة وسجل القياسات في المحطة الخامسة أولاً لإصدار كتاب بحثك الكامل والشهادة الذهبية!');
-                }
+                playSound('click');
+                setActiveStation(6);
               }}
+              title={(quizPassed && isQuestionApproved && isHypoApproved && isBgApproved && isExpApproved) ? 'منصة التتويج مكتملة - انقر للانتقال' : 'منصة التتويج قيد الإنجاز - انقر للمعاينة'}
             >
-              {badges.explorer && <span className="quest-step-badge-tag">🏆 متوج</span>}
+              <span className={`quest-step-state-badge ${(quizPassed && isQuestionApproved && isHypoApproved && isBgApproved && isExpApproved) ? 'completed' : 'incomplete'}`}>
+                {(quizPassed && isQuestionApproved && isHypoApproved && isBgApproved && isExpApproved) ? (
+                  <><i className="fas fa-trophy"></i> مكتمل ومتوج 🏆</>
+                ) : (
+                  <><i className="fas fa-clock"></i> مسودة قيد العمل ⏳</>
+                )}
+              </span>
               <div className="quest-step-icon">
                 <i className="fas fa-book"></i>
               </div>
@@ -1917,6 +1996,9 @@ ${historySnippet}
               </p>
             </div>
 
+            {/* Station Status Banner */}
+            {renderStationStatusBar(1)}
+
             {/* Comic Story Panels */}
             <div className="quest-comic-deck">
               <div className="quest-comic-strip">
@@ -2092,6 +2174,18 @@ ${historySnippet}
                       <span>إعادة المحاولة من جديد</span>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="quest-btn-secondary"
+                    onClick={() => {
+                      playSound('click');
+                      setActiveStation(2);
+                    }}
+                    style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#93c5fd' }}
+                    title="يمكنك الانتقال بحرية وتجربة المحطات والعودة لإتمام الاختبار لاحقاً"
+                  >
+                    <span>الانتقال للمحطة 2 (سؤال البحث) والعودة لاحقاً ➔</span>
+                  </button>
                 </div>
               ) : (
                 <div className="quest-pass-banner">
@@ -2131,6 +2225,9 @@ ${historySnippet}
                 السؤال الذكي هو بوصلة كل باحث! قارن بين الأسئلة، واكتب سؤالك الخاص ليقوم الروبوت مُشيرفي بدور الموجه السقراطي لمساعدتك في إتقانه.
               </p>
             </div>
+
+            {/* Station Status Banner */}
+            {renderStationStatusBar(2)}
 
             {/* Comparison Cards: Weak vs Strong Question */}
             <div className="quest-guide-comparison">
@@ -2343,6 +2440,24 @@ ${historySnippet}
                   </button>
                 </form>
               )}
+
+              {/* Free Navigation Button to Next Station */}
+              {!isQuestionApproved && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="quest-btn-secondary"
+                    onClick={() => {
+                      playSound('click');
+                      setActiveStation(3);
+                    }}
+                    style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#93c5fd' }}
+                    title="يمكنك الانتقال لبناء الفرضيات والعودة لاعتماد السؤال في أي وقت"
+                  >
+                    <span>الانتقال للمحطة 3 (بناء الفرضيات) مؤقتاً والعودة لاحقاً ➔</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Teacher Feedback for Question Station */}
@@ -2362,6 +2477,9 @@ ${historySnippet}
                 الفرضية ليست مجرد تخمين عشوائي! إنها توقع ذكي ومبرر علمياً. ركّب فرضيّتك الذهبية المربوطة بسؤال بحثك لتصل لمنصة التتويج!
               </p>
             </div>
+
+            {/* Station Status Banner */}
+            {renderStationStatusBar(3)}
 
             {/* Golden Formula Card */}
             <div className="quest-formula-card">
@@ -2497,6 +2615,18 @@ ${historySnippet}
                   <i className="fas fa-check-circle"></i>
                   <span>اعتماد الفرضية والانتقال للمحطة 4 (كتابة وتوثيق الخلفية العلمية) 📚</span>
                 </button>
+                <button
+                  type="button"
+                  className="quest-btn-secondary"
+                  onClick={() => {
+                    playSound('click');
+                    setActiveStation(4);
+                  }}
+                  style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#93c5fd' }}
+                  title="يمكنك الانتقال لكتابة الخلفية العلمية والعودة للفرضيات لاحقاً"
+                >
+                  <span>الانتقال للمحطة 4 (الخلفية العلمية) والعودة لاحقاً ➔</span>
+                </button>
               </div>
             </div>
 
@@ -2521,6 +2651,9 @@ ${historySnippet}
                 العالِم الحقيقي لا يبدأ من الصفر، بل يقرأ ما اكتشفه الآخرون ويبني عليه! هنا سنساعدك على استخراج المصادر، واختيار عناوين ومفاتيح البحث، وصياغة فقراتك وتدقيقها خطوة بخطوة مع الروبوت مُشيرفي.
               </p>
             </div>
+
+            {/* Station Status Banner */}
+            {renderStationStatusBar(4)}
 
             {/* Context Reminder Banner */}
             <div className="quest-bg-context-banner">
@@ -3149,6 +3282,18 @@ ${historySnippet}
                   <i className="fas fa-arrow-left"></i>
                   <span>🌟 اعتماد الخلفية والانتقال للمحطة 5 (مسار التجربة والقياسات والصور) 📊➔</span>
                 </button>
+                <button
+                  type="button"
+                  className="quest-btn-secondary"
+                  onClick={() => {
+                    playSound('click');
+                    setActiveStation(5);
+                  }}
+                  style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#93c5fd', padding: '1rem 1.8rem', fontSize: '1.05rem' }}
+                  title="يمكنك الانتقال لتسجيل القياسات والتجربة والعودة للخلفية العلمية لاحقاً"
+                >
+                  <span>الانتقال للمحطة 5 (التجربة والقياسات) والعودة لاحقاً ➔</span>
+                </button>
               </div>
             </section>
 
@@ -3174,6 +3319,9 @@ ${historySnippet}
                 هنا ينتقل العالم الصغير إلى المختبر الحقيقي! وثّق أدواتك وخطوات عملك، وسجل مقاييسك ليرسم لك النظام مخططاً بيانياً حياً (תרשים מדידות)، وأرفق صور تجاربك لمشاهدتها وتوثيقها في كتاب بحثك النهائي!
               </p>
             </div>
+
+            {/* Station Status Banner */}
+            {renderStationStatusBar(5)}
 
             {/* Context Box */}
             <div className="quest-bg-context-banner">
@@ -3679,6 +3827,18 @@ ${historySnippet}
                   <i className="fas fa-check-circle"></i>
                   <span>🌟 اعتماد التجربة والقياسات وإصدار كتاب البحث الشامل (PDF & Word) والشهادة 🚀</span>
                 </button>
+                <button
+                  type="button"
+                  className="quest-btn-secondary"
+                  onClick={() => {
+                    playSound('click');
+                    setActiveStation(6);
+                  }}
+                  style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#93c5fd', padding: '1.1rem 2rem', fontSize: '1.1rem' }}
+                  title="يمكنك الانتقال لمعاينة كتاب البحث ومنصة التتويج والعودة لتعديل القياسات في أي وقت"
+                >
+                  <span>معاينة منصة التتويج وكتاب البحث ➔</span>
+                </button>
               </div>
             </div>
 
@@ -3703,6 +3863,9 @@ ${historySnippet}
                 ألف مبارك يا بطل مدرسة مشيرفة الابتدائية! لقد أتممت بحثاً علمياً نموذجياً شاملاً يحتوي على سؤال البحث، الفرضية، الخلفية العلمية، جدول المقاييس والرسم البياني، صور التجارب، والاستنتاجات. يمكنك الآن تنزيله فوراً كملف Word أو طباعته كـ PDF!
               </p>
             </div>
+
+            {/* Station Status Banner */}
+            {renderStationStatusBar(6)}
 
             {/* Top Hero Download Bar */}
             <div className="export-hero-actions">

@@ -188,45 +188,75 @@
 
 .quest-steps-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.75rem;
 }
 
 .quest-step-pill {
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--quest-radius-md);
-  padding: 0.9rem 0.75rem;
+  padding: 1rem 0.65rem 0.85rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 0.4rem;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.25s ease;
   position: relative;
+  overflow: visible;
 }
 
-.quest-step-pill.unlocked {
-  background: rgba(56, 189, 248, 0.06);
-  border-color: rgba(56, 189, 248, 0.3);
+.quest-step-pill:hover {
+  transform: translateY(-3px);
+  border-color: #38bdf8;
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25);
 }
 
 .quest-step-pill.active {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(14, 165, 233, 0.12) 100%);
-  border-color: #38bdf8;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
   transform: translateY(-2px);
 }
 
-.quest-step-pill.completed {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.4);
+.quest-step-pill.status-completed {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.05) 100%);
+  border-color: rgba(16, 185, 129, 0.45);
 }
 
-.quest-step-pill.locked {
-  opacity: 0.45;
-  cursor: not-allowed;
+.quest-step-pill.status-incomplete {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.03) 100%);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.quest-step-state-badge {
+  position: absolute;
+  top: -10px;
+  right: -4px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 3;
+  white-space: nowrap;
+}
+
+.quest-step-state-badge.completed {
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid #34d399;
+}
+
+.quest-step-state-badge.incomplete {
+  background: #f59e0b;
+  color: #0f172a;
+  border: 1px solid #fbbf24;
 }
 
 .quest-step-icon {
@@ -248,9 +278,14 @@
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
 }
 
-.quest-step-pill.completed .quest-step-icon {
+.quest-step-pill.status-completed .quest-step-icon {
   background: #10b981;
   color: white;
+}
+
+.quest-step-pill.status-incomplete .quest-step-icon {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
 }
 
 .quest-step-num {
@@ -278,6 +313,95 @@
   padding: 2px 6px;
   font-weight: 900;
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* ======================================================== */
+/* PROMINENT STATION STATUS BANNER                          */
+/* ======================================================== */
+.quest-station-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.35rem;
+  border-radius: 16px;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+  transition: all 0.3s ease;
+}
+
+.quest-station-status-banner.done {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(5, 150, 105, 0.1) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.5);
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.15);
+}
+
+.quest-station-status-banner.pending {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.15);
+}
+
+.qssb-icon {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quest-station-status-banner.done .qssb-icon {
+  color: #34d399;
+}
+
+.quest-station-status-banner.pending .qssb-icon {
+  color: #fbbf24;
+}
+
+.qssb-content {
+  flex: 1;
+  min-width: 250px;
+}
+
+.qssb-badge {
+  font-size: 0.82rem;
+  font-weight: 900;
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 8px;
+  margin-bottom: 0.3rem;
+}
+
+.quest-station-status-banner.done .qssb-badge {
+  background: rgba(16, 185, 129, 0.25);
+  color: #a7f3d0;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.quest-station-status-banner.pending .qssb-badge {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.qssb-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #f8fafc;
+  line-height: 1.6;
+}
+
+.qssb-free-nav-hint {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: auto;
 }
 
 /* ----------------------------------------- */
