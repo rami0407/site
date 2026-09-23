@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import LottieRobot from './LottieRobot';
+import { generateMafatihLessonPlanAI } from '../utils/aiService';
+import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
 import './MafatihPedagogyPage.css';
 
 const STATIONS_DATA = [
@@ -181,6 +183,129 @@ const MafatihPedagogyPage = () => {
   });
   const [rubricNotes, setRubricNotes] = useState('');
   const [rubricGenerated, setRubricGenerated] = useState(false);
+
+  // Robot AI Lesson Planner State (الروبوت المساعد الذكي لتخطيط حصص مفاتيح)
+  const [robotMode, setRobotMode] = useState('plan'); // 'plan' (default) or 'advice'
+  const [aiSubject, setAiSubject] = useState('لغة عربية');
+  const [aiGrade, setAiGrade] = useState('الصف الرابع');
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiObjective, setAiObjective] = useState('');
+  const [aiDuration, setAiDuration] = useState(45);
+  const [aiNotes, setAiNotes] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleGeneratePlanWithRobot = async () => {
+    if (!aiTopic.trim()) {
+      alert('يرجى إدخال موضوع الحصة أو عنوانها أولاً.');
+      return;
+    }
+    setIsAiGenerating(true);
+    try {
+      const plan = await generateMafatihLessonPlanAI({
+        subject: aiSubject,
+        grade: aiGrade,
+        topic: aiTopic.trim(),
+        objective: aiObjective.trim(),
+        duration: aiDuration,
+        notes: aiNotes.trim()
+      });
+      setGeneratedPlan(plan);
+    } catch (err) {
+      console.error('Failed to generate lesson plan:', err);
+      alert('حدث خطأ أثناء إعداد الخطة، يرجى المحاولة ثانية.');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  const handleDownloadWord = (planToExport) => {
+    const data = planToExport || generatedPlan || {
+      subject: plannerSubject,
+      grade: plannerGrade,
+      title: plannerTitle,
+      objective: '',
+      duration: 45,
+      stations: plannerStations
+    };
+    exportLessonPlanToWord({
+      subject: data.subject,
+      grade: data.grade,
+      title: data.title,
+      objective: data.objective || '',
+      duration: data.duration || 45,
+      stations: data.stations
+    });
+  };
+
+  const handleDownloadPdf = (planToExport) => {
+    const data = planToExport || generatedPlan || {
+      subject: plannerSubject,
+      grade: plannerGrade,
+      title: plannerTitle,
+      objective: '',
+      duration: 45,
+      stations: plannerStations
+    };
+    exportLessonPlanToPdf({
+      subject: data.subject,
+      grade: data.grade,
+      title: data.title,
+      objective: data.objective || '',
+      duration: data.duration || 45,
+      stations: data.stations
+    });
+  };
+
+  const handleCopyPlanToClipboard = (plan) => {
+    const p = plan || generatedPlan;
+    if (!p) return;
+    const text = `
+خطة درس: ${p.title}
+المادة: ${p.subject} | الصف: ${p.grade} | الزمن: ${p.duration} دقيقة
+الهدف المركزي: ${p.objective || 'غير محدد'}
+
+[ م ] محطة الجذب والإشعال:
+${p.stations?.m || ''}
+
+[ ف ] محطة الفهم وبناء المفهوم:
+${p.stations?.f || ''}
+
+[ ت ] محطة التبصر والتعمق:
+${p.stations?.t || ''}
+
+[ ي ] محطة اليدوي والتطبيق والتمايز:
+${p.stations?.y || ''}
+
+[ ح ] محطة الحصاد والزوّادة:
+${p.stations?.h || ''}
+    `.trim();
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2500);
+    });
+  };
+
+  const handleApplyToMainPlanner = (plan) => {
+    const p = plan || generatedPlan;
+    if (!p) return;
+    setPlannerSubject(p.subject || aiSubject);
+    setPlannerGrade(p.grade || aiGrade);
+    setPlannerTitle(p.title || aiTopic);
+    if (p.stations) {
+      setPlannerStations({
+        m: p.stations.m || '',
+        f: p.stations.f || '',
+        t: p.stations.t || '',
+        y: p.stations.y || '',
+        h: p.stations.h || ''
+      });
+    }
+    setIsRobotModalOpen(false);
+    setActiveTab('planner');
+  };
 
   // Interactive Lottie Robot Assistant State
   const [isRobotModalOpen, setIsRobotModalOpen] = useState(false);
@@ -1203,9 +1328,38 @@ const MafatihPedagogyPage = () => {
                     <h4>مدرسة مشيرفة الابتدائية</h4>
                     <small>خطة درس نموذجية — موديل مَفَاتِيح (מודל מַפְתֵּ"חַ)</small>
                   </div>
-                  <button className="print-sheet-btn" onClick={handlePrint}>
-                    <i className="fas fa-print"></i> طباعة / تصدير PDF
-                  </button>
+                  <div className="sheet-actions-group">
+                    <button 
+                      type="button"
+                      className="sheet-action-btn word" 
+                      onClick={() => handleDownloadWord()}
+                      title="تحميل كملف Word قابل للتعديل والطباعة"
+                    >
+                      <i className="fas fa-file-word"></i> تحميل Word
+                    </button>
+                    <button 
+                      type="button"
+                      className="sheet-action-btn pdf" 
+                      onClick={() => handleDownloadPdf()}
+                      title="تحميل أو طباعة كملف PDF عالي الدقة"
+                    >
+                      <i className="fas fa-file-pdf"></i> تحميل PDF
+                    </button>
+                    <button 
+                      type="button"
+                      className="sheet-action-btn ai-magic" 
+                      onClick={() => {
+                        setAiSubject(plannerSubject);
+                        setAiGrade(plannerGrade);
+                        setAiTopic(plannerTitle);
+                        setRobotMode('plan');
+                        setIsRobotModalOpen(true);
+                      }}
+                      title="هندسة الدرس آلياً بواسطة الروبوت الذكي"
+                    >
+                      <i className="fas fa-magic"></i> توليد بالروبوت
+                    </button>
+                  </div>
                 </div>
 
                 <div className="sheet-meta-grid">
@@ -1609,121 +1763,340 @@ const MafatihPedagogyPage = () => {
       {/* 5. FLOATING INTERACTIVE ROBOT ASSISTANT BUTTON */}
       <div 
         className="floating-robot-trigger"
-        onClick={() => setIsRobotModalOpen(true)}
-        title="اسأل رفيق مفاتيح الذكي"
+        onClick={() => {
+          setRobotMode('plan');
+          setIsRobotModalOpen(true);
+        }}
+        title="روبوت تخطيط الدروس — موديل مَفَاتِيح"
       >
-        <LottieRobot width="75px" height="75px" className="float-mini-robot" />
+        <LottieRobot width="70px" height="70px" className="float-mini-robot" />
         <span className="float-robot-label">
           <span className="float-pulse-dot"></span>
-          اسألني عن مفاتيح!
+          ⚡ روبوت تخطيط الحصة
         </span>
       </div>
 
-      {/* 6. ROBOT INTERACTIVE DIALOG MODAL */}
+      {/* 6. ROBOT LESSON PLANNER MODAL */}
       {isRobotModalOpen && (
         <div className="robot-modal-overlay" onClick={() => setIsRobotModalOpen(false)}>
-          <div className="robot-modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="robot-modal-card lesson-planner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="robot-modal-header">
               <div className="robot-modal-avatar">
-                <LottieRobot width="70px" height="70px" />
+                <LottieRobot width="65px" height="65px" />
               </div>
               <div className="robot-modal-title-wrap">
-                <h3>رفيق مفاتيح التربوي الذكي 🗝️🤖</h3>
-                <p>مساعدك الميداني لصياغة وتطبيق المحطات الخمس وحصد الزوّادة</p>
+                <h3>روبوت تخطيط الدروس — موديل مَفَاتِيح 🤖🗝️</h3>
+                <p>هندسة خطة حصة نموذجية وفق محطات מַפְתֵּ"חַ وتصديرها كـ Word أو PDF</p>
               </div>
               <button 
                 className="robot-modal-close"
                 onClick={() => setIsRobotModalOpen(false)}
+                title="إغلاق"
               >
                 <i className="fas fa-times"></i>
               </button>
             </div>
 
+            {/* Mode Switcher Tabs */}
+            <div className="robot-nav-modes">
+              <button 
+                type="button"
+                className={`robot-mode-tab ${robotMode === 'plan' ? 'active' : ''}`}
+                onClick={() => setRobotMode('plan')}
+              >
+                <i className="fas fa-magic"></i> ⚡ هندسة وتوليد خطة الدرس
+              </button>
+              <button 
+                type="button"
+                className={`robot-mode-tab ${robotMode === 'advice' ? 'active' : ''}`}
+                onClick={() => setRobotMode('advice')}
+              >
+                <i className="fas fa-comment-alt"></i> 💬 استشارات بيداغوجية
+              </button>
+            </div>
+
             <div className="robot-modal-body">
-              {/* Robot Speech Display */}
-              <div className="robot-speech-display">
-                <div className="robot-speech-header">
-                  <span className="robot-badge-tag"><i className="fas fa-comment-dots"></i> إرشادات الروبوت:</span>
-                  <button 
-                    type="button"
-                    className={`robot-voice-read-btn ${isVoiceSpeaking ? 'speaking' : ''}`}
-                    onClick={() => speakArabic(robotReply)}
-                  >
-                    <i className={`fas ${isVoiceSpeaking ? 'fa-volume-mute' : 'fa-volume-up'}`}></i>
-                    {isVoiceSpeaking ? 'إيقاف الصوت' : 'استمع بالصوت العربي'}
-                  </button>
-                </div>
-                <p className="robot-speech-text">{robotReply}</p>
-              </div>
+              {robotMode === 'plan' ? (
+                <div className="robot-planner-flow">
+                  {isAiGenerating ? (
+                    <div className="robot-generating-state">
+                      <LottieRobot width="120px" height="120px" />
+                      <div className="generating-pulse-spinner"></div>
+                      <h4>جاري هندسة مسار الدرس بموديل "مَفَاتِيح"...</h4>
+                      <p>
+                        يقوم الروبوت بصياغة لغز الجذب [م]، تفكيك المفهوم [ف]، أسئلة التفكير العليا [ت]، ورشة التمايز UDL [ي]، وختم الزوّادة وتذكرة الخروج [ح]...
+                      </p>
+                    </div>
+                  ) : generatedPlan ? (
+                    <div className="robot-plan-result">
+                      <div className="plan-success-banner">
+                        <div className="banner-text">
+                          <i className="fas fa-check-circle"></i>
+                          <div>
+                            <strong>تمت هندسة خطة الدرس بنجاح!</strong>
+                            <small>موضوع: {generatedPlan.title} | {generatedPlan.subject} — {generatedPlan.grade}</small>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          className="reset-plan-btn"
+                          onClick={() => setGeneratedPlan(null)}
+                        >
+                          <i className="fas fa-redo"></i> تخطيط درس جديد
+                        </button>
+                      </div>
 
-              {/* Quick Questions Chips */}
-              <div className="robot-quick-topics">
-                <span className="topics-label">اسألني بسرعة عن أي محطة أو أداة:</span>
-                <div className="topics-chips-grid">
-                  <button 
-                    type="button" 
-                    className="topic-chip yellow"
-                    onClick={() => handleAskRobot('جذب وتشويق')}
-                  >
-                    🧲 سر محطة الجذب
-                  </button>
-                  <button 
-                    type="button" 
-                    className="topic-chip cyan"
-                    onClick={() => handleAskRobot('فهم وتفكيك المفهوم')}
-                  >
-                    💡 نمذجة المفهوم
-                  </button>
-                  <button 
-                    type="button" 
-                    className="topic-chip purple"
-                    onClick={() => handleAskRobot('تبصر وتفكير عليا')}
-                  >
-                    🧠 أسئلة التفكير العليا
-                  </button>
-                  <button 
-                    type="button" 
-                    className="topic-chip green"
-                    onClick={() => handleAskRobot('تطبيق وتمايز udl')}
-                  >
-                    🛠️ ورشة التمايز UDL
-                  </button>
-                  <button 
-                    type="button" 
-                    className="topic-chip pink"
-                    onClick={() => handleAskRobot('حصاد وزوادة ونقل الأثر')}
-                  >
-                    🎒 الزوّادة ونقل الأثر
-                  </button>
-                  <button 
-                    type="button" 
-                    className="topic-chip slate"
-                    onClick={() => handleAskRobot('توزيع مسطرة الحصة')}
-                  >
-                    ⏱️ مسطرة الحصة والوقت
-                  </button>
-                </div>
-              </div>
+                      {/* Export Action Bar */}
+                      <div className="robot-export-actions">
+                        <button 
+                          type="button"
+                          className="robot-export-btn word"
+                          onClick={() => handleDownloadWord(generatedPlan)}
+                          title="تحميل كملف Word منسق ومصمم جاهز للطباعة والتعديل"
+                        >
+                          <i className="fas fa-file-word"></i> تحميل Word (.doc)
+                        </button>
+                        <button 
+                          type="button"
+                          className="robot-export-btn pdf"
+                          onClick={() => handleDownloadPdf(generatedPlan)}
+                          title="تحميل أو طباعة كملف PDF عالي الدقة"
+                        >
+                          <i className="fas fa-file-pdf"></i> تحميل / طباعة PDF
+                        </button>
+                        <button 
+                          type="button"
+                          className="robot-export-btn copy"
+                          onClick={() => handleCopyPlanToClipboard(generatedPlan)}
+                        >
+                          <i className={`fas ${copySuccess ? 'fa-check' : 'fa-copy'}`}></i>
+                          {copySuccess ? 'تم النسخ!' : 'نسخ النص'}
+                        </button>
+                        <button 
+                          type="button"
+                          className="robot-export-btn sync"
+                          onClick={() => handleApplyToMainPlanner(generatedPlan)}
+                          title="فتح وتعديل الخطة في صفحة الموديل الرئيسية"
+                        >
+                          <i className="fas fa-external-link-alt"></i> فتح بالمحرر
+                        </button>
+                      </div>
 
-              {/* Custom Input Query */}
-              <div className="robot-query-input-bar">
-                <input 
-                  type="text"
-                  placeholder="اكتب استفسارك هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."
-                  value={robotChatInput}
-                  onChange={(e) => setRobotChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAskRobot();
-                  }}
-                />
-                <button 
-                  type="button"
-                  className="robot-query-send-btn"
-                  onClick={() => handleAskRobot()}
-                >
-                  <i className="fas fa-paper-plane"></i>
-                </button>
-              </div>
+                      {/* Station Cards Preview */}
+                      <div className="generated-stations-list">
+                        <div className="gen-station-card yellow">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🧲 [ م ]</span>
+                            <strong>محطة الجذب والتشويق (משוך)</strong>
+                            <small>لغز البداية وكسر الجليد</small>
+                          </div>
+                          <div className="station-text">{generatedPlan.stations?.m}</div>
+                        </div>
+
+                        <div className="gen-station-card cyan">
+                          <div className="station-badge-head">
+                            <span className="station-icon">💡 [ ف ]</span>
+                            <strong>محطة الفهم وبناء المفهوم (פְּגִישָׁה / הֲבָנָה)</strong>
+                            <small>القاموس العلمي ونمذجة I Do</small>
+                          </div>
+                          <div className="station-text">{generatedPlan.stations?.f}</div>
+                        </div>
+
+                        <div className="gen-station-card purple">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🧠 [ ت ]</span>
+                            <strong>محطة التبصر والتعمق (תְּבוּנָה)</strong>
+                            <small>أسئلة التفكير العليا والحوار السقراطي</small>
+                          </div>
+                          <div className="station-text">{generatedPlan.stations?.t}</div>
+                        </div>
+
+                        <div className="gen-station-card green">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🛠️ [ ي ]</span>
+                            <strong>محطة اليدوي والتطبيق (יִשּׂוּם)</strong>
+                            <small>ورشة العمل ومسارات التمايز UDL</small>
+                          </div>
+                          <div className="station-text">{generatedPlan.stations?.y}</div>
+                        </div>
+
+                        <div className="gen-station-card pink">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🎒 [ ح ]</span>
+                            <strong>محطة الحصاد والزوّادة (חֲתִימָה וְצֵידָה לַדֶּרֶךְ)</strong>
+                            <small>تذكرة الخروج ونقل الأثر للحياة</small>
+                          </div>
+                          <div className="station-text">{generatedPlan.stations?.h}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="robot-plan-form">
+                      <div className="form-intro-note">
+                        <i className="fas fa-lightbulb"></i>
+                        <span>اكتب موضوع الحصة وهدفها، وسأقوم بهندسة خطة درس نموذجية متكاملة بمحطات مفاتيح الخمس جاهزة للتنزيل كملف Word أو PDF:</span>
+                      </div>
+
+                      {/* Quick Subjects Pills */}
+                      <div className="robot-form-group">
+                        <label>المادة الدراسية:</label>
+                        <div className="subject-quick-pills">
+                          {['لغة عربية', 'رياضيات', 'علوم وتكنولوجيا', 'لغة إنجليزية', 'لغة عبرية', 'تربية إسلامية', 'تاريخ', 'جغرافيا', 'فنون', 'حاسوب'].map((sub) => (
+                            <button
+                              key={sub}
+                              type="button"
+                              className={`sub-pill ${aiSubject === sub ? 'active' : ''}`}
+                              onClick={() => setAiSubject(sub)}
+                            >
+                              {sub}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Grade & Duration Row */}
+                      <div className="robot-form-row">
+                        <div className="robot-form-group">
+                          <label>الصف والمستوى:</label>
+                          <select 
+                            value={aiGrade} 
+                            onChange={(e) => setAiGrade(e.target.value)}
+                            className="robot-select"
+                          >
+                            <option value="الصف الأول">الصف الأول</option>
+                            <option value="الصف الثاني">الصف الثاني</option>
+                            <option value="الصف الثالث">الصف الثالث</option>
+                            <option value="الصف الرابع">الصف الرابع</option>
+                            <option value="الصف الخامس">الصف الخامس</option>
+                            <option value="الصف السادس">الصف السادس</option>
+                            <option value="المرحلة الإعدادية">المرحلة الإعدادية</option>
+                          </select>
+                        </div>
+
+                        <div className="robot-form-group">
+                          <label>زمن الحصة:</label>
+                          <div className="duration-toggle-group">
+                            <button
+                              type="button"
+                              className={`duration-chip ${aiDuration === 45 ? 'active' : ''}`}
+                              onClick={() => setAiDuration(45)}
+                            >
+                              45 دقيقة
+                            </button>
+                            <button
+                              type="button"
+                              className={`duration-chip ${aiDuration === 90 ? 'active' : ''}`}
+                              onClick={() => setAiDuration(90)}
+                            >
+                              90 دقيقة (مزدوجة)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Topic Input (Required) */}
+                      <div className="robot-form-group">
+                        <label className="required-label">
+                          <i className="fas fa-heading"></i> موضوع وعنوان الحصة:
+                        </label>
+                        <input 
+                          type="text"
+                          className="robot-text-input"
+                          placeholder="مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب..."
+                          value={aiTopic}
+                          onChange={(e) => setAiTopic(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Objective Input (Required) */}
+                      <div className="robot-form-group">
+                        <label className="required-label">
+                          <i className="fas fa-bullseye"></i> هدف الحصة التعليمي والقيمي:
+                        </label>
+                        <textarea 
+                          rows="2"
+                          className="robot-textarea-input"
+                          placeholder="مثال: أن يميز الطالب بين المفهومين من خلال أمثلة ملموسة، ويحل تمارين متمايزة، ويستخلص زوّادة لنقل الأثر لبيئته اليومية..."
+                          value={aiObjective}
+                          onChange={(e) => setAiObjective(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Optional Notes */}
+                      <div className="robot-form-group">
+                        <label>
+                          <i className="fas fa-sliders-h"></i> تركيز خاص أو ملاحظات إضافية (اختياري):
+                        </label>
+                        <input 
+                          type="text"
+                          className="robot-text-input"
+                          placeholder="مثال: دمج تجربة علمية حسية، مراعاة صعوبات التعلم، عمل تشاركي..."
+                          value={aiNotes}
+                          onChange={(e) => setAiNotes(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Submit Generator Button */}
+                      <button 
+                        type="button"
+                        className="robot-submit-generate-btn"
+                        onClick={handleGeneratePlanWithRobot}
+                      >
+                        <i className="fas fa-magic"></i> ⚡ ابدأ بناء وتوليد خطة الدرس الآن
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Advice Mode (Existing Quick Inquiries) */
+                <div className="robot-advice-flow">
+                  <div className="robot-speech-display">
+                    <div className="robot-speech-header">
+                      <span className="robot-badge-tag"><i className="fas fa-comment-dots"></i> إرشادات الروبوت:</span>
+                      <button 
+                        type="button"
+                        className={`robot-voice-read-btn ${isVoiceSpeaking ? 'speaking' : ''}`}
+                        onClick={() => speakArabic(robotReply)}
+                      >
+                        <i className={`fas ${isVoiceSpeaking ? 'fa-volume-mute' : 'fa-volume-up'}`}></i>
+                        {isVoiceSpeaking ? 'إيقاف الصوت' : 'استمع بالصوت العربي'}
+                      </button>
+                    </div>
+                    <p className="robot-speech-text">{robotReply}</p>
+                  </div>
+
+                  <div className="robot-quick-topics">
+                    <span className="topics-label">اسألني بسرعة عن أي محطة أو أداة:</span>
+                    <div className="topics-chips-grid">
+                      <button type="button" className="topic-chip yellow" onClick={() => handleAskRobot('جذب وتشويق')}>🧲 سر محطة الجذب</button>
+                      <button type="button" className="topic-chip cyan" onClick={() => handleAskRobot('فهم وتفكيك المفهوم')}>💡 نمذجة المفهوم</button>
+                      <button type="button" className="topic-chip purple" onClick={() => handleAskRobot('تبصر وتفكير عليا')}>🧠 أسئلة التفكير العليا</button>
+                      <button type="button" className="topic-chip green" onClick={() => handleAskRobot('تطبيق وتمايز udl')}>🛠️ ورشة التمايز UDL</button>
+                      <button type="button" className="topic-chip pink" onClick={() => handleAskRobot('حصاد وزوادة ونقل الأثر')}>🎒 الزوّادة ونقل الأثر</button>
+                      <button type="button" className="topic-chip slate" onClick={() => handleAskRobot('توزيع مسطرة الحصة')}>⏱️ مسطرة الحصة والوقت</button>
+                    </div>
+                  </div>
+
+                  <div className="robot-query-input-bar">
+                    <input 
+                      type="text"
+                      placeholder="اكتب استفسارك هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."
+                      value={robotChatInput}
+                      onChange={(e) => setRobotChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAskRobot();
+                      }}
+                    />
+                    <button 
+                      type="button" 
+                      className="robot-query-send-btn"
+                      onClick={() => handleAskRobot()}
+                    >
+                      <i className="fas fa-paper-plane"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

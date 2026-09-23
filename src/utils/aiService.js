@@ -1214,3 +1214,147 @@ export const generateStudentPraiseAI = async ({ studentName, studentGrade, badge
 
   return `مبارك من القلب لبطلنا المتميز ${studentName}! لقد أثبتّ ذكاءً متقداً وسرعة بديهة استحققت بها وسام "${badgeTitle}". تفخر بك مدرسة مشيرفة دوماً! 🏆🌟`;
 };
+
+/**
+ * 15. Mafatih Pedagogical Model AI Lesson Planner:
+ * Generates an exhaustive, beautifully architected lesson plan according to the 5 Mafatih stations:
+ * [ م ] جذب وإشعال | [ ف ] فهم المفهوم | [ ت ] تبصر وتفكير عليا | [ ي ] يدوي وتطبيق وتمايز | [ ح ] حصاد وزوّادة ونقل الأثر
+ */
+export const generateMafatihLessonPlanAI = async ({
+  subject = 'عام',
+  grade = 'المرحلة الابتدائية',
+  topic = '',
+  objective = '',
+  duration = 45,
+  notes = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const prompt = `أنت الخبير البيداغوجي والمستشار التعليمي الأول لموديل "مَفَاتِيح" (مودل מַפְתֵּ"חַ) بمدرسة مشيرفة الابتدائية.
+المطلوب: هندسة وتخطيط درس نموذجي تفاعلي متكامل قائم بنسبة 100% على فلسفة ومحطات موديل "مَفَاتِيح" الخمس.
+
+بيانات الحصة:
+- المادة الدراسية: "${subject}"
+- الصف والمستوى: "${grade}"
+- موضوع الحصة المركزي: "${topic || 'مفهوم دراسي ريادي'}"
+- الهدف التعليمي والقيمي للحصة: "${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه حياتياً'}"
+- زمن الحصة: ${duration} دقيقة
+${notes ? `- ملاحظات المعلم الإضافية: "${notes}"` : ''}
+
+قواعد التخطيط وفق المحطات الخمس الإلزامية:
+1. [ م ] محطة الجذب والإشعال (משוך): لغز البداية، كسر الجليد، سؤال إشكالي أو محفز بصري حسي يثير الفضول الفطري لدى الطالب بدون حرق الإجابة.
+2. [ ف ] محطة الفهم وتفكيك المفهوم (פְּגִישָׁה / הֲבָנָה): بناء القاموس اللغوي والعلمي، تفكيك المعنى بأسلوب مبسط، نمذجة المعلم خطوة بخطوة (I Do - أنا أعمل ونحن نعمل معاً).
+3. [ ت ] محطة التبصر والتعمق (תְּבוּנָה): مهارات تفكير عليا (HOTS)، أسئلة سقراطية عميقة، مقارنة وتحليل، حوار نقدي يوجه استنتاجات الطلاب.
+4. [ ي ] محطة اليدوي والتطبيق والتمايز (יִשּׂוּם): ورشة عمل تطبيقية تعتمد مبادئ التصميم الشامل للتعلم (UDL) مع 3 مستويات تمايز (مسار دعم ميسر، مسار متوسط، مسار إثرائي متقدم)، مع منتج ملموس.
+5. [ ح ] محطة الحصاد والزوّادة (חֲתִימָה וְצֵידָה לַדֶּרֶךְ): صياغة تذكرة الخروج (Exit Ticket)، تحديد "زوّادتي اليوم"، وسؤال نقل الأثر للحياة اليومية والبيت.
+
+المطلوب إخراج النتيجة بتنسيق JSON حصراً بهذا المخطط بدون أي مقدمات أو علامات إضافية:
+{
+  "title": "${topic || 'عنوان الدرس'}",
+  "subject": "${subject}",
+  "grade": "${grade}",
+  "duration": ${duration},
+  "objective": "${objective || 'الهدف التعليمي العام'}",
+  "stations": {
+    "m": "نص تفصيلي لمحطة الجذب [ م ] يتضمن سؤال البداية والنشاط الاستفزازي للفضول...",
+    "f": "نص تفصيلي لمحطة الفهم [ ف ] يتضمن القاموس العلمي، نمذجة المعلم، وكيفية تفكيك المفهوم...",
+    "t": "نص تفصيلي لمحطة التبصر [ ت ] يتضمن 3 أسئلة تفكير عليا وحواراً سقراطياً...",
+    "y": "نص تفصيلي لمحطة اليدوي [ ي ] يتضمن الورشة، تقسيم المهمة، ومسارات التمايز الثلاثة (ميسر/متوسط/إثرائي)...",
+    "h": "نص تفصيلي لمحطة الحصاد [ ح ] يتضمن تذكرة الخروج، جملة زوّادتي، وسؤال نقل الأثر للواقع..."
+  }
+}`;
+
+  // 1. Try Groq
+  if (groqKey) {
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.6,
+            max_tokens: 1500,
+            response_format: { type: "json_object" }
+          })
+        }, 8000);
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.stations && parsed.stations.m && parsed.stations.f) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq lesson planning (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.6,
+                maxOutputTokens: 1500,
+                responseMimeType: "application/json"
+              }
+            })
+          }, 8000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.stations && parsed.stations.m && parsed.stations.f) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini lesson planning (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 3. High-Quality Pedagogical Synthesis Engine (Intelligent Fallback tailored to the prompt)
+  const safeTopic = topic || 'المفهوم التعليمي المركزي';
+  const safeObj = objective || `أن يتعرف الطالب على ${safeTopic} ويوظفه في مواقف تعليمية وحياتية متنوعة`;
+
+  return {
+    title: safeTopic,
+    subject: subject,
+    grade: grade,
+    duration: duration,
+    objective: safeObj,
+    stations: {
+      m: `🎯 لغز واستثارة البداية:\nيطرح المعلم مفارقة واقعية أو لغزاً بصرياً متعلقاً بـ "${safeTopic}" دون الكشف عن الحل أو القاعدة.\n• سؤال الإشعال: "تأملوا معي هذا المشهد العجيب: كيف يمكن تفسير هذا الأمر في حياتنا؟"\n• دور الطالب: طرح التخمينات الأولية وفحص الفرضيات الذهنية المسبقة بحماس وشغف.`,
+      
+      f: `💡 تفكيك المفهوم والقاموس اللغوي والعلمي:\n• المصطلحات المركزية: تعريف دقيق ومبسط للمصطلحات الجوهرية المرتبطة بـ "${safeTopic}".\n• نمذجة المعلم (I Do): يقوم المعلم بحل مسألة أو استعراض مثال نموذجي على اللوح خطوة بخطوة مع إبراز طريقة التفكير الصوتي المنظم.\n• التطبيق الموجه (We Do): إشراك الطلاب جماعياً في فحص مثال ثانٍ لترسيخ الفهم السليم.`,
+      
+      t: `🧠 أسئلة التفكير العليا (HOTS) والحوار السقراطي:\n• سؤال التحليل والمقارنة: "لو قمنا بتغيير أحد العناصر في ${safeTopic}، فكيف ستتأثر النتيجة النهائية؟ ولماذا؟"\n• سؤال النقد والتقييم: "ما هو الخطأ الشائع الذي يقع فيه البعض عند التعامل مع هذا المفهوم، وكيف نتفاداه بحكمة؟"\n• سؤال الاحتمالات: "ماذا لو لم نكن نعرف هذا القانون/المفهوم، كيف كانت حياتنا ستتأثر اليوم؟"`,
+      
+      y: `🛠️ ورشة العمل التطبيقية ومسارات التمايز (UDL):\n• مسار الدعم والمؤازرة (المبتدئ): مهمة موجهة مع بطاقة مفاتيح إرشادية وتدريبات متدرجة الخطوات.\n• مسار التمكين (المتوسط): حل مهمة مركبة في ثنائيات أو مجموعات تعلم تشاركي تتطلب إنتاج حل متكامل.\n• مسار التحدي والإثراء (المتقدم): ابتكار مسألة جديدة أو ربط ${safeTopic} بمجال علمي أو تطبيقي آخر.\n• مخرج الورشة: بطاقة عمل منجزة أو منتج ملموس يبرهن على الفهم العملي.`,
+      
+      h: `🎒 تذكرة الخروج (Exit Ticket) وحصد الزوّادة:\n• سؤال الخروج الإلزامي: "اكتب في جملة واحدة: ما الفكرة الكبرى التي اكتشفتها اليوم في ${safeTopic}؟"\n• خانة زوّادتي (צידת לדרך): "زوّادتي اليوم: مفهوم ${safeTopic}؛ وتطبيقي العملي: سأوظف هذا الزاد في منزلي ومع عائلتي عندما..."\n• تقييم ذاتي: يضع الطالب إشارة على مقياس الثقة (من 1 إلى 5) لمدى قدرته على شرح المفهوم لزميل آخر.`
+    }
+  };
+};
