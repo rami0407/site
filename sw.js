@@ -1,4 +1,4 @@
-const CACHE_NAME = 'musherfe-pwa-v6';
+const CACHE_NAME = 'musherfe-pwa-v8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -19,28 +19,30 @@ const STATIC_ASSETS = [
   '/audio/quest/feedback_hint.mp3'
 ];
 
-// Install Event: cache core app shell
+// Install Event: cache core app shell and immediately activate
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
     })
   );
-  self.skipWaiting();
 });
 
-// Activate Event: clean up old caches
+// Activate Event: purge all older caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log('Purging legacy cache:', name);
+            return caches.delete(name);
+          })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Fetch Event: Stale-while-revalidate for same-origin static assets, network-first for pages
@@ -188,8 +190,12 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// 3. Message Event: trigger notification from app client
+// 3. Message Event: trigger notification or skip waiting from app client
 self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING' || (event.data && event.data.type === 'SKIP_WAITING')) {
+    self.skipWaiting();
+    return;
+  }
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { title, body, icon, url, tag } = event.data;
     const options = {
