@@ -2630,55 +2630,29 @@ ${historySnippet}
                 </p>
               </div>
 
-              {/* Microsoft Word Document Simulator Studio — Premium Redesign */}
-              <div className="word-studio-window">
+              {/* Full-Width Word Online Editor */}
+              <div className="word-online-editor">
 
-                {/* Window Header — Chrome bar + Tab bar (Word-style) */}
-                <div className="word-window-header">
-                  {/* Chrome top bar */}
-                  <div className="word-window-chrome">
-                    <div className="word-window-controls">
-                      <span className="word-ctrl-dot" style={{ background: '#ef4444' }} title="إغلاق"></span>
-                      <span className="word-ctrl-dot" style={{ background: '#f59e0b' }} title="تصغير"></span>
-                      <span className="word-ctrl-dot" style={{ background: '#22c55e' }} title="تكبير"></span>
+                {/* Top Toolbar Bar */}
+                <div className="word-online-toolbar">
+                  {/* Right side: formatting tools */}
+                  <div className="word-online-tools">
+
+                    {/* Font name */}
+                    <div className="word-font-name-display">
+                      <i className="fas fa-font" style={{ fontSize: '0.72rem', color: '#64748b' }}></i>
+                      <span>Tajawal</span>
+                      <i className="fas fa-chevron-down" style={{ fontSize: '0.58rem', color: '#94a3b8' }}></i>
                     </div>
-                    <div className="word-window-title">
-                      <i className="fas fa-file-word" style={{ color: '#93c5fd', fontSize: '1.1rem' }}></i>
-                      <span>محرر البحث العلمي — الفقرة {bgActiveTab} من 3</span>
-                    </div>
-                    <div style={{ width: 60 }}></div>
-                  </div>
 
-                  {/* Word-style Tab bar */}
-                  <div className="word-tab-bar">
-                    {['ملف', 'الرئيسية', 'إدراج', 'تخطيط', 'مراجع', 'مراسلات', 'مراجعة'].map((tab, idx) => (
-                      <span
-                        key={tab}
-                        className={`word-tab-item ${idx === 1 ? 'active-tab' : ''}`}
-                      >
-                        {tab}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Word Ribbon Bar — Premium */}
-                <div className="word-ribbon-bar">
-                  {/* Font family display */}
-                  <div className="word-font-name-display">
-                    <i className="fas fa-font" style={{ fontSize: '0.75rem', color: '#64748b' }}></i>
-                    <span>Tajawal</span>
-                    <i className="fas fa-chevron-down" style={{ fontSize: '0.6rem', color: '#94a3b8', marginRight: 'auto' }}></i>
-                  </div>
-
-                  {/* Font size */}
-                  <div className="word-tool-group">
+                    {/* Font size */}
                     <select
                       className="word-select-font-size"
                       value={wordFontSize}
                       onChange={(e) => setWordFontSize(e.target.value)}
                       title="حجم الخط"
                     >
+                      <option value="14px">14</option>
                       <option value="15px">15</option>
                       <option value="16px">16</option>
                       <option value="18px">18</option>
@@ -2687,96 +2661,66 @@ ${historySnippet}
                       <option value="24px">24</option>
                       <option value="28px">28</option>
                     </select>
-                  </div>
 
-                  {/* Text formatting */}
-                  <div className="word-tool-group">
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordBold ? 'active' : ''}`}
-                      onClick={() => setWordBold(!wordBold)}
-                      title="خط عريض (Bold)"
-                    >
-                      <strong style={{ fontFamily: 'Georgia, serif', fontSize: '1rem' }}>B</strong>
-                    </button>
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordItalic ? 'active' : ''}`}
-                      onClick={() => setWordItalic(!wordItalic)}
-                      title="خط مائل (Italic)"
-                    >
-                      <em style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1rem' }}>I</em>
-                    </button>
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordUnderline ? 'active' : ''}`}
-                      onClick={() => setWordUnderline(!wordUnderline)}
-                      title="تسطير (Underline)"
-                    >
-                      <u style={{ fontFamily: 'Georgia, serif', fontSize: '1rem' }}>U</u>
-                    </button>
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordHighlight ? 'active' : ''}`}
-                      onClick={() => setWordHighlight(!wordHighlight)}
-                      title="تظليل"
-                      style={wordHighlight ? { background: '#fef08a', color: '#854d0e' } : {}}
-                    >
-                      <i className="fas fa-highlighter" style={{ fontSize: '0.85rem' }}></i>
-                    </button>
-                  </div>
+                    <div className="word-online-divider"></div>
 
-                  {/* Alignment */}
-                  <div className="word-tool-group">
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordAlign === 'right' ? 'active' : ''}`}
-                      onClick={() => setWordAlign('right')}
-                      title="محاذاة لليمين"
-                    >
+                    {/* Bold Italic Underline Strikethrough */}
+                    <button type="button"
+                      className={`word-online-btn ${wordBold ? 'active' : ''}`}
+                      onClick={() => setWordBold(!wordBold)} title="خط عريض">
+                      <strong style={{ fontFamily: 'Georgia, serif' }}>B</strong>
+                    </button>
+                    <button type="button"
+                      className={`word-online-btn ${wordItalic ? 'active' : ''}`}
+                      onClick={() => setWordItalic(!wordItalic)} title="مائل">
+                      <em style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>I</em>
+                    </button>
+                    <button type="button"
+                      className={`word-online-btn ${wordUnderline ? 'active' : ''}`}
+                      onClick={() => setWordUnderline(!wordUnderline)} title="تسطير">
+                      <u style={{ fontFamily: 'Georgia, serif' }}>U</u>
+                    </button>
+                    <button type="button"
+                      className={`word-online-btn ${wordHighlight ? 'active' : ''}`}
+                      onClick={() => setWordHighlight(!wordHighlight)} title="تظليل"
+                      style={wordHighlight ? { background: '#fef08a', color: '#854d0e', borderColor: '#fbbf24' } : {}}>
+                      <i className="fas fa-highlighter" style={{ fontSize: '0.82rem' }}></i>
+                    </button>
+
+                    <div className="word-online-divider"></div>
+
+                    {/* Alignment */}
+                    <button type="button"
+                      className={`word-online-btn ${wordAlign === 'right' ? 'active' : ''}`}
+                      onClick={() => setWordAlign('right')} title="محاذاة لليمين">
                       <i className="fas fa-align-right"></i>
                     </button>
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordAlign === 'center' ? 'active' : ''}`}
-                      onClick={() => setWordAlign('center')}
-                      title="توسيط"
-                    >
+                    <button type="button"
+                      className={`word-online-btn ${wordAlign === 'center' ? 'active' : ''}`}
+                      onClick={() => setWordAlign('center')} title="توسيط">
                       <i className="fas fa-align-center"></i>
                     </button>
-                    <button
-                      type="button"
-                      className={`word-tool-btn ${wordAlign === 'justify' ? 'active' : ''}`}
-                      onClick={() => setWordAlign('justify')}
-                      title="ضبط الأسطر"
-                    >
+                    <button type="button"
+                      className={`word-online-btn ${wordAlign === 'justify' ? 'active' : ''}`}
+                      onClick={() => setWordAlign('justify')} title="ضبط الأسطر">
                       <i className="fas fa-align-justify"></i>
                     </button>
-                  </div>
 
-                  {/* Extra tools */}
-                  <div className="word-tool-group">
-                    <button
-                      type="button"
-                      className="word-tool-btn"
-                      title="لائحة نقطية"
-                    >
+                    <div className="word-online-divider"></div>
+
+                    {/* List buttons */}
+                    <button type="button" className="word-online-btn" title="لائحة نقطية">
                       <i className="fas fa-list-ul"></i>
                     </button>
-                    <button
-                      type="button"
-                      className="word-tool-btn"
-                      title="لائحة رقمية"
-                    >
+                    <button type="button" className="word-online-btn" title="لائحة رقمية">
                       <i className="fas fa-list-ol"></i>
                     </button>
-                  </div>
 
-                  {/* Clear formatting */}
-                  <div className="word-tool-group">
-                    <button
-                      type="button"
-                      className="word-tool-btn"
+                    <div className="word-online-divider"></div>
+
+                    {/* Clear formatting */}
+                    <button type="button"
+                      className="word-online-btn word-online-btn-text"
                       onClick={() => {
                         setWordBold(false);
                         setWordItalic(false);
@@ -2785,93 +2729,67 @@ ${historySnippet}
                         setWordAlign('right');
                         setWordFontSize('18px');
                       }}
-                      title="مسح التنسيق"
-                      style={{ width: 'auto', padding: '0 10px', fontSize: '0.82rem', gap: '4px', display: 'flex', alignItems: 'center' }}
-                    >
-                      <i className="fas fa-eraser" style={{ fontSize: '0.8rem' }}></i>
+                      title="مسح التنسيق">
+                      <i className="fas fa-eraser" style={{ fontSize: '0.78rem' }}></i>
                       <span>مسح</span>
                     </button>
                   </div>
-                </div>
 
-                {/* Word Ruler */}
-                <div className="word-ruler-bar">
-                  <span style={{ fontSize: '8px', fontFamily: 'monospace' }}>▲ 0</span>
-                  <span className="word-ruler-ticks">| · · · · | · · · · | · · · · | · · · · | · · · · | · · · · |</span>
-                  <span style={{ fontSize: '8px', fontFamily: 'monospace' }}>15 ▲</span>
-                </div>
-
-                {/* Word Desk & A4 Paper Canvas */}
-                <div className="word-page-desk">
-                  <div className="word-sheet-canvas">
-                    <div className="word-sheet-header-watermark">
-                      <span>🏫 مدرسة مشيرفة الابتدائية — بحث المستكشف العلمي الصغير</span>
-                      <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 10px', borderRadius: 20, fontWeight: 700, fontSize: '0.75rem' }}>
-                        الفقرة {bgActiveTab} من 3
-                      </span>
-                    </div>
-
-                    <textarea
-                      className="word-large-textarea"
-                      value={bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (bgActiveTab === 1) setBgParagraph1(val);
-                        else if (bgActiveTab === 2) setBgParagraph2(val);
-                        else setBgParagraph3(val);
-                      }}
-                      placeholder={
-                        bgActiveTab === 1
-                          ? 'اكتب مسودتك هنا بأسلوبك... مثال: يتناول بحثي ظاهرة نمو النباتات وعلاقتها بضوء الشمس، حيث يعتبر الضوء عاملاً حيوياً أساسياً تحتاجه النباتات...'
-                          : bgActiveTab === 2
-                          ? 'اكتب مسودتك هنا... مثال: تفسر المراجع العلمية أن أوراق النبات تحتوي على صبغة الكلوروفيل الخضراء التي تمتص فوتونات الضوء للقيام بالبناء الضوئي...'
-                          : 'اكتب مسودتك هنا... مثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل...'
-                      }
-                      style={{
-                        fontSize: wordFontSize,
-                        fontWeight: wordBold ? 'bold' : 'normal',
-                        fontStyle: wordItalic ? 'italic' : 'normal',
-                        textDecoration: wordUnderline ? 'underline' : 'none',
-                        backgroundColor: wordHighlight ? 'rgba(254, 240, 138, 0.35)' : 'transparent',
-                        textAlign: wordAlign
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Word Status Bar — Premium */}
-                <div className="word-status-bar">
-                  <div className="word-status-stats">
-                    <span className="word-status-pill">
-                      <i className="fas fa-file-alt" style={{ fontSize: '0.72rem' }}></i>
-                      صفحة 1 من 1
-                    </span>
-                    <span className="word-status-pill">
-                      <i className="fas fa-pencil-alt" style={{ fontSize: '0.72rem' }}></i>
+                  {/* Left side: word count */}
+                  <div className="word-online-meta">
+                    <span>
                       {(() => {
                         const text = bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3;
                         return `${text.trim() ? text.trim().split(/\s+/).length : 0} كلمة`;
                       })()}
                     </span>
-                    <span className="word-status-pill">
-                      <i className="fas fa-text-width" style={{ fontSize: '0.72rem' }}></i>
-                      {(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).length} حرف
-                    </span>
+                    <span style={{ color: '#cbd5e1' }}>|</span>
+                    <span>{(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).length} حرف</span>
                   </div>
-                  <div className="word-status-stats">
-                    <span className="word-status-pill">
-                      🌐 العربية
-                    </span>
-                    <span className="word-status-pill">
-                      <i className="fas fa-search" style={{ fontSize: '0.72rem' }}></i>
-                      100%
-                    </span>
-                  </div>
+                </div>
+
+                {/* Full-width Writing Area */}
+                <textarea
+                  className="word-online-textarea"
+                  value={bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (bgActiveTab === 1) setBgParagraph1(val);
+                    else if (bgActiveTab === 2) setBgParagraph2(val);
+                    else setBgParagraph3(val);
+                  }}
+                  placeholder={
+                    bgActiveTab === 1
+                      ? 'اكتب محتوى الفقرة الأولى هنا بأسلوبك الخاص...\n\nمثال: يتناول بحثي ظاهرة نمو النباتات وعلاقتها بضوء الشمس، حيث يعتبر الضوء عاملاً حيوياً أساسياً تحتاجه النباتات لإجراء عملية البناء الضوئي. تُعدّ هذه الظاهرة من أبرز الظواهر الطبيعية...'
+                      : bgActiveTab === 2
+                      ? 'اكتب محتوى الفقرة الثانية هنا...\n\nمثال: تفسر المراجع العلمية أن أوراق النبات تحتوي على صبغة الكلوروفيل الخضراء التي تمتص فوتونات الضوء للقيام بالبناء الضوئي، مما يؤدي إلى تحويل ثاني أكسيد الكربون والماء إلى...'
+                      : 'اكتب محتوى الفقرة الثالثة هنا...\n\nمثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل وزيادة الإنتاج. كما يُسهم هذا البحث في...'
+                  }
+                  style={{
+                    fontSize: wordFontSize,
+                    fontWeight: wordBold ? 'bold' : 'normal',
+                    fontStyle: wordItalic ? 'italic' : 'normal',
+                    textDecoration: wordUnderline ? 'underline' : 'none',
+                    backgroundColor: wordHighlight ? 'rgba(254, 240, 138, 0.25)' : 'transparent',
+                    textAlign: wordAlign
+                  }}
+                />
+
+                {/* Bottom info bar */}
+                <div className="word-online-bottom">
+                  <span>
+                    <i className="fas fa-info-circle" style={{ color: '#0ea5e9' }}></i>
+                    اكتب بأسلوبك الخاص — سيراجع مُشيرفي كتابتك ويصقلها علمياً ولغوياً
+                  </span>
+                  <span style={{ color: '#64748b' }}>
+                    الفقرة {bgActiveTab} من 3
+                  </span>
                 </div>
               </div>
 
 
               {/* Giant Glowing AI Review Button */}
+
               <button
                 type="button"
                 className="quest-check-btn-giant"
