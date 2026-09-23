@@ -1,4 +1,4 @@
-const CACHE_NAME = 'musherfe-pwa-v8';
+const CACHE_NAME = 'musherfe-pwa-v9';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -107,6 +107,14 @@ self.addEventListener('fetch', (event) => {
             const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
           }
+
+          // If an asset chunk returns 404 (due to a new deployment replacing chunk hashes), signal open clients to refresh
+          if (networkResponse && networkResponse.status === 404 && event.request.url.includes('/assets/')) {
+            self.clients.matchAll({ type: 'window' }).then((clients) => {
+              clients.forEach((client) => client.postMessage({ type: 'CHUNK_404_RELOAD' }));
+            });
+          }
+
           return networkResponse;
         })
         .catch(() => {
