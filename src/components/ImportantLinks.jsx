@@ -160,6 +160,23 @@ const ImportantLinks = () => {
             });
           }
 
+          // Mafatih Pedagogy Portal (بيداغوجيا مفاتيح وتخطيط الحصص - السطر القبل أخير)
+          const hasMafatih = list.some(l => 
+            (l.title && (l.title.includes('مفاتيح') || l.title.includes('المفتاح') || l.title.includes('מפת"ח'))) || 
+            (l.url && (l.url.includes('mafatih') || l.url.includes('pedagogy')))
+          );
+          if (!hasMafatih) {
+            list.push({
+              id: 'school-mafatih-pedagogy-default',
+              title: 'بيداغوجيا مَفَاتِيح (تخطيط الحصص والتعلم العميق)',
+              icon: 'fa-key',
+              url: '#/mafatih',
+              desc: 'منظومة التخطيط البيداغوجي المتقدمة بمحطات مفاتيح الخمس [م • ف • ت • ي • ح] بالذكاء الاصطناعي ومكتبة الدروس المدرسية المشتركة.',
+              badge: 'بيداغوجيا مفاتيح 🗝️',
+              isAi: true
+            });
+          }
+
           // 0. Services Platform (منصة الخدمات)
           const hasServices = list.some(l => 
             (l.title && (l.title.includes('منصة الخدمات') || l.title.includes('שעות בודדות') || l.title.includes('ميلوي מקום'))) || 
@@ -314,7 +331,8 @@ const ImportantLinks = () => {
             const isExcellence = link.url?.includes('excellence') || link.badge?.includes('التميز');
             const isTasbih = link.url?.includes('tasbih') || link.badge?.includes('الذكر') || link.title?.includes('مسبحة');
             const isMonawaat = link.url?.includes('monawaat') || link.badge?.includes('منوعات') || link.title?.includes('منوعات');
-            const isAi = link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة');
+            const isMafatih = link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.title?.includes('مفاتيح');
+            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih;
 
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             let iconGradient = undefined;
@@ -329,6 +347,8 @@ const ImportantLinks = () => {
               iconGradient = 'linear-gradient(135deg, #059669 0%, #064e3b 100%)';
             } else if (isMonawaat) {
               iconGradient = 'linear-gradient(135deg, #ec4899 0%, #d946ef 100%)';
+            } else if (isMafatih) {
+              iconGradient = 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #06b6d4 100%)';
             } else if (link.icon === 'fa-brain') {
               iconGradient = 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)';
             } else if (link.icon === 'fa-book-reader') {
@@ -402,6 +422,12 @@ const ImportantLinks = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
+                  if (link.url?.includes('mafatih') || link.url?.includes('pedagogy')) {
+                    e.preventDefault();
+                    window.location.hash = '#/mafatih';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
                   if (link.url?.includes('initiatives')) {
                     e.preventDefault();
                     if (window.location.hash.includes('/') && !window.location.hash.includes('home')) {
@@ -462,6 +488,12 @@ const ImportantLinks = () => {
                   position: 'relative',
                   overflow: 'hidden',
                   boxShadow: '0 4px 16px rgba(236, 72, 153, 0.18)'
+                } : isMafatih ? {
+                  borderRight: '4px solid #2563eb',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 16px rgba(37, 99, 235, 0.18)'
                 } : isAi ? {
                   borderRight: '4px solid #8b5cf6',
                   background: 'linear-gradient(135deg, #ffffff 0%, #faf5ff 100%)',
@@ -474,14 +506,31 @@ const ImportantLinks = () => {
                   style={iconGradient ? {
                     background: iconGradient,
                     color: isKiosk ? '#000' : '#ffffff',
-                    boxShadow: isKiosk ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isExcellence ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isTasbih ? '0 4px 12px rgba(5, 150, 105, 0.35)' : isMonawaat ? '0 4px 12px rgba(236, 72, 153, 0.35)' : isAi ? '0 4px 12px rgba(139, 92, 246, 0.35)' : undefined
+                    boxShadow: isKiosk ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isExcellence ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isTasbih ? '0 4px 12px rgba(5, 150, 105, 0.35)' : isMonawaat ? '0 4px 12px rgba(236, 72, 153, 0.35)' : isMafatih ? '0 4px 12px rgba(37, 99, 235, 0.35)' : isAi ? '0 4px 12px rgba(139, 92, 246, 0.35)' : undefined
                   } : undefined}
                 >
                   <i className={`fas ${link.icon || 'fa-link'}`}></i>
                 </div>
                 <div className="link-text-wrapper" style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-                    {isAi && (
+                    {isMafatih && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                        color: '#fef08a',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>🗝️</span> بيداغوجيا مفاتيح
+                      </span>
+                    )}
+                    {isAi && !isMafatih && (
                       <span style={{
                         background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                         color: 'white',
@@ -567,7 +616,7 @@ const ImportantLinks = () => {
                         <span>🎨</span> منوعات وإبداع
                       </span>
                     )}
-                    {link.badge && !isAi && !isKiosk && !isExcellence && !isTasbih && !isMonawaat && (
+                    {link.badge && !isAi && !isKiosk && !isExcellence && !isTasbih && !isMonawaat && !isMafatih && (
                       <span style={{
                         background: '#eff6ff',
                         color: '#1d4ed8',
@@ -582,7 +631,7 @@ const ImportantLinks = () => {
                       </span>
                     )}
                   </div>
-                  <span className="link-text" style={isKiosk ? { color: '#b45309', fontWeight: 900 } : isExcellence ? { color: '#b45309', fontWeight: 900 } : isTasbih ? { color: '#047857', fontWeight: 900 } : isMonawaat ? { color: '#be185d', fontWeight: 900 } : isAi ? { color: '#5b21b6', fontWeight: 900 } : undefined}>
+                  <span className="link-text" style={isKiosk ? { color: '#b45309', fontWeight: 900 } : isExcellence ? { color: '#b45309', fontWeight: 900 } : isTasbih ? { color: '#047857', fontWeight: 900 } : isMonawaat ? { color: '#be185d', fontWeight: 900 } : isMafatih ? { color: '#1e40af', fontWeight: 900 } : isAi ? { color: '#5b21b6', fontWeight: 900 } : undefined}>
                     {link.title}
                   </span>
                   <span className="link-desc">{link.desc}</span>
