@@ -424,6 +424,64 @@ const MafatihPedagogyPage = () => {
               </p>
             </div>
 
+            {/* Official Visual Key Infographic Showcase */}
+            <div className="mafatih-key-infographic-card">
+              <div className="infographic-card-header">
+                <div>
+                  <span className="infographic-tag">
+                    <i className="fas fa-project-diagram"></i> المخطط البصري الرسمي للموديل
+                  </span>
+                  <h3>مسار الحصة والتعلم وفق موديل מַפְתֵּ"חַ</h3>
+                </div>
+                <div className="infographic-actions">
+                  <a 
+                    href="/mafatih_key_transparent.png" 
+                    download="mafatih_key_transparent.png" 
+                    className="download-png-btn transparent"
+                    title="تحميل المخطط بصيغة PNG مفرغة بدون خلفية"
+                  >
+                    <i className="fas fa-download"></i> تحميل PNG مفرغ (شفاف)
+                  </a>
+                  <a 
+                    href="/mafatih_key_model.png" 
+                    download="mafatih_key_model.png" 
+                    className="download-png-btn standard"
+                    title="تحميل المخطط بصيغة PNG الأصلية"
+                  >
+                    <i className="fas fa-file-image"></i> تحميل PNG الأصلي
+                  </a>
+                </div>
+              </div>
+
+              <div className="infographic-image-wrapper">
+                <img 
+                  src="/mafatih_key_model.png" 
+                  alt="مخطط موديل مفاتيح التربوي - מודל מפתח" 
+                  className="key-model-img"
+                  loading="lazy"
+                />
+              </div>
+
+              <div className="infographic-interactive-legend">
+                <span className="legend-title">انقر على أي محطة في المخطط للانتقال المباشر لملفها الإجرائي:</span>
+                <div className="legend-pills">
+                  {STATIONS_DATA.map((st, idx) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      className={`legend-pill ${selectedStationIndex === idx ? 'active' : ''}`}
+                      onClick={() => setSelectedStationIndex(idx)}
+                      style={{ '--pill-color': st.color }}
+                    >
+                      <span className="pill-letter">{st.letter}</span>
+                      <span className="pill-name">{st.title}</span>
+                      <small>({st.hebrewTitle.split('/')[0]})</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Stepper Buttons */}
             <div className="stations-stepper">
               {STATIONS_DATA.map((st, idx) => (
