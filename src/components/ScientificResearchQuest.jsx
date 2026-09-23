@@ -2630,103 +2630,152 @@ ${historySnippet}
                 </p>
               </div>
 
-              {/* Microsoft Word Document Simulator Studio */}
+              {/* Microsoft Word Document Simulator Studio — Premium Redesign */}
               <div className="word-studio-window">
-                {/* Window Top Title */}
+
+                {/* Window Header — Chrome bar + Tab bar (Word-style) */}
                 <div className="word-window-header">
-                  <div className="word-window-title">
-                    <i className="fas fa-file-word" style={{ color: '#60a5fa', fontSize: '1.25rem' }}></i>
-                    <span>محرر مستندات البحث العلمي (Microsoft Word Studio) — الفقرة {bgActiveTab} من 3</span>
+                  {/* Chrome top bar */}
+                  <div className="word-window-chrome">
+                    <div className="word-window-controls">
+                      <span className="word-ctrl-dot" style={{ background: '#ef4444' }} title="إغلاق"></span>
+                      <span className="word-ctrl-dot" style={{ background: '#f59e0b' }} title="تصغير"></span>
+                      <span className="word-ctrl-dot" style={{ background: '#22c55e' }} title="تكبير"></span>
+                    </div>
+                    <div className="word-window-title">
+                      <i className="fas fa-file-word" style={{ color: '#93c5fd', fontSize: '1.1rem' }}></i>
+                      <span>محرر البحث العلمي — الفقرة {bgActiveTab} من 3</span>
+                    </div>
+                    <div style={{ width: 60 }}></div>
                   </div>
-                  <div className="word-window-controls">
-                    <span className="word-ctrl-dot" style={{ background: '#ef4444' }}></span>
-                    <span className="word-ctrl-dot" style={{ background: '#f59e0b' }}></span>
-                    <span className="word-ctrl-dot" style={{ background: '#10b981' }}></span>
+
+                  {/* Word-style Tab bar */}
+                  <div className="word-tab-bar">
+                    {['ملف', 'الرئيسية', 'إدراج', 'تخطيط', 'مراجع', 'مراسلات', 'مراجعة'].map((tab, idx) => (
+                      <span
+                        key={tab}
+                        className={`word-tab-item ${idx === 1 ? 'active-tab' : ''}`}
+                      >
+                        {tab}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                {/* Word Ribbon Bar */}
+                {/* Word Ribbon Bar — Premium */}
                 <div className="word-ribbon-bar">
+                  {/* Font family display */}
+                  <div className="word-font-name-display">
+                    <i className="fas fa-font" style={{ fontSize: '0.75rem', color: '#64748b' }}></i>
+                    <span>Tajawal</span>
+                    <i className="fas fa-chevron-down" style={{ fontSize: '0.6rem', color: '#94a3b8', marginRight: 'auto' }}></i>
+                  </div>
+
+                  {/* Font size */}
                   <div className="word-tool-group">
-                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, paddingRight: '4px' }}>حجم الخط:</span>
-                    <select 
-                      className="word-select-font-size" 
-                      value={wordFontSize} 
+                    <select
+                      className="word-select-font-size"
+                      value={wordFontSize}
                       onChange={(e) => setWordFontSize(e.target.value)}
+                      title="حجم الخط"
                     >
-                      <option value="16px">16 (عادي)</option>
-                      <option value="18px">18 (مناسب للبحث)</option>
-                      <option value="20px">20 (كبير)</option>
-                      <option value="22px">22 (عريض)</option>
-                      <option value="24px">24 (عنوان)</option>
+                      <option value="15px">15</option>
+                      <option value="16px">16</option>
+                      <option value="18px">18</option>
+                      <option value="20px">20</option>
+                      <option value="22px">22</option>
+                      <option value="24px">24</option>
+                      <option value="28px">28</option>
                     </select>
                   </div>
 
+                  {/* Text formatting */}
                   <div className="word-tool-group">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordBold ? 'active' : ''}`}
                       onClick={() => setWordBold(!wordBold)}
                       title="خط عريض (Bold)"
                     >
-                      <strong>B</strong>
+                      <strong style={{ fontFamily: 'Georgia, serif', fontSize: '1rem' }}>B</strong>
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordItalic ? 'active' : ''}`}
                       onClick={() => setWordItalic(!wordItalic)}
                       title="خط مائل (Italic)"
                     >
-                      <em>I</em>
+                      <em style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1rem' }}>I</em>
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordUnderline ? 'active' : ''}`}
                       onClick={() => setWordUnderline(!wordUnderline)}
-                      title="تسطير النص (Underline)"
+                      title="تسطير (Underline)"
                     >
-                      <u>U</u>
+                      <u style={{ fontFamily: 'Georgia, serif', fontSize: '1rem' }}>U</u>
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordHighlight ? 'active' : ''}`}
                       onClick={() => setWordHighlight(!wordHighlight)}
-                      title="قلم تمييز النص باللون الأصفر (Highlight)"
+                      title="تظليل"
+                      style={wordHighlight ? { background: '#fef08a', color: '#854d0e' } : {}}
                     >
-                      🖍️
+                      <i className="fas fa-highlighter" style={{ fontSize: '0.85rem' }}></i>
                     </button>
                   </div>
 
+                  {/* Alignment */}
                   <div className="word-tool-group">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordAlign === 'right' ? 'active' : ''}`}
                       onClick={() => setWordAlign('right')}
                       title="محاذاة لليمين"
                     >
                       <i className="fas fa-align-right"></i>
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordAlign === 'center' ? 'active' : ''}`}
                       onClick={() => setWordAlign('center')}
                       title="توسيط"
                     >
                       <i className="fas fa-align-center"></i>
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`word-tool-btn ${wordAlign === 'justify' ? 'active' : ''}`}
                       onClick={() => setWordAlign('justify')}
-                      title="ضبط السطور"
+                      title="ضبط الأسطر"
                     >
                       <i className="fas fa-align-justify"></i>
                     </button>
                   </div>
 
+                  {/* Extra tools */}
                   <div className="word-tool-group">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
+                      className="word-tool-btn"
+                      title="لائحة نقطية"
+                    >
+                      <i className="fas fa-list-ul"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className="word-tool-btn"
+                      title="لائحة رقمية"
+                    >
+                      <i className="fas fa-list-ol"></i>
+                    </button>
+                  </div>
+
+                  {/* Clear formatting */}
+                  <div className="word-tool-group">
+                    <button
+                      type="button"
                       className="word-tool-btn"
                       onClick={() => {
                         setWordBold(false);
@@ -2736,19 +2785,20 @@ ${historySnippet}
                         setWordAlign('right');
                         setWordFontSize('18px');
                       }}
-                      title="مسح التنسيق والرجوع للافتراضي"
-                      style={{ width: 'auto', padding: '0 8px', fontSize: '0.82rem' }}
+                      title="مسح التنسيق"
+                      style={{ width: 'auto', padding: '0 10px', fontSize: '0.82rem', gap: '4px', display: 'flex', alignItems: 'center' }}
                     >
-                      <span>🧹 مسح التنسيق</span>
+                      <i className="fas fa-eraser" style={{ fontSize: '0.8rem' }}></i>
+                      <span>مسح</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Word Ruler */}
                 <div className="word-ruler-bar">
-                  <span>📐 0 cm</span>
+                  <span style={{ fontSize: '8px', fontFamily: 'monospace' }}>▲ 0</span>
                   <span className="word-ruler-ticks">| · · · · | · · · · | · · · · | · · · · | · · · · | · · · · |</span>
-                  <span>15 cm 📐</span>
+                  <span style={{ fontSize: '8px', fontFamily: 'monospace' }}>15 ▲</span>
                 </div>
 
                 {/* Word Desk & A4 Paper Canvas */}
@@ -2756,12 +2806,13 @@ ${historySnippet}
                   <div className="word-sheet-canvas">
                     <div className="word-sheet-header-watermark">
                       <span>🏫 مدرسة مشيرفة الابتدائية — بحث المستكشف العلمي الصغير</span>
-                      <span>الفقرة {bgActiveTab} من 3</span>
+                      <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 10px', borderRadius: 20, fontWeight: 700, fontSize: '0.75rem' }}>
+                        الفقرة {bgActiveTab} من 3
+                      </span>
                     </div>
 
                     <textarea
                       className="word-large-textarea"
-                      rows={6}
                       value={bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -2774,33 +2825,51 @@ ${historySnippet}
                           ? 'اكتب مسودتك هنا بأسلوبك... مثال: يتناول بحثي ظاهرة نمو النباتات وعلاقتها بضوء الشمس، حيث يعتبر الضوء عاملاً حيوياً أساسياً تحتاجه النباتات...'
                           : bgActiveTab === 2
                           ? 'اكتب مسودتك هنا... مثال: تفسر المراجع العلمية أن أوراق النبات تحتوي على صبغة الكلوروفيل الخضراء التي تمتص فوتونات الضوء للقيام بالبناء الضوئي...'
-                          : 'اكتب مسودتك هنا... مثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل وزيادة الإنتاج...'
+                          : 'اكتب مسودتك هنا... مثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل...'
                       }
                       style={{
                         fontSize: wordFontSize,
                         fontWeight: wordBold ? 'bold' : 'normal',
                         fontStyle: wordItalic ? 'italic' : 'normal',
                         textDecoration: wordUnderline ? 'underline' : 'none',
-                        backgroundColor: wordHighlight ? 'rgba(254, 240, 138, 0.45)' : 'transparent',
+                        backgroundColor: wordHighlight ? 'rgba(254, 240, 138, 0.35)' : 'transparent',
                         textAlign: wordAlign
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Word Status Bar */}
+                {/* Word Status Bar — Premium */}
                 <div className="word-status-bar">
                   <div className="word-status-stats">
-                    <span>📄 صفحة 1 من 1</span>
-                    <span>✍️ الكلمات: {(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).trim() ? (bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).trim().split(/\s+/).length : 0} كلمة</span>
-                    <span>🔤 الأحرف: {(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).length} حرفاً</span>
+                    <span className="word-status-pill">
+                      <i className="fas fa-file-alt" style={{ fontSize: '0.72rem' }}></i>
+                      صفحة 1 من 1
+                    </span>
+                    <span className="word-status-pill">
+                      <i className="fas fa-pencil-alt" style={{ fontSize: '0.72rem' }}></i>
+                      {(() => {
+                        const text = bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3;
+                        return `${text.trim() ? text.trim().split(/\s+/).length : 0} كلمة`;
+                      })()}
+                    </span>
+                    <span className="word-status-pill">
+                      <i className="fas fa-text-width" style={{ fontSize: '0.72rem' }}></i>
+                      {(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).length} حرف
+                    </span>
                   </div>
                   <div className="word-status-stats">
-                    <span>🌐 العربية (مشيرفة)</span>
-                    <span>🔍 100%</span>
+                    <span className="word-status-pill">
+                      🌐 العربية
+                    </span>
+                    <span className="word-status-pill">
+                      <i className="fas fa-search" style={{ fontSize: '0.72rem' }}></i>
+                      100%
+                    </span>
                   </div>
                 </div>
               </div>
+
 
               {/* Giant Glowing AI Review Button */}
               <button
