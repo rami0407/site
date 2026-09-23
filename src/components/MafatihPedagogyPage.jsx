@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import LottieRobot from './LottieRobot';
 import './MafatihPedagogyPage.css';
 
 const STATIONS_DATA = [
@@ -181,6 +182,59 @@ const MafatihPedagogyPage = () => {
   const [rubricNotes, setRubricNotes] = useState('');
   const [rubricGenerated, setRubricGenerated] = useState(false);
 
+  // Interactive Lottie Robot Assistant State
+  const [isRobotModalOpen, setIsRobotModalOpen] = useState(false);
+  const [robotChatInput, setRobotChatInput] = useState('');
+  const [robotReply, setRobotReply] = useState(
+    'مرحباً بك في موديل "مَفَاتِيح"! أنا رفيقك الروبوت الذكي 🤖🗝️\nأنا هنا لأساعدك في تخطيط مسار حصتك، إشعال محطة الجذب، وتصميم تذكرة الخروج (الزوّادة). انقر على أي سؤال بالأسفل أو اكتب لي ما يشغل بالك!'
+  );
+  const [isVoiceSpeaking, setIsVoiceSpeaking] = useState(false);
+
+  const speakArabic = (text) => {
+    if (!('speechSynthesis' in window)) {
+      alert('المتصفح الحالي لا يدعم ميزة قراءة الصوت.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (isVoiceSpeaking) {
+      setIsVoiceSpeaking(false);
+      return;
+    }
+    const clean = text.replace(/[🤖🗝️✨💡🧠🛠️🎒🏅🌟❓✔️❌]/g, '');
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = 'ar-SA';
+    utter.rate = 0.95;
+    utter.onend = () => setIsVoiceSpeaking(false);
+    utter.onerror = () => setIsVoiceSpeaking(false);
+    setIsVoiceSpeaking(true);
+    window.speechSynthesis.speak(utter);
+  };
+
+  const handleAskRobot = (query) => {
+    const q = (query || robotChatInput).trim().toLowerCase();
+    if (!q) return;
+
+    let ans = '';
+    if (q.includes('جذب') || q.includes('تشويق') || q.includes('משו')) {
+      ans = '💡 نصيحة لمحطة الجذب [ م ]:\nلا تكشف الإجابة أو الحل! اطرح لغزاً أو صورة محيرة أو مشهداً مألوفاً من حياة الطلاب اليومية. هدفك أن يسأل الطلاب بعفوية: "لماذا يحدث هذا؟" أو "كيف نفسر هذا اللغز؟"';
+    } else if (q.includes('فهم') || q.includes('مفهوم') || q.includes('لقاء')) {
+      ans = '📖 نصيحة لمحطة الفهم [ ف ]:\nركز على المفهوم المركزي بدقة، وفكك الكلمات الصعبة. قدّم نمذجة واضحة (I Do) واطلب من الطلاب إعادة صياغة المفهوم بلغتهم الخاصة للتأكد من استيعابهم قبل الانتقال.';
+    } else if (q.includes('تبصر') || q.includes('تعمق') || q.includes('تفكير')) {
+      ans = '🧠 نصيحة لمحطة التبصر [ ت ]:\nاستخدم أسئلة تفكير عليا (HOTS) مثل "ماذا لو لم يحدث هذا؟" أو "لماذا اخترنا هذا الحل دون غيره؟". تجنب الإجابة بدلاً من الطلاب واجعلهم يستنتجون بأنفسهم.';
+    } else if (q.includes('يدوي') || q.includes('تطبيق') || q.includes('تمايز') || q.includes('udl')) {
+      ans = '🛠️ نصيحة لمحطة التطبيق [ ي ]:\nهنا قلب التمايز! وفر طاولة دعم مع المعلم للتمكين، ومجموعات عمل مستقلة للمتفوقين. نوّع في أشكال المخرجات (كتابي، مجسم، تسجيل، بطاقة تفاعلية).';
+    } else if (q.includes('حصاد') || q.includes('زوادة') || q.includes('تذكرة') || q.includes('exit')) {
+      ans = '🎒 سر "الزوّادة" [ ح ]:\nالحصة لا تنتهي برنين الجرس! بل بسؤالين سريعين:\n1. ما الذي تزودت به اليوم؟\n2. أين وكيف سأوظفه في حياتي أو دراستي القادمة؟\nاجعلها محددة ومختصرة (سطرين فقط).';
+    } else if (q.includes('مسطرة') || q.includes('وقت') || q.includes('זמן')) {
+      ans = '⏱️ نصيحة لمسطرة الحصة:\nفي الحصة العادية (45 دقيقة): امنح الجذب 7د، الفهم 10د، التبصر 10د، التطبيق 14د، والزوّادة 4د. أما في الحصة المضاعفة (90د) فوسع وقت الورشة التطبيقية إلى 35 دقيقة!';
+    } else {
+      ans = `رائع جداً! سؤالك حول "${q}" يرتبط بجوهر موديل مفاتيح. تذكر دائماً أن المفتاح يفتح أبواب التفكير، وأن نجاح الحصة يكمن في امتلاك الطالب لزوّادته الحياتية ونقل أثر التعلم!`;
+    }
+
+    setRobotReply(ans);
+    setRobotChatInput('');
+  };
+
   const selectedStation = STATIONS_DATA[selectedStationIndex];
 
   // Timer effect
@@ -221,14 +275,34 @@ const MafatihPedagogyPage = () => {
             </span>
           </div>
 
-          <h1 className="mafatih-hero-title">
-            موديل <span>"مَفَاتِيح"</span> التربوي
-            <small className="mafatih-hebrew-subtitle">مودل מַפְתֵּ"חַ: الإطار التدريسي الموحد لرسم مسار الحصة</small>
-          </h1>
+          <div className="mafatih-hero-main-flex">
+            <div className="mafatih-hero-text-col">
+              <h1 className="mafatih-hero-title">
+                موديل <span>"مَفَاتِيح"</span> التربوي
+                <small className="mafatih-hebrew-subtitle">مودل מַפְתֵּ"חַ: الإطار التدريسي الموحد لرسم مسار الحصة</small>
+              </h1>
 
-          <p className="mafatih-hero-description">
-            نموذج تعليمي قيادي ينقل الحصة المدرسية من مجرد التلقين السطحي إلى بناء <strong>"الزوّادة" (צידת הדרך)</strong> ونقل أثر التعلم للحياة اليومية عبر 5 محطات إجرائية متناغمة تعزز التمايز، الاحتواء، والوعي الذاتي.
-          </p>
+              <p className="mafatih-hero-description">
+                نموذج تعليمي قيادي ينقل الحصة المدرسية من مجرد التلقين السطحي إلى بناء <strong>"الزوّادة" (צידת הדרך)</strong> ونقل أثر التعلم للحياة اليومية عبر 5 محطات إجرائية متناغمة تعزز التمايز، الاحتواء، والوعي الذاتي.
+              </p>
+            </div>
+
+            {/* Live Interactive Animated Robot in Hero */}
+            <div 
+              className="mafatih-hero-robot-pod" 
+              onClick={() => setIsRobotModalOpen(true)}
+              title="انقر للتحدث مع رفيق مفاتيح الذكي"
+            >
+              <div className="robot-speech-bubble">
+                <span className="sparkle-icon">✨</span>
+                <span>"أنا رفيقكم المتحرك في موديل مفاتيح! انقر عليّ لأساعدك!"</span>
+              </div>
+              <LottieRobot width="170px" height="170px" className="hero-animated-robot" />
+              <div className="robot-name-chip">
+                <span>🤖 رفيق مفاتيح الذكي</span>
+              </div>
+            </div>
+          </div>
 
           {/* Quick Acronym Visual Cards */}
           <div className="mafatih-acronym-bar">
@@ -1493,6 +1567,129 @@ const MafatihPedagogyPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* 5. FLOATING INTERACTIVE ROBOT ASSISTANT BUTTON */}
+      <div 
+        className="floating-robot-trigger"
+        onClick={() => setIsRobotModalOpen(true)}
+        title="اسأل رفيق مفاتيح الذكي"
+      >
+        <LottieRobot width="75px" height="75px" className="float-mini-robot" />
+        <span className="float-robot-label">
+          <span className="float-pulse-dot"></span>
+          اسألني عن مفاتيح!
+        </span>
+      </div>
+
+      {/* 6. ROBOT INTERACTIVE DIALOG MODAL */}
+      {isRobotModalOpen && (
+        <div className="robot-modal-overlay" onClick={() => setIsRobotModalOpen(false)}>
+          <div className="robot-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="robot-modal-header">
+              <div className="robot-modal-avatar">
+                <LottieRobot width="70px" height="70px" />
+              </div>
+              <div className="robot-modal-title-wrap">
+                <h3>رفيق مفاتيح التربوي الذكي 🗝️🤖</h3>
+                <p>مساعدك الميداني لصياغة وتطبيق المحطات الخمس وحصد الزوّادة</p>
+              </div>
+              <button 
+                className="robot-modal-close"
+                onClick={() => setIsRobotModalOpen(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="robot-modal-body">
+              {/* Robot Speech Display */}
+              <div className="robot-speech-display">
+                <div className="robot-speech-header">
+                  <span className="robot-badge-tag"><i className="fas fa-comment-dots"></i> إرشادات الروبوت:</span>
+                  <button 
+                    type="button"
+                    className={`robot-voice-read-btn ${isVoiceSpeaking ? 'speaking' : ''}`}
+                    onClick={() => speakArabic(robotReply)}
+                  >
+                    <i className={`fas ${isVoiceSpeaking ? 'fa-volume-mute' : 'fa-volume-up'}`}></i>
+                    {isVoiceSpeaking ? 'إيقاف الصوت' : 'استمع بالصوت العربي'}
+                  </button>
+                </div>
+                <p className="robot-speech-text">{robotReply}</p>
+              </div>
+
+              {/* Quick Questions Chips */}
+              <div className="robot-quick-topics">
+                <span className="topics-label">اسألني بسرعة عن أي محطة أو أداة:</span>
+                <div className="topics-chips-grid">
+                  <button 
+                    type="button" 
+                    className="topic-chip yellow"
+                    onClick={() => handleAskRobot('جذب وتشويق')}
+                  >
+                    🧲 سر محطة الجذب
+                  </button>
+                  <button 
+                    type="button" 
+                    className="topic-chip cyan"
+                    onClick={() => handleAskRobot('فهم وتفكيك المفهوم')}
+                  >
+                    💡 نمذجة المفهوم
+                  </button>
+                  <button 
+                    type="button" 
+                    className="topic-chip purple"
+                    onClick={() => handleAskRobot('تبصر وتفكير عليا')}
+                  >
+                    🧠 أسئلة التفكير العليا
+                  </button>
+                  <button 
+                    type="button" 
+                    className="topic-chip green"
+                    onClick={() => handleAskRobot('تطبيق وتمايز udl')}
+                  >
+                    🛠️ ورشة التمايز UDL
+                  </button>
+                  <button 
+                    type="button" 
+                    className="topic-chip pink"
+                    onClick={() => handleAskRobot('حصاد وزوادة ونقل الأثر')}
+                  >
+                    🎒 الزوّادة ونقل الأثر
+                  </button>
+                  <button 
+                    type="button" 
+                    className="topic-chip slate"
+                    onClick={() => handleAskRobot('توزيع مسطرة الحصة')}
+                  >
+                    ⏱️ مسطرة الحصة والوقت
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Input Query */}
+              <div className="robot-query-input-bar">
+                <input 
+                  type="text"
+                  placeholder="اكتب استفسارك هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."
+                  value={robotChatInput}
+                  onChange={(e) => setRobotChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAskRobot();
+                  }}
+                />
+                <button 
+                  type="button"
+                  className="robot-query-send-btn"
+                  onClick={() => handleAskRobot()}
+                >
+                  <i className="fas fa-paper-plane"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

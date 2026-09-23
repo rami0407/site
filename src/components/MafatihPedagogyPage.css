@@ -1867,6 +1867,320 @@
 }
 
 /* =========================================================================
+   ROBOT ANIMATION & INTERACTIVE ASSISTANT POD
+   ========================================================================= */
+
+.mafatih-hero-main-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  text-align: right;
+}
+
+.mafatih-hero-text-col {
+  flex: 1;
+}
+
+.mafatih-hero-robot-pod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  user-select: none;
+}
+
+.mafatih-hero-robot-pod:hover {
+  transform: translateY(-6px) scale(1.03);
+}
+
+.robot-speech-bubble {
+  background: white;
+  color: #0f172a;
+  padding: 8px 14px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  max-width: 200px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  margin-bottom: 6px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+  animation: floatBubble 2.5s ease-in-out infinite alternate;
+}
+
+.robot-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: white transparent;
+  display: block;
+  width: 0;
+}
+
+@keyframes floatBubble {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+.hero-animated-robot {
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.35));
+}
+
+.robot-name-chip {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fbbf24;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-top: 4px;
+  backdrop-filter: blur(8px);
+}
+
+/* FLOATING ROBOT TRIGGER BUTTON */
+.floating-robot-trigger {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px solid #38bdf8;
+  padding: 6px 16px 6px 8px;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-robot-trigger:hover {
+  transform: scale(1.08) translateY(-4px);
+  box-shadow: 0 14px 35px rgba(56, 189, 248, 0.4);
+  border-color: #fbbf24;
+}
+
+.float-robot-label {
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.float-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+/* ROBOT DIALOG MODAL */
+.robot-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.robot-modal-card {
+  background: white;
+  width: 100%;
+  max-width: 560px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+  animation: modalPopIn 0.3s ease;
+}
+
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.robot-modal-header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+  color: white;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.robot-modal-title-wrap {
+  flex: 1;
+}
+
+.robot-modal-title-wrap h3 {
+  margin: 0 0 2px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fbbf24;
+}
+
+.robot-modal-title-wrap p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.robot-modal-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.robot-modal-body {
+  padding: 1.5rem;
+}
+
+.robot-speech-display {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.robot-speech-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.robot-badge-tag {
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #1e3a8a;
+}
+
+.robot-voice-read-btn {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.robot-voice-read-btn.speaking {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.robot-speech-text {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.75;
+  color: #334155;
+  white-space: pre-line;
+}
+
+.robot-quick-topics {
+  margin-bottom: 1.25rem;
+}
+
+.topics-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.topics-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.topic-chip {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: right;
+  transition: all 0.2s ease;
+}
+
+.topic-chip:hover {
+  transform: translateY(-2px);
+}
+
+.topic-chip.yellow:hover { border-color: #f59e0b; background: #fffbeb; }
+.topic-chip.cyan:hover { border-color: #06b6d4; background: #ecfeff; }
+.topic-chip.purple:hover { border-color: #8b5cf6; background: #f5f3ff; }
+.topic-chip.green:hover { border-color: #10b981; background: #ecfdf5; }
+.topic-chip.pink:hover { border-color: #ec4899; background: #fdf2f8; }
+.topic-chip.slate:hover { border-color: #64748b; background: #f8fafc; }
+
+.robot-query-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.robot-query-input-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-family: inherit;
+  font-size: 0.92rem;
+}
+
+.robot-query-send-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* =========================================================================
    RESPONSIVE DESIGN (MOBILE & TABLETS)
    ========================================================================= */
 
