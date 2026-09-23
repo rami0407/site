@@ -12,7 +12,8 @@ import PwaInstallPrompt from './components/PwaInstallPrompt';
 import NotificationPromptBanner from './components/NotificationPromptBanner';
 import SocraticHomeworkModal from './components/SocraticHomeworkModal';
 import CentralNotificationModal from './components/CentralNotificationModal';
-import { db } from './firebase';
+import { db, auth } from './firebase';
+import { getScientificResearchVisibility, subscribeScientificResearchVisibility } from './utils/pageVisibilityService';
 import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
 import { 
   calendarEvents, 
@@ -67,6 +68,14 @@ const MafatihPedagogyPage = lazy(() => import('./components/MafatihPedagogyPage'
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
   const [isGlobalHomeworkHelperOpen, setIsGlobalHomeworkHelperOpen] = useState(false);
+  const [isResearchVisible, setIsResearchVisible] = useState(() => getScientificResearchVisibility());
+
+  useEffect(() => {
+    const unsub = subscribeScientificResearchVisibility((val) => {
+      setIsResearchVisible(val);
+    });
+    return () => unsub();
+  }, []);
 
   // Clean event-driven hash routing listener and homework helper trigger
   useEffect(() => {
@@ -426,6 +435,123 @@ function App() {
   }
 
   if (isResearchQuestView) {
+    const isAdminOrPreview = 
+      (typeof window !== 'undefined' && sessionStorage.getItem('admin_preview_research') === 'true') ||
+      Boolean(auth.currentUser);
+
+    if (!isResearchVisible && !isAdminOrPreview) {
+      return (
+        <Suspense fallback={<Loader />}>
+          <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            padding: '1.5rem',
+            direction: 'rtl',
+            color: '#f8fafc',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
+            <div style={{
+              maxWidth: '540px',
+              width: '100%',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              borderRadius: '24px',
+              padding: '2.5rem 2rem',
+              textAlign: 'center',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{
+                width: '84px',
+                height: '84px',
+                margin: '0 auto 1.5rem',
+                borderRadius: '50%',
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '2px solid #38bdf8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2.5rem',
+                color: '#38bdf8'
+              }}>
+                🔬
+              </div>
+
+              <span style={{
+                display: 'inline-block',
+                background: 'rgba(234, 179, 8, 0.15)',
+                color: '#facc15',
+                border: '1px solid rgba(234, 179, 8, 0.3)',
+                padding: '0.4rem 1rem',
+                borderRadius: '50px',
+                fontSize: '0.88rem',
+                fontWeight: 800,
+                marginBottom: '1rem'
+              }}>
+                🚧 قيد التطوير والتجهيز
+              </span>
+
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: '0.75rem', color: '#ffffff' }}>
+                مختبر البحث العلمي (المستكشف الصغير)
+              </h2>
+
+              <p style={{ color: '#94a3b8', fontSize: '1rem', lineHeight: '1.7', marginBottom: '2rem' }}>
+                يقوم طاقم مدرسة مشيرفة الابتدائية حالياً بتجهيز وتحديث مختبر البحث العلمي التفاعلي. سيتم إتاحة وتفعيل الصفحة لجميع الطلاب قريباً بإذن الله! ✨
+              </p>
+
+              <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = '#/'; }}
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.8rem 1.6rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontSize: '0.95rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 15px rgba(2, 132, 199, 0.4)'
+                  }}
+                >
+                  <i className="fas fa-home"></i>
+                  <span>العودة للصفحة الرئيسية</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = '#/admin'; }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    color: '#94a3b8',
+                    border: '1px solid #475569',
+                    padding: '0.8rem 1.4rem',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.92rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <i className="fas fa-user-shield"></i>
+                  <span>دخول الإدارة</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Suspense>
+      );
+    }
+
     return (
       <Suspense fallback={<Loader />}>
         <Loader />

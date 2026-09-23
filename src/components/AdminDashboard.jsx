@@ -33,6 +33,7 @@ import LostFoundAdminTab from './LostFoundAdminTab';
 import FamilyChallengeAdminTab from './FamilyChallengeAdminTab';
 import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import StudentDismissalAdminTab from './StudentDismissalAdminTab';
+import ScientificResearchAdminTab from './ScientificResearchAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
@@ -4732,6 +4733,27 @@ const AdminDashboard = () => {
               🛡️ مركز الأمان وسجل التدقيق
             </button>
 
+            {/* TAB: SCIENTIFIC RESEARCH MANAGEMENT */}
+            <button 
+              onClick={() => setActiveTab('scientific-research-admin')} 
+              className={`filter-chip ${activeTab === 'scientific-research-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'scientific-research-admin' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#f0f9ff',
+                color: activeTab === 'scientific-research-admin' ? 'white' : '#0369a1',
+                fontWeight: 900,
+                border: '2px solid #38bdf8',
+                boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)'
+              }}
+            >
+              <i className="fas fa-microscope" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'scientific-research-admin' ? 'white' : '#0284c7' }}></i>
+              🔬 صفحة البحث العلمي
+            </button>
+
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.5rem 0' }}></div>
 
             <button 
@@ -8740,6 +8762,13 @@ const AdminDashboard = () => {
               {activeTab === 'student-dismissal-admin' && (
                 <div>
                   <StudentDismissalAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: إدارة صفحة خطوات البحث العلمي (المستكشف الصغير) */}
+              {activeTab === 'scientific-research-admin' && (
+                <div>
+                  <ScientificResearchAdminTab />
                 </div>
               )}
 

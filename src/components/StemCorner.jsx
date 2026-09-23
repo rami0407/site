@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
 import { generateStemSolutionIdeas, askSocraticStemMentor } from '../utils/aiService';
+import { getScientificResearchVisibility, subscribeScientificResearchVisibility } from '../utils/pageVisibilityService';
 import './StemCorner.css';
 
 const DEFAULT_CHALLENGES = [
@@ -209,6 +210,20 @@ const StemCorner = ({ isStandalone = true }) => {
   const [solutions, setSolutions] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState(DEFAULT_CHALLENGES[0]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isResearchVisible, setIsResearchVisible] = useState(() => getScientificResearchVisibility());
+
+  useEffect(() => {
+    const unsub = subscribeScientificResearchVisibility((vis) => {
+      setIsResearchVisible(vis);
+    });
+    return () => unsub();
+  }, []);
+
+  const canSeeResearchQuest = isResearchVisible || 
+    (typeof window !== 'undefined' && (
+      sessionStorage.getItem('admin_preview_research') === 'true' || 
+      Boolean(auth?.currentUser)
+    ));
 
   // Auto-fill student details from global Single Sign-On session
   const [studentSession, setStudentSession] = useState(getStudentSession());
@@ -732,20 +747,22 @@ const StemCorner = ({ isStandalone = true }) => {
           <i className="fas fa-bars-progress"></i> 5. متابعة ابتكاراتي وتحدياتي 🔍
         </button>
 
-        <button 
-          className="stem-tab-btn"
-          onClick={() => window.location.hash = '#/scientific-research'}
-          style={{
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-            color: '#ffffff',
-            borderColor: '#0284c7',
-            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
-            fontWeight: 800
-          }}
-          title="الانتقال لرحلة خطوات البحث العلمي التفاعلية مع الروبوت مشيرفي"
-        >
-          <i className="fas fa-microscope"></i> 6. خطوات البحث العلمي (المستكشف الصغير) 🔬✨
-        </button>
+        {canSeeResearchQuest && (
+          <button 
+            className="stem-tab-btn"
+            onClick={() => window.location.hash = '#/scientific-research'}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              color: '#ffffff',
+              borderColor: '#0284c7',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+              fontWeight: 800
+            }}
+            title="الانتقال لرحلة خطوات البحث العلمي التفاعلية مع الروبوت مشيرفي"
+          >
+            <i className="fas fa-microscope"></i> 6. خطوات البحث العلمي (المستكشف الصغير) 🔬✨
+          </button>
+        )}
 
         <button 
           className={`stem-tab-btn ${activeTab === 'socratic' ? 'active' : ''}`}
