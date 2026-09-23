@@ -269,7 +269,21 @@ const MafatihPedagogyPage = () => {
   const [rubricGenerated, setRubricGenerated] = useState(false);
 
   // Robot AI Lesson Planner State (الروبوت المساعد الذكي لتخطيط حصص مفاتيح)
-  const [robotMode, setRobotMode] = useState('plan'); // 'plan' (default) or 'advice'
+  const [robotMode, setRobotMode] = useState('choice'); // 'choice' (welcoming selection), 'plan' (instant full auto), 'step_by_step' (guided wizard), or 'advice'
+  const [wizardStep, setWizardStep] = useState(0); // 0: setup, 1: [م], 2: [ف], 3: [ت], 4: [ي], 5: [ح], 6: summary
+  const [wizardPlan, setWizardPlan] = useState({
+    subject: 'لغة عربية',
+    grade: 'الصف الخامس',
+    topic: '',
+    objective: '',
+    duration: 45,
+    m: '',
+    f: '',
+    t: '',
+    y: '',
+    h: ''
+  });
+  const [isWizardGeneratingStep, setIsWizardGeneratingStep] = useState(false);
   const [aiSubject, setAiSubject] = useState('لغة عربية');
   const [aiGrade, setAiGrade] = useState('الصف الرابع');
   const [aiTopic, setAiTopic] = useState('');
@@ -279,6 +293,93 @@ const MafatihPedagogyPage = () => {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
+
+  // Helper for generating inspirational pedagogical suggestions for each station
+  const getStationSuggestions = (stationKey, topic, subject) => {
+    const t = (topic && topic.trim()) ? topic.trim() : 'الموضوع المركزي للحصة';
+    const s = subject || 'المادة';
+    if (stationKey === 'm') {
+      return [
+        {
+          title: '🖼️ لغز بصري وصورة مثيرة للدهشة',
+          text: `عرض صورة مقربة أو مشهد غير مألوف يتعلق بـ (${t}) وسؤال الطلاب: "ماذا تشاهدون هنا؟ وما هو اللغز الخفي الذي لا تراه أعيننا مباشرة؟" لتحفيز الفضول دون حرق الإجابة.`
+        },
+        {
+          title: '⚡ تجربة صدمة أو استثارة حسية سريعة',
+          text: `إجراء تجربة حسية دقيقتين تخالف توقعات الطلاب البديهية حول (${t})، وتركهم في حيرة وتساؤل يبحثون عن تفسير علمي ومنطقي له.`
+        },
+        {
+          title: '🎭 معضلة واقعية وسيناريو من بيئتنا',
+          text: `طرح قصة قصيرة لمعضلة حياتية واجهت طلاب أو أهالي قرية مشيرفة، تحتاج حلاً وتفكيراً يرتبط بـ (${t}) لمساعدة الشخصية في اتخاذ القرار.`
+        }
+      ];
+    }
+    if (stationKey === 'f') {
+      return [
+        {
+          title: '📖 تفكيك المصطلح ونمذجة I Do',
+          text: `تدوين المصطلح المركزي لـ (${t}) في "القاموس العلمي"، ونمذجة المعلم بصوت مفكر لحل المثال الأول أو تفكيك القاعدة أمام الطلاب خطوة بخطوة.`
+        },
+        {
+          title: '🗺️ مخطط مفاهيمي ومنظم بصري',
+          text: `بناء خريطة مفاهيمية تشاركية على اللوح التفاعلي تربط بين المفهوم الجديد لـ (${t}) والخبرات السابقة مع إشراك الطلاب في سد الفجوات.`
+        },
+        {
+          title: '🎬 استكشاف موجه بمقطع تفاعلي قصير',
+          text: `عرض فيديو دقيقة ونصف يشرح آلية (${t}) مع إيقاف مؤقت عند كل مرحلة مفصلية لتدوين استنتاجات الطلاب ومصادقتها علمياً.`
+        }
+      ];
+    }
+    if (stationKey === 't') {
+      return [
+        {
+          title: '🧠 سؤال سقراطي وتفكير ناقد عميق',
+          text: `طرح سؤال تعمق: "ماذا لو اختفى (${t}) من حياتنا وبيئتنا؟ وما الفرق الجوهري بين الحالتين؟" لتحفيز التعليل وربط الأسباب بالنتائج.`
+        },
+        {
+          title: '👥 روتين التفكير: فكّر - زاوِج - شارك',
+          text: `منح كل طالب دقيقة صامتة للتأمل في معضلة حول (${t})، ثم دقيقتين لتبادل الحجج مع الزميل، ثم نقاش صفي موجه للوصول لتعميم علمي.`
+        },
+        {
+          title: '⚖️ محاكمة الفرضيات ومقارنة الأدلة',
+          text: `طرح رأيين أو فرضيتين متناقضتين حول تطبيق (${t})، وتكليف الطلاب بالبحث عن براهين وقرائن تدعم أحد الرأيين وتفند الآخر.`
+        }
+      ];
+    }
+    if (stationKey === 'y') {
+      return [
+        {
+          title: '🎨 مسارات التمايز الثلاثية UDL',
+          text: `ورشة عمل بمستويات متمايزة:\n• مسار الدعم: بطاقة موجهة مع بنك مصطلحات وقوالب مساعدة.\n• المسار الأساسي: تطبيق عملي وحل مشكلات ثنائي لترسيخ مفهوم (${t}).\n• مسار التميز: مهمة إثرائية مفتوحة تتطلب الابتكار ونقل المعرفة لموقف جديد.`
+        },
+        {
+          title: '🛠️ ورشة إنتاج مخرج ملموس',
+          text: `توزيع الطلاب في مجموعات لإنتاج مخرج صفي (ملصق توعوي، مجسم بسيط، بطاقة إرشادية، أو خريطة ذهنية) يجسد استيعابهم لـ (${t}).`
+        },
+        {
+          title: '🔄 محطات تعلم نشطة وتدريب مهام',
+          text: `تقسيم الغرفة الصفية لـ 3 محطات دوران سريعة؛ كل محطة تعالج زاوية تطبيقية مختلفة لـ (${t})، وينتقل الطلاب بينها كل 4 دقائق.`
+        }
+      ];
+    }
+    if (stationKey === 'h') {
+      return [
+        {
+          title: '🎒 بطاقة "زوّادتي" وتذكرة الخروج (Exit Ticket)',
+          text: `يدون كل طالب في دفتره:\n1. زوّادتي المعرفية: "المصطلح والمهارة التي اكتسبتها اليوم هي...".\n2. زوّادتي الحياتية: "كيف سأستخدم ما تعلمته حول (${t}) الليلة في بيتي ومع عائلتي؟".`
+        },
+        {
+          title: '🏡 سؤال نقل الأثر للبيت والواقع',
+          text: `تحدي المساء: "اشرح لأحد والديك أو إخوتك في المنزل اليوم فكرة (${t}) في دقيقة واحدة واطلب منه أن يوقع لك في دفتر الملاحظات!".`
+        },
+        {
+          title: '✨ دقيقة الوعي الذاتي والامتنان',
+          text: `جلسة ختامية هادئة يشارك فيها كل طالب كلمة أو شعوراً يلخص به تجربته اليوم في حصة (${s})، مع مصادقة المعلم على التميز والمشاركة.`
+        }
+      ];
+    }
+    return [];
+  };
 
   const handleGeneratePlanWithRobot = async () => {
     if (!aiTopic.trim()) {
@@ -305,14 +406,34 @@ const MafatihPedagogyPage = () => {
   };
 
   const handleDownloadWord = (planToExport) => {
-    const data = planToExport || generatedPlan || {
-      subject: plannerSubject,
-      grade: plannerGrade,
-      title: plannerTitle,
-      objective: '',
-      duration: 45,
-      stations: plannerStations
-    };
+    let data = planToExport;
+    if (!data && robotMode === 'step_by_step' && wizardPlan.topic) {
+      data = {
+        subject: wizardPlan.subject,
+        grade: wizardPlan.grade,
+        title: wizardPlan.topic,
+        objective: wizardPlan.objective || '',
+        duration: wizardPlan.duration || 45,
+        stations: {
+          m: wizardPlan.m,
+          f: wizardPlan.f,
+          t: wizardPlan.t,
+          y: wizardPlan.y,
+          h: wizardPlan.h
+        }
+      };
+    }
+    if (!data) data = generatedPlan;
+    if (!data) {
+      data = {
+        subject: plannerSubject,
+        grade: plannerGrade,
+        title: plannerTitle,
+        objective: '',
+        duration: 45,
+        stations: plannerStations
+      };
+    }
     exportLessonPlanToWord({
       subject: data.subject,
       grade: data.grade,
@@ -324,14 +445,34 @@ const MafatihPedagogyPage = () => {
   };
 
   const handleDownloadPdf = (planToExport) => {
-    const data = planToExport || generatedPlan || {
-      subject: plannerSubject,
-      grade: plannerGrade,
-      title: plannerTitle,
-      objective: '',
-      duration: 45,
-      stations: plannerStations
-    };
+    let data = planToExport;
+    if (!data && robotMode === 'step_by_step' && wizardPlan.topic) {
+      data = {
+        subject: wizardPlan.subject,
+        grade: wizardPlan.grade,
+        title: wizardPlan.topic,
+        objective: wizardPlan.objective || '',
+        duration: wizardPlan.duration || 45,
+        stations: {
+          m: wizardPlan.m,
+          f: wizardPlan.f,
+          t: wizardPlan.t,
+          y: wizardPlan.y,
+          h: wizardPlan.h
+        }
+      };
+    }
+    if (!data) data = generatedPlan;
+    if (!data) {
+      data = {
+        subject: plannerSubject,
+        grade: plannerGrade,
+        title: plannerTitle,
+        objective: '',
+        duration: 45,
+        stations: plannerStations
+      };
+    }
     exportLessonPlanToPdf({
       subject: data.subject,
       grade: data.grade,
@@ -1883,10 +2024,29 @@ ${p.stations?.h || ''}
             <div className="robot-nav-modes">
               <button 
                 type="button"
+                className={`robot-mode-tab ${robotMode === 'choice' ? 'active' : ''}`}
+                onClick={() => setRobotMode('choice')}
+              >
+                <i className="fas fa-compass"></i> 🧭 خيارات التخطيط
+              </button>
+              <button 
+                type="button"
                 className={`robot-mode-tab ${robotMode === 'plan' ? 'active' : ''}`}
                 onClick={() => setRobotMode('plan')}
               >
-                <i className="fas fa-magic"></i> ⚡ هندسة وتوليد خطة الدرس
+                <i className="fas fa-bolt"></i> ⚡ خطة كاملة فورية
+              </button>
+              <button 
+                type="button"
+                className={`robot-mode-tab ${robotMode === 'step_by_step' ? 'active' : ''}`}
+                onClick={() => {
+                  setRobotMode('step_by_step');
+                  if (wizardStep === 0 && !wizardPlan.topic && aiTopic) {
+                    setWizardPlan(prev => ({ ...prev, topic: aiTopic, subject: aiSubject, grade: aiGrade }));
+                  }
+                }}
+              >
+                <i className="fas fa-shoe-prints"></i> 🤝 مرافقة خطوة بخطوة
               </button>
               <button 
                 type="button"
@@ -1898,7 +2058,382 @@ ${p.stations?.h || ''}
             </div>
 
             <div className="robot-modal-body">
-              {robotMode === 'plan' ? (
+              {/* ========================================================================= */}
+              {/* MODE 1: WELCOME & PATH SELECTION (CHOICE SCREEN)                          */}
+              {/* ========================================================================= */}
+              {robotMode === 'choice' ? (
+                <div className="robot-choice-flow">
+                  <div className="robot-welcome-banner">
+                    <div className="welcome-avatar-wrap">
+                      <LottieRobot width="80px" height="80px" />
+                    </div>
+                    <div className="welcome-text-wrap">
+                      <h4>مرحباً بك زميلي المعلم في مدرسة مشيرفة الابتدائية! 👋</h4>
+                      <p>
+                        أنا رفيقك ومستشارك البيداغوجي الذكي لهندسة وتخطيط الدروس بموديل «مَفَاتِيح». لإراحة المعلمين وتوفير وقتكم وجهدكم، كيف ترغب في تخطيط حصتك اليوم؟
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="choice-cards-grid">
+                    {/* Path A: Fast-Track Auto Complete Plan */}
+                    <div 
+                      className="robot-path-card fast-plan"
+                      onClick={() => setRobotMode('plan')}
+                    >
+                      <div className="path-card-badge">⚡ المسار السريع</div>
+                      <div className="path-card-icon">⚡📜</div>
+                      <h3>بناء وتوليد خطة درس كاملة فورية</h3>
+                      <p>
+                        أدخل موضوع الحصة، وسيقوم الروبوت بهندسة وتوليد الخطة كاملة بجميع محطاتها الخمس وتمايز UDL بضغطة زر، وتجهيزها للتصدير كـ Word أو PDF.
+                      </p>
+                      <button type="button" className="path-action-btn fast">
+                        ابدأ التوليد الفوري ⚡
+                      </button>
+                    </div>
+
+                    {/* Path B: Step-by-Step Guided Companion */}
+                    <div 
+                      className="robot-path-card guided-plan"
+                      onClick={() => {
+                        setRobotMode('step_by_step');
+                        if (!wizardPlan.topic && aiTopic) {
+                          setWizardPlan(prev => ({ ...prev, topic: aiTopic, subject: aiSubject, grade: aiGrade }));
+                        }
+                      }}
+                    >
+                      <div className="path-card-badge">🤝 المسار التفاعلي الممتع</div>
+                      <div className="path-card-icon">👣🗝️</div>
+                      <h3>مرافقة خطوة بخطوة لبناء الحصة معاً</h3>
+                      <p>
+                        سأرافقك كمرشد ومستشار بيداغوجي محطة بمحطة ([م] ثم [ف] ثم [ت] ثم [ي] ثم [ح])، وأقترح عليك أفكاراً وخيارات إبداعية لتختار منها وتعدلها بأسلوبك.
+                      </p>
+                      <button type="button" className="path-action-btn guided">
+                        رافقني خطوة بخطوة 👣
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="choice-footer-note">
+                    <span>
+                      <i className="fas fa-info-circle" style={{ color: '#0ea5e9', marginLeft: '6px' }}></i>
+                      أو يمكنك استشارتي بحرية في أي شأن بيداغوجي أو استراتيجية تدريس:
+                    </span>
+                    <button 
+                      type="button" 
+                      className="open-advice-btn"
+                      onClick={() => setRobotMode('advice')}
+                    >
+                      💬 فتح الاستشارات البيداغوجية
+                    </button>
+                  </div>
+                </div>
+              ) : robotMode === 'step_by_step' ? (
+                /* ========================================================================= */
+                /* MODE 2: STEP-BY-STEP GUIDED WIZARD (STATION BY STATION)                   */
+                /* ========================================================================= */
+                <div className="robot-wizard-flow">
+                  {/* Station Progress Stepper Tracker */}
+                  <div className="wizard-stepper-bar">
+                    {[
+                      { step: 0, label: 'البيانات', icon: '📝' },
+                      { step: 1, label: '[م] جلب', icon: '🧲' },
+                      { step: 2, label: '[ف] فهم', icon: '💡' },
+                      { step: 3, label: '[ت] تبصر', icon: '🧠' },
+                      { step: 4, label: '[ي] يدوي', icon: '🛠️' },
+                      { step: 5, label: '[ح] حصاد', icon: '🎒' },
+                      { step: 6, label: 'الخطة كاملة', icon: '🎉' }
+                    ].map((st) => (
+                      <div 
+                        key={st.step} 
+                        className={`stepper-node ${wizardStep === st.step ? 'active' : ''} ${wizardStep > st.step ? 'completed' : ''}`}
+                        onClick={() => {
+                          if (wizardStep > 0 && wizardPlan.topic) setWizardStep(st.step);
+                        }}
+                      >
+                        <span className="node-icon">{wizardStep > st.step ? '✓' : st.icon}</span>
+                        <span className="node-label">{st.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* STEP 0: LESSON METADATA SETUP */}
+                  {wizardStep === 0 && (
+                    <div className="wizard-step-pane fade-in">
+                      <div className="wizard-step-header">
+                        <h4>الخطوة التمهيدية: ما هو موضوع الحصة التي سنبنيها معاً؟ 🎯</h4>
+                        <p>حدد المادة والصف وعنوان الحصة لنتمكن من مرافقتك واقتراح الأفكار الأنسب لكل محطة:</p>
+                      </div>
+
+                      <div className="robot-form-row">
+                        <div className="robot-form-group">
+                          <label>المادة الدراسية:</label>
+                          <select 
+                            value={wizardPlan.subject} 
+                            onChange={(e) => setWizardPlan({ ...wizardPlan, subject: e.target.value })}
+                            className="robot-select"
+                          >
+                            {['لغة عربية', 'رياضيات', 'علوم وتكنولوجيا', 'موطن ومجتمع ومدنيات', 'تربية إسلامية', 'لغة إنجليزية', 'لغة عبرية', 'تاريخ', 'جغرافيا', 'فنون', 'حاسوب'].map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="robot-form-group">
+                          <label>الصف والمستوى:</label>
+                          <select 
+                            value={wizardPlan.grade} 
+                            onChange={(e) => setWizardPlan({ ...wizardPlan, grade: e.target.value })}
+                            className="robot-select"
+                          >
+                            <option value="الصف الأول">الصف الأول</option>
+                            <option value="الصف الثاني">الصف الثاني</option>
+                            <option value="الصف الثالث">الصف الثالث</option>
+                            <option value="الصف الرابع">الصف الرابع</option>
+                            <option value="الصف الخامس">الصف الخامس</option>
+                            <option value="الصف السادس">الصف السادس</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="robot-form-group">
+                        <label className="required-label"><i className="fas fa-heading"></i> عنوان وموضوع الحصة المركزي:</label>
+                        <input 
+                          type="text" 
+                          className="robot-text-input" 
+                          placeholder="مثال: حالات المادة والتكاثف / أسلوب التعجب / الكسور المتكافئة..." 
+                          value={wizardPlan.topic}
+                          onChange={(e) => setWizardPlan({ ...wizardPlan, topic: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="robot-form-group">
+                        <label><i className="fas fa-bullseye"></i> هدف الحصة التعليمي والقيمي (اختياري):</label>
+                        <input 
+                          type="text" 
+                          className="robot-text-input" 
+                          placeholder="مثال: أن يستنتج الطالب المفهوم من خلال أمثلة ملموسة ويطبقه في بيته اليومية..." 
+                          value={wizardPlan.objective}
+                          onChange={(e) => setWizardPlan({ ...wizardPlan, objective: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="wizard-nav-actions">
+                        <button 
+                          type="button" 
+                          className="wizard-btn-next"
+                          onClick={() => {
+                            if (!wizardPlan.topic.trim()) {
+                              alert('يرجى كتابة موضوع الحصة أولاً للمتابعة.');
+                              return;
+                            }
+                            setWizardStep(1);
+                          }}
+                        >
+                          ابدأ المرافقة في محطة [ م ] الجذب والتشويق 🚀
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEPS 1 TO 5: THE 5 STATIONS WIZARD */}
+                  {wizardStep >= 1 && wizardStep <= 5 && (() => {
+                    const STATIONS_INFO = {
+                      1: { key: 'm', name: 'محطة [ م ] — جَلْب وتَشْوِيق (משוך)', time: '5 دقائق', icon: '🧲', badge: 'م', color: '#f59e0b', desc: 'لغز البداية، كسر الجليد، وسؤال إثارة الفضول الفطري لدى التلميذ دون حرق الإجابة.' },
+                      2: { key: 'f', name: 'محطة [ ف ] — فَهْم المَفْهُوم واللِّقَاء الأَوَّل (פְּגִישָׁה)', time: '10 دقائق', icon: '💡', badge: 'ف', color: '#0ea5e9', desc: 'بناء القاموس العلمي، تفكيك المفهوم، والنمذجة الصريحة للمعلم (I Do - أنا أعمل ونحن نعمل معاً).' },
+                      3: { key: 't', name: 'محطة [ ت ] — تَبَصُّر وتَعَمُّق (תְּבוּנָה)', time: '8 دقائق', icon: '🧠', badge: 'ت', color: '#8b5cf6', desc: 'مهارات التفكير العليا (HOTS)، أسئلة الحوار السقراطي، والتعليل والمقارنة.' },
+                      4: { key: 'y', name: 'محطة [ ي ] — يَدَوِيّ وتَطْبِيق متمايز UDL (יִשּׂוּם)', time: '15 دقيقة', icon: '🛠️', badge: 'ي', color: '#10b981', desc: 'ورشة العمل الملموسة ومسارات التمايز الثلاثية (دعم/أساسي/تميز) لدمج جميع الطلاب.' },
+                      5: { key: 'h', name: 'محطة [ ح ] — حَصَاد وزَوَّادَة ونَقْل الأَثَر (חֲתִימָה וְצֵيדָה)', time: '7 دقائق', icon: '🎒', badge: 'ح', color: '#ec4899', desc: 'تذكرة الخروج (Exit Ticket)، تحديد "زوّادتي اليوم"، وسؤال نقل أثر التعلم للمنزل والواقع.' }
+                    };
+                    const cur = STATIONS_INFO[wizardStep];
+                    const suggestions = getStationSuggestions(cur.key, wizardPlan.topic, wizardPlan.subject);
+
+                    return (
+                      <div className="wizard-step-pane fade-in" key={wizardStep}>
+                        <div className="wizard-station-header" style={{ borderRightColor: cur.color }}>
+                          <div className="station-title-row">
+                            <span className="st-badge" style={{ backgroundColor: cur.color }}>{cur.badge}</span>
+                            <h4>{cur.name}</h4>
+                            <span className="st-time-chip">⏱️ {cur.time}</span>
+                          </div>
+                          <p className="st-desc">{cur.desc}</p>
+                        </div>
+
+                        {/* Inspirational Click-to-Apply Suggestions */}
+                        <div className="wizard-suggestions-box">
+                          <div className="suggestions-head">
+                            <span className="sugg-title">
+                              <i className="fas fa-lightbulb" style={{ color: '#f59e0b' }}></i>
+                              مقترحات وأفكار الروبوت لدرسك (انقر على أي بطاقة لاعتمادها وتعديلها):
+                            </span>
+                          </div>
+
+                          <div className="suggestions-cards-grid">
+                            {suggestions.map((sugg, idx) => (
+                              <div 
+                                key={idx} 
+                                className="suggestion-card-item"
+                                onClick={() => setWizardPlan({ ...wizardPlan, [cur.key]: sugg.text })}
+                                title="انقر لتطبيق هذا المقترح داخل مسودتك"
+                              >
+                                <div className="sugg-item-title">{sugg.title}</div>
+                                <div className="sugg-item-snippet">{sugg.text}</div>
+                                <span className="sugg-use-label">👈 تطبيق هذا الخيار</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Teacher's Station Workspace Textarea */}
+                        <div className="wizard-editor-wrap">
+                          <label>
+                            <i className="fas fa-pen"></i> صياغتك المعتمدة لمحطة {cur.badge} (يمكنك التعديل أو الكتابة بأسلوبك):
+                          </label>
+                          <textarea 
+                            rows="4"
+                            className="wizard-textarea"
+                            placeholder={`اكتب هنا تفاصيل وخطة محطة [${cur.badge}]، أو انقر على أحد المقترحات أعلاه لتعبئتها وتعديلها...`}
+                            value={wizardPlan[cur.key]}
+                            onChange={(e) => setWizardPlan({ ...wizardPlan, [cur.key]: e.target.value })}
+                          />
+                        </div>
+
+                        {/* Navigation Actions */}
+                        <div className="wizard-nav-actions split">
+                          <button 
+                            type="button" 
+                            className="wizard-btn-prev"
+                            onClick={() => setWizardStep(wizardStep - 1)}
+                          >
+                            ➡️ المحطة السابقة
+                          </button>
+                          <button 
+                            type="button" 
+                            className="wizard-btn-next"
+                            onClick={() => {
+                              if (!wizardPlan[cur.key]?.trim()) {
+                                if (!window.confirm(`لم تقم بكتابة أو اختيار محتوى لمحطة [${cur.badge}]، هل ترغب في المتابعة على أية حال؟`)) return;
+                              }
+                              setWizardStep(wizardStep + 1);
+                            }}
+                          >
+                            {wizardStep === 5 ? '🎉 إنهاء وهندسة الخطة الكاملة ⬅️' : `اعتماد والمتابعة للمحطة التالية ⬅️`}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* STEP 6: COMPLETED PLAN SUMMARY & EXPORT */}
+                  {wizardStep === 6 && (
+                    <div className="wizard-step-pane fade-in">
+                      <div className="plan-success-banner">
+                        <div className="banner-text">
+                          <i className="fas fa-check-circle"></i>
+                          <div>
+                            <strong>تهانينا! اكتمل بناء وتخطيط الحصة بنجاح بمرافقة الروبوت! 🎉</strong>
+                            <small>موضوع: {wizardPlan.topic} | {wizardPlan.subject} — {wizardPlan.grade}</small>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="reset-plan-btn"
+                          onClick={() => setWizardStep(1)}
+                        >
+                          <i className="fas fa-edit"></i> تعديل المحطات
+                        </button>
+                      </div>
+
+                      {/* Export Action Bar */}
+                      <div className="robot-export-actions">
+                        <button 
+                          type="button" 
+                          className="robot-export-btn word"
+                          onClick={() => handleDownloadWord()}
+                          title="تحميل كملف Word منسق ومصمم جاهز للطباعة والتعديل"
+                        >
+                          <i className="fas fa-file-word"></i> تحميل Word (.doc)
+                        </button>
+                        <button 
+                          type="button" 
+                          className="robot-export-btn pdf"
+                          onClick={() => handleDownloadPdf()}
+                          title="تحميل أو طباعة كملف PDF عالي الدقة"
+                        >
+                          <i className="fas fa-file-pdf"></i> تحميل / طباعة PDF
+                        </button>
+                        <button 
+                          type="button" 
+                          className="robot-export-btn sync"
+                          onClick={() => {
+                            handleApplyToMainPlanner({
+                              subject: wizardPlan.subject,
+                              grade: wizardPlan.grade,
+                              title: wizardPlan.topic,
+                              stations: {
+                                m: wizardPlan.m,
+                                f: wizardPlan.f,
+                                t: wizardPlan.t,
+                                y: wizardPlan.y,
+                                h: wizardPlan.h
+                              }
+                            });
+                          }}
+                          title="فتح وتعديل الخطة في صفحة الموديل الرئيسية"
+                        >
+                          <i className="fas fa-external-link-alt"></i> فتح بالمحرر
+                        </button>
+                      </div>
+
+                      {/* Station Cards Preview */}
+                      <div className="generated-stations-list">
+                        <div className="gen-station-card yellow">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🧲 [ م ]</span>
+                            <strong>محطة الجذب والتشويق (משוך)</strong>
+                          </div>
+                          <div className="station-text">{wizardPlan.m || '—'}</div>
+                        </div>
+
+                        <div className="gen-station-card cyan">
+                          <div className="station-badge-head">
+                            <span className="station-icon">💡 [ ف ]</span>
+                            <strong>محطة الفهم وبناء المفهوم (פְּגִישָׁה)</strong>
+                          </div>
+                          <div className="station-text">{wizardPlan.f || '—'}</div>
+                        </div>
+
+                        <div className="gen-station-card purple">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🧠 [ ت ]</span>
+                            <strong>محطة التبصر والتعمق (תְּבוּנָה)</strong>
+                          </div>
+                          <div className="station-text">{wizardPlan.t || '—'}</div>
+                        </div>
+
+                        <div className="gen-station-card green">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🛠️ [ ي ]</span>
+                            <strong>محطة اليدوي والتطبيق (יִשּׂוּם)</strong>
+                          </div>
+                          <div className="station-text">{wizardPlan.y || '—'}</div>
+                        </div>
+
+                        <div className="gen-station-card pink">
+                          <div className="station-badge-head">
+                            <span className="station-icon">🎒 [ ح ]</span>
+                            <strong>محطة الحصاد والزوّادة (חֲתִימָה וְצֵידָה)</strong>
+                          </div>
+                          <div className="station-text">{wizardPlan.h || '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : robotMode === 'plan' ? (
+                /* ========================================================================= */
+                /* MODE 3: FAST-TRACK COMPLETE AUTO PLANNER                                  */
+                /* ========================================================================= */
                 <div className="robot-planner-flow">
                   {isAiGenerating ? (
                     <div className="robot-generating-state">
@@ -2005,7 +2540,7 @@ ${p.stations?.h || ''}
                         <div className="gen-station-card pink">
                           <div className="station-badge-head">
                             <span className="station-icon">🎒 [ ح ]</span>
-                            <strong>محطة الحصاد والزوّادة (חֲתִימָה וְצֵידָה לַדֶּרֶךְ)</strong>
+                            <strong>محطة الحصاد والزوّادة (חֲתִימָה וְצֵيדָה לַדֶּרֶךְ)</strong>
                             <small>تذكرة الخروج ونقل الأثر للحياة</small>
                           </div>
                           <div className="station-text">{generatedPlan.stations?.h}</div>
@@ -2082,9 +2617,9 @@ ${p.stations?.h || ''}
                           <i className="fas fa-heading"></i> موضوع وعنوان الحصة:
                         </label>
                         <input 
-                          type="text"
-                          className="robot-text-input"
-                          placeholder="مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب..."
+                          type="text" 
+                          className="robot-text-input" 
+                          placeholder="مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب..." 
                           value={aiTopic}
                           onChange={(e) => setAiTopic(e.target.value)}
                         />
@@ -2096,9 +2631,9 @@ ${p.stations?.h || ''}
                           <i className="fas fa-bullseye"></i> هدف الحصة التعليمي والقيمي:
                         </label>
                         <textarea 
-                          rows="2"
-                          className="robot-textarea-input"
-                          placeholder="مثال: أن يميز الطالب بين المفهومين من خلال أمثلة ملموسة، ويحل تمارين متمايزة، ويستخلص زوّادة لنقل الأثر لبيئته اليومية..."
+                          rows="2" 
+                          className="robot-textarea-input" 
+                          placeholder="مثال: أن يميز الطالب بين المفهومين من خلال أمثلة ملموسة، ويحل تمارين متمايزة، ويستخلص زوّادة لنقل الأثر لبيئته اليومية..." 
                           value={aiObjective}
                           onChange={(e) => setAiObjective(e.target.value)}
                         />
@@ -2110,9 +2645,9 @@ ${p.stations?.h || ''}
                           <i className="fas fa-sliders-h"></i> تركيز خاص أو ملاحظات إضافية (اختياري):
                         </label>
                         <input 
-                          type="text"
-                          className="robot-text-input"
-                          placeholder="مثال: دمج تجربة علمية حسية، مراعاة صعوبات التعلم، عمل تشاركي..."
+                          type="text" 
+                          className="robot-text-input" 
+                          placeholder="مثال: دمج تجربة علمية حسية، مراعاة صعوبات التعلم، عمل تشاركي..." 
                           value={aiNotes}
                           onChange={(e) => setAiNotes(e.target.value)}
                         />
@@ -2120,7 +2655,7 @@ ${p.stations?.h || ''}
 
                       {/* Submit Generator Button */}
                       <button 
-                        type="button"
+                        type="button" 
                         className="robot-submit-generate-btn"
                         onClick={handleGeneratePlanWithRobot}
                       >

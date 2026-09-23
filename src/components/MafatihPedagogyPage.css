@@ -2918,4 +2918,447 @@
   }
 }
 
+/* ========================================================================= */
+/* ROBOT LESSON PLANNER — CHOICE SCREEN & STEP-BY-STEP WIZARD               */
+/* ========================================================================= */
+.robot-choice-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.robot-welcome-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+  border: 1.5px solid #bae6fd;
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.08);
+}
+
+.welcome-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.welcome-text-wrap h4 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.15rem;
+  color: #0369a1;
+  font-weight: 800;
+}
+
+.welcome-text-wrap p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.choice-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.robot-path-card {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  text-align: right;
+  direction: rtl;
+}
+
+.robot-path-card:hover {
+  transform: translateY(-4px);
+  border-color: #3b82f6;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.18);
+}
+
+.robot-path-card.fast-plan {
+  border-top: 5px solid #f59e0b;
+}
+
+.robot-path-card.guided-plan {
+  border-top: 5px solid #10b981;
+}
+
+.path-card-badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.robot-path-card.fast-plan .path-card-badge {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.robot-path-card.guided-plan .path-card-badge {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.path-card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.robot-path-card h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.robot-path-card p {
+  font-size: 0.86rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 1.25rem 0;
+  flex: 1;
+}
+
+.path-action-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.path-action-btn.fast {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.path-action-btn.fast:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+.path-action-btn.guided {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.path-action-btn.guided:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.choice-footer-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.open-advice-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #3b82f6;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.open-advice-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+/* ── STEP-BY-STEP WIZARD STYLES ── */
+.robot-wizard-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.wizard-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 8px 12px;
+  gap: 6px;
+  overflow-x: auto;
+  direction: rtl;
+}
+
+.stepper-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.stepper-node.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.stepper-node.completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.wizard-station-header {
+  border-right: 5px solid #3b82f6;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: right;
+  direction: rtl;
+}
+
+.station-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.25rem;
+}
+
+.station-title-row h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.st-badge {
+  color: white;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.st-time-chip {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: auto;
+}
+
+.st-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.wizard-suggestions-box {
+  background: #fafcff;
+  border: 1.5px solid #dbeafe;
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: right;
+  direction: rtl;
+}
+
+.suggestions-head {
+  margin-bottom: 0.75rem;
+}
+
+.sugg-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.suggestions-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.suggestion-card-item {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: right;
+}
+
+.suggestion-card-item:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+}
+
+.sugg-item-title {
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #1e293b;
+  margin-bottom: 0.35rem;
+}
+
+.sugg-item-snippet {
+  font-size: 0.74rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+
+.sugg-use-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #2563eb;
+  align-self: flex-start;
+}
+
+.wizard-editor-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1.25rem;
+  text-align: right;
+  direction: rtl;
+}
+
+.wizard-editor-wrap label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wizard-textarea {
+  width: 100%;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.85rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  line-height: 1.6;
+  color: #1e293b;
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.2s;
+  resize: vertical;
+  direction: rtl;
+}
+
+.wizard-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.wizard-nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.wizard-nav-actions.split {
+  justify-content: space-between;
+}
+
+.wizard-btn-prev {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.wizard-btn-prev:hover {
+  background: #e2e8f0;
+}
+
+.wizard-btn-next {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  color: white;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.wizard-btn-next:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .choice-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .suggestions-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .wizard-stepper-bar {
+    justify-content: flex-start;
+  }
+}
+
 
