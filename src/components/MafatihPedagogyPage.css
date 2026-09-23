@@ -1630,12 +1630,13 @@
 .sheet-meta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
   background: #f8fafc;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
   margin-bottom: 1.25rem;
-  font-size: 0.92rem;
+  font-size: 1.02rem;
+  border: 1px solid #e2e8f0;
 }
 
 .sheet-meta-grid .full-width {
@@ -1645,23 +1646,24 @@
 .sheet-stations-timeline {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 1.5rem;
 }
 
 .sheet-station-row {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #ffffff;
 }
 
 .row-badge {
   display: inline-block;
-  padding: 2px 10px;
-  border-radius: 6px;
+  padding: 4px 12px;
+  border-radius: 8px;
   font-weight: 900;
-  font-size: 0.8rem;
-  margin-bottom: 4px;
+  font-size: 0.92rem;
+  margin-bottom: 6px;
   color: white;
 }
 
@@ -1672,19 +1674,20 @@
 .row-badge.pink { background: #db2777; }
 
 .row-text {
-  font-size: 0.92rem;
-  line-height: 1.6;
-  color: #334155;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: #1e293b;
+  font-weight: 500;
 }
 
 .sheet-footer-sign {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 12px;
-  font-size: 0.85rem;
-  color: #64748b;
+  border-top: 1.5px dashed #cbd5e1;
+  padding-top: 14px;
+  font-size: 0.95rem;
+  color: #475569;
   font-weight: 700;
 }
 
@@ -2690,18 +2693,20 @@
 }
 
 .gen-station-card .station-badge-head {
-  padding: 8px 14px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.92rem;
+  gap: 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .gen-station-card .station-badge-head small {
   margin-right: auto;
-  font-size: 0.78rem;
-  opacity: 0.85;
+  font-size: 0.88rem;
+  font-weight: 600;
+  opacity: 0.9;
 }
 
 .gen-station-card.yellow { border-color: #fde68a; }
@@ -2720,10 +2725,11 @@
 .gen-station-card.pink .station-badge-head { background: #fdf2f8; color: #be185d; }
 
 .gen-station-card .station-text {
-  padding: 12px 16px;
-  font-size: 0.92rem;
-  line-height: 1.75;
-  color: #334155;
+  padding: 14px 18px;
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: #1e293b;
+  font-weight: 500;
   white-space: pre-line;
 }
 

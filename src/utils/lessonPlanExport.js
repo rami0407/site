@@ -68,10 +68,10 @@ export const exportLessonPlanToWord = ({
     
     body {
       direction: rtl;
-      font-family: 'Cairo', 'Segoe UI', 'Arial', sans-serif;
-      font-size: 11pt;
-      line-height: 1.6;
-      color: #1e293b;
+      font-family: 'Cairo', 'Traditional Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-size: 13pt;
+      line-height: 1.8;
+      color: #0f172a;
       background-color: #ffffff;
       margin: 0;
       padding: 0;
@@ -79,61 +79,63 @@ export const exportLessonPlanToWord = ({
 
     .doc-container {
       width: 100%;
-      max-width: 750px;
+      max-width: 800px;
       margin: 0 auto;
     }
 
     /* Header styling */
     .header-table {
       width: 100%;
-      border-bottom: 2pt solid #1e3a8a;
-      padding-bottom: 10pt;
-      margin-bottom: 12pt;
+      border-bottom: 2.5pt solid #1e3a8a;
+      padding-bottom: 12pt;
+      margin-bottom: 14pt;
     }
 
     .school-title {
-      font-size: 15pt;
+      font-size: 16.5pt;
       font-weight: bold;
       color: #1e3a8a;
       text-align: right;
       margin: 0;
+      line-height: 1.35;
     }
 
     .school-subtitle {
-      font-size: 9.5pt;
-      color: #64748b;
-      margin-top: 2pt;
+      font-size: 11pt;
+      color: #475569;
+      margin-top: 3pt;
+      font-weight: 600;
     }
 
     .model-badge {
       background-color: #1e3a8a;
       color: #ffffff;
-      padding: 4pt 10pt;
-      border-radius: 4pt;
-      font-size: 10pt;
+      padding: 6pt 12pt;
+      border-radius: 6pt;
+      font-size: 11.5pt;
       font-weight: bold;
       text-align: center;
       display: inline-block;
     }
 
     .main-title-box {
-      background-color: #f1f5f9;
-      border: 1pt solid #cbd5e1;
-      border-radius: 6pt;
-      padding: 10pt 14pt;
-      margin-bottom: 14pt;
+      background-color: #f8fafc;
+      border: 1.5pt solid #cbd5e1;
+      border-radius: 8pt;
+      padding: 12pt 16pt;
+      margin-bottom: 16pt;
       text-align: center;
     }
 
     .main-lesson-title {
-      font-size: 16pt;
+      font-size: 18pt;
       font-weight: bold;
       color: #0f172a;
       margin: 0 0 4pt 0;
     }
 
     .model-sub {
-      font-size: 10.5pt;
+      font-size: 12pt;
       color: #d97706;
       font-weight: bold;
     }
@@ -142,45 +144,48 @@ export const exportLessonPlanToWord = ({
     .meta-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 14pt;
+      margin-bottom: 16pt;
     }
 
     .meta-table td {
       border: 1pt solid #cbd5e1;
-      padding: 6pt 10pt;
-      font-size: 10pt;
+      padding: 8pt 12pt;
+      font-size: 11.5pt;
       background-color: #f8fafc;
     }
 
     .meta-label {
       font-weight: bold;
-      color: #334155;
-      width: 15%;
+      color: #1e293b;
+      width: 16%;
       background-color: #e2e8f0 !important;
     }
 
     .objective-box {
       background-color: #eff6ff;
-      border-right: 4pt solid #2563eb;
+      border-right: 5pt solid #2563eb;
       border-top: 1pt solid #bfdbfe;
       border-bottom: 1pt solid #bfdbfe;
       border-left: 1pt solid #bfdbfe;
-      padding: 8pt 12pt;
-      margin-bottom: 14pt;
-      font-size: 10.5pt;
+      border-radius: 4pt;
+      padding: 10pt 14pt;
+      margin-bottom: 16pt;
+      font-size: 12pt;
+      line-height: 1.75;
     }
 
     .objective-title {
       font-weight: bold;
       color: #1e40af;
-      margin-bottom: 3pt;
+      font-size: 13pt;
+      margin-bottom: 4pt;
     }
 
     /* Stations Section */
     .stations-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 16pt;
+      margin-bottom: 18pt;
     }
 
     .station-row {
@@ -188,18 +193,18 @@ export const exportLessonPlanToWord = ({
     }
 
     .station-header-cell {
-      padding: 7pt 10pt;
+      padding: 9pt 12pt;
       font-weight: bold;
-      font-size: 11pt;
+      font-size: 13pt;
       color: #ffffff;
       border: 1pt solid #cbd5e1;
     }
 
     .station-content-cell {
-      padding: 9pt 12pt;
+      padding: 12pt 16pt;
       border: 1pt solid #cbd5e1;
-      font-size: 10.5pt;
-      line-height: 1.65;
+      font-size: 12.5pt;
+      line-height: 1.85;
       background-color: #ffffff;
     }
 
@@ -210,38 +215,39 @@ export const exportLessonPlanToWord = ({
     .bg-h { background-color: #db2777; }
 
     .station-subinfo {
-      font-size: 8.5pt;
+      font-size: 10pt;
       font-weight: normal;
-      opacity: 0.9;
+      opacity: 0.95;
+      margin-top: 2pt;
     }
 
     /* Signatures */
     .signatures-table {
       width: 100%;
-      margin-top: 18pt;
-      border-top: 1.5pt solid #94a3b8;
-      padding-top: 12pt;
+      margin-top: 22pt;
+      border-top: 2pt solid #94a3b8;
+      padding-top: 14pt;
       page-break-inside: avoid;
     }
 
     .sig-cell {
       width: 33.33%;
       text-align: center;
-      font-size: 10pt;
-      color: #475569;
+      font-size: 11.5pt;
+      color: #334155;
     }
 
     .sig-space {
-      height: 35pt;
+      height: 38pt;
     }
 
     .footer-note {
       text-align: center;
-      font-size: 8.5pt;
+      font-size: 9.5pt;
       color: #94a3b8;
-      margin-top: 16pt;
-      border-top: 0.5pt solid #e2e8f0;
-      padding-top: 6pt;
+      margin-top: 18pt;
+      border-top: 1pt solid #e2e8f0;
+      padding-top: 8pt;
     }
   </style>
 </head>
@@ -470,20 +476,20 @@ export const exportLessonPlanToPdf = ({
 
     body {
       direction: rtl;
-      font-family: 'Cairo', system-ui, sans-serif;
+      font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Traditional Arabic", sans-serif;
       margin: 0;
       padding: 0;
       color: #0f172a;
       background: #ffffff;
-      font-size: 12px;
-      line-height: 1.6;
+      font-size: 13.5px;
+      line-height: 1.75;
     }
 
     .sheet-wrapper {
       width: 100%;
-      max-width: 800px;
+      max-width: 820px;
       margin: 0 auto;
-      padding: 10px;
+      padding: 12px;
     }
 
     .sheet-header {
@@ -497,16 +503,17 @@ export const exportLessonPlanToPdf = ({
 
     .school-info h1 {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
       color: #1e3a8a;
+      line-height: 1.3;
     }
 
     .school-info p {
-      margin: 2px 0 0;
-      font-size: 11px;
-      color: #64748b;
-      font-weight: 600;
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 700;
     }
 
     .brand-key-badge {
@@ -519,35 +526,35 @@ export const exportLessonPlanToPdf = ({
     }
 
     .brand-key-badge .title {
-      font-size: 14px;
+      font-size: 14.5px;
       font-weight: 900;
       color: #fbbf24;
       display: block;
     }
 
     .brand-key-badge .subtitle {
-      font-size: 10px;
-      opacity: 0.9;
+      font-size: 11px;
+      opacity: 0.95;
     }
 
     .lesson-hero-card {
       background: #f8fafc;
       border: 1.5px solid #cbd5e1;
       border-radius: 12px;
-      padding: 12px 16px;
+      padding: 14px 18px;
       margin-bottom: 14px;
       text-align: center;
     }
 
     .lesson-hero-card h2 {
-      margin: 0 0 4px;
-      font-size: 17px;
+      margin: 0 0 5px;
+      font-size: 19.5px;
       font-weight: 900;
       color: #0f172a;
     }
 
     .lesson-hero-card .tagline {
-      font-size: 12px;
+      font-size: 13.5px;
       color: #d97706;
       font-weight: 800;
     }
@@ -555,28 +562,29 @@ export const exportLessonPlanToPdf = ({
     .meta-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
     .meta-item {
       background: #f1f5f9;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 11px;
+      padding: 8px 12px;
+      font-size: 12px;
     }
 
     .meta-item strong {
       color: #475569;
       display: block;
-      font-size: 10px;
+      font-size: 11px;
+      margin-bottom: 2px;
     }
 
     .meta-item span {
       font-weight: 800;
       color: #0f172a;
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .objective-banner {
@@ -584,40 +592,40 @@ export const exportLessonPlanToPdf = ({
       border: 1.5px solid #bfdbfe;
       border-right: 5px solid #2563eb;
       border-radius: 10px;
-      padding: 10px 14px;
+      padding: 12px 16px;
       margin-bottom: 16px;
     }
 
     .objective-banner .label {
-      font-size: 12px;
+      font-size: 13.5px;
       font-weight: 900;
       color: #1e40af;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
     .objective-banner .text {
-      font-size: 12px;
+      font-size: 13px;
       color: #1e293b;
-      line-height: 1.6;
+      line-height: 1.75;
     }
 
     /* Stations Section */
     .station-block {
       border-radius: 10px;
       border: 1.5px solid #cbd5e1;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       overflow: hidden;
       page-break-inside: avoid;
     }
 
     .station-head {
-      padding: 6px 12px;
+      padding: 8px 14px;
       color: white;
       display: flex;
       align-items: center;
       justify-content: space-between;
       font-weight: 800;
-      font-size: 12.5px;
+      font-size: 14px;
     }
 
     .station-head.m { background: #d97706; }
@@ -626,10 +634,15 @@ export const exportLessonPlanToPdf = ({
     .station-head.y { background: #059669; }
     .station-head.h { background: #db2777; }
 
-    .station-body {
-      padding: 10px 14px;
+    .station-head small {
       font-size: 11.5px;
-      line-height: 1.7;
+      opacity: 0.95;
+    }
+
+    .station-body {
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.85;
       color: #1e293b;
       background: #ffffff;
       white-space: pre-line;
@@ -647,22 +660,22 @@ export const exportLessonPlanToPdf = ({
     }
 
     .sig-box {
-      font-size: 11px;
-      color: #475569;
+      font-size: 12px;
+      color: #334155;
     }
 
     .sig-line {
       margin-top: 35px;
       border-top: 1px dotted #94a3b8;
       padding-top: 4px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .sheet-footer {
       margin-top: 18px;
       text-align: center;
-      font-size: 9.5px;
-      color: #94a3b8;
+      font-size: 10.5px;
+      color: #64748b;
       border-top: 1px solid #f1f5f9;
       padding-top: 8px;
     }
