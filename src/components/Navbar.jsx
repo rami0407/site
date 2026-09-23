@@ -44,6 +44,7 @@ const Navbar = () => {
       if (id === 'nav_5' || id === 'nav_principal' || target === 'principal' || label.includes('المدير')) return true;
       if (id === 'nav_2' || id === 'nav_initiatives' || target === 'initiatives' || label.includes('المبادرات')) return true;
       if (id === 'nav_articles' || target === 'articles' || label.includes('مقالات')) return true;
+      if (id === 'nav_mafatih' || target === 'mafatih' || target === 'mafateeh' || label.includes('مفاتيح')) return true;
       return false;
     };
 
@@ -252,22 +253,6 @@ const Navbar = () => {
                 }}
               >
                 <i className="fas fa-file-signature"></i> تسريح الطلاب 🏃‍♂️
-              </a>
-            </li>
-
-            {/* Direct Quick Link for Mafatih Pedagogical Model */}
-            <li>
-              <a 
-                href="#/mafatih"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  color: '#fbbf24',
-                  fontWeight: 800
-                }}
-              >
-                <i className="fas fa-key"></i> موديل مَفَاتِيح 🗝️
               </a>
             </li>
 
