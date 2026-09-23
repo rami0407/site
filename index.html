@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-title" content="مدرسة مشيرفة" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Client-side HTTPS Enforcement & Frame Protection -->
+    <!-- Client-side HTTPS Enforcement, Frame Protection & Deployment Auto-Recovery -->
     <script>
       // 1. Enforce HTTPS redirect if visited via unencrypted HTTP
       if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
@@ -26,6 +26,27 @@
       if (window.top !== window.self) {
         window.top.location = window.self.location;
       }
+      // 3. Deployment Auto-Recovery: if a dynamic chunk or CSS fails due to a new deployment, auto-refresh once
+      window.addEventListener('unhandledrejection', function(event) {
+        var reason = (event && event.reason && (event.reason.message || event.reason.stack)) || String(event.reason || '');
+        if (
+          reason.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+          reason.indexOf('Unable to preload CSS') !== -1 ||
+          reason.indexOf('error loading dynamically imported module') !== -1
+        ) {
+          if (!sessionStorage.getItem('deploy_reload_attempted')) {
+            sessionStorage.setItem('deploy_reload_attempted', 'true');
+            console.warn('Dynamic chunk load failed due to new deployment. Auto-refreshing...', reason);
+            window.location.reload();
+          }
+        }
+      });
+      window.addEventListener('vite:preloadError', function() {
+        if (!sessionStorage.getItem('deploy_reload_attempted')) {
+          sessionStorage.setItem('deploy_reload_attempted', 'true');
+          window.location.reload();
+        }
+      });
     </script>
 
     <!-- Standard Security Meta Tags -->
@@ -38,7 +59,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-DWQgsCzz.js"></script>
+    <script type="module" crossorigin src="/assets/index-B5n8WYL3.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-Bh1tDfsg.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-firebase-B3bL2I95.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-BEjiJJzm.js">
