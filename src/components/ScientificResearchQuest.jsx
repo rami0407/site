@@ -4,6 +4,7 @@ import { arabicTTS } from '../utils/arabicTTS';
 import { getStudentSession, logoutStudent, saveStudentSession } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
 import GenieAssistant from './GenieAssistant';
+import { exportResearchToWord, printComprehensiveResearchBook } from '../utils/scientificResearchExport';
 import './ScientificResearchQuest.css';
 
 // -------------------------------------------------------------
@@ -495,6 +496,92 @@ const ScientificResearchQuest = () => {
   const [newSourceNote, setNewSourceNote] = useState('');
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
 
+  // -----------------------------------------------------------
+  // Word Document Simulator Toolbar State (المحرر الفسيح مثل Word)
+  // -----------------------------------------------------------
+  const [wordFontSize, setWordFontSize] = useState('18px');
+  const [wordBold, setWordBold] = useState(false);
+  const [wordItalic, setWordItalic] = useState(false);
+  const [wordUnderline, setWordUnderline] = useState(false);
+  const [wordHighlight, setWordHighlight] = useState(false);
+  const [wordAlign, setWordAlign] = useState('right');
+
+  // -----------------------------------------------------------
+  // Station 5: Experiment Protocol, Measurements & Photos State
+  // (תרשימים למדידות ותמונות לנסיונות שנעשו)
+  // -----------------------------------------------------------
+  const [teacherName, setTeacherName] = useState(() => {
+    return localStorage.getItem('quest_teacher_name') || 'طاقم العلوم والتكنولوجيا - مدرسة مشيرفة الابتدائية';
+  });
+
+  const [expMaterials, setExpMaterials] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_exp_materials');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      'أصيصان زراعيان متطابقان مع كمية تربة متساوية 🪴',
+      'بذور نبات سريع النمو (فاصولياء أو حلبة) 🌱',
+      'مسطرة قياس مدرجة بدقة بالسنتيمتر 📏',
+      'أنبوب أو كأس مدرج للري اليومي (50 مل ماء) 💧',
+      'مكان مشمس بجانب نافذة الفصل + خزانة مظلمة ☀️'
+    ];
+  });
+  const [newMaterialText, setNewMaterialText] = useState('');
+
+  const [expSteps, setExpSteps] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_exp_steps');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      'زراعة 3 بذور في كل أصيص على نفس العمق (2 سم) وفي نفس نوع التربة.',
+      'وضع الأصيص الأول (أ) في مكان مشمس، والآخر (ب) في مكان مظلم تماماً.',
+      'سقاية الأصيصين بنفس كمية الماء يومياً (50 مل) وفي نفس التوقيت الصباحي.',
+      'مراقبة نمو الساق والأوراق كل يومين وقياس الارتفاع بالمسطرة وتدوين الملاحظات والمقاييس في جدول النتائج.'
+    ];
+  });
+  const [newStepText, setNewStepText] = useState('');
+
+  // Measurements Table Data (תרשימים למדידות שנעשו)
+  const [measurements, setMeasurements] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_measurements');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      { id: 'm-1', label: 'اليوم 2', xVal: 'اليوم 2', yVal: 2, notes: 'بدء الإنبات وظهور أول برعم صغير' },
+      { id: 'm-2', label: 'اليوم 4', xVal: 'اليوم 4', yVal: 5, notes: 'نمو الساق وظهور ورقتين خضراوين' },
+      { id: 'm-3', label: 'اليوم 6', xVal: 'اليوم 6', yVal: 9, notes: 'طول 9 سم واخضرار قوي للنبات المشمس' },
+      { id: 'm-4', label: 'اليوم 8', xVal: 'اليوم 8', yVal: 14, notes: 'نمو ممتاز وصحي وبراعم جديدة (14 سم)' }
+    ];
+  });
+  const [chartType, setChartType] = useState('bar'); // 'bar' | 'line'
+  const [chartXLabel, setChartXLabel] = useState('فترات القياس / الأيام');
+  const [chartYLabel, setChartYLabel] = useState('طول النبتة بالسنتيمتر (سم)');
+
+  // Experiment Photos (תמונות לנסיונות שנעשו)
+  const [expPhotos, setExpPhotos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quest_exp_photos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  // Conclusion & Recommendations
+  const [conclusion, setConclusion] = useState(() => {
+    return localStorage.getItem('quest_conclusion') || 
+      'أثبتت نتائج القياسات والرسم البياني أن النبات المعرض للضوء نما بمعدل أسرع بكثير ووصل إلى 14 سم بلون أخضر نضر، بينما النبات في الظلام كان أصفر وضعيفاً، مما يدعم صحة الفرضية بأن الضوء عامل أساسي للبناء الضوئي.';
+  });
+  const [recommendations, setRecommendations] = useState(() => {
+    return localStorage.getItem('quest_recommendations') || 
+      'نوصي بزراعة المحاصيل في أماكن مشمسة ومفتوحة لضمان وفرة الإنتاج، واستكمال البحث في المستقبل لفحص تأثير ألوان الضوء المختلفة على سرعة النمو.';
+  });
+  const [isExpApproved, setIsExpApproved] = useState(() => {
+    return localStorage.getItem('quest_exp_approved') === 'true';
+  });
+
   // Sync state changes to LocalStorage
   useEffect(() => {
     localStorage.setItem('school_unified_student_name', studentName);
@@ -514,6 +601,20 @@ const ScientificResearchQuest = () => {
     localStorage.setItem('quest_bg_keywords', JSON.stringify(bgKeywords));
   }, [bgParagraph1, bgParagraph2, bgParagraph3, bgSources, bgReviews, isBgApproved, bgKeywords]);
 
+  // Sync Station 5 state changes
+  useEffect(() => {
+    localStorage.setItem('quest_teacher_name', teacherName);
+    localStorage.setItem('quest_exp_materials', JSON.stringify(expMaterials));
+    localStorage.setItem('quest_exp_steps', JSON.stringify(expSteps));
+    localStorage.setItem('quest_measurements', JSON.stringify(measurements));
+    localStorage.setItem('quest_chart_x_label', chartXLabel);
+    localStorage.setItem('quest_chart_y_label', chartYLabel);
+    localStorage.setItem('quest_exp_photos', JSON.stringify(expPhotos));
+    localStorage.setItem('quest_conclusion', conclusion);
+    localStorage.setItem('quest_recommendations', recommendations);
+    localStorage.setItem('quest_exp_approved', String(isExpApproved));
+  }, [teacherName, expMaterials, expSteps, measurements, chartXLabel, chartYLabel, expPhotos, conclusion, recommendations, isExpApproved]);
+
   // Ensure seamless backward compatibility for unlocked stations
   useEffect(() => {
     if (badges.hypothesis && !unlockedStations.includes(4)) {
@@ -522,7 +623,10 @@ const ScientificResearchQuest = () => {
     if (isBgApproved && !unlockedStations.includes(5)) {
       setUnlockedStations(prev => [...prev, 5]);
     }
-  }, [badges.hypothesis, isBgApproved]);
+    if (isExpApproved && !unlockedStations.includes(6)) {
+      setUnlockedStations(prev => [...prev, 6]);
+    }
+  }, [badges.hypothesis, isBgApproved, isExpApproved]);
 
   // Handle Text-To-Speech with resilient Arabic engine
   const speakText = (text) => {
@@ -957,18 +1061,168 @@ ${historySnippet}
     localStorage.setItem('quest_bg_approved', 'true');
     localStorage.setItem('quest_bg_reviews', JSON.stringify(bgReviews));
     awardBadge('background');
-    awardBadge('explorer');
     unlockStation(5);
     setActiveStation(5);
   };
 
-  // Calculate overall progress %
+  // -----------------------------------------------------------
+  // Station 5 Logic: Materials, Steps, Measurements & Lab Photos
+  // -----------------------------------------------------------
+  const handleAddMaterial = (e) => {
+    e.preventDefault();
+    if (!newMaterialText.trim()) return;
+    setExpMaterials([...expMaterials, newMaterialText.trim()]);
+    setNewMaterialText('');
+    playSound('success');
+  };
+
+  const handleDeleteMaterial = (idx) => {
+    setExpMaterials(expMaterials.filter((_, i) => i !== idx));
+    playSound('click');
+  };
+
+  const handleAddStep = (e) => {
+    e.preventDefault();
+    if (!newStepText.trim()) return;
+    setExpSteps([...expSteps, newStepText.trim()]);
+    setNewStepText('');
+    playSound('success');
+  };
+
+  const handleDeleteStep = (idx) => {
+    setExpSteps(expSteps.filter((_, i) => i !== idx));
+    playSound('click');
+  };
+
+  // Measurement rows management (תרשימים למדידות)
+  const handleAddMeasurementRow = () => {
+    const nextIdx = measurements.length + 1;
+    const newRow = {
+      id: 'm-' + Date.now(),
+      label: `اليوم ${nextIdx * 2}`,
+      xVal: `اليوم ${nextIdx * 2}`,
+      yVal: (measurements[measurements.length - 1]?.yVal || 2) + 3,
+      notes: 'مشاهدة وملاحظة جديدة'
+    };
+    setMeasurements([...measurements, newRow]);
+    playSound('click');
+  };
+
+  const handleUpdateMeasurement = (id, field, value) => {
+    setMeasurements(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
+
+  const handleDeleteMeasurement = (id) => {
+    if (measurements.length <= 1) {
+      alert('يجب الإبقاء على قياس واحد على الأقل في الجدول!');
+      return;
+    }
+    setMeasurements(prev => prev.filter(m => m.id !== id));
+    playSound('click');
+  };
+
+  // Experiment Photos (תמונות לנסיונות שנעשו)
+  const handleUploadPhoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert('حجم الصورة كبير، يرجى اختيار صورة أصغر من 4 ميجابايت.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const newPhoto = {
+        id: 'p-' + Date.now(),
+        dataUrl: reader.result,
+        caption: `مشاهدة وتجربة رقم (${expPhotos.length + 1})`,
+        date: new Date().toLocaleDateString('ar-EG')
+      };
+      setExpPhotos([...expPhotos, newPhoto]);
+      playSound('success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddSamplePhoto = () => {
+    const svgSample = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250"><rect width="400" height="250" fill="%230f172a"/><circle cx="200" cy="115" r="55" fill="%230284c7" opacity="0.35"/><text x="200" y="115" font-size="42" text-anchor="middle" fill="%2338bdf8">🌱 🔬</text><text x="200" y="165" font-family="Arial" font-size="15" font-weight="bold" text-anchor="middle" fill="%23f8fafc">توثيق التجربة في مختبر مدرسة مشيرفة</text><text x="200" y="195" font-family="Arial" font-size="12" text-anchor="middle" fill="%2394a3b8">عينة نمو النبات - 2026/2027</text></svg>`;
+    const newPhoto = {
+      id: 'p-' + Date.now(),
+      dataUrl: svgSample,
+      caption: `مشاهدة نبات التجربة في اليوم الرابع (${expPhotos.length + 1})`,
+      date: new Date().toLocaleDateString('ar-EG')
+    };
+    setExpPhotos([...expPhotos, newPhoto]);
+    playSound('success');
+  };
+
+  const handleDeletePhoto = (id) => {
+    setExpPhotos(prev => prev.filter(p => p.id !== id));
+    playSound('click');
+  };
+
+  const handleUpdatePhotoCaption = (id, newCaption) => {
+    setExpPhotos(prev => prev.map(p => p.id === id ? { ...p, caption: newCaption } : p));
+  };
+
+  const handleApproveExperiment = () => {
+    if (measurements.length === 0) {
+      alert('يرجى تسجيل قياسين على الأقل في جدول القياسات لمتابعة البحث!');
+      return;
+    }
+    playSound('success');
+    setIsExpApproved(true);
+    awardBadge('explorer');
+    setShowConfetti(true);
+    unlockStation(6);
+    setActiveStation(6);
+  };
+
+  // Compile full scientific research bundle
+  const getFullResearchData = () => {
+    return {
+      studentName,
+      studentClass,
+      teacherName,
+      schoolName: 'مدرسة مشيرفة الابتدائية',
+      districtName: 'لواء حيفا - وزارة التربية والتعليم',
+      academicYear: '2026 / 2027',
+      researchQuestion,
+      independentVar: hypoIf ? `المتغير المستقل: ${hypoIf}` : 'العامل التجريبي المستقل',
+      dependentVar: hypoThen ? `المتغير التابع المقاس: ${hypoThen}` : 'النتيجة الملاحظة والمقاسة',
+      constantVars: 'كمية التربة، نوع البذور، كمية ماء الري، وتوقيت القياس لضمان تجربة عادلة',
+      hypothesis: { if: hypoIf, then: hypoThen, because: hypoBecause },
+      backgroundParagraphs: { p1: bgParagraph1, p2: bgParagraph2, p3: bgParagraph3 },
+      sources: bgSources,
+      materials: expMaterials,
+      steps: expSteps,
+      measurements: measurements,
+      chartXLabel,
+      chartYLabel,
+      photos: expPhotos,
+      conclusion,
+      recommendations,
+      date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+    };
+  };
+
+  const handleExportWord = () => {
+    playSound('success');
+    exportResearchToWord(getFullResearchData());
+  };
+
+  const handleExportPdf = () => {
+    playSound('click');
+    printComprehensiveResearchBook(getFullResearchData());
+  };
+
+  // Calculate overall progress % (across 5 milestones)
   const calculateProgress = () => {
     let p = 0;
-    if (quizPassed) p += 25;
-    if (isQuestionApproved) p += 25;
-    if (isHypoApproved) p += 25;
-    if (isBgApproved) p += 25;
+    if (quizPassed) p += 20;
+    if (isQuestionApproved) p += 20;
+    if (isHypoApproved) p += 20;
+    if (isBgApproved) p += 20;
+    if (isExpApproved) p += 20;
     return p;
   };
 
@@ -1079,7 +1333,7 @@ ${historySnippet}
             <div className="quest-trail-title">
               <span>🚀 محطات مغامرة البحث العلمي</span>
               <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-                (محطة {activeStation === 0 ? 'البداية' : activeStation} من 4)
+                (محطة {activeStation === 0 ? 'البداية' : activeStation} من 6)
               </span>
             </div>
             <div className="quest-progress-meter">
@@ -1166,30 +1420,50 @@ ${historySnippet}
             >
               {badges.background && <span className="quest-step-badge-tag">📚 تم الإنجاز</span>}
               <div className="quest-step-icon">
-                {isBgApproved ? <i className="fas fa-check"></i> : <i className="fas fa-book-reader"></i>}
+                {isBgApproved ? <i className="fas fa-check"></i> : <i className="fas fa-file-word"></i>}
               </div>
               <span className="quest-step-num">المحطة الرابعة</span>
-              <span className="quest-step-name">الخلفية العلمية والمصادر</span>
+              <span className="quest-step-name">الخلفية ومحرر Word</span>
             </div>
 
-            {/* Step 5: Finale */}
+            {/* Step 5: Experiment, Measurements & Photos */}
             <div
-              className={`quest-step-pill ${unlockedStations.includes(5) || (unlockedStations.includes(4) && badges.explorer) ? 'unlocked' : 'locked'} ${activeStation === 5 ? 'active' : ''} ${badges.explorer ? 'completed' : ''}`}
+              className={`quest-step-pill ${unlockedStations.includes(5) ? 'unlocked' : 'locked'} ${activeStation === 5 ? 'active' : ''} ${isExpApproved ? 'completed' : ''}`}
               onClick={() => {
-                if (unlockedStations.includes(5) || (unlockedStations.includes(4) && badges.explorer)) {
+                if (unlockedStations.includes(5)) {
                   playSound('click');
                   setActiveStation(5);
                 } else {
-                  alert('🔒 أكمل المحطات الأربع واعتمد الخلفية العلمية أولاً للحصول على شهادتك الذهبية ووسام التتويج!');
+                  alert('🔒 هذه المحطة مقفلة! اعتمد الخلفية العلمية في المحطة الرابعة لتفتح لك مسار التجربة والمقاييس.');
+                }
+              }}
+            >
+              {isExpApproved && <span className="quest-step-badge-tag">📊 تم الرصد</span>}
+              <div className="quest-step-icon">
+                {isExpApproved ? <i className="fas fa-check"></i> : <i className="fas fa-chart-line"></i>}
+              </div>
+              <span className="quest-step-num">المحطة الخامسة</span>
+              <span className="quest-step-name">القياسات والصور 📈</span>
+            </div>
+
+            {/* Step 6: Grand Finale & Research Book */}
+            <div
+              className={`quest-step-pill ${unlockedStations.includes(6) || (unlockedStations.includes(5) && badges.explorer) ? 'unlocked' : 'locked'} ${activeStation === 6 ? 'active' : ''} ${badges.explorer ? 'completed' : ''}`}
+              onClick={() => {
+                if (unlockedStations.includes(6) || (unlockedStations.includes(5) && badges.explorer)) {
+                  playSound('click');
+                  setActiveStation(6);
+                } else {
+                  alert('🔒 أكمل التجربة وسجل القياسات في المحطة الخامسة أولاً لإصدار كتاب بحثك الكامل والشهادة الذهبية!');
                 }
               }}
             >
               {badges.explorer && <span className="quest-step-badge-tag">🏆 متوج</span>}
               <div className="quest-step-icon">
-                <i className="fas fa-award"></i>
+                <i className="fas fa-book"></i>
               </div>
-              <span className="quest-step-num">لوحة التكريم</span>
-              <span className="quest-step-name">شهادة المستكشف</span>
+              <span className="quest-step-num">منصة التتويج</span>
+              <span className="quest-step-name">كتاب البحث (PDF/Word)</span>
             </div>
           </div>
         </nav>
@@ -1198,9 +1472,9 @@ ${historySnippet}
         <section className="quest-avatar-card">
           <RobotMusheirifiAvatar
             expression={
-              activeStation === 5 || showConfetti
+              activeStation === 6 || showConfetti
                 ? 'celebrating'
-                : activeStation === 2 || activeStation === 4
+                : activeStation === 2 || activeStation === 4 || activeStation === 5
                 ? 'thinking'
                 : 'happy'
             }
@@ -1222,7 +1496,7 @@ ${historySnippet}
                   playSound('click');
                   let textToRead = '';
                   if (activeStation === 0) {
-                    textToRead = `أهلاً بك يا بطلنا ${studentName}! أنا صديقك الروبوت مُشيرفي، وهنا لنكتشف معاً كيف يفكر العلماء، من طرح الأسئلة إلى التجربة والاكتشاف. هل أنت مستعد للرحلة؟`;
+                    textToRead = `أهلاً بك يا بطلنا ${studentName}! أنا صديقك الروبوت مُشيرفي، وهنا لنكتشف معاً كيف يفكر العلماء، من طرح الأسئلة إلى التجربة والاكتشاف وتنزيل بحثك الكامل كملف وورد وبدي إف. هل أنت مستعد للرحلة؟`;
                   } else if (activeStation === 1) {
                     textToRead = 'في المحطة الأولى، سنقرأ قصة النبتة العجيبة لنعرف ما هو البحث العلمي، ثم تجتاز اختباراً ذكياً من ثلاثة أسئلة لتنال وسام شعلة الفضول!';
                   } else if (activeStation === 2) {
@@ -1230,9 +1504,11 @@ ${historySnippet}
                   } else if (activeStation === 3) {
                     textToRead = 'في المحطة الثالثة نتعلم كيف نصوغ الفرضية الذكية: إذا قمنا بكذا، نتوقع كذا، لأن كذا! هيا نبني فرضيتك معاً!';
                   } else if (activeStation === 4) {
-                    textToRead = 'في المحطة الرابعة، ورشة كتابة الخلفية العلمية، سنستخرج المراجع الموثوقة، ونسترشد بمفاتيح البحث، ونكتب مسودة فقراتنا خطوة بخطوة وسأقوم بتدقيقها وصقلها معك!';
+                    textToRead = 'في المحطة الرابعة، صممنا لك محرر وورد متكامل ومريح لكتابة الخلفية العلمية وتدقيق كل فقرة معي بالذكاء الاصطناعي!';
+                  } else if (activeStation === 5) {
+                    textToRead = 'المحطة الخامسة هي ورشة التجربة والقياسات! سجل مواد وخطوات تجربتك، واملأ جدول القياسات لنرسم لك رسوماً بيانية تفاعلية، وارفع صور تجاربك ومشاهداتك!';
                   } else {
-                    textToRead = `مبارك من أعماق القلب يا بطلنا المتألق ${studentName}! لقد أكملت خطوات البحث العلمي واستحققت شهادة المستكشف العلمي بجدارة!`;
+                    textToRead = `مبارك من أعماق القلب يا بطلنا المتألق ${studentName}! لقد أنجزت جميع محطات البحث العلمي واستحققت إصدار كتاب بحثك الكامل بصيغة وورد أو بدي إف والشهادة الذهبية!`;
                   }
                   speakText(textToRead);
                 }}
@@ -1245,7 +1521,7 @@ ${historySnippet}
             <p className="quest-avatar-text">
               {activeStation === 0 && (
                 <>
-                  مرحباً بك يا عالمنا المستقبلي <strong>{studentName}</strong> في مغامرة البحث العلمي! أنا صديقك <strong>مُشيرفي</strong>، وسأرافقك خطوة بخطوة لنتعلم كيف يفكر العلماء، ونحول فضولك إلى اكتشافات مذهلة. انطلق معي الآن! ✨
+                  مرحباً بك يا عالمنا المستقبلي <strong>{studentName}</strong> في مغامرة البحث العلمي! أنا صديقك <strong>مُشيرفي</strong>، وسأرافقك خطوة بخطوة لنتعلم كيف يفكر العلماء، ونحول فضولك إلى اكتشافات مذهلة، حتى استخراج بحثك الكامل كملف Word و PDF فاخر! ✨
                 </>
               )}
               {activeStation === 1 && (
@@ -1265,12 +1541,17 @@ ${historySnippet}
               )}
               {activeStation === 4 && (
                 <>
-                  أهلاً بك في <strong>المحطة الرابعة: ورشة كتابة الخلفية العلمية والمصادر</strong>! 📚🔍 لا باحث يبدأ من فراغ؛ سنستخرج المراجع، ونحدد عناوين البحث، وسأرافقك في صياغة وتصليح فقراتك فقرة بفقرة لنتأكد من فهمك وتميز صياغتك! ✨
+                  أهلاً بك في <strong>المحطة الرابعة: محرر Word لكتابة الخلفية العلمية والمصادر</strong>! 📝 استمتع بمحرر متكامل مريح كبرنامج Word لتنسيق وكتابة وتدقيق فقراتك فقرة بفقرة لضمان مشاركتك وإتقانك! ✨
                 </>
               )}
               {activeStation === 5 && (
                 <>
-                  يا لك من فخر لمدرسة مشيرفة! مبارك إتمام الرحلة وحصولك على الأوسمة الأربعة ولقب <strong>المستكشف العلمي المتوج</strong>. يمكنك الآن طباعة شهادتك الرسمية الشاملة مع خلفيتك العلمية ومشاركتها مع أهلك ومعلميك! 🏆🎓
+                  أهلاً بك في <strong>المحطة الخامسة: مختبر التجربة والقياسات والصور</strong>! 📊🔬 هنا نسجل خطوات ومواد العمل، وندخل قياسات التجربة لتتحول فوراً إلى مخططات بيانية تفاعلية (أعمدة أو خطوط)، ونوثق صور التجربة الميدانية! ✨
+                </>
+              )}
+              {activeStation === 6 && (
+                <>
+                  يا لك من فخر لمدرسة مشيرفة! مبارك إتمام الرحلة العلمية وحصولك على لقب <strong>المستكشف العلمي المتوج</strong>. يمكنك الآن تحميل <strong>كتاب البحث الشامل كاملاً</strong> بصيغة Word (.doc) أو PDF بكل المخططات والصور، مع شهادتك الذهبية! 📚🏆🎓
                 </>
               )}
             </p>
@@ -1288,7 +1569,7 @@ ${historySnippet}
                 رحلة المستكشف الصغير: خطوات البحث العلمي 🔬✨
               </h1>
               <p className="quest-hero-subtitle">
-                منصة تعليمية تفاعلية مبهجة لطلاب المرحلة الابتدائية بمدرسة مشيرفة، تصحبك في تجربة عملية ممتعة لصياغة الأسئلة، بناء الفرضيات، وفتح أوسمة التميز العلمي!
+                منصة تعليمية تفاعلية مبهجة لطلاب المرحلة الابتدائية بمدرسة مشيرفة، تصحبك في تجربة عملية ممتعة لصياغة الأسئلة، بناء الفرضيات، تدوين القياسات والرسوم البيانية وتوثيق التجارب بالصور، وتنزيل البحث كاملاً ككتاب علمي موثق بصيغة Word و PDF!
               </p>
 
               <div className="quest-hero-actions">
@@ -1325,7 +1606,7 @@ ${historySnippet}
                 <div className="quest-feature-card-icon" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
                   📖
                 </div>
-                <h3>المحطة 1: قصة البحث العلمي واختبار العبور</h3>
+                <h3>المحطة 1: قصة البحث واختبار العبور</h3>
                 <p>
                   شرح بالقصص المصورة لأهمية البحث العلمي في حياتنا، يليه اختبار بوابي ذكي لا يمكن العبور بعده إلا بإتقانه كاملاً.
                 </p>
@@ -1353,7 +1634,7 @@ ${historySnippet}
                 <div className="quest-feature-card-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
                   🧪
                 </div>
-                <h3>المحطة 3: بناء الفرضيات العلمية والتجربة</h3>
+                <h3>المحطة 3: بناء الفرضيات العلمية</h3>
                 <p>
                   اكتشف معادلة الفرضية الذهبية (إذا... فإن... لأن...) وطبقها عملياً لربط توقعك العلمي بسؤال بحثك بثقة وإتقان.
                 </p>
@@ -1365,15 +1646,43 @@ ${historySnippet}
 
               <div className="quest-feature-card">
                 <div className="quest-feature-card-icon" style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
-                  📚
+                  📝
                 </div>
-                <h3>المحطة 4: كتابة وتوثيق الخلفية العلمية والمصادر</h3>
+                <h3>المحطة 4: محرر Word للخلفية العلمية</h3>
                 <p>
-                  استخراج المراجع الموثوقة، وتوجيه عناوين ومفاتيح البحث، وكتابة مسودة فقرات الخلفية العلمية خطوة بخطوة وتدقيقها بالذكاء الاصطناعي مع مُشيرفي.
+                  محرر مستندات واسع بتصميم Microsoft Word لكتابة مسودة فقرات الخلفية العلمية فقرة بفقرة، وتدقيقها بالذكاء الاصطناعي وتوثيق المصادر.
                 </p>
                 <div className="quest-card-badge-preview">
                   <span>🏅 وسام المحطة:</span>
                   <strong>وسام التوثيق والخلفية العلمية 📜✨</strong>
+                </div>
+              </div>
+
+              <div className="quest-feature-card">
+                <div className="quest-feature-card-icon" style={{ background: 'rgba(14, 165, 233, 0.15)', color: '#0ea5e9' }}>
+                  📊
+                </div>
+                <h3>المحطة 5: القياسات والرسوم البيانية والصور</h3>
+                <p>
+                  تسجيل خطوات ومواد التجربة، وإدخال القياسات الرقمية في جداول ذكية تولد تلقائياً رسوماً بيانية تفاعلية (أعمدة وخطوط)، وتوثيق صور المشاهدات المخبرية.
+                </p>
+                <div className="quest-card-badge-preview">
+                  <span>🏅 وسام المحطة:</span>
+                  <strong>وسام خبير القياسات والتجربة 📈📸</strong>
+                </div>
+              </div>
+
+              <div className="quest-feature-card">
+                <div className="quest-feature-card-icon" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
+                  📚
+                </div>
+                <h3>المحطة 6: منصة التتويج وكتاب البحث الشامل</h3>
+                <p>
+                  استخراج البحث كاملاً بملف وورد رسمي (DOC) أو ملف PDF قابل للطباعة يحتوي الغلاف الرسمي لشعار المدرسة، والفرضيات، والخلفية، والجداول، والمخططات، والصور، والشهادة الذهبية.
+                </p>
+                <div className="quest-card-badge-preview">
+                  <span>🏅 وسام المحطة:</span>
+                  <strong>المستكشف العلمي المتوج 🏆🎓</strong>
                 </div>
               </div>
             </div>
@@ -1417,11 +1726,19 @@ ${historySnippet}
                   </div>
                 </div>
 
+                <div className={`quest-badge-slot ${isExpApproved ? 'earned' : 'locked'}`}>
+                  <div className="quest-badge-slot-icon">📊</div>
+                  <div className="quest-badge-info">
+                    <h4>وسام خبير القياسات</h4>
+                    <p>{isExpApproved ? 'تم تسجيل القياسات والمخططات البيانية بنجاح!' : 'يُفتح عند تسجيل القياسات وتوليد الرسوم البيانية في المحطة الخامسة.'}</p>
+                  </div>
+                </div>
+
                 <div className={`quest-badge-slot ${badges.explorer ? 'earned' : 'locked'}`}>
                   <div className="quest-badge-slot-icon">🏆</div>
                   <div className="quest-badge-info">
                     <h4>وسام المستكشف المتوج</h4>
-                    <p>{badges.explorer ? 'تم التتويج بنجاح!' : 'يُمنح عند إتمام المحطات الأربع وإصدار الشهادة.'}</p>
+                    <p>{badges.explorer ? 'تم التتويج وإصدار كتاب البحث والشهادة!' : 'يُمنح عند إتمام رحلة البحث كاملة وإصدار كتاب البحث.'}</p>
                   </div>
                 </div>
               </div>
@@ -2248,230 +2565,293 @@ ${historySnippet}
                 </div>
               </div>
 
-              {/* 3 Paragraphs Nav Tabs */}
-              <div className="quest-p-tabs">
+              {/* 3 Paragraphs Luxury Nav Tabs */}
+              <div className="quest-p-tabs" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', width: '100%', marginBottom: '1.5rem' }}>
                 <button
                   type="button"
                   className={`quest-p-tab ${bgActiveTab === 1 ? 'active' : ''} ${bgParagraph1.trim() && bgReviews[1]?.isApproved ? 'done' : ''}`}
                   onClick={() => setBgActiveTab(1)}
                 >
-                  <span className="p-num">1</span>
-                  <span>الفقرة الأولى: المفهوم والتعريف</span>
+                  <div className="p-num">1</div>
+                  <div className="p-title">
+                    <span className="p-title-main">الفقرة 1: المفهوم والتعريف</span>
+                    <span className="p-title-sub">
+                      {bgReviews[1]?.isApproved ? '✅ معتمدة ومصقولة' : bgParagraph1.trim() ? '⏳ مسودة قيد التدقيق' : '✏️ ابدأ الصياغة'}
+                    </span>
+                  </div>
                   {bgReviews[1]?.isApproved && <i className="fas fa-check-circle done-icon"></i>}
                 </button>
+
                 <button
                   type="button"
                   className={`quest-p-tab ${bgActiveTab === 2 ? 'active' : ''} ${bgParagraph2.trim() && bgReviews[2]?.isApproved ? 'done' : ''}`}
                   onClick={() => setBgActiveTab(2)}
                 >
-                  <span className="p-num">2</span>
-                  <span>الفقرة الثانية: التفسير العلمي والعلاقة</span>
+                  <div className="p-num">2</div>
+                  <div className="p-title">
+                    <span className="p-title-main">الفقرة 2: التفسير والعلاقة</span>
+                    <span className="p-title-sub">
+                      {bgReviews[2]?.isApproved ? '✅ معتمدة ومصقولة' : bgParagraph2.trim() ? '⏳ مسودة قيد التدقيق' : '✏️ ابدأ الصياغة'}
+                    </span>
+                  </div>
                   {bgReviews[2]?.isApproved && <i className="fas fa-check-circle done-icon"></i>}
                 </button>
+
                 <button
                   type="button"
                   className={`quest-p-tab ${bgActiveTab === 3 ? 'active' : ''} ${bgParagraph3.trim() && bgReviews[3]?.isApproved ? 'done' : ''}`}
                   onClick={() => setBgActiveTab(3)}
                 >
-                  <span className="p-num">3</span>
-                  <span>الفقرة الثالثة: الأهمية والتطبيق الواقعي</span>
+                  <div className="p-num">3</div>
+                  <div className="p-title">
+                    <span className="p-title-main">الفقرة 3: الأهمية والتطبيق</span>
+                    <span className="p-title-sub">
+                      {bgReviews[3]?.isApproved ? '✅ معتمدة ومصقولة' : bgParagraph3.trim() ? '⏳ مسودة قيد التدقيق' : '✏️ ابدأ الصياغة'}
+                    </span>
+                  </div>
                   {bgReviews[3]?.isApproved && <i className="fas fa-check-circle done-icon"></i>}
                 </button>
               </div>
 
-              {/* Paragraph 1 Tab Panel */}
-              {bgActiveTab === 1 && (
-                <div className="quest-p-panel">
-                  <div className="quest-p-instruction">
-                    <span className="inst-badge">🎯 مهمتك في الفقرة الأولى:</span>
-                    <strong>عرّف المفهوم الأساسي لسؤال بحثك بأسلوبك الخاص.</strong>
-                    <p>ما هي الظاهرة التي تدرسها؟ ما هي المصطلحات العلمية المركزية التي يحتاجها القارئ ليفهم موضوعك؟</p>
-                  </div>
+              {/* Dynamic Mission Box for Selected Paragraph */}
+              <div className="quest-p-instruction">
+                <span className="inst-badge">
+                  🎯 مهمتك في الفقرة {bgActiveTab === 1 ? 'الأولى (المفهوم العلمي)' : bgActiveTab === 2 ? 'الثانية (التفسير والعلاقة)' : 'الثالثة (الأهمية والتطبيق)'}:
+                </span>
+                <strong>
+                  {bgActiveTab === 1 && 'عرّف المفهوم والظاهرة المركزية لسؤال بحثك بأسلوبك وكلماتك الخاصة.'}
+                  {bgActiveTab === 2 && 'اشرح التفسير العلمي والعلاقة بين المتغيرات مستنداً إلى ما قرأته في المراجع.'}
+                  {bgActiveTab === 3 && 'وضّح أهمية هذا البحث وتطبيقاته المفيدة في حياتنا، بيئتنا ومدرستنا.'}
+                </strong>
+                <p>
+                  {bgActiveTab === 1 && 'ما هي الظاهرة التي تبحثها؟ ما هي المصطلحات والمفاهيم التي يحتاجها القارئ ليفهم موضوعك؟'}
+                  {bgActiveTab === 2 && 'كيف يؤثر المتغير المستقل على المتغير التابع؟ ما هو السبب العلمي وراء ذلك؟'}
+                  {bgActiveTab === 3 && 'لماذا اخترت هذا الموضوع؟ كيف يساعد فهمنا له المزارعين، الأطباء، أو المجتمع المدرسي؟'}
+                </p>
+              </div>
 
-                  <div className="quest-p-textarea-wrap">
-                    <textarea
-                      className="quest-p-textarea"
-                      rows={4}
-                      value={bgParagraph1}
-                      onChange={(e) => setBgParagraph1(e.target.value)}
-                      placeholder="اكتب مسودتك هنا... مثال: يتناول بحثي ظاهرة نمو النباتات وعلاقتها بضوء الشمس، حيث يعتبر الضوء عاملاً حيوياً أساسياً تحتاجه النباتات..."
-                    />
-                    <div className="textarea-footer">
-                      <span className="char-count">{bgParagraph1.length} حرفاً</span>
-                      <button
-                        type="button"
-                        className="quest-check-btn"
-                        onClick={() => handleReviewParagraphWithAI(1)}
-                        disabled={isReviewingParagraph === 1 || !bgParagraph1.trim()}
-                      >
-                        <i className={`fas ${isReviewingParagraph === 1 ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
-                        <span>{isReviewingParagraph === 1 ? 'مُشيرفي يفحص فقرتك...' : '🤖 صلّح ودقّق فقرّتي مع مُشيرفي'}</span>
-                      </button>
-                    </div>
+              {/* Microsoft Word Document Simulator Studio */}
+              <div className="word-studio-window">
+                {/* Window Top Title */}
+                <div className="word-window-header">
+                  <div className="word-window-title">
+                    <i className="fas fa-file-word" style={{ color: '#60a5fa', fontSize: '1.25rem' }}></i>
+                    <span>محرر مستندات البحث العلمي (Microsoft Word Studio) — الفقرة {bgActiveTab} من 3</span>
                   </div>
-
-                  {/* AI Feedback for Paragraph 1 */}
-                  {bgReviews[1] && (
-                    <div className="quest-ai-review-box">
-                      <div className="review-header">
-                        <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي:</span>
-                      </div>
-                      <p className="review-feedback">{bgReviews[1].feedback}</p>
-                      {bgReviews[1].polished && (
-                        <div className="review-polished-wrap">
-                          <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
-                          <div className="polished-text">"{bgReviews[1].polished}"</div>
-                          <div className="polished-actions">
-                            <button
-                              type="button"
-                              className="quest-btn-primary"
-                              onClick={() => handleApplyPolishedParagraph(1)}
-                            >
-                              <i className="fas fa-check"></i>
-                              <span>اعتماد الصياغة المصقولة والانتقال للفقرة 2 ➔</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="quest-btn-secondary"
-                              onClick={() => handleKeepStudentParagraph(1)}
-                            >
-                              <span>أفضّل الاستمرار بصياغتي الحالية والتقدم ➔</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="word-window-controls">
+                    <span className="word-ctrl-dot" style={{ background: '#ef4444' }}></span>
+                    <span className="word-ctrl-dot" style={{ background: '#f59e0b' }}></span>
+                    <span className="word-ctrl-dot" style={{ background: '#10b981' }}></span>
+                  </div>
                 </div>
-              )}
 
-              {/* Paragraph 2 Tab Panel */}
-              {bgActiveTab === 2 && (
-                <div className="quest-p-panel">
-                  <div className="quest-p-instruction">
-                    <span className="inst-badge">🎯 مهمتك في الفقرة الثانية:</span>
-                    <strong>اشرح التفسير العلمي والعلاقة بين المتغيرات.</strong>
-                    <p>بناءً على ما قرأته في المراجع، كيف تؤثر المتغيرات ببعضها؟ ما السبب العلمي الذي يفسر حدوث هذه الظاهرة في الطبيعة؟</p>
+                {/* Word Ribbon Bar */}
+                <div className="word-ribbon-bar">
+                  <div className="word-tool-group">
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, paddingRight: '4px' }}>حجم الخط:</span>
+                    <select 
+                      className="word-select-font-size" 
+                      value={wordFontSize} 
+                      onChange={(e) => setWordFontSize(e.target.value)}
+                    >
+                      <option value="16px">16 (عادي)</option>
+                      <option value="18px">18 (مناسب للبحث)</option>
+                      <option value="20px">20 (كبير)</option>
+                      <option value="22px">22 (عريض)</option>
+                      <option value="24px">24 (عنوان)</option>
+                    </select>
                   </div>
 
-                  <div className="quest-p-textarea-wrap">
-                    <textarea
-                      className="quest-p-textarea"
-                      rows={4}
-                      value={bgParagraph2}
-                      onChange={(e) => setBgParagraph2(e.target.value)}
-                      placeholder="اكتب مسودتك هنا... مثال: تفسر المراجع العلمية أن أوراق النبات تحتوي على مادة الكلوروفيل التي تمتص أشعة الشمس لتصنع الغذاء عبر البناء الضوئي..."
-                    />
-                    <div className="textarea-footer">
-                      <span className="char-count">{bgParagraph2.length} حرفاً</span>
-                      <button
-                        type="button"
-                        className="quest-check-btn"
-                        onClick={() => handleReviewParagraphWithAI(2)}
-                        disabled={isReviewingParagraph === 2 || !bgParagraph2.trim()}
-                      >
-                        <i className={`fas ${isReviewingParagraph === 2 ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
-                        <span>{isReviewingParagraph === 2 ? 'مُشيرفي يفحص فقرتك...' : '🤖 صلّح ودقّق فقرّتي مع مُشيرفي'}</span>
-                      </button>
-                    </div>
+                  <div className="word-tool-group">
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordBold ? 'active' : ''}`}
+                      onClick={() => setWordBold(!wordBold)}
+                      title="خط عريض (Bold)"
+                    >
+                      <strong>B</strong>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordItalic ? 'active' : ''}`}
+                      onClick={() => setWordItalic(!wordItalic)}
+                      title="خط مائل (Italic)"
+                    >
+                      <em>I</em>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordUnderline ? 'active' : ''}`}
+                      onClick={() => setWordUnderline(!wordUnderline)}
+                      title="تسطير النص (Underline)"
+                    >
+                      <u>U</u>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordHighlight ? 'active' : ''}`}
+                      onClick={() => setWordHighlight(!wordHighlight)}
+                      title="قلم تمييز النص باللون الأصفر (Highlight)"
+                    >
+                      🖍️
+                    </button>
                   </div>
 
-                  {/* AI Feedback for Paragraph 2 */}
-                  {bgReviews[2] && (
-                    <div className="quest-ai-review-box">
-                      <div className="review-header">
-                        <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي:</span>
-                      </div>
-                      <p className="review-feedback">{bgReviews[2].feedback}</p>
-                      {bgReviews[2].polished && (
-                        <div className="review-polished-wrap">
-                          <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
-                          <div className="polished-text">"{bgReviews[2].polished}"</div>
-                          <div className="polished-actions">
-                            <button
-                              type="button"
-                              className="quest-btn-primary"
-                              onClick={() => handleApplyPolishedParagraph(2)}
-                            >
-                              <i className="fas fa-check"></i>
-                              <span>اعتماد الصياغة المصقولة والانتقال للفقرة 3 ➔</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="quest-btn-secondary"
-                              onClick={() => handleKeepStudentParagraph(2)}
-                            >
-                              <span>أفضّل الاستمرار بصياغتي الحالية والتقدم ➔</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="word-tool-group">
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordAlign === 'right' ? 'active' : ''}`}
+                      onClick={() => setWordAlign('right')}
+                      title="محاذاة لليمين"
+                    >
+                      <i className="fas fa-align-right"></i>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordAlign === 'center' ? 'active' : ''}`}
+                      onClick={() => setWordAlign('center')}
+                      title="توسيط"
+                    >
+                      <i className="fas fa-align-center"></i>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`word-tool-btn ${wordAlign === 'justify' ? 'active' : ''}`}
+                      onClick={() => setWordAlign('justify')}
+                      title="ضبط السطور"
+                    >
+                      <i className="fas fa-align-justify"></i>
+                    </button>
+                  </div>
+
+                  <div className="word-tool-group">
+                    <button 
+                      type="button" 
+                      className="word-tool-btn"
+                      onClick={() => {
+                        setWordBold(false);
+                        setWordItalic(false);
+                        setWordUnderline(false);
+                        setWordHighlight(false);
+                        setWordAlign('right');
+                        setWordFontSize('18px');
+                      }}
+                      title="مسح التنسيق والرجوع للافتراضي"
+                      style={{ width: 'auto', padding: '0 8px', fontSize: '0.82rem' }}
+                    >
+                      <span>🧹 مسح التنسيق</span>
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              {/* Paragraph 3 Tab Panel */}
-              {bgActiveTab === 3 && (
-                <div className="quest-p-panel">
-                  <div className="quest-p-instruction">
-                    <span className="inst-badge">🎯 مهمتك في الفقرة الثالثة:</span>
-                    <strong>وضّح أهمية هذا البحث وتطبيقاته في حياتنا وبيئتنا.</strong>
-                    <p>لماذا قمت باختيار هذا الموضوع؟ كيف يساعدنا هذا الفهم في الزراعة، الصحة، البيئة، أو حل مشكلات في مدرستنا ومجتمعنا؟</p>
-                  </div>
+                {/* Word Ruler */}
+                <div className="word-ruler-bar">
+                  <span>📐 0 cm</span>
+                  <span className="word-ruler-ticks">| · · · · | · · · · | · · · · | · · · · | · · · · | · · · · |</span>
+                  <span>15 cm 📐</span>
+                </div>
 
-                  <div className="quest-p-textarea-wrap">
-                    <textarea
-                      className="quest-p-textarea"
-                      rows={4}
-                      value={bgParagraph3}
-                      onChange={(e) => setBgParagraph3(e.target.value)}
-                      placeholder="اكتب مسودتك هنا... مثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل وزيادة الإنتاج..."
-                    />
-                    <div className="textarea-footer">
-                      <span className="char-count">{bgParagraph3.length} حرفاً</span>
-                      <button
-                        type="button"
-                        className="quest-check-btn"
-                        onClick={() => handleReviewParagraphWithAI(3)}
-                        disabled={isReviewingParagraph === 3 || !bgParagraph3.trim()}
-                      >
-                        <i className={`fas ${isReviewingParagraph === 3 ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
-                        <span>{isReviewingParagraph === 3 ? 'مُشيرفي يفحص فقرتك...' : '🤖 صلّح ودقّق فقرّتي مع مُشيرفي'}</span>
-                      </button>
+                {/* Word Desk & A4 Paper Canvas */}
+                <div className="word-page-desk">
+                  <div className="word-sheet-canvas">
+                    <div className="word-sheet-header-watermark">
+                      <span>🏫 مدرسة مشيرفة الابتدائية — بحث المستكشف العلمي الصغير</span>
+                      <span>الفقرة {bgActiveTab} من 3</span>
                     </div>
-                  </div>
 
-                  {/* AI Feedback for Paragraph 3 */}
-                  {bgReviews[3] && (
-                    <div className="quest-ai-review-box">
-                      <div className="review-header">
-                        <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي:</span>
+                    <textarea
+                      className="word-large-textarea"
+                      rows={6}
+                      value={bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (bgActiveTab === 1) setBgParagraph1(val);
+                        else if (bgActiveTab === 2) setBgParagraph2(val);
+                        else setBgParagraph3(val);
+                      }}
+                      placeholder={
+                        bgActiveTab === 1
+                          ? 'اكتب مسودتك هنا بأسلوبك... مثال: يتناول بحثي ظاهرة نمو النباتات وعلاقتها بضوء الشمس، حيث يعتبر الضوء عاملاً حيوياً أساسياً تحتاجه النباتات...'
+                          : bgActiveTab === 2
+                          ? 'اكتب مسودتك هنا... مثال: تفسر المراجع العلمية أن أوراق النبات تحتوي على صبغة الكلوروفيل الخضراء التي تمتص فوتونات الضوء للقيام بالبناء الضوئي...'
+                          : 'اكتب مسودتك هنا... مثال: تكمن أهمية هذا البحث في مساعدة المزارعين في قرية مشيرفة على اختيار أفضل الأماكن المشمسة لزراعة المحاصيل وزيادة الإنتاج...'
+                      }
+                      style={{
+                        fontSize: wordFontSize,
+                        fontWeight: wordBold ? 'bold' : 'normal',
+                        fontStyle: wordItalic ? 'italic' : 'normal',
+                        textDecoration: wordUnderline ? 'underline' : 'none',
+                        backgroundColor: wordHighlight ? 'rgba(254, 240, 138, 0.45)' : 'transparent',
+                        textAlign: wordAlign
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Word Status Bar */}
+                <div className="word-status-bar">
+                  <div className="word-status-stats">
+                    <span>📄 صفحة 1 من 1</span>
+                    <span>✍️ الكلمات: {(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).trim() ? (bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).trim().split(/\s+/).length : 0} كلمة</span>
+                    <span>🔤 الأحرف: {(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).length} حرفاً</span>
+                  </div>
+                  <div className="word-status-stats">
+                    <span>🌐 العربية (مشيرفة)</span>
+                    <span>🔍 100%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Giant Glowing AI Review Button */}
+              <button
+                type="button"
+                className="quest-check-btn-giant"
+                onClick={() => handleReviewParagraphWithAI(bgActiveTab)}
+                disabled={
+                  isReviewingParagraph === bgActiveTab || 
+                  !(bgActiveTab === 1 ? bgParagraph1 : bgActiveTab === 2 ? bgParagraph2 : bgParagraph3).trim()
+                }
+              >
+                <i className={`fas ${isReviewingParagraph === bgActiveTab ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`} style={{ fontSize: '1.3rem' }}></i>
+                <span>
+                  {isReviewingParagraph === bgActiveTab
+                    ? 'الروبوت مُشيرفي يفحص ويدقق فقرتك الآن...'
+                    : `🤖 فحص وتدقيق الفقرة (${bgActiveTab}) مع مُشيرفي (تصحيح لغوي + صقل علمي ذكي) ✨`}
+                </span>
+              </button>
+
+              {/* AI Feedback Card for Currently Selected Paragraph */}
+              {bgReviews[bgActiveTab] && (
+                <div className="quest-ai-review-box" style={{ marginTop: '1.5rem' }}>
+                  <div className="review-header">
+                    <span className="bot-tag">🤖 ملاحظات وتصحيح مُشيرفي للفقرة {bgActiveTab}:</span>
+                  </div>
+                  <p className="review-feedback">{bgReviews[bgActiveTab].feedback}</p>
+                  {bgReviews[bgActiveTab].polished && (
+                    <div className="review-polished-wrap">
+                      <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
+                      <div className="polished-text">"{bgReviews[bgActiveTab].polished}"</div>
+                      <div className="polished-actions">
+                        <button
+                          type="button"
+                          className="quest-btn-primary"
+                          onClick={() => handleApplyPolishedParagraph(bgActiveTab)}
+                        >
+                          <i className="fas fa-check"></i>
+                          <span>
+                            {bgActiveTab < 3 
+                              ? `اعتماد الصياغة المصقولة والانتقال للفقرة (${bgActiveTab + 1}) ➔` 
+                              : 'اعتماد الصياغة المصقولة للفقرة الثالثة ✅'}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="quest-btn-secondary"
+                          onClick={() => handleKeepStudentParagraph(bgActiveTab)}
+                        >
+                          <span>أفضّل الاستمرار بصياغتي الحالية والتقدم ➔</span>
+                        </button>
                       </div>
-                      <p className="review-feedback">{bgReviews[3].feedback}</p>
-                      {bgReviews[3].polished && (
-                        <div className="review-polished-wrap">
-                          <span className="polished-label">✨ الصياغة المحسنة والمصقولة علمياً:</span>
-                          <div className="polished-text">"{bgReviews[3].polished}"</div>
-                          <div className="polished-actions">
-                            <button
-                              type="button"
-                              className="quest-btn-primary"
-                              onClick={() => handleApplyPolishedParagraph(3)}
-                            >
-                              <i className="fas fa-check"></i>
-                              <span>اعتماد الصياغة المصقولة ✅</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="quest-btn-secondary"
-                              onClick={() => handleKeepStudentParagraph(3)}
-                            >
-                              <span>أفضّل الاستمرار بصياغتي الحالية ✅</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -2524,7 +2904,7 @@ ${historySnippet}
                 </div>
               </div>
 
-              {/* Approval Button */}
+              {/* Approval Button to Station 5 */}
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
                 <button
                   type="button"
@@ -2538,8 +2918,8 @@ ${historySnippet}
                     fontSize: '1.15rem'
                   }}
                 >
-                  <i className="fas fa-award"></i>
-                  <span>🌟 اعتماد الخلفية العلمية والتتويج بالشهادة الذهبية 🏆</span>
+                  <i className="fas fa-arrow-left"></i>
+                  <span>🌟 اعتماد الخلفية والانتقال للمحطة 5 (مسار التجربة والقياسات والصور) 📊➔</span>
                 </button>
               </div>
             </section>
@@ -2547,144 +2927,853 @@ ${historySnippet}
         )}
 
         {/* ========================================================= */}
-        {/* STATION 5: Finale & Explorer Certificate                  */}
+        {/* STATION 5: Experiment Protocol, Measurements & Lab Photos */}
+        {/* (תרשימים למדידות שנעשו ותמונות לנסיונות)                */}
         {/* ========================================================= */}
         {activeStation === 5 && (
           <main>
             <div className="quest-section-header">
-              <span className="quest-section-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', borderColor: '#f59e0b' }}>
-                منصة التتويج والإنجاز 🏆
+              <span className="quest-section-badge" style={{ background: 'rgba(2, 132, 199, 0.2)', color: '#38bdf8', borderColor: '#0284c7' }}>
+                المحطة 5 / 5 📊📸
               </span>
-              <h2 className="quest-section-title">شهادة المستكشف العلمي الصغير</h2>
+              <h2 className="quest-section-title">
+                مسار التجربة، الرسوم البيانية للقياسات، وصور المشاهدات
+              </h2>
               <p className="quest-section-desc">
-                ألف مبارك يا بطلنا المتألق! لقد أتقنت خطوات البحث العلمي الأربع (الملاحظة والأساسيات، صياغة السؤال، بناء الفرضية، وتوثيق الخلفية العلمية والمصادر).
+                هنا ينتقل العالم الصغير إلى المختبر الحقيقي! وثّق أدواتك وخطوات عملك، وسجل مقاييسك ليرسم لك النظام مخططاً بيانياً حياً (תרשים מדידות)، وأرفق صور تجاربك لمشاهدتها وتوثيقها في كتاب بحثك النهائي!
               </p>
             </div>
 
-            {/* Official Elementary School Certificate */}
-            <div className="quest-certificate-outer" id="printable-certificate">
-              <div className="quest-cert-watermark">🔬</div>
-
-              <div className="quest-cert-header">
-                <div className="quest-cert-school-name">
-                  🏫 مدرسة مشيرفة الابتدائية - واحة التميز والإبداع
-                </div>
-                <h2 className="quest-cert-main-title">
-                  شهادة وسام المستكشف العلمي الصغير 🎓✨
-                </h2>
-                <div className="quest-cert-subtitle">
-                  تُمنح هذه الشهادة تقديراً للتفوق والتميز في إتقان خطوات البحث العلمي والتفكير الاستقصائي
-                </div>
+            {/* Context Box */}
+            <div className="quest-bg-context-banner">
+              <div className="context-item">
+                <span className="label"><i className="fas fa-question-circle"></i> سؤال بحثك:</span>
+                <strong className="val">"{researchQuestion || 'سؤال البحث'}"</strong>
               </div>
-
-              <div className="quest-cert-student-name-box">
-                <div className="quest-cert-present-to">تُمنح بكل فخر واعتزاز للعالم الصغير:</div>
-                <div className="quest-cert-name">{studentName}</div>
-                <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>
-                  {studentClass}
-                </div>
+              <div className="context-item">
+                <span className="label"><i className="fas fa-flask"></i> فرضيتك:</span>
+                <strong className="val">"إذا {hypoIf}، نتوقع أن {hypoThen}، لأن {hypoBecause}."</strong>
               </div>
+            </div>
 
-              <p className="quest-cert-praise">
-                لقد خاض الطالب رحلة استكشافية متكاملة برفقة <strong>الروبوت مُشيرفي</strong>، وأظهر فضولاً علمياً ناضجاً في فهم المنهج العلمي، وصياغة سؤال بحث استقصائي دقيق، وبناء فرضية مبررة، وتوثيق خلفية علمية رصينة مستندة إلى مصادر ومراجع موثوقة.
-              </p>
-
-              {/* Research Project Summary */}
-              <div className="quest-cert-project-summary">
-                <div className="quest-cert-summary-row">
-                  <strong>🔍 سؤال البحث العلمي المعتمد:</strong>{' '}
-                  <span>"{researchQuestion || 'كيف يؤثر ضوء الشمس على سرعة نمو النبات؟'}"</span>
-                </div>
-                <div className="quest-cert-summary-row">
-                  <strong>🧪 الفرضية العلمية المصاغة:</strong>{' '}
-                  <span>
-                    "إذا قمنا بـ {hypoIf || 'زيادة الضوء'}، فإننا نتوقع أن {hypoThen || 'تنمو الأوراق أسرع'}، لأن{' '}
-                    {hypoBecause || 'الضوء ضروري لعملية البناء الضوئي'}."
-                  </span>
-                </div>
-
-                {/* Scientific Background in Certificate */}
-                {(bgParagraph1 || bgParagraph2 || bgParagraph3) && (
-                  <div className="quest-cert-summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.8rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.8rem' }}>
-                    <strong style={{ color: '#0369a1', marginBottom: '0.4rem' }}>📚 ملخص الخلفية العلمية للبحث:</strong>
-                    <div style={{ fontSize: '0.92rem', lineHeight: '1.75', color: '#1e293b', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', width: '100%' }}>
-                      {bgParagraph1 && <p style={{ margin: '0 0 6px 0' }}>• {bgParagraph1}</p>}
-                      {bgParagraph2 && <p style={{ margin: '0 0 6px 0' }}>• {bgParagraph2}</p>}
-                      {bgParagraph3 && <p style={{ margin: 0 }}>• {bgParagraph3}</p>}
-                    </div>
+            {/* SECTION A: Materials & Steps */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              {/* Materials Editor */}
+              <div className="quest-exp-card">
+                <div className="quest-exp-card-header">
+                  <div className="header-icon" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                    🧪
                   </div>
-                )}
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#38bdf8' }}>
+                      أدوات ومواد التجربة (كل المواد المستخدمة)
+                    </h3>
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                      الأدوات التي استعنت بها في تنفيذ التجربة:
+                    </p>
+                  </div>
+                </div>
 
-                {/* Sources in Certificate */}
-                {bgSources && bgSources.length > 0 && (
-                  <div className="quest-cert-summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.6rem' }}>
-                    <strong style={{ color: '#059669', marginBottom: '0.3rem', fontSize: '0.85rem' }}>📖 المراجع والمصادر الموثقة:</strong>
-                    <div style={{ fontSize: '0.82rem', color: '#475569', display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                      {bgSources.map((s, idx) => (
-                        <span key={s.id || idx} style={{ background: '#ecfdf5', padding: '3px 8px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
-                          [{idx + 1}] {s.title} ({s.author})
-                        </span>
+                <div className="quest-items-list-editor">
+                  {expMaterials.map((mat, idx) => (
+                    <div key={idx} className="quest-item-row">
+                      <span className="item-num">{idx + 1}.</span>
+                      <input
+                        type="text"
+                        value={mat}
+                        onChange={(e) => {
+                          const updated = [...expMaterials];
+                          updated[idx] = e.target.value;
+                          setExpMaterials(updated);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="quest-item-delete"
+                        onClick={() => handleDeleteMaterial(idx)}
+                        title="حذف هذه المادة"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleAddMaterial} style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem' }}>
+                  <input
+                    type="text"
+                    value={newMaterialText}
+                    onChange={(e) => setNewMaterialText(e.target.value)}
+                    placeholder="أضف أداة أو مادة جديدة (مثلاً: ميزان رقمي أو مقياس حرارة)..."
+                    style={{
+                      flex: 1,
+                      background: 'rgba(2, 6, 23, 0.7)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '8px',
+                      padding: '0.5rem 0.8rem',
+                      color: 'white',
+                      fontSize: '0.9rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  <button type="submit" className="quest-btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                    <i className="fas fa-plus"></i> إضافة
+                  </button>
+                </form>
+              </div>
+
+              {/* Protocol Steps Editor */}
+              <div className="quest-exp-card">
+                <div className="quest-exp-card-header">
+                  <div className="header-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                    👣
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#10b981' }}>
+                      خطوات سير العمل في التجربة (بالترتيب)
+                    </h3>
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                      كيف قمت بالتجربة خطوة بخطوة وبطريقة عادلة:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="quest-items-list-editor">
+                  {expSteps.map((step, idx) => (
+                    <div key={idx} className="quest-item-row">
+                      <span className="item-num">{idx + 1}.</span>
+                      <input
+                        type="text"
+                        value={step}
+                        onChange={(e) => {
+                          const updated = [...expSteps];
+                          updated[idx] = e.target.value;
+                          setExpSteps(updated);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="quest-item-delete"
+                        onClick={() => handleDeleteStep(idx)}
+                        title="حذف هذه الخطوة"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleAddStep} style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem' }}>
+                  <input
+                    type="text"
+                    value={newStepText}
+                    onChange={(e) => setNewStepText(e.target.value)}
+                    placeholder="أضف خطوة عمل جديدة في التجربة..."
+                    style={{
+                      flex: 1,
+                      background: 'rgba(2, 6, 23, 0.7)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '8px',
+                      padding: '0.5rem 0.8rem',
+                      color: 'white',
+                      fontSize: '0.9rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  <button type="submit" className="quest-btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                    <i className="fas fa-plus"></i> إضافة
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* SECTION B: Measurements Table & Dynamic SVG Chart (תרשימים למדידות שנעשו) */}
+            <div className="quest-exp-card">
+              <div className="quest-exp-card-header">
+                <div className="header-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
+                  📈
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#f59e0b' }}>
+                    תרשימים למדידות שנעשו (جدول القياسات والرسم البياني التفاعلي)
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                    سجل قراءات التجربة (المحاولات، الأيام، أو درجات القياس). سيتولى النظام بناء رسم بياني حي وتحديثه فورياً!
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="quest-btn-primary"
+                  onClick={handleAddMeasurementRow}
+                  style={{ padding: '0.55rem 1.1rem', fontSize: '0.88rem', background: '#0284c7' }}
+                >
+                  <i className="fas fa-plus"></i> إضافة صف قياس جديد
+                </button>
+              </div>
+
+              {/* Axis Labels Customization */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'rgba(30, 41, 59, 0.5)', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>
+                    عنوان المحور الأفقي X (المتغير المستقل):
+                  </label>
+                  <input
+                    type="text"
+                    value={chartXLabel}
+                    onChange={(e) => setChartXLabel(e.target.value)}
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', padding: '0.5rem', color: 'white', fontFamily: 'inherit' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>
+                    عنوان المحور الرأسي Y (المتغير التابع المقاس والوحدة):
+                  </label>
+                  <input
+                    type="text"
+                    value={chartYLabel}
+                    onChange={(e) => setChartYLabel(e.target.value)}
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', padding: '0.5rem', color: 'white', fontFamily: 'inherit' }}
+                  />
+                </div>
+              </div>
+
+              {/* Measurements Table */}
+              <div className="measurements-container">
+                <div className="measurements-table-wrap">
+                  <table className="m-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px' }}>#</th>
+                        <th>{chartXLabel}</th>
+                        <th style={{ width: '140px' }}>{chartYLabel} (رقم)</th>
+                        <th>الملاحظات والمشاهدات المرافقة</th>
+                        <th style={{ width: '70px', textAlign: 'center' }}>إجراء</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {measurements.map((m, idx) => (
+                        <tr key={m.id || idx}>
+                          <td style={{ textAlign: 'center', fontWeight: 'bold', color: '#38bdf8' }}>{idx + 1}</td>
+                          <td>
+                            <input
+                              type="text"
+                              value={m.xVal}
+                              onChange={(e) => handleUpdateMeasurement(m.id, 'xVal', e.target.value)}
+                              placeholder={`مثال: اليوم ${idx * 2 + 2}`}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              value={m.yVal}
+                              onChange={(e) => handleUpdateMeasurement(m.id, 'yVal', Number(e.target.value) || 0)}
+                              style={{ textAlign: 'center', fontWeight: 'bold', color: '#38bdf8' }}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={m.notes}
+                              onChange={(e) => handleUpdateMeasurement(m.id, 'notes', e.target.value)}
+                              placeholder="ماذا لاحظت بدقة في هذه المحطة؟"
+                            />
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              className="quest-item-delete"
+                              onClick={() => handleDeleteMeasurement(m.id)}
+                              title="حذف هذا القياس"
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                    </div>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Dynamic Live SVG Chart Component */}
+              <div className="chart-viewer-card">
+                <div className="chart-viewer-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8', fontWeight: 900 }}>
+                    <i className="fas fa-chart-bar" style={{ fontSize: '1.2rem' }}></i>
+                    <span>المخطط البياني للقياسات (תרשים נתונים ומדידות)</span>
                   </div>
-                )}
-              </div>
 
-              {/* Badges Earned */}
-              <div className="quest-cert-badges-row">
-                <div className="quest-cert-badge-item">
-                  <div className="quest-cert-badge-circle">🌟</div>
-                  <span>شعلة الفضول</span>
-                </div>
-                <div className="quest-cert-badge-item">
-                  <div className="quest-cert-badge-circle">🔍</div>
-                  <span>مفتاح التساؤل</span>
-                </div>
-                <div className="quest-cert-badge-item">
-                  <div className="quest-cert-badge-circle">🧪</div>
-                  <span>صانع الفرضيات</span>
-                </div>
-                <div className="quest-cert-badge-item">
-                  <div className="quest-cert-badge-circle">📜</div>
-                  <span>الخلفية والمصادر</span>
-                </div>
-                <div className="quest-cert-badge-item">
-                  <div className="quest-cert-badge-circle">🏆</div>
-                  <span>المستكشف الذهبي</span>
-                </div>
-              </div>
-
-              {/* Certificate Footer & Signatures */}
-              <div className="quest-cert-footer">
-                <div className="quest-cert-sig-box">
-                  <span>التاريخ:</span>
-                  <strong>{new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                  <div className="chart-toggle-pills">
+                    <button
+                      type="button"
+                      className={`chart-toggle-btn ${chartType === 'bar' ? 'active' : ''}`}
+                      onClick={() => setChartType('bar')}
+                    >
+                      📊 أعمدة بيانية (Bar Chart)
+                    </button>
+                    <button
+                      type="button"
+                      className={`chart-toggle-btn ${chartType === 'line' ? 'active' : ''}`}
+                      onClick={() => setChartType('line')}
+                    >
+                      📈 خط بياني (Line Chart)
+                    </button>
+                  </div>
                 </div>
 
-                <div className="quest-cert-sig-box">
-                  <span>مرشد البحث العلمي:</span>
-                  <strong>الروبوت مُشيرفي (Musheirifi 🤖)</strong>
-                </div>
+                {/* SVG Render */}
+                <div style={{ overflowX: 'auto', padding: '0.5rem 0' }}>
+                  {(() => {
+                    const maxVal = Math.max(...measurements.map(m => Number(m.yVal) || 0), 10);
+                    const chartWidth = Math.max(560, measurements.length * 85);
+                    const chartHeight = 260;
 
-                <div className="quest-cert-sig-box">
-                  <span>إدارة المدرسة:</span>
-                  <strong>مدرسة مشيرفة الابتدائية</strong>
+                    const points = measurements.map((m, idx) => {
+                      const val = Number(m.yVal) || 0;
+                      const h = Math.min(Math.round((val / maxVal) * 160), 160);
+                      const x = 70 + idx * 80;
+                      const y = 200 - h;
+                      return { x, y, val, label: m.xVal || m.label || `عينة ${idx + 1}` };
+                    });
+
+                    return (
+                      <svg width={chartWidth} height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ margin: '0 auto', display: 'block' }}>
+                        <defs>
+                          <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#38bdf8" />
+                            <stop offset="100%" stopColor="#0284c7" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Background Grid */}
+                        <line x1="50" y1="40" x2={chartWidth - 20} y2="40" stroke="rgba(255,255,255,0.08)" strokeDasharray="4" />
+                        <line x1="50" y1="120" x2={chartWidth - 20} y2="120" stroke="rgba(255,255,255,0.08)" strokeDasharray="4" />
+
+                        {/* Axes */}
+                        <line x1="50" y1="20" x2="50" y2="200" stroke="#64748b" strokeWidth="2" />
+                        <line x1="50" y1="200" x2={chartWidth - 20} y2="200" stroke="#64748b" strokeWidth="2" />
+
+                        {/* Y Axis Label */}
+                        <text x="30" y="25" textAnchor="middle" fontSize="11" fill="#94a3b8" fontWeight="bold">
+                          {chartYLabel}
+                        </text>
+
+                        {/* Render Bar Chart */}
+                        {chartType === 'bar' && points.map((p, idx) => {
+                          const barH = 200 - p.y;
+                          return (
+                            <g key={idx}>
+                              <rect
+                                x={p.x - 22}
+                                y={p.y}
+                                width="44"
+                                height={barH}
+                                rx="6"
+                                fill="url(#barGradient)"
+                              />
+                              <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize="12" fontWeight="900" fill="#f8fafc">
+                                {p.val}
+                              </text>
+                              <text x={p.x} y="222" textAnchor="middle" fontSize="11" fill="#cbd5e1" fontWeight="700">
+                                {p.label}
+                              </text>
+                            </g>
+                          );
+                        })}
+
+                        {/* Render Line Chart */}
+                        {chartType === 'line' && (
+                          <g>
+                            <polyline
+                              fill="none"
+                              stroke="#38bdf8"
+                              strokeWidth="3.5"
+                              points={points.map(p => `${p.x},${p.y}`).join(' ')}
+                            />
+                            {points.map((p, idx) => (
+                              <g key={idx}>
+                                <circle cx={p.x} cy={p.y} r="6" fill="#ffffff" stroke="#0284c7" strokeWidth="3" />
+                                <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="12" fontWeight="900" fill="#f8fafc">
+                                  {p.val}
+                                </text>
+                                <text x={p.x} y="222" textAnchor="middle" fontSize="11" fill="#cbd5e1" fontWeight="700">
+                                  {p.label}
+                                </text>
+                              </g>
+                            ))}
+                          </g>
+                        )}
+                      </svg>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
 
-            {/* Actions: Print, New Quest */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            {/* SECTION C: Experiment Photos (תמונות לנסיונות שנעשו) */}
+            <div className="quest-exp-card">
+              <div className="quest-exp-card-header">
+                <div className="header-icon" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+                  📸
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#c084fc' }}>
+                    תמונות לנסיונות שנעשו (معرض صور التجربة والمشاهدات الملموسة)
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                    ارفع صوراً حقيقية من هاتفك أو حاسوبك توثق خطوات تجربتك، أو اختر نموذجاً مصوراً من مختبر المدرسة!
+                  </p>
+                </div>
+              </div>
+
+              {/* Upload Trigger Buttons */}
+              <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                <label className="quest-btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.4rem' }}>
+                  <i className="fas fa-camera"></i>
+                  <span>رفع صورة من جهازي أو الكاميرا 📁</span>
+                  <input type="file" accept="image/*" onChange={handleUploadPhoto} style={{ display: 'none' }} />
+                </label>
+
+                <button
+                  type="button"
+                  className="quest-btn-secondary"
+                  onClick={handleAddSamplePhoto}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem' }}
+                >
+                  <i className="fas fa-flask"></i>
+                  <span>إضافة رسمة توضيحية من مختبر المدرسة 🌱</span>
+                </button>
+              </div>
+
+              {/* Photos Grid */}
+              {expPhotos.length === 0 ? (
+                <div className="photo-upload-dropzone" onClick={() => document.querySelector('input[type="file"]')?.click()}>
+                  <span style={{ fontSize: '2.5rem' }}>📷</span>
+                  <strong style={{ color: '#38bdf8', fontSize: '1.05rem' }}>لم تقم بإرفاق صور للتجربة بعد</strong>
+                  <p style={{ color: '#94a3b8', margin: 0, fontSize: '0.9rem' }}>
+                    اضغط هنا لرفع صور أو التقط بكاميرا الهاتف لتوثيق المشاهدة في تقرير البحث المطبوع!
+                  </p>
+                </div>
+              ) : (
+                <div className="photos-studio-grid">
+                  {expPhotos.map((photo, idx) => (
+                    <div key={photo.id || idx} className="photo-card-item">
+                      <div className="photo-card-img-wrap">
+                        <img src={photo.dataUrl} alt={photo.caption || `صورة ${idx + 1}`} />
+                      </div>
+                      <div className="photo-card-content">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 800 }}>صورة توثيقية ({idx + 1})</span>
+                          <button
+                            type="button"
+                            className="quest-item-delete"
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            title="حذف هذه الصورة"
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={photo.caption}
+                          onChange={(e) => handleUpdatePhotoCaption(photo.id, e.target.value)}
+                          placeholder="اكتب وصفاً علمياً للصورة..."
+                        />
+                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>📅 التاريخ: {photo.date}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* SECTION D: Conclusions & Recommendations */}
+            <div className="quest-exp-card">
+              <div className="quest-exp-card-header">
+                <div className="header-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                  💡
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#10b981' }}>
+                    الاستنتاجات والتوصيات العلمية (مסקנות והמלצות הניסוי)
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                    بناءً على جدول القياسات، الرسم البياني، وصور التجربة، ما هي النتيجة النهائية؟
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', display: 'block', marginBottom: '0.4rem' }}>
+                    🎯 الاستنتاج العلمي والإجابة على سؤال البحث (هل دعمت النتائج فرضيتك؟):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={conclusion}
+                    onChange={(e) => setConclusion(e.target.value)}
+                    className="quest-p-textarea"
+                    placeholder="اكتب استنتاجك هنا بناءً على الأرقام والمشاهدات..."
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', display: 'block', marginBottom: '0.4rem' }}>
+                    🌱 التوصيات العلمية والأفكار المستقبلية للباحث:
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={recommendations}
+                    onChange={(e) => setRecommendations(e.target.value)}
+                    className="quest-p-textarea"
+                    placeholder="ما الذي توصي به الطلاب أو المزارعين؟ ما التجربة القادمة التي تود إجراءها؟"
+                  />
+                </div>
+              </div>
+
+              {/* Approval Button to Station 6 */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+                <button
+                  type="button"
+                  className="quest-btn-primary"
+                  onClick={handleApproveExperiment}
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    boxShadow: '0 8px 30px rgba(16, 185, 129, 0.45)',
+                    padding: '1.1rem 2.4rem',
+                    fontSize: '1.2rem',
+                    fontWeight: 900
+                  }}
+                >
+                  <i className="fas fa-check-circle"></i>
+                  <span>🌟 اعتماد التجربة والقياسات وإصدار كتاب البحث الشامل (PDF & Word) والشهادة 🚀</span>
+                </button>
+              </div>
+            </div>
+          </main>
+        )}
+
+        {/* ========================================================= */}
+        {/* STATION 6: GRAND FINALE - COMPLETE RESEARCH BOOK & WORD/PDF */}
+        {/* ========================================================= */}
+        {activeStation === 6 && (
+          <main>
+            <div className="quest-section-header">
+              <span className="quest-section-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', borderColor: '#f59e0b' }}>
+                منصة الإنجاز والتتويج العلمي 🏆
+              </span>
+              <h2 className="quest-section-title">
+                كتاب وتقرير البحث العلمي المدرسي الشامل المتكامل 📚🎓
+              </h2>
+              <p className="quest-section-desc">
+                ألف مبارك يا بطل مدرسة مشيرفة الابتدائية! لقد أتممت بحثاً علمياً نموذجياً شاملاً يحتوي على سؤال البحث، الفرضية، الخلفية العلمية، جدول المقاييس والرسم البياني، صور التجارب، والاستنتاجات. يمكنك الآن تنزيله فوراً كملف Word أو طباعته كـ PDF!
+              </p>
+            </div>
+
+            {/* Top Hero Download Bar */}
+            <div className="export-hero-actions">
               <button
                 type="button"
-                className="quest-btn-primary"
+                className="export-hero-btn pdf-btn"
+                onClick={handleExportPdf}
+              >
+                <i className="fas fa-file-pdf" style={{ fontSize: '1.5rem' }}></i>
+                <span>تحميل / طباعة البحث كاملاً (PDF ملون A4) 🖨️</span>
+              </button>
+
+              <button
+                type="button"
+                className="export-hero-btn word-btn"
+                onClick={handleExportWord}
+              >
+                <i className="fas fa-file-word" style={{ fontSize: '1.5rem' }}></i>
+                <span>تنزيل البحث كاملاً بصيغة Word (.doc) 📝</span>
+              </button>
+
+              <button
+                type="button"
+                className="export-hero-btn cert-btn"
                 onClick={() => {
                   playSound('click');
                   window.print();
                 }}
               >
+                <i className="fas fa-award" style={{ fontSize: '1.5rem' }}></i>
+                <span>طباعة شهادة المستكشف فقط 🎓</span>
+              </button>
+            </div>
+
+            {/* Complete Research Book Showcase */}
+            <div className="research-book-showcase" id="printable-research-book">
+              {/* Cover Page Card */}
+              <div className="book-cover-banner">
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#b45309', marginBottom: '4px' }}>
+                  دولة إسرائيل — وزارة التربية والتعليم (لواء حيفا)
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0369a1', marginBottom: '1.25rem' }}>
+                  🏫 مدرسة مشيرفة الابتدائية
+                </div>
+                <div style={{
+                  display: 'inline-block',
+                  background: '#f0f9ff',
+                  border: '2px solid #38bdf8',
+                  color: '#0284c7',
+                  padding: '6px 20px',
+                  borderRadius: '30px',
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  🔬 كتاب وتقرير البحث العلمي الاستقصائي
+                </div>
+
+                <h1 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 900,
+                  color: '#0f172a',
+                  lineHeight: '1.5',
+                  background: '#ffffff',
+                  border: '2px solid #cbd5e1',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  margin: '1rem 0 2rem'
+                }}>
+                  "{researchQuestion || 'سؤال البحث العلمي وتأثير المتغيرات'}"
+                </h1>
+
+                {/* Metadata Grid */}
+                <div className="book-meta-grid">
+                  <div><strong>اسم الباحث الصغير:</strong> {studentName}</div>
+                  <div><strong>الصف والشعبة:</strong> {studentClass}</div>
+                  <div><strong>المعلم/ة المشرف/ة:</strong> {teacherName}</div>
+                  <div><strong>المرشد الذكي:</strong> الروبوت مُشيرفي 🤖</div>
+                  <div><strong>السنة الدراسية:</strong> 2026 / 2027</div>
+                  <div><strong>التاريخ:</strong> {new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                </div>
+              </div>
+
+              {/* Chapter 1: Question & Variables */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-question-circle" style={{ color: '#0284c7' }}></i>
+                  <span>1. سؤال البحث العلمي والمتغيرات (Research Question & Variables)</span>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '10px', borderRight: '4px solid #0284c7', marginBottom: '1rem' }}>
+                  <strong>سؤال البحث المعتمد:</strong> "{researchQuestion}"
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', fontSize: '0.92rem' }}>
+                  <div style={{ background: '#f0f9ff', padding: '0.75rem', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                    <strong style={{ color: '#0369a1', display: 'block', marginBottom: '4px' }}>المتغير المستقل:</strong>
+                    <span>{hypoIf || 'العامل التجريبي المستقل'}</span>
+                  </div>
+                  <div style={{ background: '#f0fdf4', padding: '0.75rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <strong style={{ color: '#15803d', display: 'block', marginBottom: '4px' }}>المتغير التابع المقاس:</strong>
+                    <span>{hypoThen || 'النتيجة الملاحظة'}</span>
+                  </div>
+                  <div style={{ background: '#fffbeb', padding: '0.75rem', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                    <strong style={{ color: '#b45309', display: 'block', marginBottom: '4px' }}>العوامل الثابتة:</strong>
+                    <span>كمية التربة، نوع البذور، كمية ماء الري لضمان تجربة عادلة</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chapter 2: Scientific Hypothesis */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-flask" style={{ color: '#10b981' }}></i>
+                  <span>2. الفرضية العلمية والتفسير المنطقي (Scientific Hypothesis)</span>
+                </div>
+                <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRight: '5px solid #16a34a', padding: '1.25rem', borderRadius: '10px', lineHeight: '1.8' }}>
+                  "إذا قمنا بـ <strong>{hypoIf || '...'}</strong>، فإننا نتوقع أن <strong>{hypoThen || '...'}</strong>، وذلك لأن <strong>{hypoBecause || '...'}</strong>."
+                </div>
+              </div>
+
+              {/* Chapter 3: Scientific Background & Sources */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-book-reader" style={{ color: '#8b5cf6' }}></i>
+                  <span>3. الخلفية العلمية وتوثيق المصادر والمراجع (Literature Review)</span>
+                </div>
+                <div style={{ lineHeight: '1.9', fontSize: '0.98rem', color: '#1e293b' }}>
+                  <p style={{ margin: '0 0 0.8rem' }}><strong>[ 1 ] المفهوم العلمي:</strong> {bgParagraph1}</p>
+                  <p style={{ margin: '0 0 0.8rem' }}><strong>[ 2 ] التفسير العلمي والعلاقة:</strong> {bgParagraph2}</p>
+                  <p style={{ margin: '0 0 0.8rem' }}><strong>[ 3 ] الأهمية والتطبيق الواقعي:</strong> {bgParagraph3}</p>
+                </div>
+
+                <div style={{ marginTop: '1rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.75rem' }}>
+                  <strong style={{ color: '#047857', display: 'block', marginBottom: '0.5rem', fontSize: '0.92rem' }}>
+                    المراجع المعتمدة المستفاد منها ({bgSources.length}):
+                  </strong>
+                  <ol style={{ margin: 0, paddingRight: '1.4rem', fontSize: '0.88rem', color: '#475569' }}>
+                    {bgSources.map((s, idx) => (
+                      <li key={s.id || idx}>
+                        <strong>{s.title}</strong> — {s.author} ({s.type})
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              {/* Chapter 4: Protocol & Steps */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-tools" style={{ color: '#0284c7' }}></i>
+                  <span>4. مسار التجربة: المواد والأدوات وخطوات العمل (Apparatus & Protocol)</span>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <strong style={{ color: '#0369a1', display: 'block', marginBottom: '0.4rem' }}>الأدوات والمواد:</strong>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {expMaterials.map((m, idx) => (
+                      <span key={idx} style={{ background: '#f1f5f9', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid #e2e8f0' }}>
+                        • {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <strong style={{ color: '#0369a1', display: 'block', marginBottom: '0.4rem' }}>خطوات تنفيذ التجربة:</strong>
+                  <ol style={{ margin: 0, paddingRight: '1.4rem', fontSize: '0.92rem', lineHeight: '1.8' }}>
+                    {expSteps.map((s, idx) => (
+                      <li key={idx}>{s}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              {/* Chapter 5: Measurements & SVG Chart */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-chart-line" style={{ color: '#f59e0b' }}></i>
+                  <span>5. תרשימים למדידות שנעשו (جدول ومخطط القياسات)</span>
+                </div>
+                
+                <table style={{ width: '100%', borderCollapse: 'collapse', margin: '1rem 0', fontSize: '0.92rem' }}>
+                  <thead>
+                    <tr style={{ background: '#0284c7', color: 'white' }}>
+                      <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1' }}>#</th>
+                      <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1' }}>{chartXLabel}</th>
+                      <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1' }}>{chartYLabel}</th>
+                      <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1' }}>الملاحظات والمشاهدات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {measurements.map((m, idx) => (
+                      <tr key={idx} style={{ background: idx % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
+                        <td style={{ padding: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{idx + 1}</td>
+                        <td style={{ padding: '8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{m.xVal}</td>
+                        <td style={{ padding: '8px', border: '1px solid #cbd5e1', textAlign: 'center', color: '#0284c7', fontWeight: 'bold' }}>{m.yVal}</td>
+                        <td style={{ padding: '8px', border: '1px solid #cbd5e1', color: '#475569' }}>{m.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Chapter 6: Experiment Photos */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-camera-retro" style={{ color: '#ec4899' }}></i>
+                  <span>6. תמונות לנסיונות שנעשו (المشاهدات الميدانية والصور)</span>
+                </div>
+
+                {expPhotos.length === 0 ? (
+                  <p style={{ color: '#64748b', fontStyle: 'italic' }}>تمت المشاهدات المباشرة في مختبر المدرسة.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', margin: '1rem 0' }}>
+                    {expPhotos.map((p, idx) => (
+                      <div key={idx} style={{ border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', background: '#f8fafc', textAlign: 'center' }}>
+                        <img src={p.dataUrl} alt={`صورة ${idx + 1}`} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '6px' }} />
+                        <div style={{ fontWeight: 800, marginTop: '6px', fontSize: '0.9rem', color: '#1e3a8a' }}>{p.caption}</div>
+                        {p.date && <div style={{ fontSize: '0.78rem', color: '#64748b' }}>📅 {p.date}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Chapter 7: Conclusion & Recommendations */}
+              <div className="book-chapter-block">
+                <div className="book-chapter-title">
+                  <i className="fas fa-award" style={{ color: '#10b981' }}></i>
+                  <span>7. الاستنتاجات العلمية والتوصيات المستقبلية (Conclusions)</span>
+                </div>
+                <div style={{ background: '#ecfdf5', borderRight: '4px solid #10b981', padding: '1rem', borderRadius: '8px', marginBottom: '0.85rem' }}>
+                  <strong style={{ color: '#047857', display: 'block', marginBottom: '4px' }}>الاستنتاج العلمي:</strong>
+                  <p style={{ margin: 0, lineHeight: '1.8' }}>{conclusion}</p>
+                </div>
+                <div style={{ background: '#f5f3ff', borderRight: '4px solid #8b5cf6', padding: '1rem', borderRadius: '8px' }}>
+                  <strong style={{ color: '#6d28d9', display: 'block', marginBottom: '4px' }}>التوصيات:</strong>
+                  <p style={{ margin: 0, lineHeight: '1.8' }}>{recommendations}</p>
+                </div>
+              </div>
+
+              {/* Official Elementary School Certificate Section */}
+              <div className="quest-certificate-outer" style={{ margin: '2rem 0' }}>
+                <div className="quest-cert-watermark">🔬</div>
+                <div className="quest-cert-header">
+                  <div className="quest-cert-school-name">
+                    🏫 مدرسة مشيرفة الابتدائية — واحة التميز والإبداع
+                  </div>
+                  <h2 className="quest-cert-main-title">
+                    شهادة وسام المستكشف العلمي الصغير 🎓✨
+                  </h2>
+                  <div className="quest-cert-subtitle">
+                    تُمنح هذه الشهادة تقديراً للتفوق والتميز في إتقان خطوات البحث العلمي والتفكير الاستقصائي
+                  </div>
+                </div>
+
+                <div className="quest-cert-student-name-box">
+                  <div className="quest-cert-present-to">تُمنح بكل فخر واعتزاز للعالم الصغير:</div>
+                  <div className="quest-cert-name">{studentName}</div>
+                  <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 800 }}>
+                    {studentClass}
+                  </div>
+                </div>
+
+                <p className="quest-cert-praise">
+                  لقد خاض الطالب رحلة استكشافية متكاملة برفقة <strong>الروبوت مُشيرفي</strong>، وأنجز بحثاً علمياً كاملاً شمل صياغة السؤال، بناء الفرضية، توثيق الخلفية والمراجع، وتوثيق القياسات والرسوم البيانية والصور بكل دقة واقتدار.
+                </p>
+
+                {/* Certificate Signatures */}
+                <div className="quest-cert-footer">
+                  <div className="quest-cert-sig-box">
+                    <span>التاريخ:</span>
+                    <strong>{new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                  </div>
+                  <div className="quest-cert-sig-box">
+                    <span>مرشد البحث العلمي:</span>
+                    <strong>الروبوت مُشيرفي (Musheirifi 🤖)</strong>
+                  </div>
+                  <div className="quest-cert-sig-box">
+                    <span>إدارة المدرسة:</span>
+                    <strong>مدرسة مشيرفة الابتدائية</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
+              <button
+                type="button"
+                className="quest-btn-primary"
+                onClick={handleExportPdf}
+                style={{ padding: '0.9rem 1.8rem', fontSize: '1rem' }}
+              >
                 <i className="fas fa-print"></i>
-                <span>طباعة أو حفظ الشهادة والتقرير (PDF)</span>
+                <span>طباعة أو حفظ البحث كاملاً (PDF)</span>
+              </button>
+
+              <button
+                type="button"
+                className="quest-btn-primary"
+                onClick={handleExportWord}
+                style={{ padding: '0.9rem 1.8rem', fontSize: '1rem', background: '#2563eb' }}
+              >
+                <i className="fas fa-file-word"></i>
+                <span>تنزيل البحث بصيغة Word (.doc)</span>
               </button>
 
               <button
@@ -2695,7 +3784,7 @@ ${historySnippet}
                   setActiveStation(0);
                 }}
               >
-                <i className="fas fa-home"></i>
+                <i className="fas fa-compass"></i>
                 <span>العودة لخريطة الرحلة</span>
               </button>
 
@@ -2716,6 +3805,12 @@ ${historySnippet}
                     setBgParagraph3('');
                     setIsBgApproved(false);
                     setBgReviews({});
+                    setMeasurements([
+                      { id: 'm-1', label: 'اليوم 2', xVal: 'اليوم 2', yVal: 2, notes: 'بدء الإنبات' },
+                      { id: 'm-2', label: 'اليوم 4', xVal: 'اليوم 4', yVal: 5, notes: 'ظهور الأوراق' }
+                    ]);
+                    setExpPhotos([]);
+                    setIsExpApproved(false);
                     localStorage.removeItem('quest_research_question');
                     localStorage.removeItem('quest_socratic_feedback');
                     localStorage.removeItem('quest_question_approved');
@@ -2728,6 +3823,9 @@ ${historySnippet}
                     localStorage.removeItem('quest_bg_p3');
                     localStorage.removeItem('quest_bg_approved');
                     localStorage.removeItem('quest_bg_reviews');
+                    localStorage.removeItem('quest_measurements');
+                    localStorage.removeItem('quest_exp_photos');
+                    localStorage.removeItem('quest_exp_approved');
                     setActiveStation(2);
                   }
                 }}

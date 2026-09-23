@@ -2048,176 +2048,398 @@
   justify-content: flex-end;
 }
 
-/* Paragraph Tabs & Writing Studio */
+/* ======================================================== */
+/* LUXURY PARAGRAPH TABS & MICROSOFT WORD DOCUMENT STUDIO   */
+/* ======================================================== */
 .quest-p-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 1rem !important;
+  margin-bottom: 1.5rem !important;
+  width: 100% !important;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .quest-p-tabs {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 
 .quest-p-tab {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  color: #94a3b8;
-  font-weight: 800;
-  font-size: 0.88rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 16px !important;
+  padding: 1.1rem 1.25rem !important;
+  color: #94a3b8 !important;
+  font-weight: 800 !important;
+  font-size: 0.98rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.85rem !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+  text-align: right !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
 .quest-p-tab:hover {
-  background: rgba(236, 72, 153, 0.08);
-  border-color: rgba(236, 72, 153, 0.3);
-  color: #f472b6;
+  background: linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+  border-color: #38bdf8 !important;
+  color: #f8fafc !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(56, 189, 248, 0.2) !important;
 }
 
 .quest-p-tab.active {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(219, 39, 119, 0.1) 100%);
-  border-color: #ec4899;
-  color: #ffffff;
-  box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 30px rgba(2, 132, 199, 0.45) !important;
+  transform: translateY(-2px) !important;
 }
 
 .quest-p-tab.done {
-  border-color: rgba(16, 185, 129, 0.5);
+  border-color: #10b981 !important;
 }
 
 .quest-p-tab .p-num {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 900;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
 }
 
 .quest-p-tab.active .p-num {
-  background: #ec4899;
-  color: #ffffff;
+  background: #ffffff !important;
+  color: #0284c7 !important;
+  border-color: #ffffff !important;
+}
+
+.quest-p-tab .p-title {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  flex: 1 !important;
+}
+
+.quest-p-tab .p-title-main {
+  font-weight: 900 !important;
+  font-size: 0.98rem !important;
+  color: inherit !important;
+}
+
+.quest-p-tab .p-title-sub {
+  font-size: 0.8rem !important;
+  opacity: 0.85 !important;
+  font-weight: 600 !important;
 }
 
 .quest-p-tab .done-icon {
-  color: #10b981;
-  margin-right: auto;
+  color: #10b981 !important;
+  font-size: 1.2rem !important;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5)) !important;
 }
 
 .quest-p-panel {
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 16px;
-  padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.75) !important;
+  border-radius: 20px !important;
+  padding: 1.5rem !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.25) !important;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3) !important;
 }
 
 .quest-p-instruction {
-  margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-right: 5px solid #38bdf8 !important;
+  border-radius: 14px !important;
+  padding: 1rem 1.25rem !important;
+  margin-bottom: 1.5rem !important;
 }
 
 .quest-p-instruction .inst-badge {
-  display: inline-block;
-  background: #f43f5e;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 6px;
-  margin-bottom: 0.3rem;
+  display: inline-block !important;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  font-size: 0.85rem !important;
+  font-weight: 900 !important;
+  padding: 3px 12px !important;
+  border-radius: 20px !important;
+  margin-bottom: 0.4rem !important;
 }
 
 .quest-p-instruction strong {
-  display: block;
-  font-size: 1.05rem;
-  color: #ffffff;
-  margin-bottom: 0.2rem;
+  display: block !important;
+  font-size: 1.15rem !important;
+  color: #ffffff !important;
+  margin-bottom: 0.3rem !important;
+  font-weight: 800 !important;
 }
 
 .quest-p-instruction p {
-  margin: 0;
-  font-size: 0.88rem;
-  color: #94a3b8;
-  line-height: 1.6;
+  margin: 0 !important;
+  font-size: 0.95rem !important;
+  color: #cbd5e1 !important;
+  line-height: 1.7 !important;
 }
 
-.quest-p-textarea-wrap {
-  position: relative;
-  margin-bottom: 1.25rem;
+/* ======================================================== */
+/* MICROSOFT WORD SIMULATOR CANVAS (A4 PAPER & TOOLBAR)     */
+/* ======================================================== */
+.word-studio-window {
+  background: #1e293b !important;
+  border: 2px solid #475569 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4) !important;
+  margin-bottom: 1.5rem !important;
+  direction: rtl !important;
 }
 
-.quest-p-textarea {
-  width: 100%;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 1rem;
-  color: #ffffff;
-  font-size: 0.95rem;
-  line-height: 1.8;
-  font-family: inherit;
-  resize: vertical;
-  outline: none;
-  transition: all 0.2s ease;
+/* Word Window Title Header */
+.word-window-header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+  color: #ffffff !important;
+  padding: 0.6rem 1.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
 }
 
-.quest-p-textarea:focus {
-  border-color: #ec4899;
-  box-shadow: 0 0 15px rgba(236, 72, 153, 0.25);
+.word-window-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.6rem !important;
 }
 
-.textarea-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.6rem;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.word-window-controls {
+  display: flex !important;
+  gap: 6px !important;
 }
 
-.char-count {
-  font-size: 0.82rem;
-  color: #64748b;
-  font-weight: 700;
+.word-ctrl-dot {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
 }
 
-.quest-check-btn {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-  color: #ffffff;
-  border: none;
-  padding: 0.65rem 1.4rem;
-  border-radius: 10px;
-  font-weight: 800;
-  font-size: 0.92rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.35);
+/* Word Ribbon Bar (Toolbar) */
+.word-ribbon-bar {
+  background: #f1f5f9 !important;
+  border-bottom: 1.5px solid #cbd5e1 !important;
+  padding: 0.5rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
 }
 
-.quest-check-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
+.word-tool-group {
+  display: flex !important;
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 2px 4px !important;
+  gap: 2px !important;
 }
 
-.quest-check-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.word-tool-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #334155 !important;
+  width: 34px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  font-family: inherit !important;
+}
+
+.word-tool-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0284c7 !important;
+}
+
+.word-tool-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.word-select-font-size {
+  border: none !important;
+  background: transparent !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+  padding: 0 4px !important;
+  font-size: 0.88rem !important;
+  outline: none !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+}
+
+/* Word Ruler Simulator */
+.word-ruler-bar {
+  background: #e2e8f0 !important;
+  height: 18px !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 2rem !important;
+  font-size: 9px !important;
+  color: #64748b !important;
+  user-select: none !important;
+}
+
+.word-ruler-ticks {
+  letter-spacing: 12px !important;
+  font-family: monospace !important;
+}
+
+/* Word Page Desk Backdrop */
+.word-page-desk {
+  background: #334155 !important;
+  padding: 1.75rem 1.25rem !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 600px) {
+  .word-page-desk {
+    padding: 0.75rem 0.5rem !important;
+  }
+}
+
+/* Real A4 Paper Simulation */
+.word-sheet-canvas {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  width: 100% !important;
+  max-width: 900px !important;
+  min-height: 320px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  padding: 2.25rem 2.5rem !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+@media (max-width: 600px) {
+  .word-sheet-canvas {
+    padding: 1.25rem 1rem !important;
+    min-height: 260px !important;
+  }
+}
+
+.word-sheet-header-watermark {
+  border-bottom: 1.5px dashed #cbd5e1 !important;
+  padding-bottom: 0.5rem !important;
+  margin-bottom: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 0.82rem !important;
+  color: #94a3b8 !important;
+  font-weight: 700 !important;
+}
+
+/* The Big Word Document Textarea */
+.word-large-textarea {
+  width: 100% !important;
+  min-height: 240px !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  color: #0f172a !important;
+  font-size: 1.15rem !important;
+  line-height: 2.2 !important;
+  font-family: 'Tajawal', system-ui, -apple-system, sans-serif !important;
+  resize: vertical !important;
+  box-sizing: border-box !important;
+  padding: 0.5rem 0 !important;
+}
+
+.word-large-textarea::placeholder {
+  color: #94a3b8 !important;
+  line-height: 2.2 !important;
+}
+
+/* Word Status Bar */
+.word-status-bar {
+  background: #f1f5f9 !important;
+  border-top: 1px solid #cbd5e1 !important;
+  padding: 0.5rem 1.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 0.75rem !important;
+  font-size: 0.85rem !important;
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+.word-status-stats {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+/* Huge Glowing AI Review Button */
+.quest-check-btn-giant {
+  background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 1.1rem 2.2rem !important;
+  border-radius: 16px !important;
+  font-weight: 900 !important;
+  font-size: 1.12rem !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.85rem !important;
+  font-family: inherit !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 8px 30px rgba(236, 72, 153, 0.45) !important;
+  width: 100% !important;
+  margin-top: 1rem !important;
+  letter-spacing: 0.2px !important;
+}
+
+.quest-check-btn-giant:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.01) !important;
+  box-shadow: 0 12px 40px rgba(168, 85, 247, 0.6) !important;
+  filter: brightness(1.1) !important;
+}
+
+.quest-check-btn-giant:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
 }
 
 /* AI Feedback Box */
@@ -2356,12 +2578,357 @@
   font-weight: 800;
 }
 
-.paper-sources ol {
-  margin: 0;
-  padding-right: 1.2rem;
-  font-size: 0.88rem;
-  color: #475569;
-  line-height: 1.7;
+/* ======================================================== */
+/* STATION 5: EXPERIMENTS, MEASUREMENT CHARTS & LAB PHOTOS  */
+/* ======================================================== */
+.quest-exp-card {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 20px !important;
+  padding: 1.75rem !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.quest-exp-card-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  margin-bottom: 1.25rem !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+  padding-bottom: 1rem !important;
+  flex-wrap: wrap !important;
+}
+
+.quest-exp-card-header .header-icon {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.5rem !important;
+}
+
+.quest-items-list-editor {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+}
+
+.quest-item-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  padding: 0.6rem 0.85rem !important;
+}
+
+.quest-item-row .item-num {
+  font-weight: 900 !important;
+  color: #38bdf8 !important;
+  min-width: 24px !important;
+}
+
+.quest-item-row input {
+  flex: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 0.95rem !important;
+  outline: none !important;
+  font-family: inherit !important;
+}
+
+.quest-item-delete {
+  background: transparent !important;
+  border: none !important;
+  color: #ef4444 !important;
+  cursor: pointer !important;
+  font-size: 0.9rem !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+.quest-item-delete:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Measurements Table & Live Dynamic SVG Chart */
+.measurements-container {
+  background: #0f172a !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  margin-top: 1rem !important;
+}
+
+.measurements-table-wrap {
+  overflow-x: auto !important;
+  padding: 1rem !important;
+}
+
+.m-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  direction: rtl !important;
+  font-size: 0.92rem !important;
+}
+
+.m-table th {
+  background: #1e293b !important;
+  color: #38bdf8 !important;
+  padding: 0.85rem !important;
+  text-align: right !important;
+  border-bottom: 2px solid #334155 !important;
+  font-weight: 800 !important;
+}
+
+.m-table td {
+  padding: 0.65rem 0.85rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #f1f5f9 !important;
+}
+
+.m-table input {
+  width: 100% !important;
+  background: rgba(2, 6, 23, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  padding: 0.5rem 0.75rem !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 0.92rem !important;
+  outline: none !important;
+}
+
+.m-table input:focus {
+  border-color: #38bdf8 !important;
+}
+
+/* Dynamic Live SVG Chart Viewer */
+.chart-viewer-card {
+  background: linear-gradient(135deg, #090d16 0%, #0f172a 100%) !important;
+  border: 2px solid #38bdf8 !important;
+  border-radius: 18px !important;
+  padding: 1.5rem !important;
+  margin-top: 1.5rem !important;
+  box-shadow: 0 10px 35px rgba(2, 132, 199, 0.2) !important;
+  text-align: center !important;
+}
+
+.chart-viewer-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+  margin-bottom: 1.25rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.chart-toggle-pills {
+  display: flex !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+  padding: 4px !important;
+  border-radius: 12px !important;
+  gap: 4px !important;
+}
+
+.chart-toggle-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  padding: 0.4rem 0.9rem !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  font-size: 0.85rem !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: all 0.2s ease !important;
+}
+
+.chart-toggle-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* Photo Gallery & Lab Journal */
+.photos-studio-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin-top: 1.25rem !important;
+}
+
+.photo-upload-dropzone {
+  border: 2px dashed rgba(56, 189, 248, 0.4) !important;
+  border-radius: 14px !important;
+  padding: 2rem 1.5rem !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  background: rgba(30, 41, 59, 0.4) !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+}
+
+.photo-upload-dropzone:hover {
+  background: rgba(56, 189, 248, 0.08) !important;
+  border-color: #38bdf8 !important;
+}
+
+.photo-card-item {
+  background: #1e293b !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.photo-card-img-wrap {
+  width: 100% !important;
+  height: 180px !important;
+  background: #0f172a !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.photo-card-img-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.photo-card-content {
+  padding: 0.85rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.photo-card-content input {
+  background: rgba(2, 6, 23, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px !important;
+  padding: 0.4rem 0.6rem !important;
+  color: #ffffff !important;
+  font-size: 0.85rem !important;
+  font-family: inherit !important;
+}
+
+/* ======================================================== */
+/* STATION 6: COMPREHENSIVE RESEARCH BOOK & PDF/WORD EXPORT */
+/* ======================================================== */
+.research-book-showcase {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+  padding: 2.5rem !important;
+  margin-bottom: 2.5rem !important;
+  direction: rtl !important;
+  border: 3px double #0284c7 !important;
+}
+
+@media (max-width: 768px) {
+  .research-book-showcase {
+    padding: 1.25rem 1rem !important;
+  }
+}
+
+.book-cover-banner {
+  text-align: center !important;
+  border: 4px double #0284c7 !important;
+  border-radius: 16px !important;
+  padding: 2rem 1.5rem !important;
+  background: radial-gradient(circle at center, #ffffff 60%, #f0f9ff 100%) !important;
+  margin-bottom: 2rem !important;
+}
+
+.book-meta-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  gap: 1rem !important;
+  margin: 1.5rem 0 !important;
+  text-align: right !important;
+  background: #f8fafc !important;
+  padding: 1.25rem !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.book-chapter-block {
+  margin-bottom: 2rem !important;
+  border-bottom: 1.5px dashed #cbd5e1 !important;
+  padding-bottom: 1.5rem !important;
+}
+
+.book-chapter-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.6rem !important;
+  font-size: 1.25rem !important;
+  font-weight: 900 !important;
+  color: #0369a1 !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.export-hero-actions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin: 2rem 0 !important;
+}
+
+.export-hero-btn {
+  padding: 1.2rem 1.5rem !important;
+  border-radius: 16px !important;
+  font-weight: 900 !important;
+  font-size: 1.05rem !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  border: none !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-family: inherit !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+.export-hero-btn.pdf-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 25px rgba(2, 132, 199, 0.4) !important;
+}
+
+.export-hero-btn.word-btn {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4) !important;
+}
+
+.export-hero-btn.cert-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4) !important;
+}
+
+.export-hero-btn:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  filter: brightness(1.1) !important;
 }
 
 /* ----------------------------------------- */
