@@ -870,6 +870,25 @@ ${p.stations?.h || ''}
             >
               <i className="fas fa-clipboard-check"></i> بطاقة المشاهدة الصامتة
             </button>
+            <button 
+              className="action-btn doc-hero-btn"
+              onClick={() => {
+                setActiveTab('full-document');
+                setTimeout(() => {
+                  const el = document.getElementById('mafatih-doc-top');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                color: '#f8fafc',
+                border: '1px solid rgba(255,255,255,0.25)',
+                boxShadow: '0 4px 15px rgba(15, 23, 42, 0.25)',
+                fontWeight: '700'
+              }}
+            >
+              <i className="fas fa-file-contract"></i> 📄 وثيقة المشروع الشاملة (قراءة الموديل)
+            </button>
           </div>
         </div>
       </header>
@@ -925,6 +944,22 @@ ${p.stations?.h || ''}
             onClick={() => setActiveTab('vision')}
           >
             <i className="fas fa-compass"></i> الرؤية، المزايا والمحاذير
+          </button>
+          <button 
+            className={`tab-btn doc-nav-tab ${activeTab === 'full-document' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('full-document');
+              setTimeout(() => {
+                const el = document.getElementById('mafatih-doc-top');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+            style={{
+              borderColor: activeTab === 'full-document' ? '#d97706' : undefined,
+              fontWeight: activeTab === 'full-document' ? '800' : '600'
+            }}
+          >
+            <i className="fas fa-book-open"></i> 📄 وثيقة المشروع الشاملة
           </button>
         </div>
       </nav>
@@ -2404,6 +2439,529 @@ ${p.stations?.h || ''}
                     <strong>تحول "الزوّادة" إلى عبء روتيني:</strong> إذا طُلب من الطالب كتابة فقرات طويلة ومعقدة عند نهاية كل حصة، سيفقد الأمر معناه؛ لذا يجب أن تكون الزوّادة محددة، مباشرة، ومختصرة (سطرين فقط).
                   </li>
                 </ul>
+              </div>
+
+            </div>
+          </section>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 8: FULL COMPREHENSIVE PROJECT DOCUMENT (وثيقة المشروع التربوي الشامل) */}
+        {/* ========================================================================= */}
+        {activeTab === 'full-document' && (
+          <section className="full-document-section fade-in" id="mafatih-doc-top">
+            
+            {/* DOCUMENT ACTION HEADER */}
+            <div className="doc-paper-header-box">
+              <div className="doc-paper-badge-row">
+                <span className="doc-badge-official"><i className="fas fa-certificate"></i> وثيقة تربوية رسمية موحدة</span>
+                <span className="doc-badge-sub">מודל פדגוגי מאוחד — מַפְתֵּ"חַ</span>
+                <span className="doc-badge-school">مدرسة مشيرفة الابتدائية</span>
+              </div>
+              
+              <h1 className="doc-paper-title">
+                وثيقة المشروع التربوي الشامل: نموذج «مَفَاتِيح» (מודל מַפְתֵּ"חַ)
+              </h1>
+              <p className="doc-paper-subtitle">
+                الإطار البيداغوجي الموحد لبناء الهوية التعليمية وإدارة التدريس الصفي
+              </p>
+
+              {/* QUICK JUMP CHIPS & PRINT CONTROLS */}
+              <div className="doc-controls-bar no-print">
+                <div className="doc-jump-chips">
+                  <span className="jump-label"><i className="fas fa-bookmark"></i> فهرس الفصول:</span>
+                  <a href="#doc-sec-1" className="jump-chip">1. الإطار وفلسفة المشروع</a>
+                  <a href="#doc-sec-2" className="jump-chip">2. المحطات الخمس إجرائياً</a>
+                  <a href="#doc-sec-3" className="jump-chip">3. التمايز، الدمج وSEL</a>
+                  <a href="#doc-sec-4" className="jump-chip">4. أدوات الدعم الميداني</a>
+                  <a href="#doc-sec-5" className="jump-chip">5. إدارة التغيير والتبني</a>
+                </div>
+                <div className="doc-actions-group">
+                  <button 
+                    className="doc-action-btn print-btn" 
+                    onClick={() => window.print()}
+                    title="طباعة الوثيقة الرسمية كاملة أو حفظ كملف PDF"
+                  >
+                    <i className="fas fa-print"></i> طباعة الوثيقة / PDF
+                  </button>
+                  <button 
+                    className="doc-action-btn planner-shortcut-btn" 
+                    onClick={() => setActiveTab('planner')}
+                  >
+                    <i className="fas fa-pen-nib"></i> الانتقال للمخطط الذكي
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* DOCUMENT BODY CONTAINER */}
+            <div className="doc-paper-content">
+
+              {/* SECTION 1 */}
+              <article className="doc-chapter-card" id="doc-sec-1">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill">الفصل 1</div>
+                  <h2>1. الإطار العام وفلسفة المشروع (חזון ורציונל המיזם)</h2>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">أ. الرؤية القيادية ودوافع الانطلاق</h3>
+                  <p className="doc-paragraph leading">
+                    تنطلق فكرة مشروع نموذج <strong>«مَفَاتِيح»</strong> من حاجة مدرسية ملحّة تتمثل في غياب <em>«لغة تدريسية موحدة»</em> داخل الغرف الصفية. ففي كثير من الأحيان، يعمل المعلمون وفق اجتهادات فردية معزولة، مما يخلق تشتتًا لدى الطلاب الذين يتنقلون يوميًا بين أساليب تعليمية متباينة وغير واضحة المعالم، ويضع المعلم الجديد أمام صعوبة بالغة في فهم الأجندة التربوية للمؤسسة وتوقعاتها الإدارية.
+                  </p>
+                  <div className="doc-highlight-quote">
+                    <i className="fas fa-quote-right quote-icon"></i>
+                    <div>
+                      <strong>الهدف الجوهري للمشروع:</strong> تأسيس <strong>هوية تربوية موحدة للمدرسة</strong> عبر تقديم إطار تدريسي مشترك (Common Instructional Framework). يضبط هذا الإطار مسار كل حصة دراسية بدقة وتناغم، بحيث يتحدث جميع المعلمين لغة تخطيط واحدة، ويدرك الطلاب في أي مرحلة يقفون وما المطلوب منهم ذهنيًا وسلوكيًا، وتتحول المدرسة من جزر تعليمية منعزلة إلى منظومة فكرية متكاملة يسهل عرضها وتبنّيها من قِبل مدارس أخرى.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">ب. فلسفة «المفتاح» ومفهوم «الزوّادة»</h3>
+                  <p className="doc-paragraph">
+                    يستند اسم النموذج إلى دلالات تربوية وبصرية؛ فالحصة ليست وعاءً لصبّ المعلومات التلقينية، بل هي عملية فتح مستمرة لأبواب الفهم والإدراك:
+                  </p>
+                  <div className="doc-dual-cards-grid">
+                    <div className="doc-dual-card key-theme">
+                      <div className="dc-icon-box">🗝️</div>
+                      <div className="dc-content">
+                        <h4>المفتاح</h4>
+                        <p>
+                          يرمز إلى الأداة التي يمتلكها المعلم لفتح آفاق التفكير لدى طلابه، وإلى الوسيلة التي يمتلكها الطالب لفك ألغاز المعرفة وتطوير التفكير الذاتي المستقل.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="doc-dual-card zawada-theme">
+                      <div className="dc-icon-box">🎒</div>
+                      <div className="dc-content">
+                        <h4>الزوّادة (צידת הדרך)</h4>
+                        <p>
+                          هي جوهر النموذج ومحطته الختامية؛ إذ تؤكد فلسفة المشروع أن الحصة لا تنتهي بمجرد حل التمارين أو رنين الجرس، بل بالحصيلة المعرفية والعملية التي يحملها الطالب في حقيبته الفكرية، ليوظفها لاحقًا في مواقف حياتية أو في مراحل تعلمه المستقبلية (Transfer of Learning).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              {/* SECTION 2 */}
+              <article className="doc-chapter-card" id="doc-sec-2">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill">الفصل 2</div>
+                  <h2>2. المحطات الخمس للنموذج بالتفصيل الإجرائي (תחנות המודל)</h2>
+                </div>
+
+                <p className="doc-paragraph">
+                  يتألف النموذج من خمس محطات بنائية مترابطة، صيغت في تسلسل يجمع بين التناغم اللفظي والعمق الدلالي:
+                </p>
+
+                {/* VISUAL SEQUENCE BANNER */}
+                <div className="doc-sequence-flow-banner">
+                  <div className="seq-step-badge s-m"><span className="seq-letter">[م]</span> جذب وتشويق</div>
+                  <i className="fas fa-chevron-left seq-arrow"></i>
+                  <div className="seq-step-badge s-f"><span className="seq-letter">[ف]</span> فهم ولقاء</div>
+                  <i className="fas fa-chevron-left seq-arrow"></i>
+                  <div className="seq-step-badge s-t"><span className="seq-letter">[ت]</span> تبصّر وتعمّق</div>
+                  <i className="fas fa-chevron-left seq-arrow"></i>
+                  <div className="seq-step-badge s-y"><span className="seq-letter">[ي]</span> عمل يدوي وتطبيق</div>
+                  <i className="fas fa-chevron-left seq-arrow"></i>
+                  <div className="seq-step-badge s-h"><span className="seq-letter">[ح]</span> حصاد وزوّادة</div>
+                </div>
+
+                {/* DETAILED 5 STATIONS */}
+                <div className="doc-stations-detailed-list">
+
+                  {/* STATION 1 */}
+                  <div className="station-doc-card st-card-m">
+                    <div className="st-doc-header">
+                      <div className="st-doc-title-wrap">
+                        <span className="st-doc-tag">[م]</span>
+                        <h3>المحطة الأولى: جذب وتشويق (מְשִׁיכָה)</h3>
+                      </div>
+                      <span className="st-doc-hebrew">Engagement & Wonder</span>
+                    </div>
+                    <div className="st-doc-grid">
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-lightbulb"></i> المفهوم التربوي:</span>
+                        <span className="row-val">التهيئة الذهنية المحفّزة، واستثارة الفضول المعرفي، وربط الحصة بالواقع المعاش (Engagement).</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-chalkboard-teacher"></i> دور المعلم:</span>
+                        <span className="row-val">يطرح لغزًا ويحفّز الدهشة؛ فيعرض صورة غير مألوفة، أو مقطعًا مرئيًا وجيزًا، أو معضلة يومية، أو سؤالًا يستثير الحواس، دون تقديم الحلول الجاهزة.</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-user-graduate"></i> سلوك الطالب:</span>
+                        <span className="row-val">يتساءل ويستكشف ويطرح الفرضيات، ويستحضر خبراته ومعارفه السابقة برغبة وشغف.</span>
+                      </div>
+                      <div className="st-doc-row transition-row">
+                        <span className="row-label transition-label"><i className="fas fa-flag-checkered"></i> مؤشر الانتقال (סמן מעבר):</span>
+                        <span className="row-val highlight-val">أن يطرح الطلاب السؤال المركزي: <strong>«لماذا حدث هذا؟»</strong> أو <strong>«ما تفسير ذلك؟»</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STATION 2 */}
+                  <div className="station-doc-card st-card-f">
+                    <div className="st-doc-header">
+                      <div className="st-doc-title-wrap">
+                        <span className="st-doc-tag">[ف]</span>
+                        <h3>المحطة الثانية: فهم المفهوم واللقاء الأول (פְּגִישָׁה)</h3>
+                      </div>
+                      <span className="st-doc-hebrew">Concept Acquisition & First Encounter</span>
+                    </div>
+                    <div className="st-doc-grid">
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-lightbulb"></i> المفهوم التربوي:</span>
+                        <span className="row-val">التأسيس المعرفي، واستيعاب النص أو المعطيات، واكتساب المصطلحات الأساسية (Concept Acquisition).</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-chalkboard-teacher"></i> دور المعلم:</span>
+                        <span className="row-val">وسيط معرفي ومفسّر؛ يوضح المفردات الجديدة، ويقدّم النمذجة الإيضاحية، ويبني أسس الفهم الأولى بلغة علمية دقيقة.</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-user-graduate"></i> سلوك الطالب:</span>
+                        <span className="row-val">يقرأ باهتمام، ويستخرج الكلمات المفتاحية، ويحدد الفكرة المركزية للموضوع بدقة.</span>
+                      </div>
+                      <div className="st-doc-row transition-row">
+                        <span className="row-label transition-label"><i className="fas fa-flag-checkered"></i> مؤشر الانتقال (סמן מעבר):</span>
+                        <span className="row-val highlight-val">قدرة الطلاب على صياغة تعريف أولي للمصطلح الأساسي بكلماتهم الخاصة، دون خلط بين المفاهيم.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STATION 3 */}
+                  <div className="station-doc-card st-card-t">
+                    <div className="st-doc-header">
+                      <div className="st-doc-title-wrap">
+                        <span className="st-doc-tag">[ت]</span>
+                        <h3>المحطة الثالثة: تبصّر وتعمّق (תְּבוּנָה)</h3>
+                      </div>
+                      <span className="st-doc-hebrew">Higher-Order Thinking & Socratic Inquiry</span>
+                    </div>
+                    <div className="st-doc-grid">
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-lightbulb"></i> المفهوم التربوي:</span>
+                        <span className="row-val">تشغيل مهارات التفكير العليا (HOTS)، وتفكيك البنى المعرفية، والمقارنة، واستنتاج العلاقات السببية.</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-chalkboard-teacher"></i> دور المعلم:</span>
+                        <span className="row-val">ييسّر حوارًا فكريًا سقراطيًا؛ يمتنع عن التلقين ويوجه أسئلة عميقة، مثل: <em>«ماذا لو غيّرنا هذا المعطى؟»</em> و<em>«ما أوجه الشبه والاختلاف؟»</em></span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-user-graduate"></i> سلوك الطالب:</span>
+                        <span className="row-val">يحلل ويناقش بحجج منطقية، ويربط الأسباب بالنتائج، ويصوغ استنتاجًا تحليليًا أصيلًا مع رفاقه.</span>
+                      </div>
+                      <div className="st-doc-row transition-row">
+                        <span className="row-label transition-label"><i className="fas fa-flag-checkered"></i> مؤشر الانتقال (סמן מעבר):</span>
+                        <span className="row-val highlight-val">انتقال الطلاب من مجرد ترديد المعلومات الجاهزة إلى بناء استدلال منطقي مدعوم بالأدلة والبراهين.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STATION 4 */}
+                  <div className="station-doc-card st-card-y">
+                    <div className="st-doc-header">
+                      <div className="st-doc-title-wrap">
+                        <span className="st-doc-tag">[ي]</span>
+                        <h3>المحطة الرابعة: عمل يدوي وتطبيق (יִשּׂוּם)</h3>
+                      </div>
+                      <span className="st-doc-hebrew">Active Practice & Hands-On Production</span>
+                    </div>
+                    <div className="st-doc-grid">
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-lightbulb"></i> المفهوم التربوي:</span>
+                        <span className="row-val">تحويل المعرفة النظرية إلى مهارة عملية ملموسة عبر ورشة عمل صفية نشطة (Practice & Application).</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-chalkboard-teacher"></i> دور المعلم:</span>
+                        <span className="row-val">مدرّب وموجّه يتنقل بين المجموعات؛ يقدّم الدعم المباشر، ويدير مسارات العمل المتمايزة، ويزوّد الطلاب بتغذية راجعة تكوينية مستمرة.</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-user-graduate"></i> سلوك الطالب:</span>
+                        <span className="row-val">يمارس ويبادر؛ فيحل مسائل، أو يصمم نماذج، أو يكتب نصوصاً، أو يجري تجارب، بصورة فردية أو تعاونية منتجة.</span>
+                      </div>
+                      <div className="st-doc-row transition-row">
+                        <span className="row-label transition-label"><i className="fas fa-flag-checkered"></i> مؤشر الانتقال (סמן מעבר):</span>
+                        <span className="row-val highlight-val">إنجاز المهمة وظهور مُخرج تطبيقي واضح يبيّن مدى تمكّن الطالب الفعلي من المهارة المطلوبة.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STATION 5 */}
+                  <div className="station-doc-card st-card-h">
+                    <div className="st-doc-header">
+                      <div className="st-doc-title-wrap">
+                        <span className="st-doc-tag">[ح]</span>
+                        <h3>المحطة الخامسة: حصاد وزوّادة (חֲתִימָה וְצֵידָה)</h3>
+                      </div>
+                      <span className="st-doc-hebrew">Metacognition, Closure & Transfer of Learning</span>
+                    </div>
+                    <div className="st-doc-grid">
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-lightbulb"></i> المفهوم التربوي:</span>
+                        <span className="row-val">التأمل في عملية التعلم (Metacognition)، والتقويم الذاتي، ونقل أثر التعلم إلى مجالات الحياة (Transfer of Learning).</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-chalkboard-teacher"></i> دور المعلم:</span>
+                        <span className="row-val">يستمع إلى الطلاب، يدير خلاصة الإغلاق، ويتحقق من مخرجاتهم المعرفية والوجدانية.</span>
+                      </div>
+                      <div className="st-doc-row">
+                        <span className="row-label"><i className="fas fa-user-graduate"></i> سلوك الطالب:</span>
+                        <span className="row-val">
+                          يوثّق ما تعلمه في «تذكرة الخروج» أو في خانة «زوّادتي» بدفتره، بالإجابة عن سؤالين محوريين:
+                          <ol className="doc-numbered-sublist">
+                            <li><strong>ما المصطلح أو المهارة التي اكتسبتها اليوم؟</strong></li>
+                            <li><strong>أين وكيف سأوظف هذا الزاد مستقبلًا في حياتي أو دراستي؟</strong></li>
+                          </ol>
+                        </span>
+                      </div>
+                      <div className="st-doc-row transition-row">
+                        <span className="row-label transition-label"><i className="fas fa-flag-checkered"></i> مؤشر الانتقال (סמן מעבר):</span>
+                        <span className="row-val highlight-val">مغادرة الغرفة الصفية بفهم واضح وشعور ملموس بما أضافته الحصة إلى حقيبة الطالب الفكرية.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </article>
+
+              {/* SECTION 3 */}
+              <article className="doc-chapter-card" id="doc-sec-3">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill">الفصل 3</div>
+                  <h2>3. تكامل النموذج مع أبعاد البيئة التعليمية المعاصرة</h2>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">أ. التمايز وتفريد التعليم (הוראה דיפרנציאלית)</h3>
+                  <p className="doc-paragraph">
+                    يرتكز النموذج على إتاحة مسارات متعددة للمتعلمين، وفق مبادئ التصميم الشامل للتعلم (UDL):
+                  </p>
+                  <ul className="doc-bullet-list">
+                    <li>
+                      <strong>التمايز في المدخلات:</strong> تقديم مثيرات الجذب والمفاهيم بوسائط بصرية، سمعية، وحسية متنوعة تتناسب مع أنماط الإدراك المختلفة.
+                    </li>
+                    <li>
+                      <strong>التمايز في مسار العمل (محطة التطبيق – أسنان المفتاح שיני המפתח):</strong> تقسيم الصف إلى مسارات متدرجة؛ مجموعة تتلقى توجيهًا مباشرًا من المعلم، ومجموعات تعمل باستقلالية، ومسار تحدٍّ للطلاب الذين يحتاجون إلى مهام أكثر تقدمًا، مع تنويع أشكال المخرجات (الكتابة، الرسم البياني، المجسمات، أو التسجيل الصوتي).
+                    </li>
+                    <li>
+                      <strong>التمايز في الزوّادة:</strong> يحدد كل طالب زوّادته بحسب تقدمه الفردي ودرجة تمكنه، ليخرج كل متعلم من الحصة بحصيلة نافعة مهما كان مستواه الابتدائي.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">ب. الاحتواء والدمج المدرسي (הכלה והשתלבות)</h3>
+                  <ul className="doc-bullet-list">
+                    <li>
+                      <strong>الأمان النفسي والروتين التوقعي:</strong> توفير مسار مرئي واضح للحصة يساعد الطلاب، بمن فيهم ذوو صعوبات التعلم واضطراب نقص الانتباه وفرط الحركة (ADHD)، على توقّع مراحل العمل وخفض القلق الصفي.
+                    </li>
+                    <li>
+                      <strong>تكافؤ فرص المشاركة:</strong> إتاحة الفرصة لطلاب الدمج للمشاركة في محطة الجذب بوسائل متعددة لا تعتمد حصرًا على القراءة المجردة أو التعبير اللغوي المعقد.
+                    </li>
+                    <li>
+                      <strong>تنظيم التدريس المشترك (הוראה בצמד):</strong> توضيح دور كلٍّ من معلم التعليم العادي ومعلمة الدمج داخل المحطات، لتقديم الدعم التفاعلي داخل الصف دون عزل الطالب أو إشعاره بالوصم.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">ج. التعلم الاجتماعي والعاطفي (SEL)</h3>
+                  <ul className="doc-bullet-list">
+                    <li>
+                      <strong>تطوير الوعي الذاتي:</strong> تعزيز التأمل الذاتي وإدراك النمو الشخصي من خلال محطة «الحصاد والزوّادة».
+                    </li>
+                    <li>
+                      <strong>بناء مهارات التعامل مع الآخرين:</strong> تشجيع التعلم مع الأقران، وحل المعضلات بصورة مشتركة، وتحمّل المسؤولية الجماعية داخل فرق العمل في محطة «التطبيق».
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">د. منظومة التقويم والقياس (מערך ההערכה)</h3>
+                  <p className="doc-paragraph">
+                    يمتد التقويم عبر محطات الحصة بوصفه جزءًا عضويًا ومستمراً من عملية التعلم:
+                  </p>
+                  <div className="doc-eval-cards-grid">
+                    <div className="eval-mini-card">
+                      <div className="eval-icon">🔍</div>
+                      <h4>تقويم تشخيصي</h4>
+                      <p>في محطتي الجذب والفهم، لاستكشاف المعرفة السابقة ورصد المفاهيم الخاطئة قبل البناء عليها.</p>
+                    </div>
+                    <div className="eval-mini-card">
+                      <div className="eval-icon">📊</div>
+                      <h4>تقويم تكويني مستمر</h4>
+                      <p>من خلال الملاحظة الدقيقة، التوجيه الفردي، والتغذية الراجعة الفورية أثناء محطة العمل والتطبيق.</p>
+                    </div>
+                    <div className="eval-mini-card">
+                      <div className="eval-icon">🎯</div>
+                      <h4>تقويم ذاتي ونقل أثر</h4>
+                      <p>من خلال تدوين الطالب ما اكتسبه شخصياً وتحديد استخداماته المستقبلية في محطة «الحصاد والزوّادة».</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              {/* SECTION 4 */}
+              <article className="doc-chapter-card" id="doc-sec-4">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill">الفصل 4</div>
+                  <h2>4. آليات التنفيذ وأدوات الدعم الميداني (ארגז הכלים ליישום)</h2>
+                </div>
+
+                <p className="doc-paragraph">
+                  لضمان انتقال النموذج من إطار الفكرة النظرية إلى الممارسة اليومية المستدامة، صُممت حزمة من الأدوات الميدانية البسيطة والفعالة:
+                </p>
+
+                <div className="doc-table-wrapper">
+                  <table className="doc-official-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '28%' }}>الأداة الميدانية</th>
+                        <th style={{ width: '42%' }}>وصفها وطريقة استخدامها</th>
+                        <th style={{ width: '30%' }}>الهدف الإداري والتربوي</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="tool-name-cell">
+                          <strong>مسار الحصة البصري</strong>
+                          <span className="tool-hebrew-tag">פס מגנטי על הלוח</span>
+                        </td>
+                        <td>
+                          شريط مغناطيسي ملون يُثبَّت بجانب سبورة كل صف، يعرض المحطات الخمس مع مؤشر على شكل مفتاح يتحرك بينها بانتقال مجريات الحصة.
+                        </td>
+                        <td>
+                          مساعدة الطلاب والمعلم على متابعة مراحل الدرس، ضبط الإيقاع الزمني، وتوفير أمان ذهني لجميع الطلاب.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="tool-name-cell">
+                          <strong>ختم أو خانة «زوّادتي»</strong>
+                          <span className="tool-hebrew-tag">חותמת / משבצת "צידתי"</span>
+                        </td>
+                        <td>
+                          مساحة موحدة مطبوعة أو ختم خاص يُستخدم في دفتر كل طالب لتدوين خلاصة قصيرة من سطرين في الدقائق الخمس الأخيرة.
+                        </td>
+                        <td>
+                          توثيق ما تعلمه الطالب، ترسيخ مهارة التلخيص الذاتي، وإتاحة الاطلاع المستمر للأهل والإدارة على مخرجات التعلم.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="tool-name-cell">
+                          <strong>بنك أنشطة الجذب المشترك</strong>
+                          <span className="tool-hebrew-tag">מאגר משיכות שיתופי</span>
+                        </td>
+                        <td>
+                          مجلد سحابي ورقمي تشاركي، مقسّم بحسب التخصصات والمراحل العمرية، يودع فيه المعلمون أفكارًا، مقاطع، ألغازًا، وتجارب افتتاحية.
+                        </td>
+                        <td>
+                          تبادل الخبرات بين طواقم التدريس، منع التكرار، وتيسير التخطيط اليومي السريع للحصص بجودة عالية.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="tool-name-cell">
+                          <strong>بطاقة مشاهدة الحصة</strong>
+                          <span className="tool-hebrew-tag">מחוון צפייה פדגוגי</span>
+                        </td>
+                        <td>
+                          استمارة موجزة للمدير والمشرفين ومركزي المواضيع، تستند إلى مؤشرات انتقال المحطات الخمس دون إثقال بيروقراطي.
+                        </td>
+                        <td>
+                          توحيد لغة الملاحظة الإدارية، تحويل المشاهدة إلى حوار بناء، وتوجيه التغذية الراجعة نحو تمكين المعلم وتحسين التعلم.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+
+              {/* SECTION 5 */}
+              <article className="doc-chapter-card" id="doc-sec-5">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill">الفصل 5</div>
+                  <h2>5. خطة إدارة التغيير والجدول الزمني للتبني (הטמעה והובלת שינוי)</h2>
+                </div>
+
+                <p className="doc-paragraph">
+                  يتم تبني النموذج عبر خطة تدريجية رباعية المراحل تضمن الاستيعاب الهادئ دون إثقال كاهل المعلمين:
+                </p>
+
+                <div className="doc-phases-timeline">
+                  
+                  <div className="timeline-phase-item">
+                    <div className="phase-marker">1</div>
+                    <div className="phase-body">
+                      <h4>المرحلة الأولى: النمذجة الإدارية والتوعية (ورشة في غرفة المعلمين)</h4>
+                      <p>
+                        تقديم النموذج للهيئة التدريسية عبر ورشة تفاعلية يخوض فيها المعلمون أنفسهم تجربة محطاته الخمس بوصفهم متعلمين حول موضوع عام (مثل «معنى التميّز»)، ثم يستخلصون بنيته الهندسية في ختام الورشة لترسيخ الاقتناع العملي.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="timeline-phase-item">
+                    <div className="phase-marker">2</div>
+                    <div className="phase-body">
+                      <h4>المرحلة الثانية: تثبيت بداية الحصة ونهايتها (طوق الأمان)</h4>
+                      <p>
+                        تدريب المعلمين خلال الشهر الأول على التركيز الصارم على محطتين فقط: افتتاح الحصة بنشاط <strong>جذب</strong> منظم، وإنهائها بـ<strong>زوّادة</strong> موثقة، لضمان البداية الجاذبة والنهاية ذات الأثر دون ضغط المحطات الوسطى فوراً.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="timeline-phase-item">
+                    <div className="phase-marker">3</div>
+                    <div className="phase-body">
+                      <h4>المرحلة الثالثة: تعميق التفكير وتنويع التطبيق</h4>
+                      <p>
+                        تنظيم لقاءات مهنية وحلقات بيداغوجية تخصصية حول صياغة الأسئلة السقراطية لمحطة <strong>التبصّر</strong> وتصميم مسارات عمل متمايزة داخل ورشة <strong>التطبيق</strong> (שיני המפתח).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="timeline-phase-item">
+                    <div className="phase-marker">4</div>
+                    <div className="phase-body">
+                      <h4>المرحلة الرابعة: التقييم المؤسسي والانتشار الخارجي</h4>
+                      <p>
+                        إجراء تقييم فصلي شامل لتطبيق النموذج ومخرجاته الصفيّة، وتجهيز ملف النموذج كقصة نجاح مدرسية ريادية لعرضه في الأيام الدراسية الإقليمية وأمام الجهات الإشرافية والمدارس الشريكة.
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* EDITORIAL NOTE BOX */}
+                <div className="doc-editorial-notice">
+                  <div className="notice-icon"><i className="fas fa-info-circle"></i></div>
+                  <div className="notice-body">
+                    <h4>ملاحظة تحريرية وبيداغوجية:</h4>
+                    <p>
+                      تمت مراجعة المصطلحات بدقة لضمان تناغمها اللفظي والبيداغوجي. وقد روعي في النموذج العربي التوافق الدلالي السلس للمحطات: <strong>جذب [م]، فهم [ف]، تبصر [ت]، يدوي [ي]، حصاد [ح]</strong> ليتلاقى مع الحروف المفتاحية لاسم النموذج، بينما يحافظ الاسم العبري <strong>«מַפְתֵּ"חַ»</strong> على أبعاده الدلالية الموازية في الإرشاد التربوي.
+                    </p>
+                  </div>
+                </div>
+
+              </article>
+
+              {/* BACK TO TOP & QUICK NAVIGATION FOOTER */}
+              <div className="doc-paper-footer-nav no-print">
+                <div className="dpf-text">
+                  <span className="dpf-icon">🗝️</span>
+                  <span>تم استعراض الوثيقة البيداغوجية الكاملة لنموذج مفاتيح. يمكنك الآن تجربة تخطيط حصة متكاملة.</span>
+                </div>
+                <div className="dpf-actions">
+                  <button className="dpf-btn top-btn" onClick={() => window.scrollTo({ top: 350, behavior: 'smooth' })}>
+                    <i className="fas fa-arrow-up"></i> أعلى الوثيقة
+                  </button>
+                  <button className="dpf-btn print-action" onClick={() => window.print()}>
+                    <i className="fas fa-print"></i> طباعة الوثيقة
+                  </button>
+                  <button className="dpf-btn planner-btn" onClick={() => setActiveTab('planner')}>
+                    <i className="fas fa-pen-nib"></i> ابدأ التخطيط الصفي
+                  </button>
+                </div>
               </div>
 
             </div>
