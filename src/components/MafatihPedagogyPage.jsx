@@ -275,34 +275,14 @@ const MafatihPedagogyPage = () => {
             </span>
           </div>
 
-          <div className="mafatih-hero-main-flex">
-            <div className="mafatih-hero-text-col">
-              <h1 className="mafatih-hero-title">
-                موديل <span>"مَفَاتِيح"</span> التربوي
-                <small className="mafatih-hebrew-subtitle">مودل מַפְתֵּ"חַ: الإطار التدريسي الموحد لرسم مسار الحصة</small>
-              </h1>
+          <h1 className="mafatih-hero-title">
+            موديل <span>"مَفَاتِيح"</span> التربوي
+            <small className="mafatih-hebrew-subtitle">مودل מַפְתֵּ"חַ: الإطار التدريسي الموحد لرسم مسار الحصة</small>
+          </h1>
 
-              <p className="mafatih-hero-description">
-                نموذج تعليمي قيادي ينقل الحصة المدرسية من مجرد التلقين السطحي إلى بناء <strong>"الزوّادة" (צידת הדרך)</strong> ونقل أثر التعلم للحياة اليومية عبر 5 محطات إجرائية متناغمة تعزز التمايز، الاحتواء، والوعي الذاتي.
-              </p>
-            </div>
-
-            {/* Live Interactive Animated Robot in Hero */}
-            <div 
-              className="mafatih-hero-robot-pod" 
-              onClick={() => setIsRobotModalOpen(true)}
-              title="انقر للتحدث مع رفيق مفاتيح الذكي"
-            >
-              <div className="robot-speech-bubble">
-                <span className="sparkle-icon">✨</span>
-                <span>"أنا رفيقكم المتحرك في موديل مفاتيح! انقر عليّ لأساعدك!"</span>
-              </div>
-              <LottieRobot width="170px" height="170px" className="hero-animated-robot" />
-              <div className="robot-name-chip">
-                <span>🤖 رفيق مفاتيح الذكي</span>
-              </div>
-            </div>
-          </div>
+          <p className="mafatih-hero-description">
+            نموذج تعليمي قيادي ينقل الحصة المدرسية من مجرد التلقين السطحي إلى بناء <strong>"الزوّادة" (צידת הדרך)</strong> ونقل أثر التعلم للحياة اليومية عبر 5 محطات إجرائية متناغمة تعزز التمايز، الاحتواء، والوعي الذاتي.
+          </p>
 
           {/* Quick Acronym Visual Cards */}
           <div className="mafatih-acronym-bar">
