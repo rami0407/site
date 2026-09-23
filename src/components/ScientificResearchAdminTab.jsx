@@ -4,6 +4,7 @@ import {
   setScientificResearchVisibility, 
   subscribeScientificResearchVisibility 
 } from '../utils/pageVisibilityService';
+import TeacherResearchReviewPanel from './TeacherResearchReviewPanel';
 
 const ScientificResearchAdminTab = () => {
   const [isVisible, setIsVisible] = useState(() => getScientificResearchVisibility());
@@ -256,6 +257,9 @@ const ScientificResearchAdminTab = () => {
           </div>
         </div>
       </div>
+
+      {/* Teacher Research Review & Pedagogical Commenting Section */}
+      <TeacherResearchReviewPanel />
     </div>
   );
 };

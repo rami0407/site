@@ -5,6 +5,11 @@ import { getStudentSession, logoutStudent, saveStudentSession } from '../utils/s
 import StudentAuthModal from './StudentAuthModal';
 import GenieAssistant from './GenieAssistant';
 import { exportResearchToWord, printComprehensiveResearchBook } from '../utils/scientificResearchExport';
+import { 
+  getOrGenerateResearchDocId, 
+  saveStudentResearchToCloud, 
+  subscribeStudentResearch 
+} from '../services/scientificResearchService';
 import './ScientificResearchQuest.css';
 
 // -------------------------------------------------------------
@@ -279,6 +284,29 @@ const ScientificResearchQuest = () => {
     window.addEventListener('studentAuthChanged', handleAuth);
     return () => window.removeEventListener('studentAuthChanged', handleAuth);
   }, []);
+
+  // Cloud Sync & Teacher Feedback State
+  const [researchDocId, setResearchDocId] = useState(() => getOrGenerateResearchDocId(studentSession));
+  const [teacherComments, setTeacherComments] = useState([]);
+  const [researchCloudStatus, setResearchCloudStatus] = useState('قيد العمل');
+  const [showTeacherFeedbackModal, setShowTeacherFeedbackModal] = useState(false);
+  const [isSyncingWithCloud, setIsSyncingWithCloud] = useState(false);
+  const [syncToastMessage, setSyncToastMessage] = useState('');
+
+  // Subscribe to real-time teacher feedback from Cloud
+  useEffect(() => {
+    const unsub = subscribeStudentResearch(researchDocId, (cloudData) => {
+      if (cloudData) {
+        if (cloudData.teacherComments && Array.isArray(cloudData.teacherComments)) {
+          setTeacherComments(cloudData.teacherComments);
+        }
+        if (cloudData.status) {
+          setResearchCloudStatus(cloudData.status);
+        }
+      }
+    });
+    return () => unsub();
+  }, [researchDocId]);
 
   // Active Station: 0 = Home, 1 = Station 1, 2 = Station 2, 3 = Station 3, 4 = Finale
   const [activeStation, setActiveStation] = useState(() => {
@@ -627,6 +655,40 @@ const ScientificResearchQuest = () => {
       setUnlockedStations(prev => [...prev, 6]);
     }
   }, [badges.hypothesis, isBgApproved, isExpApproved]);
+
+  // Handle Sync / Submission of Research to Teacher
+  const handleSyncWithTeacher = async (statusOverride = 'بانتظار مراجعة المعلم') => {
+    setIsSyncingWithCloud(true);
+    try {
+      const payload = {
+        id: researchDocId,
+        studentName,
+        studentClass,
+        studentId: studentSession?.id || '',
+        researchQuestion,
+        hypothesis: { if: hypoIf, then: hypoThen, because: hypoBecause },
+        backgroundParagraphs: { p1: bgParagraph1, p2: bgParagraph2, p3: bgParagraph3 },
+        sources: bgSources,
+        activeStation,
+        unlockedStations,
+        badges,
+        status: statusOverride,
+        teacherComments
+      };
+      await saveStudentResearchToCloud(payload);
+      setSyncToastMessage('تم إرسال ومشاركة بحثك مع معلم العلوم بنجاح! 🚀 ستظهر لك ملاحظات وتوجيهات المعلم هنا فور كتابتها.');
+      playSound('success');
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+      setTimeout(() => setSyncToastMessage(''), 6000);
+    } catch (err) {
+      console.error('Error syncing research:', err);
+      setSyncToastMessage('تم الحفظ محلياً.');
+      setTimeout(() => setSyncToastMessage(''), 3000);
+    } finally {
+      setIsSyncingWithCloud(false);
+    }
+  };
 
   // Handle Text-To-Speech with resilient Arabic engine
   const speakText = (text) => {
@@ -1226,6 +1288,47 @@ ${historySnippet}
     return p;
   };
 
+  // Render inline teacher comments for specific station
+  const renderTeacherStationComments = (stationKey) => {
+    const comments = teacherComments.filter(
+      (c) => c.station === stationKey || c.station === 'all'
+    );
+    if (!comments || comments.length === 0) return null;
+
+    return (
+      <div className="quest-station-teacher-card">
+        <div className="qst-header">
+          <div className="qst-badge-title">
+            <span className="qst-avatar">👨‍🏫</span>
+            <span>ملاحظات وتوجيهات المعلم المتابع ({comments.length})</span>
+          </div>
+          <span className="qst-live-indicator">
+            <span className="qst-live-dot"></span> متابعة تفاعلية
+          </span>
+        </div>
+        <div className="qst-list">
+          {comments.map((c) => (
+            <div key={c.id || Math.random()} className={`qst-bubble status-${c.status || 'review'}`}>
+              <div className="qst-meta">
+                <strong className="qst-teacher-name">{c.teacherName || 'المعلم'}</strong>
+                <span className="qst-role">{c.teacherRole || 'معلم العلوم والبحث'}</span>
+                <span className={`qst-status-tag ${c.status || 'review'}`}>
+                  {c.status === 'approved' && '🏅 معتمد وممتاز'}
+                  {c.status === 'needs_revision' && '✏️ بحاجة لتعديل'}
+                  {(!c.status || c.status === 'review') && '💡 ملاحظة وتوجيه'}
+                </span>
+                <span className="qst-date">
+                  {c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                </span>
+              </div>
+              <p className="qst-content">{c.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="quest-container">
       {/* Cosmic background stars */}
@@ -1303,6 +1406,53 @@ ${historySnippet}
               </button>
             )}
 
+            {/* Share / Sync with Teacher */}
+            <button
+              type="button"
+              onClick={handleSyncWithTeacher}
+              disabled={isSyncingWithCloud}
+              className="quest-back-btn quest-sync-btn"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                color: '#ffffff',
+                border: '1.5px solid #818cf8',
+                fontWeight: 800,
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.35)'
+              }}
+              title="مشاركة آخر تحديثات البحث وحفظها ليراها المعلم ويقدم الملاحظات"
+            >
+              <i className={`fas ${isSyncingWithCloud ? 'fa-spinner fa-spin' : 'fa-cloud-upload-alt'}`}></i>
+              <span>{isSyncingWithCloud ? 'جارِ الإرسال...' : 'مشاركة مع المعلم 📤'}</span>
+            </button>
+
+            {/* Teacher Feedback Button with Badge */}
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click');
+                setShowTeacherFeedbackModal(true);
+              }}
+              className="quest-back-btn quest-teacher-badge-btn"
+              style={{
+                background: teacherComments.length > 0
+                  ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
+                  : 'rgba(255, 255, 255, 0.08)',
+                color: '#ffffff',
+                border: teacherComments.length > 0 ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+                fontWeight: 800,
+                position: 'relative'
+              }}
+              title="عرض سجل ملاحظات وتوجيهات المعلم لك"
+            >
+              <i className="fas fa-comment-dots"></i>
+              <span>ملاحظات المعلم</span>
+              {teacherComments.length > 0 && (
+                <span className="quest-comment-count-badge">
+                  {teacherComments.length}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => setActiveStation(0)}
               className="quest-back-btn"
@@ -1313,6 +1463,14 @@ ${historySnippet}
             </button>
           </div>
         </header>
+
+        {/* Sync Status Banner */}
+        {syncToastMessage && (
+          <div className="quest-sync-banner-toast">
+            <i className="fas fa-paper-plane"></i>
+            <span>{syncToastMessage}</span>
+          </div>
+        )}
 
         {/* Global Unified Authentication Modal */}
         <StudentAuthModal
@@ -2186,6 +2344,9 @@ ${historySnippet}
                 </form>
               )}
             </div>
+
+            {/* Teacher Feedback for Question Station */}
+            {renderTeacherStationComments('station2')}
           </main>
         )}
 
@@ -2338,6 +2499,9 @@ ${historySnippet}
                 </button>
               </div>
             </div>
+
+            {/* Teacher Feedback for Hypotheses Station */}
+            {renderTeacherStationComments('station3')}
           </main>
         )}
 
@@ -2987,6 +3151,9 @@ ${historySnippet}
                 </button>
               </div>
             </section>
+
+            {/* Teacher Feedback for Background Literature Station */}
+            {renderTeacherStationComments('station4')}
           </main>
         )}
 
@@ -3514,6 +3681,9 @@ ${historySnippet}
                 </button>
               </div>
             </div>
+
+            {/* Teacher Feedback for Experiment & Measurements Station */}
+            {renderTeacherStationComments('station5')}
           </main>
         )}
 
@@ -3898,7 +4068,122 @@ ${historySnippet}
                 <span>خوض تجربة بحثية جديدة</span>
               </button>
             </div>
+
+            {/* Teacher Feedback for Final Grand Research Station */}
+            {renderTeacherStationComments('station6')}
           </main>
+        )}
+
+        {/* ========================================================= */}
+        {/* TEACHER PEDAGOGICAL FEEDBACK MODAL DIALOG                  */}
+        {/* ========================================================= */}
+        {showTeacherFeedbackModal && (
+          <div className="quest-feedback-modal-overlay" onClick={() => setShowTeacherFeedbackModal(false)}>
+            <div className="quest-feedback-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="qfm-header">
+                <div className="qfm-title">
+                  <span className="qfm-icon">👨‍🏫💬</span>
+                  <div>
+                    <h3>سجل متابعة وتقييم المعلم لبحثك العلمي</h3>
+                    <p>ملاحظات المعلم وتوجيهاته في جميع محطات البحث</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="qfm-close-btn"
+                  onClick={() => setShowTeacherFeedbackModal(false)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div className="qfm-body">
+                <div className="qfm-stats-row">
+                  <div className="qfm-stat-chip">
+                    <span>عدد التوجيهات:</span>
+                    <strong>{teacherComments.length}</strong>
+                  </div>
+                  <div className="qfm-stat-chip">
+                    <span>حالة المزامنة:</span>
+                    <strong style={{ color: '#10b981' }}>{researchCloudStatus === 'synced' ? '✅ متزامن مع المعلم' : '⏳ جارِ التحديث'}</strong>
+                  </div>
+                </div>
+
+                {teacherComments.length === 0 ? (
+                  <div className="qfm-empty-state">
+                    <div className="qfm-empty-icon">🌱</div>
+                    <h4>لا توجد ملاحظات مسجلة من المعلم حتى الآن</h4>
+                    <p>
+                      اضغط على زر <strong>"مشاركة مع المعلم 📤"</strong> في أعلى الشاشة لإرسال بحثك الحالي ليقوم المعلم بمراجعته وتوجيهك!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="qfm-comments-timeline">
+                    {teacherComments.map((comment, index) => (
+                      <div key={comment.id || index} className={`qfm-comment-card status-${comment.status || 'review'}`}>
+                        <div className="qfm-card-top">
+                          <div className="qfm-author-info">
+                            <span className="qfm-avatar">👨‍🏫</span>
+                            <div>
+                              <strong className="qfm-teacher-name">{comment.teacherName || 'المعلم المتابع'}</strong>
+                              <span className="qfm-teacher-role">{comment.teacherRole || 'معلم العلوم'}</span>
+                            </div>
+                          </div>
+                          <div className="qfm-badge-wrap">
+                            <span className={`qfm-status-tag ${comment.status || 'review'}`}>
+                              {comment.status === 'approved' && '🏅 معتمد وممتاز'}
+                              {comment.status === 'needs_revision' && '✏️ بحاجة لتعديل'}
+                              {(!comment.status || comment.status === 'review') && '💡 ملاحظة وتوجيه'}
+                            </span>
+                            <span className="qfm-station-tag">
+                              {comment.station === 'station2' && 'سؤال البحث'}
+                              {comment.station === 'station3' && 'الفرضيات'}
+                              {comment.station === 'station4' && 'الخلفية العلمية'}
+                              {comment.station === 'station5' && 'القياسات والتجربة'}
+                              {comment.station === 'station6' && 'التقرير الختامي'}
+                              {(!comment.station || comment.station === 'all') && 'عام لكامل البحث'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="qfm-comment-text">{comment.text}</p>
+
+                        <div className="qfm-card-footer">
+                          <span className="qfm-date">
+                            <i className="far fa-clock"></i>{' '}
+                            {comment.createdAt ? new Date(comment.createdAt).toLocaleString('ar-EG') : 'الآن'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="qfm-footer">
+                <button
+                  type="button"
+                  className="quest-btn-primary"
+                  onClick={handleSyncWithTeacher}
+                  disabled={isSyncingWithCloud}
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                    boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)'
+                  }}
+                >
+                  <i className={`fas ${isSyncingWithCloud ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
+                  <span>{isSyncingWithCloud ? 'جارِ المزامنة...' : 'إرسال التحديثات للمعلم الآن 📤'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="qfm-dismiss-btn"
+                  onClick={() => setShowTeacherFeedbackModal(false)}
+                >
+                  إغلاق النافذة
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* 🧞‍♂️ Magical AI Research Genie Assistant */}

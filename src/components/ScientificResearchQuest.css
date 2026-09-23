@@ -3759,3 +3759,468 @@
     gap: 1.25rem;
   }
 }
+
+/* ======================================================== */
+/* TEACHER FEEDBACK & COLLABORATIVE CLOUD MONITORING STYLES */
+/* ======================================================== */
+
+.quest-comment-count-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0f172a;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.6);
+  animation: pulseBadge 2s infinite ease-in-out;
+}
+
+@keyframes pulseBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.quest-sync-banner-toast {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Inline Station Teacher Comment Card */
+.quest-station-teacher-card {
+  margin-top: 1.5rem;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1.5px solid #f59e0b;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.quest-station-teacher-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: #f59e0b;
+}
+
+.qst-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.6rem;
+}
+
+.qst-badge-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #fbbf24;
+}
+
+.qst-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.qst-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.qst-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.qst-bubble {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.qst-bubble.status-approved {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.qst-bubble.status-needs_revision {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.qst-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.qst-teacher-name {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.qst-role {
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.qst-status-tag {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.qst-status-tag.approved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.qst-status-tag.needs_revision {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.qst-status-tag.review {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+}
+
+.qst-date {
+  color: #64748b;
+  font-size: 0.75rem;
+  margin-right: auto;
+}
+
+.qst-content {
+  margin: 0;
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ======================================================== */
+/* TEACHER FEEDBACK FULL MODAL DIALOG                       */
+/* ======================================================== */
+.quest-feedback-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.quest-feedback-modal-content {
+  background: #0f172a;
+  border: 1.5px solid #334155;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.qfm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #1e293b;
+  background: #1e293b;
+}
+
+.qfm-title {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.qfm-icon {
+  font-size: 2rem;
+}
+
+.qfm-title h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.qfm-title p {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.qfm-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.qfm-close-btn:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.qfm-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.qfm-stats-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.qfm-stat-chip {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.qfm-stat-chip strong {
+  color: #f8fafc;
+}
+
+.qfm-empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #94a3b8;
+}
+
+.qfm-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.qfm-empty-state h4 {
+  color: #f1f5f9;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.15rem;
+}
+
+.qfm-empty-state p {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.qfm-comments-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.qfm-comment-card {
+  background: #1e293b;
+  border: 1.5px solid #334155;
+  border-radius: 14px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.qfm-comment-card.status-approved {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.qfm-comment-card.status-needs_revision {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.qfm-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.qfm-author-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qfm-teacher-name {
+  color: #f8fafc;
+  font-size: 0.95rem;
+  display: block;
+}
+
+.qfm-teacher-role {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  display: block;
+}
+
+.qfm-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.qfm-status-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+}
+
+.qfm-status-tag.approved {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+.qfm-status-tag.needs_revision {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+}
+
+.qfm-status-tag.review {
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+}
+
+.qfm-station-tag {
+  background: #334155;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+}
+
+.qfm-comment-text {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.qfm-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.qfm-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #1e293b;
+  background: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.qfm-dismiss-btn {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.qfm-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+

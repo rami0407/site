@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
 import { sanitizeText } from '../utils/security';
+import TeacherResearchReviewPanel from './TeacherResearchReviewPanel';
 import './TeacherStemPortal.css';
 
 const STAGE_OPTIONS = [
@@ -15,6 +16,7 @@ const STAGE_OPTIONS = [
 const TeacherStemPortal = () => {
   const [session, setSession] = useState(getStudentSession());
   const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [activePortalTab, setActivePortalTab] = useState('research'); // 'research' | 'stem'
 
   // Form Inputs
   const [teacherNameInput, setTeacherNameInput] = useState('');
@@ -404,8 +406,67 @@ const TeacherStemPortal = () => {
       {/* Main Container */}
       <div className="t-container t-main-body">
         
-        {/* Statistics & Filters Bar */}
-        <div className="t-filters-card">
+        {/* Navigation Switcher Tabs */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setActivePortalTab('research')}
+            style={{
+              flex: '1 1 240px',
+              padding: '12px 20px',
+              borderRadius: '14px',
+              border: activePortalTab === 'research' ? '2px solid #059669' : '1px solid #cbd5e1',
+              background: activePortalTab === 'research' ? 'linear-gradient(135deg, #065f46, #059669)' : '#ffffff',
+              color: activePortalTab === 'research' ? '#ffffff' : '#334155',
+              fontWeight: 800,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: activePortalTab === 'research' ? '0 4px 15px rgba(5, 150, 105, 0.3)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <i className="fas fa-microscope"></i>
+            <span>متابعة أبحاث الطلاب العلمية والتعليق 🔬</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePortalTab('stem')}
+            style={{
+              flex: '1 1 240px',
+              padding: '12px 20px',
+              borderRadius: '14px',
+              border: activePortalTab === 'stem' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+              background: activePortalTab === 'stem' ? 'linear-gradient(135deg, #0369a1, #0284c7)' : '#ffffff',
+              color: activePortalTab === 'stem' ? '#ffffff' : '#334155',
+              fontWeight: 800,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: activePortalTab === 'stem' ? '0 4px 15px rgba(2, 132, 199, 0.3)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <i className="fas fa-lightbulb"></i>
+            <span>متابعة تحديات وحلول STEM 🎒</span>
+          </button>
+        </div>
+
+        {activePortalTab === 'research' && (
+          <TeacherResearchReviewPanel currentTeacherName={session.fullName} />
+        )}
+
+        {activePortalTab === 'stem' && (
+          <>
+            {/* Statistics & Filters Bar */}
+            <div className="t-filters-card">
           <div className="t-filter-group">
             <label><i className="fas fa-school"></i> اختر الصف للشعبة:</label>
             <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
@@ -540,7 +601,9 @@ const TeacherStemPortal = () => {
                 </div>
               );
             })}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
