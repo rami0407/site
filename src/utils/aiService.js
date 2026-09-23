@@ -205,7 +205,7 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
 
   // 2. Try Google Gemini
   if (geminiKey) {
-    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
     const fullPrompt = `${systemContext ? systemContext + '\n\n' : ''}السؤال/الطلب: ${promptText}`;
 
     for (const model of models) {
@@ -219,11 +219,11 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
               contents: [{ parts: [{ text: fullPrompt }] }],
               generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 1000
+                maxOutputTokens: 1200
               }
             })
           },
-          7000
+          10000
         );
         if (res.ok) {
           const data = await res.json();
@@ -1393,4 +1393,126 @@ ${notes ? `- ملاحظات المعلم الإضافية: "${notes}"` : ''}
       h: `🎒 تذكرة الخروج (Exit Ticket) وحصد الزوّادة:\n• سؤال الخروج الإلزامي: "اكتب في جملة واحدة: ما الفكرة الكبرى التي اكتشفتها اليوم في ${safeTopic}؟"\n• خانة زوّادتي (צידת לדרך): "زوّادتي اليوم: مفهوم ${safeTopic}؛ وتطبيقي العملي: سأوظف هذا الزاد في منزلي ومع عائلتي عندما..."\n• تقييم ذاتي: يضع الطالب إشارة على مقياس الثقة (من 1 إلى 5) لمدى قدرته على شرح المفهوم لزميل آخر.`
     }
   };
+};
+
+/**
+ * 🧞‍♂️ Scientific Genie AI Assistant (جني البحث العلمي السحري)
+ * Multi-turn conversational AI specialized in elementary science inquiry,
+ * hypotheses, experiments, variable identification, and conclusions.
+ */
+export const generateScientificGenieAI = async (question, chatHistory = [], studentName = 'مستكشفنا البطل') => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const systemPrompt = `أنت "جني البحث العلمي السحري" 🧞‍♂️✨ في مدرسة مشيرفة الابتدائية، المساعد السحري الذكي للأطفال في رحلة البحث العلمي والاكتشاف.
+أنت تتحدث باللغة العربية الفصحى الجميلة والمبهجة، بأسلوب مرح ومشجع مفعم بالحماس والذكاء (مثل جني الفانوس الودود المحب للعلوم 🧞‍♂️).
+أنت تخاطب الطالب باسمه دائماً: "${studentName}".
+
+مهامك الإرشادية في البحث العلمي:
+1. صياغة سؤال البحث: مساعدة الطالب في تحويل أفكاره وفضوله إلى سؤال بحث علمي محدد وقابل للقياس، بصيغة واضحة مثل: "ما تأثير [المتغير المستقل] على [المتغير التابع]؟".
+2. الفرضية العلمية: تعليمه كيف يصوغ تخميناً ذكياً قابلاً للاختبار بصيغة: "إذا قمنا بـ... فإن ... سيحدث لأن...".
+3. المتغيرات: شرح المتغير المستقل (الذي نغيره)، والمتغير التابع (الذي نقيسه)، والعوامل الثابتة بأسلوب مبسط بالأمثلة.
+4. تخطيط التجربة: اقتراح خطوات عملية آمنة، وأدوات منزلية أو مدرسية بسيطة، وطريقة تسجيل الملاحظات.
+5. استخلاص النتائج والاستنتاج: كيف يجيب عن سؤاله بناءً على ما شاهده في التجربة.
+6. الإجابة على أي سؤال علمي عام بأسلوب شيق يبهر الطالب ويشعل فضوله.
+
+قواعد الإجابة:
+- ابدأ برد مرح مثل: "شبيك لبيك يا بطلنا ${studentName}! 🧞‍♂️✨" أو "بأمر العلم والفضول العجيب!"
+- قسّم الإجابة إلى نقاط قصيرة وواضحة جداً يسهل على تلميذ ابتدائي قراءتها.
+- استخدم إيموجيز علمية مشوقة (🔬 🌱 🧪 ⚡ 💡 🚀).
+- شجع الطالب دائماً واختم بسؤال تفاعلي مرح يدفعه للخطوة التالية.
+- ممنوع تماماً كتابة أي نصوص بالإنجليزية أو مسودات تفكير.`;
+
+  // Build message sequence for multi-turn chat
+  const messages = [
+    { role: 'system', content: systemPrompt }
+  ];
+
+  // Include recent history (up to last 6 messages) for memory context
+  if (Array.isArray(chatHistory)) {
+    const recent = chatHistory.slice(-6);
+    for (const msg of recent) {
+      if (msg.sender === 'user') {
+        messages.push({ role: 'user', content: msg.text });
+      } else if (msg.sender === 'genie' && msg.text) {
+        messages.push({ role: 'assistant', content: msg.text });
+      }
+    }
+  }
+
+  // Add the current question
+  messages.push({ role: 'user', content: question });
+
+  // 1. Try Groq (High Speed Qwen 3.8 / GPT-OSS / ALLaM)
+  if (groqKey) {
+    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: m,
+              messages,
+              temperature: 0.7,
+              max_tokens: 1200
+            })
+          },
+          10000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const reply = data.choices?.[0]?.message?.content;
+          if (reply && reply.trim()) {
+            const cleaned = cleanAiResponse(reply.trim());
+            if (cleaned) return cleaned;
+          }
+        }
+      } catch (err) {
+        console.warn(`Genie AI (${m}) failed:`, err);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    const geminiPrompt = `${systemPrompt}\n\nسؤال الطالب ${studentName}: "${question}"`;
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: geminiPrompt }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1200
+              }
+            })
+          },
+          10000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text && text.trim()) {
+            const cleaned = cleanAiResponse(text.trim());
+            if (cleaned) return cleaned;
+          }
+        }
+      } catch (err) {
+        console.warn(`Genie AI Gemini (${gm}) failed:`, err);
+      }
+    }
+  }
+
+  // Fallback if network completely blocked
+  return `شبيك لبيك يا بطلنا المبدع ${studentName}! 🧞‍♂️✨\nسؤالك العلمي مدهش جداً! تذكر أن كل بحث علمي يبدأ بـ:\n1. 🔍 ملاحظة شيء يثير دهشتك.\n2. ❓ صياغة سؤال واضح ومحدد (ما تأثير... على...؟).\n3. 💡 وضع فرضية ذكية قابلة للاختبار.\n4. 🧪 تجربة ممتعة تسجل فيها أرقامك وملاحظاتك!\nما هي فكرة التجربة التي ترغب في استكشافها معاً؟ 🪄🌱`;
 };

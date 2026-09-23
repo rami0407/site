@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { generateAiResponse } from '../utils/aiService';
+import { generateAiResponse, generateScientificGenieAI } from '../utils/aiService';
 import { arabicTTS } from '../utils/arabicTTS';
 import genieImg from '../assets/genie.png';
 import './GenieAssistant.css';
@@ -85,35 +85,29 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
     });
   };
 
-  const handleAskGenie = async (e) => {
-    if (e) e.preventDefault();
-    const q = inputQuestion.trim();
+  const handleAskGenie = async (e, overrideQuestion = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const q = (overrideQuestion || inputQuestion).trim();
     if (!q || isLoading) return;
 
     const userMsg = { id: `user-${Date.now()}`, sender: 'user', text: q };
-    setMessages((prev) => [...prev, userMsg]);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
     setInputQuestion('');
     setIsLoading(true);
 
-    const systemPrompt = `أنت "جني البحث العلمي" السحري (العفاريت العلمية اللطيفة والمحبوبة للأطفال مثل جني علاء الدين الأزرق المرح 🧞‍♂️) في مدرسة مشيرفة الابتدائية.
-تتحدث باللغة العربية المشوقة والمبهجة المناسبة لطلاب المدارس الابتدائية (من الصف الأول حتى السادس).
-تبدأ كلامك أحياناً بعبارات سحرية لطيفة مثل "شبيك لبيك يا بطلنا!" أو "بأمر العلم والاستكشاف!" أو "سحر الفضول بين يديك!".
-مهمتك:
-1. الإجابة على أي سؤال يطرحه الطالب حول خطوات البحث العلمي، الفرضيات، أدوات التجربة، صياغة الأسئلة، أو معلومات العلوم الممتعة.
-2. جعل الإجابة واضحة، سهلة، مشوقة، ومختصرة (3 إلى 5 أسطر فقط مع إيموجيز لطيفة).
-3. تشجيع الطالب ورفع شغفه وتحديه بالبحث والتجربة.`;
-
     try {
-      const aiReply = await generateAiResponse(q, systemPrompt);
-      const botText = aiReply || `شبيك لبيك يا صديقي ${studentName}! 🧞‍♂️✨ الفكرة التي سألت عنها ممتعة جداً! في البحث العلمي، نحن نلاحظ أولاً، ثم نسأل بدقة، ثم نجرب لنرى النتيجة بأعيننا! هل تحب أن نجرب صياغة تجربة لها؟`;
+      const aiReply = await generateScientificGenieAI(q, messages, studentName);
+      const botText = aiReply || `شبيك لبيك يا صديقي ${studentName}! 🧞‍♂️✨ الفكرة التي سألت عنها ممتعة جداً! في البحث العلمي، نحن نلاحظ أولاً، ثم نسأل بدقة، ثم نجرب لنرى النتيجة بأعيننا! هل تحب أن نجرب صياغة تجربة لها؟ 🪄`;
       setMessages((prev) => [...prev, { id: `genie-${Date.now()}`, sender: 'genie', text: botText }]);
-    } catch {
+    } catch (err) {
+      console.warn('Genie AI error:', err);
       setMessages((prev) => [
         ...prev,
         {
           id: `genie-${Date.now()}`,
           sender: 'genie',
-          text: `شبيك لبيك يا عالمنا الصغير! 🧞‍♂️✨ سؤالك رائع جداً، تذكر دائماً أن أعظم الاكتشافات في تاريخ البشرية بدأت بسؤال فضولي مدهش مثلك تماماً!`
+          text: `شبيك لبيك يا بطلنا ${studentName}! 🧞‍♂️✨ سؤالك رائع جداً، تذكر دائماً أن كل بحث علمي عظيم يبدأ بسؤال فضولي مدهش مثلك تماماً!`
         }
       ]);
     } finally {
@@ -124,8 +118,11 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
   const QUICK_QUESTIONS = [
     'كيف أصوغ سؤال بحث علمي ناجح؟ 🔬',
     'ما هي الفرضية وكيف أكتبها؟ 🧪',
-    'أعطني فكرة تجربة مسلية للنباتات 🌱',
-    'ما هو المتغير المستقل والمتغير التابع؟ 📐'
+    'ما هو المتغير المستقل والمتغير التابع؟ 📐',
+    'اقترح فكرة تجربة مسلية للنباتات 🌱',
+    'أعطني فكرة مشروع لمعرض العلوم 🏆',
+    'كيف أكتب الاستنتاج العلمي النهائي؟ 📝',
+    'كيف أصمم تجربة علمية آمنة في البيت؟ 🏠'
   ];
 
   return (
@@ -209,6 +206,22 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
               <button 
                 type="button" 
                 className="genie-control-btn"
+                onClick={() => {
+                  setMessages([
+                    {
+                      id: 'g-welcome',
+                      sender: 'genie',
+                      text: `شُبَّيْك لُبَّيْك! جني البحث العلمي بين يديك يا بطلنا ${studentName}! 🧞‍♂️✨\nأنا مساعدك السحري الذكي.. اسألني أي سؤال في العلوم، سؤال البحث، الفرضيات، أو الأفكار العجيبة وسأجيبك فوراً!`
+                    }
+                  ]);
+                }}
+                title="بدء محادثة جديدة ومسح الرسائل"
+              >
+                <i className="fas fa-redo-alt"></i>
+              </button>
+              <button 
+                type="button" 
+                className="genie-control-btn"
                 onClick={() => setIsOpen(false)}
                 title="إغلاق وطي الجني"
               >
@@ -259,16 +272,16 @@ const GenieAssistant = ({ studentName = 'مستكشفنا البطل' }) => {
 
           {/* Quick Suggestions Chips */}
           <div className="genie-quick-chips">
-            <span className="chips-label">💡 أسئلة سريعة مقترحة:</span>
+            <span className="chips-label">💡 أسئلة سريعة مقترحة (اضغط للسؤال فوراً):</span>
             <div className="chips-scroll">
               {QUICK_QUESTIONS.map((chip, idx) => (
                 <button
                   key={idx}
                   type="button"
                   className="genie-chip-btn"
-                  onClick={() => {
-                    setInputQuestion(chip);
-                  }}
+                  disabled={isLoading}
+                  onClick={() => handleAskGenie(null, chip)}
+                  title="اسأل الجني هذا السؤال فوراً"
                 >
                   {chip}
                 </button>
