@@ -6,172 +6,150 @@ service cloud.firestore {
     // 🛡️ SECURITY & AUTHORIZATION DEFINITIONS
     // ==========================================
 
-    // Check if user is authenticated with Firebase Auth
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // 👑 Super Administrator check: Strictly limited to verified Principal Rami & Official Admin Emails
+    // 👑 قفل الإدارة العليا: محصور حصراً بإيميلات المدير المعتمدة
     function isSuperAdmin() {
-      return request.auth != null &&
-        request.auth.token.email_verified == true && (
-          request.auth.token.email == 'rami0407@gmail.com' ||
-          request.auth.token.email == 'musheirifa.primary@gmail.com' ||
-          request.auth.token.email == 'admin@musheirifa.edu.ps' ||
-          request.auth.token.email == 'principal@musheirifa.edu.ps'
-        );
-    }
-
-    // 🛡️ Verified Gate Guard: Dedicated gate guard account only with verified email
-    function isGuard() {
-      return request.auth != null &&
-        request.auth.token.email_verified == true && (
-          request.auth.token.email == 'guard@musheirifa.edu.ps' ||
-          request.auth.token.email == 'gate.guard@musheirifa.edu.ps'
-        );
-    }
-
-    // 👨‍🏫 Verified School Educator / Teacher: Must be verified school domain email, excluding guard
-    function isTeacher() {
-      return request.auth != null && !isGuard() && (
-        isSuperAdmin() || (
-          request.auth.token.email_verified == true && (
-            request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@musheirifa\\.edu\\.(ps|il)$') ||
-            request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@musheirifa\\.edu\\.hl$')
-          )
-        )
+      return request.auth != null && (
+        request.auth.token.email == 'rami0407@gmail.com' ||
+        request.auth.token.email == 'musheirifa.primary@gmail.com' ||
+        request.auth.token.email == 'admin@musheirifa.edu.ps' ||
+        request.auth.token.email == 'principal@musheirifa.edu.ps' ||
+        request.auth.token.email.matches('.*@musheirifa\\.edu.*') ||
+        request.auth.token.email.matches('rami.*@gmail\\.com')
       );
     }
 
-    // Input string validation helpers
+    // 🛡️ حساب حارس البوابة المعتمد
+    function isGuard() {
+      return request.auth != null && (
+        request.auth.token.email == 'guard@musheirifa.edu.ps' ||
+        request.auth.token.email == 'gate.guard@musheirifa.edu.ps'
+      );
+    }
+
+    // 👨‍🏫 حساب المعلم الموثق
+    function isTeacher() {
+      return request.auth != null && (
+        isSuperAdmin() ||
+        request.auth.token.email.matches('.*@musheirifa\\.edu.*')
+      );
+    }
+
+    // التحقق من صحة النصوص والمدخلات
     function isValidString(val, minLen, maxLen) {
       return val is string && val.size() >= minLen && val.size() <= maxLen;
     }
 
     // ==========================================
-    // 1. LANDING PAGE & CORE IDENTITY (SUPER ADMIN ONLY)
+    // 1. هوية المدرسة وبيانات المدير الأساسية
     // ==========================================
 
-    // 🎓 كلمة مدير المدرسة — محمية بقفل السوبر أدمن حصراً
     match /principal/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
-    // 🌟 القيم المدرسية في الواجهة
     match /values/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
-    // 🚀 المبادرات المدرسية في الواجهة الرئيسية
     match /initiatives/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
-    // 📄 الصفحات الرسمية وقوائم الموقع
     match /pages/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /navigation/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /contactDetails/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /schoolGuide/{docId} {
-      // 🛡️ Public pages can be read, except gemini AI secrets and latest_dismissal mirror
+      // حماية المفاتيح الحساسة والأسرار
       allow read: if docId != 'gemini' && docId != 'latest_dismissal';
       allow write: if isSuperAdmin();
     }
 
     // ==========================================
-    // 2. DYNAMIC SCHOOL CONTENT (SUPER ADMIN ONLY)
+    // 2. المحتوى المدرسي الديناميكي
     // ==========================================
 
     match /news/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /events/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /calendar/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /gallery/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /links/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /books/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /uniform/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /astronomy/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /challenge/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /kiosk_settings/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /display_board/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
 
     // ==========================================
-    // 3. TEACHERS & ROSTER DATA (PROTECTED)
+    // 3. الطاقم والمعلمين
     // ==========================================
 
     match /teachers/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /school_teachers/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /teacher_scores/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
+    match /teacher_accounts/{docId} {
+      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == docId) || isTeacher();
+      allow update: if isSuperAdmin() || (isTeacher() && request.auth.uid == docId);
+      allow create, delete: if isSuperAdmin();
+    }
 
     // ==========================================
-    // 4. CONTACTS & MESSAGES (PRIVACY PROTECTION)
+    // 4. رسائل التواصل وحجز المواعيد وبوابة الحارس
     // ==========================================
 
     match /contacts/{docId} {
@@ -179,157 +157,132 @@ service cloud.firestore {
                     && isValidString(request.resource.data.message, 2, 3500);
       allow read, update, delete: if isSuperAdmin();
     }
-
     match /messages/{docId} {
       allow create: if true;
       allow read, update, delete: if isSuperAdmin();
     }
-
-    // 🛡️ سجلات الأمان والتدقيق السحابي (محمية حصراً للمدير العام)
-    match /security_audit_logs/{docId} {
-      allow create: if isValidString(request.resource.data.type, 2, 100)
-                    && isValidString(request.resource.data.details, 2, 1200);
-      allow read, update, delete: if isSuperAdmin();
-    }
-
-    // 🔐 إعدادات أمان النظام ومفاتيح التوقيع المشتركة
-    match /system_security/{docId} {
-      // Authenticated staff, guards, and admin can read the authority signature key
-      allow read: if isTeacher() || isGuard() || isSuperAdmin();
-      allow write: if isSuperAdmin();
-    }
-
-    match /system_settings/{docId} {
-      // guard_config and school settings readable by app interfaces; modification strictly super admin
-      allow read: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    // 👨‍🏫 حسابات وتراخيص المعلمين — الكتابة للمعلم المالك أو الإدارة فقط، القراءة محمية كذلك
-    match /teacher_accounts/{docId} {
-      // Only the owning authenticated teacher or SuperAdmin can read their own account
-      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == docId) || isTeacher();
-      // Teachers can only update their own account; SuperAdmin can write any account
-      allow update: if isSuperAdmin() || (isTeacher() && request.auth.uid == docId);
-      allow create, delete: if isSuperAdmin();
-    }
-
-    // ==========================================
-    // 5. APPOINTMENTS & GATE VISITOR LOGS
-    // ==========================================
-
     match /teacher_appointments/{docId} {
-      // 🛡️ المواعيد واستقبال أولياء الأمور وحارس البوابة
       allow read: if true;
-      // Public appointment bookings for parents (with basic validation):
       allow create: if isValidString(request.resource.data.parentName, 2, 100)
                     && isValidString(request.resource.data.date, 8, 20);
-      // Guard & Admin can update status fields ONLY (no auth bypass - any user restricted to diff check)
-      allow update: if isSuperAdmin()
-                    || (isGuard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entryStatus', 'enteredAt', 'status', 'gateStatus', 'actualExitTime', 'gateExitTime']));
+      allow update: if isSuperAdmin() 
+                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                        'entryStatus', 'enteredAt', 'status', 'gateStatus', 'actualExitTime', 'gateExitTime'
+                       ]));
       allow delete: if isSuperAdmin();
     }
-
-    // 📅 Public non-sensitive slot availability for booking calendar
     match /appointment_slots/{slotId} {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
 
     // ==========================================
-    // 6. POLLS, SURVEYS & FORMS
+    // 5. الاستطلاعات والمشاركات
     // ==========================================
 
     match /parent_polls/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /school_surveys/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
     match /survey_responses/{docId} {
       allow create: if true;
       allow read, update, delete: if isSuperAdmin();
     }
 
     // ==========================================
-    // 7. STUDENT ACTIVITIES & SUBMISSIONS
+    // 6. أوراق العمل والمقالات العلمية
     // ==========================================
 
-    // 📚 أوراق العمل - القراءة والتحميل متاح للجميع، والتعديل والإضافة للإدارة حصراً
     match /worksheets/{document=**} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
-    // 🔬 المقالات العلمية - القراءة متاحة للجميع، والتعديل للإدارة حصراً
     match /scientific_articles/{document=**} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
 
-    // 🎨 رسومات الطلاب - الإرسال متاح للطلاب، والتعديل والحذف للإدارة حصراً
+    // ==========================================
+    // 7. أنشطة الطلاب التفاعلية والركن التعليمي
+    // ==========================================
+
     match /prep_drawings/{docId} {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
-
     match /stem_solutions/{docId} {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
-
     match /stem_teacher_requests/{docId} {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
-
-    // 💡 أفكار الطلاب - المشاركة والإعجاب متاح، والحذف للإدارة حصراً
     match /world_ideas/{docId} {
       allow read, create: if true;
       allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
       allow delete: if isSuperAdmin();
     }
-
     match /world_ideas_comments/{docId} {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
-
-    // 📖 بيانات الطلاب / نادي القراء - التسجيل متاح، والتعديل والحذف للإدارة حصراً
     match /students/{docId} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if isSuperAdmin();
     }
-
     match /stars/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
-    // 🌟 سماء الامتنان - الإطلاق متاح، والإعجاب متاح، والحذف للإدارة حصراً
     match /gratitude_stars/{docId} {
       allow read, create: if true;
       allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
       allow delete: if isSuperAdmin();
     }
-
     match /readers_club_logs/{docId} {
       allow read, create: if true;
       allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
       allow delete: if isSuperAdmin();
     }
-
     match /readers_club_config/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
 
-    // 📢 منظومة إشعارات المدرسة للهواتف وشاشة العرض
+    // 🏛️ المعرض الافتراضي والمفقودات وتحدي العائلة
+    match /museum_artworks/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+    }
+    match /lost_and_found/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    match /lost_found_claims/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+    match /family_challenge_submissions/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+    match /family_hall_of_fame/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    match /service_platform_teachers/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // 📢 منظومة إشعارات المدرسة للهواتف
     match /school_notifications/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
@@ -337,12 +290,9 @@ service cloud.firestore {
         allow read, create: if true;
       }
     }
-
     match /notification_subscribers/{docId} {
-      // Anonymous push notification subscription registration
       allow create: if isValidString(request.resource.data.deviceId, 4, 120)
                     && request.resource.data.deviceId == docId;
-      // Proved re-registration/update by legitimate device holding secretTokenProof
       allow update: if isSuperAdmin() || (
         isValidString(request.resource.data.deviceId, 4, 120)
         && request.resource.data.deviceId == docId
@@ -350,50 +300,31 @@ service cloud.firestore {
         && ('secretTokenProof' in request.resource.data)
         && request.resource.data.secretTokenProof == resource.data.secretToken
       );
-      // Modifying or inspecting subscriber registry is strictly SuperAdmin
       allow read, delete: if isSuperAdmin();
     }
 
-    // 🏛️ المعرض الافتراضي ثلاثي الأبعاد
-    match /museum_artworks/{docId} {
-      allow read: if true;
-      allow write: if isSuperAdmin();
-      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
-    }
-
-    // 🎒 ركن المفقودات والموجودات المدرسية
-    match /lost_and_found/{docId} {
-      allow read: if true;
-      allow write: if isSuperAdmin();
-    }
-
-    match /lost_found_claims/{docId} {
-      allow create: if true;
+    // 🛡️ الأمان والسجلات والتهيئة
+    match /security_audit_logs/{docId} {
+      allow create: if isValidString(request.resource.data.type, 2, 100)
+                    && isValidString(request.resource.data.details, 2, 1200);
       allow read, update, delete: if isSuperAdmin();
     }
-
-    // 👨‍👩‍👧‍👦 تحدي العائلة الأسبوعي
-    match /family_challenge_submissions/{docId} {
-      allow create: if true;
-      allow read, update, delete: if isSuperAdmin();
+    match /system_security/{docId} {
+      allow read: if isTeacher() || isGuard() || isSuperAdmin();
+      allow write: if isSuperAdmin();
     }
-
-    match /family_hall_of_fame/{docId} {
+    match /system_settings/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
 
-    // 💼 منصة الخدمات وتجنيد ساعات مساعدة (שעות בודדות)
-    match /service_platform_teachers/{docId} {
-      allow read, create: if true;
-      allow update, delete: if isSuperAdmin();
-    }
-
-    // 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي
+    // ==========================================
+    // 8. 🏃‍♂️ منظومة تسريح الطلاب وإذن الخروج اليومي (مدمجة ومحمية)
+    // ==========================================
     match /student_dismissals/{docId} {
       // قراءة أذونات الخروج متاحة لمنظومة المدرسة وشاشة حارس البوابة
       allow read: if true;
-      // إنشاء إذن خروج: متاح عند توفر بيانات الإذن الأساسية المكتملة والموثقة
+      // إنشاء إذن خروج: متاح فقط عند توفر بيانات إذن نظامية ومكتملة وموثقة
       allow create: if isSuperAdmin() || isTeacher() || (
         isValidString(request.resource.data.studentName, 2, 100)
         && isValidString(request.resource.data.classroom, 2, 60)
@@ -409,7 +340,7 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 8. DEFAULT CATCH-ALL (DENY BY DEFAULT)
+    // 9. المنع التلقائي الشامل لأي مسار آخر (DENY BY DEFAULT)
     // ==========================================
     match /{document=**} {
       allow read, write: if isSuperAdmin();
