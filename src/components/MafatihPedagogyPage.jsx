@@ -231,6 +231,22 @@ export const FULL_LESSON_PLANS_LIBRARY = [
       y: '🛠️ [ي - إنجاز وتطبيق / Differentiated Workshop] (15 mins):\nActive Station Work in pairs for concrete production:\n• Tier 1 (Support): Matching verb flashcards with pictures and completing sentence scaffolds: "I ____ at 8:00."\n• Tier 2 (Core): Pair interviews: Asking "What time do you study/play?" and writing 4 complete sentences about their partner.\n• Tier 3 (Extension): Designing a mini-comic strip with speech bubbles illustrating the busy routine of a superhero!',
       h: '🎒 [ح - حصاد وزوّادة / Harvest & Exit Ticket] (7 mins):\nExit Ticket Completion:\n1. My Knowledge Zowada: Mastered 6 core daily routine verbs in Present Simple.\n2. Real-World Application: "Today at home, I will say 3 complete English sentences to my parents: I wash my hands, I read my story, and I love my school!"'
     }
+  },
+  {
+    id: 'sel',
+    label: 'عاطفي واجتماعي (SEL) ❤️',
+    badgeColor: '#e11d48',
+    subject: 'عاطفي واجتماعي (SEL)',
+    grade: 'الصف الرابع',
+    title: 'إدارة الغضب وتنظيم المشاعر: من البركان الانفعالي إلى واحة الهدوء والتنفس الواعي',
+    duration: 45,
+    stations: {
+      m: '🧲 [م - مدخل محفّز (משיכה וסקרנות)] (5 دقائق):\nمحفز بصري وحسي: تجربة "قارورة الهدوء السحرية" المليئة بالماء والبريق اللامع، يهزها المعلم بقوة فيفور البريق فوضوياً ويحجب الرؤية، ثم يضعها بهدوء لتبدأ الحبيبات بالاستقرار تدريجياً حتى يصبح الماء صافياً وشفافاً تماماً! يطرح المعلم سؤال الإشعال الوجداني: "عندما نغضب، عقولنا تصبح تماماً مثل هذه القارورة الفائرة.. ماذا يحدث لأفكارنا وقراراتنا حين نكون في قمة الفوران؟ وكيف نسمح لعاصفتنا الداخلية أن تهدأ لنرى الحقيقة بوضوح وسلام؟".',
+      f: '💡 [ف - فهم وبناء المعنى (פיתוח הבנה)] (10 دقائق):\n• قراءة وتحليل نص وجداني مؤثر: قصة "سامي والبركان الصغير في قلبه"؛ كيف تحولت خيبة أمله في لعبة كرة القدم إلى نوبة صراخ كادت تخسره أعز أصدقائه.\n• قاموس المشاعر والمصطلحات: تفكيك الفارق الدقيق بين "الشعور الطبيعي" (الغضب حق طبيعي لكل إنسان) و"السلوك والاختيار" (الصراخ أو الإيذاء تصرف غير مقبول). إكساب مصطلحات: [تنظيم المشاعر Self-Regulation، إشارة التوقف الذهنية، الأمان النفسي].\n• نمذجة المعلم (I Do): يمثل المعلم أمام الطلاب موقفاً انفعالياً وينمذج التفكير الوجداني الصوتي: "أشعر بنبضات قلبي تتسارع ويدي تنقبضان.. سأتوقف الآن، آخذ نفساً عميقاً من بطني، وأعد حتى 5 قبل أن أنطق بأي كلمة!".',
+      t: '🧠 [ت - تفكير وتبصّر (תובנה והעמקה)] (8 دقائق):\nحوار تأملي سقراطي وأسئلة تفكير عليا في الذكاء العاطفي والاجتماعي:\n1. سؤال تبني منظور الآخر (Perspective Taking): "لو كنت مكان الصديق الذي صرخ عليه سامي، ما الذي كنت ستشعر به في تلك اللحظة؟ وكيف يمكن لكلمة جارحة أن تترك أثراً لا يمحوه الاعتذار السريع؟"\n2. الموازنة بين رد الفعل والاستجابة: "ما الفرق بين رد الفعل الاندفاعي اللحظي، والاستجابة الواعية الحكيمة؟"\n3. التبصر في الحلول البديلة: "كيف يمكننا التعبير عن غضبنا ورفضنا لشيء ما بقوة وشجاعة ولكن دون أن نجرح أحداً أو نخسر محبتنا واحترامنا؟".',
+      y: '🛠️ [ي - إنجاز وتطبيق متمايز UDL] (15 دقيقة):\nورشة تمكين وجداني وإنتاج عملي في بيئة صفية دافئة وآمنة:\n• مسار الدعم والتعبير (التعبير الفني/البصري): بطاقة "مقياس حرارة مشاعري"؛ تلوين مستويات الغضب وتحديد 3 علامات جسدية تنبه الطفل عند بدء الانفعال مع صندوق أدوات تهدئة مصور.\n• المسار الأساسي (محاكاة ولعب أدوار Role-Playing): ثنائيات تمثل مواقف خلافية شائعة في ساحة المدرسة، وتطبيق استراتيجية "أنا أشعر... عندما يحدث... وأحتاج إلى..." لحل النزاع بود واحترام.\n• مسار التميز والقيادة الاجتماعية: صياغة "دستور الهدوء والتراضي الصفي" أو تصميم بطاقات إرشادية مبتكرة لتثبيتها في زاوية الاسترخاء (Peace Corner) لخدمة جميع زملاء المدرسة.',
+      h: '🎒 [ح - حصاد وزوّادة (חתימה וצידה לדרך)] (7 دقائق):\n1. تذكرة الخروج الوجدانية (Emotional Exit Ticket):\n"زوّادتي القلبية اليوم: الغضب شعور عابر، وحكمتي وهدوئي هما قوتي الحقيقية.. تعلمت تقنية (توقف، تنفس، وفكّر)".\n2. زوّادة نقل الأثر للبيت والأسرة:\n"الليلة في البيت سأشارك أمي وأبي وإخوتي تمرين (التنفس البطني العميق 4-4-4)، وإذا شعرت بأي توتر أو انزعاج مع إخوتي أثناء اللعب، سأتذكر قارورة الهدوء وأطلب دقيقة استراحة لأصفي أفكاري بمحبة".'
+    }
   }
 ];
 
@@ -239,6 +255,7 @@ const LIBRARY_SUBJECTS = [
   'لغة عربية',
   'رياضيات',
   'علوم وتكنولوجيا',
+  'عاطفي واجتماعي (SEL)',
   'لغة إنجليزية',
   'موطن ومجتمع ومدنيات',
   'تربية إسلامية',
@@ -253,7 +270,19 @@ const LIBRARY_GRADES = [
   'الصف الثالث',
   'الصف الرابع',
   'الصف الخامس',
-  'الصف السادس'
+  'الصف السادس',
+  'المرحلة الإعدادية',
+  'آخر'
+];
+
+const STANDARD_GRADE_OPTIONS = [
+  'الصف الأول',
+  'الصف الثاني',
+  'الصف الثالث',
+  'الصف الرابع',
+  'الصف الخامس',
+  'الصف السادس',
+  'المرحلة الإعدادية'
 ];
 
 const MafatihPedagogyPage = () => {
@@ -444,6 +473,10 @@ const MafatihPedagogyPage = () => {
   const [isWizardGeneratingStep, setIsWizardGeneratingStep] = useState(false);
   const [aiSubject, setAiSubject] = useState('لغة عربية');
   const [aiGrade, setAiGrade] = useState('الصف الرابع');
+  const [customAiGradeText, setCustomAiGradeText] = useState('');
+  const [isCustomAiGrade, setIsCustomAiGrade] = useState(false);
+  const [customWizardGradeText, setCustomWizardGradeText] = useState('');
+  const [isCustomWizardGrade, setIsCustomWizardGrade] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
   const [aiObjective, setAiObjective] = useState('');
   const [aiDuration, setAiDuration] = useState(45);
@@ -456,6 +489,91 @@ const MafatihPedagogyPage = () => {
   const getStationSuggestions = (stationKey, topic, subject) => {
     const t = (topic && topic.trim()) ? topic.trim() : 'الموضوع المركزي للحصة';
     const s = subject || 'المادة';
+    const isSEL = s.includes('عاطفي') || s.includes('اجتماعي') || s.includes('SEL');
+
+    if (isSEL) {
+      if (stationKey === 'm') {
+        return [
+          {
+            title: '🌦️ فحص الطقس الداخلي للمشاعر (Emotional Weather)',
+            text: `افتتاحية وجدانية هادئة: كل طالب يختار رمزاً لحالته الشعورية اليوم (مشمس، غائم، ممطر، عاصف) ويربطه بمفهوم (${t})، لتهيئة الأمان النفسي والقبول قبل الخوض في الدرس.`
+          },
+          {
+            title: '🧪 تجربة قارورة الهدوء وفوران العواطف',
+            text: `هز قارورة الماء بالبريق اللامع لتمثيل فوران الانفعالات عند الغضب أو الخوف، ومراقبة هبوط الحبيبات تدريجياً لسؤال الطلاب: "كيف تتصرف عندما يفور بريقك الداخلي في موضوع (${t})؟".`
+          },
+          {
+            title: '🎭 معضلة شعورية وموقف واقعي مألوف',
+            text: `سرد موقف واقعي صفي أو عائلي قصير يمس مشاعر الطلاب حول (${t}) دون إصدار أحكام، وسؤالهم: "لو كنت هناك، ما الشعور الأعمق الذي كان سيتحرك في داخلك؟".`
+          }
+        ];
+      }
+      if (stationKey === 'f') {
+        return [
+          {
+            title: '📖 قصة وجدانية وقاموس المشاعر (I Do)',
+            text: `قراءة نص قصصي أو حواري يعالج (${t})، وتفكيك قاموس المشاعر بدقة (تسمية المشاعر: توتر، غبطة، خيبة، أمان)، مع نمذجة المعلم لصوته الداخلي وكيف يتعامل مع الموقف بتعاطف.`
+          },
+          {
+            title: '🧭 بوصلة الاختيار واتخاذ القرار المسؤول',
+            text: `رسم منظم بصري لبوصلة المشاعر: [الموقف ⬅️ الشعور الفطري ⬅️ التوقف والتفكير ⬅️ الاستجابة الحكيمة] لربط الشعور بالمسؤولية الأخلاقية والاجتماعية في (${t}).`
+          },
+          {
+            title: '🤝 نمذجة الاستماع المتعاطف الفعال',
+            text: `نمذجة المعلم لمحادثة ثنائية مع طالب توضح الفرق بين السماع السطحي والاستماع المتعاطف بالعينين والقلب ولغة الجسد الداعمة حول موضوع (${t}).`
+          }
+        ];
+      }
+      if (stationKey === 't') {
+        return [
+          {
+            title: '🧠 تبني منظور الآخر (Perspective Taking)',
+            text: `حوار سقراطي تأملي: "لو وضعت نفسك في حذاء الطرف الآخر في موقف (${t})، ما الاحتياج العميق الذي لم يجد من يفهمه؟ وكيف يغير التعاطف طريقة حكمنا على المواقف؟".`
+          },
+          {
+            title: '⚖️ الموازنة بين الاندفاع والاستجابة الواعية',
+            text: `نقاش تفكير عليا: "ما الثمن الباهظ الذي ندفعه عندما نستسلم لردود أفعالنا السريعة؟ وما القوة الحقيقية الكامنة في أخذ 5 ثوانٍ من الصمت والتنفس العميق؟".`
+          },
+          {
+            title: '🔍 روتين التفكير: [أرى - أشعر - أتساءل]',
+            text: `تأمل صورة أو موقف اجتماعي حول (${t})، والتعبير بالترتيب: ماذا أشاهد بموضوعية؟ ماذا أشعر في قلبي؟ وما التساؤل الإنساني الذي يشغل بالي؟.`
+          }
+        ];
+      }
+      if (stationKey === 'y') {
+        return [
+          {
+            title: '🎭 ورشة المحاكاة ولعب الأدوار (Role-Playing)',
+            text: `تمثيل مواقف متمايزة في ثنائيات ومجموعات:\n• مسار الدعم: بطاقات مشاعر ملونة وصياغة جملة: (أنا أشعر بـ... عندما يحدث... وأحتاج إلى...).\n• المسار الأساسي: تمثيل موقف خلاف وحله باستراتيجية التفاوض والتراضي الودي في (${t}).\n• مسار التميز: ابتكار مشهد مسرحي قصير يعلم طلاب المدرسة مهارة الصمود النفسي والدعم المتبادل.`
+          },
+          {
+            title: '🎨 شجرة المودة وصندوق المشاعر الصفي',
+            text: `نشاط تطبيقي ملموس: يكتب كل طالب بطاقة تقدير أو كلمة طيبة أو اعترافاً بجميل لزميل آخر في الصف ويعلقها على شجرة التلاحم الصفي لترسيخ الأمان والاحتواء.`
+          },
+          {
+            title: '🛡️ ميثاق الأمان النفسي والتعاطف الصفي',
+            text: `صياغة ميثاق شرف جماعي يوقعه الطلاب: 4 بنود نتعهد بها جميعاً لنضمن ألا يشعر أي طالب بيننا بالوحدة أو الخوف أو التقليل من شأنه.`
+          }
+        ];
+      }
+      if (stationKey === 'h') {
+        return [
+          {
+            title: '🎒 زوّادة قلبية وتذكرة الخروج الوجدانية',
+            text: `يدون كل طالب في دفتره:\n1. زوّادتي القلبية: "المهارة الشعورية التي تعلمتها اليوم هي... وسأحمي بها نفسي من الانفعال".\n2. زوّادتي الحياتية: "كلمة طيبة أو لفتة امتنان سأقدمها اليوم لأمي أو أبي أو أخي في البيت".`
+          },
+          {
+            title: '🕊️ دقيقة التنفس والتأمل والامتنان',
+            text: `جلسة استرخاء هادئة وتنفس عميق (شهيق 4 ثوانٍ - كتم 4 - زفير 4) لشحن طاقة الهدوء، مع تدوين 3 نعم يشعر الطالب بالامتنان الصادق لوجودها في حياته.`
+          },
+          {
+            title: '🏡 تمرين نقل الأثر والتواصل الأسري',
+            text: `تحدي المساء في البيت: "سؤال وجداني أطرحه على أسرتي الليلة على مائدة العشاء: ما أجمل لحظة أسعدتكم اليوم؟، والاستماع لهم بكل اهتمام ومحبة".`
+          }
+        ];
+      }
+    }
+
     if (stationKey === 'm') {
       return [
         {
@@ -762,6 +880,8 @@ ${p.stations?.h || ''}
         setRobotReply('🎒 سر "الزوّادة والحصاد" [ ح ] (חתימה וצידה לדרך):\nالحصة لا تنتهي برنين الجرس! بل بسؤالين سريعين لحصد الثمار:\n1. ما المصطلح أو الزاد الذي تزودت به اليوم؟\n2. أين وكيف سأوظفه في حياتي أو دراستي القادمة؟\nاجعلها محددة ومختصرة (سطرين فقط).');
       } else if (lower.includes('مسطرة') || lower.includes('وقت') || lower.includes('זמן')) {
         setRobotReply('⏱️ نصيحة لمسطرة الحصة:\nفي الحصة العادية (45 دقيقة): امنح المدخل المحفّز 5-7د، الفهم وبناء المعنى 10د، التفكير والتبصّر 8-10د، الإنجاز والتطبيق 14د، والزوّادة 4-5د. أما في الحصة المضاعفة (90د) فوسع وقت الورشة التطبيقية إلى 35 دقيقة!');
+      } else if (lower.includes('عاطفي') || lower.includes('اجتماعي') || lower.includes('sel') || lower.includes('مشاعر') || lower.includes('רגשי')) {
+        setRobotReply('❤️ هندسة الدروس في المجال العاطفي والاجتماعي (SEL):\nفي هذا العالم الوجداني، تبنى الحصة لخدمة الأمان النفسي والذكاء العاطفي:\n• في [ م ]: افتتح بفحص المشاعر (Emotional Check-in) أو قصة تثير التعاطف.\n• في [ ف ]: اختر نصوصاً غنية بالمشاعر واللغة الوجدانية وقاموس تسمية الانفعالات بدقة، ونمذج الاستماع الصادق.\n• في [ ت ]: اسأل أسئلة تبني منظور الآخر (Perspective-Taking) والتفريق بين الاندفاع والهدوء.\n• في [ ي ]: ركز على لعب الأدوار (Role-Play) وصياغة مواثيق الأمان النفسي وشجرة المودة.\n• في [ ح ]: زوّادة قلبية وسلوكية صريحة يقدمها الطالب لأسرته وبيته اليوم.');
       } else {
         setRobotReply(`رائع جداً! استفسارك حول "${q}" يرتبط بجوهر موديل مفاتيح. تذكر دائماً أن المفتاح يفتح أبواب التفكير، وأن نجاح الحصة يكمن في امتلاك الطالب لزوّادته الحياتية ونقل أثر التعلم!`);
       }
@@ -3183,7 +3303,7 @@ ${p.stations?.h || ''}
                             onChange={(e) => setWizardPlan({ ...wizardPlan, subject: e.target.value })}
                             className="robot-select"
                           >
-                            {['لغة عربية', 'رياضيات', 'علوم وتكنولوجيا', 'موطن ومجتمع ومدنيات', 'تربية إسلامية', 'لغة إنجليزية', 'لغة عبرية', 'تاريخ', 'جغرافيا', 'فنون', 'حاسوب'].map((s) => (
+                            {['لغة عربية', 'رياضيات', 'علوم وتكنولوجيا', 'عاطفي واجتماعي (SEL)', 'موطن ومجتمع ومدنيات', 'تربية إسلامية', 'لغة إنجليزية', 'لغة عبرية', 'تاريخ', 'جغرافيا', 'فنون', 'حاسوب'].map((s) => (
                               <option key={s} value={s}>{s}</option>
                             ))}
                           </select>
@@ -3192,8 +3312,19 @@ ${p.stations?.h || ''}
                         <div className="robot-form-group">
                           <label>الصف والمستوى:</label>
                           <select 
-                            value={wizardPlan.grade} 
-                            onChange={(e) => setWizardPlan({ ...wizardPlan, grade: e.target.value })}
+                            value={STANDARD_GRADE_OPTIONS.includes(wizardPlan.grade) ? wizardPlan.grade : 'آخر'} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === 'آخر') {
+                                setIsCustomWizardGrade(true);
+                                if (customWizardGradeText.trim()) {
+                                  setWizardPlan({ ...wizardPlan, grade: customWizardGradeText.trim() });
+                                }
+                              } else {
+                                setIsCustomWizardGrade(false);
+                                setWizardPlan({ ...wizardPlan, grade: val });
+                              }
+                            }}
                             className="robot-select"
                           >
                             <option value="الصف الأول">الصف الأول</option>
@@ -3202,7 +3333,25 @@ ${p.stations?.h || ''}
                             <option value="الصف الرابع">الصف الرابع</option>
                             <option value="الصف الخامس">الصف الخامس</option>
                             <option value="الصف السادس">الصف السادس</option>
+                            <option value="المرحلة الإعدادية">المرحلة الإعدادية</option>
+                            <option value="آخر">آخر (تحديد يدوي ✏️)</option>
                           </select>
+
+                          {(isCustomWizardGrade || !STANDARD_GRADE_OPTIONS.includes(wizardPlan.grade)) && (
+                            <input 
+                              type="text"
+                              className="robot-text-input"
+                              style={{ marginTop: '0.45rem', borderColor: '#f59e0b' }}
+                              placeholder="اكتب الصف أو المرحلة المحددة (مثال: بستان / روضة / صف سابع / دمج...)"
+                              value={customWizardGradeText || (!STANDARD_GRADE_OPTIONS.includes(wizardPlan.grade) ? wizardPlan.grade : '')}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCustomWizardGradeText(val);
+                                setWizardPlan({ ...wizardPlan, grade: val || 'آخر' });
+                              }}
+                              autoFocus
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -3211,7 +3360,7 @@ ${p.stations?.h || ''}
                         <input 
                           type="text" 
                           className="robot-text-input" 
-                          placeholder="مثال: حالات المادة والتكاثف / أسلوب التعجب / الكسور المتكافئة..." 
+                          placeholder={wizardPlan.subject?.includes('عاطفي') ? "مثال: إدارة الغضب وتنظيم المشاعر / مهارات الصداقة والتعاطف / حل النزاعات والتواصل الإيجابي..." : "مثال: حالات المادة والتكاثف / أسلوب التعجب / الكسور المتكافئة..."} 
                           value={wizardPlan.topic}
                           onChange={(e) => setWizardPlan({ ...wizardPlan, topic: e.target.value })}
                         />
@@ -3222,7 +3371,7 @@ ${p.stations?.h || ''}
                         <input 
                           type="text" 
                           className="robot-text-input" 
-                          placeholder="مثال: أن يستنتج الطالب المفهوم من خلال أمثلة ملموسة ويطبقه في بيته اليومية..." 
+                          placeholder={wizardPlan.subject?.includes('عاطفي') ? "مثال: أن يتعرف الطالب على علامات الغضب الجسدية، ويطبق استراتيجية التنفس لتهدئة النفس..." : "مثال: أن يستنتج الطالب المفهوم من خلال أمثلة ملموسة ويطبقه في بيته اليومية..."} 
                           value={wizardPlan.objective}
                           onChange={(e) => setWizardPlan({ ...wizardPlan, objective: e.target.value })}
                         />
@@ -3599,14 +3748,14 @@ ${p.stations?.h || ''}
                       <div className="robot-form-group">
                         <label>المادة الدراسية:</label>
                         <div className="subject-quick-pills">
-                          {['لغة عربية', 'رياضيات', 'علوم وتكنولوجيا', 'لغة إنجليزية', 'لغة عبرية', 'تربية إسلامية', 'تاريخ', 'جغرافيا', 'فنون', 'حاسوب'].map((sub) => (
+                          {['لغة عربية', 'رياضيات', 'علوم وتكنولوجيا', 'عاطفي واجتماعي (SEL)', 'لغة إنجليزية', 'لغة عبرية', 'تربية إسلامية', 'تاريخ', 'جغرافيا', 'فنون', 'حاسوب'].map((sub) => (
                             <button
                               key={sub}
                               type="button"
-                              className={`sub-pill ${aiSubject === sub ? 'active' : ''}`}
+                              className={`sub-pill ${aiSubject === sub ? 'active' : ''} ${sub.includes('عاطفي') ? 'sel-pill' : ''}`}
                               onClick={() => setAiSubject(sub)}
                             >
-                              {sub}
+                              {sub === 'عاطفي واجتماعي (SEL)' ? '❤️ عاطفي واجتماعي (SEL)' : sub}
                             </button>
                           ))}
                         </div>
@@ -3617,8 +3766,19 @@ ${p.stations?.h || ''}
                         <div className="robot-form-group">
                           <label>الصف والمستوى:</label>
                           <select 
-                            value={aiGrade} 
-                            onChange={(e) => setAiGrade(e.target.value)}
+                            value={STANDARD_GRADE_OPTIONS.includes(aiGrade) ? aiGrade : 'آخر'} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === 'آخر') {
+                                setIsCustomAiGrade(true);
+                                if (customAiGradeText.trim()) {
+                                  setAiGrade(customAiGradeText.trim());
+                                }
+                              } else {
+                                setIsCustomAiGrade(false);
+                                setAiGrade(val);
+                              }
+                            }}
                             className="robot-select"
                           >
                             <option value="الصف الأول">الصف الأول</option>
@@ -3628,7 +3788,24 @@ ${p.stations?.h || ''}
                             <option value="الصف الخامس">الصف الخامس</option>
                             <option value="الصف السادس">الصف السادس</option>
                             <option value="المرحلة الإعدادية">المرحلة الإعدادية</option>
+                            <option value="آخر">آخر (تحديد يدوي ✏️)</option>
                           </select>
+
+                          {(isCustomAiGrade || !STANDARD_GRADE_OPTIONS.includes(aiGrade)) && (
+                            <input 
+                              type="text"
+                              className="robot-text-input"
+                              style={{ marginTop: '0.45rem', borderColor: '#f59e0b' }}
+                              placeholder="اكتب الصف أو المرحلة (مثال: بستان / روضة / صف سابع / دمج...)"
+                              value={customAiGradeText || (!STANDARD_GRADE_OPTIONS.includes(aiGrade) ? aiGrade : '')}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCustomAiGradeText(val);
+                                setAiGrade(val || 'آخر');
+                              }}
+                              autoFocus
+                            />
+                          )}
                         </div>
 
                         <div className="robot-form-group">
@@ -3660,7 +3837,7 @@ ${p.stations?.h || ''}
                         <input 
                           type="text" 
                           className="robot-text-input" 
-                          placeholder="مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب..." 
+                          placeholder={aiSubject.includes('عاطفي') ? "مثال: إدارة الغضب وتنظيم المشاعر / مهارات الصداقة والتعاطف / حل النزاعات والتواصل الإيجابي..." : "مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب..."} 
                           value={aiTopic}
                           onChange={(e) => setAiTopic(e.target.value)}
                         />
@@ -3674,7 +3851,7 @@ ${p.stations?.h || ''}
                         <textarea 
                           rows="2" 
                           className="robot-textarea-input" 
-                          placeholder="مثال: أن يميز الطالب بين المفهومين من خلال أمثلة ملموسة، ويحل تمارين متمايزة، ويستخلص زوّادة لنقل الأثر لبيئته اليومية..." 
+                          placeholder={aiSubject.includes('عاطفي') ? "مثال: أن يتعرف الطالب على علامات الغضب الجسدية، ويطبق استراتيجية التنفس لتهدئة النفس، ويستخلص زوّادة لنقل الأثر للبيت..." : "مثال: أن يميز الطالب بين المفهومين من خلال أمثلة ملموسة، ويحل تمارين متمايزة، ويستخلص زوّادة لنقل الأثر لبيئته اليومية..."} 
                           value={aiObjective}
                           onChange={(e) => setAiObjective(e.target.value)}
                         />
@@ -3688,7 +3865,7 @@ ${p.stations?.h || ''}
                         <input 
                           type="text" 
                           className="robot-text-input" 
-                          placeholder="مثال: دمج تجربة علمية حسية، مراعاة صعوبات التعلم، عمل تشاركي..." 
+                          placeholder={aiSubject.includes('عاطفي') ? "مثال: التركيز على لعب الأدوار والمحاكاة، مراعاة الأمان النفسي، نصوص وقصص وجدانية..." : "مثال: دمج تجربة علمية حسية، مراعاة صعوبات التعلم، عمل تشاركي..."} 
                           value={aiNotes}
                           onChange={(e) => setAiNotes(e.target.value)}
                         />
@@ -3712,7 +3889,7 @@ ${p.stations?.h || ''}
                     <div className="robot-speech-header">
                       <span className="robot-badge-tag"><i className="fas fa-comment-dots"></i> إرشادات الروبوت:</span>
                       <button 
-                        type="button"
+                        type="button" 
                         className={`robot-voice-read-btn ${isVoiceSpeaking ? 'speaking' : ''}`}
                         onClick={() => speakArabic(robotReply)}
                       >
@@ -3732,6 +3909,7 @@ ${p.stations?.h || ''}
                       <button type="button" className="topic-chip green" onClick={() => handleAskRobot('إنجاز وتطبيق متمايز')}>🛠️ إنجاز وتطبيق متمايز</button>
                       <button type="button" className="topic-chip pink" onClick={() => handleAskRobot('حصاد وزوادة ونقل الأثر')}>🎒 الزوّادة ونقل الأثر</button>
                       <button type="button" className="topic-chip slate" onClick={() => handleAskRobot('توزيع مسطرة الحصة')}>⏱️ مسطرة الحصة والوقت</button>
+                      <button type="button" className="topic-chip rose" onClick={() => handleAskRobot('المجال العاطفي والاجتماعي SEL')}>❤️ دمج SEL والتعلم العاطفي</button>
                     </div>
                   </div>
 
@@ -3805,6 +3983,7 @@ ${p.stations?.h || ''}
                     <option value="لغة عربية">لغة عربية</option>
                     <option value="رياضيات">رياضيات</option>
                     <option value="علوم وتكنولوجيا">علوم وتكنولوجيا</option>
+                    <option value="عاطفي واجتماعي (SEL)">عاطفي واجتماعي (SEL)</option>
                     <option value="لغة إنجليزية">لغة إنجليزية</option>
                     <option value="موطن ومجتمع ومدنيات">موطن ومجتمع ومدنيات</option>
                     <option value="تربية إسلامية">تربية إسلامية</option>
@@ -3826,6 +4005,8 @@ ${p.stations?.h || ''}
                     <option value="الصف الرابع">الصف الرابع</option>
                     <option value="الصف الخامس">الصف الخامس</option>
                     <option value="الصف السادس">الصف السادس</option>
+                    <option value="المرحلة الإعدادية">المرحلة الإعدادية</option>
+                    <option value="آخر">آخر</option>
                   </select>
                 </div>
               </div>

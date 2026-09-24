@@ -2310,6 +2310,7 @@
 .topic-chip.green:hover { border-color: #10b981; background: #ecfdf5; }
 .topic-chip.pink:hover { border-color: #ec4899; background: #fdf2f8; }
 .topic-chip.slate:hover { border-color: #64748b; background: #f8fafc; }
+.topic-chip.rose:hover { border-color: #f43f5e; background: #fff1f2; }
 
 .robot-query-input-bar {
   display: flex;
@@ -2476,6 +2477,23 @@
   color: #ffffff;
   border-color: #1e3a8a;
   box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+}
+
+.sub-pill.sel-pill {
+  border-color: #fca5a5;
+  color: #e11d48;
+}
+
+.sub-pill.sel-pill:hover {
+  background: #fff1f2;
+  border-color: #f43f5e;
+}
+
+.sub-pill.sel-pill.active {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  color: #ffffff;
+  border-color: #be123c;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
 }
 
 .robot-select,
