@@ -3782,30 +3782,32 @@ ${historySnippet}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', display: 'block', marginBottom: '0.4rem' }}>
-                    🎯 الاستنتاج العلمي والإجابة على سؤال البحث (هل دعمت النتائج فرضيتك؟):
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+                <div style={{ width: '100%' }}>
+                  <label style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <span>🎯 الاستنتاج العلمي والإجابة على سؤال البحث (هل دعمت النتائج فرضيتك؟):</span>
                   </label>
                   <textarea
-                    rows={3}
+                    rows={4}
                     value={conclusion}
                     onChange={(e) => setConclusion(e.target.value)}
                     className="quest-p-textarea"
                     placeholder="اكتب استنتاجك هنا بناءً على الأرقام والمشاهدات..."
+                    style={{ width: '100%', minHeight: '120px' }}
                   />
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', display: 'block', marginBottom: '0.4rem' }}>
-                    🌱 التوصيات العلمية والأفكار المستقبلية للباحث:
+                <div style={{ width: '100%' }}>
+                  <label style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <span>🌱 التوصيات العلمية والأفكار المستقبلية للباحث:</span>
                   </label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={recommendations}
                     onChange={(e) => setRecommendations(e.target.value)}
                     className="quest-p-textarea"
                     placeholder="ما الذي توصي به الطلاب أو المزارعين؟ ما التجربة القادمة التي تود إجراءها؟"
+                    style={{ width: '100%', minHeight: '100px' }}
                   />
                 </div>
               </div>
