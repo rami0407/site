@@ -44,7 +44,7 @@ const Navbar = () => {
       if (id === 'nav_5' || id === 'nav_principal' || target === 'principal' || label.includes('المدير')) return true;
       if (id === 'nav_2' || id === 'nav_initiatives' || target === 'initiatives' || label.includes('المبادرات')) return true;
       if (id === 'nav_articles' || target === 'articles' || label.includes('مقالات')) return true;
-      if (id === 'nav_mafatih' || target === 'mafatih' || target === 'mafateeh' || label.includes('مفاتيح')) return true;
+      if (id === 'nav_mafatih' || target === 'mafatih' || target === 'mafateeh' || label.includes('مفاتيح') || label.includes('مفتاح') || label.includes('מפת')) return true;
       return false;
     };
 

@@ -160,19 +160,19 @@ const ImportantLinks = () => {
             });
           }
 
-          // Mafatih Pedagogy Portal (بيداغوجيا مفاتيح وتخطيط الحصص - السطر القبل أخير)
+          // Mafatih Pedagogy Portal (موديل مِفْتَاح وتخطيط الحصص - السطر القبل أخير)
           const hasMafatih = list.some(l => 
-            (l.title && (l.title.includes('مفاتيح') || l.title.includes('المفتاح') || l.title.includes('מפת"ח'))) || 
+            (l.title && (l.title.includes('مفاتيح') || l.title.includes('مفتاح') || l.title.includes('المفتاح') || l.title.includes('מפת"ח') || l.title.includes('מפתי"ח'))) || 
             (l.url && (l.url.includes('mafatih') || l.url.includes('pedagogy')))
           );
           if (!hasMafatih) {
             list.push({
               id: 'school-mafatih-pedagogy-default',
-              title: 'بيداغوجيا مَفَاتِيح (تخطيط الحصص والتعلم العميق)',
+              title: 'موديل مِفْتَاح التربوي (מַפְתֵּי"חַ — تخطيط الحصص والتعلم العميق)',
               icon: 'fa-key',
               url: '#/mafatih',
-              desc: 'منظومة التخطيط البيداغوجي المتقدمة بمحطات مفاتيح الخمس [م • ف • ت • ي • ح] بالذكاء الاصطناعي ومكتبة الدروس المدرسية المشتركة.',
-              badge: 'بيداغوجيا مفاتيح 🗝️',
+              desc: 'منظومة التخطيط البيداغوجي المتقدمة بمحطات مِفْتَاح الخمس [م • ف • ت • ي • ح] (מודל מַפְתֵּי"חַ) بالذكاء الاصطناعي ومكتبة الدروس المدرسية المشتركة.',
+              badge: 'موديل مِفْتَاح 🗝️',
               isAi: true
             });
           }
@@ -331,7 +331,7 @@ const ImportantLinks = () => {
             const isExcellence = link.url?.includes('excellence') || link.badge?.includes('التميز');
             const isTasbih = link.url?.includes('tasbih') || link.badge?.includes('الذكر') || link.title?.includes('مسبحة');
             const isMonawaat = link.url?.includes('monawaat') || link.badge?.includes('منوعات') || link.title?.includes('منوعات');
-            const isMafatih = link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.title?.includes('مفاتيح');
+            const isMafatih = link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.badge?.includes('مفتاح') || link.title?.includes('مفاتيح') || link.title?.includes('مفتاح') || link.title?.includes('מפתי"ח') || link.title?.includes('מפת"ח');
             const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih;
 
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
@@ -527,7 +527,7 @@ const ImportantLinks = () => {
                         boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
                         lineHeight: 1.4
                       }}>
-                        <span>🗝️</span> بيداغوجيا مفاتيح
+                        <span>🗝️</span> موديل مِفْتَاح
                       </span>
                     )}
                     {isAi && !isMafatih && (

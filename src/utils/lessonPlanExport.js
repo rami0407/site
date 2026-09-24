@@ -2,7 +2,7 @@ import { SCHOOL_LOGO_BASE64 } from './schoolLogoBase64';
 
 /**
  * =========================================================================
- * LESSON PLAN EXPORT UTILITIES (موديل مَفَاتِيح — מודל מַפְתֵּ"חַ)
+ * LESSON PLAN EXPORT UTILITIES (موديل مِفْتَاح — מודל מַפְתֵּי"חַ)
  * Professional Word (.doc) and PDF Print Exporters for Musheirifa School
  * =========================================================================
  */
@@ -11,7 +11,7 @@ import { SCHOOL_LOGO_BASE64 } from './schoolLogoBase64';
  * Clean string for filenames
  */
 const sanitizeFilename = (str) => {
-  return (str || 'خطة_درس_موديل_مفاتيح')
+  return (str || 'خطة_درس_موديل_مفتاح')
     .replace(/[\\/:*?"<>|]/g, '')
     .trim()
     .replace(/\s+/g, '_');
@@ -32,7 +32,7 @@ export const exportLessonPlanToWord = ({
   teacherName = '',
   date = new Date().toLocaleDateString('ar-EG')
 }) => {
-  const fileName = `${sanitizeFilename(title)}_خطة_درس_مفاتيح.doc`;
+  const fileName = `${sanitizeFilename(title)}_خطة_درس_مفتاح.doc`;
 
   const mContent = stations.m || 'محطة المدخل المحفّز...';
   const fContent = stations.f || 'محطة فهم وبناء المعنى...';
@@ -46,7 +46,7 @@ export const exportLessonPlanToWord = ({
       xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
   <meta charset='utf-8'>
-  <title>${title} — خطة درس موديل مفاتيح</title>
+  <title>${title} — خطة درس موديل مِفْتَاح (מודל מַפְתֵּי"חַ)</title>
   <!--[if gte mso 9]>
   <xml>
     <w:WordDocument>
@@ -270,7 +270,7 @@ export const exportLessonPlanToWord = ({
           </td>
           <td style="text-align: left; vertical-align: middle; width: 135px;">
             <div class="model-badge">
-              موديل מַפְתֵּ"חַ 🗝️
+              موديل מַפְתֵּי"חַ 🗝️
             </div>
           </td>
         </tr>
@@ -279,7 +279,7 @@ export const exportLessonPlanToWord = ({
       <!-- Lesson Main Title Banner -->
       <div class="main-title-box">
         <div class="main-lesson-title">بطاقة تخطيط درس: "${title}"</div>
-        <div class="model-sub">وفق موديل "مَفَاتِيح" التربوي القيادي (מודל מַפְתֵּ"חַ)</div>
+        <div class="model-sub">وفق موديل "مِفْتَاح" التربوي القيادي (מודל מַפְתֵּי"חַ)</div>
       </div>
 
       <!-- Metadata Box -->
@@ -307,7 +307,7 @@ export const exportLessonPlanToWord = ({
       <!-- Main Educational & Value Objective -->
       <div class="objective-box">
         <div class="objective-title">🎯 الهدف التعليمي والقيمي المركزي للحصة:</div>
-        <div>${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مفاتيح.'}</div>
+        <div>${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ).'}</div>
       </div>
 
       <!-- Five Stations Structured Table -->
@@ -402,7 +402,7 @@ export const exportLessonPlanToWord = ({
       </table>
 
       <div class="footer-note">
-        تم توليد هذه الخطة آلياً عبر مساعد الذكاء الاصطناعي لموديل "مَفَاتِيح" — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}
+        تم توليد هذه الخطة آلياً عبر مساعد الذكاء الاصطناعي لموديل "مِفْتَاح" — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}
       </div>
 
     </div>
@@ -458,7 +458,7 @@ export const exportLessonPlanToPdf = ({
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <title>${title} — خطة درس موديل مفاتيح (PDF)</title>
+  <title>${title} — خطة درس موديل مِفْتَاح (מודל מַפְתֵּי"חַ) (PDF)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -735,7 +735,7 @@ export const exportLessonPlanToPdf = ({
         </div>
       </div>
       <div class="brand-key-badge">
-        <span class="title">موديل מַפְתֵּ"חַ 🗝️</span>
+        <span class="title">موديل מַפְתֵּי"חַ 🗝️</span>
         <span class="subtitle">الشيفرة الوراثية للغرفة الصفية</span>
       </div>
     </div>
@@ -743,7 +743,7 @@ export const exportLessonPlanToPdf = ({
     <!-- Title Card -->
     <div class="lesson-hero-card">
       <h2>بطاقة تخطيط درس: "${title}"</h2>
-      <div class="tagline">وفق المحطات الخمس لموديل "مَفَاتِيح" التربوي القيادي</div>
+      <div class="tagline">وفق المحطات الخمس لموديل "مِفْتَاح" التربوي القيادي (מודל מַפְתֵּי"חַ)</div>
     </div>
 
     <!-- Meta Details -->
@@ -769,7 +769,7 @@ export const exportLessonPlanToPdf = ({
     <!-- Objective -->
     <div class="objective-banner">
       <div class="label">🎯 الهدف التعليمي والقيمي المركزي للحصة:</div>
-      <div class="text">${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مفاتيح.'}</div>
+      <div class="text">${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ).'}</div>
     </div>
 
     <!-- Five Stations -->
@@ -836,7 +836,7 @@ export const exportLessonPlanToPdf = ({
 
     <!-- Footer -->
     <div class="sheet-footer">
-      خطة درس معتمدة تم إعدادها بواسطة مساعد موديل "مَفَاتِيح" الذكي — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}
+      خطة درس معتمدة تم إعدادها بواسطة مساعد موديل "مِفْتَاح" الذكي (מודל מַפְתֵּי"חַ) — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}
     </div>
   </div>
 

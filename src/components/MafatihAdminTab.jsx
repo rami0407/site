@@ -289,7 +289,7 @@ const MafatihAdminTab = () => {
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.35rem 0.9rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-              <span>🗝️</span> مَفَاتِيح التَّعَلُّم العَمِيق — מודל מַפְתֵּ"חַ
+              <span>🗝️</span> موديل مِفْتَاح للتَّعَلُّم العَمِيق — מודל מַפְתֵּי"חַ
             </div>
             <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.9rem', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>
               إدارة مكتبة تخطيط الحصص الدراسية
@@ -762,7 +762,7 @@ const MafatihAdminTab = () => {
                     flexWrap: 'wrap',
                     alignItems: 'center'
                   }}>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>محطات مفاتيح:</span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>محطات مِفْتَاح (מַפְתֵּי"חַ):</span>
                     {STATIONS_INFO.map(st => {
                       const hasContent = Boolean(plan.stations?.[st.id]?.trim());
                       return (
@@ -884,10 +884,10 @@ const MafatihAdminTab = () => {
                 <span style={{ fontSize: '1.5rem' }}>{modalMode === 'add' ? '➕' : '✏️'}</span>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900 }}>
-                    {modalMode === 'add' ? 'إضافة تخطيط حصة جديد لمكتبة مفاتيح' : `تعديل تخطيط: ${formData.title || 'الدرس'}`}
+                    {modalMode === 'add' ? 'إضافة تخطيط حصة جديد لمكتبة موديل مِفْتَاح' : `تعديل تخطيط: ${formData.title || 'الدرس'}`}
                   </h3>
                   <p style={{ margin: '0.2rem 0 0 0', opacity: 0.85, fontSize: '0.85rem' }}>
-                    تعديل بيانات المحطات الخمس وفق نموذج مفاتيح للتعلم العميق
+                    تعديل بيانات المحطات الخمس وفق موديل مِفْتَاح (מודל מַפְתֵּי"חַ) للتعلم العميق
                   </p>
                 </div>
               </div>
