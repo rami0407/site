@@ -1,0 +1,1 @@
+var e=`/assets/genie-C4geiFKX.png`;export{e as t};
