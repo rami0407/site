@@ -3212,6 +3212,172 @@ ${p.stations?.h || ''}
             {/* DOCUMENT BODY CONTAINER */}
             <div className="doc-paper-content">
 
+              {/* 🗝️ VISUAL KEY INFOGRAPHIC SHOWCASE — תרשים מודל מַפְתֵּי"חַ הרשמי */}
+              <div 
+                className="mafatih-key-infographic-card hebrew-key-card" 
+                style={{ 
+                  background: '#ffffff', 
+                  borderRadius: '22px', 
+                  border: '1.5px solid #cbd5e1', 
+                  padding: '1.75rem 2rem', 
+                  boxShadow: '0 10px 35px rgba(15, 23, 42, 0.08)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Header of the Key Showcase */}
+                <div 
+                  className="infographic-card-header" 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap', 
+                    gap: '15px', 
+                    marginBottom: '1.5rem', 
+                    paddingBottom: '1rem', 
+                    borderBottom: '2px solid #f1f5f9' 
+                  }}
+                >
+                  <div>
+                    <span 
+                      style={{ 
+                        background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', 
+                        color: '#ffffff', 
+                        padding: '4px 14px', 
+                        borderRadius: '20px', 
+                        fontSize: '0.85rem', 
+                        fontWeight: '800', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
+                      }}
+                    >
+                      <i className="fas fa-key"></i> תרשים המפתח החזותי הרשמי של המודל
+                    </span>
+                    <h2 style={{ margin: '0.6rem 0 0.2rem 0', fontSize: '1.5rem', fontWeight: '900', color: '#0f172a' }}>
+                      מסלול חמש התחנות: מודל מַפְתֵּי"חַ | نموذج مِفتاح
+                    </h2>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
+                      שפה פדגוגית משותפת ומסלול למידה גלוי ומובנה לתלמידי בית הספר
+                    </p>
+                  </div>
+
+                  <div className="infographic-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <a 
+                      href="/mafatih_key_hebrew_model.png" 
+                      download="mafatih_key_hebrew_model.png" 
+                      style={{ 
+                        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
+                        color: '#ffffff', 
+                        padding: '9px 18px', 
+                        borderRadius: '12px', 
+                        textDecoration: 'none', 
+                        fontWeight: '800', 
+                        fontSize: '0.88rem', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title="הורדת תרשים המפתח המקורי ברזולוציה גבוהה (PNG)"
+                    >
+                      <i className="fas fa-download"></i> הורדת תרשים המפתח (PNG)
+                    </a>
+                  </div>
+                </div>
+
+                {/* Golden Key Image Centered with Gentle Framing */}
+                <div 
+                  className="infographic-image-wrapper" 
+                  style={{ 
+                    textAlign: 'center', 
+                    padding: '1.5rem 1rem',
+                    background: 'radial-gradient(circle at center, rgba(254, 243, 199, 0.3) 0%, rgba(255, 255, 255, 0.95) 75%)',
+                    borderRadius: '16px',
+                    border: '1px solid #fef3c7'
+                  }}
+                >
+                  <img 
+                    src="/mafatih_key_hebrew_model.png" 
+                    alt="תרשים מודל מַפְתֵּי&quot;חַ הפדגוגי — בית הספר היסודי מושירפה" 
+                    style={{ 
+                      maxWidth: '100%', 
+                      height: 'auto', 
+                      display: 'inline-block',
+                      filter: 'drop-shadow(0 12px 28px rgba(0, 0, 0, 0.12))',
+                      transition: 'transform 0.3s ease'
+                    }}
+                    loading="lazy"
+                  />
+                </div>
+
+                {/* Interactive Stations Quick Legend */}
+                <div 
+                  style={{ 
+                    background: '#f8fafc', 
+                    padding: '1.1rem 1.4rem', 
+                    borderRadius: '14px', 
+                    border: '1px solid #e2e8f0', 
+                    marginTop: '1.25rem' 
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '0.75rem' }}>
+                    <span style={{ fontWeight: '800', color: '#1e3a8a', fontSize: '0.92rem' }}>
+                      <i className="fas fa-hand-pointer" style={{ marginLeft: '6px' }}></i>
+                      ניווט מהיר לתחנות הלמידה במודל:
+                    </span>
+                    <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                      לחצו על כל תחנה לגלילה ישירה לפירוט שלה
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <button 
+                      onClick={() => { const el = document.querySelector('.st-card-m'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} 
+                      style={{ border: 'none', cursor: 'pointer', padding: '7px 15px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontWeight: '800', fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(245, 158, 11, 0.15)' }}
+                    >
+                      <span style={{ background: '#f59e0b', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '900' }}>1</span>
+                      מ — משיכה וסקרנות
+                    </button>
+
+                    <button 
+                      onClick={() => { const el = document.querySelector('.st-card-f'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} 
+                      style={{ border: 'none', cursor: 'pointer', padding: '7px 15px', borderRadius: '10px', background: '#dbeafe', color: '#1e40af', fontWeight: '800', fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(59, 130, 246, 0.15)' }}
+                    >
+                      <span style={{ background: '#3b82f6', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '900' }}>2</span>
+                      פ — פיתוח הבנה
+                    </button>
+
+                    <button 
+                      onClick={() => { const el = document.querySelector('.st-card-t'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} 
+                      style={{ border: 'none', cursor: 'pointer', padding: '7px 15px', borderRadius: '10px', background: '#ede9fe', color: '#6b21a8', fontWeight: '800', fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(139, 92, 246, 0.15)' }}
+                    >
+                      <span style={{ background: '#8b5cf6', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '900' }}>3</span>
+                      ת — תובנה והעמקה
+                    </button>
+
+                    <button 
+                      onClick={() => { const el = document.querySelector('.st-card-y'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} 
+                      style={{ border: 'none', cursor: 'pointer', padding: '7px 15px', borderRadius: '10px', background: '#d1fae5', color: '#065f46', fontWeight: '800', fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(16, 185, 129, 0.15)' }}
+                    >
+                      <span style={{ background: '#10b981', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '900' }}>4</span>
+                      י — יצירה ויישום
+                    </button>
+
+                    <button 
+                      onClick={() => { const el = document.querySelector('.st-card-h'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} 
+                      style={{ border: 'none', cursor: 'pointer', padding: '7px 15px', borderRadius: '10px', background: '#fce7f3', color: '#9f1239', fontWeight: '800', fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(236, 72, 153, 0.15)' }}
+                    >
+                      <span style={{ background: '#ec4899', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '900' }}>5</span>
+                      ח — חתימה וצידה לדרך
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* SECTION 1: הרעיון המוביל ומטרות המודל */}
               <article className="doc-chapter-card" id="heb-sec-lead">
                 <div className="chapter-header">
