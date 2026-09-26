@@ -3483,15 +3483,15 @@ ${p.stations?.h || ''}
                 <span className="doc-badge-official" style={{ background: '#2563eb' }}>
                   <i className="fas fa-certificate"></i> מסמך פדגוגי רשמי בית ספרי
                 </span>
-                <span className="doc-badge-sub">מודל מפתיח — نموذج מِفتاح</span>
+                <span className="doc-badge-sub">מודל מפתי"ח — نموذج مِفتاح</span>
                 <span className="doc-badge-school">בית הספר היסודי מושירפה</span>
               </div>
               
               <h1 className="doc-paper-title" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)' }}>
-                מודל מפתיח — نموذج مِفتاح
+                מודל מפתי"ח — نموذج مِفتاح
               </h1>
-              <p className="doc-paper-subtitle" style={{ fontSize: '1.2rem', color: '#93c5fd' }}>
-                שפה פדגוגית משותפת ומסלול למידה גלוי לתלמידי בית הספר היסודי מושירפה
+              <p className="doc-paper-subtitle" style={{ fontSize: '1.18rem', color: '#93c5fd', lineHeight: '1.6' }}>
+                מסגרת בית־ספרית לשפה פדגוגית משותפת, לשותפות תלמידים וללמידה המשלבת הכלה, דיפרנציאליות והערכה
               </p>
 
               {/* QUICK JUMP CHIPS & PRINT CONTROLS */}
@@ -3499,10 +3499,11 @@ ${p.stations?.h || ''}
                 <div className="doc-jump-chips">
                   <span className="jump-label"><i className="fas fa-bookmark"></i> תוכן עניינים:</span>
                   <a href="#heb-sec-lead" className="jump-chip">1. הרעיון והמטרות</a>
-                  <a href="#heb-sec-matrix" className="jump-chip">2. התחנות ורמות החשיבה</a>
-                  <a href="#heb-sec-stations" className="jump-chip">3. פירוט חמש התחנות</a>
-                  <a href="#heb-sec-student" className="jump-chip">4. שותפות התלמיד ועקרונות</a>
-                  <a href="#heb-sec-tools" className="jump-chip">5. כלי עבודה, הטמעה ובדיקה</a>
+                  <a href="#heb-sec-foundation" className="jump-chip">2. עקרונות ותשתית</a>
+                  <a href="#heb-sec-matrix" className="jump-chip">3. התחנות במבט אחד</a>
+                  <a href="#heb-sec-stations" className="jump-chip">4. פירוט חמש התחנות</a>
+                  <a href="#heb-sec-infrastructure" className="jump-chip">5. תשתיות משותפות</a>
+                  <a href="#heb-sec-tools" className="jump-chip">6. כלי עבודה והטמעה</a>
                 </div>
                 <div className="doc-actions-group">
                   <button 
@@ -3588,7 +3589,7 @@ ${p.stations?.h || ''}
                       מסלול חמש התחנות: מודל מַפְתֵּי"חַ | نموذج مِفتاح
                     </h2>
                     <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
-                      שפה פדגוגית משותפת ומסלול למידה גלוי ומובנה לתלמידי בית הספר
+                      שפה פדגוגית משותפת ומסלול למידה גלוי ומובנה לתלמידי בית הספר מושירפה
                     </p>
                   </div>
 
@@ -3599,54 +3600,72 @@ ${p.stations?.h || ''}
                       style={{ 
                         background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
                         color: '#ffffff', 
-                        padding: '9px 18px', 
-                        borderRadius: '12px', 
+                        padding: '8px 18px', 
+                        borderRadius: '10px', 
                         textDecoration: 'none', 
-                        fontWeight: '800', 
-                        fontSize: '0.88rem', 
+                        fontWeight: '700', 
+                        fontSize: '0.88rem',
                         display: 'inline-flex', 
                         alignItems: 'center', 
                         gap: '8px',
-                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)',
-                        transition: 'all 0.2s ease'
+                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+                        transition: 'transform 0.2s'
                       }}
-                      title="הורדת תרשים המפתח המקורי ברזולוציה גבוהה (PNG)"
                     >
-                      <i className="fas fa-download"></i> הורדת תרשים המפתח (PNG)
+                      <i className="fas fa-download"></i> הורדת תרשים המפתח (HD)
                     </a>
+                    <button 
+                      onClick={() => window.open('/mafatih_key_hebrew_model.png', '_blank')}
+                      style={{ 
+                        background: '#eff6ff', 
+                        color: '#1d4ed8', 
+                        border: '1px solid #bfdbfe', 
+                        padding: '8px 16px', 
+                        borderRadius: '10px', 
+                        cursor: 'pointer', 
+                        fontWeight: '700', 
+                        fontSize: '0.88rem',
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px'
+                      }}
+                    >
+                      <i className="fas fa-expand"></i> תצוגה מוגדלת
+                    </button>
                   </div>
                 </div>
 
-                {/* Golden Key Image Centered with Gentle Framing */}
+                {/* Key Diagram Display */}
                 <div 
-                  className="infographic-image-wrapper" 
+                  className="infographic-image-wrap" 
                   style={{ 
                     textAlign: 'center', 
-                    padding: '1.5rem 1rem',
-                    background: 'radial-gradient(circle at center, rgba(254, 243, 199, 0.3) 0%, rgba(255, 255, 255, 0.95) 75%)',
-                    borderRadius: '16px',
-                    border: '1px solid #fef3c7'
+                    padding: '1rem', 
+                    background: 'radial-gradient(circle, #f8fafc 0%, #f1f5f9 100%)', 
+                    borderRadius: '16px', 
+                    border: '1px solid #e2e8f0',
+                    boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.03)'
                   }}
                 >
                   <img 
                     src="/mafatih_key_hebrew_model.png" 
-                    alt="תרשים מודל מַפְתֵּי&quot;חַ הפדגוגי — בית הספר היסודי מושירפה" 
+                    alt="תרשים מודל מַפְתֵּי&quot;חַ הרשמי - מודל מפתיח" 
                     style={{ 
                       maxWidth: '100%', 
                       height: 'auto', 
-                      display: 'inline-block',
-                      filter: 'drop-shadow(0 12px 28px rgba(0, 0, 0, 0.12))',
-                      transition: 'transform 0.3s ease'
-                    }}
-                    loading="lazy"
+                      maxHeight: '480px', 
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 15px 30px rgba(30, 58, 138, 0.18))'
+                    }} 
                   />
                 </div>
 
-                {/* Interactive Stations Quick Legend */}
+                {/* Interactive Station Shortcut Buttons */}
                 <div 
+                  className="infographic-station-links" 
                   style={{ 
                     background: '#f8fafc', 
-                    padding: '1.1rem 1.4rem', 
+                    padding: '1rem 1.25rem', 
                     borderRadius: '14px', 
                     border: '1px solid #e2e8f0', 
                     marginTop: '1.25rem' 
@@ -3706,7 +3725,7 @@ ${p.stations?.h || ''}
                 </div>
               </div>
 
-              {/* SECTION 1: הרעיון המוביל ומטרות המודל */}
+              {/* SECTION 1: הרעיון המוביל ושתי מטרות המודל */}
               <article className="doc-chapter-card" id="heb-sec-lead">
                 <div className="chapter-header">
                   <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 1</div>
@@ -3716,15 +3735,22 @@ ${p.stations?.h || ''}
                 <div className="doc-sub-block">
                   <h3 className="doc-sub-title">🔑 הרעיון המוביל</h3>
                   <p className="doc-paragraph leading">
-                    <strong>מודל מפתיח</strong> הוא מסגרת בית־ספרית לתכנון ההוראה ולשיתוף התלמידים בתהליך הלמידה. המודל מבוסס על חמש תחנות מוכרות: <strong>משיכה וסקרנות, פיתוח הבנה, תובנה והעמקה, יצירה ויישום, חתימה וצידה לדרך</strong>.
+                    <strong>מודל מפתיח</strong> הוא מסגרת לתכנון ההוראה ולהפיכת תהליך הלמידה לגלוי ומובן לתלמידים. הוא מבוסס על חמש תחנות: <strong>משיכה וסקרנות, פיתוח הבנה, תובנה והעמקה, יצירה ויישום, חתימה וצידה לדרך</strong>.
                   </p>
                   <p className="doc-paragraph">
-                    התחנות ישמשו שפה משותפת למורים ולתלמידים: המורה יתכנן באמצעותן את מהלך הלמידה, והתלמיד יוכל להבין מה הוא לומד, באיזו תחנה הוא נמצא, מה נדרש ממנו וכיצד יזהה את התקדמותו.
+                    התחנות מעניקות למורים ולתלמידים שפה משותפת: המורה מתכנן באמצעותן את הלמידה, והתלמיד מבין מה הוא לומד, מה מטרת הפעילות, כיצד יוכל להשתתף ואיך יזהה את התקדמותו.
                   </p>
+                  <p className="doc-paragraph">
+                    המסלול משותף, אך דרכי ההשתתפות, התמיכה וההתקדמות מגוונות. תלמידים יכולים לעבוד בדרכים שונות, להיעזר בכלים שונים ולחזור לתחנה קודמת בהתאם לצורך.
+                  </p>
+                  
                   <div className="doc-highlight-quote" style={{ borderRightColor: '#2563eb', background: '#eff6ff' }}>
                     <i className="fas fa-key quote-icon" style={{ color: '#2563eb' }}></i>
                     <div>
-                      <strong>המפתח מסמל פתיחת דלתות ללמידה:</strong> המורה מכוון ומלווה את הדרך, ובהדרגה התלמיד לומד לזהות את מטרת הפעילות, להסביר את חשיבתו ולהעריך את עבודתו.
+                      <strong style={{ color: '#1e40af', fontSize: '1.05rem' }}>המפתח מסמל פתיחת דלתות ללמידה:</strong>
+                      <p style={{ margin: '0.35rem 0 0 0', color: '#1e293b', lineHeight: '1.7' }}>
+                        תפקיד המורה הוא לתכנן דרכי כניסה נגישות, להנחות ולאתגר; תפקיד התלמיד מתפתח בהדרגה להשתתפות פעילה, לבחירה מושכלת, לבקשת עזרה ולהערכת התקדמותו.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -3748,22 +3774,127 @@ ${p.stations?.h || ''}
                         <h4 style={{ margin: 0, color: '#065f46', fontSize: '1.1rem', fontWeight: '800' }}>שיתוף התלמיד בתהליך השיעור</h4>
                       </div>
                       <p style={{ margin: 0, color: '#475569', fontSize: '0.97rem', lineHeight: '1.7' }}>
-                        היכרות עם מטרת הלמידה, הבנת מהלך השיעור ושותפות בבדיקת ההתקדמות ובהכוונת המשך הלמידה.
+                        הבנת מטרת הלמידה ומהלכה, השתתפות בקבלת החלטות המתאימות לגילו, ומעורבות בבדיקת ההתקדמות ובתכנון הצעד הבא.
                       </p>
                     </div>
                   </div>
                 </div>
               </article>
 
-              {/* SECTION 2: הקשר בין התחנות לרמות החשיבה */}
-              <article className="doc-chapter-card" id="heb-sec-matrix">
+              {/* SECTION 2: שלושה עקרונות רוחביים והתשתית הפדגוגית */}
+              <article className="doc-chapter-card" id="heb-sec-foundation">
                 <div className="chapter-header">
                   <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 2</div>
-                  <h2>הקשר בין התחנות לרמות החשיבה</h2>
+                  <h2>שלושה עקרונות רוחביים והתשתית הפדגוגית</h2>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">🏛️ שלושה עקרונות רוחביים</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+                    
+                    {/* Principle 1: הכלה והשתלבות */}
+                    <div style={{ background: '#f8fafc', padding: '1.3rem 1.5rem', borderRadius: '14px', border: '1px solid #e2e8f0', borderRight: '6px solid #3b82f6' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                        <span style={{ background: '#eff6ff', color: '#2563eb', padding: '6px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.95rem' }}>
+                          <i className="fas fa-hands-helping"></i> עיקרון 1
+                        </span>
+                        <h4 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.15rem', fontWeight: '800' }}>
+                          הכלה והשתלבות — לכל תלמיד מקום ותרומה
+                        </h4>
+                      </div>
+                      <p style={{ margin: '0 0 0.6rem 0', color: '#334155', lineHeight: '1.7', fontSize: '0.97rem' }}>
+                        בכל תחנה יתוכננו מראש דרכים שיאפשרו לתלמידים לגשת לתוכן, להשתתף ולהביע את הבנתם. התכנון יתייחס גם לתלמידים המקבלים שירותי חינוך מיוחדים ולתלמידים המתמודדים עם קשיים רגשיים, לקויות למידה, פערי שפה או חסמים אחרים.
+                      </p>
+                      <p style={{ margin: 0, color: '#475569', lineHeight: '1.7', fontSize: '0.95rem' }}>
+                        לכל תלמיד תינתן הזדמנות לתרומה ממשית: להציע רעיון, לשאול, להסביר, למצוא ראיה, ליצור או לסייע לאחר. יינתנו אפשרויות להשתתפות בטוחה, ובהן זמן הכנה, שיחה בזוג לפני דיבור במליאה ובקשת עזרה באופן מכבד.
+                      </p>
+                    </div>
+
+                    {/* Principle 2: דיפרנציאליות */}
+                    <div style={{ background: '#f8fafc', padding: '1.3rem 1.5rem', borderRadius: '14px', border: '1px solid #e2e8f0', borderRight: '6px solid #10b981' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                        <span style={{ background: '#ecfdf5', color: '#059669', padding: '6px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.95rem' }}>
+                          <i className="fas fa-layer-group"></i> עיקרון 2
+                        </span>
+                        <h4 style={{ margin: 0, color: '#065f46', fontSize: '1.15rem', fontWeight: '800' }}>
+                          דיפרנציאליות — מענה משתנה לפי צורך
+                        </h4>
+                      </div>
+                      <p style={{ margin: '0 0 0.6rem 0', color: '#334155', lineHeight: '1.7', fontSize: '0.97rem' }}>
+                        המורה יתאים את התמיכה, מורכבות המשימה, היקף התרגול, הקצב ודרכי ההבעה על סמך מידע על למידת התלמידים.
+                      </p>
+                      <p style={{ margin: 0, color: '#475569', lineHeight: '1.7', fontSize: '0.95rem' }}>
+                        הקבוצות ומסלולי העבודה יהיו גמישים. התמיכה תוכל להינתן גם במשימות מורכבות, וההזדמנות להעמיק וליצור תהיה פתוחה לכל תלמיד. כאשר לתלמיד הוגדר יעד אישי, הוא יובא בחשבון בתכנון ובהערכה, תוך שמירה על חיבור ללמידה המשותפת.
+                      </p>
+                    </div>
+
+                    {/* Principle 3: הערכה */}
+                    <div style={{ background: '#f8fafc', padding: '1.3rem 1.5rem', borderRadius: '14px', border: '1px solid #e2e8f0', borderRight: '6px solid #8b5cf6' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                        <span style={{ background: '#f5f3ff', color: '#7c3aed', padding: '6px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.95rem' }}>
+                          <i className="fas fa-check-circle"></i> עיקרון 3
+                        </span>
+                        <h4 style={{ margin: 0, color: '#5b21b6', fontSize: '1.15rem', fontWeight: '800' }}>
+                          הערכה — מידע שמכוון את המשך הלמידה
+                        </h4>
+                      </div>
+                      <p style={{ margin: '0 0 0.6rem 0', color: '#334155', lineHeight: '1.7', fontSize: '0.97rem' }}>
+                        לאורך התחנות ייאספו עדויות קצרות להבנה ולביצוע. המורה והתלמיד ישתמשו בהן כדי להחליט אם להמשיך, להעמיק, לשנות את התמיכה או לחזור להסבר ולתרגול.
+                      </p>
+                      <p style={{ margin: 0, color: '#475569', lineHeight: '1.7', fontSize: '0.95rem' }}>
+                        ההערכה תתייחס הן להתקדמות האישית והן לקריטריוני ההצלחה של היעד שנקבע. הישגים בתוכן, במיומנות ובהשתתפות יתועדו בנפרד, כדי להכיר בהצלחות ולזהות במדויק צרכים להמשך.
+                      </p>
+                    </div>
+
+                  </div>
+                </div>
+
+                <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">🧬 התשתית הפדגוגית: UDL ו-SEL</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '10px' }}>
+                    
+                    <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                        <span style={{ background: '#dbeafe', color: '#1e40af', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="fas fa-universal-access"></i>
+                        </span>
+                        <h4 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.05rem', fontWeight: '800' }}>העיצוב האוניברסלי ללמידה (UDL)</h4>
+                      </div>
+                      <p style={{ margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.7' }}>
+                        בתכנון המודל ניעזר בעקרונות ה-UDL: מגוון דרכי <strong>מעורבות</strong> (Engagement), <strong>ייצוג</strong> (Representation), ו<strong>פעולה והבעה</strong> (Action & Expression). עקרונות אלה ישמשו לאורך כל התחנות.
+                      </p>
+                    </div>
+
+                    <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                        <span style={{ background: '#fce7f3', color: '#db2777', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="fas fa-heart"></i>
+                        </span>
+                        <h4 style={{ margin: 0, color: '#9d174d', fontSize: '1.05rem', fontWeight: '800' }}>למידה רגשית־חברתית (SEL לפי CASEL)</h4>
+                      </div>
+                      <p style={{ margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.7' }}>
+                        לצדם נשלב היבטים של SEL: מודעות עצמית, ניהול עצמי ומיומנויות יחסים. במודל הם יתורגמו לשגרות של <strong>הקשבה, בקשת עזרה, התמודדות עם קושי ושיתוף פעולה</strong>.
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <div style={{ background: '#fefce8', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px dashed #ca8a04', marginTop: '14px', fontSize: '0.92rem', color: '#854d0e' }}>
+                    <strong>הערה 1:</strong> מודל מפתי"ח מוצע כאן כמסגרת בית־ספרית ליישום ולבחינה. השפעתו בבית הספר תיבדק במהלך ההטמעה.
+                  </div>
+                </div>
+              </article>
+
+              {/* SECTION 3: חמש התחנות במבט אחד */}
+              <article className="doc-chapter-card" id="heb-sec-matrix">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 3</div>
+                  <h2>חמש התחנות במבט אחד</h2>
                 </div>
 
                 <p className="doc-paragraph leading">
-                  לכל תחנה יוגדר <strong>דגש חשיבתי</strong>, שיסייע למורה לבחור שאלות ומשימות. הדגש יתאר את הפעולה שהתלמיד נדרש לבצע: <strong>להיזכר, להסביר, לנתח, ליישם, ליצור או להעריך</strong>.
+                  טבלת המיפוי המרכזת את חמש תחנות המודל, הדגש החשיבתי המנחה, ושאלת התלמיד המובילה בכל שלב:
                 </p>
 
                 {/* MATRIX TABLE */}
@@ -3773,8 +3904,8 @@ ${p.stations?.h || ''}
                       <tr style={{ background: '#0f172a', color: '#ffffff' }}>
                         <th style={{ padding: '14px 16px', borderRadius: '0 12px 0 0', width: '60px', textAlign: 'center' }}>אות</th>
                         <th style={{ padding: '14px 16px', minWidth: '180px' }}>התחנה בעברית ובערבית</th>
-                        <th style={{ padding: '14px 16px', minWidth: '220px' }}>הדגש החשיבתי המוצע</th>
-                        <th style={{ padding: '14px 16px', borderRadius: '12px 0 0 0', minWidth: '240px' }}>שאלת התלמיד המנחה</th>
+                        <th style={{ padding: '14px 16px', minWidth: '220px' }}>הדגש החשיבתי</th>
+                        <th style={{ padding: '14px 16px', borderRadius: '12px 0 0 0', minWidth: '240px' }}>שאלת התלמיד</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -3822,7 +3953,7 @@ ${p.stations?.h || ''}
                           ניתוח, בחינת ראיות ושיפוט מנומק
                         </td>
                         <td style={{ padding: '14px', color: '#1e293b', fontWeight: '700' }}>
-                          ״מדוע זה כך, ואילו ראיות תומכות בתשובתי?״
+                          ״כיצד הגעתי לתשובה, ומה תומך בה?״
                         </td>
                       </tr>
 
@@ -3838,7 +3969,7 @@ ${p.stations?.h || ''}
                           יישום, ובמשימות מתאימות גם יצירה
                         </td>
                         <td style={{ padding: '14px', color: '#1e293b', fontWeight: '700' }}>
-                          ״כיצד אשתמש במה שלמדתי כדי לבצע את המשימה?״
+                          ״כיצד אשתמש במה שלמדתי, ואילו כלים יעזרו לי?״
                         </td>
                       </tr>
 
@@ -3848,24 +3979,28 @@ ${p.stations?.h || ''}
                         </td>
                         <td style={{ padding: '14px', fontWeight: '800', color: '#9f1239' }}>
                           חתימה וצידה לדרך<br />
-                          <small style={{ color: '#db2777', fontWeight: '600' }}>حصاد وزوّادة</small>
+                          <small style={{ color: '#db2777', fontWeight: '600' }}>حصاد وزוّادة</small>
                         </td>
                         <td style={{ padding: '14px', color: '#334155' }}>
-                          הערכה עצמית, התבוננות בתהליך וחשיבה על שימוש עתידי
+                          הערכה עצמית והתבוננות בלמידה
                         </td>
                         <td style={{ padding: '14px', color: '#1e293b', fontWeight: '700', borderRadius: '0 0 12px 0' }}>
-                          ״מה למדתי, כיצד אדע שהתקדמתי ואיפה אוכל להשתמש בכך?״
+                          ״במה התקדמתי, ומה אקח להמשך?״
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <div style={{ background: '#f8fafc', padding: '0.9rem 1.2rem', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.9rem', color: '#64748b' }}>
+                  <strong>הערה 2:</strong> הדגשים החשיבתיים מנחים את בחירת המשימות. הם אינם מגבילים את החשיבה לתחנה מסוימת, ואפשר לחזור בין התחנות לפי הצורך.
+                </div>
               </article>
 
-              {/* SECTION 3: פירוט חמש התחנות */}
+              {/* SECTION 4: פירוט חמש התחנות */}
               <article className="doc-chapter-card" id="heb-sec-stations">
                 <div className="chapter-header">
-                  <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 3</div>
+                  <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 4</div>
                   <h2>פירוט חמש התחנות של מודל מַפְתֵּי"חַ</h2>
                 </div>
 
@@ -3877,7 +4012,7 @@ ${p.stations?.h || ''}
                       <div className="st-doc-title-wrap">
                         <span className="st-doc-tag" style={{ background: '#f59e0b' }}>תחנה מ׳</span>
                         <h3 className="st-doc-title" style={{ margin: 0, fontSize: '1.3rem', color: '#92400e' }}>
-                          מ — משיכה וסקרנות | مدخل محفّز
+                          מ — משיכה וסקרנות | مدخل محفّז
                         </h3>
                       </div>
                       <span style={{ background: '#fef3c7', color: '#92400e', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '800' }}>
@@ -3885,33 +4020,41 @@ ${p.stations?.h || ''}
                       </span>
                     </div>
 
-                    <p className="doc-paragraph">
-                      השיעור נפתח בהזמנה להתעניין, להתבונן ולשאול. מטרת התחנה היא לעורר סקרנות וליצור חיבור בין הידע הקודם של התלמידים לבין הנושא שילמדו.
-                    </p>
-                    <p className="doc-paragraph">
-                      המורה מציג גירוי קצר ורלוונטי: תמונה, חפץ, סיפור, תופעה, טעות מעניינת או בעיה. התלמידים משתפים במה שהם יודעים, מזהים דבר שמעורר תמיהה ומציעים שאלות או השערות.
-                    </p>
-
-                    <div style={{ background: '#fffbeb', padding: '1rem', borderRadius: '10px', margin: '0.8rem 0', border: '1px dashed #f59e0b' }}>
-                      <strong style={{ color: '#b45309' }}>🗣️ לקראת המעבר המורה אוסף את הרעיונות ואומר:</strong>
-                      <p style={{ margin: '0.3rem 0 0 0', fontWeight: '800', color: '#78350f', fontSize: '1.05rem' }}>
-                        ״מתוך הדברים שהעליתם, היום ננסה לברר…״
-                      </p>
+                    <div style={{ background: '#fffbeb', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '0.8rem', border: '1px solid #fde68a' }}>
+                      <strong style={{ color: '#b45309' }}>🎯 מטרת התחנה:</strong> לעורר עניין, להפעיל ידע קודם ולפתוח שאלה הקשורה למטרת הלמידה.
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontWeight: '800', color: '#0f172a' }}>🎯 הדגש החשיבתי: </span>
-                        <span>היזכרות, זיהוי, קישור לידע קודם ושאילת שאלות.</span>
+                    <p className="doc-paragraph">
+                      המורה מציג גירוי קצר ורלוונטי: תמונה, חפץ, סיפור, תופעה, בעיה או טעות מעניינת. התלמידים מתבוננים, מקשרים למה שהם יודעים ומציעים שאלות או השערות.
+                    </p>
+
+                    {/* Three Pillars in Station M */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '1rem 0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #3b82f6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#1e40af' }}>🤝 הכלה והשתלבות: </strong>
+                        מתכננים גישה נגישה לגירוי, כגון תמונה עם תיאור מילולי או טקסט עם אפשרות להקראה. מאפשרים תגובה בדיבור, בהצבעה, בציור או בשיחה בזוג. אפשר לפתוח בשאלה ״מה הבחנתם?״ ובהמשך להזמין הסברים מורכבים יותר.
                       </div>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #10b981', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#065f46' }}>🔀 דיפרנציאליות: </strong>
+                        מציעים תיווך שפתי, זמן חשיבה, מילים מסייעות או שאלות המשך בהתאם לצורך. לתלמידים המוכנים לכך מוצע להעלות השערה ולנמק אותה.
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #8b5cf6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#6b21a8' }}>📊 הערכה: </strong>
+                        המורה מקשיב לתגובות כדי לזהות ידע קודם, שאלות ותפיסות ראשוניות. מידע זה משמש להתאמת ההסבר בהמשך.
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f1f5f9', padding: '0.8rem 1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                      <div>
                         <span style={{ fontWeight: '800', color: '#059669' }}>✅ סימן להתקדמות: </span>
-                        <span>התלמידים יכולים לומר במה עומדים לעסוק ומה מבקשים לברר.</span>
+                        <span style={{ color: '#334155', fontSize: '0.93rem' }}>התלמידים יכולים לציין במה עומדים לעסוק או מה מבקשים לברר, בדרך הבעה המתאימה להם.</span>
                       </div>
                     </div>
-                    <p style={{ margin: '0.8rem 0 0 0', fontSize: '0.88rem', color: '#64748b', fontStyle: 'italic' }}>
-                      💡 הצעה: לא להצמיד לתחנה זו רמה אחת בלבד; גם גירוי פתיחה יכול לעורר חשיבה מורכבת, אך תפקידו במודל הוא לפתוח את הלמידה.
-                    </p>
+
+                    <div style={{ background: '#fef3c7', padding: '0.85rem 1.1rem', borderRadius: '10px', marginTop: '10px', border: '1.5px dashed #f59e0b' }}>
+                      <strong style={{ color: '#92400e' }}>🗣️ משפט מעבר מחייב: </strong>
+                      <span style={{ fontWeight: '900', color: '#78350f', fontSize: '1.05rem' }}>״מתוך הדברים שהעליתם, היום ננסה להבין…״</span>
+                    </div>
                   </div>
 
                   {/* STATION פ */}
@@ -3928,33 +4071,43 @@ ${p.stations?.h || ''}
                       </span>
                     </div>
 
-                    <p className="doc-paragraph">
-                      לאחר שנוצר עניין, מבהירים מה לומדים ובונים את הבסיס להבנת הנושא.
-                    </p>
-                    <p className="doc-paragraph">
-                      המורה מציג את מושגי היסוד, מסביר ומדגים, וכותב על הלוח את מטרת הלמידה בשפה המובנת לתלמידים. המטרה תישאר גלויה לאורך השיעור, והמורה והתלמידים יחזרו אליה בנקודות המתאימות.
-                    </p>
-
-                    <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '10px', margin: '0.8rem 0', border: '1px dashed #3b82f6' }}>
-                      <strong style={{ color: '#1d4ed8' }}>📋 ניסוח מטרת הלמידה באמצעות פעולה של התלמיד:</strong>
-                      <p style={{ margin: '0.3rem 0 0 0', fontWeight: '700', color: '#1e3a8a' }}>
-                        ״בסיום השיעור נוכל להסביר…״, ״לזהות…״ או ״להשתמש ב…״.
-                      </p>
+                    <div style={{ background: '#eff6ff', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '0.8rem', border: '1px solid #bfdbfe' }}>
+                      <strong style={{ color: '#1e40af' }}>🎯 מטרת התחנה:</strong> להבהיר את יעד הלמידה ולבנות הבנה ראשונית של המושגים ודרכי הפעולה.
                     </div>
 
                     <p className="doc-paragraph">
-                      התלמידים קוראים, מקשיבים, מתבוננים, שואלים ומסבירים במילים שלהם. המורה בודק הבנה באמצעות דוגמה, שאלה קצרה, מיון או הסבר בזוגות.
+                      המורה מציג את מטרת הלמידה בשפה מובנת ומשאיר אותה גלויה. לצדה מופיעים קריטריוני הצלחה קצרים המתארים מה התלמיד יוכל להסביר או לבצע.
+                    </p>
+                    <p className="doc-paragraph">
+                      המורה מסביר, מדגים וחושב בקול. התלמידים קוראים, מקשיבים, מתנסים, שואלים ומסבירים במילים שלהם.
                     </p>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontWeight: '800', color: '#0f172a' }}>🎯 הדגש החשיבתי: </span>
-                        <span>זכירה והבנה — זיהוי מושגים, תיאור, פירוש והסבר.</span>
+                    {/* Three Pillars in Station F */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '1rem 0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #3b82f6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#1e40af' }}>🤝 הכלה והשתלבות: </strong>
+                        משתמשים בייצוגים משלימים לפי הצורך: הסבר מילולי, תרשים, הדגמה או חפץ מוחשי. מושגים מרכזיים נשארים נגישים במילון כיתתי קצר, עם דוגמה או סמל כאשר הם מסייעים להבנה. ההוראות מנוסחות בבהירות וניתנות במנות המתאימות למשימה.
                       </div>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #10b981', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#065f46' }}>🔀 דיפרנציאליות: </strong>
+                        מתאימים את מספר הדוגמאות, אופן ההמחשה והיקף הפירוק לשלבים. אפשר להציע דוגמה פתורה, כרטיס שלבים או הסבר נוסף בקבוצה קטנה.
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #8b5cf6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#6b21a8' }}>📊 הערכה: </strong>
+                        מבקשים מכל תלמיד עדות קצרה להבנה: דוגמה, מיון, הדגמה או הסבר. על סמך העדויות מחליטים מי יכול להמשיך ומי זקוק לביסוס נוסף.
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f1f5f9', padding: '0.8rem 1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                      <div>
                         <span style={{ fontWeight: '800', color: '#059669' }}>✅ סימן להתקדמות: </span>
-                        <span>התלמידים יכולים להסביר את הרעיון הבסיסי או להדגים אותו, והמורה מזהה למי דרוש סיוע נוסף.</span>
+                        <span style={{ color: '#334155', fontSize: '0.93rem' }}>התלמיד מסביר או מדגים את הרעיון הבסיסי; כאשר נדרש סיוע, מוגדר המענה שיאפשר לו להמשיך.</span>
                       </div>
+                    </div>
+
+                    <div style={{ background: '#eff6ff', padding: '0.85rem 1.1rem', borderRadius: '10px', marginTop: '10px', border: '1.5px dashed #3b82f6' }}>
+                      <strong style={{ color: '#1e40af' }}>🗣️ משפט מעבר מחייב: </strong>
+                      <span style={{ fontWeight: '900', color: '#1e3a8a', fontSize: '1.05rem' }}>״הכרנו את הרעיון; עכשיו נבדוק כיצד הוא פועל ומדוע״.</span>
                     </div>
                   </div>
 
@@ -3972,34 +4125,43 @@ ${p.stations?.h || ''}
                       </span>
                     </div>
 
-                    <p className="doc-paragraph">
-                      לאחר בניית ההבנה הראשונית, התלמידים בוחנים קשרים, הסברים וראיות. מטרת התחנה היא לעבור מהיכרות עם הרעיון לחקירתו ולהבנת משמעותו.
-                    </p>
-
-                    <div style={{ background: '#faf5ff', padding: '1.2rem', borderRadius: '12px', border: '1px solid #e9d5ff', margin: '0.8rem 0' }}>
-                      <strong style={{ color: '#6b21a8', display: 'block', marginBottom: '0.5rem' }}>❓ שאלות מנחות שמציג המורה:</strong>
-                      <ul style={{ margin: 0, paddingRight: '20px', color: '#3b0764', lineHeight: '1.8' }}>
-                        <li>״כיצד הגעת למסקנה הזאת?״</li>
-                        <li>״מה הקשר בין החלקים?״</li>
-                        <li>״איזו ראיה תומכת בטענה?״</li>
-                        <li>״איזה הסבר מתאים יותר, ולפי מה החלטתם?״</li>
-                        <li>״מה ישתנה אם נשנה אחד מהנתונים?״</li>
-                      </ul>
+                    <div style={{ background: '#faf5ff', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '0.8rem', border: '1px solid #e9d5ff' }}>
+                      <strong style={{ color: '#6b21a8' }}>🎯 מטרת התחנה:</strong> לבחון קשרים, הסברים וראיות ולהרחיב את ההבנה.
                     </div>
 
                     <p className="doc-paragraph">
-                      התלמידים מנתחים, משווים, מנמקים, בוחנים הסברים חלופיים ומתקנים את עמדתם כאשר מתגלה מידע נוסף.
+                      המורה מציג שאלות כגון: <strong>״כיצד הגעת למסקנה?״</strong>, <strong>״מה הקשר בין החלקים?״</strong>, <strong>״איזו ראיה תומכת בטענה?״</strong> או <strong>״מה ישתנה אם נשנה אחד מהנתונים?״</strong>.
+                    </p>
+                    <p className="doc-paragraph">
+                      התלמידים מנתחים, משווים, מנמקים ובוחנים הסברים חלופיים.
                     </p>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontWeight: '800', color: '#0f172a' }}>🎯 הדגש החשיבתי: </span>
-                        <span>ניתוח וחשיבה ביקורתית; במשימות הכוללות בחירה ושיפוט לפי קריטריונים — גם הערכה.</span>
+                    {/* Three Pillars in Station T */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '1rem 0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #3b82f6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#1e40af' }}>🤝 הכלה והשתלבות: </strong>
+                        מאפשרים זמן לחשיבה אישית לפני השיח, ועבודה בזוגות או בשלשות בהרכב המתאים למשימה. אפשר לחלק תפקידים מתחלפים: מחפש ראיות, מנמק ומציג. כל תלמיד מתבקש גם להביע הבנה אישית; התפקיד אינו מגביל את האפשרות שלו לחשוב, להסביר או לשאול.
                       </div>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #10b981', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#065f46' }}>🔀 דיפרנציאליות: </strong>
+                        מציעים שאלות ביניים, כרטיסי רמז, תרשים מארגן או מסגרת לניסוח טענה וראיה. תלמידים המוכנים להרחבה בוחנים טענה נגדית, מקרה חריג או הסבר חלופי.
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #8b5cf6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#6b21a8' }}>📊 הערכה: </strong>
+                        המורה בוחן את איכות הנימוק, הקשר והראיה, ומברר את הבנתו של כל תלמיד גם כאשר התוצר משותף. אפשר לבקש: ״בחרו ראיה אחת והסבירו כיצד היא תומכת בתשובה״.
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f1f5f9', padding: '0.8rem 1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                      <div>
                         <span style={{ fontWeight: '800', color: '#059669' }}>✅ סימן להתקדמות: </span>
-                        <span>התלמיד מציג הסבר הכולל קשר, נימוק או ראיה המתאימים לגילו ולנושא.</span>
+                        <span style={{ color: '#334155', fontSize: '0.93rem' }}>התלמיד מציג הסבר מנומק או קשר משמעותי, עם התמיכה המתאימה לו.</span>
                       </div>
+                    </div>
+
+                    <div style={{ background: '#faf5ff', padding: '0.85rem 1.1rem', borderRadius: '10px', marginTop: '10px', border: '1.5px dashed #8b5cf6' }}>
+                      <strong style={{ color: '#6b21a8' }}>🗣️ משפט מעבר מחייב: </strong>
+                      <span style={{ fontWeight: '900', color: '#4c1d95', fontSize: '1.05rem' }}>״בחנו את הרעיון והסברנו אותו; כעת נשתמש בו במשימה״.</span>
                     </div>
                   </div>
 
@@ -4017,41 +4179,97 @@ ${p.stations?.h || ''}
                       </span>
                     </div>
 
+                    <div style={{ background: '#f0fdf4', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '0.8rem', border: '1px solid #bbf7d0' }}>
+                      <strong style={{ color: '#065f46' }}>🎯 מטרת התחנה:</strong> להשתמש בידע ובמיומנויות באמצעות תרגול, פתרון בעיות והפקת תוצרים.
+                    </div>
+
                     <p className="doc-paragraph">
-                      בתחנה זו התלמידים משתמשים בידע ובמיומנויות שנלמדו במסגרת עבודה בכיתה. מטרתה היא לאפשר תרגול, ביצוע עצמאי והפקת תוצר בהתאם למטרת השיעור.
-                    </p>
-                    <p className="doc-paragraph">
-                      המורה מציג משימה ומבהיר את קריטריוני ההצלחה. התלמידים פותרים, כותבים, מתכננים, מציגים, בונים או יוצרים — ביחידים, בזוגות או בקבוצות.
+                      המורה מציג את המשימה ואת קריטריוני ההצלחה. התלמידים עובדים ביחידים, בזוגות או בקבוצות, ומסבירים כיצד השתמשו במה שלמדו.
                     </p>
 
+                    {/* הכלה והשתלבות בתחנה י */}
+                    <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '10px', margin: '0.8rem 0', border: '1px solid #bfdbfe' }}>
+                      <strong style={{ color: '#1e40af' }}>🤝 הכלה והשתלבות — בחירה נגישה באופן הביצוע:</strong>
+                      <p style={{ margin: '0.4rem 0 0 0', color: '#1e293b', fontSize: '0.93rem', lineHeight: '1.7' }}>
+                        כאשר מטרת הלמידה מאפשרת זאת, יוצעו דרכי הבעה שונות: כתיבה, הסבר מוקלט, תרשים, איור מנומק, דגם או הדגמה. דרך ההבעה חייבת לאפשר בדיקה של היעד. אם היעד הוא כתיבה, יידרש ביצוע בכתב עם תמיכה מתאימה. אם היעד הוא הבנת תופעה, ניתן יהיה להציג את ההבנה בדרכים נוספות.
+                      </p>
+                    </div>
+
+                    {/* דיפרנציאליות — שלושה מסלולי עבודה גמישים */}
+                    <div style={{ margin: '1rem 0' }}>
+                      <strong style={{ color: '#065f46', fontSize: '1rem' }}>🔀 דיפרנציאליות — שלושה מסלולי עבודה גמישים:</strong>
+                      
+                      <div className="doc-table-wrapper" style={{ overflowX: 'auto', margin: '0.7rem 0' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                          <thead>
+                            <tr style={{ background: '#065f46', color: '#ffffff' }}>
+                              <th style={{ padding: '10px 14px', width: '160px', borderRadius: '0 8px 0 0' }}>מסלול</th>
+                              <th style={{ padding: '10px 14px', width: '220px' }}>אופי העבודה</th>
+                              <th style={{ padding: '10px 14px', borderRadius: '8px 0 0 0' }}>דוגמאות לתמיכה או לאתגר</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                              <td style={{ padding: '10px 14px', fontWeight: '800', color: '#1e40af' }}>יישום בתמיכה</td>
+                              <td style={{ padding: '10px 14px', color: '#334155' }}>שימוש בידע ובמיומנות בעזרת פיגומים</td>
+                              <td style={{ padding: '10px 14px', color: '#475569' }}>דוגמה פתורה, מחסן מילים, המחשה או כרטיס שלבים</td>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#ffffff' }}>
+                              <td style={{ padding: '10px 14px', fontWeight: '800', color: '#059669' }}>יישום עצמאי</td>
+                              <td style={{ padding: '10px 14px', color: '#334155' }}>ביצוע משימות ליבה לפי קריטריוני ההצלחה</td>
+                              <td style={{ padding: '10px 14px', color: '#475569' }}>פתרון, כתיבה או הדגמה עצמאיים, עם אפשרות לבקש סיוע</td>
+                            </tr>
+                            <tr style={{ background: '#f8fafc' }}>
+                              <td style={{ padding: '10px 14px', fontWeight: '800', color: '#7c3aed' }}>העמקה ויצירה</td>
+                              <td style={{ padding: '10px 14px', color: '#334155' }}>הרחבה, בחינת חלופות או יצירת תוצר חדש</td>
+                              <td style={{ padding: '10px 14px', color: '#475569' }}>ניתוח טעות, השוואת פתרונות, תכנון או שילוב רעיונות</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p style={{ margin: '0.4rem 0 0 0', color: '#64748b', fontSize: '0.88rem', fontStyle: 'italic' }}>
+                        💡 המסלולים אינם קבוצות קבועות. הבחירה נעשית בשיח עם התלמיד ובהתאם לעדויות להבנתו. אפשר לעבור בין המסלולים, ואפשר להיעזר בפיגומים גם במשימת העמקה.
+                      </p>
+                    </div>
+
+                    {/* שולחן הוראה ממוקדת וכרטיס מפתח חוזר */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', margin: '0.8rem 0' }}>
-                      <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
-                        <strong style={{ color: '#166534' }}>🛠️ תרגול ויישום:</strong>
-                        <p style={{ margin: '0.3rem 0 0 0', color: '#14532d', fontSize: '0.92rem' }}>
-                          שימוש במושג, בכלל, בשיטה או במיומנות שנלמדו.
+                      <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+                        <strong style={{ color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <i className="fas fa-users" style={{ color: '#2563eb' }}></i>
+                          שולחן ההוראה הממוקדת — ״תחנת כוונון ודיוק״:
+                        </strong>
+                        <p style={{ margin: '0.4rem 0 0 0', color: '#334155', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                          בזמן העבודה העצמאית בתחנות ת׳ או י׳, המורה יכול לעבוד עם קבוצה קטנה ומשתנה (בדרך כלל 4-6 תלמידים). המורה מדגים מחדש, מציע ייצוג אחר, מפרק לשלבים ומקיים תרגול מודרך, ובודק ביצוע עצמאי קצר לפני חזרה למשימה.
                         </p>
                       </div>
-                      <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
-                        <strong style={{ color: '#166534' }}>🎨 יצירה:</strong>
-                        <p style={{ margin: '0.3rem 0 0 0', color: '#14532d', fontSize: '0.92rem' }}>
-                          שילוב ידע ורעיונות לכדי פתרון, הסבר, תכנון או תוצר חדש של התלמיד.
+
+                      <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+                        <strong style={{ color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <i className="fas fa-id-card-alt" style={{ color: '#10b981' }}></i>
+                          כרטיס ״מפתח חוזר לפ׳״ וחונך עמית:
+                        </strong>
+                        <p style={{ margin: '0.4rem 0 0 0', color: '#334155', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                          תלמיד הזקוק להבהרה מציג כרטיס קטן על שולחנו. המורה מברר את הקושי ומתאים מענה (עזר, סיוע עמית או שולחן הוראה). חונך עמית יסייע לאחר שהפגין הבנה וקיבל הנחיה כיצד להדגים.
                         </p>
                       </div>
                     </div>
 
-                    <p className="doc-paragraph">
-                      המשימות והסיוע יותאמו לצורכי התלמידים: הנחיה ישירה של המורה, עבודה עצמאית, אמצעי עזר או משימת העמקה. הקבוצות יהיו גמישות וישתנו לפי הצורך.
-                    </p>
+                    <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #8b5cf6', fontSize: '0.93rem', margin: '0.8rem 0' }}>
+                      <strong style={{ color: '#6b21a8' }}>📊 הערכה: </strong>
+                      בוחנים את התוצר ואת דרך הביצוע לפי הקריטריונים, ומתעדים את סוג התמיכה ואת מידת העצמאות. השלמת משימה משמשת נקודת מוצא לבירור ההבנה.
+                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontWeight: '800', color: '#0f172a' }}>🎯 הדגש החשיבתי: </span>
-                        <span>יישום, ובמשימות המתאימות גם יצירה ושילוב רכיבים לכדי שלם. ניתוח והערכה ישולבו כאשר המשימה דורשת אותם.</span>
-                      </div>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ background: '#f1f5f9', padding: '0.8rem 1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                      <div>
                         <span style={{ fontWeight: '800', color: '#059669' }}>✅ סימן להתקדמות: </span>
-                        <span>התלמיד מציג ביצוע או תוצר העומדים בקריטריונים, ויכול להסביר כיצד השתמש במה שלמד.</span>
+                        <span style={{ color: '#334155', fontSize: '0.93rem' }}>התלמיד מדגים שימוש במה שלמד ומסביר את דרך עבודתו.</span>
                       </div>
+                    </div>
+
+                    <div style={{ background: '#d1fae5', padding: '0.85rem 1.1rem', borderRadius: '10px', marginTop: '10px', border: '1.5px dashed #10b981' }}>
+                      <strong style={{ color: '#065f46' }}>🗣️ משפט מעבר מחייב: </strong>
+                      <span style={{ fontWeight: '900', color: '#064e3b', fontSize: '1.05rem' }}>״עכשיו נבחן מה הצלחנו לעשות ומה נרצה לקחת להמשך״.</span>
                     </div>
                   </div>
 
@@ -4061,204 +4279,294 @@ ${p.stations?.h || ''}
                       <div className="st-doc-title-wrap">
                         <span className="st-doc-tag" style={{ background: '#ec4899' }}>תחנה ח׳</span>
                         <h3 className="st-doc-title" style={{ margin: 0, fontSize: '1.3rem', color: '#9f1239' }}>
-                          ח — חתימה וצידה לדרך | حصاد وزوّادة
+                          ח — חתימה וצידה לדרך | حصاد وزוّادة
                         </h3>
                       </div>
                       <span style={{ background: '#fce7f3', color: '#9f1239', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '800' }}>
-                        הערכה עצמית וצידה לעתיד
+                        הערכה עצמית והתבוננות בלמידה
                       </span>
                     </div>
 
-                    <p className="doc-paragraph">
-                      השיעור מסתיים בחזרה למטרת הלמידה ובהתבוננות במה שהתלמיד רכש ובדרך שבה למד.
-                    </p>
-                    <p className="doc-paragraph">
-                      מטרת התחנה היא לסכם את הלמידה, להעריך את ההתקדמות ולזהות את הצידה שהתלמיד ייקח להמשך: ידע, מיומנות, דרך חשיבה או שאלה חדשה.
-                    </p>
+                    <div style={{ background: '#fdf2f8', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '0.8rem', border: '1px solid #fbcfe8' }}>
+                      <strong style={{ color: '#9f1239' }}>🎯 מטרת התחנה:</strong> לחזור ליעד, לזהות התקדמות ולבחור צידה להמשך הלמידה.
+                    </div>
 
-                    <div style={{ background: '#fdf2f8', padding: '1.2rem', borderRadius: '12px', border: '1px solid #fbcfe8', margin: '0.8rem 0' }}>
-                      <strong style={{ color: '#be185d', display: 'block', marginBottom: '0.5rem' }}>🎒 התלמיד מתייחס בקצרה לשאלות נבחרות:</strong>
-                      <ul style={{ margin: 0, paddingRight: '20px', color: '#831843', lineHeight: '1.8' }}>
-                        <li><strong>מה למדתי? מה מעיד על כך?</strong> היום הבנתי או הצלחתי… הדוגמה או התוצר שמראים את התקדמותי הם…</li>
-                        <li><strong>מה אקח להמשך?</strong> אוכל להשתמש במה שלמדתי כאשר…</li>
+                    <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '10px', border: '1px solid #cbd5e1', margin: '0.8rem 0' }}>
+                      <strong style={{ color: '#831843' }}>🎒 התלמיד מתייחס לשאלות נבחרות:</strong>
+                      <ul style={{ margin: '0.4rem 0 0 0', paddingRight: '20px', color: '#475569', lineHeight: '1.8', fontSize: '0.94rem' }}>
+                        <li>מה למדתי או הצלחתי לעשות היום, איזו דוגמה מעידה על ההתקדמות שלי?</li>
+                        <li>איפה אוכל להשתמש במה שלמדתי?</li>
                       </ul>
-                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#9d174d' }}>
-                        התשובות יכולות להינתן בכתב (במחברת מיוחד), בדיבור או בציור. המורה נעזר בהן לתכנון ההמשך.
-                      </p>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontWeight: '800', color: '#0f172a' }}>🎯 הדגש החשיבתי: </span>
-                        <span>הערכה עצמית מנומקת והתבוננות בדרך הלמידה, לצד זיהוי שימוש אפשרי בידע בעתיד.</span>
+                    {/* Three Pillars in Station H */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '1rem 0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #3b82f6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#1e40af' }}>🤝 הכלה והשתלבות: </strong>
+                        מאפשרים סיכום בכתב, בדיבור, בציור או בבחירה מלווה בהסבר. ניתן לשתף את המורה באופן אישי, ואין חובה לחשוף קושי בפני הכיתה.
                       </div>
-                      <div style={{ background: '#f8fafc', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #10b981', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#065f46' }}>🔀 דיפרנציאליות: </strong>
+                        מתאימים את היקף הסיכום ואת התמיכה. תלמיד אחד נעזר בהתחלת משפט, ואחר מסביר כיצד יעביר את הלמידה למצב חדש.
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '8px', borderRight: '4px solid #8b5cf6', fontSize: '0.93rem' }}>
+                        <strong style={{ color: '#6b21a8' }}>📊 הערכה: </strong>
+                        התלמיד בוחן את התקדמותו ביחס לנקודת הפתיחה ולקריטריוני ההצלחה. המורה משתמש בתשובות כדי לתכנן חזרה, תרגול, תמיכה או העמקה.
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f1f5f9', padding: '0.8rem 1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                      <div>
                         <span style={{ fontWeight: '800', color: '#059669' }}>✅ סימן להתקדמות: </span>
-                        <span>התלמיד מזהה דבר שלמד, מביא עדות להתקדמותו ומציין צורך להמשך או שימוש אפשרי בלמידה.</span>
+                        <span style={{ color: '#334155', fontSize: '0.93rem' }}>התלמיד מזהה למידה, מציג עדות לה ומציין צעד להמשך או שימוש אפשרי.</span>
                       </div>
+                    </div>
+
+                    <div style={{ background: '#fff1f2', padding: '0.85rem 1.1rem', borderRadius: '10px', marginTop: '10px', border: '1px solid #fecdd3', fontSize: '0.92rem', color: '#881337' }}>
+                      <strong>הצידה תוכל להיות:</strong> ידע, מיומנות, אסטרטגיה או שאלה. בשיעורים הבאים אפשר לחזור אליה ולבדוק כיצד נעשה בה שימוש.
                     </div>
                   </div>
 
                 </div>
               </article>
 
-              {/* SECTION 4: שותפות התלמיד ועקרונות היישום */}
-              <article className="doc-chapter-card" id="heb-sec-student">
-                <div className="chapter-header">
-                  <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 4</div>
-                  <h2>כיצד התלמיד נעשה שותף ועקרונות היישום</h2>
-                </div>
-
-                <div className="doc-sub-block">
-                  <h3 className="doc-sub-title">🤝 כיצד התלמיד נעשה שותף לתהליך?</h3>
-                  <p className="doc-paragraph">
-                    בכל כיתה יוצג מסלול חמש התחנות, עם השמות והסמלים המשותפים. בתחילת הלמידה יוצג המסלול המתוכנן; בתחנת פיתוח ההבנה תנוסח במפורש מטרת הלמידה, ולצדה קריטריוני הצלחה קצרים.
-                  </p>
-                  
-                  <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0', margin: '0.8rem 0' }}>
-                    <strong style={{ color: '#0f172a' }}>בכל מעבר תובהר הסיבה להתקדמות:</strong>
-                    <p style={{ margin: '0.3rem 0 0 0', color: '#334155' }}>
-                      ״כעת אנחנו מבינים את הרעיון; נבדוק מה מסביר אותו״, או ״בחנו כמה אפשרויות; עכשיו נשתמש בהן לביצוע המשימה״.
-                    </p>
-                  </div>
-
-                  <p className="doc-paragraph">
-                    התלמידים יהיו שותפים באמצעות שאילת שאלות, הסבר המעברים, בחירה בין אפשרויות מתאימות ובדיקת עבודתם. אפשר למנות <strong>״נווט למידה״</strong> שיזיז את הסמן ויסביר מה עומדים לעשות.
-                  </p>
-
-                  <div className="doc-highlight-quote" style={{ borderRightColor: '#10b981', background: '#ecfdf5' }}>
-                    <i className="fas fa-bullseye quote-icon" style={{ color: '#10b981' }}></i>
-                    <div>
-                      <strong style={{ color: '#065f46' }}>היעד המרכזי לתלמיד:</strong>
-                      <p style={{ margin: '0.3rem 0 0 0', fontSize: '1.1rem', fontWeight: '800', color: '#064e3b' }}>
-                        ״אני יודע מה אנחנו לומדים, מה אני עושה עכשיו, מדוע אני עושה זאת ואיך אראה שהתקדמתי״.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="doc-sub-block">
-                  <h3 className="doc-sub-title">🏛️ עקרונות היישום בבית הספר</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-                    {[
-                      { icon: 'fa-stream', title: 'מסגרת גמישה', desc: 'התחנות ישמשו מסגרת לשיעור או לרצף שיעורים, בהתאם למטרה ולתוכן.' },
-                      { icon: 'fa-brain', title: 'חשיבה לאורך כל הדרך', desc: 'לכל תחנה דגש חשיבתי, אך פעולות החשיבה יוכלו להופיע לאורך כל התהליך.' },
-                      { icon: 'fa-undo-alt', title: 'חזרה והתאמה דינמית', desc: 'אפשר יהיה לחזור להסבר, לתרגול או לבדיקת רעיון לפי עדויות להבנת התלמידים.' },
-                      { icon: 'fa-clock', title: 'משך תחנות גמיש', desc: 'משך התחנות יהיה גמיש; לא תיקבע חלוקת זמן אחידה לכל שיעור.' },
-                      { icon: 'fa-comments', title: 'משוב מתמשך', desc: 'המשוב ובדיקת ההבנה ישולבו לאורך כל מהלך הלמידה.' },
-                      { icon: 'fa-user-check', title: 'דיפרנציאציה והתאמה', desc: 'המשימות ודרכי ההבעה יותאמו לגיל, למקצוע ולצורכי התלמידים השונים.' }
-                    ].map((item, idx) => (
-                      <div key={idx} style={{ background: '#ffffff', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                        <span style={{ background: '#dbeafe', color: '#1d4ed8', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <i className={`fas ${item.icon}`}></i>
-                        </span>
-                        <div>
-                          <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.98rem', marginBottom: '0.2rem' }}>{item.title}</strong>
-                          <span style={{ color: '#475569', fontSize: '0.9rem', lineHeight: '1.6' }}>{item.desc}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </article>
-
-              {/* SECTION 5: כלי עבודה, תוכנית הטמעה ובדיקה */}
-              <article className="doc-chapter-card" id="heb-sec-tools">
+              {/* SECTION 5: תשתיות משותפות לכל התחנות */}
+              <article className="doc-chapter-card" id="heb-sec-infrastructure">
                 <div className="chapter-header">
                   <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 5</div>
-                  <h2>כלי העבודה, תוכנית ההטמעה ובדיקת ההתקדמות</h2>
+                  <h2>תשתיות משותפות לכל התחנות</h2>
                 </div>
 
                 <div className="doc-sub-block">
-                  <h3 className="doc-sub-title">🧰 כלי העבודה המשותפים</h3>
-                  <div className="doc-table-wrapper" style={{ overflowX: 'auto', margin: '1rem 0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '10px' }}>
+                    
+                    {/* מסלול למידה גלוי */}
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', borderRight: '4px solid #2563eb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                        <i className="fas fa-map-signs" style={{ color: '#2563eb', fontSize: '1.2rem' }}></i>
+                        <h4 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.05rem', fontWeight: '800' }}>מסלול למידה גלוי ונווט למידה</h4>
+                      </div>
+                      <p style={{ margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.7' }}>
+                        בכל כיתה יוצגו חמש התחנות בשמות ובסמלים המשותפים. המורה יסביר את המעברים ואת מטרתם. בזמן עבודה דיפרנציאלית יובהר כי תלמידים שונים יכולים להימצא בתחנות שונות. אפשר למנות <strong>״נווט למידה״</strong> שיסמן את התחנה במהלך המשותף ויסביר מה עושים בה ולשם מה.
+                      </p>
+                    </div>
+
+                    {/* מדף המפתחות */}
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', borderRight: '4px solid #f59e0b' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                        <i className="fas fa-key" style={{ color: '#f59e0b', fontSize: '1.2rem' }}></i>
+                        <h4 style={{ margin: 0, color: '#92400e', fontSize: '1.05rem', fontWeight: '800' }}>מדף המפתחות (עזרים ופיגומים)</h4>
+                      </div>
+                      <p style={{ margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.7' }}>
+                        בכיתה ירוכזו עזרים זמינים: מילוני מושגים, מחסני מילים, מארגני חשיבה, כרטיסי שלבים, אמצעי המחשה וכלים טכנולוגיים מתאימים. התלמידים ילמדו לבחור כלי לפי הצורך ולבדוק אם הוא מסייע להם. העזרים המשותפים מצטרפים למענים האישיים הנדרשים לתלמידים.
+                      </p>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* קריטריוני הצלחה בשלושה ממדים */}
+                <div className="doc-sub-block" style={{ marginTop: '1.5rem' }}>
+                  <h3 className="doc-sub-title">📐 קריטריוני הצלחה בשלושה ממדים</h3>
+                  <p className="doc-paragraph">
+                    בתכנון השיעור נבחין בין שלושה ממדים מוגדרים:
+                  </p>
+
+                  <div className="doc-table-wrapper" style={{ overflowX: 'auto', margin: '0.8rem 0' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                       <thead>
-                        <tr style={{ background: '#1e293b', color: '#ffffff' }}>
-                          <th style={{ padding: '12px 16px', borderRadius: '0 10px 0 0', width: '220px' }}>כלי</th>
-                          <th style={{ padding: '12px 16px', borderRadius: '10px 0 0 0' }}>שימוש</th>
+                        <tr style={{ background: '#1e3a8a', color: '#ffffff' }}>
+                          <th style={{ padding: '10px 14px', width: '120px', borderRadius: '0 8px 0 0' }}>ממד</th>
+                          <th style={{ padding: '10px 14px', width: '220px' }}>השאלה המנחה</th>
+                          <th style={{ padding: '10px 14px', borderRadius: '8px 0 0 0' }}>דוגמה מוחשית</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: '800', color: '#1e3a8a' }}>מסלול מפתיח בכיתה</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>הצגת התחנות וסימון המקום בתהליך</td>
+                          <td style={{ padding: '11px 14px', fontWeight: '800', color: '#1e40af' }}>תוכן</td>
+                          <td style={{ padding: '11px 14px', color: '#334155' }}>מה התלמיד יבין?</td>
+                          <td style={{ padding: '11px 14px', color: '#475569' }}>יסביר מושג ויציג דוגמה מתאימה</td>
                         </tr>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: '800', color: '#1e3a8a' }}>תבנית תכנון קצרה</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>מטרת למידה, קריטריוני הצלחה, תחנות, דרישות חשיבה, התאמות ובדיקות הבנה</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: '800', color: '#1e3a8a' }}>מחברת או כרטיס ״הצידה שלי״</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>תיעוד תמציתי של הלמידה, עדות להתקדמות וצעד להמשך</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: '800', color: '#1e3a8a' }}>מאגר צוותי</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>שיתוף פתיחות, שאלות, משימות ודוגמאות לעבודות תלמידים</td>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#ffffff' }}>
+                          <td style={{ padding: '11px 14px', fontWeight: '800', color: '#059669' }}>מיומנות</td>
+                          <td style={{ padding: '11px 14px', color: '#334155' }}>מה התלמיד יוכל לבצע?</td>
+                          <td style={{ padding: '11px 14px', color: '#475569' }}>יאתר ראיה ויקשר אותה לטענה</td>
                         </tr>
                         <tr style={{ background: '#f8fafc' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: '800', color: '#1e3a8a' }}>כלי תצפית ומשוב</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>בחינת השפה המשותפת, הבנת התהליך ואיכות הלמידה</td>
+                          <td style={{ padding: '11px 14px', fontWeight: '800', color: '#7c3aed' }}>השתתפות</td>
+                          <td style={{ padding: '11px 14px', color: '#334155' }}>כיצד יהיה שותף ללמידה?</td>
+                          <td style={{ padding: '11px 14px', color: '#475569' }}>יתייחס לרעיון של עמית או יתרום בדרך מוסכמת</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
+
+                  <p style={{ margin: '0.5rem 0 0 0', color: '#475569', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    בכל שיעור ייבחרו קריטריונים מעטים ורלוונטיים. ההשתתפות תיבחן בדרכים נגישות, כגון תרומה כתובה, בחירת ראיה או שיחה בזוג, ולא רק לפי דיבור במליאה. ההישג הלימודי והתרומה החברתית יקבלו התייחסות נפרדת.
+                  </p>
                 </div>
 
+                {/* שגרות רגשיות ותכנון משותף */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '1.5rem' }}>
+                  <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontSize: '1rem', fontWeight: '800' }}>
+                      <i className="fas fa-heart" style={{ color: '#db2777', marginLeft: '6px' }}></i>
+                      שגרות רגשיות וחברתיות
+                    </h4>
+                    <p style={{ margin: 0, color: '#475569', fontSize: '0.91rem', lineHeight: '1.65' }}>
+                      יילמדו במפורש דרכים לבקש הבהרה, לחלוק על רעיון בכבוד, לקבל משוב ולחזור למשימה לאחר קושי. לפי צורך אישי יתוכננו גם הפוגה קצרה או מרחב עבודה שקט, עם דרך ברורה לחזרה ללמידה.
+                    </p>
+                  </div>
+
+                  <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontSize: '1rem', fontWeight: '800' }}>
+                      <i className="fas fa-user-friends" style={{ color: '#2563eb', marginLeft: '6px' }}></i>
+                      תכנון משותף של אנשי הצוות
+                    </h4>
+                    <p style={{ margin: 0, color: '#475569', fontSize: '0.91rem', lineHeight: '1.65' }}>
+                      כאשר פועלים בכיתה מורה נוסף או איש צוות תומך, יוגדרו מראש יעד הלמידה, חלוקת התפקידים ודרכי איסוף המידע. תפקידי ההוראה, התצפית והסיוע יתחלקו לפי הצורך, תוך שמירה על השתתפות התלמיד בלמידה הכיתתית.
+                    </p>
+                  </div>
+                </div>
+              </article>
+
+              {/* SECTION 6: כלי עבודה, תוכנית הטמעה ובדיקה */}
+              <article className="doc-chapter-card" id="heb-sec-tools">
+                <div className="chapter-header">
+                  <div className="chapter-number-pill" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>פרק 6</div>
+                  <h2>כלי העבודה, תוכנית ההטמעה ובדיקת ההתקדמות</h2>
+                </div>
+
+                {/* כלי העבודה הבית ספריים */}
                 <div className="doc-sub-block">
+                  <h3 className="doc-sub-title">🧰 כלי העבודה הבית־ספריים</h3>
+                  <div className="doc-table-wrapper" style={{ overflowX: 'auto', margin: '0.8rem 0' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                      <thead>
+                        <tr style={{ background: '#1e293b', color: '#ffffff' }}>
+                          <th style={{ padding: '11px 16px', borderRadius: '0 10px 0 0', width: '220px' }}>כלי</th>
+                          <th style={{ padding: '11px 16px', borderRadius: '10px 0 0 0' }}>תפקיד</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>מסלול מפתיח בכיתה</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>הצגת התחנות והבהרת תהליך הלמידה</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>תבנית תכנון משותפת</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>תכנון היעד, התחנות, החסמים הצפויים, המענים ועדויות ההצלחה</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>מדף המפתחות</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>הנגשת עזרים ופיגומים לבחירה מונחית</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>מסלולי משימות גמישים</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>התאמת התמיכה והאתגר</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>שולחן הוראה ממוקדת</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>ביסוס הבנה ותרגול בקבוצה משתנה</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>כרטיס ״מפתח חוזר לפ׳״</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>בקשת הבהרה והכוונת הסיוע</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>מחברת ״הצידה שלי״</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>תיעוד התקדמות וצעד להמשך</td>
+                        </tr>
+                        <tr style={{ background: '#ffffff' }}>
+                          <td style={{ padding: '11px 16px', fontWeight: '800', color: '#1e3a8a' }}>כלי תצפית ומשוב</td>
+                          <td style={{ padding: '11px 16px', color: '#334155' }}>בחינת ההוראה, ההשתתפות והלמידה</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div style={{ background: '#eff6ff', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid #bfdbfe', marginTop: '12px' }}>
+                    <strong style={{ color: '#1e40af' }}>בתבנית התכנון ישאל המורה בכל תחנה:</strong>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px', marginTop: '8px', color: '#1e293b', fontSize: '0.92rem' }}>
+                      <span style={{ background: '#fff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>1. מה התלמיד יעשה?</span>
+                      <span style={{ background: '#fff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>2. מה עלול להקשות על השתתפותו?</span>
+                      <span style={{ background: '#fff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>3. איזו התאמה או בחירה תוצע?</span>
+                      <span style={{ background: '#fff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>4. ואיזו עדות תראה שהתקדם?</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* תוכנית הטמעה מוצעת — שמונה שבועות */}
+                <div className="doc-sub-block" style={{ marginTop: '1.5rem' }}>
                   <h3 className="doc-sub-title">📅 תוכנית הטמעה מוצעת — שמונה שבועות</h3>
-                  <div className="doc-table-wrapper" style={{ overflowX: 'auto', margin: '1rem 0' }}>
+                  <div className="doc-table-wrapper" style={{ overflowX: 'auto', margin: '0.8rem 0' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                       <thead>
                         <tr style={{ background: '#0f172a', color: '#ffffff' }}>
-                          <th style={{ padding: '12px 16px', borderRadius: '0 10px 0 0', width: '180px' }}>תקופה</th>
+                          <th style={{ padding: '12px 16px', borderRadius: '0 10px 0 0', width: '160px' }}>תקופה</th>
                           <th style={{ padding: '12px 16px', borderRadius: '10px 0 0 0' }}>מוקד העבודה</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
                           <td style={{ padding: '12px 16px', fontWeight: '800', color: '#2563eb' }}>שבועות 1–2</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>התנסות צוותית במודל, הסכמה על משמעות התחנות והכנת המסלול הכיתתי</td>
+                          <td style={{ padding: '12px 16px', color: '#334155' }}>התנסות צוותית במודל, הסכמה על משמעות התחנות, זיהוי חסמים והכנת המסלול הכיתתי</td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                           <td style={{ padding: '12px 16px', fontWeight: '800', color: '#2563eb' }}>שבועות 3–4</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>התנסות בשיעורים נבחרים, עם דגש על הבהרת המטרה, המעברים והחתימה</td>
+                          <td style={{ padding: '12px 16px', color: '#334155' }}>התנסות בשיעורים נבחרים; הבהרת מטרות, מעברים וקריטריוני הצלחה; הקניית שגרות לבקשת עזרה</td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
                           <td style={{ padding: '12px 16px', fontWeight: '800', color: '#2563eb' }}>שבועות 5–6</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>תכנון משותף של שאלות ומשימות ברמות חשיבה שונות והתאמתן לתלמידים</td>
+                          <td style={{ padding: '12px 16px', color: '#334155' }}>תכנון משימות מותאמות, דרכי הבעה מגוונות והפעלת שולחן ההוראה ומדף המפתחות</td>
                         </tr>
                         <tr style={{ background: '#ffffff' }}>
                           <td style={{ padding: '12px 16px', fontWeight: '800', color: '#2563eb' }}>שבועות 7–8</td>
-                          <td style={{ padding: '12px 16px', color: '#334155' }}>תצפיות עמיתים, שיחות עם תלמידים, בחינת עבודות והתאמת המודל להמשך</td>
+                          <td style={{ padding: '12px 16px', color: '#334155' }}>תצפיות עמיתים, שיחות עם תלמידים ובחינת תוצרים לצורך שיפור המודל</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                <div className="doc-sub-block">
-                  <h3 className="doc-sub-title">🔍 בדיקת ההתקדמות והערכה</h3>
+                {/* כיצד נבחן את התקדמות ההטמעה */}
+                <div className="doc-sub-block" style={{ marginTop: '1.5rem' }}>
+                  <h3 className="doc-sub-title">🔍 כיצד נבחן את התקדמות ההטמעה?</h3>
                   <p className="doc-paragraph">
-                    לפני ההתנסות ובסיומה נאסוף מידע באמצעות תכנון שיעורים, תצפיות קצרות, שיחות עם תלמידים ודוגמאות מעבודותיהם. נבחן:
+                    נאסוף מידע באמצעות תכנונים, תצפיות קצרות, שיחות ותוצרי תלמידים. נבדוק:
                   </p>
+                  
                   <div style={{ background: '#f8fafc', padding: '1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <ol style={{ margin: 0, paddingRight: '20px', color: '#1e293b', lineHeight: '1.9', fontSize: '0.98rem' }}>
-                      <li>האם המורים משתמשים בשמות התחנות במשמעות משותפת?</li>
-                      <li>האם התלמידים יודעים להסביר את מטרת הלמידה ואת מקומם בתהליך?</li>
-                      <li>האם המשימות מזמנות את פעולות החשיבה שהתכוונו לפתח?</li>
-                      <li>האם התלמידים יכולים להציג עדות להתקדמותם?</li>
-                      <li>אילו חלקים במודל מסייעים להוראה, ואילו דורשים התאמה?</li>
+                    <ol style={{ margin: 0, paddingRight: '20px', color: '#1e293b', lineHeight: '1.9', fontSize: '0.96rem' }}>
+                      <li>האם המורים והתלמידים משתמשים בתחנות במשמעות משותפת?</li>
+                      <li>האם התלמידים מבינים את היעד ואת הקשר בין הפעילות ללמידה?</li>
+                      <li>מי משתתף, באיזו דרך, ומי עדיין זקוק לדרך השתתפות נוספת?</li>
+                      <li>האם המענים מותאמים לחסמים שהתגלו?</li>
+                      <li>האם התלמידים עוברים בין מסלולים וקבוצות בהתאם לצורך?</li>
+                      <li>האם קיימות עדויות להתקדמות בהבנה, בביצוע ובעצמאות?</li>
+                      <li>האם התלמידים יודעים לבקש עזרה ולהסביר מה סייע להם?</li>
+                      <li>האם המורים משתמשים במידע שנאסף לתכנון הצעד הבא?</li>
                     </ol>
                   </div>
+                  <p style={{ margin: '0.7rem 0 0 0', color: '#64748b', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                    הממצאים ישמשו לשיפור ההוראה ולהתאמת המודל לתנאי בית הספר. נבחן בנפרד את איכות היישום ואת השינוי בלמידת התלמידים.
+                  </p>
                 </div>
 
-                {/* LEADING MOTTO BANNER */}
-                <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%)', color: '#ffffff', borderRadius: '16px', padding: '1.8rem', textAlign: 'center', marginTop: '2rem', boxShadow: '0 8px 25px rgba(30, 58, 138, 0.25)' }}>
-                  <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>✨ 🗝️ ✨</div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', color: '#93c5fd', fontWeight: '700' }}>המשפט המוביל של המודל</h3>
-                  <p style={{ margin: 0, fontSize: 'clamp(1.2rem, 3vw, 1.6rem)', fontWeight: '900', color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
-                    ״מסתקרנים, מבינים, מעמיקים, מיישמים ויוצרים — ומסיימים עם צידה להמשך.״
+                {/* LEADING MOTTO BANNER & STUDENT VOICE */}
+                <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%)', color: '#ffffff', borderRadius: '18px', padding: '2rem', textAlign: 'center', marginTop: '2rem', boxShadow: '0 8px 30px rgba(30, 58, 138, 0.28)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✨ 🗝️ ✨</div>
+                  
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', color: '#93c5fd', fontWeight: '700' }}>המשפט המוביל</h3>
+                  <p style={{ margin: '0 0 1.25rem 0', fontSize: 'clamp(1.2rem, 3vw, 1.55rem)', fontWeight: '900', color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+                    ״מפתיח — מסלול למידה משותף, דרכים מגוונות להשתתפות ולהתקדמות.״
+                  </p>
+
+                  <div style={{ width: '80px', height: '2px', background: '#3b82f6', margin: '0 auto 1.25rem auto', opacity: 0.7 }}></div>
+
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', color: '#a7f3d0', fontWeight: '700' }}>בשפת התלמידים</h3>
+                  <p style={{ margin: 0, fontSize: 'clamp(1.1rem, 2.5vw, 1.45rem)', fontWeight: '800', color: '#ecfdf5', textShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                    ״אני יודע מה אני לומד, מוצא דרך להשתתף, נעזר כשצריך ומראה כיצד התקדמתי״.
                   </p>
                 </div>
               </article>
