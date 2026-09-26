@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import LottieRobot from './LottieRobot';
+import genieImg from '../assets/genie.png';
 import { generateMafatihLessonPlanAI, generateAiResponse } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
 import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
@@ -4299,33 +4299,45 @@ ${p.stations?.h || ''}
         </div>
       </footer>
 
-      {/* 5. FLOATING INTERACTIVE ROBOT ASSISTANT BUTTON */}
+      {/* 5. FLOATING INTERACTIVE GENIE ASSISTANT BUTTON */}
       <div 
-        className="floating-robot-trigger"
+        className="floating-genie-trigger"
         onClick={() => {
           setRobotMode('plan');
           setIsRobotModalOpen(true);
         }}
-        title="روبوت تخطيط الدروس — موديل مِفْتَاح"
+        title="جني تخطيط الدروس السحري — موديل مِفْتَاح"
       >
-        <LottieRobot width="70px" height="70px" className="float-mini-robot" />
-        <span className="float-robot-label">
+        <div className="genie-aura-glow-mini"></div>
+        <div className="genie-avatar-mini-wrap">
+          <img 
+            src={genieImg} 
+            alt="جني تخطيط الدروس السحري" 
+            className="genie-img-mini"
+          />
+          <div className="genie-mini-sparkles">
+            <span className="sparkle s1">✨</span>
+            <span className="sparkle s2">⭐</span>
+          </div>
+        </div>
+        <span className="float-genie-label">
           <span className="float-pulse-dot"></span>
-          ⚡ روبوت تخطيط الحصة
+          🧞‍♂️ جني تخطيط الحصة ✨
         </span>
       </div>
 
-      {/* 6. ROBOT LESSON PLANNER MODAL */}
+      {/* 6. GENIE LESSON PLANNER MODAL */}
       {isRobotModalOpen && (
         <div className="robot-modal-overlay" onClick={() => setIsRobotModalOpen(false)}>
           <div className="robot-modal-card lesson-planner-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="robot-modal-header">
-              <div className="robot-modal-avatar">
-                <LottieRobot width="65px" height="65px" />
+            <div className="robot-modal-header genie-theme-header">
+              <div className="genie-modal-avatar-box">
+                <img src={genieImg} alt="جني مِفتاح السحري" className="genie-avatar-header-img" />
+                <span className="genie-lamp-glow">✨</span>
               </div>
               <div className="robot-modal-title-wrap">
-                <h3>روبوت تخطيط الدروس — موديل مِفْتَاح 🤖🗝️</h3>
-                <p>هندسة خطة حصة نموذجية وفق محطات מַפְתֵּי"חַ وتصديرها كـ Word أو PDF</p>
+                <h3>جني تخطيط الدروس السحري — موديل مِفْتَاح 🧞‍♂️🗝️✨</h3>
+                <p>شُبَّيْك لُبَّيْك! رفيقك السحري لهندسة الحصة وفق محطات מַפְתֵּי"חַ وتصديرها كـ Word أو PDF</p>
               </div>
               <button 
                 className="robot-modal-close"
@@ -4379,14 +4391,14 @@ ${p.stations?.h || ''}
               {/* ========================================================================= */}
               {robotMode === 'choice' ? (
                 <div className="robot-choice-flow">
-                  <div className="robot-welcome-banner">
-                    <div className="welcome-avatar-wrap">
-                      <LottieRobot width="80px" height="80px" />
+                  <div className="robot-welcome-banner genie-welcome-box">
+                    <div className="welcome-avatar-wrap genie-avatar-frame">
+                      <img src={genieImg} alt="جني مِفتاح السحري" className="genie-welcome-img" />
                     </div>
                     <div className="welcome-text-wrap">
-                      <h4>مرحباً بك زميلي المعلم في مدرسة مشيرفة الابتدائية! 👋</h4>
+                      <h4>شُبَّيْك لُبَّيْك زميلي المعلم في مدرسة مشيرفة الابتدائية! 🧞‍♂️✨</h4>
                       <p>
-                        أنا رفيقك ومستشارك البيداغوجي الذكي لهندسة وتخطيط الدروس بموديل «مِفْتَاح» (مودل מַפְתֵּי"חַ). لإراحة المعلمين وتوفير وقتكم وجهدكم، كيف ترغب في تخطيط حصتك اليوم؟
+                        خرجت لك من الفانوس السحري لأكون رفيقك البيداغوجي ومساعدك الذكي لهندسة وتخطيط الدروس بموديل «مِفْتَاح» (مودل מַפְתֵּי"חַ). كيف ترغب في تخطيط حصتك اليوم؟
                       </p>
                     </div>
                   </div>
@@ -4804,12 +4816,15 @@ ${p.stations?.h || ''}
                 /* ========================================================================= */
                 <div className="robot-planner-flow">
                   {isAiGenerating ? (
-                    <div className="robot-generating-state">
-                      <LottieRobot width="120px" height="120px" />
+                    <div className="robot-generating-state genie-generating-box">
+                      <div className="genie-generating-avatar-wrap">
+                        <img src={genieImg} alt="جني مِفتاح السحري" className="genie-generating-img" />
+                        <div className="genie-magic-stars">✨ 🌟 💫</div>
+                      </div>
                       <div className="generating-pulse-spinner"></div>
-                      <h4>جاري هندسة مسار الدرس بموديل "مِفْتَاح"...</h4>
+                      <h4>جاري إطلاق سحر التخطيط بموديل «مِفْتَاح»... 🧞‍♂️🪄</h4>
                       <p>
-                        يقوم الروبوت بصياغة لغز المدخل المحفّز [م]، فهم وبناء المعنى [ف]، أسئلة التفكير والتبصّر [ت]، ورشة الإنجاز والتطبيق UDL [ي]، وختم الحصاد والزوّادة وتذكرة الخروج [ح]...
+                        يقوم الجني السحري ببلورة لغز المدخل المحفّز [م]، وبناء المعنى [ف]، وأسئلة التفكير والتبصّر [ت]، وورشة الإنجاز والتطبيق [ي]، وختم الحصاد والزوّادة [ح] بدقة وتمايز واحتواء...
                       </p>
                     </div>
                   ) : generatedPlan ? (
@@ -5098,7 +5113,7 @@ ${p.stations?.h || ''}
                 <div className="robot-advice-flow">
                   <div className="robot-speech-display">
                     <div className="robot-speech-header">
-                      <span className="robot-badge-tag"><i className="fas fa-comment-dots"></i> إرشادات الروبوت:</span>
+                      <span className="robot-badge-tag"><i className="fas fa-magic"></i> إرشادات جني مِفتاح السحري 🧞‍♂️:</span>
                       <button 
                         type="button" 
                         className={`robot-voice-read-btn ${isVoiceSpeaking ? 'speaking' : ''}`}
@@ -5127,7 +5142,7 @@ ${p.stations?.h || ''}
                   <div className="robot-query-input-bar">
                     <input 
                       type="text"
-                      placeholder={isRobotThinking ? "جاري استشارة الذكاء الاصطناعي..." : "اكتب استفسارك هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."}
+                      placeholder={isRobotThinking ? "جاري استدعاء حكمة الجني السحري..." : "اسأل الجني السحري هنا (مثال: كيف أدمج طلاب صعوبات التعلم؟)..."}
                       value={robotChatInput}
                       onChange={(e) => setRobotChatInput(e.target.value)}
                       disabled={isRobotThinking}

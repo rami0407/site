@@ -2110,7 +2110,8 @@
    ROBOT ANIMATION & INTERACTIVE ASSISTANT POD
    ========================================================================= */
 
-/* FLOATING ROBOT TRIGGER BUTTON */
+/* FLOATING GENIE TRIGGER BUTTON */
+.floating-genie-trigger,
 .floating-robot-trigger {
   position: fixed;
   bottom: 24px;
@@ -2118,38 +2119,162 @@
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.92);
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 138, 0.92) 100%);
   border: 2px solid #38bdf8;
-  padding: 6px 16px 6px 8px;
-  border-radius: 50px;
+  padding: 6px 18px 6px 8px;
+  border-radius: 60px;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(12px);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 12px 35px rgba(2, 132, 199, 0.45), 0 0 20px rgba(56, 189, 248, 0.3);
+  backdrop-filter: blur(14px);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
 }
 
+.floating-genie-trigger:hover,
 .floating-robot-trigger:hover {
-  transform: scale(1.08) translateY(-4px);
-  box-shadow: 0 14px 35px rgba(56, 189, 248, 0.4);
+  transform: scale(1.08) translateY(-6px);
+  box-shadow: 0 18px 45px rgba(245, 158, 11, 0.5), 0 0 30px rgba(56, 189, 248, 0.6);
   border-color: #fbbf24;
 }
 
-.float-robot-label {
-  color: white;
+.genie-avatar-mini-wrap {
+  position: relative;
+  width: 65px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.genie-img-mini {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(14, 165, 233, 0.7));
+  animation: genieFloatingHover 2.8s ease-in-out infinite alternate;
+}
+
+.genie-mini-sparkles {
+  position: absolute;
+  top: -4px;
+  right: -4px;
   font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.genie-mini-sparkles .s1 {
+  animation: sparkleFloat 2s infinite;
+}
+
+.genie-mini-sparkles .s2 {
+  animation: sparkleFloat 2.4s infinite 0.6s;
+}
+
+.float-genie-label,
+.float-robot-label {
+  color: #ffffff;
+  font-size: 0.95rem;
   font-weight: 800;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .float-pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 10px #10b981;
+  box-shadow: 0 0 12px #10b981;
+}
+
+/* GENIE MODAL AVATAR & HEADER */
+.genie-modal-avatar-box {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(15, 23, 42, 0.8) 80%);
+  border: 2px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.5);
+}
+
+.genie-avatar-header-img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.6));
+  animation: genieFloatingHover 3s ease-in-out infinite alternate;
+}
+
+.genie-lamp-glow {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 0.85rem;
+}
+
+/* GENIE WELCOME & GENERATING BOXES */
+.genie-welcome-box .welcome-avatar-wrap.genie-avatar-frame {
+  width: 85px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.genie-welcome-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(14, 165, 233, 0.65));
+  animation: genieFloatingHover 3s ease-in-out infinite alternate;
+}
+
+.genie-generating-box .genie-generating-avatar-wrap {
+  position: relative;
+  width: 120px;
+  height: 130px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.genie-generating-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 25px rgba(245, 158, 11, 0.8));
+  animation: genieFloatingHover 2.2s ease-in-out infinite alternate;
+}
+
+.genie-magic-stars {
+  position: absolute;
+  bottom: 0;
+  font-size: 1.2rem;
+  animation: pulseAura 2s ease-in-out infinite alternate;
+}
+
+@keyframes genieFloatingHover {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(2deg); }
+  100% { transform: translateY(-2px) rotate(-1deg); }
+}
+
+@keyframes pulseAura {
+  0% { opacity: 0.5; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes sparkleFloat {
+  0%, 100% { opacity: 0.3; transform: scale(0.6) translateY(0); }
+  50% { opacity: 1; transform: scale(1.2) translateY(-6px); }
 }
 
 /* ROBOT DIALOG MODAL */
