@@ -509,6 +509,7 @@ const MafatihPedagogyPage = () => {
   const [aiObjective, setAiObjective] = useState('');
   const [aiDuration, setAiDuration] = useState(45);
   const [aiNotes, setAiNotes] = useState('');
+  const [planLanguage, setPlanLanguage] = useState('ar');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -698,7 +699,8 @@ const MafatihPedagogyPage = () => {
         topic: aiTopic.trim(),
         objective: aiObjective.trim(),
         duration: aiDuration,
-        notes: aiNotes.trim()
+        notes: aiNotes.trim(),
+        language: planLanguage
       });
       setGeneratedPlan(plan);
     } catch (err) {
@@ -744,7 +746,8 @@ const MafatihPedagogyPage = () => {
       title: data.title,
       objective: data.objective || '',
       duration: data.duration || 45,
-      stations: data.stations
+      stations: data.stations,
+      language: data.language || planLanguage
     });
   };
 
@@ -783,7 +786,8 @@ const MafatihPedagogyPage = () => {
       title: data.title,
       objective: data.objective || '',
       duration: data.duration || 45,
-      stations: data.stations
+      stations: data.stations,
+      language: data.language || planLanguage
     });
   };
 
@@ -4970,6 +4974,65 @@ ${p.stations?.h || ''}
                         <span>اكتب موضوع الحصة وهدفها، وسأقوم بهندسة خطة درس نموذجية متكاملة بمحطات «مِفْتَاح» الخمس (מודל מַפְתֵּי"חַ) جاهزة للتنزيل كملف Word أو PDF:</span>
                       </div>
 
+                      {/* Language Selection Toggle */}
+                      <div className="robot-lang-toggle-bar" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: '#f8fafc',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1',
+                        marginBottom: '1rem',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <i className="fas fa-language" style={{ color: '#0284c7' }}></i>
+                          لغة إخراج التخطيط / שפת הפקת המערך:
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '20px',
+                              border: planLanguage === 'ar' ? '2px solid #10b981' : '1px solid #cbd5e1',
+                              background: planLanguage === 'ar' ? '#ecfdf5' : '#ffffff',
+                              color: planLanguage === 'ar' ? '#065f46' : '#64748b',
+                              fontWeight: '700',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
+                            onClick={() => setPlanLanguage('ar')}
+                          >
+                            <span>🇸🇦</span> العربية
+                          </button>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '20px',
+                              border: planLanguage === 'he' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                              background: planLanguage === 'he' ? '#eff6ff' : '#ffffff',
+                              color: planLanguage === 'he' ? '#1e40af' : '#64748b',
+                              fontWeight: '700',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
+                            onClick={() => setPlanLanguage('he')}
+                          >
+                            <span>🇮🇱</span> עברית (Hebrew)
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Quick Subjects Pills */}
                       <div className="robot-form-group">
                         <label>المادة الدراسية:</label>
@@ -5058,14 +5121,20 @@ ${p.stations?.h || ''}
                       {/* Topic Input (Required) */}
                       <div className="robot-form-group">
                         <label className="required-label">
-                          <i className="fas fa-heading"></i> موضوع وعنوان الحصة:
+                          <i className="fas fa-heading"></i> {planLanguage === 'he' ? 'נושא השיעור וכותרתו:' : 'موضوع وعنوان الحصة:'}
                         </label>
                         <input 
                           type="text" 
                           className="robot-text-input" 
-                          placeholder={aiSubject.includes('عاطفي') ? "مثال: إدارة الغضب وتنظيم المشاعر / مهارات الصداقة والتعاطف / حل النزاعات والتواصل الإيجابي..." : "مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب..."} 
+                          placeholder={planLanguage === 'he' ? "לדוגמה: שברים פשוטים וחיבורם / מצבי צבירה והתעבות / ויסות כעסים ומיומנויות שיח..." : (aiSubject.includes('عاطفي') ? "مثال: إدارة الغضب وتنظيم المشاعر / مهارات الصداقة والتعاطف / حل النزاعات والتواصل الإيجابي..." : "مثال: حالات المادة والتكاثف / الكسور المتكافئة / أسلوب التعجب...")} 
                           value={aiTopic}
-                          onChange={(e) => setAiTopic(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setAiTopic(val);
+                            if (/[\u0590-\u05FF]/.test(val)) {
+                              setPlanLanguage('he');
+                            }
+                          }}
                         />
                       </div>
 
@@ -5103,7 +5172,7 @@ ${p.stations?.h || ''}
                         className="robot-submit-generate-btn"
                         onClick={handleGeneratePlanWithRobot}
                       >
-                        <i className="fas fa-magic"></i> ⚡ ابدأ بناء وتوليد خطة الدرس الآن
+                        <i className="fas fa-magic"></i> {planLanguage === 'he' ? '⚡ הפק מערך שיעור לפי מודל מַפְתֵּי"חַ עכשיו' : '⚡ ابدأ بناء وتوليد خطة الدرس الآن'}
                       </button>
                     </div>
                   )}

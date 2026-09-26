@@ -30,15 +30,17 @@ export const exportLessonPlanToWord = ({
   duration = 45,
   stations = {},
   teacherName = '',
-  date = new Date().toLocaleDateString('ar-EG')
+  date = new Date().toLocaleDateString('ar-EG'),
+  language = 'ar'
 }) => {
-  const fileName = `${sanitizeFilename(title)}_خطة_درس_مفتاح.doc`;
+  const isHebrew = language === 'he' || /[\u0590-\u05FF]/.test(title || '') || /[\u0590-\u05FF]/.test(stations.m || '');
+  const fileName = `${sanitizeFilename(title)}_${isHebrew ? 'מערך_שיעור_מודל_מפתיח' : 'خطة_درس_مفتاح'}.doc`;
 
-  const mContent = stations.m || 'محطة المدخل المحفّز...';
-  const fContent = stations.f || 'محطة فهم وبناء المعنى...';
-  const tContent = stations.t || 'محطة التفكير والتبصّر وأسئلة التفكير العليا...';
-  const yContent = stations.y || 'محطة الإنجاز والتطبيق والتمايز...';
-  const hContent = stations.h || 'محطة الحصاد والزوّادة ونقل الأثر...';
+  const mContent = stations.m || (isHebrew ? 'תחנת משיכה וסקרנות...' : 'محطة المدخل المحفّز...');
+  const fContent = stations.f || (isHebrew ? 'תחנת פיתוח הבנה...' : 'محطة فهم وبناء المعنى...');
+  const tContent = stations.t || (isHebrew ? 'תחנת תובנה והעמקה...' : 'محطة التفكير والتبصّر وأسئلة التفكير العليا...');
+  const yContent = stations.y || (isHebrew ? 'תחנת יצירה ויישום...' : 'محطة الإنجاز والتطبيق والتمايز...');
+  const hContent = stations.h || (isHebrew ? 'תחנת חתימה וצידה לדרך...' : 'محطة الحصاد والزوّادة ونقل الأثر...');
 
   const wordHTML = `
 <html xmlns:o='urn:schemas-microsoft-com:office:office' 
@@ -46,7 +48,7 @@ export const exportLessonPlanToWord = ({
       xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
   <meta charset='utf-8'>
-  <title>${title} — خطة درس موديل مِفْتَاح (מודל מַפְתֵּי"חַ)</title>
+  <title>${title} — ${isHebrew ? 'מערך שיעור מודל מַפְתֵּי"חַ — בית ספר יסודי מושירפה' : 'خطة درس موديل مِفْتَاح (מודל מַפְתֵּי"חַ)'}</title>
   <!--[if gte mso 9]>
   <xml>
     <w:WordDocument>
@@ -68,7 +70,7 @@ export const exportLessonPlanToWord = ({
     
     body {
       direction: rtl;
-      font-family: 'Cairo', 'Traditional Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-family: ${isHebrew ? "'Segoe UI', 'Arial', 'Tahoma', sans-serif" : "'Cairo', 'Traditional Arabic', 'Segoe UI', Tahoma, Arial, sans-serif"};
       font-size: 13pt;
       line-height: 1.8;
       color: #0f172a;
@@ -83,7 +85,6 @@ export const exportLessonPlanToWord = ({
       margin: 0 auto;
     }
 
-    /* Header styling */
     .header-table {
       width: 100%;
       border-bottom: 2.5pt solid #1e3a8a;
@@ -140,7 +141,6 @@ export const exportLessonPlanToWord = ({
       font-weight: bold;
     }
 
-    /* Meta Table */
     .meta-table {
       width: 100%;
       border-collapse: collapse;
@@ -181,7 +181,6 @@ export const exportLessonPlanToWord = ({
       margin-bottom: 4pt;
     }
 
-    /* Stations Section */
     .stations-table {
       width: 100%;
       border-collapse: collapse;
@@ -221,7 +220,6 @@ export const exportLessonPlanToWord = ({
       margin-top: 2pt;
     }
 
-    /* Signatures */
     .signatures-table {
       width: 100%;
       margin-top: 22pt;
@@ -259,18 +257,18 @@ export const exportLessonPlanToWord = ({
       <table class="header-table" border="0" cellpadding="0" cellspacing="0">
         <tr>
           <td style="width: 85px; text-align: right; vertical-align: middle; padding-left: 10pt;">
-            <img src="${SCHOOL_LOGO_BASE64}" alt="شعار مدرسة مشيرفة" width="75" height="75" style="width: 75px; height: 75px; border-radius: 50%;" />
+            <img src="${SCHOOL_LOGO_BASE64}" alt="לוגו בית ספר מושירפה" width="75" height="75" style="width: 75px; height: 75px; border-radius: 50%;" />
           </td>
           <td style="text-align: right; vertical-align: middle;">
-            <div class="school-title">دولة إسرائيل — وزارة التربية والتعليم</div>
+            <div class="school-title">${isHebrew ? 'מדינת ישראל — משרד החינוך' : 'دولة إسرائيل — وزارة التربية والتعليم'}</div>
             <div class="school-title" style="font-size: 13.5pt; color: #0284c7; margin-top: 2pt;">
-              لواء حيفا — مدرسة مشيرفة الابتدائية
+              ${isHebrew ? 'מחוז חיפה — בית הספר היסודי מושירפה' : 'لواء حيفا — مدرسة مشيرفة الابتدائية'}
             </div>
-            <div class="school-subtitle">الإطار التربوي والتعليمي الموحد لرسم مسار الحصة (الشيفرة الوراثية الصفية)</div>
+            <div class="school-subtitle">${isHebrew ? 'מודל מַפְתֵּי"חַ — שפה פדגוגית משותפת, מעורבות תלמידים, הכלה והשתלבות, הוראה דיפרנציאלית והערכה' : 'الإطار التربوي والتعليمي الموحد لرسم مسار الحصة (الشيفرة الوراثية الصفية)'}</div>
           </td>
           <td style="text-align: left; vertical-align: middle; width: 135px;">
             <div class="model-badge">
-              موديل מַפְתֵּי"חַ 🗝️
+              ${isHebrew ? 'מודל מַפְתֵּי"חַ 🗝️' : 'موديل מַפְתֵּי"חַ 🗝️'}
             </div>
           </td>
         </tr>
@@ -278,27 +276,27 @@ export const exportLessonPlanToWord = ({
 
       <!-- Lesson Main Title Banner -->
       <div class="main-title-box">
-        <div class="main-lesson-title">بطاقة تخطيط درس: "${title}"</div>
-        <div class="model-sub">وفق موديل "مِفْتَاح" التربوي القيادي (מודל מַפְתֵּי"חַ)</div>
+        <div class="main-lesson-title">${isHebrew ? `כרטיסיית תכנון שיעור: "${title}"` : `بطاقة تخطيط درس: "${title}"`}</div>
+        <div class="model-sub">${isHebrew ? 'לפי מודל "מַפְתֵּי"חַ" הפדגוגי הבית-ספרי' : 'وفق موديل "مِفْتَاح" التربوي القيادي (מודל מַפְתֵּי"חַ)'}</div>
       </div>
 
       <!-- Metadata Box -->
       <table class="meta-table" border="1" cellpadding="0" cellspacing="0">
         <tr>
-          <td class="meta-label">المادة الدراسية:</td>
+          <td class="meta-label">${isHebrew ? 'תחום דעת:' : 'المادة الدراسية:'}</td>
           <td>${subject}</td>
-          <td class="meta-label">الصف والمستوى:</td>
+          <td class="meta-label">${isHebrew ? 'שכבת גיל:' : 'الصف والمستوى:'}</td>
           <td>${grade}</td>
         </tr>
         <tr>
-          <td class="meta-label">مدة الحصة:</td>
-          <td>${duration} دقيقة</td>
-          <td class="meta-label">تاريخ التنفيذ:</td>
+          <td class="meta-label">${isHebrew ? 'משך השיעור:' : 'مدة الحصة:'}</td>
+          <td>${duration} ${isHebrew ? 'דקות' : 'دقيقة'}</td>
+          <td class="meta-label">${isHebrew ? 'תאריך:' : 'تاريخ التنفيذ:'}</td>
           <td>${date}</td>
         </tr>
         ${teacherName ? `
         <tr>
-          <td class="meta-label">المعلم/ة المعدّ:</td>
+          <td class="meta-label">${isHebrew ? 'מורה מלמד/ת:' : 'المعلم/ة المعدّ:'}</td>
           <td colspan="3">${teacherName}</td>
         </tr>
         ` : ''}
@@ -306,8 +304,8 @@ export const exportLessonPlanToWord = ({
 
       <!-- Main Educational & Value Objective -->
       <div class="objective-box">
-        <div class="objective-title">🎯 الهدف التعليمي والقيمي المركزي للحصة:</div>
-        <div>${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ).'}</div>
+        <div class="objective-title">${isHebrew ? '🎯 מטרת השיעור ומדדי ההצלחה:' : '🎯 الهدف التعليمي والقيمي المركزي للحصة:'}</div>
+        <div>${objective || (isHebrew ? 'הבנת המושג המרכזי ויישומו במשימות מגוונות תוך לקיחת צידה לדרך לפי מודל מַפְתֵּי"חַ.' : 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ).')}</div>
       </div>
 
       <!-- Five Stations Structured Table -->
@@ -316,8 +314,8 @@ export const exportLessonPlanToWord = ({
         <!-- Station 1: M -->
         <tr class="station-row">
           <td class="station-header-cell bg-m">
-            [ م ] مَحَطَّةُ المَدْخَلِ المُحَفِّز (משיכה וסקרנות — إثارة الفضول وكسر الجمود)
-            <div class="station-subinfo">الوقت التقديري: 3 - 5 دقائق | دور المعلم: محفز ومستفز للتفكير ومثير للفضول</div>
+            ${isHebrew ? '[ מ ] משיכה וסקרנות (עירור עניין וידע קודם)' : '[ م ] مَحَطَّةُ المَدْخَلِ المُحَفِّز (משיכה וסקרנות — إثارة الفضول وكسر الجمود)'}
+            <div class="station-subinfo">${isHebrew ? 'משך מומלץ: 3 - 5 דקות | גירוי מוחשי, שאלת הפתיחה, חיבור לידע קודם' : 'الوقت التقديري: 3 - 5 دقائق | دور المعلم: محفز ومستفز للتفكير ومثير للفضول'}</div>
           </td>
         </tr>
         <tr class="station-row">
@@ -329,8 +327,8 @@ export const exportLessonPlanToWord = ({
         <!-- Station 2: F -->
         <tr class="station-row">
           <td class="station-header-cell bg-f">
-            [ ف ] مَحَطَّةُ فَهْمِ وَبِنَاءِ المَعْنَى (פיתוח הבנה — تطوير الفهم والقاموس والنمذجة)
-            <div class="station-subinfo">الوقت التقديري: 8 - 10 دقائق | دور المعلم: وسيط معرفي يوضح القاموس العلمي ونمذجة I Do</div>
+            ${isHebrew ? '[ פ ] פיתוח הבנה (המשגה ומידול)' : '[ ف ] مَحَطَّةُ فَهْمِ وَبِنَاءِ المَعْنَى (פיתוח הבנה — تطوير الفهم والقاموس والنمذجة)'}
+            <div class="station-subinfo">${isHebrew ? 'משך מומלץ: 8 - 10 דקות | מטרת השיעור, מילון מושגים, ומידול המורה בחשיבה בקול (I Do)' : 'الوقت التقديري: 8 - 10 دقائق | دور المعلم: وسيط معرفي يوضح القاموس العلمي ونمذجة I Do'}</div>
           </td>
         </tr>
         <tr class="station-row">
@@ -342,8 +340,8 @@ export const exportLessonPlanToWord = ({
         <!-- Station 3: T -->
         <tr class="station-row">
           <td class="station-header-cell bg-t">
-            [ ت ] مَحَطَّةُ التَّفْكِيرِ وَالتَّبَصُّر (תובנה והעמקה — أسئلة تفكير عليا وحوار سقراطي)
-            <div class="station-subinfo">الوقت التقديري: 8 - 10 دقائق | دور المعلم: ميسر للحوار الفكري يطرح أسئلة غير مغلقة وتبصّر</div>
+            ${isHebrew ? '[ ת ] תובנה והעמקה (חשיבה מסדר גבוה)' : '[ ت ] مَحَطَّةُ التَّفْكِירِ وَالتَّبَصُّر (תובנה והעמקה — أسئلة تفكير عليا وحوار سقراطي)'}
+            <div class="station-subinfo">${isHebrew ? 'משך מומלץ: 8 - 10 דקות | שאלות עומק, הנמקה, ראיות, ובירור תפיסות' : 'الوقت التقديري: 8 - 10 دقائق | دور المعلم: ميسر للحوار الفكري يطرح أسئلة غير مغلقة وتبصّر'}</div>
           </td>
         </tr>
         <tr class="station-row">
@@ -355,8 +353,8 @@ export const exportLessonPlanToWord = ({
         <!-- Station 4: Y -->
         <tr class="station-row">
           <td class="station-header-cell bg-y">
-            [ ي ] مَحَطَّةُ الإِنْجَازِ وَالتَّطْبِيق (יצירה ויישום — ورشة عمل وإنجاز ملموس وتمايز UDL)
-            <div class="station-subinfo">الوقت التقديري: 12 - 15 دقيقة | دور المعلم: مدرب وموجه يراعي الفروق الفردية</div>
+            ${isHebrew ? '[ י ] יצירה ויישום (סדנה פעילה ומסלולים גמישים)' : '[ ي ] مَحَطَّةُ الإِنْجَازِ وَالتَّطْبِيق (יצירה ויישום — ورشة العمل وإنجاز ملموس وتمايز)'}
+            <div class="station-subinfo">${isHebrew ? 'משך מומלץ: 12 - 15 דקות | 3 מסלולים גמישים, שולחן ממוקד (4-6 תלמידים), כרטיסיית חזרה להבנה והכלה' : 'الوقت التقديري: 12 - 15 دقيقة | دور المعلم: مدرب ומوجه يتابع المسارات المتمايزة UDL وطاولة التمكين'}</div>
           </td>
         </tr>
         <tr class="station-row">
@@ -368,8 +366,8 @@ export const exportLessonPlanToWord = ({
         <!-- Station 5: H -->
         <tr class="station-row">
           <td class="station-header-cell bg-h">
-            [ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חתימה וצידה לדרך — تذكرة الخروج ونقل الأثر)
-            <div class="station-subinfo">الوقت التقديري: 4 - 5 دقائق | دور الطالب: مقيم ذاتي يستخلص زوّادته لغده وحياته الواقعية</div>
+            ${isHebrew ? '[ ח ] חתימה וצידה לדרך (רפלקציה והעברת למידה)' : '[ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חתימה וצידה לדרך — تذكرة الخروج ونقل الأثر)'}
+            <div class="station-subinfo">${isHebrew ? 'משך מומלץ: 4 - 5 דקות | מענה ל-5 שאלות רפלקציה, הגדרת הצידה לדרך ומשפט התלמיד' : 'الوقت التقديري: 4 - 5 دقائق | دور المعلم: مصادق على الإنجاز، ميسر للتأمل الذاتي وتثبيت الزوّادة'}</div>
           </td>
         </tr>
         <tr class="station-row">
@@ -380,29 +378,30 @@ export const exportLessonPlanToWord = ({
 
       </table>
 
-      <!-- Signatures Footer -->
+      <!-- Signatures Section -->
       <table class="signatures-table" border="0" cellpadding="0" cellspacing="0">
         <tr>
           <td class="sig-cell">
-            <strong>توقيع المعلم/ة المعدّ</strong>
+            <strong>${isHebrew ? 'מורה מלמד/ת' : 'المعلم/ة المعدّ'}</strong>
             <div class="sig-space"></div>
-            ..................................
+            <div>${teacherName || (isHebrew ? 'שם וחתימה' : 'الاسم والتوقيع')}</div>
           </td>
           <td class="sig-cell">
-            <strong>مركز/ة الموضوع الدراسي</strong>
+            <strong>${isHebrew ? 'רכז/ת תחום הדעת' : 'مركز/ة الموضوع الدراسي'}</strong>
             <div class="sig-space"></div>
-            ..................................
+            <div>${isHebrew ? 'שם והערות' : 'الاسم والملاحظات'}</div>
           </td>
           <td class="sig-cell">
-            <strong>مصادقة الإدارة المدرسية</strong>
+            <strong>${isHebrew ? 'אישור הנהלת בית הספר' : 'مصادقة الإدارة المدرسية'}</strong>
             <div class="sig-space"></div>
-            ..................................
+            <div>${isHebrew ? 'מר ראמי אירפאעיה — מנהל בית הספר' : 'أ. رامي ارفاعية — مدير المدرسة'}</div>
           </td>
         </tr>
       </table>
 
+      <!-- Footer Note -->
       <div class="footer-note">
-        تم توليد هذه الخطة آلياً عبر مساعد الذكاء الاصطناعي لموديل "مِفْتَاح" — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}
+        ${isHebrew ? `מערך שיעור מאושר שנבנה בסיוע העוזר החכם של מודל מַפְתֵּי"חַ — בית הספר היסודי מושירפה © ${new Date().getFullYear()}` : `خطة درس معتمدة تم إعدادها بواسطة مساعد موديل "مِفْتَاح" الذكي (מודל מַפְתֵּי"חַ) — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}`}
       </div>
 
     </div>
@@ -411,7 +410,6 @@ export const exportLessonPlanToWord = ({
 </html>
   `.trim();
 
-  // Create a blob with Word MIME type and trigger download
   const blob = new Blob(['\ufeff', wordHTML], {
     type: 'application/msword;charset=utf-8'
   });
@@ -426,11 +424,6 @@ export const exportLessonPlanToWord = ({
   URL.revokeObjectURL(url);
 };
 
-/**
- * 2. Print / Export to PDF
- * Opens a dedicated, clean, high-resolution A4 printable window
- * with vector borders, colored stations, and automatic print dialog.
- */
 export const exportLessonPlanToPdf = ({
   subject = 'عام',
   grade = 'المرحلة الابتدائية',
@@ -439,26 +432,29 @@ export const exportLessonPlanToPdf = ({
   duration = 45,
   stations = {},
   teacherName = '',
-  date = new Date().toLocaleDateString('ar-EG')
+  date = new Date().toLocaleDateString('ar-EG'),
+  language = 'ar'
 }) => {
+  const isHebrew = language === 'he' || /[\u0590-\u05FF]/.test(title || '') || /[\u0590-\u05FF]/.test(stations.m || '');
+
   const printWindow = window.open('', '_blank', 'width=900,height=800');
   if (!printWindow) {
-    alert('يرجى السماح بالنوافذ المنبثقة (Popups) لمعاينة وطباعة ملف PDF.');
+    alert(isHebrew ? 'אנא אפשר חלונות קופצים (Popups) לצפייה והדפסת PDF.' : 'يرجى السماح بالنوافذ المنبثقة (Popups) لمعاينة وطباعة ملف PDF.');
     return;
   }
 
-  const mContent = stations.m || 'محطة المدخل المحفّز...';
-  const fContent = stations.f || 'محطة فهم وبناء المعنى...';
-  const tContent = stations.t || 'محطة التفكير والتبصّر وأسئلة التفكير العليا...';
-  const yContent = stations.y || 'محطة الإنجاز والتطبيق والتمايز...';
-  const hContent = stations.h || 'محطة الحصاد والزوّادة ونقل الأثر...';
+  const mContent = stations.m || (isHebrew ? 'תחנת משיכה וסקרנות...' : 'محطة المدخل المحفّز...');
+  const fContent = stations.f || (isHebrew ? 'תחנת פיתוח הבנה...' : 'محطة فهم وبناء المعنى...');
+  const tContent = stations.t || (isHebrew ? 'תחנת תובנה והעמקה...' : 'محطة التفكير والتبصّر وأسئلة التفكير العليا...');
+  const yContent = stations.y || (isHebrew ? 'תחנת יצירה ויישום...' : 'محطة الإنجاز والتطبيق والتمايز...');
+  const hContent = stations.h || (isHebrew ? 'תחנת חתימה וצידה לדרך...' : 'محطة الحصاد والزوّادة ونقل الأثر...');
 
   const html = `
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="${isHebrew ? 'he' : 'ar'}" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <title>${title} — خطة درس موديل مِفْتَاح (מודל מַפְתֵּי"חַ) (PDF)</title>
+  <title>${title} — ${isHebrew ? 'מערך שיעור מודל מַפְתֵּי"חַ — מושירפה' : 'خطة درس موديل مِفْتَاح (מודל מַפְתֵּי"חַ)'} (PDF)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -470,162 +466,165 @@ export const exportLessonPlanToPdf = ({
 
     * {
       box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
+      margin: 0;
+      padding: 0;
     }
 
     body {
       direction: rtl;
-      font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Traditional Arabic", sans-serif;
-      margin: 0;
-      padding: 0;
+      font-family: ${isHebrew ? "'Segoe UI', Arial, sans-serif" : "'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif"};
+      background-color: #ffffff;
       color: #0f172a;
-      background: #ffffff;
-      font-size: 13.5px;
-      line-height: 1.75;
+      line-height: 1.6;
+      font-size: 11pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
-    .sheet-wrapper {
+    .print-sheet {
       width: 100%;
-      max-width: 820px;
+      max-width: 190mm;
       margin: 0 auto;
-      padding: 12px;
     }
 
     .sheet-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      border-bottom: 3px double #1e3a8a;
-      padding-bottom: 12px;
-      margin-bottom: 14px;
+      align-items: center;
+      border-bottom: 3px solid #1e3a8a;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .school-info h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 900;
+    .header-logo-side {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo-side img {
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    .header-texts h1 {
+      font-size: 13.5pt;
+      font-weight: 800;
       color: #1e3a8a;
       line-height: 1.3;
     }
 
-    .school-info p {
-      margin: 4px 0 0;
-      font-size: 12px;
-      color: #475569;
+    .header-texts h2 {
+      font-size: 11pt;
       font-weight: 700;
+      color: #0284c7;
+      margin-top: 2px;
     }
 
-    .brand-key-badge {
-      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 12px;
+    .header-texts p {
+      font-size: 8.5pt;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .header-tag {
+      background: linear-gradient(135deg, #1e3a8a, #0284c7);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 9.5pt;
+      font-weight: 700;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(30, 58, 138, 0.2);
     }
 
-    .brand-key-badge .title {
-      font-size: 14.5px;
-      font-weight: 900;
-      color: #fbbf24;
-      display: block;
-    }
-
-    .brand-key-badge .subtitle {
-      font-size: 11px;
-      opacity: 0.95;
-    }
-
-    .lesson-hero-card {
+    .lesson-title-bar {
       background: #f8fafc;
       border: 1.5px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 14px 18px;
-      margin-bottom: 14px;
+      border-radius: 6px;
+      padding: 8px 12px;
       text-align: center;
+      margin-bottom: 10px;
     }
 
-    .lesson-hero-card h2 {
-      margin: 0 0 5px;
-      font-size: 19.5px;
-      font-weight: 900;
+    .lesson-title-bar h3 {
+      font-size: 14pt;
+      font-weight: 800;
       color: #0f172a;
     }
 
-    .lesson-hero-card .tagline {
-      font-size: 13.5px;
+    .lesson-title-bar span {
+      font-size: 9.5pt;
       color: #d97706;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .meta-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
+      gap: 6px;
+      margin-bottom: 10px;
     }
 
     .meta-item {
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 12px;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 9pt;
     }
 
     .meta-item strong {
-      color: #475569;
       display: block;
-      font-size: 11px;
+      color: #475569;
+      font-size: 8pt;
       margin-bottom: 2px;
     }
 
     .meta-item span {
-      font-weight: 800;
       color: #0f172a;
-      font-size: 13px;
+      font-weight: 700;
     }
 
     .objective-banner {
       background: #eff6ff;
-      border: 1.5px solid #bfdbfe;
-      border-right: 5px solid #2563eb;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
+      border-right: 4px solid #2563eb;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 9.5pt;
     }
 
     .objective-banner .label {
-      font-size: 13.5px;
-      font-weight: 900;
+      font-weight: 800;
       color: #1e40af;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
-    .objective-banner .text {
-      font-size: 13px;
-      color: #1e293b;
-      line-height: 1.75;
-    }
-
-    /* Stations Section */
     .station-block {
-      border-radius: 10px;
-      border: 1.5px solid #cbd5e1;
-      margin-bottom: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      margin-bottom: 10px;
       overflow: hidden;
       page-break-inside: avoid;
     }
 
     .station-head {
-      padding: 8px 14px;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      color: #ffffff;
+      padding: 6px 12px;
       font-weight: 800;
-      font-size: 14px;
+      font-size: 10.5pt;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .station-head small {
+      font-size: 8pt;
+      font-weight: 600;
+      opacity: 0.95;
     }
 
     .station-head.m { background: #d97706; }
@@ -634,150 +633,107 @@ export const exportLessonPlanToPdf = ({
     .station-head.y { background: #059669; }
     .station-head.h { background: #db2777; }
 
-    .station-head small {
-      font-size: 11.5px;
-      opacity: 0.95;
-    }
-
     .station-body {
-      padding: 12px 16px;
-      font-size: 13px;
-      line-height: 1.85;
-      color: #1e293b;
+      padding: 10px 12px;
+      font-size: 9.5pt;
+      line-height: 1.65;
       background: #ffffff;
-      white-space: pre-line;
+      white-space: pre-wrap;
     }
 
     .sheet-signatures {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 24px;
-      padding-top: 14px;
-      border-top: 2px solid #cbd5e1;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1.5px solid #cbd5e1;
       page-break-inside: avoid;
     }
 
     .sig-box {
-      font-size: 12px;
+      text-align: center;
+      width: 30%;
+      font-size: 8.5pt;
       color: #334155;
     }
 
     .sig-line {
-      margin-top: 35px;
-      border-top: 1px dotted #94a3b8;
+      margin-top: 25px;
+      border-top: 1px dashed #94a3b8;
       padding-top: 4px;
-      font-weight: 800;
+      font-weight: 600;
     }
 
     .sheet-footer {
-      margin-top: 18px;
       text-align: center;
-      font-size: 10.5px;
-      color: #64748b;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 8px;
-    }
-
-    .no-print-bar {
-      background: #1e3a8a;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      border-radius: 10px;
-    }
-
-    .no-print-bar button {
-      background: #fbbf24;
-      color: #0f172a;
-      border: none;
-      padding: 8px 20px;
-      border-radius: 8px;
-      font-weight: 900;
-      font-size: 13px;
-      cursor: pointer;
-      font-family: inherit;
+      font-size: 7.5pt;
+      color: #94a3b8;
+      margin-top: 12px;
+      padding-top: 6px;
+      border-top: 1px solid #e2e8f0;
     }
 
     @media print {
-      .no-print-bar {
-        display: none !important;
-      }
-      body {
-        padding: 0;
-      }
-      .sheet-wrapper {
-        padding: 0;
-        max-width: 100%;
-      }
+      body { margin: 0; }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="no-print-bar">
-    <span>💡 اضغط زر "طباعة / حفظ كـ PDF" واختر <strong>Save as PDF (حفظ كـ PDF)</strong> لتنزيل الملف بأعلى جودة.</span>
-    <button onclick="window.print()">🖨️ طباعة / حفظ كـ PDF</button>
-  </div>
-
-  <div class="sheet-wrapper">
+  <div class="print-sheet">
     <!-- Header -->
     <div class="sheet-header">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <img src="${SCHOOL_LOGO_BASE64}" alt="شعار مدرسة مشيرفة" style="width: 75px; height: 75px; border-radius: 50%; object-fit: contain;" />
-        <div class="school-info">
-          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 2px;">دولة إسرائيل — وزارة التربية والتعليم</div>
-          <h1 style="margin: 0; font-size: 18.5px; font-weight: 900; color: #1e3a8a;">لواء حيفا — مدرسة مشيرفة الابتدائية</h1>
-          <p style="margin: 2px 0 0; font-size: 11px; color: #64748b; font-weight: 600;">الإطار التدريسي والتربوي الموحد لرسم مسار الحصة الصفية</p>
+      <div class="header-logo-side">
+        <img src="${SCHOOL_LOGO_BASE64}" alt="לוגו בית ספר מושירפה" />
+        <div class="header-texts">
+          <h1>${isHebrew ? 'מדינת ישראל — משרד החינוך' : 'دولة إسرائيل — وزارة التربية والتعليم'}</h1>
+          <h2>${isHebrew ? 'מחוז חיפה — בית הספר היסודי מושירפה' : 'لواء حيفا — مدرسة مشيرفة الابتدائية'}</h2>
+          <p>${isHebrew ? 'מודל מַפְתֵּי"חַ — שפה פדגוגית משותפת, מעורבות תלמידים, הכלה והשתלבות, הוראה דיפרנציאלית והערכה' : 'الإطار التربوي والتعليمي الموحد لرسم مسار الحصة (الشيفرة الوراثية الصفية)'}</p>
         </div>
       </div>
-      <div class="brand-key-badge">
-        <span class="title">موديل מַפְתֵּי"חַ 🗝️</span>
-        <span class="subtitle">الشيفرة الوراثية للغرفة الصفية</span>
+      <div class="header-tag">
+        ${isHebrew ? 'מודל מַפְתֵּי"חַ 🗝️' : 'موديل מַפְתֵּי"חַ 🗝️'}
       </div>
     </div>
 
-    <!-- Title Card -->
-    <div class="lesson-hero-card">
-      <h2>بطاقة تخطيط درس: "${title}"</h2>
-      <div class="tagline">وفق المحطات الخمس لموديل "مِفْتَاح" التربوي القيادي (מודל מַפְתֵּי"חַ)</div>
+    <!-- Title Bar -->
+    <div class="lesson-title-bar">
+      <h3>${title}</h3>
+      <span>${isHebrew ? 'תכנון שיעור מופתי לפי חמש תחנות מודל מַפְתֵּי"חַ הבית-ספרי' : 'خطة درس معتمدة وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ)'}</span>
     </div>
 
-    <!-- Meta Details -->
+    <!-- Meta Grid -->
     <div class="meta-grid">
       <div class="meta-item">
-        <strong>المادة الدراسية:</strong>
+        <strong>${isHebrew ? 'תחום דעת:' : 'المادة الدراسية:'}</strong>
         <span>${subject}</span>
       </div>
       <div class="meta-item">
-        <strong>الصف والمستوى:</strong>
+        <strong>${isHebrew ? 'שכבת גיל:' : 'الصف والمستوى:'}</strong>
         <span>${grade}</span>
       </div>
       <div class="meta-item">
-        <strong>زمن الحصة:</strong>
-        <span>${duration} دقيقة</span>
+        <strong>${isHebrew ? 'משך השיעור:' : 'زمن الحصة:'}</strong>
+        <span>${duration} ${isHebrew ? 'דקות' : 'دقيقة'}</span>
       </div>
       <div class="meta-item">
-        <strong>التاريخ:</strong>
+        <strong>${isHebrew ? 'תאריך:' : 'التاريخ:'}</strong>
         <span>${date}</span>
       </div>
     </div>
 
     <!-- Objective -->
     <div class="objective-banner">
-      <div class="label">🎯 الهدف التعليمي والقيمي المركزي للحصة:</div>
-      <div class="text">${objective || 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ).'}</div>
+      <div class="label">${isHebrew ? '🎯 מטרת השיעור ומדדי ההצלחה:' : '🎯 الهدف التعليمي والقيمي المركزي للحصة:'}</div>
+      <div class="text">${objective || (isHebrew ? 'הבנת המושג המרכזי ויישומו במשימות מגוונות תוך לקיחת צידה לדרך לפי מודל מַפְתֵּי"חַ.' : 'إكساب الطالب المفهوم الأساسي وتطبيقه عملياً وحصد أثره في الحياة اليومية وفق محطات موديل مِفْتَاح (מודל מַפְתֵּי"חַ).')}</div>
     </div>
 
     <!-- Five Stations -->
     <!-- Station 1 -->
     <div class="station-block">
       <div class="station-head m">
-        <span>[ م ] مَحَطَّةُ المَدْخَلِ المُحَفِّز (משיכה וסקרנות)</span>
-        <small>3 - 5 دقائق | سؤال البداية واللغز الصفي وكسر الجمود</small>
+        <span>${isHebrew ? '[ מ ] משיכה וסקרנות (עירור עניין וידע קודם)' : '[ م ] مَحَطَّةُ المَدْخَلِ المُحَفِّز (משיכה וסקרנות)'}</span>
+        <small>${isHebrew ? '3 - 5 דקות | שאלת הפתיחה, גירוי מוחשי וחיבור לידע קודם' : '3 - 5 دقائق | سؤال البداية واللغز الصفي وكسر الجمود'}</small>
       </div>
       <div class="station-body">${mContent}</div>
     </div>
@@ -785,8 +741,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 2 -->
     <div class="station-block">
       <div class="station-head f">
-        <span>[ ف ] مَحَطَّةُ فَهْمِ وَبِنَاءِ المَعْنَى (פיתוח הבנה)</span>
-        <small>8 - 10 دقائق | نمذجة المعلم وتطوير الفهم وتأسيس القاموس العلمي</small>
+        <span>${isHebrew ? '[ פ ] פיתוח הבנה (המשגה ומידול)' : '[ ف ] مَحَطَّةُ فَهْمِ وَبِنَاءِ المَعْنَى (פיתוח הבנה)'}</span>
+        <small>${isHebrew ? '8 - 10 דקות | מטרת השיעור, מילון מושגים, ומידול המורה בחשיבה בקול' : '8 - 10 دقائق | نمذجة المعلم وتطوير الفهم وتأسيس القاموس العلمي'}</small>
       </div>
       <div class="station-body">${fContent}</div>
     </div>
@@ -794,8 +750,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 3 -->
     <div class="station-block">
       <div class="station-head t">
-        <span>[ ت ] مَحَطَّةُ التَّفْكِيرِ وَالتَّبَصُّر (תובנה והעמקה)</span>
-        <small>8 - 10 دقائق | أسئلة التفكير العليا، التبصر وحوار سقراطي</small>
+        <span>${isHebrew ? '[ ת ] תובנה והעמקה (חשיבה מסדר גבוה)' : '[ ت ] مَحَطَّةُ التَّفْكِירِ وَالتَّבَصُّر (תובנה והעמקה)'}</span>
+        <small>${isHebrew ? '8 - 10 דקות | שאלות חשיבה מסדר גבוה, הנמקה, ראיות ובירור מעמיק' : '8 - 10 دقائق | أسئلة التفكير العليا، التبصر وحوار سقراطي'}</small>
       </div>
       <div class="station-body">${tContent}</div>
     </div>
@@ -803,8 +759,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 4 -->
     <div class="station-block">
       <div class="station-head y">
-        <span>[ ي ] مَحَطَّةُ الإِنْجَازِ وَالتَّطْبِيق (יצירה ויישום)</span>
-        <small>12 - 15 دقيقة | ورشة العمل، إنجاز ملموس وتمايز المستويات UDL</small>
+        <span>${isHebrew ? '[ י ] יצירה ויישום (סדנה דיפרנציאלית ומסלולים גמישים)' : '[ ي ] مَحَطَّةُ الإِنْجَازِ وَالتَّطْبِيق (יצירה ויישום)'}</span>
+        <small>${isHebrew ? '12 - 15 דקות | סדנה פעילה, 3 מסלולים גמישים, שולחן ממוקד והכלה' : '12 - 15 دقيقة | ورشة العمل، إنجاز ملموس وتمايز المستويات UDL'}</small>
       </div>
       <div class="station-body">${yContent}</div>
     </div>
@@ -812,8 +768,8 @@ export const exportLessonPlanToPdf = ({
     <!-- Station 5 -->
     <div class="station-block">
       <div class="station-head h">
-        <span>[ ح ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חתימה וצידה לדרך)</span>
-        <small>4 - 5 دقائق | تذكرة الخروج ونقل الأثر للواقع</small>
+        <span>${isHebrew ? '[ ח ] חתימה וצידה לדרך (רפלקציה והעברת למידה)' : '[ ח ] مَحَطَّةُ الحَصَادِ وَالزَّوَّادَة (חתימה וצידה לדרך)'}</span>
+        <small>${isHebrew ? '4 - 5 דקות | 5 שאלות רפלקציה, הגדרת הצידה לדרך ומשפט התלמיד' : '4 - 5 دقائق | تذكرة الخروج ونقل الأثر للواقع'}</small>
       </div>
       <div class="station-body">${hContent}</div>
     </div>
@@ -821,28 +777,27 @@ export const exportLessonPlanToPdf = ({
     <!-- Signatures -->
     <div class="sheet-signatures">
       <div class="sig-box">
-        <strong>المعلم/ة المعدّ</strong>
-        <div class="sig-line">${teacherName || 'الاسم والتوقيع'}</div>
+        <strong>${isHebrew ? 'מורה מלמד/ת' : 'المعلم/ة المعدّ'}</strong>
+        <div class="sig-line">${teacherName || (isHebrew ? 'שם וחתימה' : 'الاسم والتوقيع')}</div>
       </div>
       <div class="sig-box">
-        <strong>مركز/ة الموضوع الدراسي</strong>
-        <div class="sig-line">الاسم والملاحظات</div>
+        <strong>${isHebrew ? 'רכז/ת תחום הדעת' : 'مركز/ة الموضوع الدراسي'}</strong>
+        <div class="sig-line">${isHebrew ? 'שם והערות' : 'الاسم والملاحظات'}</div>
       </div>
       <div class="sig-box">
-        <strong>مصادقة الإدارة المدرسية</strong>
-        <div class="sig-line">أ. رامي ارفاعية — مدير المدرسة</div>
+        <strong>${isHebrew ? 'אישור הנהלת בית הספר' : 'مصادقة الإدارة المدرسية'}</strong>
+        <div class="sig-line">${isHebrew ? 'מר ראמי אירפאעיה — מנהל בית הספר' : 'أ. رامي ارفاعية — مدير المدرسة'}</div>
       </div>
     </div>
 
     <!-- Footer -->
     <div class="sheet-footer">
-      خطة درس معتمدة تم إعدادها بواسطة مساعد موديل "مِفْتَاح" الذكي (מודל מַפְתֵּי"חַ) — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}
+      ${isHebrew ? `מערך שיעור מאושר שנבנה בסיוע העוזר החכם של מודל מַפְתֵּי"חַ — בית הספר היסודי מושירפה © ${new Date().getFullYear()}` : `خطة درس معتمدة تم إعدادها بواسطة مساعد موديل "مِفْتَاح" الذكي (מודל מַפְתֵּי"חַ) — مدرسة مشيرفة الابتدائية © ${new Date().getFullYear()}`}
     </div>
   </div>
 
   <script>
     window.addEventListener('load', () => {
-      // Auto open print dialog after font and styles load
       setTimeout(() => {
         window.print();
       }, 500);
@@ -856,3 +811,4 @@ export const exportLessonPlanToPdf = ({
   printWindow.document.write(html);
   printWindow.document.close();
 };
+
