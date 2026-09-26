@@ -2785,6 +2785,42 @@
 .gen-station-card.pink { border-color: #fbcfe8; }
 .gen-station-card.pink .station-badge-head { background: #fdf2f8; color: #be185d; }
 
+.station-pillars-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 18px 4px;
+}
+
+.st-pillar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.st-pillar-badge.inclusion {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.st-pillar-badge.diff {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.st-pillar-badge.eval {
+  background: #fefce8;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+
 .gen-station-card .station-text {
   padding: 14px 18px;
   font-size: 1.05rem;
