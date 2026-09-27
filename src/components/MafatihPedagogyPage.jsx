@@ -1251,6 +1251,31 @@ ${p.stations?.h || ''}
             >
               <span>🤖</span> بوت لتخطيط حصة ↗
             </a>
+
+            <a 
+              href="https://gemini.google.com/gem/5b697cc4099b"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mafatih-hero-top-gemini-badge"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                color: 'white',
+                padding: '0.45rem 1.15rem',
+                borderRadius: '50px',
+                fontWeight: 900,
+                fontSize: '0.92rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.45)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح بوت تخطيط حسب جيمني بموديل مِفْتَاح"
+            >
+              <span>✨</span> تخطيط حسب جيمني ↗
+            </a>
           </div>
 
           <h1 className="mafatih-hero-title">
@@ -1312,6 +1337,33 @@ ${p.stations?.h || ''}
             >
               <i className="fas fa-robot"></i>
               <span>بوت لتخطيط حصة</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
+            </a>
+
+            <a 
+              href="https://gemini.google.com/gem/5b697cc4099b"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="action-btn gemini-bot-btn"
+              style={{
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #7c3aed 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                fontWeight: 900,
+                fontSize: '1rem',
+                padding: '0.75rem 1.6rem',
+                borderRadius: '12px',
+                boxShadow: '0 4px 18px rgba(37, 99, 235, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح بوت تخطيط حسب جيمني بموديل مِفْتَاح"
+            >
+              <i className="fas fa-sparkles"></i>
+              <span>تخطيط حسب جيمني</span>
               <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
             </a>
 
@@ -2214,6 +2266,33 @@ ${p.stations?.h || ''}
                 >
                   <i className="fas fa-robot"></i>
                   <span>بوت لتخطيط حصة</span>
+                  <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
+                </a>
+
+                <a
+                  href="https://gemini.google.com/gem/5b697cc4099b"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #7c3aed 100%)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    padding: '0.8rem 1.6rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  title="فتح بوت تخطيط حسب جيمني بموديل مِفْتَاح"
+                >
+                  <i className="fas fa-sparkles"></i>
+                  <span>تخطيط حسب جيمني</span>
                   <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
                 </a>
               </div>

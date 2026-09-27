@@ -502,8 +502,62 @@ const MafatihAdminTab = () => {
               }}
             >
               <i className="fas fa-file-upload"></i>
-              <span>📤 رفع تخطيط من الحاسوب (Word / PDF / نص)</span>
+              <span>📤 رفع تخطيط من الحاسوب</span>
             </button>
+
+            <a
+              href="https://chatgpt.com/?surface=work&prompt=%D7%91%D7%A0%D7%94+%D7%90%D7%99%D7%AA%D7%99+%D7%9E%D7%A2%D7%A8%D7%9A+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+%D7%9C%D7%A4%D7%99+%D7%9E%D7%95%D7%93%D7%9C+%D7%9E%D7%A4%D7%AA%D7%99%D7%B4%D7%97+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A9%D7%90%D7%9C%D7%95%D7%AA+%D7%9E%D7%9B%D7%95%D7%95%D7%A0%D7%95%D7%AA."
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: 'linear-gradient(135deg, #10a37f 0%, #059669 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                padding: '0.85rem 1.4rem',
+                borderRadius: '10px',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 14px rgba(16, 163, 127, 0.4)',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح بوت تخطيط حصة عبر ChatGPT"
+            >
+              <i className="fas fa-robot"></i>
+              <span>بوت لتخطيط حصة</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.75rem', opacity: 0.9 }}></i>
+            </a>
+
+            <a
+              href="https://gemini.google.com/gem/5b697cc4099b"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #7c3aed 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                padding: '0.85rem 1.4rem',
+                borderRadius: '10px',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح بوت تخطيط حسب جيمني"
+            >
+              <i className="fas fa-sparkles"></i>
+              <span>تخطيط حسب جيمني</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.75rem', opacity: 0.9 }}></i>
+            </a>
 
             <button
               type="button"
