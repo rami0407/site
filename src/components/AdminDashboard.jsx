@@ -5174,7 +5174,7 @@ const AdminDashboard = () => {
               }}
             >
               <i className="fas fa-key" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'mafatih-admin' ? '#fef08a' : '#2563eb' }}></i>
-              🗝️ مكتبة تخطيط الحصص (مفاتيح)
+              🗝️ موديل مِفْتَاح (تخطيط الحصص والأرشيف)
             </button>
 
           </div>
