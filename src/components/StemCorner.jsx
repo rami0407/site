@@ -213,6 +213,12 @@ const StemCorner = ({ isStandalone = true }) => {
   const [isResearchVisible, setIsResearchVisible] = useState(() => getScientificResearchVisibility());
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && (window.location.hash.includes('steam-hub') || window.location.hash.includes('stem-hub'))) {
+      setActiveTab('steam-hub');
+    }
+  }, []);
+
+  useEffect(() => {
     const unsub = subscribeScientificResearchVisibility((vis) => {
       setIsResearchVisible(vis);
     });
@@ -685,6 +691,20 @@ const StemCorner = ({ isStandalone = true }) => {
 
             <div className="teacher-access-hero-wrapper">
               <button 
+                onClick={() => setActiveTab('steam-hub')} 
+                className="teacher-portal-quick-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
+                  border: '1.5px solid #c4b5fd',
+                  marginRight: '8px'
+                }}
+                title="عرض وثيقة الموديل التشغيلي والبيداغوجي: حاضنة ستيم الرقمية (School STEAM Hub)"
+              >
+                <i className="fas fa-file-invoice"></i> 📑 وثيقة موديل حاضنة ستيم (STEAM Hub)
+              </button>
+
+              <button 
                 onClick={() => setActiveTab('socratic')} 
                 className="teacher-portal-quick-btn"
                 style={{
@@ -712,6 +732,20 @@ const StemCorner = ({ isStandalone = true }) => {
 
       {/* 🎯 Navigation Tabs */}
       <nav className="stem-nav-tabs">
+        <button 
+          className={`stem-tab-btn ${activeTab === 'steam-hub' ? 'active' : ''}`}
+          onClick={() => setActiveTab('steam-hub')}
+          style={{
+            background: activeTab === 'steam-hub' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined,
+            color: activeTab === 'steam-hub' ? '#fff' : undefined,
+            border: '2px solid #8b5cf6',
+            fontWeight: 800
+          }}
+          title="وثيقة الموديل التشغيلي والبيداغوجي: حاضنة ستيم الرقمية (School STEAM Hub)"
+        >
+          <i className="fas fa-file-lines"></i> 📑 وثيقة موديل حاضنة ستيم
+        </button>
+
         <button 
           className={`stem-tab-btn ${activeTab === 'challenges' ? 'active' : ''}`}
           onClick={() => setActiveTab('challenges')}
@@ -1935,6 +1969,427 @@ const StemCorner = ({ isStandalone = true }) => {
                   <i className="fas fa-check-circle"></i>
                   <span>اعتماد الفكرة وتسليمها في صناع الحلول (+100 نقطة ⭐)</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: STEAM Hub Operational & Pedagogical Model Document  */}
+      {/* ======================================================== */}
+      {activeTab === 'steam-hub' && (
+        <section className="steam-hub-model-section">
+          {/* Header & Meta */}
+          <div className="steam-model-hero-card">
+            <div className="steam-model-badge">
+              <i className="fas fa-graduation-cap"></i> وثيقة الموديل التشغيلي والبيداغوجي الرسمي
+            </div>
+            <h2 className="steam-model-title">
+              حاضنة ستيم الرقمية <span className="highlight">(School STEAM Hub)</span>
+            </h2>
+            <p className="steam-model-org">
+              <i className="fas fa-school"></i> مدرسة مشيرفة الابتدائية — منصة تفاعلية للابتكار وريادة التفكير الطلابي
+            </p>
+
+            <div className="steam-model-goal-box">
+              <div className="goal-icon">
+                <i className="fas fa-bullseye"></i>
+              </div>
+              <div className="goal-content">
+                <strong>الهدف الاستراتيجي للمنظومة:</strong>
+                <p>
+                  كسر القوالب التقليدية للتعلم عبر توظيف موقع المدرسة كمنظومة تشغيل وبحث، لدمج كافة التخصصات المنهجية لحل مشكلات مدرسية واقعية وتنمية وكالة الطالب (Student Agency).
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="steam-model-quick-actions">
+              <button 
+                type="button" 
+                className="model-action-btn primary"
+                onClick={() => setActiveTab('challenges')}
+              >
+                <i className="fas fa-rocket"></i> الانتقال لصناع الحلول (التحديات المدرسية)
+              </button>
+              <button 
+                type="button" 
+                className="model-action-btn secondary"
+                onClick={() => window.location.hash = '#/stem-teacher'}
+              >
+                <i className="fas fa-chalkboard-teacher"></i> بوابة معلم المادة للتقييم والتوجيه
+              </button>
+              <button 
+                type="button" 
+                className="model-action-btn secondary"
+                onClick={() => setActiveTab('socratic')}
+              >
+                <i className="fas fa-robot"></i> محاورة المكتشف الصغير (سقراطي)
+              </button>
+              <button 
+                type="button" 
+                className="model-action-btn outline"
+                onClick={() => window.print()}
+              >
+                <i className="fas fa-print"></i> طباعة / حفظ الوثيقة
+              </button>
+            </div>
+          </div>
+
+          {/* Section 1: Philosophy & Vision */}
+          <div className="steam-doc-block">
+            <div className="doc-block-header">
+              <div className="block-number">1</div>
+              <div className="block-title-group">
+                <h3>فلسفة الموديل وفكرة المنصة</h3>
+                <span className="block-subtitle">من مجرد واجهة إخبارية إلى مختبر تفكير هندسي وبحثي مفتوح</span>
+              </div>
+            </div>
+
+            <div className="doc-content-body">
+              <p className="doc-lead-text">
+                بدلًا من فرض حصص متزامنة ترهق الجدول المدرسي، يتحول موقع المدرسة من مجرد واجهة إخبارية إلى <strong>مختبر تفكير هندسي وبحثي مفتوح</strong> يتكامل فيه التعلم الصفي مع الواقع العملي للبيئة المدرسية.
+              </p>
+
+              <div className="philosophy-grid">
+                <div className="phil-card">
+                  <div className="phil-icon-circle blue">
+                    <i className="fas fa-crosshairs"></i>
+                  </div>
+                  <h4>المحرك الأساسي</h4>
+                  <p>
+                    مشكلة حقيقية من واقع المدرسة (مثل: أوزان الحقائب، هدر مياه الشرب، الضوضاء، تنظيم الساحات، ترشيد الطاقة).
+                  </p>
+                </div>
+
+                <div className="phil-card">
+                  <div className="phil-icon-circle purple">
+                    <i className="fas fa-network-wired"></i>
+                  </div>
+                  <h4>طريقة التعلم (Blended / Asynchronous Hub)</h4>
+                  <p>
+                    التحدي يطرح رقميًا عبر المنصة مع مصادر توجيهية ولقاءات إرشادية قصيرة. البحث والتجريب يتم فرديًا أو في مجموعات، والمنصة توثق المسار التراكمي وتدير تسليم المخرجات وتلقي التغذية الراجعة.
+                  </p>
+                </div>
+
+                <div className="phil-card">
+                  <div className="phil-icon-circle green">
+                    <i className="fas fa-seedling"></i>
+                  </div>
+                  <h4>وكالة الطالب (Student Agency)</h4>
+                  <p>
+                    وضع الطالب في مركز القيادة وصناعة القرار: من تحديد المشكلة وتحليلها، إلى قيادة الفريق وهندسة النموذج واختباره وتعديله.
+                  </p>
+                </div>
+              </div>
+
+              {/* STEAM 5 Pillars Matrix */}
+              <div className="steam-pillars-container">
+                <h4 className="pillars-heading">
+                  <i className="fas fa-puzzle-piece"></i> الدمج البيداغوجي (STEAM): تكامل التخصصات الخمسة لحل كل تحدٍ مدرسي
+                </h4>
+                <div className="pillars-grid">
+                  <div className="pillar-card s">
+                    <div className="pillar-header">
+                      <span className="pillar-letter">S</span>
+                      <span className="pillar-name">العلوم (Science)</span>
+                    </div>
+                    <p className="pillar-desc">
+                      تفسير الظواهر العلمية، جمع البيانات الميدانية، وضع الفرضيات وإجراء الفحوصات والتجارب المخبرية والحقلية.
+                    </p>
+                  </div>
+
+                  <div className="pillar-card t">
+                    <div className="pillar-header">
+                      <span className="pillar-letter">T</span>
+                      <span className="pillar-name">التكنولوجيا (Technology)</span>
+                    </div>
+                    <p className="pillar-desc">
+                      البحث الرقمي، توظيف الحساسات الذكية (Sensors)، برمجيات المحاكاة والنمذجة، وتطبيقات الذكاء الاصطناعي التوليدي.
+                    </p>
+                  </div>
+
+                  <div className="pillar-card e">
+                    <div className="pillar-header">
+                      <span className="pillar-letter">E</span>
+                      <span className="pillar-name">الهندسة (Engineering)</span>
+                    </div>
+                    <p className="pillar-desc">
+                      تطبيق مراحل التفكير التصميمي (Design Thinking)، تخطيط النماذج الأولية، واختيار المواد المناسبة وتجربة الأداء.
+                    </p>
+                  </div>
+
+                  <div className="pillar-card a">
+                    <div className="pillar-header">
+                      <span className="pillar-letter">A</span>
+                      <span className="pillar-name">الفنون واللغات (Arts & Languages)</span>
+                    </div>
+                    <p className="pillar-desc">
+                      الكتابة الإقناعية والتوثيق، التصميم الجمالي وتجربة المستخدم، والإلقاء والعرض الفعّال (Elevator Pitch).
+                    </p>
+                  </div>
+
+                  <div className="pillar-card m">
+                    <div className="pillar-header">
+                      <span className="pillar-letter">M</span>
+                      <span className="pillar-name">الرياضيات (Mathematics)</span>
+                    </div>
+                    <p className="pillar-desc">
+                      القياسات والحسابات الدقيقة، الجداول والنسب، دراسة التكاليف والجدوى، والتحليل الإحصائي الدقيق للنتائج.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Six Stations (Student Workflow) */}
+          <div className="steam-doc-block">
+            <div className="doc-block-header">
+              <div className="block-number">2</div>
+              <div className="block-title-group">
+                <h3>المحطات الست في مسار الطالب (Student Workflow)</h3>
+                <span className="block-subtitle">يسير الطالب أو الفريق عبر 6 محطات رقمية مترابطة داخل المنصة</span>
+              </div>
+            </div>
+
+            <div className="doc-content-body">
+              <div className="workflow-timeline">
+                <div className="timeline-item">
+                  <div className="timeline-badge" style={{ background: '#3b82f6' }}>1</div>
+                  <div className="timeline-card">
+                    <div className="stage-top">
+                      <span className="stage-code">المحطة 1</span>
+                      <h4 className="stage-title">اكتشاف المشكلة وفهمها (Problem Discovery)</h4>
+                    </div>
+                    <ul className="stage-bullets">
+                      <li>قراءة التحدي المدرسي المطروح، مشاهدة فيديو أو صور توضيحية من بيئة المدرسة.</li>
+                      <li>تعبئة <strong>"نموذج التعاطف وفهم المشكلة"</strong> (من يتأثر بها؟ متى تحدث؟ ولماذا هي مهمة للمجتمع المدرسي؟).</li>
+                    </ul>
+                    <div className="stage-deliverable">
+                      <i className="fas fa-clipboard-check"></i> <strong>المخرج المطلوب:</strong> بطاقة تعريف المشكلة والجمهور المتأثر.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-item">
+                  <div className="timeline-badge" style={{ background: '#06b6d4' }}>2</div>
+                  <div className="timeline-card">
+                    <div className="stage-top">
+                      <span className="stage-code">المحطة 2</span>
+                      <h4 className="stage-title">مصفوفة تكامل التخصصات (STEAM Matrix)</h4>
+                    </div>
+                    <ul className="stage-bullets">
+                      <li>تفكيك المشكلة إلى الأسئلة الفرعية الخمسة: ماذا نحتاج من علوم، رياضيات، تكنولوجيا، هندسة، وفنون لحلها؟</li>
+                      <li>تسجيل الفرضيات الأولية للحل بمساعدة مرشد الذكاء الاصطناعي السقراطي في المنصة.</li>
+                    </ul>
+                    <div className="stage-deliverable">
+                      <i className="fas fa-table-cells-large"></i> <strong>المخرج المطلوب:</strong> مصفوفة الأسئلة المنهجية الخمسة وفرضيات الحل.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-item">
+                  <div className="timeline-badge" style={{ background: '#8b5cf6' }}>3</div>
+                  <div className="timeline-card">
+                    <div className="stage-top">
+                      <span className="stage-code">المحطة 3</span>
+                      <h4 className="stage-title">هندسة النموذج الأولي والعرض (Prototyping & Pitching)</h4>
+                    </div>
+                    <ul className="stage-bullets">
+                      <li>رسم مخطط هندسي يدوي أو رقمي (Sketch / 3D Model).</li>
+                      <li>رفع فيديو قصير (دقيقة إلى دقيقتين) يعرض فيه الطلاب فكرتهم ونموذجهم بأسلوب إقناعي (Elevator Pitch).</li>
+                    </ul>
+                    <div className="stage-deliverable">
+                      <i className="fas fa-drafting-compass"></i> <strong>المخرج المطلوب:</strong> رسم النموذج الأولي + رابط أو فيديو العرض الإقناعي.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-item">
+                  <div className="timeline-badge" style={{ background: '#f59e0b' }}>4</div>
+                  <div className="timeline-card">
+                    <div className="stage-top">
+                      <span className="stage-code">المحطة 4</span>
+                      <h4 className="stage-title">الاختبار والتقييم التبادلي (Testing & Peer Review)</h4>
+                    </div>
+                    <ul className="stage-bullets">
+                      <li>تجربة الحل في ساحة المدرسة أو الصف ورصد النتائج الأولية والقياسات الميدانية.</li>
+                      <li>تقييم أقران متبادل عبر معايير محددة (الجدوى، الأصالة، الأثر على المدرسة).</li>
+                    </ul>
+                    <div className="stage-deliverable">
+                      <i className="fas fa-users-viewfinder"></i> <strong>المخرج المطلوب:</strong> تقرير الاختبار الميداني وتقييم الزملاء.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-item">
+                  <div className="timeline-badge" style={{ background: '#ec4899' }}>5</div>
+                  <div className="timeline-card">
+                    <div className="stage-top">
+                      <span className="stage-code">المحطة 5</span>
+                      <h4 className="stage-title">التحسين وإعادة التصميم (Iteration & Redesign)</h4>
+                    </div>
+                    <ul className="stage-bullets">
+                      <li>تلقي ملاحظات وتوجيهات المعلمين والذكاء الاصطناعي السقراطي في البوابة.</li>
+                      <li>تعديل النموذج وتحديث مصفوفة النتائج لمعالجة التحديات المكتشفة.</li>
+                    </ul>
+                    <div className="stage-deliverable">
+                      <i className="fas fa-rotate-right"></i> <strong>المخرج المطلوب:</strong> النسخة المطورة (V2) من الحل والنموذج.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="timeline-item">
+                  <div className="timeline-badge" style={{ background: '#10b981' }}>6</div>
+                  <div className="timeline-card">
+                    <div className="stage-top">
+                      <span className="stage-code">المحطة 6</span>
+                      <h4 className="stage-title">قياس الأثر والتكريم (Impact & Recognition)</h4>
+                    </div>
+                    <ul className="stage-bullets">
+                      <li>نشر الحل النهائي في "معرض مشاريع الطلاب" الرقمي بالموقع.</li>
+                      <li>نيل أوسمة رقمية، شهادات تميز، ونقاط تضاف للتقييم الصفي والمدرسي.</li>
+                    </ul>
+                    <div className="stage-deliverable">
+                      <i className="fas fa-trophy"></i> <strong>المخرج النهائي:</strong> نشر الابتكار في المعرض المدرسي ونيل وسام التميز.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Teacher Engagement Matrix */}
+          <div className="steam-doc-block">
+            <div className="doc-block-header">
+              <div className="block-number">3</div>
+              <div className="block-title-group">
+                <h3>مصفوفة أدوار ومتابعة طاقم المعلمين (Teacher Engagement Matrix)</h3>
+                <span className="block-subtitle">توزيع مهام استشاري غير متزامن يضمن التوجيه عالي الجودة دون إرهاق كاهل المعلمين بنصاب حصص جديد</span>
+              </div>
+            </div>
+
+            <div className="doc-content-body">
+              {/* Workflow Steps for Teachers */}
+              <div className="teacher-steps-bar">
+                <div className="t-step">
+                  <div className="step-num">1</div>
+                  <div className="step-txt">
+                    <strong>طرح التحدي / اعتماده:</strong>
+                    <span>يحدد طاقم المعلمين بالتشاور مع الإدارة تحدياً حقيقياً فصلياً أو شهرياً.</span>
+                  </div>
+                </div>
+                <div className="t-step">
+                  <div className="step-num">2</div>
+                  <div className="step-txt">
+                    <strong>التوجيه التخصصي غير المتزامن:</strong>
+                    <span>يدخل كل معلم بحسابه على بوابة المتابعة ليطّلع على إجابات الطلاب المتعلقة بتخصصه حصراً.</span>
+                  </div>
+                </div>
+                <div className="t-step">
+                  <div className="step-num">3</div>
+                  <div className="step-txt">
+                    <strong>منح التغذية الراجعة والنجوم:</strong>
+                    <span>يضع المعلم ملاحظة توجيهية محفزة ويمنح نقاطاً معيارية تؤثر إيجاباً في علامة التقييم البديل للطالب في مادته.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Matrix Table */}
+              <div className="table-responsive-wrapper">
+                <table className="steam-matrix-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '22%' }}>التخصص الأكاديمي</th>
+                      <th style={{ width: '40%' }}>المهمة الإشرافية المباشرة عبر المنصة</th>
+                      <th style={{ width: '38%' }}>معيار التقييم المضاف للطالب</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="subject-cell math">
+                        <i className="fas fa-calculator"></i> معلم الرياضيات
+                      </td>
+                      <td>يراجع دقة الحسابات، النسب، وتكلفة المشروع والجدوى الحسابية.</td>
+                      <td>دقة الحسابات والتقدير الرياضي والتحليل الرقمي السليم.</td>
+                    </tr>
+                    <tr>
+                      <td className="subject-cell science">
+                        <i className="fas fa-flask"></i> معلم العلوم
+                      </td>
+                      <td>يراجع صحة القوانين العلمية، المتغيرات، وفرضيات التجربة والفحص الميداني.</td>
+                      <td>سلامة التفسير العلمي ومنهجية الملاحظة والتجريب.</td>
+                    </tr>
+                    <tr>
+                      <td className="subject-cell lang">
+                        <i className="fas fa-book-open"></i> معلم اللغات
+                      </td>
+                      <td>يراجع لغة الإلقاء، وضوح التعبير في الفيديو، ودقة التقرير المكتوب والعرض الإقناعي.</td>
+                      <td>الفصاحة، سلامة التعبير، وقوة الإلقاء وبناء الحجة.</td>
+                    </tr>
+                    <tr>
+                      <td className="subject-cell tech">
+                        <i className="fas fa-laptop-code"></i> معلم التكنولوجيا / الحاسوب
+                      </td>
+                      <td>يوجه في اختيار الأدوات الرقمية والمحاكاة والبرمجة واستخدام المستشعرات.</td>
+                      <td>حسن توظيف التقنيات الذكية والأمان الرقمي.</td>
+                    </tr>
+                    <tr>
+                      <td className="subject-cell art">
+                        <i className="fas fa-palette"></i> معلم الفنون
+                      </td>
+                      <td>يوجه في الجانب الجمالي للنموذج، الهوية البصرية، وتصميم العرض والبوستر.</td>
+                      <td>الابتكار الجمالي، تنسيق الألوان والخامات، وحسن الإخراج.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Administrative Governance */}
+          <div className="steam-doc-block">
+            <div className="doc-block-header">
+              <div className="block-number">4</div>
+              <div className="block-title-group">
+                <h3>دور الإدارة والحوكمة المدرسية (Administrative Governance)</h3>
+                <span className="block-subtitle">ضمان الاستدامة، ربط المبادرة بالتقييم المدرسي، ومتابعة الأثر الميداني</span>
+              </div>
+            </div>
+
+            <div className="doc-content-body">
+              <div className="governance-grid">
+                <div className="gov-card">
+                  <div className="gov-header-icon gold">
+                    <i className="fas fa-percentage"></i>
+                  </div>
+                  <h4>الربط بالتقييم المدرسي (15% - 20%)</h4>
+                  <p>
+                    تخصيص نسبة معتمدة (مثل 15% - 20%) من علامة التقييم المستمر / البديل في المواد المشاركة لكل طالب ينجز التحديات بجدارة.
+                  </p>
+                </div>
+
+                <div className="gov-card">
+                  <div className="gov-header-icon blue">
+                    <i className="fas fa-user-gear"></i>
+                  </div>
+                  <h4>المنسق العام للمنظومة</h4>
+                  <p>
+                    تعيين مركز/ة لـ STEAM يتولى التنسيق بين التخصصات ومتابعة تقدم المجموعات وتحديث بنك التحديات بالمستجدات الواقعية.
+                  </p>
+                </div>
+
+                <div className="gov-card">
+                  <div className="gov-header-icon emerald">
+                    <i className="fas fa-chart-line"></i>
+                  </div>
+                  <h4>لوحة تحكم الإدارة</h4>
+                  <p>
+                    تقارير دورية تبيّن: نسب مشاركة الصفوف، التخصصات الأكثر تفاعلاً، والحلول القابلة للتطبيق العملي داخل المدرسة لتحسين البيئة المدرسية.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
