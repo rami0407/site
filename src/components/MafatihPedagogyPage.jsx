@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import mammoth from 'mammoth';
 import genieImg from '../assets/genie.png';
-import { generateMafatihLessonPlanAI, generateAiResponse } from '../utils/aiService';
+import { generateMafatihLessonPlanAI, generateAiResponse, parseUploadedLessonPlanAI } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
 import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
 import './MafatihPedagogyPage.css';
@@ -344,6 +345,161 @@ const MafatihPedagogyPage = () => {
   const [saveAuthorName, setSaveAuthorName] = useState('معلم في مدرسة مشيرفة');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [libraryNotification, setLibraryNotification] = useState(null);
+
+  // Upload Lesson Plan From Computer State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
+  const [uploadError, setUploadError] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [uploadTab, setUploadTab] = useState('file'); // 'file' | 'paste'
+  const fileInputRef = useRef(null);
+
+  const handleProcessUploadedFile = async (file) => {
+    if (!file) return;
+    setIsUploadingFile(true);
+    setUploadError(null);
+    setUploadProgressText('جاري فحص وقراءة ملف التخطيط... 📄');
+
+    try {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      let rawText = '';
+      let fileBase64 = '';
+      let mimeType = file.type || 'text/plain';
+
+      if (ext === 'docx') {
+        setUploadProgressText('جاري استخراج النصوص من مستند Word (.docx)... 📝');
+        const arrayBuffer = await file.arrayBuffer();
+        const mammothResult = await mammoth.extractRawText({ arrayBuffer });
+        rawText = mammothResult.value || '';
+        if (!rawText.trim()) {
+          throw new Error('لم نتمكن من استخراج نصوص واضحة من ملف Word، قد يكون المستند فارغاً أو يحتوي صوراً فقط.');
+        }
+      } else if (ext === 'pdf') {
+        setUploadProgressText('جاري تحضير وقراءة ملف الـ PDF للتحليل البيداغوجي... 📑');
+        mimeType = 'application/pdf';
+        fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const res = reader.result;
+            if (typeof res === 'string') {
+              const base64Part = res.includes(',') ? res.split(',')[1] : res;
+              resolve(base64Part);
+            } else {
+              reject(new Error('فشلت قراءة ملف الـ PDF'));
+            }
+          };
+          reader.onerror = () => reject(new Error('تعذرت قراءة ملف الـ PDF'));
+          reader.readAsDataURL(file);
+        });
+      } else if (['txt', 'json', 'md', 'rtf', 'csv'].includes(ext)) {
+        setUploadProgressText('جاري قراءة محتوى الملف النصي... 📄');
+        rawText = await file.text();
+      } else if (ext === 'doc') {
+        throw new Error('صيغة .doc القديمة قد لا تُقرأ بدقة؛ يُرجى حفظ الملف على حاسوبك بصيغة .docx الحديثة أو بصيغة PDF ثم إعادة رفعه.');
+      } else {
+        rawText = await file.text();
+      }
+
+      setUploadProgressText('الذكاء الاصطناعي يقوم الآن بهيكلة التخطيط وتوزيعه وفق محطات مِفْتَاح الخمس... 🤖⚡');
+
+      const parsedPlan = await parseUploadedLessonPlanAI({
+        rawText,
+        fileBase64,
+        mimeType,
+        fileName: file.name
+      });
+
+      if (!parsedPlan || !parsedPlan.stations) {
+        throw new Error('تعذر استخراج المحطات من الملف المرفوع.');
+      }
+
+      const planToArchive = {
+        title: parsedPlan.title || file.name.replace(/\.[^/.]+$/, ''),
+        subject: parsedPlan.subject || 'عام',
+        grade: parsedPlan.grade || 'المرحلة الابتدائية',
+        duration: parsedPlan.duration || 45,
+        author: 'مستورد من الحاسوب ومُعالج بموديل مِفْتَاح',
+        objective: parsedPlan.objective || '',
+        stations: { ...parsedPlan.stations }
+      };
+
+      const saved = await saveLessonPlanToSharedLibrary(planToArchive);
+      setLibraryPlans(prev => [saved, ...prev.filter(p => p.id !== saved.id)]);
+
+      // Also pre-fill the interactive planner
+      setPlannerTitle(saved.title);
+      setPlannerSubject(saved.subject);
+      setPlannerGrade(saved.grade);
+      setPlannerStations({ ...saved.stations });
+
+      setIsUploadModalOpen(false);
+      setLibraryNotification(`تم استيراد وتحليل درس "${saved.title}" بنجاح ونشره في مكتبة المدرسة! 📚🎉`);
+      setTimeout(() => setLibraryNotification(null), 7000);
+      setActiveTab('library');
+      window.scrollTo({ top: 400, behavior: 'smooth' });
+    } catch (err) {
+      console.error('File upload error:', err);
+      setUploadError(err.message || 'حدث خطأ أثناء معالجة الملف.');
+    } finally {
+      setIsUploadingFile(false);
+      setUploadProgressText('');
+    }
+  };
+
+  const handleProcessPastedText = async () => {
+    if (!pastedText.trim()) {
+      setUploadError('يرجى لصق نص تخطيط الدرس أولاً');
+      return;
+    }
+
+    setIsUploadingFile(true);
+    setUploadError(null);
+    setUploadProgressText('الذكاء الاصطناعي يحلل النص ويوزعه على محطات مِفْتَاح الخمس... 🤖⚡');
+
+    try {
+      const parsedPlan = await parseUploadedLessonPlanAI({
+        rawText: pastedText,
+        fileName: 'تخطيط ملصوق من الحاسوب'
+      });
+
+      if (!parsedPlan || !parsedPlan.stations) {
+        throw new Error('تعذر استخراج المحطات من النص الملصوق.');
+      }
+
+      const planToArchive = {
+        title: parsedPlan.title || 'تخطيط درس مستورد',
+        subject: parsedPlan.subject || 'عام',
+        grade: parsedPlan.grade || 'المرحلة الابتدائية',
+        duration: parsedPlan.duration || 45,
+        author: 'مستورد من الحاسوب ومُعالج بموديل مِفْتَاح',
+        objective: parsedPlan.objective || '',
+        stations: { ...parsedPlan.stations }
+      };
+
+      const saved = await saveLessonPlanToSharedLibrary(planToArchive);
+      setLibraryPlans(prev => [saved, ...prev.filter(p => p.id !== saved.id)]);
+
+      setPlannerTitle(saved.title);
+      setPlannerSubject(saved.subject);
+      setPlannerGrade(saved.grade);
+      setPlannerStations({ ...saved.stations });
+
+      setIsUploadModalOpen(false);
+      setPastedText('');
+      setLibraryNotification(`تم استيراد وتحليل درس "${saved.title}" بنجاح ونشره في مكتبة المدرسة! 📚🎉`);
+      setTimeout(() => setLibraryNotification(null), 7000);
+      setActiveTab('library');
+      window.scrollTo({ top: 400, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Pasted text parse error:', err);
+      setUploadError(err.message || 'حدث خطأ أثناء معالجة النص.');
+    } finally {
+      setIsUploadingFile(false);
+      setUploadProgressText('');
+    }
+  };
 
   const loadLibraryPlans = async () => {
     setLibraryLoading(true);
@@ -1955,6 +2111,34 @@ ${p.stations?.h || ''}
               <p>
                 صمم خطة درسك النموذجية وفق المحطات الخمس بضغطة زر، واطبع بطاقة التخطيط الجاهزة للمشاهدة الصفية أو التحضير اليومي:
               </p>
+              <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadError(null);
+                    setUploadTab('file');
+                    setIsUploadModalOpen(true);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.8rem 1.6rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    boxShadow: '0 4px 14px rgba(217, 119, 6, 0.4)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <i className="fas fa-file-upload"></i>
+                  <span>📤 رفع تخطيط من الحاسوب (Word / PDF / نص)</span>
+                </button>
+              </div>
             </div>
 
             <div className="planner-builder-grid">
@@ -2199,6 +2383,21 @@ ${p.stations?.h || ''}
                   }}
                 >
                   <i className="fas fa-plus-circle"></i> تخطيط درس جديد
+                </button>
+                <button 
+                  type="button" 
+                  className="lib-add-plan-btn"
+                  onClick={() => {
+                    setUploadError(null);
+                    setUploadTab('file');
+                    setIsUploadModalOpen(true);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    boxShadow: '0 4px 14px rgba(217, 119, 6, 0.4)'
+                  }}
+                >
+                  <i className="fas fa-file-upload"></i> رفع تخطيط من الحاسوب
                 </button>
               </div>
             </div>
@@ -5856,6 +6055,362 @@ ${p.stations?.h || ''}
             >
               &times;
             </button>
+          </div>
+        </div>
+      )}
+      {/* 7. UPLOAD LESSON PLAN FROM COMPUTER MODAL */}
+      {isUploadModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 25000,
+          padding: '1.5rem',
+          direction: 'rtl'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
+            border: '1px solid #e2e8f0',
+            animation: 'fadeIn 0.25s ease'
+          }}>
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+              color: 'white',
+              padding: '1.5rem 1.75rem',
+              borderRadius: '20px 20px 0 0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.4rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span>📤</span> رفع واستيراد تخطيط حصة من حاسوبك
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>
+                  الذكاء الاصطناعي يحلل الملف ويوزعه على محطات مِفْتَاح الخمس تلقائياً
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isUploadingFile) setIsUploadModalOpen(false);
+                }}
+                disabled={isUploadingFile}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: 'white',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  fontSize: '1.2rem',
+                  cursor: isUploadingFile ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '1.75rem' }}>
+              {/* Tab Selector */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '0.35rem', borderRadius: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setUploadTab('file')}
+                  disabled={isUploadingFile}
+                  style={{
+                    flex: 1,
+                    padding: '0.65rem',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    background: uploadTab === 'file' ? '#3b82f6' : 'transparent',
+                    color: uploadTab === 'file' ? 'white' : '#64748b',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📁 رفع ملف (Word / PDF / نص)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadTab('paste')}
+                  disabled={isUploadingFile}
+                  style={{
+                    flex: 1,
+                    padding: '0.65rem',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    background: uploadTab === 'paste' ? '#3b82f6' : 'transparent',
+                    color: uploadTab === 'paste' ? 'white' : '#64748b',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📋 لصق نص التخطيط مباشرة
+                </button>
+              </div>
+
+              {/* Error Message */}
+              {uploadError && (
+                <div style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  color: '#991b1b',
+                  padding: '1rem',
+                  borderRadius: '12px',
+                  marginBottom: '1.25rem',
+                  fontSize: '0.95rem',
+                  lineHeight: 1.6,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.75rem'
+                }}>
+                  <i className="fas fa-exclamation-triangle" style={{ marginTop: '3px' }}></i>
+                  <div>{uploadError}</div>
+                </div>
+              )}
+
+              {/* Loading State Spinner */}
+              {isUploadingFile ? (
+                <div style={{
+                  padding: '3rem 1.5rem',
+                  textAlign: 'center',
+                  background: '#f8fafc',
+                  borderRadius: '16px',
+                  border: '2px dashed #93c5fd'
+                }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'bounce 1s infinite' }}>
+                    🤖⚡
+                  </div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e3a8a', fontSize: '1.2rem', fontWeight: 900 }}>
+                    جاري استيراد وتوزيع التخطيط بموديل مِفْتَاح
+                  </h4>
+                  <p style={{ margin: 0, color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
+                    {uploadProgressText || 'جاري المعالجة البيداغوجية بالذكاء الاصطناعي...'}
+                  </p>
+                  <div style={{
+                    width: '60%',
+                    height: '6px',
+                    background: '#e2e8f0',
+                    borderRadius: '999px',
+                    margin: '1.5rem auto 0 auto',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #3b82f6, #10b981)',
+                      animation: 'pulse 1.5s infinite'
+                    }} />
+                  </div>
+                </div>
+              ) : uploadTab === 'file' ? (
+                <div>
+                  {/* Hidden File Input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".docx,.doc,.pdf,.txt,.json,.md,.rtf"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleProcessUploadedFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragActive(true);
+                    }}
+                    onDragLeave={() => setDragActive(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragActive(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        handleProcessUploadedFile(e.dataTransfer.files[0]);
+                      }
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: `2px dashed ${dragActive ? '#3b82f6' : '#cbd5e1'}`,
+                      background: dragActive ? '#eff6ff' : '#f8fafc',
+                      borderRadius: '16px',
+                      padding: '3rem 1.5rem',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{
+                      width: '72px',
+                      height: '72px',
+                      margin: '0 auto 1.25rem auto',
+                      borderRadius: '50%',
+                      background: '#dbeafe',
+                      color: '#2563eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '2rem'
+                    }}>
+                      <i className="fas fa-cloud-upload-alt"></i>
+                    </div>
+
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#1e293b' }}>
+                      اسحب وأفلت ملف تخطيط الحصة هنا
+                    </h4>
+                    <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.95rem' }}>
+                      أو انقر هنا لاستعراض واختيار الملف من جهازك
+                    </p>
+
+                    <div style={{ display: 'inline-flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        📘 Word (.docx)
+                      </span>
+                      <span style={{ background: '#fee2e2', color: '#991b1b', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        📑 PDF (.pdf)
+                      </span>
+                      <span style={{ background: '#fef3c7', color: '#92400e', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        📝 نص (.txt / .json)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    marginTop: '1.25rem',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '1rem 1.25rem'
+                  }}>
+                    <div style={{ fontWeight: 800, color: '#334155', marginBottom: '0.4rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span>💡</span> كيف تتم المعالجة الذكية؟
+                    </div>
+                    <ul style={{ margin: 0, paddingRight: '1.25rem', color: '#64748b', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                      <li>يقرأ الذكاء الاصطناعي محتوى الدرس ويستخرج العنوان والمادة والصف والهدف.</li>
+                      <li>يتم فرز وتوزيع محتوى درسك بدقة على محطات مِفْتَاح الخمس [ م - ف - ت - ي - ح ].</li>
+                      <li>يُحفظ الدرس تلقائياً في مكتبة المدرسة ويُفتح في المحرر لتتمكن من تخصيصه وتصديره.</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                    الصق نص التخطيط أو مسودة الحصة هنا:
+                  </label>
+                  <textarea
+                    rows={10}
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    placeholder="قم بنسخ ولصق نص خطة الدرس من أي ملف أو بريد إلكتروني، واضغط على زر التحليل بالأسفل..."
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.95rem',
+                      lineHeight: 1.6,
+                      boxSizing: 'border-box',
+                      fontFamily: 'inherit',
+                      resize: 'vertical'
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setPastedText('')}
+                      disabled={!pastedText}
+                      style={{
+                        background: '#f1f5f9',
+                        color: '#64748b',
+                        border: '1px solid #cbd5e1',
+                        padding: '0.7rem 1.25rem',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      مسح
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleProcessPastedText}
+                      disabled={!pastedText.trim()}
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.7rem 1.75rem',
+                        borderRadius: '8px',
+                        fontWeight: 900,
+                        fontSize: '0.95rem',
+                        cursor: !pastedText.trim() ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)'
+                      }}
+                    >
+                      <span>🤖 تحليل وتوزيع بموديل مِفْتَاح</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.75rem',
+              background: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              borderRadius: '0 0 20px 20px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setIsUploadModalOpen(false)}
+                disabled={isUploadingFile}
+                style={{
+                  background: '#f1f5f9',
+                  color: '#475569',
+                  border: '1px solid #cbd5e1',
+                  padding: '0.65rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  cursor: isUploadingFile ? 'not-allowed' : 'pointer'
+                }}
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}

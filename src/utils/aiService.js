@@ -1765,3 +1765,286 @@ export const generateScientificGenieAI = async (question, chatHistory = [], stud
   // Fallback if network completely blocked
   return `شبيك لبيك يا بطلنا المبدع ${studentName}! 🧞‍♂️✨\nسؤالك العلمي مدهش جداً! تذكر أن كل بحث علمي يبدأ بـ:\n1. 🔍 ملاحظة شيء يثير دهشتك.\n2. ❓ صياغة سؤال واضح ومحدد (ما تأثير... على...؟).\n3. 💡 وضع فرضية ذكية قابلة للاختبار.\n4. 🧪 تجربة ممتعة تسجل فيها أرقامك وملاحظاتك!\nما هي فكرة التجربة التي ترغب في استكشافها معاً؟ 🪄🌱`;
 };
+
+/**
+ * 17. Parse and Structure Uploaded Lesson Plan (Word / PDF / Text / JSON):
+ * Analyzes the raw document text or PDF base64 using AI and extracts/structures it into
+ * the 5 canonical Mafatih stations [ م ، ف ، ت ، ي ، ح ].
+ */
+export const parseUploadedLessonPlanAI = async ({
+  rawText = '',
+  fileBase64 = '',
+  mimeType = 'text/plain',
+  fileName = ''
+}) => {
+  // 1. Direct JSON check
+  if (rawText && typeof rawText === 'string') {
+    try {
+      const trimmed = rawText.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.stations && (parsed.stations.m || parsed.stations.f || parsed.stations.t || parsed.stations.y || parsed.stations.h)) {
+          return {
+            title: parsed.title || fileName.replace(/\.[^/.]+$/, '') || 'تخطيط درس مستورد',
+            subject: parsed.subject || 'عام',
+            grade: parsed.grade || 'المرحلة الابتدائية',
+            duration: Number(parsed.duration) || 45,
+            objective: parsed.objective || '',
+            author: parsed.author || 'مستورد من الحاسوب',
+            stations: {
+              m: parsed.stations.m || '',
+              f: parsed.stations.f || '',
+              t: parsed.stations.t || '',
+              y: parsed.stations.y || '',
+              h: parsed.stations.h || ''
+            }
+          };
+        }
+      }
+    } catch {
+      // Continue to AI parsing
+    }
+  }
+
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const isHebrew = /[\u0590-\u05FF]/.test(rawText || '') || /[\u0590-\u05FF]/.test(fileName || '');
+
+  const parsingPrompt = isHebrew
+    ? `אתה המומחה הפדגוגי הבכיר של מודל "מַפְתֵּי"חַ" (מודל מפתיח) בבית הספר היסודי מושירפה.
+מורה העלה קובץ תכנון שיעור ממחשבו האישי (שם הקובץ: "${fileName}").
+משימתך: לקרוא בעיון רב את תוכן הקובץ, לחלץ את מרכיביו ולשבץ/להמיר אותם במדויק לחמש תחנות מודל מַפְתֵּי"חַ [ מ , פ , ת , י , ח ]:
+1. [ מ ] משיכה וסקרנות (משוך): גירוי מוחשי, שאלת סקרנות, עירור ידע קודם, והכלת כלל התלמידים.
+2. [ פ ] פיתוח הבנה (הבנה): מטרת השיעור, המשגה, מילון מושגים, ומידול המורה (I Do).
+3. [ ת ] תובנה והעמקה (תבונה): שאלות חשיבה מסדר גבוה, נימוק, ודיון מעמיק.
+4. [ י ] יצירה ויישום (יישום): משימה מעשית, 3 מסלולי תמאוז (נתמך, רגיל, מאתגר), ושולחן ממוקד.
+5. [ ח ] חתימה וצידה לדרך (חתימה): רפלקציה, 5 השאלות, והצידה לדרך שלוקח התלמיד.
+
+אם הקובץ המקורי בנוי במבנה שיעור מסורתי (פתיחה, גוף, סיכום), פרוס והעשר את התוכן במקצועיות רבה כך שימלא את חמש התחנות באופן מושלם.
+חלץ גם: כותרת/נושא השיעור (title), תחום דעת (subject), שכבת גיל/כיתה (grade), משך השיעור (duration בדקות), ומטרת השיעור (objective).
+
+החזר פלט בפורמט JSON בלבד:
+{
+  "title": "כותרת השיעור",
+  "subject": "תחום הדעת",
+  "grade": "שכבת הגיל",
+  "duration": 45,
+  "objective": "מטרת השיעור",
+  "stations": {
+    "m": "תוכן תחנת משיכה וסקרנות...",
+    "f": "תוכן תחנת פיתוח הבנה...",
+    "t": "תוכן תחנת תובנה והעמקה...",
+    "y": "תוכן תחנת יצירה ויישום...",
+    "h": "תוכן תחנת חתימה וצידה לדרך..."
+  }
+}`
+    : `أنت الخبير البيداغوجي والمستشار التربوي الأول لنموذج «مِفتاح» (موديل مفتیح) بمدرسة مشيرفة الابتدائية.
+قام المعلم برفع ملف تخطيط حصة دراسية من حاسوبه (اسم الملف: "${fileName}").
+مهمتك بدقة وإتقان تام: قراءة محتوى الملف المرفق، واستخراج وتوزيع وإعادة صياغة محتواه بذكاء ليتطابق مع المحطات الخمس لنموذج مِفتاح المعتمد بمدرسة مشيرفة:
+1. [ م ] مدخل محفّز (משיכה וסקרנות): إثارة الفضول، سؤال الانطلاق، الاحتواء، والتقويم الأولي، وعبارة الانتقال الإلزامية.
+2. [ ف ] فهم وبناء المعنى (פיתוח הבנה): الهدف بلغة الطلاب، النص أو المفهوم العلمي، نمذجة المعلم (I Do)، والاحتواء والتقويم التكويني.
+3. [ ت ] تفكير وتبصّر (תובנה והעמקה): أسئلة التفكير العليا (HOTS)، المناقشة السقراطية، والتعمق.
+4. [ ي ] إنجاز وتطبيق (יצירה ויישום): ورشة العمل ومسارات التمايز الثلاثة (دعم، أساسي، وإثراء/تحدٍ) ودمج UDL.
+5. [ ح ] حصاد وزوّادة (חתימה וצידה לדרך): التأمل الذاتي، تذكرة الخروج، زوّادة الطالب، وسؤال نقل الأثر الحياتي للمنزل.
+
+إذا كان التخطيط المرفوع مكتوباً بهيكل تقليدي (مثل: تمهيد، شرح، أسئلة، واجب بيتي)، قم بفرز وتوزيع وإثراء المحتوى بذكاء ومهنية عالية ليغذي المحطات الخمس كاملة بدون أي نقص وبأعلى معايير الجودة البيداغوجية.
+استخرج أيضاً:
+- عنوان الدرس (title)
+- المادة الدراسية (subject)
+- الصف (grade)
+- زمن الحصة بالدقائق (duration)
+- الهدف العام ومؤشرات النجاح (objective)
+
+أخرج النتيجة بصيغة JSON حصراً بدون أي كود أو نصوص خارج الـ JSON:
+{
+  "title": "عنوان الدرس",
+  "subject": "المادة الدراسية",
+  "grade": "الصف",
+  "duration": 45,
+  "objective": "الهدف التعليمي ومعايير النجاح",
+  "stations": {
+    "m": "نص محطة المدخل المحفز بتفاصيلها...",
+    "f": "نص محطة فهم وبناء المعنى بنمذجة المعلم والمفهوم...",
+    "t": "نص محطة التفكير والتبصر وأسئلة التفكير العليا...",
+    "y": "نص محطة الإنجاز والتطبيق ومسارات التمايز الثلاثة...",
+    "h": "نص محطة الحصاد والزوّادة وتذكرة الخروج..."
+  }
+}`;
+
+  // Helper to safely parse JSON from AI response
+  const tryParseAiJson = (text) => {
+    if (!text) return null;
+    let clean = text.trim();
+    // Remove markdown code fences if present
+    if (clean.startsWith('```json')) clean = clean.slice(7);
+    else if (clean.startsWith('```')) clean = clean.slice(3);
+    if (clean.endsWith('```')) clean = clean.slice(0, -3);
+    clean = clean.trim();
+    
+    // Find json braces if surrounded by commentary
+    const firstBrace = clean.indexOf('{');
+    const lastBrace = clean.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      clean = clean.substring(firstBrace, lastBrace + 1);
+    }
+
+    try {
+      const obj = JSON.parse(clean);
+      if (obj.stations && (obj.stations.m || obj.stations.f || obj.stations.t || obj.stations.y || obj.stations.h)) {
+        return {
+          title: obj.title || fileName.replace(/\.[^/.]+$/, '') || 'تخطيط درس مستورد',
+          subject: obj.subject || 'عام',
+          grade: obj.grade || 'المرحلة الابتدائية',
+          duration: Number(obj.duration) || 45,
+          objective: obj.objective || '',
+          author: 'مستورد من الحاسوب ومُعالج بموديل مِفْتَاح',
+          stations: {
+            m: obj.stations.m || '',
+            f: obj.stations.f || '',
+            t: obj.stations.t || '',
+            y: obj.stations.y || '',
+            h: obj.stations.h || ''
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('Failed parsing AI JSON response:', e);
+    }
+    return null;
+  };
+
+  // 1. Try Gemini (Superior for PDFs via inlineData base64, as well as text)
+  if (geminiKey) {
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    for (const m of models) {
+      try {
+        const parts = [];
+        if (fileBase64 && (mimeType === 'application/pdf' || mimeType.startsWith('image/'))) {
+          parts.push({
+            inlineData: {
+              mimeType: mimeType,
+              data: fileBase64
+            }
+          });
+          parts.push({ text: parsingPrompt });
+        } else if (rawText) {
+          parts.push({
+            text: `${parsingPrompt}\n\nنص ملف التخطيط المرفوع من الحاسوب:\n"""\n${rawText.slice(0, 15000)}\n"""`
+          });
+        }
+
+        if (parts.length > 0) {
+          const res = await fetchWithTimeout(
+            `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts }],
+                generationConfig: {
+                  temperature: 0.4,
+                  maxOutputTokens: 3800,
+                  responseMimeType: "application/json"
+                }
+              })
+            },
+            14000
+          );
+
+          if (res.ok) {
+            const data = await res.json();
+            const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const parsed = tryParseAiJson(txt);
+            if (parsed) return parsed;
+          }
+        }
+      } catch (err) {
+        console.warn(`Gemini upload parser (${m}) failed:`, err);
+      }
+    }
+  }
+
+  // 2. Try Groq (Ultra-fast for text)
+  if (groqKey && rawText) {
+    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    for (const gm of groqModels) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqKey}`
+            },
+            body: JSON.stringify({
+              model: gm,
+              messages: [
+                { role: 'system', content: isHebrew ? 'אתה יועץ פדגוגי של מודל מפתיח. עליך להמיר את מערך השיעור המועלה ל-JSON של 5 התחנות.' : 'أنت خبير بيداغوجي لنموذج مِفتاح. حول التخطيط المرفوع إلى JSON يحوي المحطات الخمس بدقة.' },
+                { role: 'user', content: `${parsingPrompt}\n\nنص ملف التخطيط المرفوع:\n"""\n${rawText.slice(0, 15000)}\n"""` }
+              ],
+              temperature: 0.4,
+              max_tokens: 3800,
+              response_format: { type: "json_object" }
+            })
+          },
+          13000
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          const parsed = tryParseAiJson(txt);
+          if (parsed) return parsed;
+        }
+      } catch (err) {
+        console.warn(`Groq upload parser (${gm}) failed:`, err);
+      }
+    }
+  }
+
+  // 3. Fallback Heuristic Parser (If AI is unreachable or offline)
+  const lines = (rawText || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const cleanBaseName = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+  
+  let detectedTitle = cleanBaseName || 'تخطيط درس مستورد من الحاسوب';
+  let detectedSubject = 'عام';
+  let detectedGrade = 'المرحلة الابتدائية';
+  let detectedObjective = '';
+
+  // Scan first 15 lines for metadata
+  for (let i = 0; i < Math.min(lines.length, 15); i++) {
+    const line = lines[i];
+    if (/عنوان|موضوع الدرس|נושא השיעור/i.test(line)) {
+      detectedTitle = line.replace(/.*[:\-–]/, '').trim() || detectedTitle;
+    } else if (/مادة|المادة|الموضوع|تחום דעת/i.test(line)) {
+      detectedSubject = line.replace(/.*[:\-–]/, '').trim() || detectedSubject;
+    } else if (/صف|الصف|כיתה/i.test(line)) {
+      detectedGrade = line.replace(/.*[:\-–]/, '').trim() || detectedGrade;
+    } else if (/هدف|الهدف|الأهداف|מטרה/i.test(line)) {
+      detectedObjective = line.replace(/.*[:\-–]/, '').trim() || detectedObjective;
+    }
+  }
+
+  // Distribute chunks of lines into the 5 stations
+  const totalLines = lines.length;
+  const chunk = Math.max(1, Math.floor(totalLines / 5));
+
+  const sliceText = (start, end) => lines.slice(start, end).join('\n\n');
+
+  return {
+    title: detectedTitle,
+    subject: detectedSubject,
+    grade: detectedGrade,
+    duration: 45,
+    objective: detectedObjective || 'استيعاب المفاهيم الأساسية وتطبيقها في أنشطة متنوعة وفق نموذج مِفتاح.',
+    author: 'مستورد من الحاسوب',
+    stations: {
+      m: sliceText(0, chunk) || '🧲 [م - مدخل محفّز]: عرض مثير أو سؤال انطلاق يستثير فضول الطلاب ويربط الدرس بالواقع وخبراتهم السابقة.',
+      f: sliceText(chunk, chunk * 2) || '💡 [ف - فهم وبناء المعنى]: تقديم المفهوم الأساسي بلغة واضحة ونمذجة المعلم للمهارة خطوة بخطوة وتوضيح معايير النجاح.',
+      t: sliceText(chunk * 2, chunk * 3) || '🧠 [ت - تفكير وتبصّر]: حوار استقصائي وأسئلة تفكير عليا تدفع الطلاب للتعليل، المقارنة، والربط الحياتي.',
+      y: sliceText(chunk * 3, chunk * 4) || '🛠️ [ي - إنجاز وتطبيق]: ورشة عمل تطبيقية بمسارات متمايزة (مسار الدعم، المسار الأساسي، ومسار التحدي) لتحقيق الإتقان.',
+      h: sliceText(chunk * 4, totalLines) || '🎒 [ح - حصاد وزوّادة]: تأمل ذاتي وتذكرة خروج تلخص الزوّادة المعرفية والوجدانية وسؤال نقل الأثر للبيت.'
+    }
+  };
+};
+
