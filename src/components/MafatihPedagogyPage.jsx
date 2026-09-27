@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import genieImg from '../assets/genie.png';
 import { generateMafatihLessonPlanAI, generateAiResponse } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
-import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
+import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
 import './MafatihPedagogyPage.css';
 
 const STATIONS_DATA = [
@@ -374,7 +374,7 @@ const MafatihPedagogyPage = () => {
       };
     }
     setPlanToSave(target);
-    setSaveAuthorName('معلم في مدرسة مشيرفة');
+    setSaveAuthorName(target.author || aiAuthorName.trim() || 'معلم في مدرسة مشيرفة');
     setIsSaveModalOpen(true);
   };
 
@@ -387,8 +387,16 @@ const MafatihPedagogyPage = () => {
         ...planToSave,
         author: saveAuthorName.trim() || 'معلم في مدرسة مشيرفة'
       };
-      const saved = await saveLessonPlanToSharedLibrary(finalToSave);
+      let saved;
+      if (planToSave.id && !planToSave.id.startsWith('seed-')) {
+        saved = await updateLessonPlanInLibrary(planToSave.id, finalToSave);
+      } else {
+        saved = await saveLessonPlanToSharedLibrary(finalToSave);
+      }
       setLibraryPlans((prev) => [saved, ...prev.filter(p => p.id !== saved.id)]);
+      if (generatedPlan && (generatedPlan.id === planToSave.id || generatedPlan.title === planToSave.title)) {
+        setGeneratedPlan(prev => ({ ...prev, ...saved }));
+      }
       setIsSaveModalOpen(false);
       setLibraryNotification(`تم حفظ الدرس "${finalToSave.title}" بنجاح في مكتبة الحصص المدرسية! 🎉`);
       setTimeout(() => setLibraryNotification(null), 6000);
@@ -398,6 +406,27 @@ const MafatihPedagogyPage = () => {
     } finally {
       setIsSavingPlan(false);
     }
+  };
+
+  const handleViewPlanInArchive = (planId) => {
+    setIsRobotModalOpen(false);
+    setActiveTab('library');
+    if (planId) {
+      setExpandedPlanId(planId);
+    }
+    setTimeout(() => {
+      const cardEl = planId ? document.getElementById(`plan-card-${planId}`) : null;
+      if (cardEl) {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        const sectionEl = document.getElementById('mafatih-library-section');
+        if (sectionEl) {
+          sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 900, behavior: 'smooth' });
+        }
+      }
+    }, 250);
   };
 
   const handleLoadPlanIntoEditor = (plan) => {
@@ -510,6 +539,7 @@ const MafatihPedagogyPage = () => {
   const [aiDuration, setAiDuration] = useState(45);
   const [aiNotes, setAiNotes] = useState('');
   const [planLanguage, setPlanLanguage] = useState('ar');
+  const [aiAuthorName, setAiAuthorName] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -702,13 +732,62 @@ const MafatihPedagogyPage = () => {
         notes: aiNotes.trim(),
         language: planLanguage
       });
-      setGeneratedPlan(plan);
+
+      // Auto-archive newly generated plan to the school library / archive immediately!
+      const planToArchive = {
+        title: plan.title || aiTopic.trim(),
+        subject: plan.subject || aiSubject,
+        grade: plan.grade || aiGrade,
+        duration: plan.duration || aiDuration,
+        objective: plan.objective || aiObjective.trim() || '',
+        author: aiAuthorName.trim() || 'الروبوت البيداغوجي الذكي (موديل مِفْتَاح)',
+        stations: { ...plan.stations }
+      };
+
+      try {
+        const saved = await saveLessonPlanToSharedLibrary(planToArchive);
+        setLibraryPlans((prev) => [saved, ...prev.filter(p => p.id !== saved.id)]);
+        setGeneratedPlan({ ...plan, id: saved.id, author: saved.author });
+        setLibraryNotification(`تم حفظ الدرس "${saved.title}" تلقائياً في مكتبة وأرشيف الحصص المدرسية! 📚🎉`);
+        setTimeout(() => setLibraryNotification(null), 7000);
+      } catch (saveErr) {
+        console.warn('Auto-save to library failed:', saveErr);
+        setGeneratedPlan(plan);
+      }
     } catch (err) {
       console.error('Failed to generate lesson plan:', err);
       alert('حدث خطأ أثناء إعداد الخطة، يرجى المحاولة ثانية.');
     } finally {
       setIsAiGenerating(false);
     }
+  };
+
+  const handleFinishWizardStep = async () => {
+    const planToArchive = {
+      title: wizardPlan.topic || 'درس نموذجي بموديل مِفْتَاح',
+      subject: wizardPlan.subject || 'عام',
+      grade: wizardPlan.grade || 'المرحلة الابتدائية',
+      duration: wizardPlan.duration || 45,
+      objective: wizardPlan.objective || '',
+      author: aiAuthorName.trim() || 'معلم في مدرسة مشيرفة',
+      stations: {
+        m: wizardPlan.m || '',
+        f: wizardPlan.f || '',
+        t: wizardPlan.t || '',
+        y: wizardPlan.y || '',
+        h: wizardPlan.h || ''
+      }
+    };
+    try {
+      const saved = await saveLessonPlanToSharedLibrary(planToArchive);
+      setLibraryPlans((prev) => [saved, ...prev.filter(p => p.id !== saved.id)]);
+      setWizardPlan(prev => ({ ...prev, id: saved.id, author: saved.author }));
+      setLibraryNotification(`تم حفظ ونشر درس "${saved.title}" تلقائياً في مكتبة وأرشيف الحصص المدرسية! 📚🎉`);
+      setTimeout(() => setLibraryNotification(null), 7000);
+    } catch (saveErr) {
+      console.warn('Auto-save wizard plan failed:', saveErr);
+    }
+    setWizardStep(6);
   };
 
   const handleDownloadWord = (planToExport) => {
@@ -2092,7 +2171,7 @@ ${p.stations?.h || ''}
         {/* TAB 5.5: LESSON PLANS SHARED LIBRARY (مكتبة تخطيط الحصص المدرسية المشتركة) */}
         {/* ========================================================================= */}
         {activeTab === 'library' && (
-          <section className="library-section fade-in">
+          <section id="mafatih-library-section" className="library-section fade-in">
             <div className="library-hero-banner">
               <div className="library-hero-icon">
                 <i className="fas fa-book-reader"></i>
@@ -2134,6 +2213,7 @@ ${p.stations?.h || ''}
                         const ps = (p.subject || '').toLowerCase();
                         const s = sub.toLowerCase();
                         return ps.includes(s) || 
+                          (s.includes('عاطفي') && (ps.includes('عاطفي') || ps.includes('sel') || ps.includes('اجتماعي'))) ||
                           (s === 'لغة إنجليزية' && (ps.includes('english') || ps.includes('إنجليزية'))) ||
                           (s === 'موطن ومجتمع ومدنيات' && (ps.includes('موطن') || ps.includes('مدنيات')));
                       }).length;
@@ -2227,7 +2307,11 @@ ${p.stations?.h || ''}
                 {filteredLibraryPlans.map((plan) => {
                   const isExpanded = expandedPlanId === plan.id;
                   return (
-                    <div key={plan.id} className="library-plan-card">
+                    <div 
+                      key={plan.id} 
+                      id={`plan-card-${plan.id}`}
+                      className={`library-plan-card ${isExpanded ? 'active-highlight' : ''}`}
+                    >
                       <div className="plan-card-header">
                         <div className="plan-badges-row">
                           <span className="plan-subject-badge">{plan.subject}</span>
@@ -4983,10 +5067,14 @@ ${p.stations?.h || ''}
                               if (!wizardPlan[cur.key]?.trim()) {
                                 if (!window.confirm(`لم تقم بكتابة أو اختيار محتوى لمحطة [${cur.badge}]، هل ترغب في المتابعة على أية حال؟`)) return;
                               }
-                              setWizardStep(wizardStep + 1);
+                              if (wizardStep === 5) {
+                                handleFinishWizardStep();
+                              } else {
+                                setWizardStep(wizardStep + 1);
+                              }
                             }}
                           >
-                            {wizardStep === 5 ? '🎉 إنهاء وهندسة الخطة الكاملة ⬅️' : `اعتماد والمتابعة للمحطة التالية ⬅️`}
+                            {wizardStep === 5 ? '🎉 إنهاء وهندسة الخطة وحفظها بالأرشيف ⬅️' : `اعتماد والمتابعة للمحطة التالية ⬅️`}
                           </button>
                         </div>
                       </div>
@@ -5000,7 +5088,7 @@ ${p.stations?.h || ''}
                         <div className="banner-text">
                           <i className="fas fa-check-circle"></i>
                           <div>
-                            <strong>تهانينا! اكتمل بناء وتخطيط الحصة بنجاح بمرافقة الروبوت! 🎉</strong>
+                            <strong>تهانينا! اكتمل بناء وتخطيط الحصة وحفظها في الأرشيف بنجاح! 🎉</strong>
                             <small>موضوع: {wizardPlan.topic} | {wizardPlan.subject} — {wizardPlan.grade}</small>
                           </div>
                         </div>
@@ -5013,13 +5101,39 @@ ${p.stations?.h || ''}
                         </button>
                       </div>
 
+                      {/* Auto-Save Status Banner */}
+                      <div className="auto-save-status-banner">
+                        <div className="status-badge-text">
+                          <span className="live-dot"></span>
+                          <i className="fas fa-archive"></i>
+                          <span><strong>محفوظ في الأرشيف المدرسي:</strong> تمت إضافة هذا الدرس تلقائياً إلى بنك خطط مِفْتَاح التشاركي ({wizardPlan.subject}).</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="view-in-archive-btn"
+                          onClick={() => handleViewPlanInArchive(wizardPlan.id)}
+                          title="الانتقال المباشر للدرس في مكتبة وبنك خطط المدرسة"
+                        >
+                          <i className="fas fa-external-link-alt"></i> فتح في الأرشيف 📂
+                        </button>
+                      </div>
+
                       {/* Export Action Bar */}
                       <div className="robot-export-actions">
                         <button 
                           type="button" 
-                          className="robot-export-btn save-library"
+                          className="robot-export-btn view-archive"
+                          onClick={() => handleViewPlanInArchive(wizardPlan.id)}
+                          title="عرض الدرس في مكتبة وبنك الخطط المدرسية"
+                        >
+                          <i className="fas fa-archive"></i> عرض بالأرشيف 📚
+                        </button>
+                        <button 
+                          type="button" 
+                          className="robot-export-btn edit-meta"
                           onClick={() => {
                             handleOpenSaveModal({
+                              id: wizardPlan.id,
                               subject: wizardPlan.subject,
                               grade: wizardPlan.grade,
                               title: wizardPlan.topic,
@@ -5034,9 +5148,9 @@ ${p.stations?.h || ''}
                               }
                             });
                           }}
-                          title="حفظ ونشر الخطة في مكتبة الحصص المدرسية المشتركة"
+                          title="تعديل اسم المعلم أو بيانات النشر في الأرشيف"
                         >
-                          <i className="fas fa-bookmark"></i> حفظ بالمكتبة 💾
+                          <i className="fas fa-edit"></i> تعديل النشر ✏️
                         </button>
                         <button 
                           type="button" 
@@ -5145,12 +5259,12 @@ ${p.stations?.h || ''}
                         <div className="banner-text">
                           <i className="fas fa-check-circle"></i>
                           <div>
-                            <strong>تمت هندسة خطة الدرس بنجاح!</strong>
+                            <strong>تمت هندسة خطة الدرس وحفظها في الأرشيف بنجاح! 🎉</strong>
                             <small>موضوع: {generatedPlan.title} | {generatedPlan.subject} — {generatedPlan.grade}</small>
                           </div>
                         </div>
                         <button 
-                          type="button"
+                          type="button" 
                           className="reset-plan-btn"
                           onClick={() => setGeneratedPlan(null)}
                         >
@@ -5158,15 +5272,40 @@ ${p.stations?.h || ''}
                         </button>
                       </div>
 
+                      {/* Auto-Save Status Banner */}
+                      <div className="auto-save-status-banner">
+                        <div className="status-badge-text">
+                          <span className="live-dot"></span>
+                          <i className="fas fa-archive"></i>
+                          <span><strong>محفوظ في الأرشيف المدرسي:</strong> تمت إضافة هذا الدرس تلقائياً إلى بنك خطط مِفْتَاح التشاركي ({generatedPlan.subject}).</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="view-in-archive-btn"
+                          onClick={() => handleViewPlanInArchive(generatedPlan.id)}
+                          title="الانتقال المباشر للدرس في مكتبة وبنك خطط المدرسة"
+                        >
+                          <i className="fas fa-external-link-alt"></i> فتح في الأرشيف 📂
+                        </button>
+                      </div>
+
                       {/* Export Action Bar */}
                       <div className="robot-export-actions">
                         <button 
                           type="button" 
-                          className="robot-export-btn save-library"
-                          onClick={() => handleOpenSaveModal(generatedPlan)}
-                          title="حفظ ونشر الخطة في مكتبة الحصص المدرسية المشتركة"
+                          className="robot-export-btn view-archive"
+                          onClick={() => handleViewPlanInArchive(generatedPlan.id)}
+                          title="الانتقال المباشر لمكان حفظ الخطة في مكتبة المدرسة"
                         >
-                          <i className="fas fa-bookmark"></i> حفظ بالمكتبة 💾
+                          <i className="fas fa-archive"></i> عرض بالأرشيف 📚
+                        </button>
+                        <button 
+                          type="button" 
+                          className="robot-export-btn edit-meta"
+                          onClick={() => handleOpenSaveModal(generatedPlan)}
+                          title="تعديل اسم المعلم أو بيانات النشر في الأرشيف"
+                        >
+                          <i className="fas fa-edit"></i> تعديل النشر ✏️
                         </button>
                         <button 
                           type="button" 
@@ -5474,13 +5613,27 @@ ${p.stations?.h || ''}
                         />
                       </div>
 
+                      {/* Optional Author Name */}
+                      <div className="robot-form-group">
+                        <label>
+                          <i className="fas fa-user-edit"></i> اسم المعلم / المُعِدّ (للتوثيق في أرشيف المكتبة المدرسية):
+                        </label>
+                        <input 
+                          type="text" 
+                          className="robot-text-input" 
+                          placeholder="مثال: أ. رامي / معلمة اللغة العربية (اختياري - يظهر بالبطاقة والأرشيف)" 
+                          value={aiAuthorName}
+                          onChange={(e) => setAiAuthorName(e.target.value)}
+                        />
+                      </div>
+
                       {/* Submit Generator Button */}
                       <button 
                         type="button" 
                         className="robot-submit-generate-btn"
                         onClick={handleGeneratePlanWithRobot}
                       >
-                        <i className="fas fa-magic"></i> {planLanguage === 'he' ? '⚡ הפק מערך שיעור לפי מודל מַפְתֵּי"חַ עכשיו' : '⚡ ابدأ بناء وتوليد خطة الدرس الآن'}
+                        <i className="fas fa-magic"></i> {planLanguage === 'he' ? '⚡ הפק מערך שיעור לפי מודל מַפְתֵּי"חַ ושמור בארכיון' : '⚡ ابدأ بناء وتوليد خطة الدرس وحفظها بالأرشيف'}
                       </button>
                     </div>
                   )}

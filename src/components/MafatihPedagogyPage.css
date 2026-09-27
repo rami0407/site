@@ -2863,6 +2863,105 @@
   box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
 }
 
+.robot-export-btn.view-archive {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.robot-export-btn.view-archive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.45);
+}
+
+.robot-export-btn.edit-meta {
+  background: #f8fafc;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+}
+
+.robot-export-btn.edit-meta:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Auto-Save Status Banner */
+.auto-save-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid #6ee7b7;
+  border-radius: 14px;
+  padding: 10px 16px;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.1);
+}
+
+.auto-save-status-banner .status-badge-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #065f46;
+}
+
+.auto-save-status-banner .status-badge-text i {
+  font-size: 1.15rem;
+  color: #059669;
+}
+
+.auto-save-status-banner .live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.view-in-archive-btn {
+  background: #047857;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25);
+  font-family: inherit;
+}
+
+.view-in-archive-btn:hover {
+  background: #065f46;
+  transform: translateY(-1px);
+}
+
+/* Highlighted Plan Card in Library */
+.library-plan-card.active-highlight {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35), 0 15px 35px rgba(16, 185, 129, 0.15) !important;
+  animation: highlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+  0% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35), 0 15px 35px rgba(16, 185, 129, 0.15); }
+  50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.6), 0 20px 40px rgba(16, 185, 129, 0.25); }
+  100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35), 0 15px 35px rgba(16, 185, 129, 0.15); }
+}
+
 /* Generated Station Cards */
 .generated-stations-list {
   display: flex;
@@ -4218,6 +4317,20 @@
 
 .empty-reset-btn:hover {
   background: #047857;
+}
+
+/* Modal Overlay for Mafatih Shared Library Save */
+.mafatih-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
 
 /* Save Plan Modal */
