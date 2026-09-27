@@ -1276,6 +1276,31 @@ ${p.stations?.h || ''}
             >
               <span>✨</span> تخطيط حسب جيمني ↗
             </a>
+
+            <a 
+              href="https://gemini.google.com/gem-labs/1jRrQGLBhFIeSIOwihaflwAg0cUzBfa_W"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mafatih-hero-top-gemini-lab-badge"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                color: 'white',
+                padding: '0.45rem 1.15rem',
+                borderRadius: '50px',
+                fontWeight: 900,
+                fontSize: '0.92rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(124, 58, 237, 0.45)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                transition: 'all 0.2s ease'
+              }}
+              title="تحضير خطة درس حسب ai"
+            >
+              <span>🧠</span> تحضير خطة درس حسب ai ↗
+            </a>
           </div>
 
           <h1 className="mafatih-hero-title">
@@ -1364,6 +1389,33 @@ ${p.stations?.h || ''}
             >
               <i className="fas fa-sparkles"></i>
               <span>تخطيط حسب جيمني</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
+            </a>
+
+            <a 
+              href="https://gemini.google.com/gem-labs/1jRrQGLBhFIeSIOwihaflwAg0cUzBfa_W"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="action-btn gemini-labs-btn"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #06b6d4 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                fontWeight: 900,
+                fontSize: '1rem',
+                padding: '0.75rem 1.6rem',
+                borderRadius: '12px',
+                boxShadow: '0 4px 18px rgba(124, 58, 237, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="تحضير خطة درس حسب ai"
+            >
+              <i className="fas fa-brain"></i>
+              <span>تحضير خطة درس حسب ai</span>
               <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
             </a>
 
@@ -2293,6 +2345,33 @@ ${p.stations?.h || ''}
                 >
                   <i className="fas fa-sparkles"></i>
                   <span>تخطيط حسب جيمني</span>
+                  <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
+                </a>
+
+                <a
+                  href="https://gemini.google.com/gem-labs/1jRrQGLBhFIeSIOwihaflwAg0cUzBfa_W"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #06b6d4 100%)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    padding: '0.8rem 1.6rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  title="تحضير خطة درس حسب ai"
+                >
+                  <i className="fas fa-brain"></i>
+                  <span>تحضير خطة درس حسب ai</span>
                   <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
                 </a>
               </div>

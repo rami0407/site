@@ -559,6 +559,33 @@ const MafatihAdminTab = () => {
               <i className="fas fa-external-link-alt" style={{ fontSize: '0.75rem', opacity: 0.9 }}></i>
             </a>
 
+            <a
+              href="https://gemini.google.com/gem-labs/1jRrQGLBhFIeSIOwihaflwAg0cUzBfa_W"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #06b6d4 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                padding: '0.85rem 1.4rem',
+                borderRadius: '10px',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="تحضير خطة درس حسب ai"
+            >
+              <i className="fas fa-brain"></i>
+              <span>تحضير خطة درس حسب ai</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.75rem', opacity: 0.9 }}></i>
+            </a>
+
             <button
               type="button"
               onClick={loadPlans}
