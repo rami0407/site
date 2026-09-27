@@ -2,9 +2,82 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
-import { generateStemSolutionIdeas, askSocraticStemMentor } from '../utils/aiService';
+import { generateStemSolutionIdeas, askSocraticStemMentor, guideSteamStationAI } from '../utils/aiService';
 import { getScientificResearchVisibility, subscribeScientificResearchVisibility } from '../utils/pageVisibilityService';
 import './StemCorner.css';
+
+const STEAM_HUB_PRESETS = {
+  bag: {
+    id: 'bag',
+    title: '🎒 تحدي الحقيبة الثقيلة',
+    category: 'صحة وهندسة',
+    problemDescription: 'نلاحظ أن حقائب الطلاب في المدرسة ثقيلة جداً وتتجاوز أحياناً 5 كغم بسبب حمل جميع الكتب والدفاتر والمستلزمات يومياً.',
+    whyItIsAProblem: 'لأن الوزن الزائد يسبب إجهاداً مستمراً للعمود الفقري وتقوس الظهر وآلاماً للطلاب الصغار، مما يؤثر على نموهم السليم وتركيزهم الدراسي ويشعرهم بالإرهاق.',
+    whoIsAffected: 'طلاب الصفوف الابتدائية وأهاليهم أثناء الذهاب والعودة.',
+    whereAndWhen: 'يومياً عند الصباح وظهراً، وخاصة أثناء صعود أدراج المدرسة.',
+    scienceAspect: 'دراسة تأثير قوى الجاذبية وعزم القوة وتوزيع مركز الثقل على فقرات الظهر وعضلات الكتف.',
+    techAspect: 'حساس وزن إلكتروني أو تطبيق جدول مدرسي ذكي يحدد الكتب المطلوبة لليوم فقط.',
+    engineeringAspect: 'تصميم هيكل خفيف مع عجلات ثلاثية لصعود الدرج، وتقسيم الحجرات هندسياً لتوزيع الثقل على الحوض.',
+    artsAspect: 'تصميم شعار وبوستر توعوي جذاب: "ظهر سليم لعقل عليم"، وإلقاء مقنع في دقيقة واحدة.',
+    mathAspect: 'حساب نسبة وزن الحقيبة إلى وزن الطالب (يجب ألا تزيد عن 10%-15%)، وحساب وزن الكتب لكل حصة.'
+  },
+  water: {
+    id: 'water',
+    title: '💧 تحدي ترشيد مياه المغاسل',
+    category: 'بيئة وتكنولوجيا',
+    problemDescription: 'ترك بعض صنابير المغاسل مفتوحة أو عدم إغلاقها بإحكام أثناء الاستراحة مما يتسبب في هدر مستمر للمياه.',
+    whyItIsAProblem: 'لأن هدر المياه يضيع ثروة طبيعية ثمينة، ويزيد فاتورة المدرسة، ويسبب تجمع المياه على الأرض مما قد يؤدي لانزلاق الطلاب وتكاثر الرطوبة.',
+    whoIsAffected: 'جميع طلاب المدرسة وطاقم النظافة وإدارة المدرسة.',
+    whereAndWhen: 'في مغاسل ساحة المدرسة والممرات أثناء استراحة الفطور وبعد حصص الرياضة.',
+    scienceAspect: 'مفهوم ضغط وتدفق السوائل، والخاصية الشعرية، وحفظ الموارد الطبيعية ودورة الماء.',
+    techAspect: 'حساس حركة يعمل بالأشعة تحت الحمراء أو صمام مؤقت يغلق الماء تلقائياً بعد 7 ثوانٍ.',
+    engineeringAspect: 'تصميم فوهة صنبور ميكانيكية تمزج الماء بالهواء لتقليل الاستهلاك بنسبة 50% دون إضعاف التدفق.',
+    artsAspect: 'رسوم جدارية وملصقات تشجيعية ملونة بجانب كل صنبور: "كل قطرة ماء تصنع مستقبلاً".',
+    mathAspect: 'حساب كمية الماء المهدورة باللتر في الدقيقة، وحساب إجمالي التوفير الشهري باللترات والشواكل.'
+  },
+  power: {
+    id: 'power',
+    title: '💡 تحدي توفير إضاءة الصفوف',
+    category: 'طاقة وفيزياء',
+    problemDescription: 'ترك المصابيح والمكيفات تعمل في الصفوف الفارغة عند خروج الطلاب للساحة أو لحصص الرياضة رغم وجود ضوء الشمس الكافي.',
+    whyItIsAProblem: 'استهلاك غير مبرر للطاقة الكهربائية، وارتفاع تكاليف المدرسة، وانبعاثات كربونية تؤثر على البيئة وتلف المصابيح سريعاً.',
+    whoIsAffected: 'المدرسة والبيئة المحيطة والأجيال القادمة.',
+    whereAndWhen: 'في غرف الصفوف أثناء حصص الرياضة والاستراحة ونهاية الدوام.',
+    scienceAspect: 'تحولات الطاقة الكهربائية إلى طاقة ضوئية وحرارية، وتأثير شدة الضوء الطبيعي (Lux).',
+    techAspect: 'حساس إضاءة نهارية (LDR) وحساس حركة (PIR) لفصل الإضاءة أوتوماتيكياً عند خلو الصف.',
+    engineeringAspect: 'إعادة توزيع زوايا العاكسات الضوئية للنوافذ للاستفادة القصوى من ضوء الشمس الطبيعي.',
+    artsAspect: 'تصميم رمز تعبيري ضاحك عند إطفاء النور، وملصقات "سفير الطاقة الصفّي".',
+    mathAspect: 'حساب عدد الكيلوواط الساعي المستهلك، ونسبة التوفير المئوية، والمبلغ المالي الموفر سنوياً.'
+  },
+  noise: {
+    id: 'noise',
+    title: '🔇 تحدي تقليل ضوضاء الكراسي',
+    category: 'فيزياء وبيئة تعلم',
+    problemDescription: 'صدور أصوات صرير حادة ومزعجة عند سحب الكراسي والطاولات على أرضية الصف أثناء الحصص.',
+    whyItIsAProblem: 'تشتيت انتباه الطلاب والمعلمين، وإزعاج الصفوف المجاورة، وتآكل أرضية الصف وخلق بيئة صفية متوترة تعيق الاستيعاب.',
+    whoIsAffected: 'الطلاب والمعلمون أثناء الحصص الدراسية والامتحانات.',
+    whereAndWhen: 'داخل الغرف الصفية طوال اليوم الدراسي عند القيام والجلوس وتغيير المجموعات.',
+    scienceAspect: 'علم الصوتيات وتردد الموجات، وقوى الاحتكاك بين المعادن والبلاط وكيفية امتصاص الاهتزاز.',
+    techAspect: 'تطبيق قياس الديسيبل (Sound Meter) على الهاتف الذكي لقياس شدة الضوضاء قبل وبعد الحل.',
+    engineeringAspect: 'تصميم وسادات كواتم صوت كروية من خامات معاد تدويرها (كرات تنس أو لباد سيليكوني) تثبت بأرجل الكراسي.',
+    artsAspect: 'تلوين وتزيين أرجل الكراسي بتصميمات بهيجة تجعل الصف أكثر جمالاً وهدوءاً.',
+    mathAspect: 'قياس قطر أرجل الكراسي بالمليمتر، وحساب عدد الكراسي في المدرسة (مثلاً 500 كرسي × 4 أرجل = 2000 قطعة).'
+  },
+  custom: {
+    id: 'custom',
+    title: '✨ مشكلة جديدة ألاحظها في مدرستي',
+    category: 'ابتكار حر',
+    problemDescription: '',
+    whyItIsAProblem: '',
+    whoIsAffected: '',
+    whereAndWhen: '',
+    scienceAspect: '',
+    techAspect: '',
+    engineeringAspect: '',
+    artsAspect: '',
+    mathAspect: ''
+  }
+};
 
 const DEFAULT_CHALLENGES = [
   {
@@ -254,6 +327,185 @@ const StemCorner = ({ isStandalone = true }) => {
   const [formSuccess, setFormSuccess] = useState('');
   const [aiStemIdeas, setAiStemIdeas] = useState('');
   const [isLoadingAiStem, setIsLoadingAiStem] = useState(false);
+
+  // STEAM Hub Interactive Stations State
+  const [hubActiveStation, setHubActiveStation] = useState(1);
+  const [hubViewMode, setHubViewMode] = useState('interactive'); // 'interactive' | 'summary'
+  const [hubSelectedPresetKey, setHubSelectedPresetKey] = useState('bag');
+  const [hubAiGuidance, setHubAiGuidance] = useState({});
+  const [hubIsAiLoading, setHubIsAiLoading] = useState({});
+  const [hubSubmitSuccess, setHubSubmitSuccess] = useState('');
+  const hubPhotoInputRef = useRef(null);
+
+  const [hubStationData, setHubStationData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('steam_hub_station_work');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn("Reading steam_hub_station_work failed:", e);
+    }
+    const def = STEAM_HUB_PRESETS.bag;
+    return {
+      problemKey: 'bag',
+      problemTitle: def.title,
+      problemCategory: def.category,
+      problemDescription: def.problemDescription,
+      whyItIsAProblem: def.whyItIsAProblem,
+      whoIsAffected: def.whoIsAffected,
+      whereAndWhen: def.whereAndWhen,
+
+      scienceAspect: def.scienceAspect,
+      techAspect: def.techAspect,
+      engineeringAspect: def.engineeringAspect,
+      artsAspect: def.artsAspect,
+      mathAspect: def.mathAspect,
+
+      prototypeTitle: 'الحقيبة الذكية ذات الهيكل الموزع للضغط',
+      prototypeSketchDesc: 'مخطط كرتوني يُظهر حقيبة مقسمة لثلاثة جيوب عمودية مع قاعدة عجلات خفيفة وحزام خصر عريض يوزع الحمل.',
+      prototypeImage: '',
+      pitchElevatorScript: 'المشكلة: يعاني زملاؤنا من ألم الظهر بسبب الحقائب الثقيلة.\nحلنا: حقيبة ذكية بهيكل خفيف وحزام توزيع الوزن وجدول مدرسي رقمي.\nكيف تعمل: نقيس الوزن أوتوماتيكياً ونحمل فقط كتب اليوم.\nالفائدة: حماية ظهور الطلاب وجعل القدوم للمدرسة تجربة مريحة وسعيدة!',
+      pitchVideoUrl: '',
+
+      testLocation: 'ممر الصفوف وأدراج مدرسة مشيرفة الابتدائية',
+      testResults: 'تم فحص النموذج مع 5 طلاب، وانخفض الشعور بالثقل بنسبة 40%، وكان صعود الدرج أسهل بكثير.',
+      peerReviewFeasibility: 5,
+      peerReviewOriginality: 5,
+      peerReviewImpact: 5,
+      peerReviewNotes: 'فكرة ممتازة وعملية جداً! نقترح إضافة عاكس ضوئي في الخلف للأمان في الشارع.',
+
+      iterationChallenges: 'كانت العجلات تصدر صوتاً خفيفاً على البلاط عند سحبها بسرعة.',
+      iterationModifications: 'أضفنا طبقة سيليكون مطاطية ممتصة للصوت على العجلات (النسخة V2)، وعززنا حزام الأمان.',
+      teacherTipsApplied: 'نصحنا معلم العلوم بتخفيف وزن الهيكل نفسه باستخدام مواد كرتونية معاد تدويرها.',
+
+      finalImpactSummary: 'حماية صحة 300 طالب بالمدرسة من آلام الظهر، وتوفير بيئة تعليمية صحية ومحفزة.',
+      studentLeadName: '',
+      studentClassRoom: 'الصف الثالث (أ)',
+      teamMembers: 'أحمد، رامي، مريم، يوسف'
+    };
+  });
+
+  // Keep student name in sync if empty
+  useEffect(() => {
+    if (studentName && !hubStationData.studentLeadName) {
+      setHubStationData(prev => ({ ...prev, studentLeadName: studentName }));
+    }
+  }, [studentName]);
+
+  // Save to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('steam_hub_station_work', JSON.stringify(hubStationData));
+    } catch (e) {
+      console.warn("Saving steam_hub_station_work failed:", e);
+    }
+  }, [hubStationData]);
+
+  const handleSelectHubPreset = (key) => {
+    setHubSelectedPresetKey(key);
+    const p = STEAM_HUB_PRESETS[key];
+    if (!p) return;
+    setHubStationData(prev => ({
+      ...prev,
+      problemKey: key,
+      problemTitle: p.title,
+      problemCategory: p.category,
+      problemDescription: p.problemDescription,
+      whyItIsAProblem: p.whyItIsAProblem,
+      whoIsAffected: p.whoIsAffected,
+      whereAndWhen: p.whereAndWhen,
+      scienceAspect: p.scienceAspect || prev.scienceAspect,
+      techAspect: p.techAspect || prev.techAspect,
+      engineeringAspect: p.engineeringAspect || prev.engineeringAspect,
+      artsAspect: p.artsAspect || prev.artsAspect,
+      mathAspect: p.mathAspect || prev.mathAspect,
+      prototypeTitle: key === 'bag' ? 'الحقيبة الذكية ذات الهيكل الموزع للضغط' :
+                      key === 'water' ? 'صنبور التوفير الحساس الذكي' :
+                      key === 'power' ? 'نظام استشعار الطاقة الصفية الذكي' :
+                      key === 'noise' ? 'كواتم الضوضاء السيليكونية لأرجل الكراسي' : prev.prototypeTitle
+    }));
+  };
+
+  const handleHubPhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        setHubStationData(prev => ({ ...prev, prototypeImage: evt.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRequestHubAi = async (stationNum) => {
+    setHubIsAiLoading(prev => ({ ...prev, [stationNum]: true }));
+    try {
+      let extra = '';
+      if (stationNum === 5) {
+        extra = `تحديات: ${hubStationData.iterationChallenges} | تعديلات: ${hubStationData.iterationModifications}`;
+      }
+      const guidance = await guideSteamStationAI({
+        stationNumber: stationNum,
+        problemTitle: hubStationData.problemTitle,
+        problemDetail: hubStationData.problemDescription,
+        whyProblem: hubStationData.whyItIsAProblem,
+        extraContext: extra
+      });
+      setHubAiGuidance(prev => ({ ...prev, [stationNum]: guidance }));
+    } catch (e) {
+      console.warn("AI station guidance error:", e);
+      setHubAiGuidance(prev => ({
+        ...prev,
+        [stationNum]: 'مرحباً يا بطل! فكر في أثر هذا التحدي على زملائك في المدرسة، وركز على حل بسيط وآمن يمكنك بناؤه بمواد متوفرة.'
+      }));
+    } finally {
+      setHubIsAiLoading(prev => ({ ...prev, [stationNum]: false }));
+    }
+  };
+
+  const handleSaveSteamHubProject = async () => {
+    const studentLead = hubStationData.studentLeadName || studentName || 'طالب مبدع';
+    const studentClassRoom = hubStationData.studentClassRoom || studentClass || 'الصف الثالث (أ)';
+    const projTitle = hubStationData.prototypeTitle || hubStationData.problemTitle || 'مشروع حاضنة ستيم المدرسية';
+
+    const newProject = {
+      studentName: studentLead,
+      studentClass: studentClassRoom,
+      participationType: hubStationData.teamMembers ? 'team' : 'individual',
+      teamName: hubStationData.prototypeTitle || 'فريق مبتكري ستيم',
+      teamLeader: studentLead,
+      teamRoles: hubStationData.teamMembers || '',
+      challengeTitle: hubStationData.problemTitle,
+      solutionTitle: projTitle,
+      solutionDesc: `[مشروع متكامل في حاضنة ستيم الرقمية]\n• المشكلة: ${hubStationData.problemDescription}\n• لماذا هي مشكلة: ${hubStationData.whyItIsAProblem}\n• الحل الهندسي: ${hubStationData.prototypeSketchDesc}\n• الأثر على المدرسة: ${hubStationData.finalImpactSummary}`,
+      prototypeImage: hubStationData.prototypeImage || '',
+      currentStage: 4,
+      teacherStars: 5,
+      teacherFeedback: '🌟 مبارك! تم استلام المشروع المتكامل عبر حاضنة ستيم الرقمية، واحتسابه رسمياً ضمن ملف التقييم المدرسي.',
+      studentUpdates: [`تم إنجاز المحطات الست في حاضنة ستيم واعتماد المشروع بتاريخ ${new Date().toLocaleDateString('ar-EG')}`],
+      likes: 10,
+      isSteamHubProject: true,
+      steamHubData: hubStationData,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, 'stem_solutions'), newProject);
+    } catch (e) {
+      console.warn("Firestore save fallback:", e);
+    }
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('stem_local_solutions') || '[]');
+      localStorage.setItem('stem_local_solutions', JSON.stringify([newProject, ...existing]));
+      setSolutions(prev => [newProject, ...prev]);
+    } catch (e) {
+      console.warn("LocalStorage save fallback:", e);
+    }
+
+    addPoints(100);
+    setHubSubmitSuccess('🎉 مبارك يا بطل! تم تسليم مشروعك بنجاح واعتماده في حاضنة ستيم الرقمية ونلت +100 نقطة ⭐');
+    setTimeout(() => setHubSubmitSuccess(''), 8000);
+  };
 
   const handleGenerateAiStemIdeas = async () => {
     if (!selectedChallenge) return;
@@ -2149,115 +2401,1080 @@ const StemCorner = ({ isStandalone = true }) => {
             <div className="doc-block-header">
               <div className="block-number">2</div>
               <div className="block-title-group">
-                <h3>المحطات الست في مسار الطالب (Student Workflow)</h3>
-                <span className="block-subtitle">يسير الطالب أو الفريق عبر 6 محطات رقمية مترابطة داخل المنصة</span>
+                <h3>المحطات الست في مسار الطالب (Interactive STEAM Studio)</h3>
+                <span className="block-subtitle">مختبر التفكير الهندسي والبحثي: صمم، جرب، وحل مشكلات مدرستك خطوة بخطوة</span>
+              </div>
+              <div className="hub-mode-toggle-group">
+                <button
+                  type="button"
+                  className={`hub-toggle-btn ${hubViewMode === 'interactive' ? 'active' : ''}`}
+                  onClick={() => setHubViewMode('interactive')}
+                >
+                  <i className="fas fa-flask-vial"></i> الاستوديو التفاعلي
+                </button>
+                <button
+                  type="button"
+                  className={`hub-toggle-btn ${hubViewMode === 'summary' ? 'active' : ''}`}
+                  onClick={() => setHubViewMode('summary')}
+                >
+                  <i className="fas fa-list-check"></i> النظرة الشاملة
+                </button>
               </div>
             </div>
 
             <div className="doc-content-body">
-              <div className="workflow-timeline">
-                <div className="timeline-item">
-                  <div className="timeline-badge" style={{ background: '#3b82f6' }}>1</div>
-                  <div className="timeline-card">
-                    <div className="stage-top">
-                      <span className="stage-code">المحطة 1</span>
-                      <h4 className="stage-title">اكتشاف المشكلة وفهمها (Problem Discovery)</h4>
-                    </div>
-                    <ul className="stage-bullets">
-                      <li>قراءة التحدي المدرسي المطروح، مشاهدة فيديو أو صور توضيحية من بيئة المدرسة.</li>
-                      <li>تعبئة <strong>"نموذج التعاطف وفهم المشكلة"</strong> (من يتأثر بها؟ متى تحدث؟ ولماذا هي مهمة للمجتمع المدرسي؟).</li>
-                    </ul>
-                    <div className="stage-deliverable">
-                      <i className="fas fa-clipboard-check"></i> <strong>المخرج المطلوب:</strong> بطاقة تعريف المشكلة والجمهور المتأثر.
-                    </div>
-                  </div>
+              {hubSubmitSuccess && (
+                <div className="hub-success-alert">
+                  <i className="fas fa-circle-check"></i>
+                  <span>{hubSubmitSuccess}</span>
                 </div>
+              )}
 
-                <div className="timeline-item">
-                  <div className="timeline-badge" style={{ background: '#06b6d4' }}>2</div>
-                  <div className="timeline-card">
-                    <div className="stage-top">
-                      <span className="stage-code">المحطة 2</span>
-                      <h4 className="stage-title">مصفوفة تكامل التخصصات (STEAM Matrix)</h4>
-                    </div>
-                    <ul className="stage-bullets">
-                      <li>تفكيك المشكلة إلى الأسئلة الفرعية الخمسة: ماذا نحتاج من علوم، رياضيات، تكنولوجيا، هندسة، وفنون لحلها؟</li>
-                      <li>تسجيل الفرضيات الأولية للحل بمساعدة مرشد الذكاء الاصطناعي السقراطي في المنصة.</li>
-                    </ul>
-                    <div className="stage-deliverable">
-                      <i className="fas fa-table-cells-large"></i> <strong>المخرج المطلوب:</strong> مصفوفة الأسئلة المنهجية الخمسة وفرضيات الحل.
-                    </div>
+              {/* INTERACTIVE STUDIO VIEW */}
+              {hubViewMode === 'interactive' && (
+                <div className="steam-interactive-studio">
+                  {/* Stepper Navigation */}
+                  <div className="studio-stepper-bar">
+                    {[
+                      { num: 1, title: 'اكتشاف المشكلة', icon: 'fa-magnifying-glass' },
+                      { num: 2, title: 'مصفوفة STEAM', icon: 'fa-puzzle-piece' },
+                      { num: 3, title: 'النموذج والإلقاء', icon: 'fa-drafting-compass' },
+                      { num: 4, title: 'الاختبار والتقييم', icon: 'fa-vial-circle-check' },
+                      { num: 5, title: 'التحسين V2', icon: 'fa-arrows-rotate' },
+                      { num: 6, title: 'قياس الأثر والتكريم', icon: 'fa-trophy' }
+                    ].map(st => (
+                      <button
+                        key={st.num}
+                        type="button"
+                        className={`stepper-station-btn ${hubActiveStation === st.num ? 'active' : ''}`}
+                        onClick={() => setHubActiveStation(st.num)}
+                      >
+                        <span className="step-circle">{st.num}</span>
+                        <span className="step-txt">{st.title}</span>
+                      </button>
+                    ))}
                   </div>
-                </div>
 
-                <div className="timeline-item">
-                  <div className="timeline-badge" style={{ background: '#8b5cf6' }}>3</div>
-                  <div className="timeline-card">
-                    <div className="stage-top">
-                      <span className="stage-code">المحطة 3</span>
-                      <h4 className="stage-title">هندسة النموذج الأولي والعرض (Prototyping & Pitching)</h4>
-                    </div>
-                    <ul className="stage-bullets">
-                      <li>رسم مخطط هندسي يدوي أو رقمي (Sketch / 3D Model).</li>
-                      <li>رفع فيديو قصير (دقيقة إلى دقيقتين) يعرض فيه الطلاب فكرتهم ونموذجهم بأسلوب إقناعي (Elevator Pitch).</li>
-                    </ul>
-                    <div className="stage-deliverable">
-                      <i className="fas fa-drafting-compass"></i> <strong>المخرج المطلوب:</strong> رسم النموذج الأولي + رابط أو فيديو العرض الإقناعي.
-                    </div>
-                  </div>
-                </div>
+                  {/* Station 1: Problem Discovery */}
+                  {hubActiveStation === 1 && (
+                    <div className="station-workspace-card station-1-card">
+                      <div className="station-card-banner">
+                        <div className="banner-icon blue">
+                          <i className="fas fa-magnifying-glass"></i>
+                        </div>
+                        <div className="banner-content">
+                          <span className="station-tag">المحطة 1 من 6</span>
+                          <h4>اكتشاف المشكلة وفهمها (Problem Discovery)</h4>
+                          <p>
+                            مرحباً بك يا بطل الاستكشاف! 🌟 مهمتك هنا هي ملاحظة مشكلة واقعية في مدرسة مشيرفة، وشرحها بدقة، وتوضيح <strong>لماذا هي مشكلة حقيقية</strong> تؤثر على الطلاب والبيئة المدرسية.
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="timeline-item">
-                  <div className="timeline-badge" style={{ background: '#f59e0b' }}>4</div>
-                  <div className="timeline-card">
-                    <div className="stage-top">
-                      <span className="stage-code">المحطة 4</span>
-                      <h4 className="stage-title">الاختبار والتقييم التبادلي (Testing & Peer Review)</h4>
-                    </div>
-                    <ul className="stage-bullets">
-                      <li>تجربة الحل في ساحة المدرسة أو الصف ورصد النتائج الأولية والقياسات الميدانية.</li>
-                      <li>تقييم أقران متبادل عبر معايير محددة (الجدوى، الأصالة، الأثر على المدرسة).</li>
-                    </ul>
-                    <div className="stage-deliverable">
-                      <i className="fas fa-users-viewfinder"></i> <strong>المخرج المطلوب:</strong> تقرير الاختبار الميداني وتقييم الزملاء.
-                    </div>
-                  </div>
-                </div>
+                      {/* Problem Quick Presets Chips */}
+                      <div className="preset-selector-row">
+                        <span className="preset-label">💡 اختر تحدياً مقترحاً أو اكتب مشكلتك الخاصة:</span>
+                        <div className="preset-chips">
+                          <button
+                            type="button"
+                            className={`preset-chip ${hubSelectedPresetKey === 'bag' ? 'active' : ''}`}
+                            onClick={() => handleSelectHubPreset('bag')}
+                          >
+                            🎒 حقيبة الظهر الثقيلة
+                          </button>
+                          <button
+                            type="button"
+                            className={`preset-chip ${hubSelectedPresetKey === 'water' ? 'active' : ''}`}
+                            onClick={() => handleSelectHubPreset('water')}
+                          >
+                            💧 هدر مياه المغاسل
+                          </button>
+                          <button
+                            type="button"
+                            className={`preset-chip ${hubSelectedPresetKey === 'power' ? 'active' : ''}`}
+                            onClick={() => handleSelectHubPreset('power')}
+                          >
+                            💡 توفير إضاءة الصفوف
+                          </button>
+                          <button
+                            type="button"
+                            className={`preset-chip ${hubSelectedPresetKey === 'noise' ? 'active' : ''}`}
+                            onClick={() => handleSelectHubPreset('noise')}
+                          >
+                            🔇 ضوضاء الكراسي
+                          </button>
+                          <button
+                            type="button"
+                            className={`preset-chip ${hubSelectedPresetKey === 'custom' ? 'active' : ''}`}
+                            onClick={() => handleSelectHubPreset('custom')}
+                          >
+                            ✏️ مشكلة جديدة من اقتراحي
+                          </button>
+                        </div>
+                      </div>
 
-                <div className="timeline-item">
-                  <div className="timeline-badge" style={{ background: '#ec4899' }}>5</div>
-                  <div className="timeline-card">
-                    <div className="stage-top">
-                      <span className="stage-code">المحطة 5</span>
-                      <h4 className="stage-title">التحسين وإعادة التصميم (Iteration & Redesign)</h4>
-                    </div>
-                    <ul className="stage-bullets">
-                      <li>تلقي ملاحظات وتوجيهات المعلمين والذكاء الاصطناعي السقراطي في البوابة.</li>
-                      <li>تعديل النموذج وتحديث مصفوفة النتائج لمعالجة التحديات المكتشفة.</li>
-                    </ul>
-                    <div className="stage-deliverable">
-                      <i className="fas fa-rotate-right"></i> <strong>المخرج المطلوب:</strong> النسخة المطورة (V2) من الحل والنموذج.
-                    </div>
-                  </div>
-                </div>
+                      {/* Station 1 Interactive Questions */}
+                      <div className="station-form-grid">
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-heading"></i> 1. عنوان المشكلة أو التحدي المدرسي:
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.problemTitle}
+                            onChange={(e) => setHubStationData({ ...hubStationData, problemTitle: e.target.value })}
+                            placeholder="مثال: تحدي تقليل وزن الحقيبة المدرسية، أو ترشيد مياه المغاسل..."
+                            className="stem-text-input"
+                          />
+                        </div>
 
-                <div className="timeline-item">
-                  <div className="timeline-badge" style={{ background: '#10b981' }}>6</div>
-                  <div className="timeline-card">
-                    <div className="stage-top">
-                      <span className="stage-code">المحطة 6</span>
-                      <h4 className="stage-title">قياس الأثر والتكريم (Impact & Recognition)</h4>
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-eye"></i> 2. ما هي المشكلة بالتحديد؟ (اشرح ما تلاحظه في المدرسة بالتفصيل):
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.problemDescription}
+                            onChange={(e) => setHubStationData({ ...hubStationData, problemDescription: e.target.value })}
+                            placeholder="صف ما الذي يحدث بالضبط في المدرسة... متى رأيته؟ وماذا يفعل الطلاب؟"
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        {/* Special Accent Box for WHY it is a problem */}
+                        <div className="stem-input-group full why-problem-wrapper">
+                          <div className="why-problem-header">
+                            <i className="fas fa-triangle-exclamation"></i>
+                            <strong>3. لماذا تعتبر هذه مشكلة؟ (ما هي الأضرار والآثار السلبية الناتجة عنها؟)</strong>
+                          </div>
+                          <p className="why-problem-hint">
+                            فكر كعالم وباحث: ما الضرر الذي يقع على صحة الطلاب، تركيزهم، البيئة المدرسية، أو الموارد إذا لم نقم بحل هذه المشكلة فوراً؟
+                          </p>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.whyItIsAProblem}
+                            onChange={(e) => setHubStationData({ ...hubStationData, whyItIsAProblem: e.target.value })}
+                            placeholder="مثال: لأنها تسبب آلاماً في العمود الفقري للطلاب، وتؤدي لتشتيت الانتباه أثناء الحصص، وتكلف المدرسة مبالغ إضافية..."
+                            className="stem-textarea why-textarea"
+                          />
+                        </div>
+
+                        <div className="stem-input-group half">
+                          <label>
+                            <i className="fas fa-users"></i> 4. من هم الأشخاص المتأثرون بهذه المشكلة؟
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.whoIsAffected}
+                            onChange={(e) => setHubStationData({ ...hubStationData, whoIsAffected: e.target.value })}
+                            placeholder="مثال: طلاب الصفوف الثالث والرابع، المعلمون، طاقم النظافة..."
+                            className="stem-text-input"
+                          />
+                        </div>
+
+                        <div className="stem-input-group half">
+                          <label>
+                            <i className="fas fa-location-dot"></i> 5. متى وأين تحدث هذه المشكلة في مدرستنا؟
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.whereAndWhen}
+                            onChange={(e) => setHubStationData({ ...hubStationData, whereAndWhen: e.target.value })}
+                            placeholder="مثال: في ساحة الاستراحة أثناء الفطور، أو عند صعود الأدراج صباحاً..."
+                            className="stem-text-input"
+                          />
+                        </div>
+                      </div>
+
+                      {/* AI Mentor Scaffolding */}
+                      <div className="hub-ai-helper-box">
+                        <button
+                          type="button"
+                          className="hub-ai-btn"
+                          disabled={hubIsAiLoading[1]}
+                          onClick={() => handleRequestHubAi(1)}
+                        >
+                          <i className={`fas ${hubIsAiLoading[1] ? 'fa-spinner fa-spin' : 'fa-robot'}`}></i>
+                          <span>{hubIsAiLoading[1] ? 'المكتشف الصغير يفكر معك...' : 'استشر المكتشف الصغير: كيف أصوغ المشكلة وأشرح أثرها؟'}</span>
+                        </button>
+
+                        {hubAiGuidance[1] && (
+                          <div className="hub-ai-response-card">
+                            <div className="response-header">
+                              <i className="fas fa-lightbulb"></i> إرشادات المكتشف الصغير السقراطي:
+                            </div>
+                            <div className="response-text" style={{ whiteSpace: 'pre-line' }}>
+                              {hubAiGuidance[1]}
+                            </div>
+                            <button
+                              type="button"
+                              className="apply-ai-hint-btn"
+                              onClick={() => {
+                                setHubStationData(prev => ({
+                                  ...prev,
+                                  whyItIsAProblem: prev.whyItIsAProblem + '\n• نصيحة المكتشف الصغير: ' + hubAiGuidance[1].slice(0, 140) + '...'
+                                }));
+                              }}
+                            >
+                              <i className="fas fa-copy"></i> تضمين نصيحة المكتشف في خانة "لماذا هي مشكلة"
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Station Actions */}
+                      <div className="station-bottom-actions">
+                        <span className="hint-text">💡 تأكد من إجابتك ثم انتقل لمصفوفة STEAM</span>
+                        <button
+                          type="button"
+                          className="next-station-btn"
+                          onClick={() => setHubActiveStation(2)}
+                        >
+                          <span>الانتقال للمحطة 2 (مصفوفة STEAM)</span>
+                          <i className="fas fa-arrow-left"></i>
+                        </button>
+                      </div>
                     </div>
-                    <ul className="stage-bullets">
-                      <li>نشر الحل النهائي في "معرض مشاريع الطلاب" الرقمي بالموقع.</li>
-                      <li>نيل أوسمة رقمية، شهادات تميز، ونقاط تضاف للتقييم الصفي والمدرسي.</li>
-                    </ul>
-                    <div className="stage-deliverable">
-                      <i className="fas fa-trophy"></i> <strong>المخرج النهائي:</strong> نشر الابتكار في المعرض المدرسي ونيل وسام التميز.
+                  )}
+
+                  {/* Station 2: STEAM Matrix */}
+                  {hubActiveStation === 2 && (
+                    <div className="station-workspace-card station-2-card">
+                      <div className="station-card-banner">
+                        <div className="banner-icon cyan">
+                          <i className="fas fa-puzzle-piece"></i>
+                        </div>
+                        <div className="banner-content">
+                          <span className="station-tag">المحطة 2 من 6</span>
+                          <h4>مصفوفة تكامل التخصصات (STEAM Matrix)</h4>
+                          <p>
+                            في هذه المحطة، نفكك التحدي إلى الأركان الخمسة: <strong>العلوم، التكنولوجيا، الهندسة، الفنون واللغات، والرياضيات</strong>. كل حل متكامل لا بد أن تتآزر فيه هذه التخصصات معاً!
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="steam-matrix-inputs-grid">
+                        <div className="matrix-input-card s">
+                          <div className="card-top">
+                            <span className="letter-badge">S</span>
+                            <strong>العلوم (Science)</strong>
+                          </div>
+                          <span className="sub-prompt">ما القانون أو الظاهرة أو المبدأ العلمي الذي سنعتمد عليه؟</span>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.scienceAspect}
+                            onChange={(e) => setHubStationData({ ...hubStationData, scienceAspect: e.target.value })}
+                            placeholder="مثال: تأثير قوى الاحتكاك والجاذبية وتوزيع عزم الدوران..."
+                            className="matrix-textarea"
+                          />
+                        </div>
+
+                        <div className="matrix-input-card t">
+                          <div className="card-top">
+                            <span className="letter-badge">T</span>
+                            <strong>التكنولوجيا (Technology)</strong>
+                          </div>
+                          <span className="sub-prompt">ما الأداة الرقمية أو الحساسات (Sensors) أو البرمجة المقترحة؟</span>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.techAspect}
+                            onChange={(e) => setHubStationData({ ...hubStationData, techAspect: e.target.value })}
+                            placeholder="مثال: حساس وزن رقمي، حساس حركة بالأشعة، أو تطبيق ذكي..."
+                            className="matrix-textarea"
+                          />
+                        </div>
+
+                        <div className="matrix-input-card e">
+                          <div className="card-top">
+                            <span className="letter-badge">E</span>
+                            <strong>الهندسة (Engineering)</strong>
+                          </div>
+                          <span className="sub-prompt">كيف سنبني ونركب النموذج وما الخامات الهندسية المناسبة؟</span>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.engineeringAspect}
+                            onChange={(e) => setHubStationData({ ...hubStationData, engineeringAspect: e.target.value })}
+                            placeholder="مثال: هيكل كرتوني مقوّى، مفاصل متحركة، عجلات خفيفة..."
+                            className="matrix-textarea"
+                          />
+                        </div>
+
+                        <div className="matrix-input-card a">
+                          <div className="card-top">
+                            <span className="letter-badge">A</span>
+                            <strong>الفنون واللغات (Arts & Languages)</strong>
+                          </div>
+                          <span className="sub-prompt">ما هو شعار المشروع واسمه الجذاب ولغة العرض الإقناعي؟</span>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.artsAspect}
+                            onChange={(e) => setHubStationData({ ...hubStationData, artsAspect: e.target.value })}
+                            placeholder="مثال: شعار المشروع، بوستر ملون، وسيناريو إلقاء في دقيقة واحدة..."
+                            className="matrix-textarea"
+                          />
+                        </div>
+
+                        <div className="matrix-input-card m">
+                          <div className="card-top">
+                            <span className="letter-badge">M</span>
+                            <strong>الرياضيات (Mathematics)</strong>
+                          </div>
+                          <span className="sub-prompt">ما القياسات الدقيقة، التكاليف المتوقعة، أو النسب المحسوبة؟</span>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.mathAspect}
+                            onChange={(e) => setHubStationData({ ...hubStationData, mathAspect: e.target.value })}
+                            placeholder="مثال: حساب وزن الحقيبة 15% من وزن الطالب، أو كمية التوفير باللترات..."
+                            className="matrix-textarea"
+                          />
+                        </div>
+                      </div>
+
+                      {/* AI Helper for STEAM Matrix */}
+                      <div className="hub-ai-helper-box">
+                        <button
+                          type="button"
+                          className="hub-ai-btn"
+                          disabled={hubIsAiLoading[2]}
+                          onClick={() => handleRequestHubAi(2)}
+                        >
+                          <i className={`fas ${hubIsAiLoading[2] ? 'fa-spinner fa-spin' : 'fa-robot'}`}></i>
+                          <span>{hubIsAiLoading[2] ? 'المكتشف الصغير يبحث في العلوم...' : 'اقترح أفكاراً ذكية لربط التحدي بأركان STEAM الخمسة ✨'}</span>
+                        </button>
+
+                        {hubAiGuidance[2] && (
+                          <div className="hub-ai-response-card">
+                            <div className="response-header">
+                              <i className="fas fa-lightbulb"></i> اقتراحات STEAM الذكية:
+                            </div>
+                            <div className="response-text" style={{ whiteSpace: 'pre-line' }}>
+                              {hubAiGuidance[2]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="station-bottom-actions between">
+                        <button
+                          type="button"
+                          className="prev-station-btn"
+                          onClick={() => setHubActiveStation(1)}
+                        >
+                          <i className="fas fa-arrow-right"></i>
+                          <span>المحطة السابقة (اكتشاف المشكلة)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="next-station-btn"
+                          onClick={() => setHubActiveStation(3)}
+                        >
+                          <span>الانتقال للمحطة 3 (النموذج والإلقاء)</span>
+                          <i className="fas fa-arrow-left"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Station 3: Prototyping & Pitching */}
+                  {hubActiveStation === 3 && (
+                    <div className="station-workspace-card station-3-card">
+                      <div className="station-card-banner">
+                        <div className="banner-icon purple">
+                          <i className="fas fa-drafting-compass"></i>
+                        </div>
+                        <div className="banner-content">
+                          <span className="station-tag">المحطة 3 من 6</span>
+                          <h4>هندسة النموذج الأولي والعرض (Prototyping & Pitching)</h4>
+                          <p>
+                            حان وقت تحويل الفكرة إلى مجسم حقيقي ومخطط هندسي! ارسم فكرتك، واكتب سيناريو الإلقاء السريع (Elevator Pitch) لتشرح اختراعك في دقيقة واحدة بإقناع وشغف.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="station-form-grid">
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-tag"></i> 1. اسم النموذج الأولي أو الاختراع:
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.prototypeTitle}
+                            onChange={(e) => setHubStationData({ ...hubStationData, prototypeTitle: e.target.value })}
+                            placeholder="مثال: الحقيبة الذكية الموزعة للضغط V1"
+                            className="stem-text-input"
+                          />
+                        </div>
+
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-pencil"></i> 2. وصف المخطط الهندسي وأجزاء النموذج:
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.prototypeSketchDesc}
+                            onChange={(e) => setHubStationData({ ...hubStationData, prototypeSketchDesc: e.target.value })}
+                            placeholder="اشرح أجزاء النموذج: مما يتكون؟ وكيف تتصل القطع ببعضها؟"
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        {/* Photo Upload Box */}
+                        <div className="stem-input-group full photo-upload-group">
+                          <label>
+                            <i className="fas fa-camera"></i> 3. رفع صورة المخطط أو المجسم الأولي:
+                          </label>
+                          <input
+                            type="file"
+                            ref={hubPhotoInputRef}
+                            accept="image/*"
+                            onChange={handleHubPhotoUpload}
+                            style={{ display: 'none' }}
+                          />
+                          <div className="upload-controls">
+                            <button
+                              type="button"
+                              className="upload-trigger-btn"
+                              onClick={() => hubPhotoInputRef.current?.click()}
+                            >
+                              <i className="fas fa-cloud-arrow-up"></i>
+                              <span>{hubStationData.prototypeImage ? 'تغيير صورة المجسم' : 'ارفع صورة رسمتك أو المجسم من جهازك'}</span>
+                            </button>
+                            {hubStationData.prototypeImage && (
+                              <button
+                                type="button"
+                                className="remove-photo-btn"
+                                onClick={() => setHubStationData({ ...hubStationData, prototypeImage: '' })}
+                              >
+                                <i className="fas fa-trash-can"></i> حذف الصورة
+                              </button>
+                            )}
+                          </div>
+                          {hubStationData.prototypeImage && (
+                            <div className="hub-photo-preview">
+                              <img src={hubStationData.prototypeImage} alt="Prototype preview" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Pitching Script */}
+                        <div className="stem-input-group full pitch-script-box">
+                          <label>
+                            <i className="fas fa-microphone-lines"></i> 4. سيناريو الإلقاء السريع (Elevator Pitch) في دقيقة واحدة:
+                          </label>
+                          <span className="sub-prompt">
+                            نموذج الإلقاء الفعال: (1. المشكلة التي لاحظناها - 2. حلنا المبتكر - 3. كيف يعمل - 4. الأثر والفائدة لمدرسة مشيرفة)
+                          </span>
+                          <textarea
+                            rows={4}
+                            value={hubStationData.pitchElevatorScript}
+                            onChange={(e) => setHubStationData({ ...hubStationData, pitchElevatorScript: e.target.value })}
+                            placeholder="اكتب هنا ما ستقوله أمام المعلمين ولجنة التحكيم..."
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-video"></i> 5. رابط فيديو العرض الإقناعي (اختياري - YouTube أو Drive):
+                          </label>
+                          <input
+                            type="url"
+                            value={hubStationData.pitchVideoUrl}
+                            onChange={(e) => setHubStationData({ ...hubStationData, pitchVideoUrl: e.target.value })}
+                            placeholder="https://..."
+                            className="stem-text-input"
+                          />
+                        </div>
+                      </div>
+
+                      {/* AI Helper for Pitching */}
+                      <div className="hub-ai-helper-box">
+                        <button
+                          type="button"
+                          className="hub-ai-btn"
+                          disabled={hubIsAiLoading[3]}
+                          onClick={() => handleRequestHubAi(3)}
+                        >
+                          <i className={`fas ${hubIsAiLoading[3] ? 'fa-spinner fa-spin' : 'fa-robot'}`}></i>
+                          <span>{hubIsAiLoading[3] ? 'المكتشف يصيغ سيناريو الإلقاء...' : 'ساعدني في صياغة سيناريو إلقاء سريع ومبهر 🎙️'}</span>
+                        </button>
+
+                        {hubAiGuidance[3] && (
+                          <div className="hub-ai-response-card">
+                            <div className="response-header">
+                              <i className="fas fa-lightbulb"></i> مقترح الإلقاء السريع:
+                            </div>
+                            <div className="response-text" style={{ whiteSpace: 'pre-line' }}>
+                              {hubAiGuidance[3]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="station-bottom-actions between">
+                        <button
+                          type="button"
+                          className="prev-station-btn"
+                          onClick={() => setHubActiveStation(2)}
+                        >
+                          <i className="fas fa-arrow-right"></i>
+                          <span>المحطة السابقة (مصفوفة STEAM)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="next-station-btn"
+                          onClick={() => setHubActiveStation(4)}
+                        >
+                          <span>الانتقال للمحطة 4 (الاختبار الميداني)</span>
+                          <i className="fas fa-arrow-left"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Station 4: Testing & Peer Review */}
+                  {hubActiveStation === 4 && (
+                    <div className="station-workspace-card station-4-card">
+                      <div className="station-card-banner">
+                        <div className="banner-icon amber">
+                          <i className="fas fa-vial-circle-check"></i>
+                        </div>
+                        <div className="banner-content">
+                          <span className="station-tag">المحطة 4 من 6</span>
+                          <h4>الاختبار والتقييم التبادلي (Testing & Peer Review)</h4>
+                          <p>
+                            المهندس الحقيقي يختبر اختراعه في الميدان ويسجل الأرقام الحقيقية، ثم يستمع لملاحظات وتقييم زملائه الطلاب لتحسين العمل.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="station-form-grid">
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-map-pin"></i> 1. أين وكيف اختبرتم النموذج في المدرسة؟
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.testLocation}
+                            onChange={(e) => setHubStationData({ ...hubStationData, testLocation: e.target.value })}
+                            placeholder="مثال: جربناه في ممر الصف الثالث وعلى أدراج المدرسة أثناء الصباح..."
+                            className="stem-text-input"
+                          />
+                        </div>
+
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-chart-column"></i> 2. ما هي النتائج والقياسات التي سجلتموها؟
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.testResults}
+                            onChange={(e) => setHubStationData({ ...hubStationData, testResults: e.target.value })}
+                            placeholder="اكتب الأرقام والنتائج: كم كيلوغرام تم توفيره؟ كم دقيقة استغرق العمل؟ وماذا قال من جربوه؟"
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        {/* Peer Review Canvas */}
+                        <div className="stem-input-group full peer-review-card">
+                          <div className="peer-review-title">
+                            <i className="fas fa-user-check"></i>
+                            <strong>3. بطاقة تقييم الأقران (تقييم زميلك أو فريقك للحل):</strong>
+                          </div>
+
+                          <div className="peer-scores-row">
+                            <div className="peer-metric">
+                              <span>الجدوى وقابلية التطبيق:</span>
+                              <div className="stars-picker">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    className={`star-btn ${hubStationData.peerReviewFeasibility >= star ? 'filled' : ''}`}
+                                    onClick={() => setHubStationData({ ...hubStationData, peerReviewFeasibility: star })}
+                                  >
+                                    ★
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="peer-metric">
+                              <span>الأصالة والإبداع:</span>
+                              <div className="stars-picker">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    className={`star-btn ${hubStationData.peerReviewOriginality >= star ? 'filled' : ''}`}
+                                    onClick={() => setHubStationData({ ...hubStationData, peerReviewOriginality: star })}
+                                  >
+                                    ★
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="peer-metric">
+                              <span>الأثر الإيجابي على المدرسة:</span>
+                              <div className="stars-picker">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    className={`star-btn ${hubStationData.peerReviewImpact >= star ? 'filled' : ''}`}
+                                    onClick={() => setHubStationData({ ...hubStationData, peerReviewImpact: star })}
+                                  >
+                                    ★
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <label style={{ marginTop: '12px' }}>نصيحة أو ملاحظة الزميل المقيم:</label>
+                          <input
+                            type="text"
+                            value={hubStationData.peerReviewNotes}
+                            onChange={(e) => setHubStationData({ ...hubStationData, peerReviewNotes: e.target.value })}
+                            placeholder="مثال: فكرة ممتازة جداً وننصح بإضافة لون عاكس للإضاءة ليلاً..."
+                            className="stem-text-input"
+                          />
+                        </div>
+                      </div>
+
+                      {/* AI Helper for Testing */}
+                      <div className="hub-ai-helper-box">
+                        <button
+                          type="button"
+                          className="hub-ai-btn"
+                          disabled={hubIsAiLoading[4]}
+                          onClick={() => handleRequestHubAi(4)}
+                        >
+                          <i className={`fas ${hubIsAiLoading[4] ? 'fa-spinner fa-spin' : 'fa-robot'}`}></i>
+                          <span>{hubIsAiLoading[4] ? 'المكتشف يضع خطة فحص...' : 'كيف أختبر نموذجي بأمان في ساحة المدرسة؟ 🧪'}</span>
+                        </button>
+
+                        {hubAiGuidance[4] && (
+                          <div className="hub-ai-response-card">
+                            <div className="response-header">
+                              <i className="fas fa-lightbulb"></i> إرشادات الفحص الميداني:
+                            </div>
+                            <div className="response-text" style={{ whiteSpace: 'pre-line' }}>
+                              {hubAiGuidance[4]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="station-bottom-actions between">
+                        <button
+                          type="button"
+                          className="prev-station-btn"
+                          onClick={() => setHubActiveStation(3)}
+                        >
+                          <i className="fas fa-arrow-right"></i>
+                          <span>المحطة السابقة (النموذج والإلقاء)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="next-station-btn"
+                          onClick={() => setHubActiveStation(5)}
+                        >
+                          <span>الانتقال للمحطة 5 (التحسين V2)</span>
+                          <i className="fas fa-arrow-left"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Station 5: Iteration & Redesign */}
+                  {hubActiveStation === 5 && (
+                    <div className="station-workspace-card station-5-card">
+                      <div className="station-card-banner">
+                        <div className="banner-icon pink">
+                          <i className="fas fa-arrows-rotate"></i>
+                        </div>
+                        <div className="banner-content">
+                          <span className="station-tag">المحطة 5 من 6</span>
+                          <h4>التحسين وإعادة التصميم (Iteration & Redesign)</h4>
+                          <p>
+                            لا يوجد اختراع ينجح تماماً من المرة الأولى! الأخطاء ونقاط الضعف المكتشفة في الاختبار هي البوصلة التي تقودنا لصناعة النسخة المحسّنة (V2).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="station-form-grid">
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-circle-exclamation"></i> 1. ما التحديات أو نقاط الضعف التي ظهرت أثناء الاختبار الميداني؟
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.iterationChallenges}
+                            onChange={(e) => setHubStationData({ ...hubStationData, iterationChallenges: e.target.value })}
+                            placeholder="مثال: كان الهيكل يهتز قليلاً، أو أن البطارية نفدت بسرعة..."
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-wrench"></i> 2. ما هي التعديلات التي قمت بها في النسخة المحسّنة (V2)؟
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.iterationModifications}
+                            onChange={(e) => setHubStationData({ ...hubStationData, iterationModifications: e.target.value })}
+                            placeholder="ما الذي غيرته أو استبدلته أو أضفته في التصميم الجديد للتغلب على المشكلة؟"
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-chalkboard-user"></i> 3. توجيهات ونصائح المعلمين التي طبقتها في النسخة الجديدة:
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.teacherTipsApplied}
+                            onChange={(e) => setHubStationData({ ...hubStationData, teacherTipsApplied: e.target.value })}
+                            placeholder="مثال: نصحنا معلم العلوم بتخفيف الوزن واستخدام مادة عازلة..."
+                            className="stem-text-input"
+                          />
+                        </div>
+                      </div>
+
+                      {/* AI Helper for Iteration */}
+                      <div className="hub-ai-helper-box">
+                        <button
+                          type="button"
+                          className="hub-ai-btn"
+                          disabled={hubIsAiLoading[5]}
+                          onClick={() => handleRequestHubAi(5)}
+                        >
+                          <i className={`fas ${hubIsAiLoading[5] ? 'fa-spinner fa-spin' : 'fa-robot'}`}></i>
+                          <span>{hubIsAiLoading[5] ? 'المكتشف يقترح حلولاً هندسية...' : 'اقترح عليّ حلولاً لتطوير النسخة V2 للتغلب على التحديات 🛠️'}</span>
+                        </button>
+
+                        {hubAiGuidance[5] && (
+                          <div className="hub-ai-response-card">
+                            <div className="response-header">
+                              <i className="fas fa-lightbulb"></i> نصائح إعادة التصميم والتحسين:
+                            </div>
+                            <div className="response-text" style={{ whiteSpace: 'pre-line' }}>
+                              {hubAiGuidance[5]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="station-bottom-actions between">
+                        <button
+                          type="button"
+                          className="prev-station-btn"
+                          onClick={() => setHubActiveStation(4)}
+                        >
+                          <i className="fas fa-arrow-right"></i>
+                          <span>المحطة السابقة (الاختبار والتقييم)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="next-station-btn"
+                          onClick={() => setHubActiveStation(6)}
+                        >
+                          <span>الانتقال للمحطة 6 (قياس الأثر والتكريم)</span>
+                          <i className="fas fa-arrow-left"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Station 6: Impact & Recognition */}
+                  {hubActiveStation === 6 && (
+                    <div className="station-workspace-card station-6-card">
+                      <div className="station-card-banner">
+                        <div className="banner-icon emerald">
+                          <i className="fas fa-trophy"></i>
+                        </div>
+                        <div className="banner-content">
+                          <span className="station-tag">المحطة 6 من 6</span>
+                          <h4>قياس الأثر والتكريم (Impact & Recognition)</h4>
+                          <p>
+                            مبارك وصولك للمحطة الختامية يا بطل الابتكار! 🏆 دعنا نقيس الأثر الإيجابي الذي حققه مشروعك لمدرسة مشيرفة الابتدائية ونعتمد عملك رسمياً في المنظومة.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="station-form-grid">
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-bullseye"></i> 1. ملخص الأثر الإيجابي النهائي على مدرسة مشيرفة:
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={hubStationData.finalImpactSummary}
+                            onChange={(e) => setHubStationData({ ...hubStationData, finalImpactSummary: e.target.value })}
+                            placeholder="كيف ساهم هذا الاختراع في تحسين مدرستنا؟ (مثال: حماية صحة 300 طالب، توفير 500 لتر ماء أسبوعياً...)"
+                            className="stem-textarea"
+                          />
+                        </div>
+
+                        <div className="stem-input-group half">
+                          <label>
+                            <i className="fas fa-user-graduate"></i> 2. اسم الطالب أو قائد الفريق:
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.studentLeadName}
+                            onChange={(e) => setHubStationData({ ...hubStationData, studentLeadName: e.target.value })}
+                            placeholder="اسمك الكامل"
+                            className="stem-text-input"
+                          />
+                        </div>
+
+                        <div className="stem-input-group half">
+                          <label>
+                            <i className="fas fa-school"></i> 3. الصف والشعبة:
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.studentClassRoom}
+                            onChange={(e) => setHubStationData({ ...hubStationData, studentClassRoom: e.target.value })}
+                            placeholder="مثال: الصف الثالث (أ)"
+                            className="stem-text-input"
+                          />
+                        </div>
+
+                        <div className="stem-input-group full">
+                          <label>
+                            <i className="fas fa-people-group"></i> 4. أسماء أعضاء الفريق (إن وجد عمل جماعي):
+                          </label>
+                          <input
+                            type="text"
+                            value={hubStationData.teamMembers}
+                            onChange={(e) => setHubStationData({ ...hubStationData, teamMembers: e.target.value })}
+                            placeholder="أحمد، رامي، مريم، يوسف..."
+                            className="stem-text-input"
+                          />
+                        </div>
+                      </div>
+
+                      {/* AI Helper for Impact */}
+                      <div className="hub-ai-helper-box">
+                        <button
+                          type="button"
+                          className="hub-ai-btn"
+                          disabled={hubIsAiLoading[6]}
+                          onClick={() => handleRequestHubAi(6)}
+                        >
+                          <i className={`fas ${hubIsAiLoading[6] ? 'fa-spinner fa-spin' : 'fa-robot'}`}></i>
+                          <span>{hubIsAiLoading[6] ? 'المكتشف يصيغ بيان الأثر...' : 'صِغ بياناً ختامياً فخوراً للمشروع وشعار وسام التميز 🌟'}</span>
+                        </button>
+
+                        {hubAiGuidance[6] && (
+                          <div className="hub-ai-response-card">
+                            <div className="response-header">
+                              <i className="fas fa-award"></i> بيان الأثر والتكريم:
+                            </div>
+                            <div className="response-text" style={{ whiteSpace: 'pre-line' }}>
+                              {hubAiGuidance[6]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Final Submit & Celebrate Actions */}
+                      <div className="final-celebrate-box">
+                        <div className="celebrate-text">
+                          <h5>🚀 جاهز لنيل وسام التميز واعتماد المشروع؟</h5>
+                          <p>
+                            عند التسليم، سيتم إدراج مشروعك في حاضنة ستيم المدرسية، واحتسابه ضمن نسبة التقييم البديل (15% - 20%)، وإرساله إلى طاقم المعلمين للمتابعة والتكريم.
+                          </p>
+                        </div>
+                        <div className="celebrate-btns">
+                          <button
+                            type="button"
+                            className="hub-submit-project-btn"
+                            onClick={handleSaveSteamHubProject}
+                          >
+                            <i className="fas fa-award"></i>
+                            <span>اعتماد وتسليم المشروع في حاضنة ستيم (+100 نقطة ⭐)</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="hub-print-portfolio-btn"
+                            onClick={() => window.print()}
+                          >
+                            <i className="fas fa-print"></i>
+                            <span>طباعة ملف إنجاز ستيم (STEAM Hub Portfolio PDF)</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="station-bottom-actions">
+                        <button
+                          type="button"
+                          className="prev-station-btn"
+                          onClick={() => setHubActiveStation(5)}
+                        >
+                          <i className="fas fa-arrow-right"></i>
+                          <span>المحطة السابقة (التحسين V2)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUMMARY VIEW (Theoretical Roadmap) */}
+              {hubViewMode === 'summary' && (
+                <div className="workflow-timeline">
+                  <div className="timeline-item">
+                    <div className="timeline-badge" style={{ background: '#3b82f6' }}>1</div>
+                    <div className="timeline-card">
+                      <div className="stage-top">
+                        <span className="stage-code">المحطة 1</span>
+                        <h4 className="stage-title">اكتشاف المشكلة وفهمها (Problem Discovery)</h4>
+                      </div>
+                      <ul className="stage-bullets">
+                        <li>قراءة التحدي المدرسي المطروح، مشاهدة فيديو أو صور توضيحية من بيئة المدرسة.</li>
+                        <li>تعبئة <strong>"نموذج التعاطف وفهم المشكلة"</strong> (من يتأثر بها؟ متى تحدث؟ ولماذا هي مهمة للمجتمع المدرسي؟).</li>
+                      </ul>
+                      <div className="stage-deliverable">
+                        <i className="fas fa-clipboard-check"></i> <strong>المخرج المطلوب:</strong> بطاقة تعريف المشكلة والجمهور المتأثر.
+                      </div>
+                      <button
+                        type="button"
+                        className="jump-to-studio-btn"
+                        onClick={() => { setHubViewMode('interactive'); setHubActiveStation(1); }}
+                      >
+                        افتح محطة المشكلة في الاستوديو التفاعلي ⬅️
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timeline-item">
+                    <div className="timeline-badge" style={{ background: '#06b6d4' }}>2</div>
+                    <div className="timeline-card">
+                      <div className="stage-top">
+                        <span className="stage-code">المحطة 2</span>
+                        <h4 className="stage-title">مصفوفة تكامل التخصصات (STEAM Matrix)</h4>
+                      </div>
+                      <ul className="stage-bullets">
+                        <li>تفكيك المشكلة إلى الأسئلة الفرعية الخمسة: ماذا نحتاج من علوم، رياضيات، تكنولوجيا، هندسة، وفنون لحلها؟</li>
+                        <li>تسجيل الفرضيات الأولية للحل بمساعدة مرشد الذكاء الاصطناعي السقراطي في المنصة.</li>
+                      </ul>
+                      <div className="stage-deliverable">
+                        <i className="fas fa-table-cells-large"></i> <strong>المخرج المطلوب:</strong> مصفوفة الأسئلة المنهجية الخمسة وفرضيات الحل.
+                      </div>
+                      <button
+                        type="button"
+                        className="jump-to-studio-btn"
+                        onClick={() => { setHubViewMode('interactive'); setHubActiveStation(2); }}
+                      >
+                        افتح مصفوفة STEAM في الاستوديو التفاعلي ⬅️
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timeline-item">
+                    <div className="timeline-badge" style={{ background: '#8b5cf6' }}>3</div>
+                    <div className="timeline-card">
+                      <div className="stage-top">
+                        <span className="stage-code">المحطة 3</span>
+                        <h4 className="stage-title">هندسة النموذج الأولي والعرض (Prototyping & Pitching)</h4>
+                      </div>
+                      <ul className="stage-bullets">
+                        <li>رسم مخطط هندسي يدوي أو رقمي (Sketch / 3D Model).</li>
+                        <li>رفع فيديو قصير (دقيقة إلى دقيقتين) يعرض فيه الطلاب فكرتهم ونموذجهم بأسلوب إقناعي (Elevator Pitch).</li>
+                      </ul>
+                      <div className="stage-deliverable">
+                        <i className="fas fa-drafting-compass"></i> <strong>المخرج المطلوب:</strong> رسم النموذج الأولي + رابط أو فيديو العرض الإقناعي.
+                      </div>
+                      <button
+                        type="button"
+                        className="jump-to-studio-btn"
+                        onClick={() => { setHubViewMode('interactive'); setHubActiveStation(3); }}
+                      >
+                        افتح محطة النموذج والإلقاء في الاستوديو التفاعلي ⬅️
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timeline-item">
+                    <div className="timeline-badge" style={{ background: '#f59e0b' }}>4</div>
+                    <div className="timeline-card">
+                      <div className="stage-top">
+                        <span className="stage-code">المحطة 4</span>
+                        <h4 className="stage-title">الاختبار والتقييم التبادلي (Testing & Peer Review)</h4>
+                      </div>
+                      <ul className="stage-bullets">
+                        <li>تجربة الحل في ساحة المدرسة أو الصف ورصد النتائج الأولية والقياسات الميدانية.</li>
+                        <li>تقييم أقران متبادل عبر معايير محددة (الجدوى، الأصالة، الأثر على المدرسة).</li>
+                      </ul>
+                      <div className="stage-deliverable">
+                        <i className="fas fa-users-viewfinder"></i> <strong>المخرج المطلوب:</strong> تقرير الاختبار الميداني وتقييم الزملاء.
+                      </div>
+                      <button
+                        type="button"
+                        className="jump-to-studio-btn"
+                        onClick={() => { setHubViewMode('interactive'); setHubActiveStation(4); }}
+                      >
+                        افتح محطة الاختبار والتقييم في الاستوديو التفاعلي ⬅️
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timeline-item">
+                    <div className="timeline-badge" style={{ background: '#ec4899' }}>5</div>
+                    <div className="timeline-card">
+                      <div className="stage-top">
+                        <span className="stage-code">المحطة 5</span>
+                        <h4 className="stage-title">التحسين وإعادة التصميم (Iteration & Redesign)</h4>
+                      </div>
+                      <ul className="stage-bullets">
+                        <li>تلقي ملاحظات وتوجيهات المعلمين والذكاء الاصطناعي السقراطي في البوابة.</li>
+                        <li>تعديل النموذج وتحديث مصفوفة النتائج لمعالجة التحديات المكتشفة.</li>
+                      </ul>
+                      <div className="stage-deliverable">
+                        <i className="fas fa-rotate-right"></i> <strong>المخرج المطلوب:</strong> النسخة المطورة (V2) من الحل والنموذج.
+                      </div>
+                      <button
+                        type="button"
+                        className="jump-to-studio-btn"
+                        onClick={() => { setHubViewMode('interactive'); setHubActiveStation(5); }}
+                      >
+                        افتح محطة التحسين V2 في الاستوديو التفاعلي ⬅️
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timeline-item">
+                    <div className="timeline-badge" style={{ background: '#10b981' }}>6</div>
+                    <div className="timeline-card">
+                      <div className="stage-top">
+                        <span className="stage-code">المحطة 6</span>
+                        <h4 className="stage-title">قياس الأثر والتكريم (Impact & Recognition)</h4>
+                      </div>
+                      <ul className="stage-bullets">
+                        <li>نشر الحل النهائي في "معرض مشاريع الطلاب" الرقمي بالموقع.</li>
+                        <li>نيل أوسمة رقمية، شهادات تميز، ونقاط تضاف للتقييم الصفي والمدرسي.</li>
+                      </ul>
+                      <div className="stage-deliverable">
+                        <i className="fas fa-trophy"></i> <strong>المخرج النهائي:</strong> نشر الابتكار في المعرض المدرسي ونيل وسام التميز.
+                      </div>
+                      <button
+                        type="button"
+                        className="jump-to-studio-btn"
+                        onClick={() => { setHubViewMode('interactive'); setHubActiveStation(6); }}
+                      >
+                        افتح محطة قياس الأثر والتكريم في الاستوديو التفاعلي ⬅️
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

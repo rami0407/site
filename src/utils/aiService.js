@@ -2048,3 +2048,153 @@ export const parseUploadedLessonPlanAI = async ({
   };
 };
 
+/**
+ * 18. AI STEAM Station Smart Guide:
+ * Guides elementary students through the 6 stations of the School STEAM Hub.
+ * Specifically for Station 1: helps articulate the problem, why it is a problem, who is affected.
+ * For Station 2: breaks down the problem into S, T, E, A, M.
+ * For Station 3: crafts pitch script & prototyping tips.
+ * For Station 4: gives testing advice & metrics.
+ * For Station 5: guides iteration & improvements.
+ * For Station 6: calculates & highlights impact on the school.
+ */
+export const guideSteamStationAI = async ({
+  stationNumber = 1,
+  problemTitle = '',
+  problemDetail = '',
+  whyProblem = '',
+  extraContext = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const stationPrompts = {
+    1: `أنت "مرشد حاضنة ستيم الذكي" لمدرسة مشيرفة الابتدائية.
+مهمتك في (المحطة 1: اكتشاف المشكلة وفهمها):
+مساعدة الطالب في صياغة مشكلة مدرسية واقعية بدقة:
+عنوان التحدي: "${problemTitle || 'مشكلة مدرسية'}"
+ما كتبه الطالب عن المشكلة: "${problemDetail || 'لا يوجد وصف بعد'}"
+ما كتبه عن أسباب المشكلة ولماذا هي مشكلة: "${whyProblem || 'لا يوجد تعليل بعد'}"
+
+المطلوب:
+1. قدم تشجيعاً حاراً للطالب.
+2. وضح له كيف يعبر عن المشكلة بالتحديد وبجملة واضحة ومحددة.
+3. ساعده في شرح "لماذا هي مشكلة حقيقية" (الأضرار المترتبة على صحة الطلاب أو البيئة أو التعلم في مدرسة مشيرفة إذا لم تحل).
+4. اطرح عليه سؤالين توجيهيين لتحديد من يتأثر بها ومتى وأين تحدث بالتحديد.
+اجعل الرد بنقاط قصيرة، لغة عربية فصحى مشوقة وميسرة لطلاب الابتدائي، مع إيموجيز مشجعة.`,
+
+    2: `أنت "مرشد حاضنة ستيم الذكي" لمدرسة مشيرفة الابتدائية.
+مهمتك في (المحطة 2: مصفوفة تكامل التخصصات STEAM):
+التحدي المطروح: "${problemTitle}"
+تفاصيل المشكلة: "${problemDetail} - لماذا هي مشكلة: ${whyProblem}"
+
+المطلوب: اقترح أفكاراً ذكية ومبسطة ومناسبة لطلاب الابتدائي لربط المشكلة بأركان STEAM الخمسة:
+• 🔬 العلوم (S): قانون أو ظاهرة علمية يمكن الاستفادة منها.
+• 💻 التكنولوجيا (T): فكرة استخدام حساس أو أداة رقمية بسيطة.
+• 🛠️ الهندسة (E): فكرة لتصميم وبناء نموذج من خامات بسيطة كرتون أو خشب.
+• 🎨 الفنون واللغات (A): شعار جذاب وفكرة بوستر أو أسلوب إلقاء.
+• 📐 الرياضيات (M): حسابات أو قياسات أو نسب مئوية يمكن قياسها.
+اجعل الأفكار ملموسة وقابلة للتطبيق بالمدرسة.`,
+
+    3: `أنت "مرشد حاضنة ستيم الذكي" لمدرسة مشيرفة الابتدائية.
+مهمتك في (المحطة 3: هندسة النموذج الأولي والعرض Prototyping & Pitching):
+التحدي: "${problemTitle}"
+المطلوب:
+1. اقترح نصائح لبناء نموذج أولي بأدوات آمنة وبسيطة متوفرة في المدرسة أو البيت.
+2. اكتب له مسودة سيناريو إلقاء سريع في دقيقة واحدة (Elevator Pitch) مكون من 4 جمل:
+   - الجملة 1: ما المشكلة التي لاحظناها؟
+   - الجملة 2: ما حلنا المبتكر؟
+   - الجملة 3: كيف يعمل؟
+   - الجملة 4: ما الفائدة لمدرستنا مشيرفة؟`,
+
+    4: `أنت "مرشد حاضنة ستيم الذكي" لمدرسة مشيرفة الابتدائية.
+مهمتك في (المحطة 4: الاختبار والتقييم التبادلي Testing & Peer Review):
+التحدي: "${problemTitle}"
+المطلوب:
+1. كيف يختبر الطالب نموذجه عملياً في ساحة أو صفوف مدرسة مشيرفة بأمان؟
+2. ما الأرقام والقياسات التي يمكنه تسجيلها للتأكد من نجاح الفكرة (مثل: قياس الوزن، كمية الماء، درجة الصوت، الوقت المستغرق)؟
+3. نصيحة لكيفية تقبل ملاحظات الزملاء وتحويلها إلى أفكار تطويرية.`,
+
+    5: `أنت "مرشد حاضنة ستيم الذكي" لمدرسة مشيرفة الابتدائية.
+مهمتك في (المحطة 5: التحسين وإعادة التصميم Iteration & Redesign):
+التحدي: "${problemTitle}"
+سياق التعديل: "${extraContext}"
+المطلوب:
+1. وضح للطالب أن الأخطاء والتحديات في النماذج الأولية هي سر نجاح أعظم العلماء والمخترعين!
+2. اقترح 3 أفكار لتطوير النموذج للنسخة المحسنة (V2) وحل المشاكل الشائعة.`,
+
+    6: `أنت "مرشد حاضنة ستيم الذكي" لمدرسة مشيرفة الابتدائية.
+مهمتك في (المحطة 6: قياس الأثر والتكريم Impact & Recognition):
+التحدي: "${problemTitle}"
+المطلوب:
+1. صغ بياناً ختامياً فخوراً للمشروع يوضح كيف سيغير هذا الابتكار مدرسة مشيرفة للأفضل.
+2. اقترح عبارة وسام وشعار تميز يستحقه الفريق.`
+  };
+
+  const currentPrompt = stationPrompts[stationNumber] || stationPrompts[1];
+
+  // 1. Try Groq
+  if (groqKey) {
+    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [
+              { role: 'system', content: 'أنت مرشد بيداغوجي ذكي لحاضنة ستيم بمدرسة مشيرفة الابتدائية. قدم إرشادات تشجيعية وعملية باللغة العربية الفصحى.' },
+              { role: 'user', content: currentPrompt }
+            ],
+            temperature: 0.6,
+            max_tokens: 650
+          })
+        }, 8000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Groq STEAM Station Guide (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: currentPrompt }] }],
+              generationConfig: { temperature: 0.6, maxOutputTokens: 650 }
+            })
+          },
+          8000
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Gemini STEAM Station Guide (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // Static Fallback
+  return `أحسنت يا بطل الابتكار! 🌟 في هذه المحطة، ركّز على ربط ما تلاحظه في مدرستنا مشيرفة بالحلول العملية. كل فكرة مهما كانت بسيطة هي بداية لاختراع عظيم! 🚀💡`;
+};
+
