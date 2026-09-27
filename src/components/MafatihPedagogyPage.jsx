@@ -1227,6 +1227,30 @@ ${p.stations?.h || ''}
             <span className="mafatih-framework-tag">
               <i className="fas fa-dna"></i> الشيفرة الوراثية (DNA) للغرفة الصفية
             </span>
+            <a 
+              href="https://chatgpt.com/?surface=work&prompt=%D7%91%D7%A0%D7%94+%D7%90%D7%99%D7%AA%D7%99+%D7%9E%D7%A2%D7%A8%D7%9A+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+%D7%9C%D7%A4%D7%99+%D7%9E%D7%95%D7%93%D7%9C+%D7%9E%D7%A4%D7%AA%D7%99%D7%B4%D7%97+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A9%D7%90%D7%9C%D7%95%D7%AA+%D7%9E%D7%9B%D7%95%D7%95%D7%A0%D7%95%D7%AA."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mafatih-hero-top-bot-badge"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'linear-gradient(135deg, #10a37f 0%, #0d9488 100%)',
+                color: 'white',
+                padding: '0.45rem 1.15rem',
+                borderRadius: '50px',
+                fontWeight: 900,
+                fontSize: '0.92rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(16, 163, 127, 0.45)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح البوت الذكي لتخطيط حصة بموديل مِفْتَاح عبر الأسئلة الموجهة"
+            >
+              <span>🤖</span> بوت لتخطيط حصة ↗
+            </a>
           </div>
 
           <h1 className="mafatih-hero-title">
@@ -1264,6 +1288,33 @@ ${p.stations?.h || ''}
 
           {/* Top Quick Actions */}
           <div className="mafatih-hero-actions">
+            <a 
+              href="https://chatgpt.com/?surface=work&prompt=%D7%91%D7%A0%D7%94+%D7%90%D7%99%D7%AA%D7%99+%D7%9E%D7%A2%D7%A8%D7%9A+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+%D7%9C%D7%A4%D7%99+%D7%9E%D7%95%D7%93%D7%9C+%D7%9E%D7%A4%D7%AA%D7%99%D7%B4%D7%97+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A9%D7%90%D7%9C%D7%95%D7%AA+%D7%9E%D7%9B%D7%95%D7%95%D7%A0%D7%95%D7%AA."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="action-btn chatgpt-bot-btn"
+              style={{
+                background: 'linear-gradient(135deg, #10a37f 0%, #059669 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                fontWeight: 900,
+                fontSize: '1rem',
+                padding: '0.75rem 1.6rem',
+                borderRadius: '12px',
+                boxShadow: '0 4px 18px rgba(16, 163, 127, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح البوت لتخطيط حصة عبر ChatGPT بالأسئلة الموجهة بموديل مِفْتَاح"
+            >
+              <i className="fas fa-robot"></i>
+              <span>بوت لتخطيط حصة</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
+            </a>
+
             <button 
               className="action-btn primary"
               onClick={() => setActiveTab('stations')}
@@ -2138,6 +2189,33 @@ ${p.stations?.h || ''}
                   <i className="fas fa-file-upload"></i>
                   <span>📤 رفع تخطيط من الحاسوب (Word / PDF / نص)</span>
                 </button>
+
+                <a
+                  href="https://chatgpt.com/?surface=work&prompt=%D7%91%D7%A0%D7%94+%D7%90%D7%99%D7%AA%D7%99+%D7%9E%D7%A2%D7%A8%D7%9A+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+%D7%9C%D7%A4%D7%99+%D7%9E%D7%95%D7%93%D7%9C+%D7%9E%D7%A4%D7%AA%D7%99%D7%B4%D7%97+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A9%D7%90%D7%9C%D7%95%D7%AA+%D7%9E%D7%9B%D7%95%D7%95%D7%A0%D7%95%D7%AA."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #10a37f 0%, #059669 100%)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    padding: '0.8rem 1.6rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    boxShadow: '0 4px 14px rgba(16, 163, 127, 0.4)',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  title="فتح البوت لتخطيط حصة عبر ChatGPT بالأسئلة الموجهة بموديل مِفْتَاح"
+                >
+                  <i className="fas fa-robot"></i>
+                  <span>بوت لتخطيط حصة</span>
+                  <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
+                </a>
               </div>
             </div>
 
