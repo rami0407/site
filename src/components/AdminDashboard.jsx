@@ -40,6 +40,7 @@ import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiSe
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
 import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
 import SecurityHubAdminTab from './SecurityHubAdminTab';
+import ParentMeetingPollAdminTab from './ParentMeetingPollAdminTab';
 import { 
   checkRateLimit, 
   recordFailedAttempt, 
@@ -1892,50 +1893,20 @@ const AdminDashboard = () => {
 
   const defaultInitialSurveys = [
     {
-      id: 'survey_demo_parents',
-      title: 'استطلاع رأي أولياء الأمور في الأنشطة المدرسية والخدمات 👨‍👩‍👧',
-      description: 'استبيان رصد انطباعات الأهالي وتقييم الفعاليات والمبادرات المدرسية.',
-      category: 'الأنشطة والفعاليات',
+      id: 'meeting-10-10-2026',
+      title: 'استطلاع وتأكيد الحضور للقاء أولياء الأمور: «يدًا بيد نحو التميّز» (10.10.2026)',
+      description: 'استطلاع وتأكيد حضور أولياء الأمور ورصد المقترحات التطويرية لدعم مسيرة تميّز أبنائنا.',
+      category: 'لقاءات أولياء الأمور',
       targetAudience: 'أولياء الأمور والأهالي 👨‍👩‍👧',
       status: 'active',
-      totalResponses: 14,
+      totalResponses: 0,
       starred: true,
       questions: [
-        { id: 'q_p1', title: 'ما هو تقييمكم العام لخدمات ومبادرات مدرسة مشيرفة الابتدائية؟', type: 'rating_stars', required: true },
-        { id: 'q_p2', title: 'هل تؤيد زيادة الأنشطة والرحلات اللامنهجية في المدرسة؟', type: 'multiple_choice', required: true, options: ['نعم، وبشدة 🌟', 'حسب الميزانية 👍', 'لا داعي حالياً ⚠️'] },
-        { id: 'q_p3', title: 'ما هي مقترحاتكم التطويرية المستقبلية للإدارة الكريمة؟', type: 'long_text', required: false }
+        { id: 'q_att', title: 'هل ستشاركون في لقاء أولياء الأمور بتاريخ 10.10.2026؟', type: 'multiple_choice', required: true, options: ['نعم، سأحضر بكل سرور 🟢', 'سأحضر مع طلب تنسيق الموعد 🟡', 'أعتذر لظرف طارئ 🔴'] },
+        { id: 'q_id', title: 'بيانات ولي الأمر والطالب والصف', type: 'short_text', required: true },
+        { id: 'q_sug', title: 'مقترحاتكم وأفكاركم لتطوير وتحسين المدرسة', type: 'long_text', required: false }
       ],
-      createdAt: '2026-08-28'
-    },
-    {
-      id: 'survey_demo_teachers',
-      title: 'استبيان تقييم اليوم التحضيري للمعلمين والكوادر 👨‍🏫',
-      description: 'استطلاع ملائمة ورضا الطاقم عن فعاليات اليوم التحضيري والورشات.',
-      category: 'التطوير والتأهيل',
-      targetAudience: 'المعلمون والطاقم 👨‍🏫',
-      status: 'active',
-      totalResponses: 28,
-      starred: true,
-      questions: [
-        { id: 'q_t1', title: 'ما هو انطباعك العام عن برنامج وفعاليات اليوم التحضيري؟', type: 'likert_scale', required: true, options: ['مقتنع جداً 🌟', 'مقتنع 👍', 'محايد 😐', 'غير مقتنع ⚠️'] },
-        { id: 'q_t2', title: 'ما هي مقترحاتك التطويرية للخطوات القادمة؟', type: 'short_text', required: false }
-      ],
-      createdAt: '2026-08-28'
-    },
-    {
-      id: 'survey_demo_students',
-      title: 'استطلاع رأي الطلاب والأبناء في الفعاليات اللاصفية 🎓',
-      description: 'استبيان صوت الطالب واختيارات الأنشطة الرياضية والعلمية.',
-      category: 'الأنشطة والفعاليات',
-      targetAudience: 'الطلاب والأبناء 🎓',
-      status: 'active',
-      totalResponses: 45,
-      starred: false,
-      questions: [
-        { id: 'q_s1', title: 'ما هي أكثر الفعاليات المدرسية التي تفضل المشاركة فيها؟', type: 'checkboxes', required: true, options: ['دوري كرة القدم ⚽', 'مسابقة الربوت 🤖', 'الرحلات العلمية 🚌', 'الإذاعة المدرسية 🎙️'] },
-        { id: 'q_s2', title: 'قيم مدى رضاك عن زوايا المكتبة والمبتكرات', type: 'rating_stars', required: true }
-      ],
-      createdAt: '2026-08-28'
+      createdAt: '2026-09-28'
     }
   ];
 
@@ -1947,7 +1918,13 @@ const AdminDashboard = () => {
       const s1 = localStorage.getItem('db_school_surveys');
       if (s1) localSurveys = JSON.parse(s1);
       const s2 = localStorage.getItem('db_parent_polls');
-      if (s2) localPolls = JSON.parse(s2);
+      if (s2) {
+        if (s2.includes('poll-1') || s2.includes('poll-2') || s2.includes('poll-3')) {
+          localStorage.removeItem('db_parent_polls');
+        } else {
+          localPolls = JSON.parse(s2);
+        }
+      }
       const del = localStorage.getItem('deleted_surveys_ids');
       if (del) deletedIds = JSON.parse(del);
     } catch(e){}
@@ -4945,17 +4922,38 @@ const AdminDashboard = () => {
               📚 المقالات والمجلات العلمية
             </button>
 
+            {/* 🗳️ استطلاع ودعوة لقاء أولياء الأمور (10.10.2026) */}
             <button 
-              onClick={() => setActiveTab('forms-center')} 
-              className={`filter-chip ${(activeTab === 'forms-center' || activeTab === 'parent-polls') ? 'active' : ''}`}
+              onClick={() => setActiveTab('parent-polls')} 
+              className={`filter-chip ${activeTab === 'parent-polls' ? 'active' : ''}`}
               style={{
                 width: '100%',
                 justifyContent: 'flex-start',
                 padding: '0.95rem 1.2rem',
                 fontSize: '1.02rem',
                 borderRadius: 'var(--radius-sm)',
-                background: (activeTab === 'forms-center' || activeTab === 'parent-polls') ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#eff6ff',
-                color: (activeTab === 'forms-center' || activeTab === 'parent-polls') ? 'white' : '#1d4ed8',
+                background: activeTab === 'parent-polls' ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : '#ecfdf5',
+                color: activeTab === 'parent-polls' ? '#fef08a' : '#047857',
+                fontWeight: 900,
+                border: '2px solid #10b981',
+                boxShadow: '0 4px 10px rgba(5,150,105,0.2)'
+              }}
+            >
+              <i className="fas fa-users" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'parent-polls' ? '#fef08a' : '#10b981' }}></i>
+              🗳️ استطلاع ودعوة لقاء الأهالي (10.10.2026)
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('forms-center')} 
+              className={`filter-chip ${activeTab === 'forms-center' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.95rem 1.2rem',
+                fontSize: '1.02rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'forms-center' ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#eff6ff',
+                color: activeTab === 'forms-center' ? 'white' : '#1d4ed8',
                 fontWeight: 900,
                 border: '2px solid #93c5fd',
                 boxShadow: '0 4px 10px rgba(37,99,235,0.15)'
@@ -9275,8 +9273,15 @@ const AdminDashboard = () => {
                 </div>
               )}
 
+              {/* TAB: PARENT MEETING POLL & INVITATION (10.10.2026) */}
+              {(activeTab === 'parent-polls' || activeTab === 'parent-meeting-poll') && (
+                <div>
+                  <ParentMeetingPollAdminTab />
+                </div>
+              )}
+
               {/* UNIFIED FORMS & SURVEYS ARCHIVE HUB */}
-              {(activeTab === 'forms-center' || activeTab === 'parent-polls') && (
+              {activeTab === 'forms-center' && (
                 <div>
                   {/* Top Hub Banner & Main Control Actions */}
                   <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: 'white', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', boxShadow: '0 15px 30px rgba(0,0,0,0.12)' }}>

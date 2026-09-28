@@ -1,0 +1,1001 @@
+/* ========================================================================== */
+/* صفحة استطلاع ودعوة لقاء أولياء الأمور — مدرسة مشيرفة الابتدائية           */
+/* Parent Polls & Meeting Invitation — Arabic RTL Styling                     */
+/* ========================================================================== */
+
+.parent-polls-page {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1e293b;
+  min-height: 88vh;
+  padding-bottom: 4rem;
+}
+
+.parent-polls-container {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* ========================================== */
+/* 1. Header Back Navigation                  */
+/* ========================================== */
+
+.polls-nav-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.back-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  color: #047857;
+  border: 1.5px solid #a7f3d0;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.08);
+}
+
+.back-home-link:hover {
+  background: #ecfdf5;
+  border-color: #34d399;
+  transform: translateY(-1px);
+}
+
+.meeting-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #78350f;
+  border: 1px solid #f59e0b;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+/* ========================================== */
+/* 2. Official Meeting Invitation Card        */
+/* ========================================== */
+
+.meeting-invitation-card {
+  background: linear-gradient(135deg, #022c22 0%, #064e3b 45%, #047857 100%);
+  border-radius: 28px;
+  color: #ffffff;
+  padding: 2.75rem 2.5rem 2.25rem 2.5rem;
+  box-shadow: 0 20px 45px -10px rgba(6, 78, 59, 0.45);
+  border: 2px solid rgba(253, 230, 138, 0.35);
+  margin-bottom: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.meeting-invitation-card::before {
+  content: '';
+  position: absolute;
+  top: -90px;
+  left: -90px;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.28) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.meeting-invitation-card::after {
+  content: '';
+  position: absolute;
+  bottom: -90px;
+  right: -90px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.invitation-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-gold-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1e1b4b;
+  font-weight: 900;
+  font-size: 0.88rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.invitation-school-tag {
+  background: rgba(255, 255, 255, 0.12);
+  color: #d1fae5;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.invitation-title-group {
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-main-heading {
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 0.6rem 0;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+
+.invitation-salutation {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fde68a;
+  margin-bottom: 1rem;
+}
+
+/* Theme Golden Ribbon */
+.invitation-theme-banner {
+  display: inline-block;
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  color: #ffffff;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  font-size: clamp(1.15rem, 2.8vw, 1.6rem);
+  font-weight: 900;
+  border: 2px solid #fef08a;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45);
+  margin: 0.5rem auto 1.25rem auto;
+}
+
+/* Event Details Cards Grid */
+.invitation-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
+  margin-bottom: 1.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+.detail-item-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  padding: 1.1rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  backdrop-filter: blur(8px);
+}
+
+.detail-item-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1e1b4b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.detail-item-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-item-label {
+  font-size: 0.8rem;
+  color: #a7f3d0;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.detail-item-val {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* Intro Paragraph */
+.invitation-intro-text {
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: #e2e8f0;
+  background: rgba(0, 0, 0, 0.18);
+  border-right: 4px solid #f59e0b;
+  padding: 1.2rem 1.5rem;
+  border-radius: 14px;
+  margin-bottom: 1.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Agenda Section */
+.invitation-agenda-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+.agenda-title {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fde68a;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.agenda-items-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+}
+
+.agenda-bullet-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #f1f5f9;
+}
+
+.agenda-bullet-point i {
+  color: #34d399;
+  font-size: 1.05rem;
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Quotes & Poetic Callout */
+.invitation-callout-quote {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.08));
+  border: 1.5px solid rgba(245, 158, 11, 0.35);
+  border-radius: 18px;
+  padding: 1.4rem 1.75rem;
+  margin-bottom: 1.8rem;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-callout-quote p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #ffffff;
+  font-weight: 800;
+  margin: 0 0 0.8rem 0;
+}
+
+.invitation-poem-lines {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fef08a;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* Signature & Closing */
+.invitation-footer-closing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  padding-top: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.closing-text-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.closing-greeting {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fde68a;
+  margin-bottom: 0.35rem;
+}
+
+.closing-signoff {
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+/* Quick Share Buttons Bar */
+.invitation-share-bar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.invitation-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.invitation-action-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.invitation-action-btn.whatsapp {
+  background: #25d366;
+  border-color: #22c55e;
+  color: #ffffff;
+}
+
+.invitation-action-btn.whatsapp:hover {
+  background: #16a34a;
+}
+
+/* ========================================== */
+/* 3. The Interactive Survey & Poll Card      */
+/* ========================================== */
+
+.parent-form-card {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 2.5rem;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06);
+  border: 2px solid #e2e8f0;
+  margin-bottom: 2.5rem;
+  animation: fadeInForm 0.35s ease;
+}
+
+@keyframes fadeInForm {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.form-header-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+}
+
+.form-header-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.form-header-subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.92rem;
+  color: #64748b;
+}
+
+/* Question 1: Attendance Options Grid */
+.question-section {
+  margin-bottom: 2.25rem;
+}
+
+.question-title-label {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 0.4rem;
+}
+
+.question-help-hint {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+  display: block;
+}
+
+.attendance-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+}
+
+.attendance-card-btn {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.4rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.attendance-card-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.attendance-card-btn.selected.yes {
+  background: #ecfdf5;
+  border-color: #10b981;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.22);
+}
+
+.attendance-card-btn.selected.time_slot {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.22);
+}
+
+.attendance-card-btn.selected.apologize {
+  background: #fff1f2;
+  border-color: #f43f5e;
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.2);
+}
+
+.attendance-icon-bubble {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin-bottom: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.attendance-card-btn.yes .attendance-icon-bubble {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.attendance-card-btn.time_slot .attendance-icon-bubble {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.attendance-card-btn.apologize .attendance-icon-bubble {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.attendance-card-btn.selected .attendance-icon-bubble {
+  transform: scale(1.1);
+}
+
+.attendance-label-text {
+  font-size: 1.02rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.attendance-sub-text {
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.attendance-check-marker {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+/* Question 2: Parent and Student Identity Form Grid */
+.identity-form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.input-cell.half {
+  grid-column: span 6;
+}
+
+.input-cell.third {
+  grid-column: span 4;
+}
+
+.input-cell.full {
+  grid-column: span 12;
+}
+
+.input-cell label {
+  display: block;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #334155;
+  margin-bottom: 0.45rem;
+}
+
+.poll-text-input,
+.poll-select-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1e293b;
+  transition: all 0.2s ease;
+}
+
+.poll-text-input:focus,
+.poll-select-input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Question 3: Development & Suggestions Box */
+.suggestions-box-wrapper {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.suggestions-tag-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.suggestion-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.suggestion-chip:hover {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.poll-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.7;
+  color: #1e293b;
+  resize: vertical;
+}
+
+.poll-textarea:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Grand Submit Button */
+.submit-response-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #ffffff;
+  border: none;
+  padding: 1.1rem 2rem;
+  border-radius: 16px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 8px 25px rgba(5, 150, 105, 0.35);
+}
+
+.submit-response-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(5, 150, 105, 0.45);
+}
+
+.submit-response-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ========================================== */
+/* 4. Submission Success & Live Stats Screen  */
+/* ========================================== */
+
+.response-success-banner {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 2px solid #34d399;
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15);
+  animation: popIn 0.35s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.success-check-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  margin: 0 auto 1.25rem auto;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.response-success-banner h3 {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #065f46;
+  margin: 0 0 0.5rem 0;
+}
+
+.response-success-banner p {
+  font-size: 1rem;
+  color: #047857;
+  line-height: 1.6;
+  max-width: 650px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.registered-summary-badge {
+  display: inline-block;
+  background: #ffffff;
+  border: 1.5px solid #a7f3d0;
+  padding: 0.8rem 1.6rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #065f46;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(6, 95, 70, 0.08);
+}
+
+.success-actions-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.edit-response-btn {
+  background: #ffffff;
+  color: #047857;
+  border: 1.5px solid #059669;
+  padding: 0.65rem 1.3rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.edit-response-btn:hover {
+  background: #f0fdf4;
+}
+
+/* Live Analytics Bar */
+.live-poll-stats-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 1.6rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.live-stats-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stat-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stat-label-flex {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.stat-progress-track {
+  height: 12px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  overflow: hidden;
+  position: relative;
+}
+
+.stat-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.8s ease;
+}
+
+.stat-progress-fill.green  { background: linear-gradient(135deg, #10b981, #059669); }
+.stat-progress-fill.yellow { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.stat-progress-fill.red    { background: linear-gradient(135deg, #f43f5e, #e11d48); }
+
+/* ========================================== */
+/* 5. Mobile & Responsive Layout              */
+/* ========================================== */
+
+@media (max-width: 900px) {
+  .invitation-details-grid,
+  .agenda-items-list,
+  .attendance-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .input-cell.half,
+  .input-cell.third {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .meeting-invitation-card {
+    padding: 1.8rem 1.4rem;
+    border-radius: 20px;
+  }
+
+  .invitation-main-heading {
+    font-size: 1.7rem;
+  }
+
+  .invitation-theme-banner {
+    padding: 0.6rem 1.4rem;
+    font-size: 1.15rem;
+  }
+
+  .parent-form-card {
+    padding: 1.6rem 1.25rem;
+    border-radius: 20px;
+  }
+
+  .invitation-footer-closing {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .invitation-share-bar {
+    justify-content: center;
+  }
+
+  .attendance-card-btn {
+    padding: 1.1rem 0.9rem;
+  }
+
+  .attendance-icon-bubble {
+    width: 48px;
+    height: 48px;
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .invitation-main-heading {
+    font-size: 1.45rem;
+  }
+
+  .invitation-salutation {
+    font-size: 1.1rem;
+  }
+
+  .detail-item-card {
+    padding: 0.85rem 1rem;
+  }
+
+  .detail-item-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.15rem;
+  }
+
+  .detail-item-val {
+    font-size: 1rem;
+  }
+
+  .form-header-bar {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ========================================== */
+/* 6. High-Quality Print Stylesheet           */
+/* ========================================== */
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .polls-nav-header,
+  .invitation-share-bar,
+  .parent-form-card,
+  .live-poll-stats-card,
+  header,
+  nav,
+  footer {
+    display: none !important;
+  }
+
+  .parent-polls-page {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .parent-polls-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .meeting-invitation-card {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    padding: 2rem !important;
+    page-break-after: avoid;
+  }
+
+  .invitation-main-heading {
+    color: #000000 !important;
+    text-shadow: none !important;
+  }
+
+  .invitation-theme-banner {
+    background: #f1f5f9 !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+  }
+
+  .detail-item-card,
+  .invitation-agenda-card,
+  .invitation-callout-quote {
+    background: #f8fafc !important;
+    color: #000000 !important;
+    border: 1px solid #999999 !important;
+    box-shadow: none !important;
+  }
+
+  .detail-item-icon {
+    background: #cccccc !important;
+    color: #000000 !important;
+  }
+
+  .invitation-poem-lines,
+  .agenda-title,
+  .closing-greeting,
+  .invitation-salutation {
+    color: #000000 !important;
+  }
+}

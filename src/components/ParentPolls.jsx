@@ -1,404 +1,659 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, increment } from 'firebase/firestore';
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  setDoc, 
+  getDoc,
+  addDoc,
+  onSnapshot 
+} from 'firebase/firestore';
+import './ParentPolls.css';
 
-const DEFAULT_POLLS = [
-  {
-    id: 'poll-1',
-    question: '🌟 ما هي الفعالية أو النادي التربوي الأكثر أهمية لأبنائكم في الفصل القادم؟',
-    description: 'شاركونا رأيكم لاختيار وتجهيز الأنشطة الأكثر فائدة وشغفاً للطلاب في مدرسة مشيرفة الابتدائية.',
-    category: 'الأنشطة والفعاليات',
-    status: 'active',
-    totalVotes: 184,
-    options: [
-      { id: 'opt-1', text: '🚀 نادي العلوم والابتكار الفضائي', votes: 78, color: '#0284c7' },
-      { id: 'opt-2', text: '🤖 ورشات الذكاء الاصطناعي والبرمجة للأطفال', votes: 56, color: '#7c3aed' },
-      { id: 'opt-3', text: '🎨 معارض الفنون والابتكار اليدوي', votes: 28, color: '#ec4899' },
-      { id: 'opt-4', text: '⚽ الدوري الرياضي واللياقة المدرسية', votes: 22, color: '#16a34a' }
-    ],
-    createdAt: '2026-08-12'
-  },
-  {
-    id: 'poll-2',
-    question: '🤝 ما هو تقييمكم لمبادرات المدرسة في تعزيز القيم والدافعية لدى الطلاب؟',
-    description: 'استطلاع رأي لقياس أثر المبادرات التربوية (مشروع امتنان، التحديات الأسبوعية، وبنك أوراق العمل).',
-    category: 'التقييم الجودة',
-    status: 'active',
-    totalVotes: 142,
-    options: [
-      { id: 'opt-21', text: '⭐ ممتازة جداً وواضحة الأثر على سلوك وشغف الأبناء', votes: 94, color: '#10b981' },
-      { id: 'opt-22', text: '👍 جيدة جداً ونطمح لإضافة المزيد من التحديات', votes: 36, color: '#3b82f6' },
-      { id: 'opt-23', text: '💡 مقبولة ونقترح تنويع الفعاليات للمراحل المختلفة', votes: 12, color: '#f59e0b' }
-    ],
-    createdAt: '2026-08-08'
-  },
-  {
-    id: 'poll-3',
-    question: '📚 ما هي الوسيلة الأفضل بالنسبة لكم لمتابعة أوراق العمل والامتحانات المدرسية؟',
-    description: 'يهمنا تسهيل وصول الأهالي والأبناء للامتحانات وأوراق العمل والمراجعات بأيسر الطرق.',
-    category: 'التواصل والخدمات',
-    status: 'active',
-    totalVotes: 115,
-    options: [
-      { id: 'opt-31', text: '🌐 تصفح وتنزيل المستندات عبر الموقع الإلكتروني للمدرسة', votes: 72, color: '#2563eb' },
-      { id: 'opt-32', text: '📱 استلام التنبيهات المباشرة عبر الرسائل', votes: 31, color: '#059669' },
-      { id: 'opt-33', text: '📄 الطباعة الورقية وتوزيعها داخل الصفوف', votes: 12, color: '#64748b' }
-    ],
-    createdAt: '2026-08-01'
-  }
+export const DEFAULT_MEETING_DATA = {
+  id: 'meeting-10-10-2026',
+  title: 'دعوة للقاء أولياء الأمور',
+  salutation: 'أهلنا الأعزاء،',
+  theme: '«يدًا بيد نحو التميّز»',
+  date: 'يوم السبت، 10.10.2026',
+  location: 'مدرسة مشيرفة الابتدائية',
+  intro: 'انطلاقًا من إيماننا بأن تميّز أبنائنا لا تصنعه المدرسة وحدها، بل تصنعه شراكة حقيقية ومتواصلة بين البيت والمدرسة، يسعدنا أن ندعوكم إلى اللقاء الأول لأولياء الأمور للعام الدراسي الحالي، تحت شعار:',
+  goals: [
+    'التعرف إلى رؤية المدرسة وأهداف عام التميّز.',
+    'لقاء أولياء الأمور مع المربين والمعلمين لبحث مسيرة الطالب التعليمية والتربوية.',
+    'الاستماع إلى أفكاركم ومقترحاتكم وتطلعاتكم لتطوير المدرسة.',
+    'انتخاب لجنة أولياء الأمور الصفية والمدرسية.'
+  ],
+  quote1: 'حضوركم ليس مجرد مشاركة، بل هو رسالة دعم قوية لأبنائكم وبناتكم، وتأكيد على أننا معًا نبني مستقبلًا أفضل لهم.',
+  poem: '«إذا التقت همّة البيت مع عزيمة المدرسة، أزهرت في درب الأبناء بساتين النجاح»',
+  closing: 'ننتظركم بكل محبة وتقدير، ودمتم شركاء النجاح والتميّز.',
+  signature: 'إدارة وطاقم مدرسة مشيرفة الابتدائية — عام التميّز 2026/2027',
+  status: 'active'
+};
+
+const CLASS_OPTIONS = [
+  'الأول (أ)', 'الأول (ب)', 'الأول (ج)',
+  'الثاني (أ)', 'الثاني (ب)', 'الثاني (ج)',
+  'الثالث (أ)', 'الثالث (ب)', 'الثالث (ج)',
+  'الرابع (أ)', 'الرابع (ب)', 'الرابع (ج)',
+  'الخامس (أ)', 'الخامس (ب)', 'الخامس (ج)',
+  'السادس (أ)', 'السادس (ب)', 'السادس (ج)'
 ];
 
-const ParentPolls = ({ isStandalone }) => {
-  const [polls, setPolls] = useState(DEFAULT_POLLS);
-  const [votedPollIds, setVotedPollIds] = useState(() => JSON.parse(localStorage.getItem('voted_polls') || '{}'));
-  const [selectedCategory, setSelectedCategory] = useState('جميع الاستطلاعات');
+const SUGGESTION_TAGS = [
+  '💡 البيئة المدرسية والصفوف',
+  '🚀 مبادرات ستيم والابتكار',
+  '📚 تعزيز القراءة والمطالعة',
+  '🤝 الأنشطة اللامنهجية والرحلات',
+  '⚽ الرياضة والصحة المدرسية',
+  '📱 التواصل الرقمي مع الأهالي'
+];
 
+const ParentPolls = ({ isStandalone = true }) => {
+  const [meetingData, setMeetingData] = useState(DEFAULT_MEETING_DATA);
+  const [attendance, setAttendance] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [studentClass, setStudentClass] = useState('');
+  const [parentPhone, setParentPhone] = useState('');
+  const [suggestions, setSuggestions] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedResponse, setSubmittedResponse] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Live Aggregated Stats
+  const [stats, setStats] = useState({
+    total: 0,
+    yes: 0,
+    time_slot: 0,
+    apologize: 0
+  });
+
+  // Purge old polls & Load current meeting data + responses
   useEffect(() => {
-    const loadPolls = async () => {
-      let localItems = [];
-      const localP = localStorage.getItem('db_parent_polls');
-      if (localP) { try { localItems = JSON.parse(localP); } catch(e){} }
-
-      try {
-        const snap = await getDocs(collection(db, 'parent_polls'));
-        let fsList = [];
-        if (!snap.empty) {
-          snap.forEach(d => fsList.push({ ...d.data(), id: d.id }));
-          setPolls(fsList);
-          localStorage.setItem('db_parent_polls', JSON.stringify(fsList));
-        } else {
-          setPolls(localItems.length > 0 ? localItems : DEFAULT_POLLS);
-        }
-      } catch (err) {
-        console.warn("Polls load fallback:", err.message);
-        setPolls(localItems.length > 0 ? localItems : DEFAULT_POLLS);
+    // 1. Purge legacy demo polls from localStorage
+    try {
+      const oldPolls = localStorage.getItem('db_parent_polls');
+      if (oldPolls && (oldPolls.includes('poll-1') || oldPolls.includes('poll-2'))) {
+        localStorage.removeItem('db_parent_polls');
       }
-    };
+      const oldVoted = localStorage.getItem('voted_polls');
+      if (oldVoted && (oldVoted.includes('poll-1') || oldVoted.includes('poll-2'))) {
+        localStorage.removeItem('voted_polls');
+      }
+    } catch (e) {
+      console.warn("Purge old polls cache:", e);
+    }
 
-    loadPolls();
+    // 2. Check saved user response for this meeting
+    try {
+      const saved = localStorage.getItem('meeting_poll_saved_response');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSubmittedResponse(parsed);
+        setAttendance(parsed.attendance || '');
+        setParentName(parsed.parentName || '');
+        setStudentName(parsed.studentName || '');
+        setStudentClass(parsed.studentClass || '');
+        setParentPhone(parsed.parentPhone || '');
+        setSuggestions(parsed.suggestions || '');
+      }
+    } catch (e) {
+      console.warn("Load saved user response:", e);
+    }
+
+    // 3. Listen to meeting configuration from Firestore
+    let unsubConfig = () => {};
+    try {
+      const configRef = doc(db, 'parent_polls', 'meeting-10-10-2026');
+      unsubConfig = onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setMeetingData(prev => ({ ...prev, ...docSnap.data() }));
+        } else {
+          // Seed the document to Firestore if it doesn't exist
+          setDoc(configRef, DEFAULT_MEETING_DATA).catch(err => console.warn("Seed Firestore error:", err));
+        }
+      }, (err) => {
+        console.warn("Firestore config snapshot error:", err);
+      });
+    } catch (err) {
+      console.warn("Firestore config error:", err);
+    }
+
+    // 4. Listen to responses collection to aggregate live stats
+    let unsubResponses = () => {};
+    try {
+      const responsesRef = collection(db, 'parent_poll_responses');
+      unsubResponses = onSnapshot(responsesRef, (snapshot) => {
+        let total = 0;
+        let yes = 0;
+        let time_slot = 0;
+        let apologize = 0;
+
+        snapshot.forEach((d) => {
+          const data = d.data();
+          if (data.meetingId === 'meeting-10-10-2026' || !data.meetingId) {
+            total += 1;
+            if (data.attendance === 'yes') yes += 1;
+            else if (data.attendance === 'time_slot') time_slot += 1;
+            else if (data.attendance === 'apologize') apologize += 1;
+          }
+        });
+
+        // If local storage has records and firestore is empty / offline
+        if (total === 0) {
+          const localResponses = JSON.parse(localStorage.getItem('db_parent_meeting_responses') || '[]');
+          if (localResponses.length > 0) {
+            total = localResponses.length;
+            yes = localResponses.filter(r => r.attendance === 'yes').length;
+            time_slot = localResponses.filter(r => r.attendance === 'time_slot').length;
+            apologize = localResponses.filter(r => r.attendance === 'apologize').length;
+          }
+        }
+
+        setStats({ total, yes, time_slot, apologize });
+      }, (err) => {
+        console.warn("Firestore responses snapshot error:", err);
+      });
+    } catch (err) {
+      console.warn("Firestore responses error:", err);
+    }
+
+    return () => {
+      unsubConfig();
+      unsubResponses();
+    };
   }, []);
 
-  const [customTextInputs, setCustomTextInputs] = useState({});
+  // Quick chip click appends text to suggestions
+  const handleAddTag = (tag) => {
+    setSuggestions(prev => {
+      if (!prev) return tag + ': ';
+      if (prev.includes(tag)) return prev;
+      return prev + '\n' + tag + ': ';
+    });
+  };
 
-  // Handle Cast Vote
-  const handleVoteOption = async (pollId, optionId) => {
-    if (votedPollIds[pollId]) {
-      alert("لقد قمت بالتصويت والمشاركة في هذا الاستطلاع سابقاً! شكراً لصوتكم واهتمامكم 💖");
+  // Submit Handler
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!attendance) {
+      alert('يرجى تحديد موقفكم من حضور اللقاء أولاً (نعم / تنسيق / اعتذار).');
+      return;
+    }
+    if (!parentName.trim()) {
+      alert('يرجى كتابة اسم ولي الأمر الكريم.');
+      return;
+    }
+    if (!studentName.trim()) {
+      alert('يرجى كتابة اسم الطالب / الطالبة.');
+      return;
+    }
+    if (!studentClass) {
+      alert('يرجى اختيار صف وشعبة الطالب.');
       return;
     }
 
-    const newVotedState = { ...votedPollIds, [pollId]: optionId };
-    setVotedPollIds(newVotedState);
-    localStorage.setItem('voted_polls', JSON.stringify(newVotedState));
+    setIsSubmitting(true);
 
-    const updatedPolls = polls.map(p => {
-      if (p.id === pollId) {
-        const updatedOptions = p.options.map(opt => {
-          if (opt.id === optionId) {
-            return { ...opt, votes: (opt.votes || 0) + 1 };
-          }
-          return opt;
-        });
-        return {
-          ...p,
-          totalVotes: (p.totalVotes || 0) + 1,
-          options: updatedOptions
-        };
-      }
-      return p;
-    });
+    const responsePayload = {
+      meetingId: 'meeting-10-10-2026',
+      meetingTitle: meetingData.title,
+      parentName: parentName.trim(),
+      studentName: studentName.trim(),
+      studentClass,
+      parentPhone: parentPhone.trim(),
+      attendance,
+      attendanceLabel: attendance === 'yes' ? 'نعم، سأحضر بكل سرور' : attendance === 'time_slot' ? 'سأحضر مع طلب تنسيق الموعد' : 'أعتذر لظرف طارئ',
+      suggestions: suggestions.trim(),
+      updatedAt: new Date().toISOString(),
+      timestamp: Date.now()
+    };
 
-    setPolls(updatedPolls);
-    localStorage.setItem('db_parent_polls', JSON.stringify(updatedPolls));
-
-    // Save to Firestore
     try {
-      const targetPoll = updatedPolls.find(p => p.id === pollId);
-      if (targetPoll) {
-        await setDoc(doc(db, 'parent_polls', pollId), targetPoll, { merge: true });
+      // 1. Save to Firestore
+      const resDocId = submittedResponse?.docId || `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      await setDoc(doc(db, 'parent_poll_responses', resDocId), {
+        ...responsePayload,
+        docId: resDocId
+      }, { merge: true });
+
+      responsePayload.docId = resDocId;
+
+      // 2. Save locally
+      localStorage.setItem('meeting_poll_saved_response', JSON.stringify(responsePayload));
+      
+      // Update local master list for offline backup
+      let localList = JSON.parse(localStorage.getItem('db_parent_meeting_responses') || '[]');
+      const existIdx = localList.findIndex(item => item.docId === resDocId);
+      if (existIdx >= 0) {
+        localList[existIdx] = responsePayload;
+      } else {
+        localList.push(responsePayload);
       }
-    } catch(err) {
-      console.warn("Firestore vote save warning:", err.message);
+      localStorage.setItem('db_parent_meeting_responses', JSON.stringify(localList));
+
+      setSubmittedResponse(responsePayload);
+      setIsEditing(false);
+      alert('تم استلام ردكم الكريم بنجاح! نثمن شراكتكم الغالية ومشاركتكم في بناء مسيرة تميّز أبنائنا 💖');
+    } catch (err) {
+      console.warn("Failed to save to Firestore directly, saving locally:", err);
+      // Fallback local save
+      const resDocId = submittedResponse?.docId || `local_${Date.now()}`;
+      responsePayload.docId = resDocId;
+      localStorage.setItem('meeting_poll_saved_response', JSON.stringify(responsePayload));
+
+      let localList = JSON.parse(localStorage.getItem('db_parent_meeting_responses') || '[]');
+      localList.push(responsePayload);
+      localStorage.setItem('db_parent_meeting_responses', JSON.stringify(localList));
+
+      setSubmittedResponse(responsePayload);
+      setIsEditing(false);
+      alert('تم حفظ ردكم بنجاح! شكراً جزيلاً لتعاونكم 💖');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Handle Open Text Input Vote Submit
-  const handleVoteOpenTextSubmit = async (pollId) => {
-    const textVal = (customTextInputs[pollId] || '').trim();
-    if (!textVal) {
-      alert("يرجى إدخال إجابتك أو اقتراحك الخاص أولاً قبل الإرسال.");
-      return;
-    }
-    if (votedPollIds[pollId]) {
-      alert("لقد قمت بالتصويت والمشاركة في هذا الاستطلاع سابقاً! شكراً لصوتكم واهتمامكم 💖");
-      return;
-    }
-
-    const newVotedState = { ...votedPollIds, [pollId]: 'open_text' };
-    setVotedPollIds(newVotedState);
-    localStorage.setItem('voted_polls', JSON.stringify(newVotedState));
-
-    const updatedPolls = polls.map(p => {
-      if (p.id === pollId) {
-        const prevOpenResponses = p.openTextResponses || [];
-        return {
-          ...p,
-          totalVotes: (p.totalVotes || 0) + 1,
-          openTextResponses: [...prevOpenResponses, { text: textVal, date: new Date().toLocaleDateString('ar-EG') }]
-        };
-      }
-      return p;
-    });
-
-    setPolls(updatedPolls);
-    localStorage.setItem('db_parent_polls', JSON.stringify(updatedPolls));
-
-    try {
-      const targetPoll = updatedPolls.find(p => p.id === pollId);
-      if (targetPoll) {
-        await setDoc(doc(db, 'parent_polls', pollId), targetPoll, { merge: true });
-      }
-    } catch(err) {
-      console.warn("Firestore open text vote save warning:", err.message);
-    }
+  // WhatsApp share message
+  const shareWhatsApp = () => {
+    const text = `دعوة للقاء أولياء الأمور — مدرسة مشيرفة الابتدائية 🏫✨\n«يدًا بيد نحو التميّز»\n🗓️ الموعد: ${meetingData.date}\n🏫 المكان: ${meetingData.location}\n\nشاركونا الحضور وسجلوا مقترحاتكم الكريمة عبر الرابط:\n${window.location.origin}${window.location.pathname}#parent-polls`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const categories = ['جميع الاستطلاعات', 'الأنشطة والفعاليات', 'التقييم الجودة', 'التواصل والخدمات'];
-
-  const filteredPolls = polls.filter(p => selectedCategory === 'جميع الاستطلاعات' || p.category === selectedCategory);
+  // Percentage calculations
+  const totalVotes = stats.total || 0;
+  const yesPct = totalVotes > 0 ? Math.round((stats.yes / totalVotes) * 100) : 0;
+  const timeSlotPct = totalVotes > 0 ? Math.round((stats.time_slot / totalVotes) * 100) : 0;
+  const apologizePct = totalVotes > 0 ? Math.round((stats.apologize / totalVotes) * 100) : 0;
 
   return (
-    <section className={`parent-polls-section ${isStandalone ? 'standalone-page' : ''}`} id="parent-polls" style={isStandalone ? { paddingTop: '120px', minHeight: '85vh' } : {}}>
-      <div className="container">
+    <div className={`parent-polls-page ${isStandalone ? 'standalone-view' : ''}`} id="parent-polls" style={isStandalone ? { paddingTop: '100px' } : {}}>
+      <div className="parent-polls-container">
 
-        {isStandalone && (
-          <div style={{ marginBottom: '2rem' }}>
-            <a 
-              href="#home" 
-              onClick={(e) => { e.preventDefault(); window.location.hash = '#home'; }}
-              className="btn btn-outline"
-              style={{ color: 'var(--primary)', borderColor: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontWeight: 800, padding: '0.6rem 1.4rem' }}
-            >
-              <i className="fas fa-arrow-right"></i> العودة للصفحة الرئيسية
-            </a>
+        {/* 1. Header Navigation Bar */}
+        <div className="polls-nav-header">
+          <a href="#" className="back-home-link">
+            <i className="fas fa-arrow-right"></i> العودة للرئيسية
+          </a>
+          <span className="meeting-date-badge">
+            <i className="fas fa-calendar-star"></i> {meetingData.date || 'السبت 10.10.2026'}
+          </span>
+        </div>
+
+        {/* 2. Grand Royal Official Meeting Invitation Card */}
+        <section className="meeting-invitation-card" aria-label="دعوة لقاء أولياء الأمور">
+          <div className="invitation-badge-row">
+            <span className="invitation-gold-pill">
+              <i className="fas fa-award"></i> ⚜️ دعوة رسمية كريمة
+            </span>
+            <span className="invitation-school-tag">
+              <i className="fas fa-school"></i> مدرسة مشيرفة الابتدائية
+            </span>
           </div>
+
+          <div className="invitation-title-group">
+            <h1 className="invitation-main-heading">{meetingData.title}</h1>
+            <div className="invitation-salutation">{meetingData.salutation}</div>
+            <div className="invitation-theme-banner">{meetingData.theme}</div>
+          </div>
+
+          <div className="invitation-intro-text">
+            {meetingData.intro}
+          </div>
+
+          {/* Details Grid (Date & Location) */}
+          <div className="invitation-details-grid">
+            <div className="detail-item-card">
+              <div className="detail-item-icon">
+                <i className="fas fa-calendar-alt"></i>
+              </div>
+              <div className="detail-item-content">
+                <span className="detail-item-label">الموعد المحدد</span>
+                <span className="detail-item-val">{meetingData.date}</span>
+              </div>
+            </div>
+
+            <div className="detail-item-card">
+              <div className="detail-item-icon">
+                <i className="fas fa-map-marker-alt"></i>
+              </div>
+              <div className="detail-item-content">
+                <span className="detail-item-label">المكان</span>
+                <span className="detail-item-val">{meetingData.location}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Agenda / Goals Section */}
+          <div className="invitation-agenda-card">
+            <h3 className="agenda-title">
+              <i className="fas fa-compass"></i> أهداف وبرنامج اللقاء:
+            </h3>
+            <div className="agenda-items-list">
+              {(meetingData.goals || []).map((goal, idx) => (
+                <div key={idx} className="agenda-bullet-point">
+                  <i className="fas fa-check-circle"></i>
+                  <span>{goal}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Callout Quote & Inspirational Poetic Lines */}
+          <div className="invitation-callout-quote">
+            <p>{meetingData.quote1}</p>
+            <p className="invitation-poem-lines">{meetingData.poem}</p>
+          </div>
+
+          {/* Closing & Official Signature */}
+          <div className="invitation-footer-closing">
+            <div className="closing-text-box">
+              <span className="closing-greeting">{meetingData.closing}</span>
+              <span className="closing-signoff">{meetingData.signature}</span>
+            </div>
+
+            <div className="invitation-share-bar">
+              <button 
+                type="button" 
+                onClick={shareWhatsApp} 
+                className="invitation-action-btn whatsapp"
+                title="مشاركة الدعوة عبر واتساب"
+              >
+                <i className="fab fa-whatsapp"></i> مشاركة الدعوة
+              </button>
+              <button 
+                type="button" 
+                onClick={() => window.print()} 
+                className="invitation-action-btn"
+                title="طباعة بطاقة الدعوة"
+              >
+                <i className="fas fa-print"></i> طباعة الدعوة
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. The Interactive Survey & Registration Form */}
+        {submittedResponse && !isEditing ? (
+          /* Submission Confirmation & Success View */
+          <div className="response-success-banner">
+            <div className="success-check-icon">
+              <i className="fas fa-check"></i>
+            </div>
+            <h3>تم استلام ردكم الكريم بنجاح!</h3>
+            <p>
+              أهلنا الكرام، مساهمتكم في استطلاع اللقاء ومقترحاتكم القيّمة هي الركيزة الأساسية لنهضة وتميّز أبنائنا. نترقب لقاءكم بكل فخر وشوق.
+            </p>
+
+            <div className="registered-summary-badge">
+              <strong>حالة الرد المسجل:</strong> {submittedResponse.attendanceLabel} | 
+              <strong> الطالب:</strong> {submittedResponse.studentName} ({submittedResponse.studentClass}) | 
+              <strong> ولي الأمر:</strong> {submittedResponse.parentName}
+            </div>
+
+            <div className="success-actions-row">
+              <button 
+                type="button" 
+                onClick={() => setIsEditing(true)} 
+                className="edit-response-btn"
+              >
+                <i className="fas fa-edit"></i> تعديل بيانات الرد أو المقترحات
+              </button>
+              <button 
+                type="button" 
+                onClick={shareWhatsApp} 
+                className="edit-response-btn"
+                style={{ background: '#10b981', color: 'white', borderColor: '#059669' }}
+              >
+                <i className="fab fa-whatsapp"></i> دعوة ولي أمر آخر
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Active Form View */
+          <section className="parent-form-card" aria-label="استمارة مشاركة أولياء الأمور">
+            <div className="form-header-bar">
+              <div className="form-header-icon">
+                <i className="fas fa-clipboard-check"></i>
+              </div>
+              <div>
+                <h2 className="form-header-title">استمارة تأكيد المشاركة ومقترحات التطوير</h2>
+                <p className="form-header-subtitle">
+                  يرجى تعبئة الاستمارة التالية لتأكيد حضوركم وتزويدنا بأفكاركم النيّرة لدعم مسيرة المدرسة.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              
+              {/* Question 1: Attendance Confirmation */}
+              <div className="question-section">
+                <label className="question-title-label">
+                  1. هل ستشاركون في لقاء أولياء الأمور بتاريخ 10.10.2026؟ <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <span className="question-help-hint">
+                  اختر الخيار المناسب لكم لتسهيل تنظيم القاعات والمربين:
+                </span>
+
+                <div className="attendance-options-grid">
+                  {/* Option 1: Yes */}
+                  <button
+                    type="button"
+                    className={`attendance-card-btn yes ${attendance === 'yes' ? 'selected' : ''}`}
+                    onClick={() => setAttendance('yes')}
+                  >
+                    {attendance === 'yes' && <div className="attendance-check-marker"><i className="fas fa-check"></i></div>}
+                    <div className="attendance-icon-bubble">
+                      <i className="fas fa-check-circle"></i>
+                    </div>
+                    <span className="attendance-label-text">نعم، سأحضر اللقاء</span>
+                    <span className="attendance-sub-text">بكل سرور وتأكيد للحضور بإذن الله</span>
+                  </button>
+
+                  {/* Option 2: Coordinate Time */}
+                  <button
+                    type="button"
+                    className={`attendance-card-btn time_slot ${attendance === 'time_slot' ? 'selected' : ''}`}
+                    onClick={() => setAttendance('time_slot')}
+                  >
+                    {attendance === 'time_slot' && <div className="attendance-check-marker"><i className="fas fa-check"></i></div>}
+                    <div className="attendance-icon-bubble">
+                      <i className="fas fa-clock"></i>
+                    </div>
+                    <span className="attendance-label-text">سأحضر مع تنسيق موعد</span>
+                    <span className="attendance-sub-text">أطلب تنظيم ساعة محددة مع مربي الصف</span>
+                  </button>
+
+                  {/* Option 3: Apologize */}
+                  <button
+                    type="button"
+                    className={`attendance-card-btn apologize ${attendance === 'apologize' ? 'selected' : ''}`}
+                    onClick={() => setAttendance('apologize')}
+                  >
+                    {attendance === 'apologize' && <div className="attendance-check-marker"><i className="fas fa-check"></i></div>}
+                    <div className="attendance-icon-bubble">
+                      <i className="fas fa-hand-paper"></i>
+                    </div>
+                    <span className="attendance-label-text">أعتذر لظرف طارئ</span>
+                    <span className="attendance-sub-text">يتعذر عليّ الحضور في هذا التاريخ</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Question 2: Identity Form Fields */}
+              <div className="question-section">
+                <label className="question-title-label">
+                  2. بيانات ولي الأمر والطالب <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <span className="question-help-hint">
+                  لتسجيل اسمكم في جدول مربي الصف وتجهيز ملف المتابعة:
+                </span>
+
+                <div className="identity-form-grid">
+                  <div className="input-cell half">
+                    <label>اسم ولي الأمر (الوالد / الوالدة): <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="poll-text-input"
+                      placeholder="مثال: أحمد مصطفى إغبارية"
+                      value={parentName}
+                      onChange={(e) => setParentName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="input-cell half">
+                    <label>اسم الطالب / الطالبة: <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="poll-text-input"
+                      placeholder="مثال: يوسف أحمد إغبارية"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="input-cell half">
+                    <label>الصف والشعبة: <span style={{ color: '#ef4444' }}>*</span></label>
+                    <select
+                      className="poll-select-input"
+                      value={studentClass}
+                      onChange={(e) => setStudentClass(e.target.value)}
+                      required
+                    >
+                      <option value="">-- اختر صف وشعبة الطالب --</option>
+                      {CLASS_OPTIONS.map((cls, idx) => (
+                        <option key={idx} value={cls}>{cls}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="input-cell half">
+                    <label>رقم هاتف للتواصل (اختياري):</label>
+                    <input
+                      type="tel"
+                      className="poll-text-input"
+                      placeholder="05X-XXXXXXX"
+                      value={parentPhone}
+                      onChange={(e) => setParentPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Question 3: Ideas & Suggestions */}
+              <div className="question-section">
+                <label className="question-title-label">
+                  3. مقترحاتكم وأفكاركم لتطوير وتحسين المدرسة:
+                </label>
+                <span className="question-help-hint">
+                  صوتكم ورؤيتكم شريكان في صنع القرار؛ ما هي أفكاركم وملاحظاتكم لدعم عام التميّز؟
+                </span>
+
+                <div className="suggestions-box-wrapper">
+                  <div className="suggestions-tag-chips">
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', alignSelf: 'center' }}>
+                      مجالات سريعة:
+                    </span>
+                    {SUGGESTION_TAGS.map((tag, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="suggestion-chip"
+                        onClick={() => handleAddTag(tag)}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    rows={4}
+                    className="poll-textarea"
+                    placeholder="اكتبوا لنا هنا مقترحاتكم، ملاحظاتكم، أو أي فكرة تودون طرحها على طاولة النقاش خلال اللقاء..."
+                    value={suggestions}
+                    onChange={(e) => setSuggestions(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="submit-response-btn"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> جاري حفظ الرد...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-paper-plane"></i> إرسال المشاركة وتأكيد الرد 🚀
+                  </>
+                )}
+              </button>
+            </form>
+          </section>
         )}
 
-        {/* Section Header */}
-        <div className="section-header">
-          <span className="worksheets-badge-pill" style={{ background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', color: 'white' }}>
-            <i className="fas fa-poll"></i> صوت ولي الأمر ومشاركتكم تهمنا
-          </span>
-          <h2 className="section-title">استطلاعات وتصويت الأهالي 📊🤝</h2>
-          <p className="section-subtitle">
-            شارك بصوتك ورأيك بنقرة واحدة في القرار والأنشطة المدرسية لمستقبل أبنائنا في مدرسة مشيرفة الابتدائية ✨
-          </p>
-        </div>
+        {/* 4. Live Community Response Stats Bar */}
+        <section className="live-poll-stats-card" aria-label="إحصائيات تفاعل أولياء الأمور">
+          <h3 className="live-stats-title">
+            <i className="fas fa-chart-pie"></i> نبض المشاركة والتفاعل المجتمعي ({totalVotes} مشارك مسجل)
+          </h3>
 
-        {/* Categories Bar */}
-        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.75rem', marginBottom: '2rem', justifyContent: 'center' }}>
-          {categories.map((cat, idx) => (
-            <button
-              key={idx}
-              onClick={() => setSelectedCategory(cat)}
-              style={{
-                background: selectedCategory === cat ? '#10b981' : '#ffffff',
-                color: selectedCategory === cat ? 'white' : '#334155',
-                border: '1px solid #cbd5e1',
-                padding: '0.65rem 1.3rem',
-                borderRadius: '14px',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                boxShadow: selectedCategory === cat ? '0 6px 16px rgba(16,185,129,0.3)' : 'none',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Polls Display Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '2rem' }}>
-          {filteredPolls.map((poll) => {
-            const hasVoted = Boolean(votedPollIds[poll.id]);
-            const selectedOptId = votedPollIds[poll.id];
-
-            return (
-              <div 
-                key={poll.id}
-                style={{
-                  background: '#ffffff',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  border: '2px solid #e2e8f0',
-                  boxShadow: '0 12px 30px rgba(0,0,0,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justify: 'space-between',
-                  position: 'relative'
-                }}
-              >
-                <div>
-                  {/* Category & Status Badges */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ background: '#ecfdf5', color: '#047857', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.78rem', fontWeight: 900 }}>
-                      🏷️ {poll.category}
-                    </span>
-                    <span style={{ background: hasVoted ? '#dbeafe' : '#fef3c7', color: hasVoted ? '#1d4ed8' : '#b45309', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.78rem', fontWeight: 900 }}>
-                      {hasVoted ? '✅ تم التصويت بنجاح' : '📊 استطلاع مفتوح للتصويت'}
-                    </span>
-                  </div>
-
-                  {/* Poll Question Title */}
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.6rem 0', lineHeight: 1.4 }}>
-                    {poll.question}
-                  </h3>
-                  <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 1.5rem 0', lineHeight: 1.5 }}>
-                    {poll.description}
-                  </p>
-
-                  {/* Options & Interactive Vote Bars */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                    {poll.options.map((opt) => {
-                      const total = poll.totalVotes || 1;
-                      const percentage = Math.round(((opt.votes || 0) / total) * 100);
-                      const isOptionChosen = selectedOptId === opt.id;
-
-                      return (
-                        <div 
-                          key={opt.id}
-                          onClick={() => handleVoteOption(poll.id, opt.id)}
-                          style={{
-                            background: isOptionChosen ? '#ecfdf5' : '#f8fafc',
-                            border: `2px solid ${isOptionChosen ? '#10b981' : '#e2e8f0'}`,
-                            borderRadius: '16px',
-                            padding: '1rem 1.25rem',
-                            cursor: hasVoted ? 'default' : 'pointer',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            transition: 'all 0.25 ease'
-                          }}
-                        >
-                          {/* Progress Fill Background Layer */}
-                          <div 
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              right: 0,
-                              bottom: 0,
-                              width: `${percentage}%`,
-                              background: opt.color || '#10b981',
-                              opacity: 0.12,
-                              transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-                            }}
-                          />
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', paddingLeft: '0.5rem' }}>
-                              <div style={{
-                                width: '22px',
-                                height: '22px',
-                                borderRadius: '50%',
-                                border: `2px solid ${isOptionChosen ? '#10b981' : '#cbd5e1'}`,
-                                background: isOptionChosen ? '#10b981' : 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                                fontSize: '0.7rem',
-                                fontWeight: 900
-                              }}>
-                                {isOptionChosen && '✓'}
-                              </div>
-                              <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1e293b' }}>
-                                {opt.text}
-                              </span>
-                            </div>
-
-                            <div style={{ textAlign: 'left', minWidth: '60px' }}>
-                              <span style={{ fontWeight: 900, fontSize: '1rem', color: opt.color || '#10b981' }}>
-                                {percentage}%
-                              </span>
-                              <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>
-                                ({opt.votes || 0} صوت)
-                              </span>
-                            </div>
-                          </div>
-
-                        </div>
-                      );
-                    })}
-
-                    {/* Open Text Response Input Field for Parents */}
-                    {poll.allowOpenText && (
-                      <div style={{ marginTop: '1rem', background: '#f0f9ff', padding: '1.25rem', borderRadius: '18px', border: '2px solid #bae6fd', boxShadow: '0 4px 12px rgba(2,132,199,0.06)' }}>
-                        <label style={{ display: 'block', fontWeight: 900, fontSize: '0.92rem', color: '#0369a1', marginBottom: '0.6rem' }}>
-                          ✍️ أضف إجابتك أو اقتراحك الخاص (حقل كتابة مفتوح):
-                        </label>
-                        {hasVoted ? (
-                          <div style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, background: '#e0f2fe', padding: '0.65rem 0.9rem', borderRadius: '10px' }}>
-                            ✅ تم تسجيل مشاركتك المفتوحة بنجاح. شكراً لاهتمامكم وحرصكم! 💖
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                            <input
-                              type="text"
-                              placeholder="أدخل إجابتك أو اقتراحك الحر هنا..."
-                              value={customTextInputs[poll.id] || ''}
-                              onChange={(e) => setCustomTextInputs({ ...customTextInputs, [poll.id]: e.target.value })}
-                              style={{ flex: 1, padding: '0.7rem 0.9rem', borderRadius: '10px', border: '2px solid #7dd3fc', fontWeight: 700, fontSize: '0.9rem', minWidth: '220px', background: 'white' }}
-                            />
-                            <button
-                              onClick={() => handleVoteOpenTextSubmit(poll.id)}
-                              style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: 'white', border: 'none', padding: '0.7rem 1.3rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 10px rgba(3,105,161,0.2)' }}
-                            >
-                              إرسال 🚀
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer Participation Meta & Share Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700, flexWrap: 'wrap', gap: '0.6rem' }}>
-                  <span>📊 إجمالي مشاركات الأهالي: <strong style={{ color: '#0f172a' }}>{poll.totalVotes || 0} ولي أمر</strong></span>
-                  
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <button
-                      onClick={() => {
-                        const link = window.location.origin + window.location.pathname + '#parent-polls';
-                        navigator.clipboard.writeText(link);
-                        alert("📋 تم نسخ رابط صفحة تصويت واستطلاعات الأهالي بنجاح!");
-                      }}
-                      style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                    >
-                      📋 نسخ رابط الاستطلاع
-                    </button>
-                    <a
-                      href={'https://api.whatsapp.com/send?text=' + encodeURIComponent('شاركونا رأيكم وصوتكم في استطلاع مدرسة مشيرفة الابتدائية: ' + poll.question + ' عبر الرابط: ' + window.location.origin + window.location.pathname + '#parent-polls')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ background: '#25d366', color: 'white', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                    >
-                      📱 واتساب
-                    </a>
-                  </div>
-
-                  <span>📅 {poll.createdAt}</span>
-                </div>
-
+          <div className="stats-bars-container">
+            {/* Yes Attending */}
+            <div className="stat-bar-row">
+              <div className="stat-label-flex">
+                <span>🟢 سأحضر اللقاء بإذن الله ({stats.yes} ولي أمر)</span>
+                <span>{yesPct}%</span>
               </div>
-            );
-          })}
-        </div>
+              <div className="stat-progress-track">
+                <div 
+                  className="stat-progress-fill green" 
+                  style={{ width: `${yesPct}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Time Slot Requested */}
+            <div className="stat-bar-row">
+              <div className="stat-label-flex">
+                <span>🟡 سأحضر مع طلب تنسيق موعد ({stats.time_slot} ولي أمر)</span>
+                <span>{timeSlotPct}%</span>
+              </div>
+              <div className="stat-progress-track">
+                <div 
+                  className="stat-progress-fill yellow" 
+                  style={{ width: `${timeSlotPct}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Apologized */}
+            <div className="stat-bar-row">
+              <div className="stat-label-flex">
+                <span>🔴 أعتذر لظرف طارئ ({stats.apologize} ولي أمر)</span>
+                <span>{apologizePct}%</span>
+              </div>
+              <div className="stat-progress-track">
+                <div 
+                  className="stat-progress-fill red" 
+                  style={{ width: `${apologizePct}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
 
       </div>
-    </section>
+    </div>
   );
 };
 
