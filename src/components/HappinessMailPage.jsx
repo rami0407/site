@@ -19,26 +19,26 @@ const CLASS_OPTIONS = [
   'السادس (أ)', 'السادس (ب)', 'السادس (ج)'
 ];
 
-// Pink Template Checkbox Criteria (للطالبات)
+// Criteria for Pink Template (بريد السعادة - للطالبات)
 const PINK_CRITERIA = [
-  { id: 'improved', label: 'أظهرت تحسنًا ملحوظًا', icon: '📈', box: { x: 952, y: 380 } },
-  { id: 'rules', label: 'التزمت بالتعليمات', icon: '✔', box: { x: 952, y: 448 } },
-  { id: 'teamwork', label: 'تعاونت مع زميلاتها', icon: '🤝', box: { x: 614, y: 380 } },
-  { id: 'effort', label: 'بذلت جهدًا رائعًا', icon: '💖', box: { x: 614, y: 452 } },
-  { id: 'active', label: 'شاركت بفاعلية', icon: '⭐', box: { x: 291, y: 380 } },
-  { id: 'behavior', label: 'أبدعت بسلوك جميل', icon: '🌸', box: { x: 291, y: 450 } },
-  { id: 'other', label: 'أخرى', icon: '📝', box: { x: 952, y: 510 }, isOther: true }
+  { id: 'improved', label: 'أظهرت تحسنًا ملحوظًا', icon: '📈' },
+  { id: 'rules', label: 'التزمت بالتعليمات', icon: '✔' },
+  { id: 'teamwork', label: 'تعاونت مع زميلاتها', icon: '🤝' },
+  { id: 'effort', label: 'بذلت جهدًا رائعًا', icon: '💖' },
+  { id: 'active', label: 'شاركت بفاعلية', icon: '⭐' },
+  { id: 'behavior', label: 'أبدعت بسلوك جميل', icon: '🌸' },
+  { id: 'other', label: 'أخرى', icon: '📝', isOther: true }
 ];
 
-// Blue Template Checkbox Criteria (للطلاب)
+// Criteria for Blue Template (بريد التميز - للطلاب)
 const BLUE_CRITERIA = [
-  { id: 'improved', label: 'أظهر تحسنًا ملحوظًا', icon: '📈', box: { x: 952, y: 380 } },
-  { id: 'active', label: 'شارك بفاعلية', icon: '💡', box: { x: 952, y: 448 } },
-  { id: 'teamwork', label: 'تعاون مع زملائه', icon: '🤝', box: { x: 614, y: 380 } },
-  { id: 'effort', label: 'بذل جهدًا رائعًا', icon: '💙', box: { x: 614, y: 452 } },
-  { id: 'rules', label: 'التزم بالتعليمات', icon: '✔', box: { x: 291, y: 380 } },
-  { id: 'behavior', label: 'أبدع بسلوك حسن', icon: '🌸', box: { x: 291, y: 450 } },
-  { id: 'other', label: 'أخرى', icon: '📝', box: { x: 952, y: 510 }, isOther: true }
+  { id: 'improved', label: 'أظهر تحسنًا ملحوظًا', icon: '📈' },
+  { id: 'active', label: 'شارك بفاعلية', icon: '💡' },
+  { id: 'teamwork', label: 'تعاون مع زملائه', icon: '🤝' },
+  { id: 'effort', label: 'بذل جهدًا رائعًا', icon: '💙' },
+  { id: 'rules', label: 'التزم بالتعليمات', icon: '✔' },
+  { id: 'behavior', label: 'أبدع بسلوك حسن', icon: '🌸' },
+  { id: 'other', label: 'أخرى', icon: '📝', isOther: true }
 ];
 
 const DEFAULT_CARD = {
@@ -55,7 +55,7 @@ const DEFAULT_CARD = {
 };
 
 const HappinessMailPage = ({ isStandalone = true }) => {
-  // Mode: 'studio' (Teacher creating) or 'recipient' (Student/Parent viewing their personalized card)
+  // Mode: 'studio' (Teacher creating) or 'recipient' (Student/Parent opening their letter)
   const [viewMode, setViewMode] = useState('studio');
   const [card, setCard] = useState(DEFAULT_CARD);
   const [savedCards, setSavedCards] = useState([]);
@@ -65,15 +65,17 @@ const HappinessMailPage = ({ isStandalone = true }) => {
   const [recipientCardId, setRecipientCardId] = useState(null);
   const [showCopyAlert, setShowCopyAlert] = useState(false);
 
+  // 3D Envelope Unboxing State
+  const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
+  const [hasUnboxedOnce, setHasUnboxedOnce] = useState(false);
+
   const canvasRef = useRef(null);
 
-  // Parse URL on mount: Detect if viewing an individual card by ID or by base64 payload
+  // Detect URL query/hash parameters to open recipient card
   useEffect(() => {
     const parseUrl = async () => {
       const hash = window.location.hash || '';
       const search = window.location.search || '';
-
-      // Check query or hash params for card ID or payload
       const urlParams = new URLSearchParams(search || hash.split('?')[1] || '');
       const cardId = urlParams.get('id') || urlParams.get('card_id');
       const encodedData = urlParams.get('data');
@@ -81,8 +83,8 @@ const HappinessMailPage = ({ isStandalone = true }) => {
       if (cardId) {
         setRecipientCardId(cardId);
         setViewMode('recipient');
+        setIsEnvelopeOpen(false); // starts closed for surprise!
 
-        // Fetch card from Firestore
         try {
           const docSnap = await getDoc(doc(db, 'happiness_mail_cards', cardId));
           if (docSnap.exists()) {
@@ -93,7 +95,6 @@ const HappinessMailPage = ({ isStandalone = true }) => {
           console.warn("Firestore fetch card error:", e);
         }
 
-        // Fallback local storage
         const local = JSON.parse(localStorage.getItem('db_happiness_mail_cards') || '[]');
         const found = local.find(c => c.id === cardId);
         if (found) {
@@ -108,6 +109,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
           const parsed = JSON.parse(jsonStr);
           setCard(parsed);
           setViewMode('recipient');
+          setIsEnvelopeOpen(false);
           return;
         } catch (err) {
           console.warn("Base64 parse card err:", err);
@@ -118,7 +120,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     parseUrl();
   }, []);
 
-  // Listen to Firestore collection of sent cards for the archive
+  // Listen to Firestore collection of sent cards
   useEffect(() => {
     let unsub = () => {};
     try {
@@ -129,18 +131,23 @@ const HappinessMailPage = ({ isStandalone = true }) => {
         setSavedCards(list);
         localStorage.setItem('db_happiness_mail_cards', JSON.stringify(list));
       }, (err) => {
-        console.warn("Cards snapshot error:", err);
+        console.warn("Cards snapshot fallback:", err);
         const local = JSON.parse(localStorage.getItem('db_happiness_mail_cards') || '[]');
         setSavedCards(local);
       });
     } catch (e) {
       console.warn("Snapshot setup err:", e);
     }
-
     return () => unsub();
   }, []);
 
-  // Helper: toggle criterion checkbox
+  // Trigger Envelope Opening with Sound & Sparkle
+  const handleOpenEnvelope = () => {
+    setIsEnvelopeOpen(true);
+    setHasUnboxedOnce(true);
+  };
+
+  // Toggle Criterion
   const handleToggleCriterion = (id) => {
     setCard(prev => {
       const exists = prev.criteria.includes(id);
@@ -151,7 +158,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     });
   };
 
-  // Helper: Switch template (Pink vs Blue) with sensible defaults
+  // Switch Template (Pink vs Blue)
   const handleSwitchTemplate = (type) => {
     if (type === 'blue' && card.type !== 'blue') {
       setCard(prev => ({
@@ -168,115 +175,287 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     }
   };
 
-  // 1. Draw High-Res Card on HTML5 Canvas (1024 × 695)
+  // 1. High-Resolution Vector Canvas Renderer (2048 x 1390 for ultra-sharp Retina / print export)
   const drawCardToCanvas = (targetCard, canvas) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const ctx = canvas.getContext('2d');
       const isPink = targetCard.type === 'pink';
-      const bgImg = new Image();
-      bgImg.crossOrigin = 'anonymous';
-      bgImg.src = isPink 
-        ? `${import.meta.env.BASE_URL}assets/mail/happiness_mail_pink.jpg` 
-        : `${import.meta.env.BASE_URL}assets/mail/excellence_mail_blue.jpg`;
+      
+      const W = 1600;
+      const H = 1080;
+      canvas.width = W;
+      canvas.height = H;
 
-      bgImg.onload = () => {
-        canvas.width = 1024;
-        canvas.height = 695;
+      // 1. Background Fill
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
 
-        // 1. Draw background template image
-        ctx.drawImage(bgImg, 0, 0, 1024, 695);
+      // 2. Airmail Candy Striped Border
+      const borderWidth = 24;
+      const stripeLen = 32;
+      const col1 = isPink ? '#f43f5e' : '#2563eb';
+      const col2 = isPink ? '#10b981' : '#0284c7';
 
-        // Styling defaults
-        ctx.direction = 'rtl';
+      // Draw top and bottom border
+      for (let x = 0; x < W; x += stripeLen * 2) {
+        ctx.fillStyle = col1;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + stripeLen, 0);
+        ctx.lineTo(x + stripeLen - borderWidth, borderWidth);
+        ctx.lineTo(x - borderWidth, borderWidth);
+        ctx.fill();
+
+        ctx.fillStyle = col2;
+        ctx.beginPath();
+        ctx.moveTo(x + stripeLen, 0);
+        ctx.lineTo(x + stripeLen * 2, 0);
+        ctx.lineTo(x + stripeLen * 2 - borderWidth, borderWidth);
+        ctx.lineTo(x + stripeLen - borderWidth, borderWidth);
+        ctx.fill();
+
+        // Bottom
+        ctx.fillStyle = col1;
+        ctx.beginPath();
+        ctx.moveTo(x, H - borderWidth);
+        ctx.lineTo(x + stripeLen, H - borderWidth);
+        ctx.lineTo(x + stripeLen - borderWidth, H);
+        ctx.lineTo(x - borderWidth, H);
+        ctx.fill();
+
+        ctx.fillStyle = col2;
+        ctx.beginPath();
+        ctx.moveTo(x + stripeLen, H - borderWidth);
+        ctx.lineTo(x + stripeLen * 2, H - borderWidth);
+        ctx.lineTo(x + stripeLen * 2 - borderWidth, H);
+        ctx.lineTo(x + stripeLen - borderWidth, H);
+        ctx.fill();
+      }
+
+      // Left and right border
+      for (let y = 0; y < H; y += stripeLen * 2) {
+        ctx.fillStyle = col1;
+        ctx.fillRect(0, y, borderWidth, stripeLen);
+        ctx.fillStyle = col2;
+        ctx.fillRect(0, y + stripeLen, borderWidth, stripeLen);
+
+        ctx.fillStyle = col1;
+        ctx.fillRect(W - borderWidth, y, borderWidth, stripeLen);
+        ctx.fillStyle = col2;
+        ctx.fillRect(W - borderWidth, y + stripeLen, borderWidth, stripeLen);
+      }
+
+      // 3. Inner Padding & Defaults
+      ctx.direction = 'rtl';
+      ctx.textAlign = 'center';
+
+      // Stamp in Left Corner (Airmail art)
+      ctx.font = '55px sans-serif';
+      ctx.fillText(isPink ? '💌' : '📮', 110, 115);
+      ctx.font = 'bold 18px Cairo, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('مدرسة مشيرفة', 110, 155);
+
+      // Stamp in Right Corner
+      ctx.fillStyle = isPink ? '#fdf2f8' : '#eff6ff';
+      ctx.strokeStyle = isPink ? '#f472b6' : '#60a5fa';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(W - 170, 45, 110, 110);
+      ctx.fillRect(W - 170, 45, 110, 110);
+      ctx.font = '50px sans-serif';
+      ctx.fillText(isPink ? '💖' : '💙', W - 115, 120);
+
+      // 4. Center Title & Subtitle
+      ctx.font = '900 62px Cairo, Tahoma, sans-serif';
+      ctx.fillStyle = isPink ? '#831843' : '#1e3a8a';
+      ctx.fillText(isPink ? 'بريد السعادة' : 'بريد التميز', W / 2, 105);
+
+      // Subtitle Pill
+      const subText = isPink ? 'رسالة صغيرة... وأثر كبير' : 'رسالة متميزة... وأثر باقٍ';
+      ctx.font = '900 24px Cairo, sans-serif';
+      ctx.fillStyle = isPink ? '#fce7f3' : '#dbeafe';
+      ctx.beginPath();
+      ctx.roundRect(W / 2 - 180, 125, 360, 46, 23);
+      ctx.fill();
+      ctx.fillStyle = isPink ? '#9d174d' : '#1e40af';
+      ctx.fillText(subText, W / 2, 156);
+
+      // 5. Meta Fields Row
+      ctx.font = 'bold 28px Cairo, sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.textAlign = 'right';
+      ctx.fillText(isPink ? 'إلى ولي أمر الطالبة:' : 'إلى ولي أمر الطالب:', W - 180, 240);
+
+      // Student Name on dotted line
+      ctx.font = '900 32px Cairo, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.fillText(targetCard.studentName || '', W - 480, 238);
+
+      // Class on left
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 28px Cairo, sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText('الصف:', 450, 240);
+      ctx.font = '900 30px Cairo, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.fillText(targetCard.studentClass || '', 310, 238);
+
+      // 6. Announcement Sentence
+      ctx.font = '900 34px Cairo, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      const intro = isPink ? 'يسعدني اليوم أن أخبركم أن ابنتكم كانت متميزة في:' : 'يسعدني اليوم أن أخبركم أن ابنكم كان متميزًا في:';
+      ctx.fillText(intro, W / 2, 320);
+
+      // 7. Checkboxes Grid (3 columns x 2 rows + 1 other)
+      const criteriaList = isPink ? PINK_CRITERIA : BLUE_CRITERIA;
+      const startY = 370;
+      const colW = 460;
+      const rowH = 75;
+
+      criteriaList.slice(0, 6).forEach((item, idx) => {
+        const colIdx = idx % 3; // 0, 1, 2
+        const rowIdx = Math.floor(idx / 3); // 0, 1
+        // RTL columns: 0 is right, 1 is center, 2 is left
+        const x = W - 120 - (colIdx * colW);
+        const y = startY + (rowIdx * rowH);
+        const isChecked = targetCard.criteria && targetCard.criteria.includes(item.id);
+
+        // Box
+        ctx.fillStyle = isChecked ? (isPink ? '#fdf2f8' : '#eff6ff') : '#f8fafc';
+        ctx.strokeStyle = isChecked ? (isPink ? '#f472b6' : '#60a5fa') : '#cbd5e1';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x - 420, y, 400, 56, 14);
+        ctx.fill();
+        ctx.stroke();
+
+        // Indicator square
+        ctx.fillStyle = isChecked ? (isPink ? '#e11d48' : '#2563eb') : '#ffffff';
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.roundRect(x - 60, y + 10, 36, 36, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        if (isChecked) {
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('✔', x - 42, y + 36);
+        }
+
+        // Text & Icon
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 24px Cairo, sans-serif';
+        ctx.fillStyle = isChecked ? (isPink ? '#831843' : '#1e3a8a') : '#334155';
+        ctx.fillText(`${item.icon} ${item.label}`, x - 75, y + 37);
+      });
+
+      // Other item (centered under grid)
+      if (targetCard.criteria && targetCard.criteria.includes('other') && targetCard.otherText) {
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#0f172a';
-
-        // 2. Draw Student Name (x: 770, y: 265)
-        ctx.font = 'bold 22px Cairo, Tahoma, sans-serif';
-        ctx.fillText(targetCard.studentName || '', 770, 265);
-
-        // 3. Draw Student Class (x: 175, y: 265)
-        ctx.font = 'bold 20px Cairo, Tahoma, sans-serif';
-        ctx.fillText(targetCard.studentClass || '', 175, 265);
-
-        // 4. Draw Checkmarks for checked criteria
-        const criteriaList = isPink ? PINK_CRITERIA : BLUE_CRITERIA;
-        ctx.font = '900 24px sans-serif';
+        ctx.font = 'bold 24px Cairo, sans-serif';
         ctx.fillStyle = isPink ? '#9d174d' : '#1e40af';
+        ctx.fillText(`✨ إنجاز إضافي: ${targetCard.otherText}`, W / 2, 555);
+      }
 
-        criteriaList.forEach(item => {
-          if (targetCard.criteria && targetCard.criteria.includes(item.id)) {
-            // Draw checkmark symbol inside the box
-            ctx.fillText('✔', item.box.x, item.box.y + 8);
-          }
-        });
+      // 8. Middle Ribbon: بريد عائد للمعلمة
+      const ribY = 590;
+      ctx.fillStyle = isPink ? '#f472b6' : '#60a5fa';
+      ctx.beginPath();
+      ctx.roundRect(W / 2 - 200, ribY, 400, 48, 24);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 24px Cairo, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(isPink ? '📬 بريد عائد للمعلمة' : '📬 رد عائد للمعلمة', W / 2, ribY + 33);
 
-        // 5. Draw "أخرى" custom text if filled (x: 795, y: 514)
-        if (targetCard.otherText && targetCard.otherText.trim()) {
-          ctx.font = 'bold 16px Cairo, sans-serif';
-          ctx.fillStyle = '#1e293b';
-          ctx.fillText(targetCard.otherText.trim(), 795, 514);
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 18px Cairo, sans-serif';
+      ctx.fillText('كلمة، ملاحظة أو رأي تحبون مشاركته معي:', W / 2, ribY + 70);
+
+      // 9. Creative Flash Section (وميض الإبداع)
+      const flashY = 700;
+      ctx.fillStyle = isPink ? '#fce7f3' : '#dbeafe';
+      ctx.beginPath();
+      ctx.roundRect(W - 320, flashY, 200, 60, 14);
+      ctx.fill();
+      ctx.fillStyle = isPink ? '#831843' : '#1e3a8a';
+      ctx.font = '900 26px Cairo, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('وميض الإبداع ➔', W - 220, flashY + 40);
+
+      // Text Box for Teacher's Note
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = isPink ? '#fbcfe8' : '#bfdbfe';
+      ctx.beginPath();
+      ctx.roundRect(140, flashY, W - 480, 140, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 24px Cairo, sans-serif';
+      ctx.fillStyle = isPink ? '#701a75' : '#1e3a8a';
+      const flashWords = (targetCard.creativeFlash || '').split(' ');
+      let line = '';
+      let curY = flashY + 45;
+      for (let n = 0; n < flashWords.length; n++) {
+        const testLine = line + flashWords[n] + ' ';
+        if (ctx.measureText(testLine).width > (W - 540) && n > 0) {
+          ctx.fillText(line.trim(), W - 370, curY);
+          line = flashWords[n] + ' ';
+          curY += 38;
+        } else {
+          line = testLine;
         }
+      }
+      ctx.fillText(line.trim(), W - 370, curY);
 
-        // 6. Draw "وميض الإبداع" (Creative Flash) Notes with smart line wrap
-        if (targetCard.creativeFlash && targetCard.creativeFlash.trim()) {
-          ctx.font = 'bold 17px Cairo, sans-serif';
-          ctx.fillStyle = isPink ? '#701a75' : '#1e3a8a';
-          ctx.textAlign = 'right';
+      // 10. Footer Section (Teacher, Date, Signature)
+      const footY = 960;
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.setLineDash([8, 8]);
+      ctx.moveTo(100, footY - 30);
+      ctx.lineTo(W - 100, footY - 30);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-          const text = targetCard.creativeFlash.trim();
-          const words = text.split(' ');
-          let line = '';
-          const lines = [];
-          const maxLineWidth = 390; // width from x=450 to x=840
+      ctx.font = 'bold 24px Cairo, sans-serif';
+      ctx.fillStyle = '#475569';
 
-          for (let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' ';
-            const metrics = ctx.measureText(testLine);
-            if (metrics.width > maxLineWidth && n > 0) {
-              lines.push(line);
-              line = words[n] + ' ';
-            } else {
-              line = testLine;
-            }
-          }
-          lines.push(line);
+      // Teacher Name on right
+      ctx.textAlign = 'right';
+      ctx.fillText(`المعلمة / المربي: `, W - 120, footY);
+      ctx.font = '900 26px Cairo, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(targetCard.teacherName || '', W - 300, footY);
 
-          // Draw up to 3 lines
-          const lineY = [530, 568, 606];
-          lines.slice(0, 3).forEach((l, idx) => {
-            ctx.fillText(l.trim(), 840, lineY[idx]);
-          });
-        }
+      // Date in Center
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 24px Cairo, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`التاريخ: ${targetCard.date || ''}`, W / 2, footY);
 
-        // 7. Footer: Teacher Name (x: 790, y: 633)
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 18px Cairo, sans-serif';
-        ctx.fillStyle = '#0f172a';
-        ctx.fillText(targetCard.teacherName || '', 790, 633);
+      // Parent Signature on Left
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 24px Cairo, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText('توقيع ولي الأمر: ', 120, footY);
+      if (targetCard.parentSignature) {
+        ctx.font = 'italic bold 26px Cairo, sans-serif';
+        ctx.fillStyle = isPink ? '#be185d' : '#2563eb';
+        ctx.fillText(targetCard.parentSignature, 280, footY);
+      }
 
-        // 8. Footer: Date (x: 455, y: 633)
-        ctx.font = 'bold 17px Cairo, sans-serif';
-        ctx.fillText(targetCard.date || '', 455, 633);
-
-        // 9. Footer: Parent Signature / Name (x: 110, y: 633)
-        if (targetCard.parentSignature) {
-          ctx.font = 'italic bold 17px Cairo, sans-serif';
-          ctx.fillStyle = isPink ? '#be185d' : '#2563eb';
-          ctx.fillText(targetCard.parentSignature, 110, 633);
-        }
-
-        resolve(canvas);
-      };
-
-      bgImg.onerror = (err) => {
-        console.error("Canvas template load error:", err);
-        reject(err);
-      };
+      resolve(canvas);
     });
   };
 
-  // 2. Download Card as Exact High-Resolution PNG
+  // 2. Download Card as Ultra High-Resolution PNG
   const handleDownloadImage = async () => {
     if (!canvasRef.current) return;
     setIsGeneratingImage(true);
@@ -299,7 +478,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     }
   };
 
-  // 3. Generate Shareable Link & Save Card to Firestore
+  // 3. Generate Link & Save to Firestore
   const handleGenerateAndCopyLink = async () => {
     const cardId = `mail_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     const cardPayload = {
@@ -310,16 +489,12 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     };
 
     try {
-      // 1. Save to Firestore
       await setDoc(doc(db, 'happiness_mail_cards', cardId), cardPayload);
-
-      // 2. Save locally
       let local = JSON.parse(localStorage.getItem('db_happiness_mail_cards') || '[]');
       local.unshift(cardPayload);
       localStorage.setItem('db_happiness_mail_cards', JSON.stringify(local));
       setSavedCards(local);
 
-      // 3. Construct personal link
       const personalUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?id=${cardId}`;
       navigator.clipboard.writeText(personalUrl);
 
@@ -328,7 +503,6 @@ const HappinessMailPage = ({ isStandalone = true }) => {
       return personalUrl;
     } catch (err) {
       console.warn("Firestore save card fallback:", err);
-      // Base64 fallback in URL so it works offline
       const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(cardPayload))));
       const standaloneUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?data=${base64Data}`;
       navigator.clipboard.writeText(standaloneUrl);
@@ -338,7 +512,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     }
   };
 
-  // 4. Send via WhatsApp directly to parent with personal link & text
+  // 4. WhatsApp Direct Message with Personal Link
   const handleShareWhatsApp = async () => {
     let personalUrl = '';
     const cardId = `mail_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -352,19 +526,19 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     try {
       await setDoc(doc(db, 'happiness_mail_cards', cardId), cardPayload);
       personalUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?id=${cardId}`;
-    } catch(e) {
+    } catch (e) {
       const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(cardPayload))));
       personalUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?data=${base64Data}`;
     }
 
     const cardTitle = card.type === 'pink' ? 'بريد السعادة 🌸' : 'بريد التميز 💙';
     const pronoun = card.type === 'pink' ? 'ابنتكم' : 'ابنكم';
-    const text = `تحية طيبة ومباركة من مدرسة مشيرفة الابتدائية 🏫✨\n\nإلى ولي أمر الطالب/ة: ${card.studentName} (${card.studentClass})\n\nيسعدنا أن نهديكم بطاقة «${cardTitle}» تقديراً لتميّز ${pronoun} وإبداعه/ا في صفوف المدرسة اليوم 💖\n\n💌 تفضلوا بفتح بطاقة التقدير الشخصية عبر الرابط:\n${personalUrl}\n\nمع فائق تقديرنا ومحبتنا،\n${card.teacherName}`;
+    const text = `تحية محبة وتقدير من مدرسة مشيرفة الابتدائية 🏫✨\n\nإلى ولي أمر الطالب/ة: ${card.studentName} (${card.studentClass})\n\nيسعدنا أن نرسل لكم ظرف «${cardTitle}» تقديراً لتميّز ${pronoun} وإبداعه/ا في المدرسة اليوم 💖\n\n💌 اضغطوا على الرابط لفتح الظرف البريدي ومشاهدة رسالة المربي/ة الموجهة لكم:\n${personalUrl}\n\nمع فائق الاحترام والاعتزاز،\n${card.teacherName}`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  // 5. Parent Reply Handler (When viewing their card)
+  // 5. Parent Interactive Reply Submission
   const handleSendParentReply = async (e) => {
     e.preventDefault();
     if (!parentReplyInput.trim()) {
@@ -387,15 +561,15 @@ const HappinessMailPage = ({ isStandalone = true }) => {
       setCard(updatedCard);
       alert('تم إرسال ردكم وشكركم الكريم إلى المربي/ة بنجاح! شكراً لشراكتكم الجميلة 💖');
     } catch (err) {
-      console.warn("Parent reply save error:", err);
+      console.warn("Parent reply save fallback:", err);
       setCard(updatedCard);
-      alert('تم تسجيل ردكم الجميل! شكراً جزيلاً 💖');
+      alert('تم تسجيل ردكم الجميل بنجاح! 💖');
     } finally {
       setIsSendingReply(false);
     }
   };
 
-  // 6. Delete Card from Archive
+  // 6. Delete Card
   const handleDeleteCard = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه البطاقة من السجل؟')) return;
     try {
@@ -415,212 +589,334 @@ const HappinessMailPage = ({ isStandalone = true }) => {
     <div className={`happiness-mail-page ${isStandalone ? 'standalone-view' : ''}`} style={isStandalone ? { paddingTop: '100px' } : {}}>
       <div className="happiness-mail-container">
 
-        {/* Hidden Canvas for High-Resolution 1024x695 Generation */}
+        {/* Hidden Canvas for High-Resolution 2048 x 1390 Generation */}
         <canvas ref={canvasRef} className="hidden-export-canvas"></canvas>
 
         {/* ========================================================================= */}
-        {/* RECIPIENT VIEW (STUDENT / PARENT OPENING THEIR PERSONALIZED CARD)        */}
+        {/* RECIPIENT MODE: 3D LUXURY ENVELOPE UNBOXING FOR PARENT & STUDENT          */}
         {/* ========================================================================= */}
         {viewMode === 'recipient' ? (
-          <div className="parent-view-container">
+          <div className="envelope-experience-wrapper">
             
-            <div className="parent-congrats-header">
-              <span className="parent-congrats-badge">
-                <i className="fas fa-gift"></i> بطاقة تقدير وتميّز خاصة بك
+            {/* Header Salutation */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <span style={{ background: isPink ? '#fce7f3' : '#dbeafe', color: isPink ? '#9d174d' : '#1e40af', padding: '0.4rem 1.2rem', borderRadius: '9999px', fontSize: '0.92rem', fontWeight: 900 }}>
+                {isPink ? '🌸 بريد السعادة — رسالة صغيرة وأثر كبير' : '💙 بريد التميز — رسالة متميزة وأثر باقٍ'}
               </span>
-              <h1 className="parent-congrats-title">
-                {isPink ? '🌸 بريد السعادة: رسالة صغيرة... وأثر كبير' : '💙 بريد التميز: رسالة متميزة... وأثر باقٍ'}
+              <h1 style={{ margin: '0.75rem 0 0.25rem 0', fontWeight: 900, fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', color: '#0f172a' }}>
+                رسالة تقدير وتميّز من مدرسة مشيرفة الابتدائية
               </h1>
-              <p className="parent-congrats-subtitle">
-                مقدمة بكل فخر واعتزاز إلى ولي أمر {isPink ? 'الطالبة المتميزة' : 'الطالب المتميز'}: <strong>{card.studentName}</strong> ({card.studentClass})
+              <p style={{ margin: 0, color: '#64748b', fontSize: '1rem' }}>
+                وصلتكم رسالة خاصة موجهة من مربي الصف إلى أسرة الطالب/ة <strong>{card.studentName}</strong>
               </p>
             </div>
 
-            {/* Interactive Replica Card Stage */}
-            <div className="interactive-postcard-stage">
-              <img
-                src={isPink ? `${import.meta.env.BASE_URL}assets/mail/happiness_mail_pink.jpg` : `${import.meta.env.BASE_URL}assets/mail/excellence_mail_blue.jpg`}
-                alt="بطاقة بريد السعادة"
-                className="postcard-background-img"
-              />
+            {/* 3D Interactive Envelope Component */}
+            {!isEnvelopeOpen ? (
+              <div className="envelope-3d-scene" onClick={handleOpenEnvelope}>
+                <div className={`envelope-container ${isPink ? 'pink' : 'blue'}`}>
+                  {/* Top Fold Flap */}
+                  <div className={`envelope-top-flap ${isPink ? 'pink' : 'blue'}`}></div>
 
-              <div className="postcard-overlay-layer">
-                {/* Student Name */}
-                <div 
-                  className="overlay-item" 
-                  style={{ top: '35.5%', right: '14%', left: '33%', textAlign: 'center', fontSize: 'clamp(1rem, 2vw, 1.45rem)' }}
-                >
-                  {card.studentName}
-                </div>
-
-                {/* Class */}
-                <div 
-                  className="overlay-item" 
-                  style={{ top: '35.5%', left: '8%', right: '72%', textAlign: 'center', fontSize: 'clamp(0.9rem, 1.8vw, 1.3rem)' }}
-                >
-                  {card.studentClass}
-                </div>
-
-                {/* Checkmarks */}
-                {criteriaList.map(item => {
-                  const isChecked = card.criteria && card.criteria.includes(item.id);
-                  if (!isChecked) return null;
-                  const topPercent = (item.box.y / 695) * 100;
-                  const rightPercent = ((1024 - item.box.x) / 1024) * 100;
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`checkmark-marker ${isPink ? 'pink' : 'blue'}`}
-                      style={{ top: `${topPercent}%`, right: `${rightPercent}%` }}
-                    >
-                      ✔
-                    </div>
-                  );
-                })}
-
-                {/* Other text */}
-                {card.otherText && (
-                  <div
-                    className="overlay-item"
-                    style={{ top: '72%', right: '14%', left: '30%', textAlign: 'center', fontSize: 'clamp(0.75rem, 1.3vw, 1rem)' }}
-                  >
-                    {card.otherText}
+                  {/* Corner Airmail Stamp */}
+                  <div className="envelope-corner-stamp">
+                    {isPink ? '💖' : '💙'}
                   </div>
-                )}
 
-                {/* Creative Flash Notes */}
-                {card.creativeFlash && (
-                  <div
-                    className="overlay-item"
+                  {/* Golden / Red Wax Seal Button */}
+                  <button 
+                    type="button" 
+                    className={`envelope-wax-seal ${!isPink ? 'blue' : ''}`}
+                    onClick={handleOpenEnvelope}
+                    title="انقر لفتح الظرف البريدي"
+                  >
+                    <span>افتح 💌</span>
+                    <span style={{ fontSize: '0.65rem' }}>الرسالة</span>
+                  </button>
+
+                  {/* Front Address Label Card */}
+                  <div className="envelope-front-label">
+                    <div className="label-school-badge">
+                      🏫 مدرسة مشيرفة الابتدائية — عام التميّز
+                    </div>
+                    <div className="label-recipient-name">
+                      إلى ولي أمر {isPink ? 'الطالبة المتميزة' : 'الطالب المتميز'}: <strong>{card.studentName}</strong> المحترم
+                    </div>
+                    <div className="label-student-class">
+                      الصف: {card.studentClass} | من: {card.teacherName}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.25rem' }}>
+                  <button
+                    type="button"
+                    onClick={handleOpenEnvelope}
                     style={{
-                      top: '73.5%',
-                      right: '17%',
-                      left: '42%',
-                      textAlign: 'right',
-                      fontSize: 'clamp(0.72rem, 1.35vw, 1.05rem)',
-                      color: isPink ? '#701a75' : '#1e3a8a',
-                      lineHeight: '1.9',
-                      maxHeight: '18%',
-                      overflow: 'hidden'
+                      background: isPink ? 'linear-gradient(135deg, #e11d48, #be185d)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '0.85rem 2rem',
+                      borderRadius: '9999px',
+                      fontSize: '1.1rem',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.6rem'
                     }}
                   >
-                    {card.creativeFlash}
-                  </div>
-                )}
-
-                {/* Teacher Name */}
-                <div
-                  className="overlay-item"
-                  style={{ top: '89.5%', right: '15%', left: '30%', textAlign: 'center', fontSize: 'clamp(0.8rem, 1.5vw, 1.15rem)' }}
-                >
-                  {card.teacherName}
+                    <i className="fas fa-envelope-open-text"></i> اضغط لفتح الظرف البريدي واستلام البطاقة 💌
+                  </button>
                 </div>
-
-                {/* Date */}
-                <div
-                  className="overlay-item"
-                  style={{ top: '89.5%', right: '48%', left: '60%', textAlign: 'center', fontSize: 'clamp(0.75rem, 1.4vw, 1.05rem)' }}
-                >
-                  {card.date}
-                </div>
-
-                {/* Parent Signature (if replied) */}
-                {card.parentSignature && (
-                  <div
-                    className="overlay-item"
-                    style={{ top: '89.5%', left: '7%', right: '82%', textAlign: 'center', fontSize: 'clamp(0.75rem, 1.4vw, 1.05rem)', color: isPink ? '#be185d' : '#2563eb', fontStyle: 'italic' }}
-                  >
-                    {card.parentSignature}
-                  </div>
-                )}
               </div>
-            </div>
+            ) : (
+              /* Postcard Unboxed & Fully Revealed */
+              <div style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
-            {/* Recipient Action Buttons */}
-            <div className="studio-actions-grid" style={{ marginBottom: '2rem' }}>
-              <button
-                type="button"
-                onClick={handleDownloadImage}
-                className="studio-action-btn download"
-                disabled={isGeneratingImage}
-              >
-                {isGeneratingImage ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-image"></i>}
-                حفظ البطاقة في هاتفي (صورة PNG)
-              </button>
+                {/* Return / Close Envelope button */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsEnvelopeOpen(false)}
+                    style={{
+                      background: '#ffffff',
+                      color: '#475569',
+                      border: '1.5px solid #cbd5e1',
+                      padding: '0.5rem 1.2rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    <i className="fas fa-envelope"></i> إعادة طي الظرف البريدي
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="studio-action-btn print"
-              >
-                <i className="fas fa-print"></i> طباعة البطاقة ورقيًا
-              </button>
+                {/* THE CRISP NATIVE VECTOR POSTCARD */}
+                <div className={`crisp-postcard-card ${isPink ? 'pink' : 'blue'}`}>
+                  <div className="postcard-inner-canvas">
 
-              <button
-                type="button"
-                onClick={() => setViewMode('studio')}
-                className="studio-action-btn copy-link"
-              >
-                <i className="fas fa-magic"></i> إنشاء بطاقة لطالب آخر (للمعلمين)
-              </button>
-            </div>
+                    {/* Top Row: Stamps & Branding */}
+                    <div className="postcard-top-row">
+                      <div className="postcard-art-left">
+                        <div className="cancellation-waves">
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                        </div>
+                        <div className={`stamp-badge-art ${!isPink ? 'blue' : ''}`}>
+                          {isPink ? '💌' : '📮'}
+                        </div>
+                      </div>
 
-            {/* Interactive Parent Reply Box ("بريد عائد للمعلمة") */}
-            <div className={`parent-reply-box ${card.type === 'blue' ? 'blue' : ''}`}>
-              <h3 className="parent-reply-title">
-                <i className="fas fa-envelope-open-text"></i> بريد عائد للمعلمة والمدرسة
-              </h3>
-              <p className="parent-reply-desc">
-                يسعد طاقم المدرسة ومربي الصف سماع كلمتكم الطيبة أو مشاعر فخركم بابنكم/ابنتكم:
-              </p>
+                      <div className="postcard-center-branding">
+                        <h2 className={`postcard-main-title ${isPink ? 'pink' : 'blue'}`}>
+                          <span>{isPink ? 'بريد السعادة' : 'بريد التميز'}</span>
+                          <span style={{ fontSize: '1.8rem' }}>{isPink ? '💖' : '💙'}</span>
+                        </h2>
+                        <div>
+                          <span className={`postcard-subtitle-pill ${isPink ? 'pink' : 'blue'}`}>
+                            {isPink ? 'رسالة صغيرة... وأثر كبير' : 'رسالة متميزة... وأثر باقٍ'}
+                          </span>
+                        </div>
+                      </div>
 
-              {card.parentReply ? (
-                <div style={{ background: '#ecfdf5', border: '1.5px solid #a7f3d0', padding: '1rem 1.25rem', borderRadius: '14px', color: '#065f46' }}>
-                  <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>
-                    <i className="fas fa-check-circle"></i> تم إرسال ردكم الكريم بنجاح إلى المربي/ة:
-                  </div>
-                  <div style={{ fontSize: '1rem', fontStyle: 'italic', color: '#047857' }}>
-                    "{card.parentReply}"
+                      <div className="postcard-art-left">
+                        <div className={`stamp-badge-art ${!isPink ? 'blue' : ''}`}>
+                          {isPink ? '🌸' : '⭐'}
+                        </div>
+                        <div className="cancellation-waves">
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Meta Info Row */}
+                    <div className="postcard-meta-grid">
+                      <div className="meta-field-item">
+                        <span>إلى ولي أمر {isPink ? 'الطالبة' : 'الطالب'}:</span>
+                        <span className="meta-field-val">{card.studentName}</span>
+                      </div>
+
+                      <div className="meta-field-item">
+                        <span>📖 الصف:</span>
+                        <span className="meta-field-val">{card.studentClass}</span>
+                      </div>
+                    </div>
+
+                    {/* Main Announcement Line */}
+                    <div className="postcard-statement-banner">
+                      {isPink ? 'يسعدني اليوم أن أخبركم أن ابنتكم كانت متميزة في' : 'يسعدني اليوم أن أخبركم أن ابنكم كان متميزًا في'}
+                    </div>
+
+                    {/* 3-Column Criteria Grid */}
+                    <div className="postcard-criteria-layout">
+                      {criteriaList.map((item) => {
+                        const isChecked = card.criteria && card.criteria.includes(item.id);
+                        return (
+                          <div 
+                            key={item.id} 
+                            className={`criterion-card-badge ${isChecked ? `checked ${card.type}` : ''}`}
+                          >
+                            <span>{item.icon} {item.label}</span>
+                            <div className="criterion-box-indicator">
+                              {isChecked ? '✔' : ''}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Other Item text if present */}
+                    {card.criteria.includes('other') && card.otherText && (
+                      <div style={{ textAlign: 'center', marginBottom: '1.25rem', background: '#f8fafc', padding: '0.6rem 1rem', borderRadius: '12px', border: '1.5px dashed #cbd5e1', fontWeight: 800, color: isPink ? '#9d174d' : '#1e40af' }}>
+                        ✨ إنجاز إضافي: <strong>{card.otherText}</strong>
+                      </div>
+                    )}
+
+                    {/* Middle Ribbon: بريد عائد للمعلمة */}
+                    <div className="postcard-reply-ribbon-row">
+                      <div className={`reply-ribbon-tag ${isPink ? 'pink' : 'blue'}`}>
+                        <span>📬 {isPink ? 'بريد عائد للمعلمة' : 'رد عائد للمعلمة'}</span>
+                      </div>
+                      <span className="reply-ribbon-sub">
+                        كلمة، ملاحظة أو رأي تحبون مشاركته معي:
+                      </span>
+                    </div>
+
+                    {/* Creative Flash Section with Arrow and Mailbox */}
+                    <div className="postcard-flash-section">
+                      <div className={`flash-arrow-badge ${isPink ? 'pink' : 'blue'}`}>
+                        <span>وميض الإبداع ➔</span>
+                      </div>
+
+                      <div className={`flash-note-lines-box ${isPink ? 'pink' : 'blue'}`}>
+                        {card.creativeFlash || '—'}
+                      </div>
+
+                      <div className="flash-mailbox-art">
+                        {isPink ? '🌸📬' : '💙📮'}
+                      </div>
+                    </div>
+
+                    {/* Footer Row */}
+                    <div className="postcard-footer-grid">
+                      <div className="footer-item">
+                        <span>👤 المعلمة / المربي:</span>
+                        <span className="footer-val">{card.teacherName}</span>
+                      </div>
+
+                      <div className="footer-item">
+                        <span>📅 التاريخ:</span>
+                        <span className="footer-val">{card.date}</span>
+                      </div>
+
+                      <div className="footer-item">
+                        <span>🖊️ توقيع ولي الأمر:</span>
+                        <span className="footer-val" style={{ color: isPink ? '#be185d' : '#2563eb', fontStyle: 'italic' }}>
+                          {card.parentSignature || '.....................'}
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
-              ) : (
-                <form onSubmit={handleSendParentReply}>
-                  <textarea
-                    rows={3}
-                    className="parent-reply-textarea"
-                    placeholder="اكتبوا كلمة شكر أو انطباعكم الجميل لمربي الصف هنا..."
-                    value={parentReplyInput}
-                    onChange={(e) => setParentReplyInput(e.target.value)}
-                    required
-                  />
+
+                {/* Recipient Action Buttons */}
+                <div className="studio-actions-grid" style={{ maxWidth: '820px', margin: '1.5rem auto' }}>
+                  <button
+                    type="button"
+                    onClick={handleDownloadImage}
+                    className="studio-action-btn download"
+                    disabled={isGeneratingImage}
+                  >
+                    {isGeneratingImage ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-image"></i>}
+                    حفظ البطاقة كصورة PNG عالية الدقة
+                  </button>
 
                   <button
-                    type="submit"
-                    className="parent-reply-submit-btn"
-                    disabled={isSendingReply}
+                    type="button"
+                    onClick={() => window.print()}
+                    className="studio-action-btn print"
                   >
-                    {isSendingReply ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-paper-plane"></i>}
-                    إرسال الرد والتوقيع للمعلمة 📬
+                    <i className="fas fa-print"></i> طباعة البطاقة ورقيًا
                   </button>
-                </form>
-              )}
-            </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('studio')}
+                    className="studio-action-btn copy-link"
+                  >
+                    <i className="fas fa-pencil-alt"></i> فتح استوديو المعلمين
+                  </button>
+                </div>
+
+                {/* Interactive Parent Reply Box ("بريد عائد للمعلمة") */}
+                <div className={`parent-reply-box ${!isPink ? 'blue' : ''}`} style={{ maxWidth: '820px', margin: '2rem auto' }}>
+                  <h3 className="parent-reply-title">
+                    <i className="fas fa-envelope-open-text"></i> رد ولي الأمر إلى المربي/ة
+                  </h3>
+                  <p className="parent-reply-desc">
+                    يسعد طاقم المدرسة ومربي الصف تلقي كلمتكم الطيبة أو فخركم بإنجاز ابنكم/ابنتكم:
+                  </p>
+
+                  {card.parentReply ? (
+                    <div style={{ background: '#ecfdf5', border: '1.5px solid #a7f3d0', padding: '1rem 1.25rem', borderRadius: '14px', color: '#065f46' }}>
+                      <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>
+                        <i className="fas fa-check-circle"></i> تم إرسال ردكم الكريم بنجاح إلى المربي/ة:
+                      </div>
+                      <div style={{ fontSize: '1.05rem', fontStyle: 'italic', color: '#047857' }}>
+                        "{card.parentReply}"
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSendParentReply}>
+                      <textarea
+                        rows={3}
+                        className="parent-reply-textarea"
+                        placeholder="اكتبوا كلمة شكر أو انطباعكم الجميل لمربي الصف هنا..."
+                        value={parentReplyInput}
+                        onChange={(e) => setParentReplyInput(e.target.value)}
+                        required
+                      />
+
+                      <button
+                        type="submit"
+                        className="parent-reply-submit-btn"
+                        disabled={isSendingReply}
+                      >
+                        {isSendingReply ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-paper-plane"></i>}
+                        إرسال الرد والتوقيع للمعلمة 📬
+                      </button>
+                    </form>
+                  )}
+                </div>
+
+              </div>
+            )}
 
           </div>
         ) : (
           /* ========================================================================= */
-          /* STUDIO MODE (TEACHER CREATION & BATCH SENDING)                           */
+          /* STUDIO MODE: TEACHER CREATOR & BATCH LINK/IMAGE GENERATOR                 */
           /* ========================================================================= */
           <>
             {/* Header Banner */}
             <div className="happiness-header-banner">
               <div>
                 <h1 className="happiness-header-title">
-                  <i className="fas fa-envelope-heart"></i> استوديو «بريد السعادة والتميّز»
+                  <i className="fas fa-envelope-open-text"></i> استوديو «بريد السعادة والتميّز»
                 </h1>
                 <p className="happiness-header-subtitle">
-                  رسالة صغيرة... وأثر كبير! صمم بطاقات تقدير مخصصة طبق الأصل لكل طالب وطالبة، وشاركها فوراً مع أولياء الأمور كرابط شخصي تفاعلي أو صورة رقمية عالية الدقة.
+                  تصميم وإرسال بطاقات التقدير المدرسية طبق الأصل بنقاء عالي، وتوليد ظرف تفاعلي ثلاثي الأبعاد يُفتح برقة للأهالي مع إمكانية الرد الفوري.
                 </p>
               </div>
 
@@ -640,7 +936,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                     gap: '0.5rem'
                   }}
                 >
-                  <i className="fas fa-arrow-right"></i> العودة للاستطلاع
+                  <i className="fas fa-arrow-right"></i> استطلاع لقاء الأهالي
                 </a>
               </div>
             </div>
@@ -672,13 +968,13 @@ const HappinessMailPage = ({ isStandalone = true }) => {
               </button>
             </div>
 
-            {/* Studio Main Grid: Editor on Left, Live Replica on Right */}
+            {/* Studio Main Grid: Editor on Right/Left and Crisp Preview */}
             <div className="studio-grid-layout">
 
-              {/* 1. Left Column: Studio Form Editor */}
+              {/* Form Editor */}
               <div className="studio-form-panel">
                 <h3 className="panel-section-title">
-                  <i className="fas fa-edit"></i> بيانات الطالب والرسالة
+                  <i className="fas fa-pencil-alt"></i> تخصيص بيانات البطاقة
                 </h3>
 
                 <div className="form-group-field">
@@ -709,7 +1005,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
                 <div className="form-group-field">
                   <label className="field-label">
-                    مجالات التميّز اليوم (حدد ما أبدع به {isPink ? 'الطالبة' : 'الطالب'}):
+                    مجالات التميّز اليوم (انقر لتحديد أو إلغاء الإنجازات):
                   </label>
                   <div className="criteria-picker-grid">
                     {criteriaList.map((item) => {
@@ -731,29 +1027,27 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                   </div>
                 </div>
 
-                {/* If "أخرى" is checked */}
                 {card.criteria.includes('other') && (
                   <div className="form-group-field" style={{ animation: 'fadeIn 0.25s ease' }}>
                     <label className="field-label">نص الإنجاز الإضافي (أخرى):</label>
                     <input
                       type="text"
                       className={`studio-input ${!isPink ? 'blue' : ''}`}
-                      placeholder="مثال: حفظ سورة الملك / إتقان جدول الضرب"
+                      placeholder="مثال: حفظ سورة الملك / التميز في الحساب الذهني"
                       value={card.otherText}
                       onChange={(e) => setCard({ ...card, otherText: e.target.value })}
                     />
                   </div>
                 )}
 
-                {/* "وميض الإبداع" Note */}
                 <div className="form-group-field">
                   <label className="field-label">
-                    ✨ وميض الإبداع (كلمة تشجيعية خاصة للطالب والأهل):
+                    ✨ وميض الإبداع (كلمة فخر واعتزاز شخصية للطالب والأهل):
                   </label>
                   <textarea
                     rows={3}
                     className={`studio-textarea ${!isPink ? 'blue' : ''}`}
-                    placeholder="اكتب كلمة فخر واعتزاز شخصية للطالب..."
+                    placeholder="اكتب كلمة تشجيعية خاصة للطالب..."
                     value={card.creativeFlash}
                     onChange={(e) => setCard({ ...card, creativeFlash: e.target.value })}
                   />
@@ -761,7 +1055,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                   <div className="form-group-field">
-                    <label className="field-label">اسم المعلم/ة المربي/ة:</label>
+                    <label className="field-label">المعلمة / المربي:</label>
                     <input
                       type="text"
                       className={`studio-input ${!isPink ? 'blue' : ''}`}
@@ -782,160 +1076,206 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                 </div>
               </div>
 
-              {/* 2. Right Column: Live Replica Preview Stage */}
-              <div className="studio-preview-panel">
-                <div className="preview-card-wrapper">
-                  <div className="preview-header-bar">
-                    <span className="preview-live-tag">
-                      <i className="fas fa-eye"></i> معاينة فورية طبق الأصل (1024 × 695)
-                    </span>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800 }}>
-                      {isPink ? '🌸 نموذج بريد السعادة' : '💙 نموذج بريد التميز'}
-                    </span>
-                  </div>
+              {/* Live Preview Panel */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <span style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 900 }}>
+                    <i className="fas fa-eye"></i> معاينة فورية فائقة الدقة (طبق الأصل)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('recipient');
+                      setIsEnvelopeOpen(false);
+                    }}
+                    style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '0.4rem 0.9rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    تجربة فتح الظرف كولي أمر 💌
+                  </button>
+                </div>
 
-                  {/* Interactive Visual Canvas Stage */}
-                  <div className="interactive-postcard-stage">
-                    <img
-                      src={isPink ? `${import.meta.env.BASE_URL}assets/mail/happiness_mail_pink.jpg` : `${import.meta.env.BASE_URL}assets/mail/excellence_mail_blue.jpg`}
-                      alt="معاينة البطاقة"
-                      className="postcard-background-img"
-                    />
+                {/* THE CRISP NATIVE VECTOR POSTCARD PREVIEW */}
+                <div className={`crisp-postcard-card ${isPink ? 'pink' : 'blue'}`}>
+                  <div className="postcard-inner-canvas">
 
-                    <div className="postcard-overlay-layer">
-                      {/* Student Name */}
-                      <div 
-                        className="overlay-item" 
-                        style={{ top: '35.5%', right: '14%', left: '33%', textAlign: 'center', fontSize: 'clamp(0.85rem, 1.7vw, 1.35rem)' }}
-                      >
-                        {card.studentName}
+                    {/* Top Row: Stamps & Branding */}
+                    <div className="postcard-top-row">
+                      <div className="postcard-art-left">
+                        <div className="cancellation-waves">
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                        </div>
+                        <div className={`stamp-badge-art ${!isPink ? 'blue' : ''}`}>
+                          {isPink ? '💌' : '📮'}
+                        </div>
                       </div>
 
-                      {/* Class */}
-                      <div 
-                        className="overlay-item" 
-                        style={{ top: '35.5%', left: '8%', right: '72%', textAlign: 'center', fontSize: 'clamp(0.75rem, 1.5vw, 1.2rem)' }}
-                      >
-                        {card.studentClass}
+                      <div className="postcard-center-branding">
+                        <h2 className={`postcard-main-title ${isPink ? 'pink' : 'blue'}`}>
+                          <span>{isPink ? 'بريد السعادة' : 'بريد التميز'}</span>
+                          <span style={{ fontSize: '1.8rem' }}>{isPink ? '💖' : '💙'}</span>
+                        </h2>
+                        <div>
+                          <span className={`postcard-subtitle-pill ${isPink ? 'pink' : 'blue'}`}>
+                            {isPink ? 'رسالة صغيرة... وأثر كبير' : 'رسالة متميزة... وأثر باقٍ'}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Checkmarks */}
-                      {criteriaList.map(item => {
-                        const isChecked = card.criteria.includes(item.id);
-                        if (!isChecked) return null;
-                        const topPercent = (item.box.y / 695) * 100;
-                        const rightPercent = ((1024 - item.box.x) / 1024) * 100;
+                      <div className="postcard-art-left">
+                        <div className={`stamp-badge-art ${!isPink ? 'blue' : ''}`}>
+                          {isPink ? '🌸' : '⭐'}
+                        </div>
+                        <div className="cancellation-waves">
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                          <div className="wave-line"></div>
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Meta Info Row */}
+                    <div className="postcard-meta-grid">
+                      <div className="meta-field-item">
+                        <span>إلى ولي أمر {isPink ? 'الطالبة' : 'الطالب'}:</span>
+                        <span className="meta-field-val">{card.studentName}</span>
+                      </div>
+
+                      <div className="meta-field-item">
+                        <span>📖 الصف:</span>
+                        <span className="meta-field-val">{card.studentClass}</span>
+                      </div>
+                    </div>
+
+                    {/* Main Announcement Line */}
+                    <div className="postcard-statement-banner">
+                      {isPink ? 'يسعدني اليوم أن أخبركم أن ابنتكم كانت متميزة في' : 'يسعدني اليوم أن أخبركم أن ابنكم كان متميزًا في'}
+                    </div>
+
+                    {/* 3-Column Criteria Grid */}
+                    <div className="postcard-criteria-layout">
+                      {criteriaList.map((item) => {
+                        const isChecked = card.criteria && card.criteria.includes(item.id);
                         return (
-                          <div
-                            key={item.id}
-                            className={`checkmark-marker ${isPink ? 'pink' : 'blue'}`}
-                            style={{ top: `${topPercent}%`, right: `${rightPercent}%` }}
+                          <div 
+                            key={item.id} 
+                            onClick={() => handleToggleCriterion(item.id)}
+                            style={{ cursor: 'pointer' }}
+                            className={`criterion-card-badge ${isChecked ? `checked ${card.type}` : ''}`}
                           >
-                            ✔
+                            <span>{item.icon} {item.label}</span>
+                            <div className="criterion-box-indicator">
+                              {isChecked ? '✔' : ''}
+                            </div>
                           </div>
                         );
                       })}
+                    </div>
 
-                      {/* Other Text */}
-                      {card.otherText && (
-                        <div
-                          className="overlay-item"
-                          style={{ top: '72%', right: '14%', left: '30%', textAlign: 'center', fontSize: 'clamp(0.65rem, 1.2vw, 0.95rem)' }}
-                        >
-                          {card.otherText}
-                        </div>
-                      )}
+                    {/* Other Item text if present */}
+                    {card.criteria.includes('other') && card.otherText && (
+                      <div style={{ textAlign: 'center', marginBottom: '1.25rem', background: '#f8fafc', padding: '0.6rem 1rem', borderRadius: '12px', border: '1.5px dashed #cbd5e1', fontWeight: 800, color: isPink ? '#9d174d' : '#1e40af' }}>
+                        ✨ إنجاز إضافي: <strong>{card.otherText}</strong>
+                      </div>
+                    )}
 
-                      {/* Creative Flash Notes */}
-                      {card.creativeFlash && (
-                        <div
-                          className="overlay-item"
-                          style={{
-                            top: '73.5%',
-                            right: '17%',
-                            left: '42%',
-                            textAlign: 'right',
-                            fontSize: 'clamp(0.65rem, 1.2vw, 0.98rem)',
-                            color: isPink ? '#701a75' : '#1e3a8a',
-                            lineHeight: '1.9',
-                            maxHeight: '18%',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          {card.creativeFlash}
-                        </div>
-                      )}
+                    {/* Middle Ribbon: بريد عائد للمعلمة */}
+                    <div className="postcard-reply-ribbon-row">
+                      <div className={`reply-ribbon-tag ${isPink ? 'pink' : 'blue'}`}>
+                        <span>📬 {isPink ? 'بريد عائد للمعلمة' : 'رد عائد للمعلمة'}</span>
+                      </div>
+                      <span className="reply-ribbon-sub">
+                        كلمة، ملاحظة أو رأي تحبون مشاركته معي:
+                      </span>
+                    </div>
 
-                      {/* Teacher Name */}
-                      <div
-                        className="overlay-item"
-                        style={{ top: '89.5%', right: '15%', left: '30%', textAlign: 'center', fontSize: 'clamp(0.75rem, 1.4vw, 1.1rem)' }}
-                      >
-                        {card.teacherName}
+                    {/* Creative Flash Section with Arrow and Mailbox */}
+                    <div className="postcard-flash-section">
+                      <div className={`flash-arrow-badge ${isPink ? 'pink' : 'blue'}`}>
+                        <span>وميض الإبداع ➔</span>
                       </div>
 
-                      {/* Date */}
-                      <div
-                        className="overlay-item"
-                        style={{ top: '89.5%', right: '48%', left: '60%', textAlign: 'center', fontSize: 'clamp(0.7rem, 1.3vw, 1rem)' }}
-                      >
-                        {card.date}
+                      <div className={`flash-note-lines-box ${isPink ? 'pink' : 'blue'}`}>
+                        {card.creativeFlash || '—'}
+                      </div>
+
+                      <div className="flash-mailbox-art">
+                        {isPink ? '🌸📬' : '💙📮'}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Copy Alert Toast */}
-                  {showCopyAlert && (
-                    <div style={{ background: '#ecfdf5', border: '1.5px solid #34d399', color: '#065f46', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: 800, textAlign: 'center', animation: 'fadeIn 0.2s' }}>
-                      <i className="fas fa-check-circle"></i> تم نسخ الرابط الشخصي للطالب بنجاح! جاهز للإرسال لولي الأمر 🚀
+                    {/* Footer Row */}
+                    <div className="postcard-footer-grid">
+                      <div className="footer-item">
+                        <span>👤 المعلمة / المربي:</span>
+                        <span className="footer-val">{card.teacherName}</span>
+                      </div>
+
+                      <div className="footer-item">
+                        <span>📅 التاريخ:</span>
+                        <span className="footer-val">{card.date}</span>
+                      </div>
+
+                      <div className="footer-item">
+                        <span>🖊️ توقيع ولي الأمر:</span>
+                        <span className="footer-val" style={{ color: isPink ? '#be185d' : '#2563eb', fontStyle: 'italic' }}>
+                          {card.parentSignature || '.....................'}
+                        </span>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Actions Grid */}
-                  <div className="studio-actions-grid">
-                    <button
-                      type="button"
-                      onClick={handleShareWhatsApp}
-                      className="studio-action-btn whatsapp"
-                    >
-                      <i className="fab fa-whatsapp"></i> إرسال عبر واتساب للأهل
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleDownloadImage}
-                      className="studio-action-btn download"
-                      disabled={isGeneratingImage}
-                    >
-                      {isGeneratingImage ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-image"></i>}
-                      تنزيل كصورة PNG (طبق الأصل)
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleGenerateAndCopyLink}
-                      className="studio-action-btn copy-link"
-                    >
-                      <i className="fas fa-link"></i> نسخ الرابط الشخصي للطالب
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      className="studio-action-btn print"
-                    >
-                      <i className="fas fa-print"></i> طباعة البطاقة ورقيًا
-                    </button>
                   </div>
+                </div>
+
+                {/* Toast alert */}
+                {showCopyAlert && (
+                  <div style={{ background: '#ecfdf5', border: '1.5px solid #34d399', color: '#065f46', padding: '0.75rem 1rem', borderRadius: '12px', marginTop: '1rem', fontWeight: 800, textAlign: 'center' }}>
+                    <i className="fas fa-check-circle"></i> تم نسخ الرابط الشخصي للطالب بنجاح! جاهز للإرسال لولي الأمر 🚀
+                  </div>
+                )}
+
+                {/* Action Buttons Grid */}
+                <div className="studio-actions-grid">
+                  <button
+                    type="button"
+                    onClick={handleShareWhatsApp}
+                    className="studio-action-btn whatsapp"
+                  >
+                    <i className="fab fa-whatsapp"></i> إرسال عبر واتساب للأهل
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadImage}
+                    className="studio-action-btn download"
+                    disabled={isGeneratingImage}
+                  >
+                    {isGeneratingImage ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-image"></i>}
+                    تنزيل كصورة PNG عالية الدقة
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleGenerateAndCopyLink}
+                    className="studio-action-btn copy-link"
+                  >
+                    <i className="fas fa-link"></i> نسخ الرابط الشخصي للطالب
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="studio-action-btn print"
+                  >
+                    <i className="fas fa-print"></i> طباعة البطاقة ورقيًا
+                  </button>
                 </div>
               </div>
 
             </div>
 
-            {/* ========================================================================= */}
-            {/* 3. SENT CARDS ARCHIVE (سجل البطاقات المرسلة للمربين)                       */}
-            {/* ========================================================================= */}
+            {/* Archive Section */}
             <div className="sent-cards-archive-section">
               <div className="archive-header-row">
                 <div>
@@ -951,7 +1291,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
               {savedCards.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
                   <i className="fas fa-mail-bulk" style={{ fontSize: '2.5rem', marginBottom: '0.8rem', color: '#cbd5e1' }}></i>
-                  <div>لا توجد بطاقات محفوظة حتى الآن. عند توليد أول رابط أو إرسال بطاقة ستظهر هنا تلقائياً.</div>
+                  <div>لا توجد بطاقات محفوظة حتى الآن. عند توليد أول رابط ستظهر هنا تلقائياً.</div>
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
