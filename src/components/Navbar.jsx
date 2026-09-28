@@ -51,17 +51,28 @@ const Navbar = () => {
     const updateNavState = (rawItems) => {
       let items = [...rawItems].filter(item => !isExcludedFromNavbar(item));
       
-      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'gratitude-sky', 'stars'];
+      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'happiness-mail', 'gratitude-sky', 'stars'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
       if (!items.some(item => item.id === 'nav_parent_polls' || item.target === 'parent-polls')) {
         items.push({
           id: "nav_parent_polls",
-          label: "📊 تصويت الأهالي",
+          label: "📊 استطلاع الأهالي",
           type: "page",
           target: "parent-polls",
           category: "main",
           order: 7
+        });
+      }
+
+      if (!items.some(item => item.id === 'nav_happiness_mail' || item.target === 'happiness-mail')) {
+        items.push({
+          id: "nav_happiness_mail",
+          label: "💌 بريد السعادة والتميز",
+          type: "page",
+          target: "happiness-mail",
+          category: "main",
+          order: 8
         });
       }
 
@@ -144,7 +155,7 @@ const Navbar = () => {
           const isScrolled = window.scrollY > 40;
           setScrolled(prev => (prev !== isScrolled ? isScrolled : prev));
 
-          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
+          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
           const hash = window.location.hash;
           const isOnCustomPage = hash.startsWith('#/page/') || hash.startsWith('#page/') || systemTargets.some(t => hash.includes(t));
 
@@ -180,7 +191,7 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh'];
 
     if (item.type === 'page' || item.type === 'custom_page' || systemPages.includes(item.target)) {
       const isSystemPage = systemPages.includes(item.target);
@@ -209,7 +220,7 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh', 'mafatih', 'mafateeh'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh', 'mafatih', 'mafateeh'];
     if (systemPages.includes(item.target)) {
       return `#/${item.target}`;
     }

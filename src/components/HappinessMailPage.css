@@ -1,0 +1,660 @@
+/* ========================================================================== */
+/* منصة «بريد السعادة والتميّز» — بطاقات التقدير المدرسية التفاعلية             */
+/* Joy & Excellence Postcards Hub — Arabic RTL Styling                        */
+/* ========================================================================== */
+
+.happiness-mail-page {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 90vh;
+  padding-bottom: 4rem;
+  background: linear-gradient(180deg, #fff7ed 0%, #fdf2f8 50%, #f0fdf4 100%);
+  color: #1e293b;
+}
+
+.happiness-mail-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* ========================================== */
+/* 1. Header Banner                           */
+/* ========================================== */
+
+.happiness-header-banner {
+  background: linear-gradient(135deg, #be185d 0%, #ec4899 50%, #3b82f6 100%);
+  color: #ffffff;
+  padding: 2.2rem 2.5rem;
+  border-radius: 28px;
+  margin-bottom: 2rem;
+  box-shadow: 0 15px 35px rgba(236, 72, 153, 0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.happiness-header-banner::before {
+  content: '💌';
+  position: absolute;
+  left: -20px;
+  bottom: -25px;
+  font-size: 7rem;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.happiness-header-title {
+  margin: 0 0 0.5rem 0;
+  font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.happiness-header-subtitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #fdf2f8;
+  max-width: 650px;
+  line-height: 1.6;
+}
+
+/* ========================================== */
+/* 2. Studio Mode Switcher (Pink vs Blue)     */
+/* ========================================== */
+
+.card-type-tabs-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.card-type-tab-btn {
+  flex: 1;
+  min-width: 250px;
+  background: #ffffff;
+  border: 2.5px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.card-type-tab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.card-type-tab-btn.active.pink {
+  border-color: #ec4899;
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.2);
+}
+
+.card-type-tab-btn.active.blue {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+.tab-icon-bubble {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.tab-icon-bubble.pink {
+  background: #fbcfe8;
+  color: #be185d;
+}
+
+.tab-icon-bubble.blue {
+  background: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.tab-content-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-main-label {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.tab-sub-label {
+  font-size: 0.86rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+/* ========================================== */
+/* 3. Studio Two-Column Grid                  */
+/* ========================================== */
+
+.studio-grid-layout {
+  display: grid;
+  grid-template-columns: 460px 1fr;
+  gap: 2rem;
+  align-items: start;
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 1100px) {
+  .studio-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Studio Editor Panel (Form) */
+.studio-form-panel {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 1.8rem;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.panel-section-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.form-group-field {
+  margin-bottom: 1.2rem;
+}
+
+.field-label {
+  display: block;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #334155;
+  margin-bottom: 0.4rem;
+}
+
+.studio-input,
+.studio-select,
+.studio-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1e293b;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.studio-input:focus,
+.studio-select:focus,
+.studio-textarea:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+}
+
+.studio-input.blue:focus,
+.studio-select.blue:focus,
+.studio-textarea.blue:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Checkboxes Selector Grid in Studio */
+.criteria-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.criteria-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.criteria-checkbox-item:hover {
+  background: #f1f5f9;
+}
+
+.criteria-checkbox-item.checked.pink {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  color: #9d174d;
+}
+
+.criteria-checkbox-item.checked.blue {
+  background: #eff6ff;
+  border-color: #60a5fa;
+  color: #1e40af;
+}
+
+.criteria-checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #db2777;
+  cursor: pointer;
+}
+
+.criteria-checkbox-item.blue input[type="checkbox"] {
+  accent-color: #2563eb;
+}
+
+/* ========================================== */
+/* 4. Live Postcard Preview (Canvas & Stage)  */
+/* ========================================== */
+
+.studio-preview-panel {
+  position: sticky;
+  top: 100px;
+}
+
+.preview-card-wrapper {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 1.5rem;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.preview-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.preview-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+/* Visual Postcard Screen Canvas Container */
+.interactive-postcard-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1024px;
+  aspect-ratio: 1024 / 695;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  margin-bottom: 1.5rem;
+  background: #ffffff;
+  user-select: none;
+}
+
+.postcard-background-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Overlaid Real Dynamic Arabic Text Elements */
+.postcard-overlay-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.overlay-item {
+  position: absolute;
+  color: #1e1b4b;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+/* Checkmark Markers inside the Postcard Boxes */
+.checkmark-marker {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 900;
+  transform: translate(50%, -50%);
+  animation: checkPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.checkmark-marker.pink {
+  color: #9d174d;
+}
+
+.checkmark-marker.blue {
+  color: #1e40af;
+}
+
+@keyframes checkPop {
+  from { transform: translate(50%, -50%) scale(0); opacity: 0; }
+  to { transform: translate(50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Action Buttons Bar in Studio */
+.studio-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) ;
+  gap: 0.85rem;
+}
+
+.studio-action-btn {
+  padding: 0.9rem 1.25rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.studio-action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.studio-action-btn.whatsapp {
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.3);
+}
+
+.studio-action-btn.download {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
+}
+
+.studio-action-btn.copy-link {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.3);
+}
+
+.studio-action-btn.print {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+}
+
+/* ========================================== */
+/* 5. Parent / Student Recipient View Modal   */
+/* ========================================== */
+
+.parent-view-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.parent-congrats-header {
+  margin-bottom: 2rem;
+  animation: fadeInDown 0.4s ease;
+}
+
+.parent-congrats-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  font-weight: 900;
+  padding: 0.5rem 1.4rem;
+  border-radius: 9999px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+}
+
+.parent-congrats-title {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.parent-congrats-subtitle {
+  font-size: 1.1rem;
+  color: #475569;
+  margin: 0;
+}
+
+/* Parent Interactive Reply Form Box */
+.parent-reply-box {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  margin-top: 2rem;
+  border: 2px dashed #ec4899;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  text-align: right;
+}
+
+.parent-reply-box.blue {
+  border-color: #3b82f6;
+}
+
+.parent-reply-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 0.4rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.parent-reply-desc {
+  font-size: 0.92rem;
+  color: #64748b;
+  margin: 0 0 1.25rem 0;
+}
+
+.parent-reply-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.7;
+  color: #1e293b;
+  resize: vertical;
+  margin-bottom: 1rem;
+}
+
+.parent-reply-submit-btn {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #ffffff;
+  border: none;
+  padding: 0.85rem 1.8rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+}
+
+/* ========================================== */
+/* 6. Sent Cards Archive Table                */
+/* ========================================== */
+
+.sent-cards-archive-section {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  margin-top: 3rem;
+}
+
+.archive-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 1rem;
+}
+
+.archive-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.archive-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 900;
+  padding: 0.85rem 1rem;
+  border-bottom: 2px solid #cbd5e1;
+  text-align: right;
+}
+
+.archive-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.archive-table tr:hover {
+  background: #fafafa;
+}
+
+/* Type Pills */
+.mail-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.mail-type-pill.pink {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+
+.mail-type-pill.blue {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* Hidden High-Res Canvas for generation */
+.hidden-export-canvas {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  visibility: hidden;
+}
+
+/* ========================================== */
+/* 7. Print Postcard Layout                   */
+/* ========================================== */
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .happiness-header-banner,
+  .card-type-tabs-row,
+  .studio-form-panel,
+  .preview-header-bar,
+  .studio-actions-grid,
+  .sent-cards-archive-section,
+  .parent-congrats-header,
+  .parent-reply-box,
+  header,
+  nav,
+  footer {
+    display: none !important;
+  }
+
+  .happiness-mail-page {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .happiness-mail-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .interactive-postcard-stage {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+  }
+}

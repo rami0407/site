@@ -54,6 +54,7 @@ const Worksheets = lazyWithRetry(() => import('./components/Worksheets'));
 const AstronomyPage = lazyWithRetry(() => import('./components/AstronomyPage'));
 const ScientificArticles = lazyWithRetry(() => import('./components/ScientificArticles'));
 const ParentPolls = lazyWithRetry(() => import('./components/ParentPolls'));
+const HappinessMailPage = lazyWithRetry(() => import('./components/HappinessMailPage'));
 const AppointmentBooking = lazyWithRetry(() => import('./components/AppointmentBooking'));
 const AppointmentsLogPage = lazyWithRetry(() => import('./components/AppointmentsLogPage'));
 const GratitudeSkyPage = lazyWithRetry(() => import('./components/GratitudeSkyPage'));
@@ -337,6 +338,7 @@ function App() {
   const isWorksheetsView = currentHash.includes('worksheets');
   const isArticlesView = currentHash.includes('articles');
   const isParentPollsView = currentHash.includes('parent-polls');
+  const isHappinessMailView = currentHash.includes('happiness-mail') || currentHash.includes('joy-mail') || currentHash.includes('bareed-saada') || currentHash.includes('bareed-tamayoz') || currentHash.includes('postcard');
   const isGuardLogView = currentHash.includes('guard') || currentHash.includes('appointments-log') || currentHash.includes('visitors') || currentHash.includes('gate');
   const isAppointmentsView = currentHash.includes('appointments') && !isGuardLogView;
   const isGratitudeSkyView = currentHash.includes('gratitude-sky') || currentHash.includes('stars-sky') || currentHash.includes('emtnan-sky') || currentHash.includes('stars');
@@ -624,6 +626,8 @@ function App() {
           <ScientificArticles isStandalone={true} />
         ) : isParentPollsView ? (
           <ParentPolls isStandalone={true} />
+        ) : isHappinessMailView ? (
+          <HappinessMailPage isStandalone={true} />
         ) : isGuardLogView ? (
           <AppointmentsLogPage />
         ) : isAppointmentsView ? (
