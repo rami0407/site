@@ -45,13 +45,14 @@ const Navbar = () => {
       if (id === 'nav_2' || id === 'nav_initiatives' || target === 'initiatives' || label.includes('المبادرات')) return true;
       if (id === 'nav_articles' || target === 'articles' || label.includes('مقالات')) return true;
       if (id === 'nav_mafatih' || target === 'mafatih' || target === 'mafateeh' || label.includes('مفاتيح') || label.includes('مفتاح') || label.includes('מפת')) return true;
+      if (id === 'nav_happiness_mail' || target === 'happiness-mail' || label.includes('بريد السعادة') || label.includes('بريد التميز')) return true;
       return false;
     };
 
     const updateNavState = (rawItems) => {
       let items = [...rawItems].filter(item => !isExcludedFromNavbar(item));
       
-      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'happiness-mail', 'gratitude-sky', 'stars'];
+      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'gratitude-sky', 'stars'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
       if (!items.some(item => item.id === 'nav_parent_polls' || item.target === 'parent-polls')) {
@@ -62,17 +63,6 @@ const Navbar = () => {
           target: "parent-polls",
           category: "main",
           order: 7
-        });
-      }
-
-      if (!items.some(item => item.id === 'nav_happiness_mail' || item.target === 'happiness-mail')) {
-        items.push({
-          id: "nav_happiness_mail",
-          label: "💌 بريد السعادة والتميز",
-          type: "page",
-          target: "happiness-mail",
-          category: "main",
-          order: 8
         });
       }
 
