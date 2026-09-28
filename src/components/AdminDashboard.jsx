@@ -554,6 +554,7 @@ const AdminDashboard = () => {
 
   // STEM Teacher Approval Requests States
   const [stemTeacherRequests, setStemTeacherRequests] = useState([]);
+  const [expandedAdminStemLabId, setExpandedAdminStemLabId] = useState(null);
 
   // Smart Multi-Channel Kiosk Display Config State
   const [selectedKioskChannel, setSelectedKioskChannel] = useState('main');
@@ -929,6 +930,18 @@ const AdminDashboard = () => {
 
     setEditingStemSolId(null);
     alert('🎉 تم حفظ توجيه معلم الموضوع وترقية مرحلة الطالب بنجاح!');
+  };
+
+  const handleDeleteStemSolution = async (solId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا المشروع من سجلات المنظومة نهائياً؟')) return;
+    const updated = adminStemSolutions.filter(s => (s.id || s.createdAt) !== solId);
+    setAdminStemSolutions(updated);
+    localStorage.setItem('stem_local_solutions', JSON.stringify(updated));
+    try {
+      await deleteDoc(doc(db, 'stem_solutions', solId));
+    } catch (e) {
+      console.warn("Delete stem solution error:", e);
+    }
   };
 
   const loadBookedAppointments = async () => {
@@ -4955,23 +4968,40 @@ const AdminDashboard = () => {
             <button 
               onClick={() => {
                 loadAdminStemSolutions();
+                loadStemTeacherRequests();
                 setActiveTab('stem-corner');
               }} 
               className={`filter-chip ${activeTab === 'stem-corner' ? 'active' : ''}`}
               style={{
                 width: '100%',
-                justifyContent: 'flex-start',
+                justifyContent: 'space-between',
                 padding: '0.9rem 1.2rem',
                 fontSize: '1rem',
                 borderRadius: 'var(--radius-sm)',
-                background: activeTab === 'stem-corner' ? '#7209b7' : '#f3e8ff',
+                background: activeTab === 'stem-corner' ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : '#f3e8ff',
                 color: activeTab === 'stem-corner' ? 'white' : '#6b21a8',
                 fontWeight: 800,
-                border: '2px solid #d8b4fe'
+                border: '2px solid #818cf8',
+                display: 'flex',
+                alignItems: 'center'
               }}
             >
-              <i className="fas fa-atom" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              🚀 إدارة زاوية STEM ومبتكرات الطلاب
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <i className="fas fa-compass" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
+                <span>🌟 مختبر التميّز وSTEM واعتماد المعلمين</span>
+              </div>
+              {stemTeacherRequests.filter(r => r.status === 'pending').length > 0 && (
+                <span style={{
+                  background: '#ef4444',
+                  color: 'white',
+                  borderRadius: '9999px',
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 900
+                }}>
+                  {stemTeacherRequests.filter(r => r.status === 'pending').length}
+                </span>
+              )}
             </button>
 
             <button 
@@ -9824,25 +9854,90 @@ const AdminDashboard = () => {
               {/* TAB 10.9: SUBJECT TEACHER STEM FOLLOW-UP & EVALUATION DASHBOARD */}
               {activeTab === 'stem-corner' && (
                 <div>
-                  <div style={{ background: 'linear-gradient(135deg, #7209b7 0%, #3a0ca3 100%)', color: 'white', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', boxShadow: '0 10px 25px rgba(114, 9, 183, 0.2)' }}>
+                  <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)', color: 'white', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', boxShadow: '0 10px 25px rgba(49, 46, 129, 0.25)', border: '1px solid rgba(255,255,255,0.15)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                       <div>
-                        <h2 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.6rem' }}>
-                          🚀 لوحة معلم الموضوع لمتابعة وتقييم حلول وتحديات الـ STEM
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#f59e0b', color: '#1e1b4b', padding: '0.3rem 0.8rem', borderRadius: '9999px', fontWeight: 900, fontSize: '0.82rem', marginBottom: '0.6rem' }}>
+                          <i className="fas fa-compass"></i> مختبر التميّز | رحلة من المشكلة إلى الأثر
+                        </div>
+                        <h2 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.65rem' }}>
+                          🌟 لوحة الإدارة لمتابعة مختبر التميّز وحلول STEM واعتماد المعلمين
                         </h2>
-                        <p style={{ margin: 0, opacity: 0.9, fontSize: '1rem' }}>
-                          تابع إنجازات الطلاب، وجّه ملحوظات معلم المادة، وقَم بـ ترقية مرحلة الابتكار حتى الاعتماد والوسام النهائي!
+                        <p style={{ margin: 0, opacity: 0.9, fontSize: '0.98rem', lineHeight: '1.6' }}>
+                          متابعة واعتماد تراخيص المعلمين الموجهين، والاطلاع على إجابات الطلاب المفصلة عبر المحطات التسع وتقييم الأثر الميداني.
                         </p>
                       </div>
 
-                      <button
-                        onClick={loadAdminStemSolutions}
-                        className="btn"
-                        style={{ background: 'white', color: '#7209b7', fontWeight: 900, padding: '0.65rem 1.2rem', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
-                      >
-                        <i className="fas fa-sync-alt"></i> تحديث القائمة فورياً
+                      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => {
+                            loadAdminStemSolutions();
+                            loadStemTeacherRequests();
+                          }}
+                          className="btn"
+                          style={{ background: 'white', color: '#1e1b4b', fontWeight: 900, padding: '0.65rem 1.2rem', borderRadius: '12px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          <i className="fas fa-sync-alt"></i> تحديث القائمة والطلبات
+                        </button>
+
+                        <button
+                          onClick={() => window.open('#/stem-teacher', '_blank')}
+                          className="btn"
+                          style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 900, padding: '0.65rem 1.2rem', borderRadius: '12px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          <i className="fas fa-chalkboard-user"></i> فتح بوابة المعلم 🚀
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STEM TEACHER APPROVAL REQUESTS FOR PRINCIPAL */}
+                  <div style={{ background: '#f5f3ff', border: '2px solid #c4b5fd', borderRadius: '18px', padding: '1.5rem', marginBottom: '2rem', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.08)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#4c1d95', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <i className="fas fa-user-check"></i> طلبات اعتماد المعلمين لمختبر التميّز و STEM ({stemTeacherRequests.filter(r => r.status === 'pending').length} معلق)
+                      </h4>
+                      <button onClick={loadStemTeacherRequests} style={{ background: 'white', color: '#6d28d9', border: '1.5px solid #c4b5fd', padding: '0.45rem 0.9rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <i className="fas fa-sync-alt"></i> تحديث الطلبات
                       </button>
                     </div>
+
+                    {stemTeacherRequests.filter(r => r.status === 'pending').length === 0 ? (
+                      <div style={{ background: 'white', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #ddd6fe', color: '#5b21b6', fontWeight: 700, fontSize: '0.92rem' }}>
+                        ✅ جميع المعلمين معتمدون ولا توجد طلبات معلقة حالياً. بمجرد أن يرسل معلم طلباً برمز دخوله المكون من 9 أرقام من البوابة، سيظهر هنا فوراً لاعتماده بنقرة زر واحدة.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+                        {stemTeacherRequests.filter(r => r.status === 'pending').map(req => (
+                          <div key={req.id} style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '2px solid #a855f7', boxShadow: '0 4px 12px rgba(114, 9, 183, 0.08)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>👨‍🏫 {req.teacherName}</h4>
+                              <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900 }}>قيد انتظار تفعيلك ⏳</span>
+                            </div>
+                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.88rem', color: '#475569', fontWeight: 700 }}>
+                              📚 التخصص: <strong>{req.subject}</strong> | 📱 الهاتف: {req.phone || 'غير مدخل'}
+                            </p>
+                            <p style={{ margin: '0 0 1rem 0', fontSize: '0.88rem', color: '#7e22ce', fontWeight: 800 }}>
+                              🔐 الرمز المفوض المختار: <span style={{ background: '#f3e8ff', padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid #d8b4fe' }}>{req.teacherId}</span>
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handleApproveStemTeacher(req.id, req.teacherName)}
+                                style={{ flex: 1, background: '#7c3aed', color: 'white', border: 'none', padding: '0.65rem', borderRadius: '8px', fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                ✅ تأشير واعتماد الحساب
+                              </button>
+                              <button
+                                onClick={() => handleRejectStemTeacher(req.id)}
+                                style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.65rem 0.8rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                ❌ رفض
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Filters Bar */}
@@ -9925,6 +10020,82 @@ const AdminDashboard = () => {
                                 <strong>شرح فكرة الطالب:</strong> {sol.solutionDesc}
                               </div>
 
+                              {/* Excellence Lab Detailed 9-Station View */}
+                              {sol.excellenceLabData && (
+                                <div style={{ margin: '14px 0' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedAdminStemLabId(expandedAdminStemLabId === (sol.id || sol.createdAt) ? null : (sol.id || sol.createdAt))}
+                                    style={{
+                                      background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+                                      color: '#ffffff',
+                                      border: '1.5px solid #818cf8',
+                                      padding: '9px 18px',
+                                      borderRadius: '12px',
+                                      fontSize: '0.86rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      boxShadow: '0 4px 12px rgba(49, 46, 129, 0.25)',
+                                      fontFamily: 'inherit'
+                                    }}
+                                  >
+                                    <i className={`fas ${expandedAdminStemLabId === (sol.id || sol.createdAt) ? 'fa-chevron-up' : 'fa-compass'}`}></i>
+                                    <span>{expandedAdminStemLabId === (sol.id || sol.createdAt) ? 'إخفاء تفاصيل محطات مختبر التميّز 9' : '🌟 فحص إجابات المحطات الـ 9 لمختبر التميّز'}</span>
+                                  </button>
+
+                                  {expandedAdminStemLabId === (sol.id || sol.createdAt) && (
+                                    <div style={{
+                                      background: '#f8fafc',
+                                      border: '2px solid #c7d2fe',
+                                      borderRadius: '16px',
+                                      padding: '16px',
+                                      marginTop: '12px',
+                                      fontSize: '0.88rem',
+                                      lineHeight: '1.75',
+                                      color: '#1e293b'
+                                    }}>
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <strong>🎯 سؤال التحدي والبحث:</strong> {sol.excellenceLabData.inquiryQuestion || '—'}
+                                      </div>
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <strong>👁️ الواقع المشاهد:</strong> {sol.excellenceLabData.observedFact || '—'}
+                                      </div>
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <strong>💭 التفسير المحتمل:</strong> {sol.excellenceLabData.interpretation || '—'}
+                                      </div>
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <strong>🔍 الأدلة المكتشفة:</strong> {sol.excellenceLabData.evidenceFound || '—'} (المصدر: {sol.excellenceLabData.evidenceSource || '—'})
+                                      </div>
+
+                                      {/* Lenses Breakdown */}
+                                      <div style={{ background: '#ffffff', padding: '12px', borderRadius: '12px', margin: '10px 0', border: '1.5px solid #e2e8f0' }}>
+                                        <strong style={{ color: '#b45309', display: 'block', marginBottom: '6px' }}>👓 إسهامات المواد والعدسات المنهجية الخمس:</strong>
+                                        <ul style={{ margin: 0, paddingRight: '20px' }}>
+                                          <li><strong>🔬 العلوم:</strong> {sol.excellenceLabData.lenses?.science?.studentWork || '—'}</li>
+                                          <li><strong>📐 الرياضيات:</strong> {sol.excellenceLabData.lenses?.math?.studentWork || '—'}</li>
+                                          <li><strong>🛠️ التكنولوجيا والهندسة:</strong> {sol.excellenceLabData.lenses?.tech?.studentWork || '—'}</li>
+                                          <li><strong>✍️ اللغة العربية:</strong> {sol.excellenceLabData.lenses?.arabic?.studentWork || '—'}</li>
+                                          <li><strong>🎨 الفنون والتصميم:</strong> {sol.excellenceLabData.lenses?.art?.studentWork || '—'}</li>
+                                        </ul>
+                                      </div>
+
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <strong>📊 قياس البيانات بالأرقام:</strong> قبل: <code>{sol.excellenceLabData.dataBefore || '—'}</code> | بعد: <code>{sol.excellenceLabData.dataAfter || '—'}</code>
+                                      </div>
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <strong>🔄 تبصر الطالب وتطوير النسخة V2:</strong> {sol.excellenceLabData.whatToChangeV2 || '—'}
+                                      </div>
+                                      <div>
+                                        <strong>👥 المستفيدون والأثر المدرسي:</strong> {sol.excellenceLabData.whoBenefits || '—'}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               {sol.prototypeImage && (
                                 <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
                                   <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#7209b7', marginBottom: '0.3rem' }}>📸 رسمة / مجسم نموذج الطالب الأولي:</div>
@@ -9973,18 +10144,29 @@ const AdminDashboard = () => {
                                   </select>
                                 </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const st = document.getElementById(`stage_select_${sol.id || index}`).value;
-                                    const fb = document.getElementById(`feedback_text_${sol.id || index}`).value;
-                                    const sr = document.getElementById(`stars_select_${sol.id || index}`).value;
-                                    handleSaveTeacherStemFeedback(sol.id || sol.createdAt, st, fb, sr);
-                                  }}
-                                  style={{ background: '#7209b7', color: 'white', border: 'none', padding: '0.65rem 1rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.88rem' }}
-                                >
-                                  <i className="fas fa-paper-plane"></i> حفظ التوجيه والترقية 🚀
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const st = document.getElementById(`stage_select_${sol.id || index}`).value;
+                                      const fb = document.getElementById(`feedback_text_${sol.id || index}`).value;
+                                      const sr = document.getElementById(`stars_select_${sol.id || index}`).value;
+                                      handleSaveTeacherStemFeedback(sol.id || sol.createdAt, st, fb, sr);
+                                    }}
+                                    style={{ background: '#7209b7', color: 'white', border: 'none', padding: '0.65rem 1rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.88rem', fontFamily: 'inherit' }}
+                                  >
+                                    <i className="fas fa-paper-plane"></i> حفظ التوجيه والترقية 🚀
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteStemSolution(sol.id || sol.createdAt)}
+                                    style={{ background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5', padding: '0.65rem 0.85rem', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.88rem' }}
+                                    title="حذف هذا المشروع من السجلات نهائياً"
+                                  >
+                                    <i className="fas fa-trash-alt"></i>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
