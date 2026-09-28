@@ -363,20 +363,16 @@ const HappinessMailPage = ({ isStandalone = true }) => {
         ctx.fillText(displayLabel, x - 75, y + 37);
       });
 
-      // 8. Middle Ribbon: بريد عائد للمعلمة
-      const ribY = 590;
+      // 8. Middle Ribbon: ملاحظات المربية / المربي
+      const ribY = 600;
       ctx.fillStyle = isPink ? '#f472b6' : '#60a5fa';
       ctx.beginPath();
-      ctx.roundRect(W / 2 - 200, ribY, 400, 48, 24);
+      ctx.roundRect(W / 2 - 210, ribY, 420, 50, 25);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = '900 24px Cairo, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(isPink ? '📬 بريد عائد للمعلمة' : '📬 رد عائد للمعلمة', W / 2, ribY + 33);
-
-      ctx.fillStyle = '#64748b';
-      ctx.font = 'bold 18px Cairo, sans-serif';
-      ctx.fillText('كلمة، ملاحظة أو رأي تحبون مشاركته معي:', W / 2, ribY + 70);
+      ctx.fillText('ملاحظات المربية / المربي', W / 2, ribY + 34);
 
       // 9. Creative Flash Section (وميض الإبداع)
       const flashY = 700;
@@ -783,14 +779,11 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                       })}
                     </div>
 
-                    {/* Middle Ribbon: بريد عائد للمعلمة */}
+                    {/* Middle Ribbon: ملاحظات المربية / المربي */}
                     <div className="postcard-reply-ribbon-row">
                       <div className={`reply-ribbon-tag ${isPink ? 'pink' : 'blue'}`}>
-                        <span>📬 {isPink ? 'بريد عائد للمعلمة' : 'رد عائد للمعلمة'}</span>
+                        <span>ملاحظات المربية / المربي</span>
                       </div>
-                      <span className="reply-ribbon-sub">
-                        كلمة، ملاحظة أو رأي تحبون مشاركته معي:
-                      </span>
                     </div>
 
                     {/* Creative Flash Section with Arrow and Mailbox */}
@@ -1206,14 +1199,11 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                       })}
                     </div>
 
-                    {/* Middle Ribbon: بريد عائد للمعلمة */}
+                    {/* Middle Ribbon: ملاحظات المربية / المربي */}
                     <div className="postcard-reply-ribbon-row">
                       <div className={`reply-ribbon-tag ${isPink ? 'pink' : 'blue'}`}>
-                        <span>📬 {isPink ? 'بريد عائد للمعلمة' : 'رد عائد للمعلمة'}</span>
+                        <span>ملاحظات المربية / المربي</span>
                       </div>
-                      <span className="reply-ribbon-sub">
-                        كلمة، ملاحظة أو رأي تحبون مشاركته معي:
-                      </span>
                     </div>
 
                     {/* Creative Flash Section with Arrow and Mailbox */}
