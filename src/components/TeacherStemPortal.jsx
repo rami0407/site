@@ -33,6 +33,7 @@ const TeacherStemPortal = () => {
   const [filterStage, setFilterStage] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [savedSuccessId, setSavedSuccessId] = useState(null);
+  const [expandedLabId, setExpandedLabId] = useState(null);
 
   // Check session
   const isTeacherLoggedIn = session && (session.role === 'teacher' || (session.studentClass && session.studentClass.includes('معلم')));
@@ -530,6 +531,82 @@ const TeacherStemPortal = () => {
                   <div className="t-desc-box">
                     <strong>فكرة الطالب:</strong> {sol.solutionDesc}
                   </div>
+
+                  {/* Excellence Lab Detailed 9-Station View */}
+                  {sol.excellenceLabData && (
+                    <div className="t-excellence-lab-box" style={{ margin: '14px 0' }}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedLabId(expandedLabId === (sol.id || sol.createdAt) ? null : (sol.id || sol.createdAt))}
+                        style={{
+                          background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+                          color: '#ffffff',
+                          border: '1.5px solid #818cf8',
+                          padding: '9px 18px',
+                          borderRadius: '12px',
+                          fontSize: '0.86rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 12px rgba(49, 46, 129, 0.25)',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        <i className={`fas ${expandedLabId === (sol.id || sol.createdAt) ? 'fa-chevron-up' : 'fa-compass'}`}></i>
+                        <span>{expandedLabId === (sol.id || sol.createdAt) ? 'إخفاء تفاصيل محطات مختبر التميّز 9' : '🌟 فحص إجابات المحطات الـ 9 لمختبر التميّز'}</span>
+                      </button>
+
+                      {expandedLabId === (sol.id || sol.createdAt) && (
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '2px solid #c7d2fe',
+                          borderRadius: '16px',
+                          padding: '16px',
+                          marginTop: '12px',
+                          fontSize: '0.88rem',
+                          lineHeight: '1.75',
+                          color: '#1e293b'
+                        }}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong>🎯 سؤال التحدي والبحث:</strong> {sol.excellenceLabData.inquiryQuestion || '—'}
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong>👁️ الواقع المشاهد:</strong> {sol.excellenceLabData.observedFact || '—'}
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong>💭 التفسير المحتمل:</strong> {sol.excellenceLabData.interpretation || '—'}
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong>🔍 الأدلة المكتشفة:</strong> {sol.excellenceLabData.evidenceFound || '—'} (المصدر: {sol.excellenceLabData.evidenceSource || '—'})
+                          </div>
+
+                          {/* Lenses Breakdown */}
+                          <div style={{ background: '#ffffff', padding: '12px', borderRadius: '12px', margin: '10px 0', border: '1.5px solid #e2e8f0' }}>
+                            <strong style={{ color: '#b45309', display: 'block', marginBottom: '6px' }}>👓 إسهامات المواد والعدسات المنهجية الخمس:</strong>
+                            <ul style={{ margin: 0, paddingRight: '20px' }}>
+                              <li><strong>🔬 العلوم:</strong> {sol.excellenceLabData.lenses?.science?.studentWork || '—'}</li>
+                              <li><strong>📐 الرياضيات:</strong> {sol.excellenceLabData.lenses?.math?.studentWork || '—'}</li>
+                              <li><strong>🛠️ التكنولوجيا والهندسة:</strong> {sol.excellenceLabData.lenses?.tech?.studentWork || '—'}</li>
+                              <li><strong>✍️ اللغة العربية:</strong> {sol.excellenceLabData.lenses?.arabic?.studentWork || '—'}</li>
+                              <li><strong>🎨 الفنون والتصميم:</strong> {sol.excellenceLabData.lenses?.art?.studentWork || '—'}</li>
+                            </ul>
+                          </div>
+
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong>📊 قياس البيانات بالأرقام:</strong> قبل: <code>{sol.excellenceLabData.dataBefore || '—'}</code> | بعد: <code>{sol.excellenceLabData.dataAfter || '—'}</code>
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong>🔄 تبصر الطالب وتطوير النسخة V2:</strong> {sol.excellenceLabData.whatToChangeV2 || '—'}
+                          </div>
+                          <div>
+                            <strong>👥 المستفيدون والأثر المدرسي:</strong> {sol.excellenceLabData.whoBenefits || '—'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {sol.prototypeImage && (
                     <div className="t-proto-box">
