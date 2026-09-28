@@ -4,6 +4,7 @@ import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore'
 import { getStudentSession } from '../utils/studentAuth';
 import { generateStemSolutionIdeas, askSocraticStemMentor, guideSteamStationAI } from '../utils/aiService';
 import { getScientificResearchVisibility, subscribeScientificResearchVisibility } from '../utils/pageVisibilityService';
+import ExcellenceLabJourney from './ExcellenceLabJourney';
 import './StemCorner.css';
 
 const STEAM_HUB_PRESETS = {
@@ -285,8 +286,15 @@ const StemCorner = ({ isStandalone = true }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isResearchVisible, setIsResearchVisible] = useState(() => getScientificResearchVisibility());
 
+  const [showPedagogicalDoc, setShowPedagogicalDoc] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window.location.hash.includes('steam-hub') || window.location.hash.includes('stem-hub'))) {
+    if (typeof window !== 'undefined' && (
+      window.location.hash.includes('steam-hub') || 
+      window.location.hash.includes('stem-hub') ||
+      window.location.hash.includes('excellence-lab') ||
+      window.location.hash.includes('excel-lab')
+    )) {
       setActiveTab('steam-hub');
     }
   }, []);
@@ -946,14 +954,16 @@ const StemCorner = ({ isStandalone = true }) => {
                 onClick={() => setActiveTab('steam-hub')} 
                 className="teacher-portal-quick-btn"
                 style={{
-                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
-                  border: '1.5px solid #c4b5fd',
-                  marginRight: '8px'
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                  border: '1.5px solid #fde68a',
+                  marginRight: '8px',
+                  color: '#1e1b4b',
+                  fontWeight: 900
                 }}
-                title="عرض وثيقة الموديل التشغيلي والبيداغوجي: حاضنة ستيم الرقمية (School STEAM Hub)"
+                title="مختبر التميّز | رحلة من المشكلة إلى الأثر (9 محطات استقصائية وتفكير هندسي)"
               >
-                <i className="fas fa-file-invoice"></i> 📑 وثيقة موديل حاضنة ستيم (STEAM Hub)
+                <i className="fas fa-compass"></i> 🌟 مختبر التميّز | رحلة من المشكلة إلى الأثر
               </button>
 
               <button 
@@ -988,14 +998,14 @@ const StemCorner = ({ isStandalone = true }) => {
           className={`stem-tab-btn ${activeTab === 'steam-hub' ? 'active' : ''}`}
           onClick={() => setActiveTab('steam-hub')}
           style={{
-            background: activeTab === 'steam-hub' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined,
+            background: activeTab === 'steam-hub' ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : undefined,
             color: activeTab === 'steam-hub' ? '#fff' : undefined,
-            border: '2px solid #8b5cf6',
+            border: '2px solid #818cf8',
             fontWeight: 800
           }}
-          title="وثيقة الموديل التشغيلي والبيداغوجي: حاضنة ستيم الرقمية (School STEAM Hub)"
+          title="مختبر التميّز: رحلة بحث وابتكار متكاملة من المشكلة إلى الأثر عبر 9 محطات تفاعلية"
         >
-          <i className="fas fa-file-lines"></i> 📑 وثيقة موديل حاضنة ستيم
+          <i className="fas fa-compass"></i> 🌟 مختبر التميّز (من المشكلة إلى الأثر)
         </button>
 
         <button 
@@ -2228,12 +2238,47 @@ const StemCorner = ({ isStandalone = true }) => {
       )}
 
       {/* ======================================================== */}
-      {/* TAB: STEAM Hub Operational & Pedagogical Model Document  */}
+      {/* TAB: Excellence Lab Journey (From Problem to Impact)     */}
       {/* ======================================================== */}
       {activeTab === 'steam-hub' && (
-        <section className="steam-hub-model-section">
-          {/* Header & Meta */}
-          <div className="steam-model-hero-card">
+        <section className="steam-hub-model-section animate-fade">
+          <ExcellenceLabJourney 
+            studentSession={studentSession}
+            addPoints={addPoints}
+            onJumpToTeacher={() => window.location.hash = '#/stem-teacher'}
+          />
+
+          {/* Reference Pedagogical Document Accordion */}
+          <div className="steam-doc-collapsible-wrapper" style={{ marginTop: '3rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="doc-accordion-toggle-btn"
+              onClick={() => setShowPedagogicalDoc(!showPedagogicalDoc)}
+              style={{
+                background: '#ffffff',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '12px',
+                padding: '0.85rem 1.6rem',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                color: '#334155',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                fontFamily: 'inherit'
+              }}
+            >
+              <i className={`fas ${showPedagogicalDoc ? 'fa-chevron-up' : 'fa-file-lines'}`}></i>
+              <span>{showPedagogicalDoc ? 'إخفاء وثيقة الموديل التشغيلي والبيداغوجي المرجعية' : '📑 قراءة وثيقة الموديل التشغيلي والبيداغوجي المرجعية (School STEAM Hub Model)'}</span>
+            </button>
+          </div>
+
+          {showPedagogicalDoc && (
+            <div className="steam-doc-full-reference" style={{ marginTop: '1.5rem' }}>
+              {/* Header & Meta */}
+              <div className="steam-model-hero-card">
             <div className="steam-model-badge">
               <i className="fas fa-graduation-cap"></i> وثيقة الموديل التشغيلي والبيداغوجي الرسمي
             </div>
@@ -3610,6 +3655,8 @@ const StemCorner = ({ isStandalone = true }) => {
               </div>
             </div>
           </div>
+            </div>
+          )}
         </section>
       )}
     </div>

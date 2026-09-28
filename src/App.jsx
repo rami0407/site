@@ -331,7 +331,7 @@ function App() {
 
   const isMonawaatAdminView = currentHash.includes('monawaat-admin') || currentHash.includes('monawat-admin');
   const isPrepDayView = currentHash.includes('monawaat') || currentHash.includes('monawat') || currentHash.includes('prep-day') || currentHash.includes('prep-excellence');
-  const isStemView = currentHash.includes('stem');
+  const isStemView = currentHash.includes('stem') || currentHash.includes('steam') || currentHash.includes('excellence-lab') || currentHash.includes('excel-lab');
   const isLearningCornerView = currentHash.includes('learning-corner');
   const isCustomPageView = (currentHash.startsWith('#/page/') || currentHash.startsWith('#page/')) && !currentHash.includes('prep-day') && !currentHash.includes('monawaat');
   const isWorksheetsView = currentHash.includes('worksheets');

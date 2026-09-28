@@ -2198,3 +2198,191 @@ export const guideSteamStationAI = async ({
   return `أحسنت يا بطل الابتكار! 🌟 في هذه المحطة، ركّز على ربط ما تلاحظه في مدرستنا مشيرفة بالحلول العملية. كل فكرة مهما كانت بسيطة هي بداية لاختراع عظيم! 🚀💡`;
 };
 
+/**
+ * 19. AI Excellence Lab Journey Guide ("مختبر التميّز | رحلة من المشكلة إلى الأثر"):
+ * Guides elementary students through the 9 inquiry & engineering design stations.
+ * Roles:
+ * 1. Explains concepts in age-appropriate Arabic.
+ * 2. Asks inquiry questions rather than giving ready solutions.
+ * 3. Helps with precise wording (saving student's original thought vs refined formulation).
+ * 4. Alerts to gaps (e.g. distinguishing assumption from fact, narrowing questions, balancing criteria & constraints).
+ */
+export const guideExcellenceLabAI = async ({
+  stationNumber = 1,
+  ageTrack = 'upper', // 'lower' (1-3) | 'upper' (4-6)
+  problemText = '',
+  questionText = '',
+  evidenceText = '',
+  subjectKey = '',
+  solutionsList = '',
+  planText = '',
+  testDataText = '',
+  reflectionText = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const isLower = ageTrack === 'lower';
+  const ageInstruction = isLower
+    ? 'أنت تتحدث مع تلميذ في الصفوف الأولى (1-3). استخدم جملاً قصيرة جداً ومرحة، كلمات سهلة ومشجعة، وأمثلة حسية ملموسة.'
+    : 'أنت تتحدث مع تلميذ في الصفوف العليا (4-6). استخدم أسلوباً علمياً مشوقاً، وركز على الدليل، والتحديد، والقياس.';
+
+  let stationTask = '';
+  switch (stationNumber) {
+    case 1:
+      stationTask = `المحطة 1: ألاحظ: ما المشكلة؟
+رسالة المحطة: «انظر حولك: ما الشيء الذي تتمنى تحسينه في المدرسة أو البيت أو الحي؟»
+ما كتبه الطالب: "${problemText}"
+المطلوب منك:
+1. اطرح عليه سؤالين استقصائيين مثل: "متى لاحظت ذلك؟" و "ما الذي رأيته بنفسك في مدرسة مشيرفة؟".
+2. ساعده على التمييز بين موضوع عام (مثل "الكهرباء" أو "النظافة") ومشكلة محددة قابلة للملاحظة.
+3. اقترح له صياغة أوضح وأدق للمشكلة ليراجعها ويختار ما يناسبه.`;
+      break;
+
+    case 2:
+      stationTask = `المحطة 2: أحدّد: ماذا أريد أن أعرف أو أغيّر؟
+المشكلة الملاحظة: "${problemText}"
+سؤال التحدي الحالي: "${questionText}"
+المطلوب منك:
+1. اشرح للطالب الفرق بين: ما شاهده كواقع، وتفسيره المحتمل، وفكرته للحل.
+2. ساعده على تضييق السؤال ليصبح سؤال بحث أو تحدياً هندسياً عملياً يبدأ بـ "كيف يمكننا... دون أن...؟".
+3. ذكّره بالحدود العملية (الوقت المتاح، المواد الممكنة في المدرسة، وما يمكن قياسه).`;
+      break;
+
+    case 3:
+      stationTask = `المحطة 3: أستكشف: ماذا نعرف قبل أن نقترح حلًا؟
+المشكلة: "${problemText}"
+ما كتبه كدليل: "${evidenceText}"
+المطلوب منك:
+1. نبّه الطالب بلطف إذا كان قد كتب تخميناً أو حكماً شخصياً على أنه حقيقة، وسل: "كيف عرفت ذلك؟ وما مصدر هذه المعلومة؟".
+2. ساعده على التمييز بين "وجدت دليلاً على..." و "ما زلت لا أعرف...".
+3. اقترح عليه مصدرين أو فكرتين بسيطتين لجمع أدلة حقيقية من بيئة المدرسة.`;
+      break;
+
+    case 4:
+      stationTask = `المحطة 4: أرى المشكلة بعيون المواد (العدسة: ${subjectKey || 'المواد الدراسية'})
+المشكلة: "${problemText}"
+المطلوب منك:
+بين للطالب كيف ينظر معلم ${subjectKey || 'المادة'} لهذه المشكلة، واقترح عليه فكرة لسؤال أو مهمة قصيرة جداً خاصة بهذه المادة تجعل مشروعه أكثر عمقاً وتكاملاً.`;
+      break;
+
+    case 5:
+      stationTask = `المحطة 5: أتخيل وأقارن حلولًا
+المشكلة: "${problemText}"
+الحلول المقترحة: "${solutionsList}"
+المطلوب منك:
+1. ساعد الطالب في مقارنة حلوله بحسب المعايير (هل يعالج المشكلة؟ هل يمكن تنفيذه؟ ما مواده؟ كيف سنعرف أنه نجح؟).
+2. اسأله عن ميزة كل فكرة وأهم قيد أو عائق أمامها (دون أن تختار الحل نيابة عنه!).`;
+      break;
+
+    case 6:
+      stationTask = `المحطة 6: أخطّط وأبني
+المشروع والحل المختار: "${planText}"
+المطلوب منك:
+1. ساعد في ترتيب خطوات العمل في 3-4 خطوات متسلسلة.
+2. اقترح عليه كيف يوزع الأدوار بإنصاف بين أعضاء الفريق.
+3. قدم نصيحة لاختيار خامات آمنة وقليلة التكلفة في المدرسة أو البيت.`;
+      break;
+
+    case 7:
+      stationTask = `المحطة 7: أجرّب وأقيس
+ما كتبه عن التجربة والبيانات: "${testDataText}"
+المطلوب منك:
+1. شجع الطالب على قياس ما قبل التجربة وما بعد التجربة (Before / After).
+2. اسأله: "هل تدعم هذه الأرقام استنتاجك؟ وما الذي قد يكون أثر على النتيجة؟".
+3. اقترح طريقة بسيطة لعرض الأرقام (جدول أو رسم مبسط).`;
+      break;
+
+    case 8:
+      stationTask = `المحطة 8: أتبصّر وأعيد المحاولة
+رسالة المحطة: «ماذا نجح؟ ماذا لم ينجح؟ ما الذي ستغيّره، ولماذا؟»
+ما كتبه الطالب: "${reflectionText}"
+المطلوب منك:
+1. أكد للطالب أن إعادة المحاولة والتعديل جزء أساسي وممتع في رحلة الابتكار وليست إخفاقاً أبداً.
+2. اقترح عليه فكرتين لتطوير نسخته الثانية (V2).`;
+      break;
+
+    case 9:
+      stationTask = `المحطة 9: أشارك الأثر
+ملخص المشروع: "${problemText} | ${planText}"
+المطلوب منك:
+1. صغ عبارة ملهمة وموجزة تعبر عن فخر المدرسة بهذا الابتكار.
+2. اطرح السؤال الختامي: "لمن يفيد الحل؟ وما الخطوة التالية لتطبيقه على نطاق أوسع في مدرستنا؟".`;
+      break;
+
+    default:
+      stationTask = `قدم نصيحة تفكير هندسي وبحثي لتلميذ المرحلة الابتدائية حول: "${problemText}".`;
+  }
+
+  const prompt = `أنت "مرشد مختبر التميّز" في مدرسة مشيرفة الابتدائية.
+${ageInstruction}
+قواعدك الصارمة:
+- لا تعطِ حلاً جاهزاً أبداً؛ دورك أن تسأل، وتلفت النظر للثغرات، وتساعد في صياغة الفكرة.
+- الرد بلغة عربية فصحى مشوقة، مقسم لنقاط قصيرة، مع إيموجيز مشجعة (💡 🔬 🔍 🛠️ 🎯).
+- الحد الأقصى للرد: 3 إلى 4 أسطر فقط لتناسب تركيز التلميذ.
+
+المهمة الحالية:
+${stationTask}`;
+
+  // 1. Try Groq
+  if (groqKey) {
+    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'system', content: 'أنت مرشد مختبر التميز بمدرسة مشيرفة.' }, { role: 'user', content: prompt }],
+            temperature: 0.5,
+            max_tokens: 500
+          })
+        }, 7500);
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Groq ExcellenceLab AI (${m}) error:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.5, maxOutputTokens: 500 }
+            })
+          },
+          7500
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Gemini ExcellenceLab AI (${gm}) error:`, e);
+      }
+    }
+  }
+
+  // Fallback
+  return isLower
+    ? 'أحسنت يا بطل! 🌟 فكرتك جميلة جداً، فكر في شيء شاهدته بنفسك في مدرستنا، وتذكر أن العلماء الصغار يلاحظون الأشياء بذكاء! 🔍💡'
+    : 'خطوة ممتازة نحو التفكير العلمي! 🌟 احرص على أن تميز بين ما رأيته كدليل مؤكد وما تتوقعه، واجعل سؤالك محدداً بدقة. 🎯🔬';
+};
+
+
