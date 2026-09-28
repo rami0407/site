@@ -142,7 +142,7 @@ const HappinessMailAdminTab = () => {
       const clean = (val) => `"${(val || '').toString().replace(/"/g, '""')}"`;
       const row = [
         idx + 1,
-        c.type === 'pink' ? 'بريد السعادة' : 'بريد التميز',
+        c.type === 'pink' ? 'بريد التميز (وردي)' : 'بريد التميز (أزرق)',
         clean(c.studentName),
         clean(c.studentClass),
         clean(c.teacherName),
@@ -158,7 +158,7 @@ const HappinessMailAdminTab = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.setAttribute('download', `أرشيف_بريد_السعادة_${filterClass === 'all' ? 'جميع_الصفوف' : filterClass.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    a.setAttribute('download', `أرشيف_بريد_التميز_${filterClass === 'all' ? 'جميع_الصفوف' : filterClass.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -181,7 +181,7 @@ const HappinessMailAdminTab = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
               <span style={{ background: '#fef08a', color: '#831843', padding: '0.25rem 0.8rem', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 900 }}>
-                💌 منصة بريد السعادة والتميز
+                💌 منصة بريد التميز
               </span>
               <span style={{ background: 'rgba(255,255,255,0.2)', color: '#ffffff', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 700 }}>
                 أرشيف البطاقات وردود الأهالي
@@ -409,7 +409,7 @@ const HappinessMailAdminTab = () => {
         {/* Pink (Girls) */}
         <div style={{ background: '#fdf2f8', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #fbcfe8', boxShadow: '0 4px 15px rgba(219, 39, 119, 0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#9d174d' }}>🌸 بريد السعادة (طالبات)</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#9d174d' }}>🌸 بطاقات التميز (الوردية)</span>
             <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ec4899', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
               <i className="fas fa-heart"></i>
             </div>
@@ -516,8 +516,8 @@ const HappinessMailAdminTab = () => {
               style={{ width: '100%', boxSizing: 'border-box', padding: '0.55rem 0.8rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', background: '#ffffff' }}
             >
               <option value="all">جميع الأنواع ({totalCount})</option>
-              <option value="pink">🌸 بريد السعادة للطالبات ({pinkCount})</option>
-              <option value="blue">💙 بريد التميز للطلاب ({blueCount})</option>
+              <option value="pink">🌸 النموذج الوردي ({pinkCount})</option>
+              <option value="blue">💙 النموذج الأزرق ({blueCount})</option>
             </select>
           </div>
 
@@ -601,7 +601,7 @@ const HappinessMailAdminTab = () => {
                           alignItems: 'center',
                           gap: '0.3rem'
                         }}>
-                          {isPink ? '🌸 بريد السعادة' : '💙 بريد التميز'}
+                          {isPink ? '🌸 بريد التميز' : '💙 بريد التميز'}
                         </span>
                       </td>
 

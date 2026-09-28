@@ -4962,7 +4962,7 @@ const AdminDashboard = () => {
               }}
             >
               <i className="fas fa-envelope-open-text" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'happiness-mail' ? '#ffffff' : '#db2777' }}></i>
-              💌 أرشيف بريد السعادة والتميز
+              💌 أرشيف بريد التميز
             </button>
 
             <button 

@@ -27,7 +27,7 @@ const ImportantLinks = () => {
           if (!hasHappinessMail) {
             list.unshift({
               id: 'school-happiness-mail-default',
-              title: 'بريد السعادة والتميّز',
+              title: 'بريد التميز',
               icon: 'fa-envelope-open-text',
               url: '#happiness-mail',
               desc: 'بطاقات تقدير وتميّز مدرسية مخصصة للطلاب والطالبات: رسالة صغيرة... وأثر كبير وباقٍ!',

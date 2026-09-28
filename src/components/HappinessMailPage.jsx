@@ -19,7 +19,7 @@ const CLASS_OPTIONS = [
   'السادس 1', 'السادس 2', 'السادس 3'
 ];
 
-// Criteria for Pink Template (بريد السعادة - للطالبات)
+// Criteria for Pink Template (بريد التميز - للطالبات)
 const PINK_CRITERIA = [
   { id: 'improved', label: 'أظهرت تحسنًا ملحوظًا', icon: '📈' },
   { id: 'rules', label: 'التزمت بالتعليمات', icon: '✔' },
@@ -269,7 +269,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
       // 4. Center Title & Subtitle
       ctx.font = '900 62px Cairo, Tahoma, sans-serif';
       ctx.fillStyle = isPink ? '#831843' : '#1e3a8a';
-      ctx.fillText(isPink ? 'بريد السعادة' : 'بريد التميز', W / 2, 105);
+      ctx.fillText('بريد التميز', W / 2, 105);
 
       // Subtitle Pill
       const subText = isPink ? 'رسالة صغيرة... وأثر كبير' : 'رسالة متميزة... وأثر باقٍ';
@@ -461,7 +461,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
       await drawCardToCanvas(card, canvasRef.current);
       const dataUrl = canvasRef.current.toDataURL('image/png');
       const link = document.createElement('a');
-      const fileName = `بطاقة_${card.type === 'pink' ? 'بريد_السعادة' : 'بريد_التميز'}_${card.studentName.replace(/\s+/g, '_')}.png`;
+      const fileName = `بطاقة_بريد_التميز_${card.studentName.replace(/\s+/g, '_')}.png`;
       link.download = fileName;
       link.href = dataUrl;
       document.body.appendChild(link);
@@ -528,7 +528,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
       personalUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?data=${base64Data}`;
     }
 
-    const cardTitle = card.type === 'pink' ? 'بريد السعادة 🌸' : 'بريد التميز 💙';
+    const cardTitle = card.type === 'pink' ? 'بريد التميز 🌸' : 'بريد التميز 💙';
     const pronoun = card.type === 'pink' ? 'ابنتكم' : 'ابنكم';
     const text = `تحية محبة وتقدير من مدرسة مشيرفة الابتدائية 🏫✨\n\nإلى ولي أمر الطالب/ة: ${card.studentName} (${card.studentClass})\n\nيسعدنا أن نرسل لكم ظرف «${cardTitle}» تقديراً لتميّز ${pronoun} وإبداعه/ا في المدرسة اليوم 💖\n\n💌 اضغطوا على الرابط لفتح الظرف البريدي ومشاهدة رسالة المربي/ة الموجهة لكم:\n${personalUrl}\n\nمع فائق الاحترام والاعتزاز،\n${card.teacherName}`;
 
@@ -598,7 +598,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
             {/* Header Salutation */}
             <div style={{ marginBottom: '1.5rem' }}>
               <span style={{ background: isPink ? '#fce7f3' : '#dbeafe', color: isPink ? '#9d174d' : '#1e40af', padding: '0.4rem 1.2rem', borderRadius: '9999px', fontSize: '0.92rem', fontWeight: 900 }}>
-                {isPink ? '🌸 بريد السعادة — رسالة صغيرة وأثر كبير' : '💙 بريد التميز — رسالة متميزة وأثر باقٍ'}
+                {isPink ? '🌸 بريد التميز — رسالة تقدير واعتزاز' : '💙 بريد التميز — رسالة تقدير واعتزاز'}
               </span>
               <h1 style={{ margin: '0.75rem 0 0.25rem 0', fontWeight: 900, fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', color: '#0f172a' }}>
                 رسالة تقدير وتميّز من مدرسة مشيرفة الابتدائية
@@ -714,7 +714,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
                       <div className="postcard-center-branding">
                         <h2 className={`postcard-main-title ${isPink ? 'pink' : 'blue'}`}>
-                          <span>{isPink ? 'بريد السعادة' : 'بريد التميز'}</span>
+                          <span>بريد التميز</span>
                           <span style={{ fontSize: '1.8rem' }}>{isPink ? '💖' : '💙'}</span>
                         </h2>
                         <div>
@@ -907,7 +907,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
             <div className="happiness-header-banner">
               <div>
                 <h1 className="happiness-header-title">
-                  <i className="fas fa-envelope-open-text"></i> استوديو «بريد السعادة والتميّز»
+                  <i className="fas fa-envelope-open-text"></i> استوديو «بريد التميز»
                 </h1>
                 <p className="happiness-header-subtitle">
                   تصميم وإرسال بطاقات التقدير المدرسية طبق الأصل بنقاء عالي، وتوليد ظرف تفاعلي ثلاثي الأبعاد يُفتح برقة للأهالي مع إمكانية الرد الفوري.
@@ -944,7 +944,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
               >
                 <div className="tab-icon-bubble pink">🌸</div>
                 <div className="tab-content-info">
-                  <span className="tab-main-label">بريد السعادة (للطالبات)</span>
+                  <span className="tab-main-label">بريد التميز (الوردي 🌸)</span>
                   <span className="tab-sub-label">«يسعدني اليوم أن أخبركم أن ابنتكم كانت متميزة في...»</span>
                 </div>
               </button>
@@ -1131,7 +1131,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
                       <div className="postcard-center-branding">
                         <h2 className={`postcard-main-title ${isPink ? 'pink' : 'blue'}`}>
-                          <span>{isPink ? 'بريد السعادة' : 'بريد التميز'}</span>
+                          <span>بريد التميز</span>
                           <span style={{ fontSize: '1.8rem' }}>{isPink ? '💖' : '💙'}</span>
                         </h2>
                         <div>
