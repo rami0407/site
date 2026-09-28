@@ -128,6 +128,13 @@ export const newsData = [
 
 export const importantLinks = [
   { 
+    title: 'بريد السعادة والتميّز', 
+    icon: 'fa-envelope-open-text', 
+    url: '#happiness-mail', 
+    desc: 'بطاقات تقدير وتميّز مدرسية مخصصة للطلاب والطالبات: رسالة صغيرة... وأثر كبير وباقٍ!', 
+    badge: 'جديد 💌' 
+  },
+  { 
     title: 'منصة الخدمات (שעות בודדות / מילוי מקום / ספק חוגים)', 
     icon: 'fa-briefcase', 
     url: '#/services', 

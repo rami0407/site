@@ -19,6 +19,22 @@ const ImportantLinks = () => {
         if (list.length === 0) {
           setLinks(fallbackLinks);
         } else {
+          // Ensure Happiness Mail is always present at the top
+          const hasHappinessMail = list.some(l => 
+            (l.title && (l.title.includes('بريد السعادة') || l.title.includes('بريد التميز') || l.title.includes('بريد'))) || 
+            (l.url && (l.url.includes('happiness-mail') || l.url.includes('bareed')))
+          );
+          if (!hasHappinessMail) {
+            list.unshift({
+              id: 'school-happiness-mail-default',
+              title: 'بريد السعادة والتميّز',
+              icon: 'fa-envelope-open-text',
+              url: '#happiness-mail',
+              desc: 'بطاقات تقدير وتميّز مدرسية مخصصة للطلاب والطالبات: رسالة صغيرة... وأثر كبير وباقٍ!',
+              badge: 'جديد 💌'
+            });
+          }
+
           // Ensure Kiosk is always included even if not manually added in Firestore yet
           const hasKiosk = list.some(l => 
             (l.url && (l.url.includes('kiosk') || l.url.includes('display'))) || 
