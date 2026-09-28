@@ -11,12 +11,12 @@ import {
 import './HappinessMailPage.css';
 
 const CLASS_OPTIONS = [
-  'الأول (أ)', 'الأول (ب)', 'الأول (ج)',
-  'الثاني (أ)', 'الثاني (ب)', 'الثاني (ج)',
-  'الثالث (أ)', 'الثالث (ب)', 'الثالث (ج)',
-  'الرابع (أ)', 'الرابع (ب)', 'الرابع (ج)',
-  'الخامس (أ)', 'الخامس (ب)', 'الخامس (ج)',
-  'السادس (أ)', 'السادس (ب)', 'السادس (ج)'
+  'الأول 1', 'الأول 2', 'الأول 3',
+  'الثاني 1', 'الثاني 2', 'الثاني 3',
+  'الثالث 1', 'الثالث 2', 'الثالث 3',
+  'الرابع 1', 'الرابع 2', 'الرابع 3',
+  'الخامس 1', 'الخامس 2', 'الخامس 3', 'الخامس 4',
+  'السادس 1', 'السادس 2', 'السادس 3'
 ];
 
 // Criteria for Pink Template (بريد السعادة - للطالبات)
@@ -44,7 +44,7 @@ const BLUE_CRITERIA = [
 const DEFAULT_CARD = {
   type: 'pink', // 'pink' or 'blue'
   studentName: 'مريم أحمد إغبارية',
-  studentClass: 'الرابع (أ)',
+  studentClass: 'الرابع 1',
   criteria: ['improved', 'active', 'behavior'],
   otherText: '',
   creativeFlash: 'مبادرة متميزة ومشاركة فاعلة في الإذاعة المدرسية وحل المسائل العلمية بإتقان باهر!',
@@ -64,6 +64,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [recipientCardId, setRecipientCardId] = useState(null);
   const [showCopyAlert, setShowCopyAlert] = useState(false);
+  const [filterArchiveClass, setFilterArchiveClass] = useState('all');
 
   // 3D Envelope Unboxing State
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
@@ -349,18 +350,18 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
         // Text & Icon
         ctx.textAlign = 'right';
-        ctx.font = 'bold 24px Cairo, sans-serif';
+        ctx.font = 'bold 22px Cairo, sans-serif';
         ctx.fillStyle = isChecked ? (isPink ? '#831843' : '#1e3a8a') : '#334155';
-        ctx.fillText(`${item.icon} ${item.label}`, x - 75, y + 37);
+        let displayLabel = `${item.icon} ${item.label}`;
+        if (item.id === 'other') {
+          if (targetCard.otherText) {
+            displayLabel = `📝 أخرى: ${targetCard.otherText}`;
+          } else if (isChecked) {
+            displayLabel = '📝 أخرى: ..............................';
+          }
+        }
+        ctx.fillText(displayLabel, x - 75, y + 37);
       });
-
-      // Other item (centered under grid)
-      if (targetCard.criteria && targetCard.criteria.includes('other') && targetCard.otherText) {
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 24px Cairo, sans-serif';
-        ctx.fillStyle = isPink ? '#9d174d' : '#1e40af';
-        ctx.fillText(`✨ إنجاز إضافي: ${targetCard.otherText}`, W / 2, 555);
-      }
 
       // 8. Middle Ribbon: بريد عائد للمعلمة
       const ribY = 590;
@@ -761,12 +762,19 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                     <div className="postcard-criteria-layout">
                       {criteriaList.map((item) => {
                         const isChecked = card.criteria && card.criteria.includes(item.id);
+                        const isOther = item.id === 'other';
+                        const displayLabel = isOther && card.otherText
+                          ? `📝 أخرى: ${card.otherText}`
+                          : isOther && isChecked
+                          ? '📝 أخرى: ..............................'
+                          : `${item.icon} ${item.label}`;
+
                         return (
                           <div 
                             key={item.id} 
-                            className={`criterion-card-badge ${isChecked ? `checked ${card.type}` : ''}`}
+                            className={`criterion-card-badge ${isChecked ? `checked ${card.type}` : ''} ${isOther ? 'other-badge' : ''}`}
                           >
-                            <span>{item.icon} {item.label}</span>
+                            <span style={isOther && card.otherText ? { fontWeight: 900 } : {}}>{displayLabel}</span>
                             <div className="criterion-box-indicator">
                               {isChecked ? '✔' : ''}
                             </div>
@@ -774,13 +782,6 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                         );
                       })}
                     </div>
-
-                    {/* Other Item text if present */}
-                    {card.criteria.includes('other') && card.otherText && (
-                      <div style={{ textAlign: 'center', marginBottom: '1.25rem', background: '#f8fafc', padding: '0.6rem 1rem', borderRadius: '12px', border: '1.5px dashed #cbd5e1', fontWeight: 800, color: isPink ? '#9d174d' : '#1e40af' }}>
-                        ✨ إنجاز إضافي: <strong>{card.otherText}</strong>
-                      </div>
-                    )}
 
                     {/* Middle Ribbon: بريد عائد للمعلمة */}
                     <div className="postcard-reply-ribbon-row">
@@ -1010,18 +1011,42 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                   <div className="criteria-picker-grid">
                     {criteriaList.map((item) => {
                       const isChecked = card.criteria.includes(item.id);
+                      const isOther = item.id === 'other';
                       return (
-                        <label
-                          key={item.id}
-                          className={`criteria-checkbox-item ${isChecked ? `checked ${card.type}` : ''} ${card.type}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleToggleCriterion(item.id)}
-                          />
-                          <span>{item.icon} {item.label}</span>
-                        </label>
+                        <div key={item.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                          <label
+                            className={`criteria-checkbox-item ${isChecked ? `checked ${card.type}` : ''} ${card.type}`}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleCriterion(item.id)}
+                            />
+                            <span>{item.icon} {item.label}</span>
+                          </label>
+
+                          {isOther && isChecked && (
+                            <div style={{ marginTop: '0.4rem', animation: 'fadeIn 0.2s ease' }}>
+                              <input
+                                type="text"
+                                className={`studio-input ${!isPink ? 'blue' : ''}`}
+                                placeholder="اكتب هنا أي شيء يريده المعلم..."
+                                value={card.otherText || ''}
+                                onChange={(e) => setCard({ ...card, otherText: e.target.value })}
+                                autoFocus
+                                style={{
+                                  fontSize: '0.86rem',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '8px',
+                                  border: isPink ? '2px solid #db2777' : '2px solid #2563eb',
+                                  background: '#ffffff',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -1029,12 +1054,12 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
                 {card.criteria.includes('other') && (
                   <div className="form-group-field" style={{ animation: 'fadeIn 0.25s ease' }}>
-                    <label className="field-label">نص الإنجاز الإضافي (أخرى):</label>
+                    <label className="field-label">✏️ نص الإنجاز الخاص بالزر «أخرى» (يظهر مباشرة على البطاقة):</label>
                     <input
                       type="text"
                       className={`studio-input ${!isPink ? 'blue' : ''}`}
-                      placeholder="مثال: حفظ سورة الملك / التميز في الحساب الذهني"
-                      value={card.otherText}
+                      placeholder="اكتب هنا أي شيء يريده المعلم (مثال: حفظ سورة الملك / التميز في الحساب الذهني)"
+                      value={card.otherText || ''}
                       onChange={(e) => setCard({ ...card, otherText: e.target.value })}
                     />
                   </div>
@@ -1157,14 +1182,22 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                     <div className="postcard-criteria-layout">
                       {criteriaList.map((item) => {
                         const isChecked = card.criteria && card.criteria.includes(item.id);
+                        const isOther = item.id === 'other';
+                        const displayLabel = isOther && card.otherText
+                          ? `📝 أخرى: ${card.otherText}`
+                          : isOther && isChecked
+                          ? '📝 أخرى: ..............................'
+                          : `${item.icon} ${item.label}`;
+
                         return (
                           <div 
                             key={item.id} 
                             onClick={() => handleToggleCriterion(item.id)}
                             style={{ cursor: 'pointer' }}
-                            className={`criterion-card-badge ${isChecked ? `checked ${card.type}` : ''}`}
+                            className={`criterion-card-badge ${isChecked ? `checked ${card.type}` : ''} ${isOther ? 'other-badge' : ''}`}
+                            title={isOther ? 'انقر لتفعيل أو تعديل إنجاز أخرى' : ''}
                           >
-                            <span>{item.icon} {item.label}</span>
+                            <span style={isOther && card.otherText ? { fontWeight: 900 } : {}}>{displayLabel}</span>
                             <div className="criterion-box-indicator">
                               {isChecked ? '✔' : ''}
                             </div>
@@ -1172,13 +1205,6 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                         );
                       })}
                     </div>
-
-                    {/* Other Item text if present */}
-                    {card.criteria.includes('other') && card.otherText && (
-                      <div style={{ textAlign: 'center', marginBottom: '1.25rem', background: '#f8fafc', padding: '0.6rem 1rem', borderRadius: '12px', border: '1.5px dashed #cbd5e1', fontWeight: 800, color: isPink ? '#9d174d' : '#1e40af' }}>
-                        ✨ إنجاز إضافي: <strong>{card.otherText}</strong>
-                      </div>
-                    )}
 
                     {/* Middle Ribbon: بريد عائد للمعلمة */}
                     <div className="postcard-reply-ribbon-row">
@@ -1280,12 +1306,55 @@ const HappinessMailPage = ({ isStandalone = true }) => {
               <div className="archive-header-row">
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
-                    📬 أرشيف البطاقات الصادرة ({savedCards.length} بطاقة مرسلة)
+                    📬 أرشيف البطاقات الصادرة {filterArchiveClass !== 'all' ? `— الصف ${filterArchiveClass}` : ''} ({savedCards.filter(c => filterArchiveClass === 'all' || (c.studentClass || '').includes(filterArchiveClass)).length} من أصل {savedCards.length})
                   </h3>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem', color: '#64748b' }}>
-                    يمكنك إعادة إرسال الرابط، تنزيل صورة أي بطاقة سابقة، وقراءة ردود أولياء الأمور.
+                    فرز واستعراض بطاقات وردود أولياء الأمور لكل صف وشعبة بشكل مستقل.
                   </p>
                 </div>
+              </div>
+
+              {/* Classroom filter pills for archive */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', margin: '1rem 0 1.25rem 0' }}>
+                <button
+                  type="button"
+                  onClick={() => setFilterArchiveClass('all')}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '10px',
+                    border: `1.5px solid ${filterArchiveClass === 'all' ? '#2563eb' : '#cbd5e1'}`,
+                    background: filterArchiveClass === 'all' ? '#eff6ff' : '#ffffff',
+                    color: filterArchiveClass === 'all' ? '#1d4ed8' : '#475569',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🏢 جميع الصفوف ({savedCards.length})
+                </button>
+                {CLASS_OPTIONS.map(cls => {
+                  const count = savedCards.filter(c => (c.studentClass || '').includes(cls)).length;
+                  const isSelected = filterArchiveClass === cls;
+                  return (
+                    <button
+                      key={cls}
+                      type="button"
+                      onClick={() => setFilterArchiveClass(cls)}
+                      style={{
+                        padding: '0.4rem 0.85rem',
+                        borderRadius: '10px',
+                        border: `1.5px solid ${isSelected ? '#059669' : '#cbd5e1'}`,
+                        background: isSelected ? '#ecfdf5' : '#ffffff',
+                        color: isSelected ? '#047857' : '#475569',
+                        fontWeight: isSelected ? 900 : 700,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {cls} ({count})
+                    </button>
+                  );
+                })}
               </div>
 
               {savedCards.length === 0 ? (
@@ -1309,8 +1378,10 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {savedCards.map((sc, idx) => {
-                        const linkUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?id=${sc.id}`;
+                      {savedCards
+                        .filter(sc => filterArchiveClass === 'all' || (sc.studentClass || '').includes(filterArchiveClass))
+                        .map((sc, idx) => {
+                          const linkUrl = `${window.location.origin}${window.location.pathname}#happiness-mail?id=${sc.id}`;
                         return (
                           <tr key={sc.id || idx}>
                             <td style={{ fontWeight: 800, color: '#64748b' }}>{idx + 1}</td>

@@ -10,12 +10,12 @@ import {
 } from 'firebase/firestore';
 
 const CLASS_OPTIONS = [
-  'الأول (أ)', 'الأول (ب)', 'الأول (ج)',
-  'الثاني (أ)', 'الثاني (ب)', 'الثاني (ج)',
-  'الثالث (أ)', 'الثالث (ب)', 'الثالث (ج)',
-  'الرابع (أ)', 'الرابع (ب)', 'الرابع (ج)',
-  'الخامس (أ)', 'الخامس (ب)', 'الخامس (ج)',
-  'السادس (أ)', 'السادس (ب)', 'السادس (ج)'
+  'الأول 1', 'الأول 2', 'الأول 3',
+  'الثاني 1', 'الثاني 2', 'الثاني 3',
+  'الثالث 1', 'الثالث 2', 'الثالث 3',
+  'الرابع 1', 'الرابع 2', 'الرابع 3',
+  'الخامس 1', 'الخامس 2', 'الخامس 3', 'الخامس 4',
+  'السادس 1', 'السادس 2', 'السادس 3'
 ];
 
 const DEFAULT_CONFIG = {
@@ -118,17 +118,46 @@ const ParentMeetingPollAdminTab = () => {
     };
   }, []);
 
-  // 2. Metrics Calculation
-  const totalCount = responses.length;
-  const yesCount = responses.filter(r => r.attendance === 'yes').length;
-  const timeSlotCount = responses.filter(r => r.attendance === 'time_slot').length;
-  const apologizeCount = responses.filter(r => r.attendance === 'apologize').length;
-  const suggestionsCount = responses.filter(r => r.suggestions && r.suggestions.trim().length > 0).length;
+  // Smart class matcher to support both "الرابع 1" and "الرابع (أ)", "الخامس 4" and "الخامس (د)"
+  const isClassMatching = (itemClass, targetClass) => {
+    if (!targetClass || targetClass === 'all') return true;
+    if (!itemClass) return false;
+    if (itemClass === targetClass) return true;
+
+    const normItem = itemClass.replace(/[\(\)\s\-]/g, '');
+    const normTarget = targetClass.replace(/[\(\)\s\-]/g, '');
+    if (normItem === normTarget) return true;
+
+    const numToLetter = { '1': 'أ', '2': 'ب', '3': 'ج', '4': 'د' };
+
+    const grades = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
+    for (const g of grades) {
+      if (targetClass.includes(g) && itemClass.includes(g)) {
+        for (let i = 1; i <= 4; i++) {
+          const numStr = String(i);
+          const letter = numToLetter[numStr];
+          if (targetClass.includes(numStr)) {
+            if (itemClass.includes(numStr) || itemClass.includes(letter)) return true;
+          }
+        }
+      }
+    }
+    return false;
+  };
+
+  // Scoped responses based on selected class
+  const classScopedResponses = responses.filter(r => isClassMatching(r.studentClass, filterClass));
+
+  // 2. Metrics Calculation (Dynamically calculated for selected class or all)
+  const totalCount = classScopedResponses.length;
+  const yesCount = classScopedResponses.filter(r => r.attendance === 'yes').length;
+  const timeSlotCount = classScopedResponses.filter(r => r.attendance === 'time_slot').length;
+  const apologizeCount = classScopedResponses.filter(r => r.attendance === 'apologize').length;
+  const suggestionsCount = classScopedResponses.filter(r => r.suggestions && r.suggestions.trim().length > 0).length;
   const attendanceRate = totalCount > 0 ? Math.round(((yesCount + timeSlotCount) / totalCount) * 100) : 0;
 
-  // 3. Filtered list
-  const filteredResponses = responses.filter(item => {
-    if (filterClass !== 'all' && item.studentClass !== filterClass) return false;
+  // 3. Filtered list (status + search inside the scoped class)
+  const filteredResponses = classScopedResponses.filter(item => {
     if (filterStatus !== 'all' && item.attendance !== filterStatus) return false;
     if (onlySuggestions && (!item.suggestions || !item.suggestions.trim())) return false;
     if (searchQuery.trim()) {
@@ -287,7 +316,7 @@ const ParentMeetingPollAdminTab = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `كشف_حضور_لقاء_أولياء_الأمور_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `كشف_حضور_لقاء_أولياء_الأمور_${filterClass === 'all' ? 'جميع_الصفوف' : filterClass.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -401,6 +430,153 @@ const ParentMeetingPollAdminTab = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Classroom Quick Selector & Active Class Focus Bar */}
+      <div style={{
+        background: '#ffffff',
+        borderRadius: '20px',
+        padding: '1.25rem 1.5rem',
+        marginBottom: '1.5rem',
+        border: '1.5px solid #cbd5e1',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>🏫</span>
+            <div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>
+                تصفية وعرض ردود أولياء الأمور لكل صف على حدة:
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                اضغط على أي صف (مثل: الرابع 1، الخامس 4) لتظهر إحصائيات وكشف ذلك الصف فقط
+              </div>
+            </div>
+          </div>
+
+          {filterClass !== 'all' && (
+            <button
+              type="button"
+              onClick={() => setFilterClass('all')}
+              style={{
+                background: '#f1f5f9',
+                border: '1.5px solid #cbd5e1',
+                color: '#334155',
+                padding: '0.4rem 1rem',
+                borderRadius: '10px',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <i className="fas fa-undo"></i> إلغاء الفرز وعرض كل المدرسة ({responses.length})
+            </button>
+          )}
+        </div>
+
+        {/* Classroom Pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={() => setFilterClass('all')}
+            style={{
+              padding: '0.55rem 1rem',
+              borderRadius: '12px',
+              border: `2px solid ${filterClass === 'all' ? '#2563eb' : '#e2e8f0'}`,
+              background: filterClass === 'all' ? '#eff6ff' : '#ffffff',
+              color: filterClass === 'all' ? '#1d4ed8' : '#334155',
+              fontWeight: 900,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: filterClass === 'all' ? '0 2px 8px rgba(37,99,235,0.2)' : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span>🏢 جميع الصفوف</span>
+            <span style={{
+              background: filterClass === 'all' ? '#2563eb' : '#f1f5f9',
+              color: filterClass === 'all' ? '#ffffff' : '#475569',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
+              fontWeight: 900
+            }}>
+              {responses.length}
+            </span>
+          </button>
+
+          {CLASS_OPTIONS.map((cls) => {
+            const count = responses.filter(r => isClassMatching(r.studentClass, cls)).length;
+            const isSelected = filterClass === cls;
+            return (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => setFilterClass(cls)}
+                style={{
+                  padding: '0.55rem 0.9rem',
+                  borderRadius: '12px',
+                  border: `2px solid ${isSelected ? '#059669' : count > 0 ? '#10b981' : '#e2e8f0'}`,
+                  background: isSelected ? '#ecfdf5' : count > 0 ? '#ffffff' : '#f8fafc',
+                  color: isSelected ? '#047857' : count > 0 ? '#0f172a' : '#94a3b8',
+                  fontWeight: isSelected ? 900 : 700,
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  boxShadow: isSelected ? '0 2px 8px rgba(5,150,105,0.2)' : 'none',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>{cls}</span>
+                <span style={{
+                  background: isSelected ? '#059669' : count > 0 ? '#10b981' : '#e2e8f0',
+                  color: isSelected || count > 0 ? '#ffffff' : '#64748b',
+                  padding: '0.12rem 0.45rem',
+                  borderRadius: '999px',
+                  fontSize: '0.74rem',
+                  fontWeight: 900
+                }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active Class Focus Notification Banner */}
+        {filterClass !== 'all' && (
+          <div style={{
+            marginTop: '1rem',
+            background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
+            color: '#ffffff',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            animation: 'fadeIn 0.25s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '1.2rem' }}>📌</span>
+              <span style={{ fontWeight: 900, fontSize: '0.95rem' }}>
+                أنت تستعرض حالياً: ردود وإحصائيات وكشف <strong>الصف {filterClass}</strong> ({totalCount} مسجلين)
+              </span>
+            </div>
+            <div style={{ fontSize: '0.84rem', color: '#d1fae5', fontWeight: 800 }}>
+              نسبة الحضور للصف: {attendanceRate}% ({yesCount} حاضرون)
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI Stats Grid */}
@@ -835,10 +1011,10 @@ const ParentMeetingPollAdminTab = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
-              📋 كشف ردود أولياء الأمور ({filteredResponses.length} من أصل {totalCount})
+              📋 كشف ردود أولياء الأمور {filterClass !== 'all' ? `— الصف ${filterClass}` : ''} ({filteredResponses.length} مسجلين)
             </h2>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem', color: '#64748b' }}>
-              يمكنك الفرز حسب الصف، تصفية المعتذرين، وتصدير أو طباعة الكشف للمربين.
+              {filterClass !== 'all' ? `يعرض هذا الجدول بيانات وردود أولياء أمور الصف ${filterClass} فقط.` : 'يمكنك الفرز حسب الصف، تصفية المعتذرين، وتصدير أو طباعة الكشف للمربين.'}
             </p>
           </div>
 
