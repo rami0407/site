@@ -62,14 +62,6 @@ const ParentPolls = ({ isStandalone = true }) => {
   const [submittedResponse, setSubmittedResponse] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Live Aggregated Stats
-  const [stats, setStats] = useState({
-    total: 0,
-    yes: 0,
-    time_slot: 0,
-    apologize: 0
-  });
-
   // Purge old polls & Load current meeting data + responses
   useEffect(() => {
     // 1. Purge legacy demo polls from localStorage
@@ -121,48 +113,8 @@ const ParentPolls = ({ isStandalone = true }) => {
       console.warn("Firestore config error:", err);
     }
 
-    // 4. Listen to responses collection to aggregate live stats
-    let unsubResponses = () => {};
-    try {
-      const responsesRef = collection(db, 'parent_poll_responses');
-      unsubResponses = onSnapshot(responsesRef, (snapshot) => {
-        let total = 0;
-        let yes = 0;
-        let time_slot = 0;
-        let apologize = 0;
-
-        snapshot.forEach((d) => {
-          const data = d.data();
-          if (data.meetingId === 'meeting-10-10-2026' || !data.meetingId) {
-            total += 1;
-            if (data.attendance === 'yes') yes += 1;
-            else if (data.attendance === 'time_slot') time_slot += 1;
-            else if (data.attendance === 'apologize') apologize += 1;
-          }
-        });
-
-        // If local storage has records and firestore is empty / offline
-        if (total === 0) {
-          const localResponses = JSON.parse(localStorage.getItem('db_parent_meeting_responses') || '[]');
-          if (localResponses.length > 0) {
-            total = localResponses.length;
-            yes = localResponses.filter(r => r.attendance === 'yes').length;
-            time_slot = localResponses.filter(r => r.attendance === 'time_slot').length;
-            apologize = localResponses.filter(r => r.attendance === 'apologize').length;
-          }
-        }
-
-        setStats({ total, yes, time_slot, apologize });
-      }, (err) => {
-        console.warn("Firestore responses snapshot error:", err);
-      });
-    } catch (err) {
-      console.warn("Firestore responses error:", err);
-    }
-
     return () => {
       unsubConfig();
-      unsubResponses();
     };
   }, []);
 
@@ -262,12 +214,6 @@ const ParentPolls = ({ isStandalone = true }) => {
     const text = `دعوة للقاء أولياء الأمور — مدرسة مشيرفة الابتدائية 🏫✨\n«يدًا بيد نحو التميّز»\n🗓️ الموعد: ${meetingData.date}\n🏫 المكان: ${meetingData.location}\n\nشاركونا الحضور وسجلوا مقترحاتكم الكريمة عبر الرابط:\n${window.location.origin}${window.location.pathname}#parent-polls`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
-
-  // Percentage calculations
-  const totalVotes = stats.total || 0;
-  const yesPct = totalVotes > 0 ? Math.round((stats.yes / totalVotes) * 100) : 0;
-  const timeSlotPct = totalVotes > 0 ? Math.round((stats.time_slot / totalVotes) * 100) : 0;
-  const apologizePct = totalVotes > 0 ? Math.round((stats.apologize / totalVotes) * 100) : 0;
 
   return (
     <div className={`parent-polls-page ${isStandalone ? 'standalone-view' : ''}`} id="parent-polls" style={isStandalone ? { paddingTop: '100px' } : {}}>
@@ -600,57 +546,6 @@ const ParentPolls = ({ isStandalone = true }) => {
             </form>
           </section>
         )}
-
-        {/* 4. Live Community Response Stats Bar */}
-        <section className="live-poll-stats-card" aria-label="إحصائيات تفاعل أولياء الأمور">
-          <h3 className="live-stats-title">
-            <i className="fas fa-chart-pie"></i> نبض المشاركة والتفاعل المجتمعي ({totalVotes} مشارك مسجل)
-          </h3>
-
-          <div className="stats-bars-container">
-            {/* Yes Attending */}
-            <div className="stat-bar-row">
-              <div className="stat-label-flex">
-                <span>🟢 سأحضر اللقاء بإذن الله ({stats.yes} ولي أمر)</span>
-                <span>{yesPct}%</span>
-              </div>
-              <div className="stat-progress-track">
-                <div 
-                  className="stat-progress-fill green" 
-                  style={{ width: `${yesPct}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Time Slot Requested */}
-            <div className="stat-bar-row">
-              <div className="stat-label-flex">
-                <span>🟡 سأحضر مع طلب تنسيق موعد ({stats.time_slot} ولي أمر)</span>
-                <span>{timeSlotPct}%</span>
-              </div>
-              <div className="stat-progress-track">
-                <div 
-                  className="stat-progress-fill yellow" 
-                  style={{ width: `${timeSlotPct}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Apologized */}
-            <div className="stat-bar-row">
-              <div className="stat-label-flex">
-                <span>🔴 أعتذر لظرف طارئ ({stats.apologize} ولي أمر)</span>
-                <span>{apologizePct}%</span>
-              </div>
-              <div className="stat-progress-track">
-                <div 
-                  className="stat-progress-fill red" 
-                  style={{ width: `${apologizePct}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        </section>
 
       </div>
     </div>
