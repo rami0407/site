@@ -1293,7 +1293,7 @@ const HappinessMailPage = ({ isStandalone = true }) => {
 
             {/* Archive Section */}
             <div className="sent-cards-archive-section">
-              <div className="archive-header-row">
+              <div className="archive-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
                     📬 أرشيف البطاقات الصادرة {filterArchiveClass !== 'all' ? `— الصف ${filterArchiveClass}` : ''} ({savedCards.filter(c => filterArchiveClass === 'all' || (c.studentClass || '').includes(filterArchiveClass)).length} من أصل {savedCards.length})
@@ -1302,6 +1302,27 @@ const HappinessMailPage = ({ isStandalone = true }) => {
                     فرز واستعراض بطاقات وردود أولياء الأمور لكل صف وشعبة بشكل مستقل.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = '#admin'; }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.6rem 1.1rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)'
+                  }}
+                >
+                  <i className="fas fa-tachometer-alt" style={{ color: '#38bdf8' }}></i>
+                  الانتقال للوحة التحكم الإدارية الكاملة
+                </button>
               </div>
 
               {/* Classroom filter pills for archive */}

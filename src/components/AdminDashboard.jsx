@@ -41,6 +41,7 @@ import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } fro
 import { getSecureStorage, setSecureStorage, removeSecureStorage } from '../utils/cryptoVault';
 import SecurityHubAdminTab from './SecurityHubAdminTab';
 import ParentMeetingPollAdminTab from './ParentMeetingPollAdminTab';
+import HappinessMailAdminTab from './HappinessMailAdminTab';
 import { 
   checkRateLimit, 
   recordFailedAttempt, 
@@ -4943,25 +4944,25 @@ const AdminDashboard = () => {
               🗳️ استطلاع ودعوة لقاء الأهالي (10.10.2026)
             </button>
 
-            {/* 💌 بريد السعادة والتميز */}
+            {/* 💌 أرشيف ولوحة تحكم بريد السعادة والتميز */}
             <button 
-              onClick={() => { window.location.hash = '#happiness-mail'; }} 
-              className="filter-chip"
+              onClick={() => setActiveTab('happiness-mail')} 
+              className={`filter-chip ${activeTab === 'happiness-mail' ? 'active' : ''}`}
               style={{
                 width: '100%',
                 justifyContent: 'flex-start',
                 padding: '0.95rem 1.2rem',
                 fontSize: '1.02rem',
                 borderRadius: 'var(--radius-sm)',
-                background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)',
-                color: '#be185d',
+                background: activeTab === 'happiness-mail' ? 'linear-gradient(135deg, #db2777 0%, #be185d 100%)' : '#fdf2f8',
+                color: activeTab === 'happiness-mail' ? '#ffffff' : '#be185d',
                 fontWeight: 900,
                 border: '2px solid #f472b6',
                 boxShadow: '0 4px 10px rgba(236,72,153,0.15)'
               }}
             >
-              <i className="fas fa-envelope" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#db2777' }}></i>
-              💌 استوديو بريد السعادة والتميز
+              <i className="fas fa-envelope-open-text" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'happiness-mail' ? '#ffffff' : '#db2777' }}></i>
+              💌 أرشيف بريد السعادة والتميز
             </button>
 
             <button 
@@ -9298,6 +9299,13 @@ const AdminDashboard = () => {
               {(activeTab === 'parent-polls' || activeTab === 'parent-meeting-poll') && (
                 <div>
                   <ParentMeetingPollAdminTab />
+                </div>
+              )}
+
+              {/* TAB: HAPPINESS & EXCELLENCE MAIL ARCHIVE */}
+              {activeTab === 'happiness-mail' && (
+                <div>
+                  <HappinessMailAdminTab />
                 </div>
               )}
 
