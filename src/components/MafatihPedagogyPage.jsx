@@ -1549,7 +1549,7 @@ ${p.stations?.h || ''}
                   <span className="infographic-tag">
                     <i className="fas fa-project-diagram"></i> المخطط البصري الرسمي للموديل
                   </span>
-                  <h3>مسار الحصة والتعلم وفق موديل מַפְתֵּי"חַ</h3>
+                  <h3>مسار الحصة والتعلم وفق نموذج مِفتاح للحصة الفاعلة</h3>
                 </div>
                 <div className="infographic-actions">
                   <a 
@@ -1573,8 +1573,8 @@ ${p.stations?.h || ''}
 
               <div className="infographic-image-wrapper">
                 <img 
-                  src="/mafatih_key_model.png" 
-                  alt="مخطط موديل مِفْتَاح التربوي — מודל מַפְתֵּי&quot;חַ" 
+                  src="/mafatih_key_model.png?v=2" 
+                  alt="المخطط البصري لنموذج مِفتاح للحصة الفاعلة" 
                   className="key-model-img"
                   loading="lazy"
                 />
@@ -3969,7 +3969,7 @@ ${p.stations?.h || ''}
                   }}
                 >
                   <img 
-                    src="/mafatih_key_hebrew_model.png" 
+                    src="/mafatih_key_hebrew_model.png?v=2" 
                     alt="תרשים מודל מַפְתֵּי&quot;חַ הרשמי - מודל מפתיח" 
                     style={{ 
                       maxWidth: '100%', 
