@@ -1248,90 +1248,13 @@ ${p.stations?.h || ''}
       <header className="mafatih-hero-banner">
         <div className="mafatih-hero-overlay"></div>
         <div className="container mafatih-hero-content">
-          <div className="mafatih-hero-meta">
-            <a 
-              href="https://chatgpt.com/?surface=work&prompt=%D7%91%D7%A0%D7%94+%D7%90%D7%99%D7%AA%D7%99+%D7%9E%D7%A2%D7%A8%D7%9A+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+%D7%9C%D7%A4%D7%99+%D7%9E%D7%95%D7%93%D7%9C+%D7%9E%D7%A4%D7%AA%D7%99%D7%B4%D7%97+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A9%D7%90%D7%9C%D7%95%D7%AA+%D7%9E%D7%9B%D7%95%D7%95%D7%A0%D7%95%D7%AA."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mafatih-hero-top-bot-badge"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'linear-gradient(135deg, #10a37f 0%, #0d9488 100%)',
-                color: 'white',
-                padding: '0.45rem 1.15rem',
-                borderRadius: '50px',
-                fontWeight: 900,
-                fontSize: '0.92rem',
-                textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(16, 163, 127, 0.45)',
-                border: '1px solid rgba(255,255,255,0.35)',
-                transition: 'all 0.2s ease'
-              }}
-              title="فتح البوت الذكي لتخطيط حصة بموديل مِفْتَاح عبر الأسئلة الموجهة"
-            >
-              <span>🤖</span> بوت لتخطيط حصة ↗
-            </a>
-
-            <a 
-              href="https://gemini.google.com/gem/5b697cc4099b"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mafatih-hero-top-gemini-badge"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-                color: 'white',
-                padding: '0.45rem 1.15rem',
-                borderRadius: '50px',
-                fontWeight: 900,
-                fontSize: '0.92rem',
-                textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.45)',
-                border: '1px solid rgba(255,255,255,0.35)',
-                transition: 'all 0.2s ease'
-              }}
-              title="فتح بوت تخطيط حسب جيمني بموديل مِفْتَاح"
-            >
-              <span>✨</span> تخطيط حسب جيمني ↗
-            </a>
-
-            <a 
-              href="https://gemini.google.com/gem-labs/1jRrQGLBhFIeSIOwihaflwAg0cUzBfa_W"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mafatih-hero-top-gemini-lab-badge"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                color: 'white',
-                padding: '0.45rem 1.15rem',
-                borderRadius: '50px',
-                fontWeight: 900,
-                fontSize: '0.92rem',
-                textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(124, 58, 237, 0.45)',
-                border: '1px solid rgba(255,255,255,0.35)',
-                transition: 'all 0.2s ease'
-              }}
-              title="تحضير خطة درس حسب ai"
-            >
-              <span>🧠</span> تحضير خطة درس حسب ai ↗
-            </a>
-          </div>
-
           <h1 className="mafatih-hero-title">
-            موديل <span>"مِفْتَاح"</span> التربوي
-            <small className="mafatih-hebrew-subtitle">מודל מַפְתֵּי"חַ: الإطار التدريسي الموحد لرسم مسار الحصة</small>
+            نموذج <span>"مِفْتَاح"</span> للحصة الفاعلة
+            <small className="mafatih-hebrew-subtitle">رحلة تعلم متكاملة ومترابطة وفق 5 محطات و3 مبادئ ثابتة</small>
           </h1>
 
           <p className="mafatih-hero-description">
-            نموذج تعليمي قيادي ينقل الحصة المدرسية من مجرد التلقين السطحي إلى بناء <strong>"الزوّادة" (צידת הדרך)</strong> ونقل أثر التعلم للحياة اليومية عبر 5 محطات إجرائية متناغمة تعزز التمايز، الاحتواء، والوعي الذاتي.
+            يقوم النموذج على أن الحصة الفاعلة ليست سلسلة أنشطة منفصلة، بل رحلة تعلم واضحة ومترابطة يعرف فيها الطالب: <strong>أين نحن الآن؟ ماذا نتعلم؟ ماذا يُتوقع مني؟ كيف أعرف أنني نجحت؟ وما المرحلة التالية؟</strong> عبر مبادئ الاحتواء والمشاركة، التمايز والتكيف، والتقويم التكويني المستمر.
           </p>
 
           {/* Quick Acronym Visual Cards */}
