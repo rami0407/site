@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import mammoth from 'mammoth';
 import genieImg from '../assets/genie.png';
 import { generateMafatihLessonPlanAI, generateAiResponse, parseUploadedLessonPlanAI } from '../utils/aiService';
@@ -3969,7 +3969,7 @@ ${p.stations?.h || ''}
                   }}
                 >
                   <img 
-                    src="/mafatih_key_hebrew_model.png?v=2" 
+                    src="/mafatih_key_hebrew_model.png?v=3" 
                     alt="תרשים מודל מַפְתֵּי&quot;חַ הרשמי - מודל מפתיח" 
                     style={{ 
                       maxWidth: '100%', 
@@ -6457,3 +6457,4 @@ ${p.stations?.h || ''}
 };
 
 export default MafatihPedagogyPage;
+
