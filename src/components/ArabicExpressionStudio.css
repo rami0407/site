@@ -1,0 +1,179 @@
+/* ArabicExpressionStudio.css */
+.expression-studio-container {
+  direction: rtl;
+  font-family: inherit;
+  color: #1e293b;
+}
+
+.expression-hero-banner {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+  color: white;
+  border-radius: 28px;
+  padding: 2.2rem 2.5rem;
+  box-shadow: 0 20px 45px rgba(30, 27, 75, 0.25);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(199, 210, 254, 0.3);
+}
+
+.expression-topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.expression-topic-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.expression-topic-card:hover {
+  transform: translateY(-4px);
+  border-color: #6366f1;
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.15);
+}
+
+.expression-topic-card.active {
+  border-color: #4f46e5;
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25);
+  background: #fdfcff;
+}
+
+.expression-topic-img-wrapper {
+  height: 160px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.expression-topic-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.expression-topic-card:hover .expression-topic-img {
+  transform: scale(1.05);
+}
+
+.expression-word-bank-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition: all 0.25s ease;
+}
+
+.expression-word-bank-chip.pending {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1.5px dashed #cbd5e1;
+}
+
+.expression-word-bank-chip.matched {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1.5px solid #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  transform: scale(1.04);
+}
+
+.expression-editor-area {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.04);
+  margin-bottom: 2rem;
+}
+
+.expression-textarea {
+  width: 100%;
+  min-height: 240px;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 18px;
+  font-size: 1.15rem;
+  line-height: 2;
+  color: #0f172a;
+  background: #fafafa;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.expression-textarea:focus {
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+/* Rubrics Results */
+.expression-results-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 28px;
+  padding: 2.2rem;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.06);
+  margin-bottom: 2.5rem;
+}
+
+.expression-rubric-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.expression-rubric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .expression-hero-banner {
+    padding: 1.5rem;
+    border-radius: 20px;
+  }
+  .expression-editor-area {
+    padding: 1.25rem;
+  }
+  .expression-textarea {
+    min-height: 180px;
+    font-size: 1.05rem;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .expression-printable-area, .expression-printable-area * {
+    visibility: visible;
+  }
+  .expression-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

@@ -15,6 +15,7 @@ import { generateReadingSummaryAndMoral } from '../utils/aiService';
 import BookBuddyModal from './BookBuddyModal';
 import StoryStudioModal from './StoryStudioModal';
 import ArabicSkillsArena from './ArabicSkillsArena';
+import ArabicExpressionStudio from './ArabicExpressionStudio';
 
 // Default starter reading logs celebrating Musheirifa students
 const DEFAULT_READING_LOGS = [
@@ -608,6 +609,7 @@ const ReadersClubPage = () => {
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
           {[
             { id: 'arabic-skills', label: 'أولمبياد مهارات لغتي العربية 📖✨', icon: 'fa-graduation-cap' },
+            { id: 'expression-studio', label: 'مُلهِم التعبير والإنشاء الذكي ✍️🎨', icon: 'fa-feather-pointed' },
             { id: 'tree', label: 'شجرة القراءة التفاعلية 🌳', icon: 'fa-tree' },
             { id: 'wall', label: 'حائط قراءات وتوصيات الأصدقاء 💬', icon: 'fa-comments' },
             { id: 'hall-of-fame', label: 'لوحة شرف فرسان القراءة 🏆', icon: 'fa-award' }
@@ -640,6 +642,11 @@ const ReadersClubPage = () => {
         {/* ==================== TAB 0: ARABIC SKILLS OLYMPIAD ==================== */}
         {activeTab === 'arabic-skills' && (
           <ArabicSkillsArena />
+        )}
+
+        {/* ==================== TAB 0.5: ARABIC EXPRESSION & COMPOSITION STUDIO ==================== */}
+        {activeTab === 'expression-studio' && (
+          <ArabicExpressionStudio />
         )}
 
         {/* ==================== TAB 1: SOCIAL REVIEWS WALL ==================== */}
