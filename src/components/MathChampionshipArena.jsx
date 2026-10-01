@@ -5,12 +5,14 @@ import {
   DETECTIVE_CHALLENGE,
   REAL_WORLD_CHALLENGE,
   PEMDAS_CHALLENGE,
+  PATTERNS_LOGIC_CHALLENGE,
   CHAMPIONSHIP_AWARDS,
   generateMultiplicationQuestion,
   generateGradeCurriculumQuestion,
   generateMathDetectiveQuestion,
   generateRealWorldMathQuestion,
-  generatePemdasQuestion
+  generatePemdasQuestion,
+  generatePatternsLogicQuestion
 } from '../data/mathCurriculumData';
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
@@ -64,6 +66,9 @@ export default function MathChampionshipArena() {
 
   // PEMDAS & Operations challenge settings
   const [selectedPemdasLevel, setSelectedPemdasLevel] = useState('progressive');
+
+  // Patterns & Logic challenge settings
+  const [selectedPatternLevel, setSelectedPatternLevel] = useState('progressive');
 
   // In-Game state
   const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'game_over'
@@ -147,11 +152,14 @@ export default function MathChampionshipArena() {
     } else if (gameType === 'pemdas') {
       const q = generatePemdasQuestion(selectedPemdasLevel, correctCount);
       setCurrentQuestion(q);
+    } else if (gameType === 'pattern') {
+      const q = generatePatternsLogicQuestion(selectedPatternLevel, correctCount);
+      setCurrentQuestion(q);
     } else {
       const q = generateGradeCurriculumQuestion(selectedCurriculumGrade, selectedCurriculumTopic);
       setCurrentQuestion(q);
     }
-  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, correctCount]);
+  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, correctCount]);
 
   // End game handler
   const finishGame = useCallback((reason = 'time_up') => {
@@ -185,6 +193,8 @@ export default function MathChampionshipArena() {
               ? `المسائل الحياتية (${selectedStoryLevel === 'progressive' ? 'متدرج ذكي' : selectedStoryLevel})`
               : activeView === 'play_pemdas'
               ? `ترتيب العمليات (${selectedPemdasLevel === 'progressive' ? 'متدرج ذكي' : selectedPemdasLevel})`
+              : activeView === 'play_pattern'
+              ? `المتواليات والألغاز (${selectedPatternLevel === 'progressive' ? 'متدرج ذكي' : selectedPatternLevel})`
               : `منهاج (${selectedCurriculumGrade})`
           },
           ...(prev.history || []).slice(0, 9)
@@ -205,7 +215,7 @@ export default function MathChampionshipArena() {
         }).catch(() => {});
       } catch (e) {}
     }
-  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, wrongCount]);
+  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, wrongCount]);
 
   // Timer tick effect
   useEffect(() => {
@@ -238,8 +248,8 @@ export default function MathChampionshipArena() {
     if (gameType === 'multiplication') {
       const m = MULTIPLICATION_TOURNAMENT.modes.find(x => x.id === selectedMultMode);
       duration = m ? m.duration : 60;
-    } else if (gameType === 'detective' || gameType === 'real_world' || gameType === 'pemdas') {
-      duration = 90; // 90 seconds for detective, real-world, and PEMDAS challenges
+    } else if (gameType === 'detective' || gameType === 'real_world' || gameType === 'pemdas' || gameType === 'pattern') {
+      duration = 90; // 90 seconds for detective, real-world, PEMDAS, and pattern challenges
     } else {
       duration = 75; // 75 seconds for curriculum
     }
@@ -261,6 +271,8 @@ export default function MathChampionshipArena() {
         ? 'play_story'
         : gameType === 'pemdas'
         ? 'play_pemdas'
+        : gameType === 'pattern'
+        ? 'play_pattern'
         : 'play_curriculum'
     );
 
@@ -303,7 +315,7 @@ export default function MathChampionshipArena() {
       checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
 
       // In fast speed mode, auto-advance
-      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas') ? 1200 : 650;
+      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas' || activeView === 'play_pattern') ? 1200 : 650;
       setTimeout(() => {
         loadNextQuestion(
           activeView === 'play_multiplication' 
@@ -314,6 +326,8 @@ export default function MathChampionshipArena() {
             ? 'real_world'
             : activeView === 'play_pemdas'
             ? 'pemdas'
+            : activeView === 'play_pattern'
+            ? 'pattern'
             : 'curriculum'
         );
       }, delay);
@@ -547,6 +561,20 @@ export default function MathChampionshipArena() {
           </button>
           <button 
             type="button"
+            className={`math-nav-tab highlight-pattern ${activeView === 'play_pattern' ? 'active' : ''}`}
+            onClick={() => {
+              setGameState('idle');
+              setActiveView('hub');
+              setTimeout(() => {
+                const el = document.getElementById('pattern-challenge-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }}
+          >
+            <i className="fas fa-puzzle-piece"></i> المتواليات والألغاز 🧩
+          </button>
+          <button 
+            type="button"
             className={`math-nav-tab ${activeView === 'leaderboard' ? 'active' : ''}`}
             onClick={() => { setActiveView('leaderboard'); fetchLeaderboard(); }}
           >
@@ -760,6 +788,50 @@ export default function MathChampionshipArena() {
               </div>
             </div>
 
+            {/* SPECIAL CHALLENGE 4: PATTERNS & MATH LOGIC (المتواليات والألغاز الرياضية) */}
+            <div className="math-pattern-challenge-card" id="pattern-challenge-section">
+              <div className="pattern-card-badge">🧩 تحدي المتواليات والتفكير المنطقي</div>
+              <div className="pattern-card-content">
+                <div className="pattern-header-row">
+                  <div className="pattern-avatar-icon">🔮</div>
+                  <div className="pattern-text">
+                    <h2>تحدي «المتواليات والألغاز الرياضية»: أسرار الأنماط والذكاء! 🧩🔍</h2>
+                    <p>اكتشف القواعد الخفية وراء سلاسل الأعداد، فك شفرات الأشكال وفيبوناتشي، وحل أحاجي الأعمار والرموز في سباق تفاعلي مشوق!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="pattern-levels-section">
+                  <label className="picker-label">اختر مسار المتواليات والألغاز (متدرج من السهل إلى الصعب):</label>
+                  <div className="pattern-levels-grid">
+                    {PATTERNS_LOGIC_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`pattern-level-card ${selectedPatternLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedPatternLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pattern-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-pattern-btn"
+                    onClick={() => startGame('pattern')}
+                  >
+                    🎲 ابدأ تحدي المتواليات والألغاز الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* CURRICULUM GRADES GAMES (GRADES 1 - 6) */}
             <div className="curriculum-grades-section">
               <div className="section-title-wrap">
@@ -935,9 +1007,9 @@ export default function MathChampionshipArena() {
             )}
 
             {/* Question Card */}
-            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''}`}>
+            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-arena-card' : ''}`}>
               <div className="question-top-tag">
-                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''}`}>
+                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-tag' : ''}`}>
                   {currentQuestion.category}
                 </span>
                 {currentQuestion.level && (
@@ -955,6 +1027,8 @@ export default function MathChampionshipArena() {
                       ? `${currentQuestion.prompt}. ${currentQuestion.storyText || ''}. ${currentQuestion.questionText}`
                       : currentQuestion.type === 'pemdas'
                       ? `${currentQuestion.prompt}. ${currentQuestion.questionText}`
+                      : currentQuestion.type === 'pattern'
+                      ? `${currentQuestion.prompt}. ${currentQuestion.patternDisplay || ''}. ${currentQuestion.questionText}`
                       : `${currentQuestion.prompt} ${currentQuestion.questionText}`;
                     mathAudio.speakArabic(text);
                   }}
@@ -1024,18 +1098,38 @@ export default function MathChampionshipArena() {
                 </div>
               )}
 
+              {/* PATTERN SPECIAL DISPLAY BOX */}
+              {currentQuestion.type === 'pattern' && (
+                <div className="pattern-case-box">
+                  <div className="pattern-case-badge-row">
+                    <span className="pattern-case-id-badge">🧩 متوالية ولغز منطقي #{correctCount + 1}</span>
+                    <span className="pattern-case-level-tag">
+                      {currentQuestion.level === 'easy' ? '🟢 صفوف 1-2 (قفزات وأنماط بسيطة)' : currentQuestion.level === 'medium' ? '🟡 صفوف 3-4 (ضرب ومربعات وأعمار)' : '🔴 صفوف 5-6 (فيبوناتشي ورموز مركبة)'}
+                    </span>
+                  </div>
+                  {currentQuestion.patternDisplay && (
+                    <div className="pattern-sequence-wrap">
+                      <span className="pattern-sparkle-icon">🔮</span>
+                      <div className="pattern-sequence-text" style={{ whiteSpace: 'pre-line' }}>
+                        {currentQuestion.patternDisplay}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="question-prompt-text">
                 {currentQuestion.prompt}
               </div>
 
               <div className="question-main-display">
-                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : 'math-formula-text'}>
+                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : currentQuestion.type === 'pattern' ? 'pattern-verdict-prompt' : 'math-formula-text'}>
                   {currentQuestion.questionText}
                 </span>
               </div>
 
               {/* Choices Buttons */}
-              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''}`}>
+              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-choices-grid' : ''}`}>
                 {currentQuestion.choices.map((choice, idx) => {
                   let btnStateClass = '';
                   if (isAnswerRevealed) {

@@ -307,6 +307,28 @@ export const CHAMPIONSHIP_AWARDS = [
     minScore: 450,
     condition: 'إحراز 450 نقطة وحل معادلات الأقواس والعمليات المعقدة',
     description: 'قمة الذكاء الرياضي في فك ألغاز العمليات الحسابية المتشابكة'
+  },
+  {
+    id: 'badge_pattern_detective',
+    type: 'badge',
+    tier: 'pattern',
+    name: 'وسام كاشف الأنماط والمتواليات 🧩',
+    icon: '🧩',
+    color: '#f59e0b',
+    minScore: 200,
+    condition: 'إحراز 200 نقطة واكتشاف قوانين المتواليات والألغاز',
+    description: 'بصيرة ثاقبة في اكتشاف الروابط الخفية بين الأرقام والأشكال'
+  },
+  {
+    id: 'cup_math_genius_logic',
+    type: 'cup',
+    tier: 'master_logic',
+    name: 'كأس بروفيسور المنطق والألغاز 🏆🧠',
+    icon: '🏆',
+    color: '#d97706',
+    minScore: 450,
+    condition: 'إحراز 450 نقطة وحل ألغاز فيبوناتشي والمعادلات الصورية المركبة',
+    description: 'الرتبة الأسطورية في التفكير المنطقي والرياضي المجرد'
   }
 ];
 
@@ -2474,5 +2496,478 @@ export const generatePemdasQuestion = (level = 'progressive', questionIndex = 0)
     ]),
     explanation: `الأقواس أولاً: القوس الأول (${a} + ${b} = ${paren1}). القوس الثاني (${c} - ${d} = ${paren2}). وأخيراً نضرب الناتجين: ${paren1} × ${paren2} = ${finalVal}.`,
     points: 35
+  };
+};
+
+/**
+ * تحدي المتواليات والألغاز الرياضية والتفكير المنطقي (Patterns & Math Logic)
+ */
+export const PATTERNS_LOGIC_CHALLENGE = {
+  id: 'patterns_logic_challenge',
+  title: 'تحدي المتواليات والألغاز الرياضية 🧩🔍',
+  subtitle: 'اكتشف قانون المتوالية الخفي، فك الرموز، وحل ألغاز الذكاء الحسابي المشوقة!',
+  icon: '🧩',
+  color: '#f59e0b',
+  badge: 'كاشف الأنماط والألغاز 💡',
+  levels: [
+    { id: 'progressive', name: 'المسار التدريجي الذكي 🚀', desc: 'قفزات عددية بسيطة (1-2) ثم متواليات ضرب ومربعات (3-4) وصولاً لفيبوناتشي والمعادلات الصورية (5-6)', icon: '📈' },
+    { id: 'easy', name: 'مكتشفو الأنماط الصغار (سهل 🟢)', desc: 'الصفوف 1-2: متواليات القفزات الثابتة (+2، +5، +10)، أنماط الأشكال، وأحاجي الأعداد البسيطة', icon: '🔺' },
+    { id: 'medium', name: 'فرسان المتواليات والألغاز (متوسط 🟡)', desc: 'الصفوف 3-4: متواليات الضرب والقسمة، الأعداد المربعة، والقفزات المتصاعدة وألغاز الأعمار', icon: '🔢' },
+    { id: 'hard', name: 'عباقرة المنطق الرياضي (صعب 🔴)', desc: 'الصفوف 5-6: متواليات فيبوناتشي، المتواليات الكسرية والعشرية، وألغاز الفواكه والرموز المركبة', icon: '🧠' }
+  ]
+};
+
+export const generatePatternsLogicQuestion = (level = 'progressive', questionIndex = 0) => {
+  let effectiveLevel = level;
+  if (level === 'progressive') {
+    if (questionIndex < 3) effectiveLevel = 'easy';
+    else if (questionIndex < 7) effectiveLevel = 'medium';
+    else effectiveLevel = 'hard';
+  }
+
+  // ==========================================
+  // EASY (الصفوف 1 و 2)
+  // ==========================================
+  if (effectiveLevel === 'easy') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // متوالية حسابية بقفزة ثابتة تصاعدية (+2, +3, +5, +10)
+      const step = [2, 3, 5, 10][rand(0, 3)];
+      const start = rand(1, 10);
+      const s0 = start;
+      const s1 = s0 + step;
+      const s2 = s1 + step;
+      const s3 = s2 + step;
+      const nextVal = s3 + step;
+
+      return {
+        type: 'pattern',
+        level: 'easy',
+        category: 'المتواليات العددية التصاعدية 📈',
+        prompt: `اكتشف مقدار القفزة وأكمل المتوالية التالية:`,
+        patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، [ ؟ ]`,
+        questionText: `ما هو العدد الذي يحل مكان [ ؟ ]؟`,
+        correctAnswer: `${nextVal}`,
+        choices: shuffle([
+          `${nextVal}`,
+          `${nextVal + 1}`,
+          `${nextVal - step}`,
+          `${nextVal + step}`
+        ]),
+        explanation: `قانون المتوالية: نضيف في كل خطوة (+${step}). إذن ${s3} + ${step} = ${nextVal}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 2) {
+      // متوالية تنازلية بقفزة ثابتة (-2, -5, -10)
+      const step = [2, 5, 10][rand(0, 2)];
+      const s3 = rand(5, 20);
+      const s2 = s3 + step;
+      const s1 = s2 + step;
+      const s0 = s1 + step;
+      const nextVal = s3 - step;
+
+      return {
+        type: 'pattern',
+        level: 'easy',
+        category: 'المتواليات العددية التنازلية 📉',
+        prompt: 'لاحظ النمط التنازلي وحدد العدد التالي:',
+        patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، [ ؟ ]`,
+        questionText: `ما هو العدد القادم في المتوالية؟`,
+        correctAnswer: `${nextVal}`,
+        choices: shuffle([
+          `${nextVal}`,
+          `${nextVal + 2}`,
+          `${nextVal - step}`,
+          `${s3 + step}`
+        ]),
+        explanation: `قانون المتوالية: نطرح في كل خطوة (-${step}). إذن ${s3} - ${step} = ${nextVal}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 3) {
+      // نمط تكراري للأشكال والرموز
+      const patterns = [
+        { seq: '🟢 ، 🟡 ، 🟢 ، 🟡 ، 🟢 ، [ ؟ ]', ans: '🟡', choices: ['🟡', '🟢', '🔴', '🔵'], exp: 'النمط يتكرر بالتبادل: أخضر ثم أصفر!' },
+        { seq: '🔺 ، 🔺 ، 🟦 ، 🔺 ، 🔺 ، [ ؟ ]', ans: '🟦', choices: ['🟦', '🔺', '🟡', '⭐'], exp: 'النمط يتكرر: مثلثان ثم مربع (🔺🔺🟦)!' },
+        { seq: '☀️ ، 🌙 ، ⭐ ، ☀️ ، 🌙 ، [ ؟ ]', ans: '⭐', choices: ['⭐', '☀️', '🌙', '☁️'], exp: 'النمط الثلاثي يتكرر: شمس ثم قمر ثم نجمة!' }
+      ];
+      const p = patterns[rand(0, patterns.length - 1)];
+
+      return {
+        type: 'pattern',
+        level: 'easy',
+        category: 'أنماط الأشكال والرموز 🎨',
+        prompt: 'ما هو الشكل أو الرمز الذي يكمل النمط التالي؟',
+        patternDisplay: p.seq,
+        questionText: 'اختر الرمز الصحيح لمكان [ ؟ ]:',
+        correctAnswer: p.ans,
+        choices: shuffle(p.choices),
+        explanation: p.exp,
+        points: 15
+      };
+    }
+
+    if (caseType === 4) {
+      // أحجية عددية منطقية خفيفة
+      const tens = rand(2, 5);
+      const ones = rand(1, 4);
+      const num = tens * 10 + ones;
+      const sum = tens + ones;
+
+      return {
+        type: 'pattern',
+        level: 'easy',
+        category: 'أحجية الأعداد والذكاء 🕵️‍♂️',
+        prompt: 'حل اللغز العددي التالي:',
+        patternDisplay: `💡 لغز: أنا عدد في العشرات (${tens * 10} إلى ${tens * 10 + 9})، مجموع رقمي آحادي وعشراتي يساوي ${sum}، ورقم عشراتي هو ${tens}.`,
+        questionText: 'من أنا؟',
+        correctAnswer: `${num}`,
+        choices: shuffle([
+          `${num}`,
+          `${num + 1}`,
+          `${num - 1}`,
+          `${tens * 10 + (ones + 2)}`
+        ]),
+        explanation: `بما أن العشرات ${tens} ومجموع الرقمين ${sum}، فإن الآحاد = ${sum} - ${tens} = ${ones}. العدد هو ${num}.`,
+        points: 15
+      };
+    }
+
+    // caseType === 5: متوالية متناوبة (+2 ثم -1)
+    const start = rand(2, 8);
+    const s0 = start;
+    const s1 = s0 + 3;
+    const s2 = s1 - 1;
+    const s3 = s2 + 3;
+    const s4 = s3 - 1;
+    const nextVal = s4 + 3;
+
+    return {
+      type: 'pattern',
+      level: 'easy',
+      category: 'المتوالية المتناوبة (+3 ثم -1) 🔀',
+      prompt: 'دقق في النمط المتغير بانتظام:',
+      patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، ${s4} ، [ ؟ ]`,
+      questionText: 'ما هو العدد التالي وفق النمط؟',
+      correctAnswer: `${nextVal}`,
+      choices: shuffle([
+        `${nextVal}`,
+        `${s4 - 1}`,
+        `${nextVal + 1}`,
+        `${s4 + 1}`
+      ]),
+      explanation: `النمط يتناوب: نزيد 3 ثم نطرح 1 (+3، -1، +3، -1). الخطوة التالية هي إضافة 3: ${s4} + 3 = ${nextVal}.`,
+      points: 20
+    };
+  }
+
+  // ==========================================
+  // MEDIUM (الصفوف 3 و 4)
+  // ==========================================
+  if (effectiveLevel === 'medium') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // متوالية هندسية بالضرب في 2 أو 3
+      const mult = rand(2, 3);
+      const start = rand(2, 4);
+      const s0 = start;
+      const s1 = s0 * mult;
+      const s2 = s1 * mult;
+      const s3 = s2 * mult;
+      const nextVal = s3 * mult;
+
+      return {
+        type: 'pattern',
+        level: 'medium',
+        category: 'المتواليات الهندسية وقاعدة الضرب ✖️',
+        prompt: 'اكتشف قاعدة الضرب وأكمل المتوالية:',
+        patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، [ ؟ ]`,
+        questionText: `ما هو الحد التالي في المتوالية؟`,
+        correctAnswer: `${nextVal}`,
+        choices: shuffle([
+          `${nextVal}`,
+          `${s3 + (s2 - s1)}`,
+          `${nextVal + mult}`,
+          `${s3 * 2}`
+        ]),
+        explanation: `قانون المتوالية: نضرب كل حد في ${mult} للحصول على الحد الذي يليه. إذن ${s3} × ${mult} = ${nextVal}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 2) {
+      // الأعداد المربعة (Square Numbers)
+      const squares = [1, 4, 9, 16, 25, 36, 49, 64];
+      const startIdx = rand(0, 2);
+      const slice = squares.slice(startIdx, startIdx + 4);
+      const nextVal = squares[startIdx + 4];
+
+      return {
+        type: 'pattern',
+        level: 'medium',
+        category: 'متوالية الأعداد المربعة (1²، 2²، 3²...) 🔲',
+        prompt: 'لاحظ متوالية المساحات المربعة للأعداد:',
+        patternDisplay: `${slice.join(' ، ')} ، [ ؟ ]`,
+        questionText: 'ما هو المربع الكامل التالي في السلسلة؟',
+        correctAnswer: `${nextVal}`,
+        choices: shuffle([
+          `${nextVal}`,
+          `${nextVal - 2}`,
+          `${slice[slice.length - 1] + 7}`,
+          `${nextVal + 5}`
+        ]),
+        explanation: `هذه هي متوالية الأعداد المربعة الناتجة عن ضرب العدد في نفسه! الحد التالي هو ${Math.sqrt(nextVal)} × ${Math.sqrt(nextVal)} = ${nextVal}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 3) {
+      // متوالية القفزات المتصاعدة (الأعداد المثلثية: +2، +3، +4، +5...)
+      const start = rand(1, 5);
+      const s0 = start;
+      const s1 = s0 + 2;
+      const s2 = s1 + 3;
+      const s3 = s2 + 4;
+      const s4 = s3 + 5;
+      const nextVal = s4 + 6;
+
+      return {
+        type: 'pattern',
+        level: 'medium',
+        category: 'متوالية القفزات المتزايدة (+2، +3، +4...) 📐',
+        prompt: 'في هذه المتوالية تتغير القفزة وتزيد في كل مرة بمقدار 1:',
+        patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، ${s4} ، [ ؟ ]`,
+        questionText: 'ما هو العدد القادم في السلسلة؟',
+        correctAnswer: `${nextVal}`,
+        choices: shuffle([
+          `${nextVal}`,
+          `${s4 + 5}`,
+          `${nextVal + 2}`,
+          `${s4 + 4}`
+        ]),
+        explanation: `القفزات هي: (+2)، (+3)، (+4)، (+5)... فالقفزة القادمة هي (+6). إذن: ${s4} + 6 = ${nextVal}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 4) {
+      // أحجية الأعمار الرياضية
+      const diff = rand(2, 6) * 2; // even diff
+      const younger = rand(6, 12);
+      const older = younger + diff;
+      const sum = younger + older;
+
+      return {
+        type: 'pattern',
+        level: 'medium',
+        category: 'أحجية الأعمار والمنطق الرياضي 🎂',
+        prompt: 'لغز الأعمار والتفكير المنطقي:',
+        patternDisplay: `👥 مجموع عمري أخي وأختي معاً هو ${sum} سنة. إذا كان أخي يكبر أختي بـ ${diff} سنوات.`,
+        questionText: 'كم يبلغ عمر أختي الصغرى؟',
+        correctAnswer: `${younger} سنوات`,
+        choices: shuffle([
+          `${younger} سنوات`,
+          `${older} سنوات`,
+          `${sum / 2} سنوات`,
+          `${younger + 1} سنوات`
+        ]),
+        explanation: `طريقة الحل المنطقي: نطرح فارق العمر من المجموع ثم نقسم على 2: (${sum} - ${diff}) ÷ 2 = ${sum - diff} ÷ 2 = ${younger} سنوات (وعمر الأخ هو ${younger} + ${diff} = ${older} سنوات).`,
+        points: 25
+      };
+    }
+
+    // caseType === 5: العدد المفقود في منتصف المتوالية
+    const step = rand(4, 9);
+    const start = rand(2, 10);
+    const s0 = start;
+    const s1 = s0 + step;
+    const s2 = s1 + step; // missing
+    const s3 = s2 + step;
+    const s4 = s3 + step;
+
+    return {
+      type: 'pattern',
+      level: 'medium',
+      category: 'لغز الحد المفقود في الوسط 🎯',
+      prompt: 'اكتشف العدد الناقص في منتصف السلسلة:',
+      patternDisplay: `${s0} ، ${s1} ، [ ؟ ] ، ${s3} ، ${s4}`,
+      questionText: 'ما هو العدد الذي يحل مكان [ ؟ ]؟',
+      correctAnswer: `${s2}`,
+      choices: shuffle([
+        `${s2}`,
+        `${s1 + 2}`,
+        `${s3 - 1}`,
+        `${s2 + step}`
+      ]),
+      explanation: `الفرق بين الحدود هو ${step}. إذن الحد الناقص هو ${s1} + ${step} = ${s2} (ويمكن التأكد: ${s2} + ${step} = ${s3}).`,
+      points: 25
+    };
+  }
+
+  // ==========================================
+  // HARD (الصفوف 5 و 6)
+  // ==========================================
+  const caseType = rand(1, 5);
+
+  if (caseType === 1) {
+    // متوالية فيبوناتشي الشهيرة (Fibonacci Sequence)
+    const fibs = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+    const startIdx = rand(1, 4);
+    const slice = fibs.slice(startIdx, startIdx + 5);
+    const nextVal = fibs[startIdx + 5];
+
+    return {
+      type: 'pattern',
+      level: 'hard',
+      category: 'متوالية فيبوناتشي الأسطورية (جمع السابقين) 🐚',
+      prompt: 'دقق في هذه المتوالية الرياضية الشهيرة واكتشف قاعدتها:',
+      patternDisplay: `${slice.join(' ، ')} ، [ ؟ ]`,
+      questionText: 'ما هو العدد القادم في متوالية فيبوناتشي؟',
+      correctAnswer: `${nextVal}`,
+      choices: shuffle([
+        `${nextVal}`,
+        `${slice[slice.length - 1] + 5}`,
+        `${nextVal - 2}`,
+        `${slice[slice.length - 1] * 2}`
+      ]),
+      explanation: `في متوالية فيبوناتشي: كل عدد هو مجموع العددين السابقين له مباشرة! ${slice[slice.length - 2]} + ${slice[slice.length - 1]} = ${nextVal}.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 2) {
+    // قاعدة مركبة: نضرب في 2 ثم نزيد/نطرح 1 (×2 + 1)
+    const start = rand(2, 4);
+    const s0 = start;
+    const s1 = s0 * 2 + 1;
+    const s2 = s1 * 2 + 1;
+    const s3 = s2 * 2 + 1;
+    const nextVal = s3 * 2 + 1;
+
+    return {
+      type: 'pattern',
+      level: 'hard',
+      category: 'المتوالية ثنائية القاعدة (× 2 + 1) ⚡',
+      prompt: 'متوالية بقاعدة مركبة من خطوتين في كل مرحلة:',
+      patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، [ ؟ ]`,
+      questionText: 'ما هو العدد التالي وفق هذه القاعدة؟',
+      correctAnswer: `${nextVal}`,
+      choices: shuffle([
+        `${nextVal}`,
+        `${s3 * 2}`,
+        `${nextVal + 2}`,
+        `${s3 + (s2 - s1)}`
+      ]),
+      explanation: `القانون الخفي هو: نضرب في 2 ثم نضيف 1 (الحد السابق × 2 + 1). إذن: (${s3} × 2) + 1 = ${s3 * 2} + 1 = ${nextVal}.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 3) {
+    // لغز الفواكه والمعادلات الصورية المشهور عالمياً
+    const apple = 10;
+    const banana = [2, 3, 4][rand(0, 2)];
+    const grape = [1, 2, 3][rand(0, 2)];
+    const eq1 = `${apple} + ${apple} + ${apple} = ${apple * 3}`;
+    const eq2 = `${apple} + ${banana} + ${banana} = ${apple + banana * 2}`;
+    const eq3 = `${banana} - ${grape} = ${banana - grape}`;
+    const target = apple + banana * grape;
+
+    return {
+      type: 'pattern',
+      level: 'hard',
+      category: 'لغز الرموز والمعادلات الصورية 🍎🍌🍇',
+      prompt: 'فك شفرة الرموز واحسب الناتج بدقة (مع مراعاة ترتيب العمليات!):',
+      patternDisplay: `🍎 + 🍎 + 🍎 = ${apple * 3}\n🍎 + 🍌 + 🍌 = ${apple + banana * 2}\n🍌 - 🍇 = ${banana - grape}\n🍎 + 🍌 × 🍇 = [ ؟ ]`,
+      questionText: 'ما هي قيمة: 🍎 + 🍌 × 🍇؟',
+      correctAnswer: `${target}`,
+      choices: shuffle([
+        `${target}`,
+        `${(apple + banana) * grape}`,
+        `${target + 2}`,
+        `${apple + banana + grape}`
+      ]),
+      explanation: `1) من السطر الأول: التفاحة 🍎 = ${apple}. 2) الموز 🍌 = ${banana}. 3) العنب 🍇 = ${grape}. 4) ترتيب العمليات: الضرب أولاً (${banana} × ${grape} = ${banana * grape}) ثم الجمع: ${apple} + ${banana * grape} = ${target}!`,
+      points: 40
+    };
+  }
+
+  if (caseType === 4) {
+    // متوالية كسرية وعشرية
+    const isDecimal = Math.random() < 0.5;
+    if (isDecimal) {
+      const start = 0.2;
+      const mult = 2;
+      const s0 = 0.2;
+      const s1 = 0.4;
+      const s2 = 0.8;
+      const s3 = 1.6;
+      const nextVal = 3.2;
+
+      return {
+        type: 'pattern',
+        level: 'hard',
+        category: 'متوالية الكسور العشرية والمضاعفة 🪙',
+        prompt: 'لاحظ مضاعفة الأعداد العشرية في كل خطوة:',
+        patternDisplay: `${s0} ، ${s1} ، ${s2} ، ${s3} ، [ ؟ ]`,
+        questionText: 'ما هو الكسر العشري القادم؟',
+        correctAnswer: `${nextVal}`,
+        choices: shuffle([
+          `${nextVal}`,
+          '2.0',
+          '3.0',
+          '2.4'
+        ]),
+        explanation: `كل عدد هو ضعف سابقه (ضرب في 2): 1.6 × 2 = 3.2.`,
+        points: 35
+      };
+    } else {
+      return {
+        type: 'pattern',
+        level: 'hard',
+        category: 'متوالية الكسور العادية المنتظمة 🍕',
+        prompt: 'أكمل متوالية الكسور المتزايدة بمقدار ربع (1/4):',
+        patternDisplay: '1/4 ، 1/2 ، 3/4 ، 1 ، [ ؟ ]',
+        questionText: 'ما هو الكسر الذي يحل مكان [ ؟ ]؟',
+        correctAnswer: '1 و 1/4 (أو 5/4)',
+        choices: shuffle([
+          '1 و 1/4 (أو 5/4)',
+          '1 و 1/2',
+          '2',
+          '4/4'
+        ]),
+        explanation: `في كل خطوة نضيف ربعاً (+ 1/4): 1 صحيح + 1/4 = 1 و 1/4 (أو 5/4).`,
+        points: 35
+      };
+    }
+  }
+
+  // caseType === 5: متوالية المسارين المتوازيين (Two Independent Alternating Tracks)
+  const a1 = 10, b1 = 50;
+  const a2 = 13, b2 = 45;
+  const a3 = 16, b3 = 40;
+  const nextVal = a3 + 3; // 19
+
+  return {
+    type: 'pattern',
+    level: 'hard',
+    category: 'متوالية المسارين المتداخلين (تزايد وتناقص) 🔀',
+    prompt: 'هذه المتوالية تدمج سلسلتين مختلفتين بالتناوب في آن واحد:',
+    patternDisplay: `${a1} ، ${b1} ، ${a2} ، ${b2} ، ${a3} ، ${b3} ، [ ؟ ]`,
+    questionText: 'ما هو العدد الذي يأتي بالدور التالي؟',
+    correctAnswer: `${nextVal}`,
+    choices: shuffle([
+      `${nextVal}`,
+      '35',
+      `${nextVal + 1}`,
+      '30'
+    ]),
+    explanation: `هناك مساران بالتناوب: المسار الأول في الخانات الفردية يزيد (+3): 10، 13، 16، والحد التالي هو 16 + 3 = 19! (بينما المسار الثاني في الخانات الزوجية ينقص (-5): 50، 45، 40).`,
+    points: 40
   };
 };
