@@ -81,6 +81,7 @@ const StudentDismissalPage = lazyWithRetry(() => import('./components/StudentDis
 const EduStaffingPortal = lazyWithRetry(() => import('./components/EduStaffingPortal'));
 const ScientificResearchQuest = lazyWithRetry(() => import('./components/ScientificResearchQuest'));
 const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPedagogyPage'));
+const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 
 
 function App() {
@@ -580,6 +581,21 @@ function App() {
   }
 
   const isMafatihView = currentHash.includes('mafatih') || currentHash.includes('mafateeh') || currentHash.includes('pedagogy');
+
+    const isMathView = currentHash.includes('math-championship') || 
+    currentHash.includes('math-arena') || 
+    currentHash.includes('math-game') || 
+    currentHash.includes('hisab') || 
+    (currentHash.includes('math') && !currentHash.includes('mafatih'));
+
+  if (isMathView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <MathChampionshipArena />
+      </Suspense>
+    );
+  }
 
   if (isMafatihView) {
     return (

@@ -241,6 +241,22 @@ const Navbar = () => {
               </li>
             ))}
 
+            {/* Direct Quick Link for Math Championship */}
+            <li>
+              <a 
+                href="#/math-championship"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  color: '#facc15',
+                  fontWeight: 900
+                }}
+              >
+                <i className="fas fa-trophy"></i> أولمبياد الرياضيات 🏆
+              </a>
+            </li>
+
             {/* Direct Quick Link for Teachers Dismissal */}
             <li>
               <a 
@@ -402,6 +418,11 @@ const Navbar = () => {
                     </a>
                   </li>
                 ))}
+                <li>
+                  <a href="#/math-championship" onClick={() => setMobileMenuOpen(false)} style={{ color: '#facc15', fontWeight: 900, fontSize: '0.95rem' }}>
+                    <i className="fas fa-trophy"></i> أولمبياد وبطولة الرياضيات 🏆⚡
+                  </a>
+                </li>
                 <li>
                   <a href="#/services" onClick={() => setMobileMenuOpen(false)} style={{ color: '#c084fc', fontWeight: 900, fontSize: '0.95rem' }}>
                     <i className="fas fa-briefcase"></i> منصة الخدمات (שעות בודדות / מילוי מקום) 💼

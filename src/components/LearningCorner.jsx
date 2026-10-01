@@ -1007,6 +1007,27 @@ const LearningCorner = () => {
               الرئيسية
             </button>
 
+            <button 
+              onClick={() => window.location.hash = '#/math-championship'}
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b, #ea580c)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '0.7rem 1.4rem',
+                fontWeight: 900,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
+              }}
+            >
+              <i className="fas fa-trophy"></i>
+              أولمبياد الرياضيات 🏆⚡
+            </button>
+
             {activeTab !== 'hub' && (
               <button 
                 onClick={() => setActiveTab('hub')}
@@ -1169,6 +1190,67 @@ const LearningCorner = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
             gap: '1.75rem'
           }}>
+
+            {/* FEATURED: ALL-GRADES MATH CHAMPIONSHIP BANNER */}
+            <div style={{
+              gridColumn: '1 / -1',
+              background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
+              border: '2px solid #f59e0b',
+              borderRadius: '24px',
+              padding: '2rem',
+              color: 'white',
+              boxShadow: '0 15px 40px rgba(245, 158, 11, 0.25)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1.5rem',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ maxWidth: '650px', zIndex: 1 }}>
+                <span style={{
+                  background: '#f59e0b',
+                  color: '#1e1b4b',
+                  padding: '4px 14px',
+                  borderRadius: '30px',
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  display: 'inline-block',
+                  marginBottom: '0.75rem'
+                }}>
+                  🏆 مسابقة حصرية متوافقة مع المنهاج الرسمي (الصفوف 1 - 6)
+                </span>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 0.5rem 0' }}>
+                  أولمبياد الرياضيات وبطولة جدول الضرب الكبرى ⚡
+                </h2>
+                <p style={{ color: '#c7d2fe', fontSize: '1rem', lineHeight: '1.6', margin: '0 0 1rem 0' }}>
+                  مسابقة رياضية تنافسية شيقة بحسب منهاج وزارة التربية والتعليم في دولة إسرائيل للمرحلة الابتدائية (الوسط العربي)، تجمع بين سباق التوقيت، حصد أكبر عدد من الكؤوس والنقاط، وتحدي جدول الضرب الشامل!
+                </p>
+                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button"
+                    onClick={() => { window.location.hash = '#/math-championship'; }}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.85rem 1.8rem',
+                      borderRadius: '14px',
+                      fontWeight: 900,
+                      fontSize: '1.05rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)'
+                    }}
+                  >
+                    🚀 ادخل ساحة أولمبياد الرياضيات والكؤوس الآن!
+                  </button>
+                </div>
+              </div>
+              <div style={{ fontSize: '5rem', zIndex: 1 }}>
+                🏆⚡
+              </div>
+            </div>
 
             {/* Game 1: Multiplication Table */}
             <div style={{
