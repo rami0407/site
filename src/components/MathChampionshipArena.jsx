@@ -3,10 +3,12 @@ import {
   MATH_GRADES, 
   MULTIPLICATION_TOURNAMENT, 
   DETECTIVE_CHALLENGE,
+  REAL_WORLD_CHALLENGE,
   CHAMPIONSHIP_AWARDS,
   generateMultiplicationQuestion,
   generateGradeCurriculumQuestion,
-  generateMathDetectiveQuestion
+  generateMathDetectiveQuestion,
+  generateRealWorldMathQuestion
 } from '../data/mathCurriculumData';
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
@@ -36,7 +38,7 @@ const getInitialPlayerProfile = () => {
 };
 
 export default function MathChampionshipArena() {
-  // Main view navigation: 'hub' | 'play_multiplication' | 'play_curriculum' | 'play_detective' | 'leaderboard' | 'certificate'
+  // Main view navigation: 'hub' | 'play_multiplication' | 'play_curriculum' | 'play_detective' | 'play_story' | 'leaderboard' | 'certificate'
   const [activeView, setActiveView] = useState('hub');
   
   // Player state
@@ -54,6 +56,9 @@ export default function MathChampionshipArena() {
 
   // Detective challenge settings
   const [selectedDetectiveLevel, setSelectedDetectiveLevel] = useState('progressive');
+
+  // Real world math settings
+  const [selectedStoryLevel, setSelectedStoryLevel] = useState('progressive');
 
   // In-Game state
   const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'game_over'
@@ -131,11 +136,14 @@ export default function MathChampionshipArena() {
     } else if (gameType === 'detective') {
       const q = generateMathDetectiveQuestion(selectedDetectiveLevel, correctCount);
       setCurrentQuestion(q);
+    } else if (gameType === 'real_world') {
+      const q = generateRealWorldMathQuestion(selectedStoryLevel, correctCount);
+      setCurrentQuestion(q);
     } else {
       const q = generateGradeCurriculumQuestion(selectedCurriculumGrade, selectedCurriculumTopic);
       setCurrentQuestion(q);
     }
-  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, correctCount]);
+  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, correctCount]);
 
   // End game handler
   const finishGame = useCallback((reason = 'time_up') => {
@@ -165,6 +173,8 @@ export default function MathChampionshipArena() {
               ? `جدول الضرب (${selectedTable})` 
               : activeView === 'play_detective'
               ? `المحقق الرياضي (${selectedDetectiveLevel === 'progressive' ? 'متدرج ذكي' : selectedDetectiveLevel})`
+              : activeView === 'play_story'
+              ? `المسائل الحياتية (${selectedStoryLevel === 'progressive' ? 'متدرج ذكي' : selectedStoryLevel})`
               : `منهاج (${selectedCurriculumGrade})`
           },
           ...(prev.history || []).slice(0, 9)
@@ -185,7 +195,7 @@ export default function MathChampionshipArena() {
         }).catch(() => {});
       } catch (e) {}
     }
-  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, wrongCount]);
+  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, wrongCount]);
 
   // Timer tick effect
   useEffect(() => {
@@ -218,8 +228,8 @@ export default function MathChampionshipArena() {
     if (gameType === 'multiplication') {
       const m = MULTIPLICATION_TOURNAMENT.modes.find(x => x.id === selectedMultMode);
       duration = m ? m.duration : 60;
-    } else if (gameType === 'detective') {
-      duration = 90; // 90 seconds for detective investigation
+    } else if (gameType === 'detective' || gameType === 'real_world') {
+      duration = 90; // 90 seconds for detective and real-world story problems
     } else {
       duration = 75; // 75 seconds for curriculum
     }
@@ -237,6 +247,8 @@ export default function MathChampionshipArena() {
         ? 'play_multiplication' 
         : gameType === 'detective'
         ? 'play_detective'
+        : gameType === 'real_world'
+        ? 'play_story'
         : 'play_curriculum'
     );
 
@@ -279,13 +291,15 @@ export default function MathChampionshipArena() {
       checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
 
       // In fast speed mode, auto-advance
-      const delay = activeView === 'play_detective' ? 1200 : 650;
+      const delay = (activeView === 'play_detective' || activeView === 'play_story') ? 1200 : 650;
       setTimeout(() => {
         loadNextQuestion(
           activeView === 'play_multiplication' 
             ? 'multiplication' 
             : activeView === 'play_detective'
             ? 'detective'
+            : activeView === 'play_story'
+            ? 'real_world'
             : 'curriculum'
         );
       }, delay);
@@ -491,6 +505,20 @@ export default function MathChampionshipArena() {
           </button>
           <button 
             type="button"
+            className={`math-nav-tab highlight-story ${activeView === 'play_story' ? 'active' : ''}`}
+            onClick={() => {
+              setGameState('idle');
+              setActiveView('hub');
+              setTimeout(() => {
+                const el = document.getElementById('story-challenge-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }}
+          >
+            <i className="fas fa-shopping-cart"></i> المسائل الحياتية 🛒
+          </button>
+          <button 
+            type="button"
             className={`math-nav-tab ${activeView === 'leaderboard' ? 'active' : ''}`}
             onClick={() => { setActiveView('leaderboard'); fetchLeaderboard(); }}
           >
@@ -611,6 +639,50 @@ export default function MathChampionshipArena() {
                     onClick={() => startGame('detective')}
                   >
                     🔎 ابدأ مهمة التحقيق الرياضي الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* SPECIAL CHALLENGE 2: REAL-WORLD MATH & STORY QUEST (المسائل الحياتية والمشتريات الذكية) */}
+            <div className="math-story-challenge-card" id="story-challenge-section">
+              <div className="story-card-badge">🛒 تحدي مواقف الحياة اليومية والمسائل الكلامية</div>
+              <div className="story-card-content">
+                <div className="story-header-row">
+                  <div className="story-avatar-icon">🏪</div>
+                  <div className="story-text">
+                    <h2>تحدي «المسائل الحياتية والمشتريات الذكية»: الرياضيات في واقعنا! 🛒</h2>
+                    <p>استخدم ذكاءك الرياضي في مواقف حقيقية: حساب باقي النقود بالشيكل، اقتسام البيتزا والحلويات، حساب محيط الحدائق، حساب نسب التخفيضات وسرعة الحافلات!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="story-levels-section">
+                  <label className="picker-label">اختر مسار التحدي الحياتي (متدرج من السهل إلى الصعب):</label>
+                  <div className="story-levels-grid">
+                    {REAL_WORLD_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`story-level-card ${selectedStoryLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedStoryLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="story-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-story-btn"
+                    onClick={() => startGame('real_world')}
+                  >
+                    🛍️ ابدأ مغامرة التحدي الحياتي الآن (100 ثانية)!
                   </button>
                 </div>
               </div>
@@ -791,9 +863,9 @@ export default function MathChampionshipArena() {
             )}
 
             {/* Question Card */}
-            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''}`}>
+            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''}`}>
               <div className="question-top-tag">
-                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''}`}>
+                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''}`}>
                   {currentQuestion.category}
                 </span>
                 {currentQuestion.level && (
@@ -807,6 +879,8 @@ export default function MathChampionshipArena() {
                   onClick={() => {
                     const text = currentQuestion.type === 'detective'
                       ? `${currentQuestion.prompt}. ${currentQuestion.caseScenario || ''}. ${currentQuestion.suspectEquation || ''}. ${currentQuestion.questionText}`
+                      : currentQuestion.type === 'real_world'
+                      ? `${currentQuestion.prompt}. ${currentQuestion.storyText || ''}. ${currentQuestion.questionText}`
                       : `${currentQuestion.prompt} ${currentQuestion.questionText}`;
                     mathAudio.speakArabic(text);
                   }}
@@ -840,18 +914,36 @@ export default function MathChampionshipArena() {
                 </div>
               )}
 
+              {/* REAL-WORLD SPECIAL STORY BOX */}
+              {currentQuestion.type === 'real_world' && (
+                <div className="story-case-box">
+                  <div className="story-case-badge-row">
+                    <span className="story-case-id-badge">🛒 موقف من الحياة اليومية #{correctCount + 1}</span>
+                    <span className="story-case-level-tag">
+                      {currentQuestion.level === 'easy' ? '🟢 صفوف 1-2 (تسوق وحساب بسيط)' : currentQuestion.level === 'medium' ? '🟡 صفوف 3-4 (توزيع وكسور ومحيط)' : '🔴 صفوف 5-6 (تخفيضات ومسافات وأحجام)'}
+                    </span>
+                  </div>
+                  {currentQuestion.storyText && (
+                    <div className="story-scenario-desc">
+                      <span className="story-book-icon">📖</span>
+                      <p>{currentQuestion.storyText}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="question-prompt-text">
                 {currentQuestion.prompt}
               </div>
 
               <div className="question-main-display">
-                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : 'math-formula-text'}>
+                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : 'math-formula-text'}>
                   {currentQuestion.questionText}
                 </span>
               </div>
 
               {/* Choices Buttons */}
-              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''}`}>
+              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''}`}>
                 {currentQuestion.choices.map((choice, idx) => {
                   let btnStateClass = '';
                   if (isAnswerRevealed) {

@@ -263,6 +263,28 @@ export const CHAMPIONSHIP_AWARDS = [
     minScore: 450,
     condition: 'إحراز 450 نقطة وحل قضايا التحقيق المتقدمة',
     description: 'الرتبة العليا في التفكير الناقد والتحقيق الرياضي'
+  },
+  {
+    id: 'badge_real_world',
+    type: 'badge',
+    tier: 'merchant',
+    name: 'وسام المستكشف الحياتي 🛒',
+    icon: '🛒',
+    color: '#10b981',
+    minScore: 200,
+    condition: 'إحراز 200 نقطة في حل المسائل الكلامية والواقعية',
+    description: 'توظيف الرياضيات ببراعة في مواقف الحياة اليومية والشراء'
+  },
+  {
+    id: 'cup_math_merchant',
+    type: 'cup',
+    tier: 'master_merchant',
+    name: 'كأس عبقري الاقتصاد والحياة 🏆🪙',
+    icon: '🏆',
+    color: '#059669',
+    minScore: 450,
+    condition: 'إحراز 450 نقطة وحل المسائل الحياتية المتقدمة',
+    description: 'الرتبة العليا في حل المشكلات الاقتصادية والتطبيقية'
   }
 ];
 
@@ -1553,6 +1575,441 @@ export const generateMathDetectiveQuestion = (level = 'progressive', questionInd
       'خطأ! الناتج الصحيح هو +2'
     ]),
     explanation: `كشف جبري متقن! عند جمع خسارتين تكون النتيجة خسارة أكبر: (-6) + (-4) = -10. الطالب خلط بين قاعدة الضرب (سالب × سالب = موجب) وقاعدة الجمع!`,
+    points: 35
+  };
+};
+
+/**
+ * تحدي المسائل الكلامية ومواقف الحياة اليومية (حل المشكلات الحياتية)
+ */
+export const REAL_WORLD_CHALLENGE = {
+  id: 'real_world_math',
+  title: 'تحدي المسائل الكلامية ومواقف الحياة اليومية 🛒🍎',
+  subtitle: 'مسائل واقعية مشوقة بالتسوق، النقود بالشيكل ₪، المسافات، وحل المشكلات الحياتية!',
+  icon: '🛒',
+  color: '#10b981',
+  badge: 'حل مشكلات واقعية 💡',
+  levels: [
+    { id: 'progressive', name: 'المسار التدريجي الذكي 🚀', desc: 'يبدأ من السهل ويتصاعد تلقائياً كلما حللت مسائل صحيحة!', icon: '📈' },
+    { id: 'easy', name: 'رواد التسوق الصغار (سهل 🟢)', desc: 'الصفوف 1-2: نقود وتسوق بسيط بالشيكل ₪، جمع وطرح قصصي ومقارنة', icon: '🍎' },
+    { id: 'medium', name: 'أبطال الحياة اليومية (متوسط 🟡)', desc: 'الصفوف 3-4: تسوق متعدد المراحل، توزيع وضرب، محيط حديقة، وكسور', icon: '🛍️' },
+    { id: 'hard', name: 'خبراء الاقتصاد والرياضيات (صعب 🔴)', desc: 'الصفوف 5-6: تخفيضات %، سرعة ومسافة، كسور كميات، وحجوم وسعة', icon: '💼' }
+  ]
+};
+
+/**
+ * مولد أسئلة المسائل الكلامية ومواقف الحياة اليومية
+ * مبني تدريجياً من السهل إلى الصعب وفق منهاج الرياضيات
+ */
+export const generateRealWorldMathQuestion = (level = 'progressive', questionIndex = 0) => {
+  let effectiveLevel = level;
+  if (level === 'progressive') {
+    if (questionIndex < 3) effectiveLevel = 'easy';
+    else if (questionIndex < 7) effectiveLevel = 'medium';
+    else effectiveLevel = 'hard';
+  }
+
+  // EASY (الصفوف 1 و 2)
+  if (effectiveLevel === 'easy') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // تسوق بالشيكل وحساب الباقي من 10 أو 20 أو 50
+      const price1 = rand(3, 8);
+      const price2 = rand(2, 6);
+      const total = price1 + price2;
+      const cash = total <= 8 ? 10 : (total <= 16 ? 20 : 50);
+      const change = cash - total;
+
+      const itemNames = [
+        ['دفتر رسم', 'علبة ألوان'],
+        ['ساندويش جبنة', 'عصير برتقال طازج'],
+        ['لعبة سيارة صغيرة', 'كرة مطاطية'],
+        ['كيس تفاح لذيذ', 'موزة طازجة']
+      ][rand(0, 3)];
+
+      return {
+        type: 'real_world',
+        level: 'easy',
+        category: 'التسوق بالنقود ₪ (حساب الباقي)',
+        prompt: '🛒 موقف حياتي في المتجر المدرسي:',
+        storyText: `اشترت ليلى ${itemNames[0]} بسعر ${price1} ₪، و${itemNames[1]} بسعر ${price2} ₪. دفعت للبائع قطعة نقدية من فئة ${cash} ₪.`,
+        questionText: 'كم شيكلاً يجب أن يعيد البائع إلى ليلى؟',
+        correctAnswer: `${change} ₪`,
+        choices: shuffle([
+          `${change} ₪`,
+          `${total} ₪`,
+          `${Math.max(1, change + 2)} ₪`,
+          `${Math.max(0, change - 2)} ₪`
+        ]),
+        explanation: `خطوات الحل: 1) نحسب مجموع المشتريات: ${price1} + ${price2} = ${total} ₪. 2) نحسب الباقي بطرح المجموع من المبلغ المدفوع: ${cash} - ${total} = ${change} ₪.`,
+        points: 20
+      };
+    }
+
+    if (caseType === 2) {
+      // جمع قصصي من الحياة المدرسية
+      const boys = rand(11, 25);
+      const girls = rand(10, 22);
+      const total = boys + girls;
+
+      return {
+        type: 'real_world',
+        level: 'easy',
+        category: 'الجمع في الأنشطة المدرسية',
+        prompt: '🏫 موقف في ساحة المدرسة:',
+        storyText: `في احتفال يوم التميز بمدرسة مشيرفة، شارك في العرض الرياضي ${boys} طالباً و ${girls} طالبة.`,
+        questionText: 'ما هو العدد الكلي للطلاب والطالبات المشاركين في العرض؟',
+        correctAnswer: `${total} مشاركاً`,
+        choices: shuffle([
+          `${total} مشاركاً`,
+          `${total - 2} مشاركاً`,
+          `${total + 10} مشاركاً`,
+          `${Math.abs(boys - girls)} مشاركاً`
+        ]),
+        explanation: `لإيجاد المجموع الكلي، نجمع عدد الطلاب مع عدد الطالبات: ${boys} + ${girls} = ${total} مشاركاً ومشاركة.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 3) {
+      // طرح قصصي (الكرات والبالونات والتوزيع)
+      const initial = rand(15, 30);
+      const used = rand(6, 12);
+      const remaining = initial - used;
+
+      return {
+        type: 'real_world',
+        level: 'easy',
+        category: 'الطرح القصصي وحساب المتبقي',
+        prompt: '🎈 موقف الاحتفال بالصف:',
+        storyText: `نفخ طلاب الصف ${initial} بالوناً ملوناً لتزيين الصف. وأثناء التزيين فرقعت ${used} بالونات.`,
+        questionText: 'كم بالوناً سليماً بقي لتزيين الصف؟',
+        correctAnswer: `${remaining} بالونات`,
+        choices: shuffle([
+          `${remaining} بالونات`,
+          `${remaining + 3} بالونات`,
+          `${initial + used} بالونات`,
+          `${Math.max(1, remaining - 4)} بالونات`
+        ]),
+        explanation: `نطرح عدد البالونات التي فرقعت من العدد الكلي: ${initial} - ${used} = ${remaining} بالونات متبقية.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 4) {
+      // المقارنة القصصية (بكم يزيد؟)
+      const countA = rand(16, 35);
+      const countB = rand(8, countA - 4);
+      const diff = countA - countB;
+
+      return {
+        type: 'real_world',
+        level: 'easy',
+        category: 'المقارنة القصصية (بكم يزيد؟)',
+        prompt: '⭐ نجوم التميز والتحفيز:',
+        storyText: `جمع سامي ${countA} نجمة تفوق خلال أسبوع القراءة، بينما جمع زميله يوسف ${countB} نجمة.`,
+        questionText: 'بكم نجمة يزيد ما جمعه سامي عن يوسف؟',
+        correctAnswer: `${diff} نجوم`,
+        choices: shuffle([
+          `${diff} نجوم`,
+          `${countA + countB} نجوم`,
+          `${diff + 2} نجوم`,
+          `${Math.max(1, diff - 3)} نجوم`
+        ]),
+        explanation: `لمعرفة مقدار الزيادة أو الفرق، نطرح العدد الأصغر من الأكبر: ${countA} - ${countB} = ${diff} نجوم.`,
+        points: 20
+      };
+    }
+
+    // caseType === 5: الوقت وساعات الحصص المدرسية
+    const startHour = rand(8, 11);
+    const duration = rand(1, 3);
+    const endHour = startHour + duration;
+
+    return {
+      type: 'real_world',
+      level: 'easy',
+      category: 'الوقت والجدول اليومي',
+      prompt: '⏰ جدول الأنشطة والرحلات:',
+      storyText: `انطلقت حافلة الرحلة المدرسية من مشيرفة في تمام الساعة ${startHour}:00 صباحاً، واستغرقت الطريق ${duration} ساعات للوصول إلى الحديقة الوطنية.`,
+      questionText: 'في أي ساعة وصلت الحافلة إلى وجهتها؟',
+      correctAnswer: `الساعة ${endHour}:00`,
+      choices: shuffle([
+        `الساعة ${endHour}:00`,
+        `الساعة ${endHour + 1}:00`,
+        `الساعة ${endHour - 1}:00`,
+        `الساعة 12:00`
+      ]),
+      explanation: `نضيف ساعات السفر إلى ساعة الانطلاق: ${startHour} + ${duration} = ${endHour}:00 تماماً.`,
+      points: 20
+    };
+  }
+
+  // MEDIUM (الصفوف 3 و 4)
+  if (effectiveLevel === 'medium') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // تسوق وحساب كميات متعددة (Multiplication & Change)
+      const qty = rand(3, 5);
+      const unitPrice = rand(6, 12);
+      const totalCost = qty * unitPrice;
+      const cash = totalCost <= 30 ? 50 : 100;
+      const change = cash - totalCost;
+
+      return {
+        type: 'real_world',
+        level: 'medium',
+        category: 'التسوق وحساب التكلفة والباقي ₪',
+        prompt: '🛒 التسوق في المكتبة المدرسية:',
+        storyText: `اشترى طارق ${qty} دفاتر هندسة متطابقة، سعر الدفتر الواحد ${unitPrice} ₪. وأعطى البائع ورقة نقدية من فئة ${cash} ₪.`,
+        questionText: 'كم شيكلاً يجب أن يسترجع طارق من البائع؟',
+        correctAnswer: `${change} ₪`,
+        choices: shuffle([
+          `${change} ₪`,
+          `${totalCost} ₪`,
+          `${change + 5} ₪`,
+          `${Math.max(1, change - 5)} ₪`
+        ]),
+        explanation: `1) ثمن الدفاتر = ${qty} × ${unitPrice} = ${totalCost} ₪. 2) الباقي = ${cash} - ${totalCost} = ${change} ₪.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 2) {
+      // التوزيع بالتساوي والقسمة العادلة
+      const boxes = rand(4, 8);
+      const perBox = rand(6, 12);
+      const totalItems = boxes * perBox;
+
+      return {
+        type: 'real_world',
+        level: 'medium',
+        category: 'التوزيع العادل والقسمة',
+        prompt: '📦 تغليف الهدايا المدرسية:',
+        storyText: `تبرع فاعل خير بـ ${totalItems} قصة علمية للمدرسة، وقررت إدارة المدرسة توزيعها بالتساوي على ${boxes} صفوف.`,
+        questionText: 'كم قصة ستحصل عليها كل غرفة صف؟',
+        correctAnswer: `${perBox} قصص`,
+        choices: shuffle([
+          `${perBox} قصص`,
+          `${perBox + 2} قصص`,
+          `${perBox - 1} قصص`,
+          `${perBox * 2} قصص`
+        ]),
+        explanation: `نقسم عدد القصص الكلي على عدد الصفوف: ${totalItems} ÷ ${boxes} = ${perBox} قصص لكل صف بالتساوي.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 3) {
+      // محيط حديقة أو غرفة وسياج واقعي
+      const length = rand(8, 15);
+      const width = rand(4, 7);
+      const perimeter = 2 * (length + width);
+
+      return {
+        type: 'real_world',
+        level: 'medium',
+        category: 'الهندسة في الحياة الواقعية (المحيط والسياج)',
+        prompt: '🏡 حديقة المدرسة الخضراء:',
+        storyText: `يريد طاقم الزراعة إحاطة حديقة مستطيلة الشكل بسياج حماية. طول الحديقة ${length} متراً وعرضها ${width} أمتار.`,
+        questionText: 'كم متراً من السياج يحتاج الطاقم لإحاطة الحديقة كاملة؟',
+        correctAnswer: `${perimeter} متراً`,
+        choices: shuffle([
+          `${perimeter} متراً`,
+          `${length * width} متراً`,
+          `${length + width} متراً`,
+          `${perimeter + 4} متراً`
+        ]),
+        explanation: `طول السياج يمثل محيط المستطيل = 2 × (الطول + العرض) = 2 × (${length} + ${width}) = 2 × ${length + width} = ${perimeter} متراً.`,
+        points: 30
+      };
+    }
+
+    if (caseType === 4) {
+      // كسور البيتزا والكعك في الحياة الواقعية
+      const denom = [6, 8, 10, 12][rand(0, 3)];
+      const eaten1 = rand(1, 2);
+      const eaten2 = rand(2, 3);
+      const totalEaten = eaten1 + eaten2;
+      const left = denom - totalEaten;
+
+      return {
+        type: 'real_world',
+        level: 'medium',
+        category: 'الكسور في الحياة اليومية',
+        prompt: '🍕 تقاسم وجبة البيتزا مع الأصدقاء:',
+        storyText: `قسمت العائلة صينية بيتزا كبيرة إلى ${denom} قطع متساوية. أكل كريم ${eaten1}/${denom} من الصينية، وأكلت أخته رنا ${eaten2}/${denom} منها.`,
+        questionText: 'ما هو الكسر الذي يمثل ما تبقى من صينية البيتزا؟',
+        correctAnswer: `${left}/${denom}`,
+        choices: shuffle([
+          `${left}/${denom}`,
+          `${totalEaten}/${denom}`,
+          `${left}/${denom * 2}`,
+          `${Math.max(1, left - 1)}/${denom}`
+        ]),
+        explanation: `1) مجموع ما أكله الاثنان = ${eaten1}/${denom} + ${eaten2}/${denom} = ${totalEaten}/${denom}. 2) المتبقي = 1 صحيح (${denom}/${denom}) - ${totalEaten}/${denom} = ${left}/${denom}.`,
+        points: 30
+      };
+    }
+
+    // caseType === 5: التوفير الأسبوعي المتكرر
+    const savePerWeek = [15, 20, 25, 30][rand(0, 3)];
+    const weeks = rand(4, 8);
+    const targetPrice = savePerWeek * weeks;
+
+    return {
+      type: 'real_world',
+      level: 'medium',
+      category: 'التوفير وإدارة المصروف الشخصي ₪',
+      prompt: '🪙 التوفير والشراء الذكي:',
+      storyText: `يدخر علاء ${savePerWeek} ₪ في حصالته كل أسبوع من مصروفه الشخصي لشراء حذاء رياضي جديد. كم شيكلاً يوفر علاء في ${weeks} أسابيع؟`,
+      questionText: 'ما هو المبلغ الإجمالي الذي وفره علاء؟',
+      correctAnswer: `${targetPrice} ₪`,
+      choices: shuffle([
+        `${targetPrice} ₪`,
+        `${targetPrice + savePerWeek} ₪`,
+        `${targetPrice - 10} ₪`,
+        `${savePerWeek + weeks} ₪`
+      ]),
+      explanation: `نضرب مقدار التوفير الأسبوعي في عدد الأسابيع: ${savePerWeek} × ${weeks} = ${targetPrice} ₪.`,
+      points: 25
+    };
+  }
+
+  // HARD (الصفوف 5 و 6)
+  const caseType = rand(1, 5);
+
+  if (caseType === 1) {
+    // نسبة مئوية وتخفيضات في متجر الملابس والأجهزة
+    const originalPrice = [200, 300, 400, 500, 150][rand(0, 4)];
+    const discountPct = [10, 20, 25, 50][rand(0, 3)];
+    const discountVal = (originalPrice * discountPct) / 100;
+    const finalPrice = originalPrice - discountVal;
+
+    return {
+      type: 'real_world',
+      level: 'hard',
+      category: 'النسبة المئوية (%) والتخفيضات التجارية',
+      prompt: '🏷️ مهرجان التخفيضات والتسوق الذكي:',
+      storyText: `في متجر للأجهزة الإلكترونية، تم الإعلان عن تخفيض بنسبة ${discountPct}% على ساعة ذكية كان سعرها الأصلي ${originalPrice} ₪.`,
+      questionText: 'كم يدفع المشتري ثمناً للساعة الذكية بعد التخفيض؟',
+      correctAnswer: `${finalPrice} ₪`,
+      choices: shuffle([
+        `${finalPrice} ₪`,
+        `${discountVal} ₪`,
+        `${originalPrice - 10} ₪`,
+        `${finalPrice + 20} ₪`
+      ]),
+      explanation: `1) نحسب قيمة التخفيض: (${originalPrice} × ${discountPct}) ÷ 100 = ${discountVal} ₪. 2) السعر بعد التخفيض = ${originalPrice} - ${discountVal} = ${finalPrice} ₪.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 2) {
+    // السرعة والمسافة والزمن
+    const speed = [60, 70, 80, 90][rand(0, 3)];
+    const time1 = 2;
+    const dist1 = speed * time1;
+    const time2 = rand(3, 5);
+    const dist2 = speed * time2;
+
+    return {
+      type: 'real_world',
+      level: 'hard',
+      category: 'السرعة والمسافة والزمن (النسبة والتناسب)',
+      prompt: '🚗 رحلة سياحية على الطريق السريع:',
+      storyText: `قطعت حافلة سياحية مسافة ${dist1} كم خلال ساعتين (${time1} ساعات) بسرعة ثابتة دون توقف.`,
+      questionText: `كم كيلومتراً ستقطع هذه الحافلة خلال ${time2} ساعات إذا واصلت السير بنفس السرعة؟`,
+      correctAnswer: `${dist2} كم`,
+      choices: shuffle([
+        `${dist2} كم`,
+        `${dist2 + speed} كم`,
+        `${dist2 - 20} كم`,
+        `${dist1 + time2} كم`
+      ]),
+      explanation: `1) سرعة الحافلة في الساعة الواحدة = ${dist1} ÷ ${time1} = ${speed} كم/ساعة. 2) المسافة في ${time2} ساعات = ${speed} × ${time2} = ${dist2} كم.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 3) {
+    // كسر من كمية (Fraction of a Quantity in Nature / School)
+    const base = [120, 150, 180, 200, 240][rand(0, 4)];
+    const num = rand(2, 3);
+    const denom = 5;
+    const part = (base / denom) * num;
+    const remaining = base - part;
+
+    return {
+      type: 'real_world',
+      level: 'hard',
+      category: 'كسر من كمية وتطبيقات بيئية',
+      prompt: '🌳 غابة أشجار الزيتون في القرية:',
+      storyText: `في مزرعة نموذجية يوجد ${base} شجرة مثمرة. إذا كانت ${num}/${denom} الأشجار هي أشجار زيتون بلدي، وباقي الأشجار هي أشجار لوز.`,
+      questionText: 'كم شجرة لوز توجد في المزرعة؟',
+      correctAnswer: `${remaining} شجرة لوز`,
+      choices: shuffle([
+        `${remaining} شجرة لوز`,
+        `${part} شجرة لوز`,
+        `${remaining + 10} شجرة لوز`,
+        `${base / denom} شجرة لوز`
+      ]),
+      explanation: `1) عدد أشجار الزيتون = (${base} ÷ ${denom}) × ${num} = ${base / denom} × ${num} = ${part} شجرة. 2) عدد أشجار اللوز المتبقية = ${base} - ${part} = ${remaining} شجرة لوز.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 4) {
+    // حجم وسعة السوائل وحمامات السباحة
+    const l = rand(4, 8);
+    const w = rand(3, 5);
+    const h = rand(2, 3);
+    const vol = l * w * h;
+
+    return {
+      type: 'real_world',
+      level: 'hard',
+      category: 'الحجوم وسعة السوائل (م³)',
+      prompt: '🏊‍♂️ مسبح القرية الرياضي:',
+      storyText: `خزان مياه مخصص لمسبح مدرسي على شكل شبه مكعب، طول قاعدته ${l} أمتار، عرضه ${w} أمتار، وارتفاعه ${h} أمتار.`,
+      questionText: 'ما هو حجم المياه الذي يملأ الخزان بالكامل بوحدة متر مكعب (م³)؟',
+      correctAnswer: `${vol} م³`,
+      choices: shuffle([
+        `${vol} م³`,
+        `${2 * (l + w + h)} م³`,
+        `${vol + 12} م³`,
+        `${vol - 8} م³`
+      ]),
+      explanation: `حجم شبه المكعب = الطول × العرض × الارتفاع = ${l} × ${w} × ${h} = ${vol} متر مكعب (م³).`,
+      points: 30
+    };
+  }
+
+  // caseType === 5: المعدل الحسابي في الحياة اليومية
+  const targetAvg = [85, 88, 90, 92][rand(0, 3)];
+  const diffs = [2, -3, 5, -4];
+  const s1 = targetAvg + diffs[0];
+  const s2 = targetAvg + diffs[1];
+  const s3 = targetAvg + diffs[2];
+  const s4 = targetAvg + diffs[3];
+
+  return {
+    type: 'real_world',
+    level: 'hard',
+    category: 'المعدل الحسابي في الحياة اليومية',
+    prompt: '🎯 نتائج دوري المسابقات العلمية:',
+    storyText: `حصل فريق مدرسة مشيرفة في 4 جولات من أولمبياد العلوم على العلامات التالية: ${s1}، ${s2}، ${s3}، و ${s4}.`,
+    questionText: 'ما هو المعدل الحسابي لعلامات الفريق في الجولات الأربع؟',
+    correctAnswer: `${targetAvg}`,
+    choices: shuffle([
+      `${targetAvg}`,
+      `${targetAvg + 3}`,
+      `${targetAvg - 2}`,
+      `${targetAvg + 5}`
+    ]),
+    explanation: `المعدل الحسابي = مجموع العلامات ÷ عدد الجولات = (${s1} + ${s2} + ${s3} + ${s4}) ÷ 4 = ${targetAvg * 4} ÷ 4 = ${targetAvg}.`,
     points: 35
   };
 };
