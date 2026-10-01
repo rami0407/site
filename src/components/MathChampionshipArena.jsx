@@ -45,6 +45,121 @@ const getInitialPlayerProfile = () => {
   };
 };
 
+export const MATH_CHALLENGE_BRANCHES = [
+  {
+    id: 'multiplication',
+    viewId: 'branch_multiplication',
+    gameType: 'multiplication',
+    title: 'بطولة جدول الضرب الكبرى',
+    subtitle: 'الماراثون الملكي وحصد الكؤوس وجداول الضرب من 1 إلى 12',
+    icon: '✖️',
+    color: '#eab308',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    badge: '👑 التحدي الملكي',
+    grades: 'صفوف 1 - 6',
+    highlights: ['سباق التوقيت الخاطف (Speed Race)', 'ماراثون الكؤوس (10 مستويات)', 'لغز العامل المفقود ومبارزة الدقة'],
+    awardTeaser: 'كؤوس الذهب والفضة والبرونز والألماسي 💎'
+  },
+  {
+    id: 'curriculum',
+    viewId: 'branch_curriculum',
+    gameType: 'curriculum',
+    title: 'أولمبياد المنهاج المدرسي',
+    subtitle: 'مسائل تفاعلية بحسب المنهاج الوزاري لكل صف من الأول للسادس',
+    icon: '📚',
+    color: '#10b981',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    badge: '🎓 معتمد وزارياً',
+    grades: 'مخصص لكل صف (1 - 6)',
+    highlights: ['الأعداد الكبيرة حتى مليون والمبنى العشري', 'العمليات الحسابية والكسور العادية والعشرية', 'مسائل كلامية متعددة المراحل والمهام'],
+    awardTeaser: 'وسام عبقري المنهاج المدرسي 🎓'
+  },
+  {
+    id: 'detective',
+    viewId: 'branch_detective',
+    gameType: 'detective',
+    title: 'المحقق الرياضي الذكي',
+    subtitle: 'اكتشف الخطأ الرياضي وصححه بذكاء وبرهان',
+    icon: '🕵️‍♂️',
+    color: '#0284c7',
+    gradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+    badge: '🔍 تفكير ناقد',
+    grades: 'تدرج ذكي (1 - 6)',
+    highlights: ['فحص أدلة المعادلات الرياضية المعروضة', 'اكتشاف الأخطاء الشائعة والمغالطات الحسابية', 'البرهان والتصحيح الدقيق وفق القواعد'],
+    awardTeaser: 'وسام المحقق + كأس شارلوك هولمز 🏆🔍'
+  },
+  {
+    id: 'story',
+    viewId: 'branch_story',
+    gameType: 'real_world',
+    title: 'المسائل الحياتية والواقعية',
+    subtitle: 'مواقف وتطبيقات من الحياة اليومية والشراء والتوزيع',
+    icon: '🛒',
+    color: '#059669',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+    badge: '🪙 رياضيات تطبيقية',
+    grades: 'تدرج ذكي (1 - 6)',
+    highlights: ['التسوق وحساب الباقي بالعملة (الشيكل ₪)', 'تقسيم الحلوى والبيتزا والعدالة التوزيعية', 'سياج الحدائق وسرعة ومسافة الحافلات'],
+    awardTeaser: 'وسام المستكشف + كأس عبقري الاقتصاد 🏆🪙'
+  },
+  {
+    id: 'pemdas',
+    viewId: 'branch_pemdas',
+    gameType: 'pemdas',
+    title: 'ترتيب العمليات والرمز المفقود',
+    subtitle: 'أسبقية الحساب والأقواس ومعادلات التوازن',
+    icon: '🧠',
+    color: '#8b5cf6',
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+    badge: '⚡ أسبقية العمليات',
+    grades: 'تدرج ذكي (1 - 6)',
+    highlights: ['أسبقية الضرب والقسمة قبل الجمع والطرح', 'لغز أين نضع الأقواس للوصول للناتج؟', 'موازين المعادلات والرمز المفقود ⚖️'],
+    awardTeaser: 'وسام خبير الترتيب + كأس بروفيسور الحساب 🏆⚡'
+  },
+  {
+    id: 'pattern',
+    viewId: 'branch_pattern',
+    gameType: 'pattern',
+    title: 'المتواليات والألغاز المنطقية',
+    subtitle: 'اكتشاف القوانين الخفية والأنماط والأحاجي',
+    icon: '🧩',
+    color: '#d97706',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
+    badge: '🔮 ذكاء ومنطق',
+    grades: 'تدرج ذكي (1 - 6)',
+    highlights: ['القفزات والمتواليات الحسابية والهندسية', 'ألغاز فيبوناتشي والأعداد المربعة وسلاسل الرموز', 'معادلات الأشكال الصورية والفواكه المتشابكة'],
+    awardTeaser: 'وسام كاشف الأنماط + كأس بروفيسور المنطق 🏆🧠'
+  },
+  {
+    id: 'fractions',
+    viewId: 'branch_fractions',
+    gameType: 'fractions',
+    title: 'الكسور والنسبة المئوية',
+    subtitle: 'مهرجان التخفيضات وتحويلات الكسور والنسب',
+    icon: '🏷️',
+    color: '#db2777',
+    gradient: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+    badge: '🍰 مهرجان التخفيضات',
+    grades: 'تدرج ذكي (1 - 6)',
+    highlights: ['الأجزاء والكسور المتكافئة والتبسيط', 'حساب تخفيضات المتاجر بالنسبة المئوية %', 'توحيد المقامات وضرب الكسور العادية'],
+    awardTeaser: 'وسام خبير الكسور + كأس ساحر التخفيضات 🏆🏷️'
+  },
+  {
+    id: 'geometry',
+    viewId: 'branch_geometry',
+    gameType: 'geometry',
+    title: 'الهندسة والمساحات والمحيط',
+    subtitle: 'الأشكال المستوية والمجسمات والزوايا والحجوم',
+    icon: '📐',
+    color: '#0284c7',
+    gradient: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+    badge: '🏛️ هندسة ومجسمات',
+    grades: 'تدرج ذكي (1 - 6)',
+    highlights: ['الأشكال المستوية والمجسمات ثلاثية الأبعاد', 'أنواع الزوايا وتصنيف المثلثات والمحيط', 'مساحات الأشكال، زوايا المثلث 180°، والحجوم'],
+    awardTeaser: 'وسام المهندس + كأس إقليدس للهندسة 🏆🏛️'
+  }
+];
+
 export default function MathChampionshipArena() {
   // Main view navigation: 'hub' | 'play_multiplication' | 'play_curriculum' | 'play_detective' | 'play_story' | 'leaderboard' | 'certificate'
   const [activeView, setActiveView] = useState('hub');
@@ -303,6 +418,28 @@ export default function MathChampionshipArena() {
     loadNextQuestion(gameType);
   };
 
+  const getCurrentMode = () => {
+    if (activeView === 'play_multiplication') return 'multiplication';
+    if (activeView === 'play_detective') return 'detective';
+    if (activeView === 'play_story') return 'real_world';
+    if (activeView === 'play_pemdas') return 'pemdas';
+    if (activeView === 'play_pattern') return 'pattern';
+    if (activeView === 'play_fractions') return 'fractions';
+    if (activeView === 'play_geometry') return 'geometry';
+    return 'curriculum';
+  };
+
+  const getCurrentBranchView = () => {
+    if (activeView === 'play_multiplication') return 'branch_multiplication';
+    if (activeView === 'play_detective') return 'branch_detective';
+    if (activeView === 'play_story') return 'branch_story';
+    if (activeView === 'play_pemdas') return 'branch_pemdas';
+    if (activeView === 'play_pattern') return 'branch_pattern';
+    if (activeView === 'play_fractions') return 'branch_fractions';
+    if (activeView === 'play_geometry') return 'branch_geometry';
+    return 'branch_curriculum';
+  };
+
   // Answer selection handler
   const handleSelectAnswer = (choice) => {
     if (isAnswerRevealed || gameState !== 'playing') return;
@@ -536,112 +673,77 @@ export default function MathChampionshipArena() {
             className={`math-nav-tab ${activeView === 'hub' ? 'active' : ''}`}
             onClick={() => { setGameState('idle'); setActiveView('hub'); }}
           >
-            <i className="fas fa-th-large"></i> الساحة الرئيسية
+            <i className="fas fa-th-large"></i> بوابة التحديات 🏠
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight ${activeView === 'play_multiplication' ? 'active' : ''}`}
-            onClick={() => { setGameState('idle'); setActiveView('hub'); }}
+            className={`math-nav-tab highlight ${(activeView === 'branch_multiplication' || activeView === 'play_multiplication') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_multiplication'); }}
           >
-            <i className="fas fa-bolt"></i> بطولة جدول الضرب ⚡
+            <i className="fas fa-bolt"></i> جدول الضرب ✖️
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight-detective ${activeView === 'play_detective' ? 'active' : ''}`}
-            onClick={() => {
-              setGameState('idle');
-              setActiveView('hub');
-              setTimeout(() => {
-                const el = document.getElementById('detective-challenge-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            className={`math-nav-tab ${(activeView === 'branch_curriculum' || activeView === 'play_curriculum') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_curriculum'); }}
           >
-            <i className="fas fa-search"></i> المحقق الرياضي 🕵️‍♂️
+            <i className="fas fa-book-open"></i> منهاج الصفوف 📚
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight-story ${activeView === 'play_story' ? 'active' : ''}`}
-            onClick={() => {
-              setGameState('idle');
-              setActiveView('hub');
-              setTimeout(() => {
-                const el = document.getElementById('story-challenge-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            className={`math-nav-tab highlight-detective ${(activeView === 'branch_detective' || activeView === 'play_detective') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_detective'); }}
+          >
+            <i className="fas fa-search"></i> المحقق 🕵️‍♂️
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab highlight-story ${(activeView === 'branch_story' || activeView === 'play_story') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_story'); }}
           >
             <i className="fas fa-shopping-cart"></i> المسائل الحياتية 🛒
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight-pemdas ${activeView === 'play_pemdas' ? 'active' : ''}`}
-            onClick={() => {
-              setGameState('idle');
-              setActiveView('hub');
-              setTimeout(() => {
-                const el = document.getElementById('pemdas-challenge-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            className={`math-nav-tab highlight-pemdas ${(activeView === 'branch_pemdas' || activeView === 'play_pemdas') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_pemdas'); }}
           >
             <i className="fas fa-brain"></i> ترتيب العمليات 🧠
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight-pattern ${activeView === 'play_pattern' ? 'active' : ''}`}
-            onClick={() => {
-              setGameState('idle');
-              setActiveView('hub');
-              setTimeout(() => {
-                const el = document.getElementById('pattern-challenge-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            className={`math-nav-tab highlight-pattern ${(activeView === 'branch_pattern' || activeView === 'play_pattern') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_pattern'); }}
           >
-            <i className="fas fa-puzzle-piece"></i> المتواليات والألغاز 🧩
+            <i className="fas fa-puzzle-piece"></i> المتواليات 🧩
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight-fractions ${activeView === 'play_fractions' ? 'active' : ''}`}
-            onClick={() => {
-              setGameState('idle');
-              setActiveView('hub');
-              setTimeout(() => {
-                const el = document.getElementById('fractions-challenge-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            className={`math-nav-tab highlight-fractions ${(activeView === 'branch_fractions' || activeView === 'play_fractions') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_fractions'); }}
           >
             <i className="fas fa-percent"></i> الكسور والنسبة 🏷️
           </button>
           <button 
             type="button"
-            className={`math-nav-tab highlight-geometry ${activeView === 'play_geometry' ? 'active' : ''}`}
-            onClick={() => {
-              setGameState('idle');
-              setActiveView('hub');
-              setTimeout(() => {
-                const el = document.getElementById('geometry-challenge-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            className={`math-nav-tab highlight-geometry ${(activeView === 'branch_geometry' || activeView === 'play_geometry') ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_geometry'); }}
           >
             <i className="fas fa-shapes"></i> الهندسة والمساحات 📐
           </button>
           <button 
             type="button"
             className={`math-nav-tab ${activeView === 'leaderboard' ? 'active' : ''}`}
-            onClick={() => { setActiveView('leaderboard'); fetchLeaderboard(); }}
+            onClick={() => { setGameState('idle'); setActiveView('leaderboard'); fetchLeaderboard(); }}
           >
-            <i className="fas fa-award"></i> لوحة شرف الأبطال 🏅
+            <i className="fas fa-award"></i> لوحة الشرف 🏅
           </button>
           <button 
             type="button"
             className={`math-nav-tab ${activeView === 'certificate' ? 'active' : ''}`}
-            onClick={() => setActiveView('certificate')}
+            onClick={() => { setGameState('idle'); setActiveView('certificate'); }}
           >
-            <i className="fas fa-certificate"></i> وسام وبراءة التميز 📜
+            <i className="fas fa-certificate"></i> براءة التميز 📜
           </button>
         </nav>
       </header>
@@ -649,11 +751,103 @@ export default function MathChampionshipArena() {
       {/* 2. MAIN CONTENT BODY */}
       <main className="math-arena-main-content">
         
-        {/* VIEW 1: HUB / GAME SELECTION */}
+        {/* VIEW 1: MAIN MATH HUB PORTAL (GRID OF BRANCHES) */}
         {activeView === 'hub' && gameState === 'idle' && (
-          <div className="math-hub-grid">
+          <div className="math-hub-portal-view fade-in">
             
-            {/* FEATURED: MULTIPLICATION TOURNAMENT CARD */}
+            {/* Branches Showcase Header */}
+            <div className="branches-overview-header">
+              <span className="sub-badge">🌟 منصة مدرسة مشيرفة الابتدائية</span>
+              <h2>فروع وتحديات المنصة التعليمية 🚀</h2>
+              <p>اختر فرع التحدي الرياضي الذي ترغب في خوضه، حيث يتميز كل فرع بمساراته المتدرجة ومسائله المعتمدة وأوسمته الخاصة:</p>
+            </div>
+
+            {/* Branches Cards Grid */}
+            <div className="branches-cards-grid">
+              {MATH_CHALLENGE_BRANCHES.map(branch => (
+                <div 
+                  key={branch.id} 
+                  className="branch-hub-card"
+                  onClick={() => { setGameState('idle'); setActiveView(branch.viewId); }}
+                >
+                  <div className="branch-card-header" style={{ background: branch.gradient }}>
+                    <div className="branch-header-top">
+                      <span className="branch-card-badge">{branch.badge}</span>
+                      <span className="branch-card-grades">{branch.grades}</span>
+                    </div>
+                    <span className="branch-card-icon">{branch.icon}</span>
+                  </div>
+                  <div className="branch-card-body">
+                    <h3>{branch.title}</h3>
+                    <p className="branch-subtitle">{branch.subtitle}</p>
+                    <ul className="branch-highlights-list">
+                      {branch.highlights.map((h, i) => (
+                        <li key={i}>✓ {h}</li>
+                      ))}
+                    </ul>
+                    <div className="branch-awards-teaser">
+                      <span className="teaser-label">🏆 الجوائز المتاحة:</span>
+                      <span className="teaser-val">{branch.awardTeaser}</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="enter-branch-btn"
+                      style={{ '--branch-color': branch.color }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setGameState('idle');
+                        setActiveView(branch.viewId);
+                      }}
+                    >
+                      دخول فرع التحدي 🚪
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* TROPHIES & CUP SHOWCASE SHELF */}
+            <div className="trophies-shelf-card">
+              <div className="shelf-header">
+                <h3>🏆 خزانة الكؤوس وأوسمة البطولة</h3>
+                <span className="shelf-counter">
+                  {player.unlockedAwards.length} من {CHAMPIONSHIP_AWARDS.length} مفتوحة
+                </span>
+              </div>
+
+              <div className="awards-grid">
+                {CHAMPIONSHIP_AWARDS.map(award => {
+                  const isUnlocked = player.unlockedAwards.some(a => a.id === award.id);
+                  return (
+                    <div key={award.id} className={`award-badge-card ${isUnlocked ? 'unlocked' : 'locked'}`}>
+                      <div className="award-icon-wrap" style={{ borderColor: isUnlocked ? award.color : '#cbd5e1' }}>
+                        <span className="award-icon">{award.icon}</span>
+                        {isUnlocked && <span className="unlocked-check">✓</span>}
+                      </div>
+                      <h4>{award.name}</h4>
+                      <p className="award-desc">{award.description}</p>
+                      <span className="award-status">
+                        {isUnlocked ? '🌟 تم الإحراز بنجاح' : '🔒 يحتاج لمزيد من النقاط'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* BRANCH 1: MULTIPLICATION TOURNAMENT */}
+        {activeView === 'branch_multiplication' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: بطولة جدول الضرب الكبرى ✖️</span>
+            </div>
+
             <div className="featured-game-card multiplication-banner">
               <div className="game-card-badge">⚡ التحدي الملكي الأكبر</div>
               <div className="game-card-content">
@@ -711,276 +905,19 @@ export default function MathChampionshipArena() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* SPECIAL CHALLENGE 1: MATH DETECTIVE (اكتشف الخطأ وصححه) */}
-            <div className="math-detective-challenge-card" id="detective-challenge-section">
-              <div className="detective-card-badge">🕵️‍♂️ تحدي التفكير الناقد والتحقيق الرياضي</div>
-              <div className="detective-card-content">
-                <div className="detective-header-row">
-                  <div className="detective-avatar-icon">🔍</div>
-                  <div className="detective-text">
-                    <h2>تحدي «المحقق الرياضي»: اكتشف الخطأ وصححه! 🕵️‍♂️</h2>
-                    <p>دقق في حلول ومسائل الرياضيات المكتوبة، اكشف المغالطات المفاهيمية الشائعة، وبرهن على براعتك في تصحيحها وفق المنهاج المدرسي!</p>
-                  </div>
-                </div>
-
-                {/* Levels Selector: Easy to Hard */}
-                <div className="detective-levels-section">
-                  <label className="picker-label">اختر مسار التحقيق (مبني تدريجياً من السهل إلى الصعب):</label>
-                  <div className="detective-levels-grid">
-                    {DETECTIVE_CHALLENGE.levels.map(lvl => (
-                      <div 
-                        key={lvl.id}
-                        className={`detective-level-card ${selectedDetectiveLevel === lvl.id ? 'active' : ''}`}
-                        onClick={() => setSelectedDetectiveLevel(lvl.id)}
-                      >
-                        <div className="level-card-top">
-                          <span className="level-icon">{lvl.icon}</span>
-                          <h4>{lvl.name}</h4>
-                        </div>
-                        <p className="level-desc">{lvl.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="detective-action-row">
-                  <button 
-                    type="button" 
-                    className="launch-detective-btn"
-                    onClick={() => startGame('detective')}
-                  >
-                    🔎 ابدأ مهمة التحقيق الرياضي الآن (90 ثانية)!
-                  </button>
-                </div>
-              </div>
+        {/* BRANCH 2: CURRICULUM GRADES (1 - 6) */}
+        {activeView === 'branch_curriculum' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: أولمبياد المنهاج المدرسي (صفوف 1-6) 📚</span>
             </div>
 
-            {/* SPECIAL CHALLENGE 2: REAL-WORLD MATH & STORY QUEST (المسائل الحياتية والمشتريات الذكية) */}
-            <div className="math-story-challenge-card" id="story-challenge-section">
-              <div className="story-card-badge">🛒 تحدي مواقف الحياة اليومية والمسائل الكلامية</div>
-              <div className="story-card-content">
-                <div className="story-header-row">
-                  <div className="story-avatar-icon">🏪</div>
-                  <div className="story-text">
-                    <h2>تحدي «المسائل الحياتية والمشتريات الذكية»: الرياضيات في واقعنا! 🛒</h2>
-                    <p>استخدم ذكاءك الرياضي في مواقف حقيقية: حساب باقي النقود بالشيكل، اقتسام البيتزا والحلويات، حساب محيط الحدائق، حساب نسب التخفيضات وسرعة الحافلات!</p>
-                  </div>
-                </div>
-
-                {/* Levels Selector: Easy to Hard */}
-                <div className="story-levels-section">
-                  <label className="picker-label">اختر مسار التحدي الحياتي (متدرج من السهل إلى الصعب):</label>
-                  <div className="story-levels-grid">
-                    {REAL_WORLD_CHALLENGE.levels.map(lvl => (
-                      <div 
-                        key={lvl.id}
-                        className={`story-level-card ${selectedStoryLevel === lvl.id ? 'active' : ''}`}
-                        onClick={() => setSelectedStoryLevel(lvl.id)}
-                      >
-                        <div className="level-card-top">
-                          <span className="level-icon">{lvl.icon}</span>
-                          <h4>{lvl.name}</h4>
-                        </div>
-                        <p className="level-desc">{lvl.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="story-action-row">
-                  <button 
-                    type="button" 
-                    className="launch-story-btn"
-                    onClick={() => startGame('real_world')}
-                  >
-                    🛍️ ابدأ مغامرة التحدي الحياتي الآن (100 ثانية)!
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* SPECIAL CHALLENGE 3: PEMDAS & MISSING OPERATOR (ترتيب العمليات والرمز المفقود) */}
-            <div className="math-pemdas-challenge-card" id="pemdas-challenge-section">
-              <div className="pemdas-card-badge">🧠 تحدي أسبقية العمليات والرمز المفقود</div>
-              <div className="pemdas-card-content">
-                <div className="pemdas-header-row">
-                  <div className="pemdas-avatar-icon">⚙️</div>
-                  <div className="pemdas-text">
-                    <h2>تحدي «ترتيب العمليات الحسابية والرمز المفقود»: لغز الترتيب والأقواس! 🧠⚡</h2>
-                    <p>أتقن القواعد الذهبية للحساب: الضرب والقسمة قبل الجمع والطرح، قوة الأقواس، واكتشف الإشارة والعدد المجهول في معادلات متدرجة الصعوبة!</p>
-                  </div>
-                </div>
-
-                {/* Levels Selector: Easy to Hard */}
-                <div className="pemdas-levels-section">
-                  <label className="picker-label">اختر مسار التحدي (متدرج من السهل إلى الصعب):</label>
-                  <div className="pemdas-levels-grid">
-                    {PEMDAS_CHALLENGE.levels.map(lvl => (
-                      <div 
-                        key={lvl.id}
-                        className={`pemdas-level-card ${selectedPemdasLevel === lvl.id ? 'active' : ''}`}
-                        onClick={() => setSelectedPemdasLevel(lvl.id)}
-                      >
-                        <div className="level-card-top">
-                          <span className="level-icon">{lvl.icon}</span>
-                          <h4>{lvl.name}</h4>
-                        </div>
-                        <p className="level-desc">{lvl.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pemdas-action-row">
-                  <button 
-                    type="button" 
-                    className="launch-pemdas-btn"
-                    onClick={() => startGame('pemdas')}
-                  >
-                    ⚡ انطلق في تحدي ترتيب العمليات الآن (90 ثانية)!
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* SPECIAL CHALLENGE 4: PATTERNS & MATH LOGIC (المتواليات والألغاز الرياضية) */}
-            <div className="math-pattern-challenge-card" id="pattern-challenge-section">
-              <div className="pattern-card-badge">🧩 تحدي المتواليات والتفكير المنطقي</div>
-              <div className="pattern-card-content">
-                <div className="pattern-header-row">
-                  <div className="pattern-avatar-icon">🔮</div>
-                  <div className="pattern-text">
-                    <h2>تحدي «المتواليات والألغاز الرياضية»: أسرار الأنماط والذكاء! 🧩🔍</h2>
-                    <p>اكتشف القواعد الخفية وراء سلاسل الأعداد، فك شفرات الأشكال وفيبوناتشي، وحل أحاجي الأعمار والرموز في سباق تفاعلي مشوق!</p>
-                  </div>
-                </div>
-
-                {/* Levels Selector: Easy to Hard */}
-                <div className="pattern-levels-section">
-                  <label className="picker-label">اختر مسار المتواليات والألغاز (متدرج من السهل إلى الصعب):</label>
-                  <div className="pattern-levels-grid">
-                    {PATTERNS_LOGIC_CHALLENGE.levels.map(lvl => (
-                      <div 
-                        key={lvl.id}
-                        className={`pattern-level-card ${selectedPatternLevel === lvl.id ? 'active' : ''}`}
-                        onClick={() => setSelectedPatternLevel(lvl.id)}
-                      >
-                        <div className="level-card-top">
-                          <span className="level-icon">{lvl.icon}</span>
-                          <h4>{lvl.name}</h4>
-                        </div>
-                        <p className="level-desc">{lvl.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pattern-action-row">
-                  <button 
-                    type="button" 
-                    className="launch-pattern-btn"
-                    onClick={() => startGame('pattern')}
-                  >
-                    🎲 ابدأ تحدي المتواليات والألغاز الآن (90 ثانية)!
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* SPECIAL CHALLENGE 5: FRACTIONS & PERCENTAGES (الكسور والنسبة المئوية ومهرجان التخفيضات) */}
-            <div className="math-fractions-challenge-card" id="fractions-challenge-section">
-              <div className="fractions-card-badge">🏷️ تحدي الكسور والنسبة المئوية والتخفيضات</div>
-              <div className="fractions-card-content">
-                <div className="fractions-header-row">
-                  <div className="fractions-avatar-icon">🍰</div>
-                  <div className="fractions-text">
-                    <h2>تحدي «الكسور والنسبة المئوية ومهرجان التخفيضات»: براعة الأجزاء والتسوق! 🏷️🍰</h2>
-                    <p>أتقن أجزاء الأعداد من النصف والربع، اختزل ووسع الكسور، أجرِ العمليات ووحّد المقامات، واحسب نسب التخفيضات في متجر الرياضيات الذكي!</p>
-                  </div>
-                </div>
-
-                {/* Levels Selector: Easy to Hard */}
-                <div className="fractions-levels-section">
-                  <label className="picker-label">اختر مسار الكسور والنسبة (متدرج من السهل إلى الصعب):</label>
-                  <div className="fractions-levels-grid">
-                    {FRACTIONS_PERCENT_CHALLENGE.levels.map(lvl => (
-                      <div 
-                        key={lvl.id}
-                        className={`fractions-level-card ${selectedFractionsLevel === lvl.id ? 'active' : ''}`}
-                        onClick={() => setSelectedFractionsLevel(lvl.id)}
-                      >
-                        <div className="level-card-top">
-                          <span className="level-icon">{lvl.icon}</span>
-                          <h4>{lvl.name}</h4>
-                        </div>
-                        <p className="level-desc">{lvl.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="fractions-action-row">
-                  <button 
-                    type="button" 
-                    className="launch-fractions-btn"
-                    onClick={() => startGame('fractions')}
-                  >
-                    🏷️ انطلق في مهرجان الكسور والنسب الآن (90 ثانية)!
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* SPECIAL CHALLENGE 6: GEOMETRY, ANGLES, PERIMETER & AREA */}
-            <div id="geometry-challenge-section" className="math-geometry-challenge-card">
-              <div className="geometry-card-badge">
-                <span>📐 تحدي الهندسة والقياس المعتمد (صفوف 1 - 6)</span>
-              </div>
-              <div className="geometry-card-content">
-                <div className="geometry-header-row">
-                  <div className="geometry-avatar-icon">
-                    <span>📐</span>
-                  </div>
-                  <div className="geometry-text">
-                    <h2>{GEOMETRY_CHALLENGE.title}</h2>
-                    <p>{GEOMETRY_CHALLENGE.subtitle}</p>
-                  </div>
-                </div>
-
-                {/* Levels Selector: Easy to Hard */}
-                <div className="geometry-levels-section">
-                  <label className="picker-label">اختر مسار التحدي الهندسي (متدرج من السهل إلى الصعب):</label>
-                  <div className="geometry-levels-grid">
-                    {GEOMETRY_CHALLENGE.levels.map(lvl => (
-                      <div 
-                        key={lvl.id}
-                        className={`geometry-level-card ${selectedGeometryLevel === lvl.id ? 'active' : ''}`}
-                        onClick={() => setSelectedGeometryLevel(lvl.id)}
-                      >
-                        <div className="level-card-top">
-                          <span className="level-icon">{lvl.icon}</span>
-                          <h4>{lvl.name}</h4>
-                        </div>
-                        <p className="level-desc">{lvl.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="geometry-action-row">
-                  <button 
-                    type="button" 
-                    className="launch-geometry-btn"
-                    onClick={() => startGame('geometry')}
-                  >
-                    📐 انطلق في تحدي الهندسة والمساحات الآن (90 ثانية)!
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* CURRICULUM GRADES GAMES (GRADES 1 - 6) */}
             <div className="curriculum-grades-section">
               <div className="section-title-wrap">
                 <span className="sub-badge">📚 متوافق مع المنهاج المدرسي</span>
@@ -1061,36 +998,340 @@ export default function MathChampionshipArena() {
                 );
               })()}
             </div>
+          </div>
+        )}
 
-            {/* TROPHIES & CUP SHOWCASE SHELF */}
-            <div className="trophies-shelf-card">
-              <div className="shelf-header">
-                <h3>🏆 خزانة الكؤوس وأوسمة البطولة</h3>
-                <span className="shelf-counter">
-                  {player.unlockedAwards.length} من {CHAMPIONSHIP_AWARDS.length} مفتوحة
-                </span>
-              </div>
-
-              <div className="awards-grid">
-                {CHAMPIONSHIP_AWARDS.map(award => {
-                  const isUnlocked = player.unlockedAwards.some(a => a.id === award.id);
-                  return (
-                    <div key={award.id} className={`award-badge-card ${isUnlocked ? 'unlocked' : 'locked'}`}>
-                      <div className="award-icon-wrap" style={{ borderColor: isUnlocked ? award.color : '#cbd5e1' }}>
-                        <span className="award-icon">{award.icon}</span>
-                        {isUnlocked && <span className="unlocked-check">✓</span>}
-                      </div>
-                      <h4>{award.name}</h4>
-                      <p className="award-desc">{award.description}</p>
-                      <span className="award-status">
-                        {isUnlocked ? '🌟 تم الإحراز بنجاح' : '🔒 يحتاج لمزيد من النقاط'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* BRANCH 3: MATH DETECTIVE (اكتشف الخطأ وصححه) */}
+        {activeView === 'branch_detective' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: المحقق الرياضي (اكتشف الخطأ وصححه) 🕵️‍♂️</span>
             </div>
 
+            <div className="math-detective-challenge-card" id="detective-challenge-section">
+              <div className="detective-card-badge">🕵️‍♂️ تحدي التفكير الناقد والتحقيق الرياضي</div>
+              <div className="detective-card-content">
+                <div className="detective-header-row">
+                  <div className="detective-avatar-icon">🔍</div>
+                  <div className="detective-text">
+                    <h2>تحدي «المحقق الرياضي»: اكتشف الخطأ وصححه! 🕵️‍♂️</h2>
+                    <p>دقق في حلول ومسائل الرياضيات المكتوبة، اكشف المغالطات المفاهيمية الشائعة، وبرهن على براعتك في تصحيحها وفق المنهاج المدرسي!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="detective-levels-section">
+                  <label className="picker-label">اختر مسار التحقيق (مبني تدريجياً من السهل إلى الصعب):</label>
+                  <div className="detective-levels-grid">
+                    {DETECTIVE_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`detective-level-card ${selectedDetectiveLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedDetectiveLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="detective-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-detective-btn"
+                    onClick={() => startGame('detective')}
+                  >
+                    🔎 ابدأ مهمة التحقيق الرياضي الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 4: REAL-WORLD MATH & STORY QUEST */}
+        {activeView === 'branch_story' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: المسائل الحياتية والواقعية 🛒</span>
+            </div>
+
+            <div className="math-story-challenge-card" id="story-challenge-section">
+              <div className="story-card-badge">🛒 تحدي مواقف الحياة اليومية والمسائل الكلامية</div>
+              <div className="story-card-content">
+                <div className="story-header-row">
+                  <div className="story-avatar-icon">🏪</div>
+                  <div className="story-text">
+                    <h2>تحدي «المسائل الحياتية والمشتريات الذكية»: الرياضيات في واقعنا! 🛒</h2>
+                    <p>استخدم ذكاءك الرياضي في مواقف حقيقية: حساب باقي النقود بالشيكل، اقتسام البيتزا والحلويات، حساب محيط الحدائق، حساب نسب التخفيضات وسرعة الحافلات!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="story-levels-section">
+                  <label className="picker-label">اختر مسار التحدي الحياتي (متدرج من السهل إلى الصعب):</label>
+                  <div className="story-levels-grid">
+                    {REAL_WORLD_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`story-level-card ${selectedStoryLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedStoryLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="story-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-story-btn"
+                    onClick={() => startGame('real_world')}
+                  >
+                    🛍️ ابدأ مغامرة التحدي الحياتي الآن (100 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 5: PEMDAS & MISSING OPERATOR */}
+        {activeView === 'branch_pemdas' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: ترتيب العمليات والرمز المفقود 🧠</span>
+            </div>
+
+            <div className="math-pemdas-challenge-card" id="pemdas-challenge-section">
+              <div className="pemdas-card-badge">🧠 تحدي أسبقية العمليات والرمز المفقود</div>
+              <div className="pemdas-card-content">
+                <div className="pemdas-header-row">
+                  <div className="pemdas-avatar-icon">⚙️</div>
+                  <div className="pemdas-text">
+                    <h2>تحدي «ترتيب العمليات الحسابية والرمز المفقود»: لغز الترتيب والأقواس! 🧠⚡</h2>
+                    <p>أتقن القواعد الذهبية للحساب: الضرب والقسمة قبل الجمع والطرح، قوة الأقواس، واكتشف الإشارة والعدد المجهول في معادلات متدرجة الصعوبة!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="pemdas-levels-section">
+                  <label className="picker-label">اختر مسار التحدي (متدرج من السهل إلى الصعب):</label>
+                  <div className="pemdas-levels-grid">
+                    {PEMDAS_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`pemdas-level-card ${selectedPemdasLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedPemdasLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pemdas-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-pemdas-btn"
+                    onClick={() => startGame('pemdas')}
+                  >
+                    ⚡ انطلق في تحدي ترتيب العمليات الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 6: PATTERNS & MATH LOGIC */}
+        {activeView === 'branch_pattern' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: المتواليات والألغاز الرياضية والمنطق 🧩</span>
+            </div>
+
+            <div className="math-pattern-challenge-card" id="pattern-challenge-section">
+              <div className="pattern-card-badge">🧩 تحدي المتواليات والتفكير المنطقي</div>
+              <div className="pattern-card-content">
+                <div className="pattern-header-row">
+                  <div className="pattern-avatar-icon">🔮</div>
+                  <div className="pattern-text">
+                    <h2>تحدي «المتواليات والألغاز الرياضية»: أسرار الأنماط والذكاء! 🧩🔍</h2>
+                    <p>اكتشف القواعد الخفية وراء سلاسل الأعداد، فك شفرات الأشكال وفيبوناتشي، وحل أحاجي الأعمار والرموز في سباق تفاعلي مشوق!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="pattern-levels-section">
+                  <label className="picker-label">اختر مسار المتواليات والألغاز (متدرج من السهل إلى الصعب):</label>
+                  <div className="pattern-levels-grid">
+                    {PATTERNS_LOGIC_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`pattern-level-card ${selectedPatternLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedPatternLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pattern-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-pattern-btn"
+                    onClick={() => startGame('pattern')}
+                  >
+                    🎲 ابدأ تحدي المتواليات والألغاز الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 7: FRACTIONS & PERCENTAGES */}
+        {activeView === 'branch_fractions' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: الكسور والنسبة المئوية ومهرجان التخفيضات 🏷️</span>
+            </div>
+
+            <div className="math-fractions-challenge-card" id="fractions-challenge-section">
+              <div className="fractions-card-badge">🏷️ تحدي الكسور والنسبة المئوية والتخفيضات</div>
+              <div className="fractions-card-content">
+                <div className="fractions-header-row">
+                  <div className="fractions-avatar-icon">🍰</div>
+                  <div className="fractions-text">
+                    <h2>تحدي «الكسور والنسبة المئوية ومهرجان التخفيضات»: براعة الأجزاء والتسوق! 🏷️🍰</h2>
+                    <p>أتقن أجزاء الأعداد من النصف والربع، اختزل ووسع الكسور، أجرِ العمليات ووحّد المقامات، واحسب نسب التخفيضات في متجر الرياضيات الذكي!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="fractions-levels-section">
+                  <label className="picker-label">اختر مسار الكسور والنسبة (متدرج من السهل إلى الصعب):</label>
+                  <div className="fractions-levels-grid">
+                    {FRACTIONS_PERCENT_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`fractions-level-card ${selectedFractionsLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedFractionsLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="fractions-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-fractions-btn"
+                    onClick={() => startGame('fractions')}
+                  >
+                    🏷️ انطلق في مهرجان الكسور والنسب الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 8: GEOMETRY, ANGLES, PERIMETER & AREA */}
+        {activeView === 'branch_geometry' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar">
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <span className="current-branch-pill">فرع: مهندس الهندسة والمساحات والمحيط والزوايا 📐</span>
+            </div>
+
+            <div id="geometry-challenge-section" className="math-geometry-challenge-card">
+              <div className="geometry-card-badge">
+                <span>📐 تحدي الهندسة والقياس المعتمد (صفوف 1 - 6)</span>
+              </div>
+              <div className="geometry-card-content">
+                <div className="geometry-header-row">
+                  <div className="geometry-avatar-icon">
+                    <span>📐</span>
+                  </div>
+                  <div className="geometry-text">
+                    <h2>{GEOMETRY_CHALLENGE.title}</h2>
+                    <p>{GEOMETRY_CHALLENGE.subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="geometry-levels-section">
+                  <label className="picker-label">اختر مسار التحدي الهندسي (متدرج من السهل إلى الصعب):</label>
+                  <div className="geometry-levels-grid">
+                    {GEOMETRY_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`geometry-level-card ${selectedGeometryLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedGeometryLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="geometry-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-geometry-btn"
+                    onClick={() => startGame('geometry')}
+                  >
+                    📐 انطلق في تحدي الهندسة والمساحات الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1373,15 +1614,9 @@ export default function MathChampionshipArena() {
                     <button 
                       type="button" 
                       className="next-q-btn"
-                      onClick={() => loadNextQuestion(
-                        activeView === 'play_multiplication' 
-                          ? 'multiplication' 
-                          : activeView === 'play_detective'
-                          ? 'detective'
-                          : 'curriculum'
-                      )}
+                      onClick={() => loadNextQuestion(getCurrentMode())}
                     >
-                      {activeView === 'play_detective' ? 'القضية التالية 🔎' : 'المسألة التالية ⬅'}
+                      {activeView === 'play_detective' ? 'القضية التالية 🔎' : activeView === 'play_geometry' ? 'المسألة الهندسية التالية 📐' : activeView === 'play_fractions' ? 'مسألة الكسور التالية 🏷️' : 'المسألة التالية ⬅'}
                     </button>
                   </div>
                 </div>
@@ -1433,9 +1668,20 @@ export default function MathChampionshipArena() {
               <button 
                 type="button" 
                 className="retry-btn"
-                onClick={() => startGame(activeView === 'play_multiplication' ? 'multiplication' : 'curriculum')}
+                onClick={() => startGame(getCurrentMode())}
               >
                 🔄 إعادة التحدي لجمع نقاط أكثر
+              </button>
+
+              <button 
+                type="button" 
+                className="branch-settings-btn"
+                onClick={() => {
+                  setGameState('idle');
+                  setActiveView(getCurrentBranchView());
+                }}
+              >
+                ⚙️ تعديل مسار التحدي
               </button>
 
               <button 
@@ -1451,7 +1697,7 @@ export default function MathChampionshipArena() {
                 className="back-hub-btn"
                 onClick={() => { setGameState('idle'); setActiveView('hub'); }}
               >
-                🏠 العودة لساحة الألعاب
+                🏠 العودة لبوابة الرياضيات الرئيسية
               </button>
             </div>
           </div>
