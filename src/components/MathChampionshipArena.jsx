@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   MATH_GRADES, 
   MULTIPLICATION_TOURNAMENT, 
+  DETECTIVE_CHALLENGE,
   CHAMPIONSHIP_AWARDS,
   generateMultiplicationQuestion,
-  generateGradeCurriculumQuestion 
+  generateGradeCurriculumQuestion,
+  generateMathDetectiveQuestion
 } from '../data/mathCurriculumData';
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
@@ -34,7 +36,7 @@ const getInitialPlayerProfile = () => {
 };
 
 export default function MathChampionshipArena() {
-  // Main view navigation: 'hub' | 'play_multiplication' | 'play_curriculum' | 'leaderboard' | 'certificate'
+  // Main view navigation: 'hub' | 'play_multiplication' | 'play_curriculum' | 'play_detective' | 'leaderboard' | 'certificate'
   const [activeView, setActiveView] = useState('hub');
   
   // Player state
@@ -49,6 +51,9 @@ export default function MathChampionshipArena() {
   // Curriculum grade settings
   const [selectedCurriculumGrade, setSelectedCurriculumGrade] = useState('grade_3');
   const [selectedCurriculumTopic, setSelectedCurriculumTopic] = useState('all');
+
+  // Detective challenge settings
+  const [selectedDetectiveLevel, setSelectedDetectiveLevel] = useState('progressive');
 
   // In-Game state
   const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'game_over'
@@ -123,11 +128,14 @@ export default function MathChampionshipArena() {
     if (gameType === 'multiplication') {
       const q = generateMultiplicationQuestion(selectedTable, selectedMultMode);
       setCurrentQuestion(q);
+    } else if (gameType === 'detective') {
+      const q = generateMathDetectiveQuestion(selectedDetectiveLevel, correctCount);
+      setCurrentQuestion(q);
     } else {
       const q = generateGradeCurriculumQuestion(selectedCurriculumGrade, selectedCurriculumTopic);
       setCurrentQuestion(q);
     }
-  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic]);
+  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, correctCount]);
 
   // End game handler
   const finishGame = useCallback((reason = 'time_up') => {
@@ -153,7 +161,11 @@ export default function MathChampionshipArena() {
             gameScore,
             correctCount,
             wrongCount,
-            mode: activeView === 'play_multiplication' ? `جدول الضرب (${selectedTable})` : `منهاج (${selectedCurriculumGrade})`
+            mode: activeView === 'play_multiplication' 
+              ? `جدول الضرب (${selectedTable})` 
+              : activeView === 'play_detective'
+              ? `المحقق الرياضي (${selectedDetectiveLevel === 'progressive' ? 'متدرج ذكي' : selectedDetectiveLevel})`
+              : `منهاج (${selectedCurriculumGrade})`
           },
           ...(prev.history || []).slice(0, 9)
         ]
@@ -173,7 +185,7 @@ export default function MathChampionshipArena() {
         }).catch(() => {});
       } catch (e) {}
     }
-  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, wrongCount]);
+  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, wrongCount]);
 
   // Timer tick effect
   useEffect(() => {
@@ -206,6 +218,8 @@ export default function MathChampionshipArena() {
     if (gameType === 'multiplication') {
       const m = MULTIPLICATION_TOURNAMENT.modes.find(x => x.id === selectedMultMode);
       duration = m ? m.duration : 60;
+    } else if (gameType === 'detective') {
+      duration = 90; // 90 seconds for detective investigation
     } else {
       duration = 75; // 75 seconds for curriculum
     }
@@ -218,7 +232,13 @@ export default function MathChampionshipArena() {
     setStreak(0);
     setMaxStreakThisGame(0);
     setGameState('playing');
-    setActiveView(gameType === 'multiplication' ? 'play_multiplication' : 'play_curriculum');
+    setActiveView(
+      gameType === 'multiplication' 
+        ? 'play_multiplication' 
+        : gameType === 'detective'
+        ? 'play_detective'
+        : 'play_curriculum'
+    );
 
     loadNextQuestion(gameType);
   };
@@ -258,10 +278,17 @@ export default function MathChampionshipArena() {
       // Check award unlocks mid-game
       checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
 
-      // In fast speed mode, auto-advance after 500ms
+      // In fast speed mode, auto-advance
+      const delay = activeView === 'play_detective' ? 1200 : 650;
       setTimeout(() => {
-        loadNextQuestion(activeView === 'play_multiplication' ? 'multiplication' : 'curriculum');
-      }, 650);
+        loadNextQuestion(
+          activeView === 'play_multiplication' 
+            ? 'multiplication' 
+            : activeView === 'play_detective'
+            ? 'detective'
+            : 'curriculum'
+        );
+      }, delay);
 
     } else {
       mathAudio.playWrong();
@@ -450,6 +477,20 @@ export default function MathChampionshipArena() {
           </button>
           <button 
             type="button"
+            className={`math-nav-tab highlight-detective ${activeView === 'play_detective' ? 'active' : ''}`}
+            onClick={() => {
+              setGameState('idle');
+              setActiveView('hub');
+              setTimeout(() => {
+                const el = document.getElementById('detective-challenge-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }}
+          >
+            <i className="fas fa-search"></i> المحقق الرياضي 🕵️‍♂️
+          </button>
+          <button 
+            type="button"
             className={`math-nav-tab ${activeView === 'leaderboard' ? 'active' : ''}`}
             onClick={() => { setActiveView('leaderboard'); fetchLeaderboard(); }}
           >
@@ -526,6 +567,50 @@ export default function MathChampionshipArena() {
                     onClick={() => startGame('multiplication')}
                   >
                     🚀 انطلق في بطولة جدول الضرب الآن!
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* SPECIAL CHALLENGE 1: MATH DETECTIVE (اكتشف الخطأ وصححه) */}
+            <div className="math-detective-challenge-card" id="detective-challenge-section">
+              <div className="detective-card-badge">🕵️‍♂️ تحدي التفكير الناقد والتحقيق الرياضي</div>
+              <div className="detective-card-content">
+                <div className="detective-header-row">
+                  <div className="detective-avatar-icon">🔍</div>
+                  <div className="detective-text">
+                    <h2>تحدي «المحقق الرياضي»: اكتشف الخطأ وصححه! 🕵️‍♂️</h2>
+                    <p>دقق في حلول ومسائل الرياضيات المكتوبة، اكشف المغالطات المفاهيمية الشائعة، وبرهن على براعتك في تصحيحها وفق المنهاج المدرسي!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="detective-levels-section">
+                  <label className="picker-label">اختر مسار التحقيق (مبني تدريجياً من السهل إلى الصعب):</label>
+                  <div className="detective-levels-grid">
+                    {DETECTIVE_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`detective-level-card ${selectedDetectiveLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedDetectiveLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="detective-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-detective-btn"
+                    onClick={() => startGame('detective')}
+                  >
+                    🔎 ابدأ مهمة التحقيق الرياضي الآن (90 ثانية)!
                   </button>
                 </div>
               </div>
@@ -706,31 +791,67 @@ export default function MathChampionshipArena() {
             )}
 
             {/* Question Card */}
-            <div className="question-arena-card">
+            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''}`}>
               <div className="question-top-tag">
-                <span className="category-tag">{currentQuestion.category}</span>
+                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''}`}>
+                  {currentQuestion.category}
+                </span>
+                {currentQuestion.level && (
+                  <span className={`difficulty-pill ${currentQuestion.level}`}>
+                    {currentQuestion.level === 'easy' ? '🟢 مستوى سهل' : currentQuestion.level === 'medium' ? '🟡 مستوى متوسط' : '🔴 مستوى متقدم'}
+                  </span>
+                )}
                 <button 
                   type="button" 
                   className="speech-btn"
-                  onClick={() => mathAudio.speakArabic(`${currentQuestion.prompt} ${currentQuestion.questionText}`)}
+                  onClick={() => {
+                    const text = currentQuestion.type === 'detective'
+                      ? `${currentQuestion.prompt}. ${currentQuestion.caseScenario || ''}. ${currentQuestion.suspectEquation || ''}. ${currentQuestion.questionText}`
+                      : `${currentQuestion.prompt} ${currentQuestion.questionText}`;
+                    mathAudio.speakArabic(text);
+                  }}
                   title="استمع للسؤال بصوت واضح"
                 >
                   🔊 استمع للسؤال
                 </button>
               </div>
 
+              {/* DETECTIVE SPECIAL CASE BOX */}
+              {currentQuestion.type === 'detective' && (
+                <div className="detective-case-box">
+                  <div className="case-badge-row">
+                    <span className="case-id-badge">🕵️‍♂️ ملف القضية الحسابية #{correctCount + 1}</span>
+                    <span className="case-level-tag">
+                      {currentQuestion.level === 'easy' ? '🟢 مسار مبتدئ (1-2)' : currentQuestion.level === 'medium' ? '🟡 مسار متمرس (3-4)' : '🔴 كبير المحققين (5-6)'}
+                    </span>
+                  </div>
+                  {currentQuestion.caseScenario && (
+                    <p className="case-scenario-desc">{currentQuestion.caseScenario}</p>
+                  )}
+                  {currentQuestion.suspectEquation && (
+                    <div className="suspect-equation-wrap">
+                      <span className="suspect-label">المعادلة المعروضة للفحص:</span>
+                      <div className="suspect-equation-box">
+                        <span className="magnifier-symbol">🔍</span>
+                        <code className="suspect-code">{currentQuestion.suspectEquation}</code>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="question-prompt-text">
                 {currentQuestion.prompt}
               </div>
 
               <div className="question-main-display">
-                <span className="math-formula-text">
+                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : 'math-formula-text'}>
                   {currentQuestion.questionText}
                 </span>
               </div>
 
               {/* Choices Buttons */}
-              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''}`}>
+              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''}`}>
                 {currentQuestion.choices.map((choice, idx) => {
                   let btnStateClass = '';
                   if (isAnswerRevealed) {
@@ -747,7 +868,7 @@ export default function MathChampionshipArena() {
                     <button
                       key={idx}
                       type="button"
-                      className={`math-choice-btn ${btnStateClass}`}
+                      className={`math-choice-btn ${btnStateClass} ${currentQuestion.type === 'detective' ? 'detective-choice-btn' : ''}`}
                       onClick={() => handleSelectAnswer(choice)}
                       disabled={isAnswerRevealed}
                     >
@@ -769,9 +890,9 @@ export default function MathChampionshipArena() {
                 <div className={`explanation-feedback-box ${selectedAnswer === currentQuestion.correctAnswer ? 'success' : 'alert'}`}>
                   <div className="feedback-headline">
                     {String(selectedAnswer).trim() === String(currentQuestion.correctAnswer).trim() ? (
-                      <span>🎉 إجابة عبقرية صحيحة! أحسنت يا بطل!</span>
+                      <span>🎉 كشف عبقري وحكم صحيح! أحسنت يا بطل!</span>
                     ) : (
-                      <span>💡 انتبه يا بطل، الإجابة الصحيحة هي: <strong>{currentQuestion.correctAnswer}</strong></span>
+                      <span>💡 انتبه يا بطل، تقرير التحقيق الصحيح هو: <strong>{currentQuestion.correctAnswer}</strong></span>
                     )}
                   </div>
                   <p className="feedback-explanation">
@@ -782,9 +903,15 @@ export default function MathChampionshipArena() {
                     <button 
                       type="button" 
                       className="next-q-btn"
-                      onClick={() => loadNextQuestion(activeView === 'play_multiplication' ? 'multiplication' : 'curriculum')}
+                      onClick={() => loadNextQuestion(
+                        activeView === 'play_multiplication' 
+                          ? 'multiplication' 
+                          : activeView === 'play_detective'
+                          ? 'detective'
+                          : 'curriculum'
+                      )}
                     >
-                      المسألة التالية ⬅
+                      {activeView === 'play_detective' ? 'القضية التالية 🔎' : 'المسألة التالية ⬅'}
                     </button>
                   </div>
                 </div>

@@ -241,6 +241,28 @@ export const CHAMPIONSHIP_AWARDS = [
     color: '#10b981',
     condition: 'التفوق في أسئلة الصف والمنهاج الوزاري',
     description: 'إتقان محاور المنهاج الدراسي بامتياز'
+  },
+  {
+    id: 'badge_detective',
+    type: 'badge',
+    tier: 'detective',
+    name: 'وسام المحقق الرياضي الذكي 🕵️‍♂️',
+    icon: '🕵️‍♂️',
+    color: '#0284c7',
+    minScore: 200,
+    condition: 'إحراز 200 نقطة واكتشاف الأخطاء وتصحيحها',
+    description: 'دقة الملاحظة وكشف المغالطات الحسابية ببراعة'
+  },
+  {
+    id: 'cup_sherlock_math',
+    type: 'cup',
+    tier: 'master_detective',
+    name: 'كأس شارلوك هولمز الحسابي 🏆🔍',
+    icon: '🏆',
+    color: '#38bdf8',
+    minScore: 450,
+    condition: 'إحراز 450 نقطة وحل قضايا التحقيق المتقدمة',
+    description: 'الرتبة العليا في التفكير الناقد والتحقيق الرياضي'
   }
 ];
 
@@ -976,4 +998,561 @@ export const generateGradeCurriculumQuestion = (gradeId, topicId = 'all') => {
     default:
       return generateMultiplicationQuestion('all', 'speed_race');
   }
+};
+
+/**
+ * تحدي المحقق الرياضي (اكتشف الخطأ وصححه)
+ */
+export const DETECTIVE_CHALLENGE = {
+  id: 'math_detective',
+  title: 'تحدي المحقق الرياضي: اكتشف الخطأ وصححه 🕵️‍♂️🔍',
+  subtitle: 'دقق في المسائل والحلول الحسابية، اكتشف المغالطات الشائعة، وكن المحقق البارع!',
+  icon: '🕵️‍♂️',
+  color: '#0284c7',
+  badge: 'تفكير ناقد 🔍',
+  levels: [
+    { id: 'progressive', name: 'المسار التدريجي الذكي 🚀', desc: 'يبدأ من السهل ويتصاعد تلقائياً كلما حللت إجابات صحيحة!', icon: '📈' },
+    { id: 'easy', name: 'المحقق الصغير (سهل 🟢)', desc: 'الصفوف 1-2: الجمع والطرح، مبنى العدد، والأشكال', icon: '🔍' },
+    { id: 'medium', name: 'المحقق الماهر (متوسط 🟡)', desc: 'الصفوف 3-4: جدول الضرب، المحيط، وقابلية القسمة', icon: '🔎' },
+    { id: 'hard', name: 'كبير المحققين (صعب 🔴)', desc: 'الصفوف 5-6: ترتيب العمليات، الكسور، والنسبة المئوية', icon: '🧠' }
+  ]
+};
+
+/**
+ * مولّد تحدي المحقق الرياضي (اكتشف الخطأ وصححه)
+ * مبني تدريجياً من السهل إلى الصعب وفق منهاج الرياضيات
+ */
+export const generateMathDetectiveQuestion = (level = 'progressive', questionIndex = 0) => {
+  let effectiveLevel = level;
+  if (level === 'progressive') {
+    if (questionIndex < 3) effectiveLevel = 'easy';
+    else if (questionIndex < 7) effectiveLevel = 'medium';
+    else effectiveLevel = 'hard';
+  }
+
+  // EASY (الصفوف 1 و 2)
+  if (effectiveLevel === 'easy') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // خطأ الجمع والطرح البسيط
+      const a = rand(10, 30);
+      const b = rand(5, 18);
+      const isAddition = Math.random() < 0.5;
+      const isActuallyCorrect = Math.random() < 0.28;
+
+      if (isAddition) {
+        const correctSum = a + b;
+        const shownSum = isActuallyCorrect ? correctSum : correctSum + (Math.random() < 0.5 ? -2 : 3);
+        const statement = `${a} + ${b} = ${shownSum}`;
+
+        if (isActuallyCorrect) {
+          return {
+            type: 'detective',
+            level: 'easy',
+            category: 'تحقيق الجمع البسيط',
+            prompt: '🕵️‍♂️ مهمة المحقق: دقق في ورقة الحل أدناه:',
+            caseScenario: 'قام أحد الطلاب بحل تمرين الجمع التالي:',
+            suspectEquation: statement,
+            questionText: 'ما هو حكمك كمحقق رياضي؟',
+            correctAnswer: 'الحل صحيح تماماً، والناتج سليم!',
+            choices: shuffle([
+              'الحل صحيح تماماً، والناتج سليم!',
+              `خطأ! الناتج الصحيح هو ${correctSum + 4}`,
+              `خطأ! الناتج الصحيح هو ${correctSum - 3}`,
+              `خطأ! كان يجب أن يطرح بدلاً من الجمع`
+            ]),
+            explanation: `أحسنت التحقيق! ${a} + ${b} = ${correctSum} بالفعل، الحل سليم ولا غبار عليه.`,
+            points: 20
+          };
+        } else {
+          return {
+            type: 'detective',
+            level: 'easy',
+            category: 'تحقيق الجمع البسيط',
+            prompt: '🕵️‍♂️ مهمة المحقق: دقق في ورقة الحل أدناه:',
+            caseScenario: 'كتب الطالب على اللوح:',
+            suspectEquation: statement,
+            questionText: 'ما هو الخطأ وما هو التصحيح السليم؟',
+            correctAnswer: `خطأ! الناتج الصحيح هو ${correctSum}`,
+            choices: shuffle([
+              `خطأ! الناتج الصحيح هو ${correctSum}`,
+              'الحل صحيح تماماً ولا يوجد أي خطأ',
+              `خطأ! الناتج الصحيح هو ${shownSum + 5}`,
+              `خطأ! الناتج الصحيح هو ${shownSum - 4}`
+            ]),
+            explanation: `كشف رائع للخطأ! الجمع الصحيح هو ${a} + ${b} = ${correctSum}، بينما كتب الطالب ${shownSum}.`,
+            points: 20
+          };
+        }
+      } else {
+        const diff = a - b;
+        const shownDiff = isActuallyCorrect ? diff : (diff === 1 ? 4 : diff - 2);
+        const statement = `${a} - ${b} = ${shownDiff}`;
+
+        if (isActuallyCorrect) {
+          return {
+            type: 'detective',
+            level: 'easy',
+            category: 'تحقيق الطرح البسيط',
+            prompt: '🕵️‍♂️ مهمة المحقق: دقق في تمرين الطرح:',
+            caseScenario: 'حلت سلمى مسألة الطرح:',
+            suspectEquation: statement,
+            questionText: 'ما هو حكمك كمحقق رياضي؟',
+            correctAnswer: 'الحل صحيح تماماً، والناتج دقيق!',
+            choices: shuffle([
+              'الحل صحيح تماماً، والناتج دقيق!',
+              `خطأ! الناتج الصحيح هو ${diff + 2}`,
+              `خطأ! الناتج الصحيح هو ${diff - 1}`,
+              'خطأ! نسي تبديل العشرات'
+            ]),
+            explanation: `تحقيق صائب! ${a} - ${b} = ${diff} والحل صحيح ومتقن.`,
+            points: 20
+          };
+        } else {
+          return {
+            type: 'detective',
+            level: 'easy',
+            category: 'تحقيق الطرح البسيط',
+            prompt: '🕵️‍♂️ مهمة المحقق: دقق في تمرين الطرح:',
+            caseScenario: 'حلت سلمى مسألة الطرح:',
+            suspectEquation: statement,
+            questionText: 'أين الخطأ وما هو الصواب؟',
+            correctAnswer: `خطأ! الناتج الصحيح هو ${diff}`,
+            choices: shuffle([
+              `خطأ! الناتج الصحيح هو ${diff}`,
+              'الحل صحيح تماماً والناتج سليم',
+              `خطأ! الناتج الصحيح هو ${shownDiff + 3}`,
+              `خطأ! الناتج الصحيح هو ${shownDiff - 1}`
+            ]),
+            explanation: `أحسنت! ${a} - ${b} = ${diff}، والطالب أخطأ في الحساب بحاصل ${shownDiff}.`,
+            points: 20
+          };
+        }
+      }
+    }
+
+    if (caseType === 2) {
+      // مقارنة الأعداد وميزان الأرقام
+      const n1 = rand(21, 99);
+      const tens = Math.floor(n1 / 10);
+      const ones = n1 % 10;
+      if (tens !== ones) {
+        const n2 = ones * 10 + tens;
+        const isActuallyGreater = n1 > n2;
+        const claimedSymbol = isActuallyGreater ? '<' : '>'; // false claim
+        const statement = `${n1} ${claimedSymbol} ${n2}`;
+
+        return {
+          type: 'detective',
+          level: 'easy',
+          category: 'تحقيق مقارنة الأعداد',
+          prompt: '🕵️‍♂️ مهمة المحقق: دقق في ميزان المقارنة:',
+          caseScenario: 'كتب طالب مقارنة بين عددين مقلوبي المنازل:',
+          suspectEquation: statement,
+          questionText: 'هل المقارنة صحيحة أم خاطئة؟',
+          correctAnswer: `خطأ! لأن ${n1} ${isActuallyGreater ? '>' : '<'} ${n2}`,
+          choices: shuffle([
+            `خطأ! لأن ${n1} ${isActuallyGreater ? '>' : '<'} ${n2}`,
+            'صحيحة تماماً لأننا ننظر لرقم الآحاد فقط',
+            'صحيحة لأن العددين متساويان في القيمة',
+            `خطأ! لأن ${n1} = ${n2}`
+          ]),
+          explanation: `كشف دقيق! عند مقارنة عددين نقارن منزلة العشرات أولاً: منزلة العشرات في ${isActuallyGreater ? n1 : n2} هي ${Math.max(tens, ones)} وهي أكبر.`,
+          points: 20
+        };
+      }
+    }
+
+    if (caseType === 3) {
+      // مبنى العدد (قيمة الرقم)
+      const num = rand(31, 89);
+      const tensDigit = Math.floor(num / 10);
+      const onesDigit = num % 10;
+      const statement = `في العدد (${num}): قيمة الرقم (${tensDigit}) هي (${tensDigit}) فقط!`;
+
+      return {
+        type: 'detective',
+        level: 'easy',
+        category: 'تحقيق مبنى العدد والمنزلة',
+        prompt: '🕵️‍♂️ مهمة المحقق: دقق في ادعاء القيمة المنزلية:',
+        caseScenario: 'ادعى أحد الطلاب قائلاً:',
+        suspectEquation: statement,
+        questionText: 'ما رأي المحقق الرياضي في هذا القول؟',
+        correctAnswer: `خطأ! لأن الرقم ${tensDigit} في منزلة العشرات وقيمته ${tensDigit * 10}`,
+        choices: shuffle([
+          `خطأ! لأن الرقم ${tensDigit} في منزلة العشرات وقيمته ${tensDigit * 10}`,
+          'صحيح! الرقم يحتفظ بقيمته نفسها في أي منزلة',
+          `خطأ! لأن قيمته هي ${onesDigit}`,
+          `صحيح، لأن ${num} يتكون من ${tensDigit} فقط`
+        ]),
+        explanation: `تحقيق ممتاز! في المبنى العشري، الرقم في منزلة العشرات يمثل حزم عشرات كاملة، لذا قيمة ${tensDigit} هي ${tensDigit * 10}.`,
+        points: 20
+      };
+    }
+
+    if (caseType === 4) {
+      // متتالية الأعداد الزوجية والفردية
+      const start = rand(2, 12);
+      const isEvenSeq = start % 2 === 0;
+      const s1 = start;
+      const s2 = start + 2;
+      const s3 = start + 4;
+      const s4 = start + 5; // intruder!
+      const s5 = start + 8;
+      const statement = `المتتالية: ${s1} ، ${s2} ، ${s3} ، ${s4} ، ${s5}`;
+
+      return {
+        type: 'detective',
+        level: 'easy',
+        category: 'تحقيق المتتاليات الزوجية والفردية',
+        prompt: '🕵️‍♂️ مهمة المحقق: هناك عنصر دخيل في المتتالية!',
+        caseScenario: `كتب المعلم على اللوح متتالية أعداد ${isEvenSeq ? 'زوجية' : 'فردية'}، ولكن طالباً وضع عدداً دخيلاً:`,
+        suspectEquation: statement,
+        questionText: 'ما هو العدد الدخيل غير المناسب؟',
+        correctAnswer: `العدد ${s4} لأنه عدد ${isEvenSeq ? 'فردي' : 'زوجي'} وسط أعداد ${isEvenSeq ? 'زوجية' : 'فردية'}`,
+        choices: shuffle([
+          `العدد ${s4} لأنه عدد ${isEvenSeq ? 'فردي' : 'زوجي'} وسط أعداد ${isEvenSeq ? 'زوجية' : 'فردية'}`,
+          `العدد ${s1} لأنه أول عدد في السلسلة`,
+          `العدد ${s3} لأنه يقع في المنتصف`,
+          'لا يوجد أي عدد دخيل، فالمتتالية سليمة تماماً'
+        ]),
+        explanation: `محقق بارع! العدد ${s4} خالف قاعدة النمط لأنه عدد ${isEvenSeq ? 'فردي' : 'زوجي'}، والصحيح مكانه هو ${start + 6}.`,
+        points: 25
+      };
+    }
+
+    // caseType === 5: السابق والتالي
+    const val = rand(20, 90);
+    const statement = `العدد السابق للعدد (${val}) هو (${val + 1})`;
+    return {
+      type: 'detective',
+      level: 'easy',
+      category: 'تحقيق السابق والتالي',
+      prompt: '🕵️‍♂️ مهمة المحقق: فحص مفهوم السابق والتالي:',
+      caseScenario: 'أجاب طالب في الاختبار السريع:',
+      suspectEquation: statement,
+      questionText: 'هل إجابة الطالب صحيحة؟',
+      correctAnswer: `خطأ! السابق هو ${val - 1} بينما ${val + 1} هو التالي`,
+      choices: shuffle([
+        `خطأ! السابق هو ${val - 1} بينما ${val + 1} هو التالي`,
+        'صحيحة تماماً، السابق يعني نزيد 1',
+        `خطأ، السابق هو ${val - 10}`,
+        'صحيحة، السابق والتالي لهما نفس المعنى'
+      ]),
+      explanation: `العدد السابق هو العدد الذي يسبقه بمقدار 1 أي (${val} - 1 = ${val - 1})، أما (${val + 1}) فهو العدد التالي.`,
+      points: 20
+    };
+  }
+
+  // MEDIUM (الصفوف 3 و 4)
+  if (effectiveLevel === 'medium') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // أخطاء جدول الضرب
+      const a = rand(6, 9);
+      const b = rand(6, 9);
+      const trueProduct = a * b;
+      const isActuallyCorrect = Math.random() < 0.25;
+      const shownProduct = isActuallyCorrect ? trueProduct : trueProduct + (Math.random() < 0.5 ? -2 : 4);
+      const statement = `${a} × ${b} = ${shownProduct}`;
+
+      if (isActuallyCorrect) {
+        return {
+          type: 'detective',
+          level: 'medium',
+          category: 'تحقيق جدول الضرب',
+          prompt: '🕵️‍♂️ مهمة المحقق: تدقيق حاصل الضرب:',
+          caseScenario: 'سجل رامي في دفتره العملية التالية:',
+          suspectEquation: statement,
+          questionText: 'ما رأي المحقق في هذا الحاصل؟',
+          correctAnswer: 'صحيح تماماً، الحاصل دقيق 100%!',
+          choices: shuffle([
+            'صحيح تماماً، الحاصل دقيق 100%!',
+            `خطأ! الحاصل الصحيح هو ${trueProduct + 6}`,
+            `خطأ! الحاصل الصحيح هو ${trueProduct - 4}`,
+            `خطأ! لأن حاصل الضرب يجب أن يكون فردياً`
+          ]),
+          explanation: `فحص محترف! ${a} × ${b} = ${trueProduct} دون أي خطأ.`,
+          points: 25
+        };
+      } else {
+        return {
+          type: 'detective',
+          level: 'medium',
+          category: 'تحقيق جدول الضرب',
+          prompt: '🕵️‍♂️ مهمة المحقق: تدقيق حاصل الضرب:',
+          caseScenario: 'سجل رامي في مسابقة السرعة:',
+          suspectEquation: statement,
+          questionText: 'أين الخطأ وما هو الصواب؟',
+          correctAnswer: `خطأ! الناتج الصحيح هو ${trueProduct}`,
+          choices: shuffle([
+            `خطأ! الناتج الصحيح هو ${trueProduct}`,
+            'صحيح تماماً ولا يوجد أي خطأ',
+            `خطأ! الناتج الصحيح هو ${shownProduct + 6}`,
+            `خطأ! الناتج الصحيح هو ${shownProduct - 8}`
+          ]),
+          explanation: `كشف سريع! حقيقة الضرب هي ${a} × ${b} = ${trueProduct}، ورامي تسرع وكتب ${shownProduct}.`,
+          points: 25
+        };
+      }
+    }
+
+    if (caseType === 2) {
+      // محيط ومساحة المستطيل
+      const l = rand(6, 10);
+      const w = rand(3, 5);
+      const area = l * w;
+      const perimeter = 2 * (l + w);
+      const statement = `مستطيل طوله ${l} سم وعرضه ${w} سم. قال يوسف: محيطه = ${area} سم!`;
+
+      return {
+        type: 'detective',
+        level: 'medium',
+        category: 'تحقيق المحيط والمساحة',
+        prompt: '🕵️‍♂️ مهمة المحقق: كشف الخلط بين المحيط والمساحة!',
+        caseScenario: 'في امتحان الهندسة، أجاب يوسف عن سؤال المحيط:',
+        suspectEquation: statement,
+        questionText: 'ما الخطأ المفاهيمي الذي ارتكبه يوسف؟',
+        correctAnswer: `خطأ! حسب المساحة بدلاً من المحيط، والمحيط الصحيح هو ${perimeter} سم`,
+        choices: shuffle([
+          `خطأ! حسب المساحة بدلاً من المحيط، والمحيط الصحيح هو ${perimeter} سم`,
+          'إجابة يوسف صحيحة تماماً والمحيط هو حاصل الضرب',
+          `خطأ! المحيط الصحيح هو ${l + w} سم فقط`,
+          `خطأ! كان يجب أن يطرح العرض من الطول: ${l - w} سم`
+        ]),
+        explanation: `محقق متميز! يوسف ضرب الطول في العرض (${l} × ${w} = ${area}) وهذا قانون المساحة! أما المحيط فهو مجموع الأضلاع = 2 × (${l} + ${w}) = ${perimeter} سم.`,
+        points: 30
+      };
+    }
+
+    if (caseType === 3) {
+      // جمع الكسور بمقامات متساوية
+      const denom = rand(5, 9);
+      const num1 = rand(1, 2);
+      const num2 = rand(1, 3);
+      const correctSumNum = num1 + num2;
+      const statement = `${num1}/${denom} + ${num2}/${denom} = ${correctSumNum}/${denom * 2}`;
+
+      return {
+        type: 'detective',
+        level: 'medium',
+        category: 'تحقيق جمع الكسور العادية',
+        prompt: '🕵️‍♂️ مهمة المحقق: فحص عملية جمع الكسور:',
+        caseScenario: 'حل أحد الطلاب مسألة الكسور التالية:',
+        suspectEquation: statement,
+        questionText: 'ما الخطأ الشائع الذي وقع فيه الطالب؟',
+        correctAnswer: `خطأ! جمع المقامات، بينما الصحيح أن يبقى المقام كما هو: ${correctSumNum}/${denom}`,
+        choices: shuffle([
+          `خطأ! جمع المقامات، بينما الصحيح أن يبقى المقام كما هو: ${correctSumNum}/${denom}`,
+          'الحل صحيح تماماً، نجمع البسوط والمقامات معاً',
+          `خطأ! كان يجب أن يطرح البسوط: ${Math.abs(num1 - num2)}/${denom}`,
+          `خطأ! الناتج الصحيح هو 1 صحيح دائماً`
+        ]),
+        explanation: `ملاحظة عبقرية! في جمع الكسور ذات المقامات المتساوية، نجمع البسوط فقط ونحتفظ بنفس المقام، فالصحيح هو ${correctSumNum}/${denom}.`,
+        points: 30
+      };
+    }
+
+    if (caseType === 4) {
+      // القسمة مع باقٍ
+      const divisor = rand(4, 7);
+      const quotient = rand(3, 6);
+      const remainder = rand(1, divisor - 1);
+      const dividend = divisor * quotient + remainder;
+      const fakeRemainder = remainder === 1 ? remainder + 2 : remainder - 1;
+      const statement = `${dividend} ÷ ${divisor} = ${quotient} والباقي ${fakeRemainder}`;
+
+      return {
+        type: 'detective',
+        level: 'medium',
+        category: 'تحقيق القسمة مع باقٍ',
+        prompt: '🕵️‍♂️ مهمة المحقق: التحقق من باقي القسمة:',
+        caseScenario: 'أجرى خالد عملية قسمة وكتب في النتيجة:',
+        suspectEquation: statement,
+        questionText: 'هل باقي القسمة الذي كتبه خالد صحيح؟',
+        correctAnswer: `خطأ! الناتج ${quotient} ولكن الباقي الصحيح هو ${remainder}`,
+        choices: shuffle([
+          `خطأ! الناتج ${quotient} ولكن الباقي الصحيح هو ${remainder}`,
+          'صحيح تماماً، الباقي وحاصل القسمة دقيقان',
+          `خطأ! لا يوجد أي باقٍ في هذه المسألة والباقي صفر`,
+          `خطأ! حاصل القسمة هو ${quotient + 1} بدون باقٍ`
+        ]),
+        explanation: `تحقيق دقيق! لأن ${divisor} × ${quotient} = ${divisor * quotient}، وبطرحها من ${dividend} نجد أن الباقي هو ${dividend - divisor * quotient} = ${remainder}.`,
+        points: 25
+      };
+    }
+
+    // caseType === 5: قابلية القسمة
+    const statement = 'العدد (435) يقبل القسمة على 2 بدون باقٍ لأنه ينتهي برقم 5';
+    return {
+      type: 'detective',
+      level: 'medium',
+      category: 'تحقيق قابلية القسمة',
+      prompt: '🕵️‍♂️ مهمة المحقق: فحص قواعد قابلية القسمة:',
+      caseScenario: 'قال وليد لزملائه أثناء المراجعة:',
+      suspectEquation: statement,
+      questionText: 'كيف تصحح مقولة وليد؟',
+      correctAnswer: 'خطأ! يقبل على 5 وليس على 2، لأن شروط القسمة على 2 أن يكون الآحاد زوجياً',
+      choices: shuffle([
+        'خطأ! يقبل على 5 وليس على 2، لأن شروط القسمة على 2 أن يكون الآحاد زوجياً',
+        'صحيح تماماً، كل عدد ينتهي بـ 5 يقبل على 2',
+        'خطأ! هذا العدد لا يقبل القسمة على أي عدد إطلاقاً',
+        'صحيح، لأن 5 عدد أولي'
+      ]),
+      explanation: `رائع! العدد يقبل القسمة على 2 إذا وفقط إذا كان رقم آحاده زوجياً (0، 2، 4، 6، 8). أما انتهاؤه بـ 5 فيعني أنه يقبل القسمة على 5!`,
+      points: 25
+    };
+  }
+
+  // HARD (الصفوف 5 و 6)
+  const caseType = rand(1, 6);
+
+  if (caseType === 1) {
+    // ترتيب العمليات الحسابية (أشهر خطأ: الجمع قبل الضرب)
+    const a = rand(4, 9);
+    const b = rand(3, 7);
+    const c = rand(2, 6);
+    const wrongResult = (a + b) * c; // الجمع قبل الضرب
+    const correctResult = a + (b * c);
+    const statement = `${a} + ${b} × ${c} = ${wrongResult}`;
+
+    return {
+      type: 'detective',
+      level: 'hard',
+      category: 'تحقيق أسبقية العمليات (PEMDAS)',
+      prompt: '🕵️‍♂️ مهمة المحقق: كشف لغز ترتيب العمليات الحسابية:',
+      caseScenario: 'حل طالب مسألة العمليات المركبة على السبورة وكتب:',
+      suspectEquation: statement,
+      questionText: 'ما هي المغالطة الرياضية التي وقع فيها الطالب؟',
+      correctAnswer: `خطأ! جمع قبل أن يضرب، والحل الصحيح هو ${correctResult}`,
+      choices: shuffle([
+        `خطأ! جمع قبل أن يضرب، والحل الصحيح هو ${correctResult}`,
+        'الحل صحيح تماماً لأننا نحسب من اليمين إلى اليسار دائماً',
+        `خطأ! الحل الصحيح هو ${correctResult + 10}`,
+        `خطأ! كان يجب أن يضرب ${a} × ${b} أولاً`
+      ]),
+      explanation: `تحقيق عبقري! في الرياضيات، الضرب له أولوية تسبق الجمع، فنحسب أولاً ${b} × ${c} = ${b * c}، ثم نجمع: ${a} + ${b * c} = ${correctResult}. والنتيجة ${wrongResult} جاءت من خطأ جمع ${a} + ${b} أولاً!`,
+      points: 35
+    };
+  }
+
+  if (caseType === 2) {
+    // جمع كسور بمقامات مختلفة
+    const statement = '1/2 + 1/4 = 2/6 = 1/3';
+    return {
+      type: 'detective',
+      level: 'hard',
+      category: 'تحقيق جمع الكسور غير متحدة المقام',
+      prompt: '🕵️‍♂️ مهمة المحقق: فحص جمع الكسور المختلفة في المقام:',
+      caseScenario: 'كتبت طالبة في دفتر الواجب:',
+      suspectEquation: statement,
+      questionText: 'ما هو الخطأ الجسيم وما هو الحل السليم؟',
+      correctAnswer: 'خطأ! جمعت المقامات بدلاً من توحيدها، والحل الصحيح هو 3/4',
+      choices: shuffle([
+        'خطأ! جمعت المقامات بدلاً من توحيدها، والحل الصحيح هو 3/4',
+        'الحل سليم تماماً، نجمع البسوط والمقامات ونختزل',
+        'خطأ! الحل الصحيح هو 1 صحيح',
+        'خطأ! الحل الصحيح هو 2/4 = 1/2'
+      ]),
+      explanation: `محقق خبير! نصف زائد ربع يساوي ثلاثة أرباع (1/2 = 2/4، إذن 2/4 + 1/4 = 3/4). لا يجوز أبداً جمع المقامات!`,
+      points: 35
+    };
+  }
+
+  if (caseType === 3) {
+    // ضرب الكسور العشرية والمنازل
+    const statement = '0.3 × 0.2 = 0.6';
+    return {
+      type: 'detective',
+      level: 'hard',
+      category: 'تحقيق ضرب الكسور العشرية',
+      prompt: '🕵️‍♂️ مهمة المحقق: فحص منازل الفاصلة العشرية:',
+      caseScenario: 'قام أحد الطلاب بحساب ضرب كسرين عشريين:',
+      suspectEquation: statement,
+      questionText: 'أين وقع الخطأ في الفاصلة العشرية؟',
+      correctAnswer: 'خطأ! نسي منزلة عشرية، والناتج الصحيح هو 0.06',
+      choices: shuffle([
+        'خطأ! نسي منزلة عشرية، والناتج الصحيح هو 0.06',
+        'الحل صحيح تماماً لأن 3 × 2 = 6',
+        'خطأ! الناتج الصحيح هو 6 صحيح بدون فاصلة',
+        'خطأ! الناتج الصحيح هو 0.006'
+      ]),
+      explanation: `تحقيق دقيق جداً! عند ضرب 0.3 (منزلة واحدة) × 0.2 (منزلة واحدة)، يجب أن يكون في الناتج منزلتان عشريتان بعد الفاصلة: 3 × 2 = 6، ونضع صفرين ومنزلتين فيصبح 0.06.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 4) {
+    // النسبة المئوية ومغالطة التخفيض
+    const statement = 'حقيبة سعرها 200 ₪ عليها تخفيض 20%، إذن سندفع للبائع 20 ₪!';
+    return {
+      type: 'detective',
+      level: 'hard',
+      category: 'تحقيق النسبة المئوية والتخفيض',
+      prompt: '🕵️‍♂️ مهمة المحقق: تدقيق فاتورة التخفيض في المتجر:',
+      caseScenario: 'قرأ كريم لافتة التخفيضات وقال لأمه:',
+      suspectEquation: statement,
+      questionText: 'ما هو الخطأ في حساب كريم وما المبلغ الحقيقي المطلوب دفعه؟',
+      correctAnswer: 'خطأ! التخفيض هو 40 ₪، والسعر المطلوب دفعه هو 160 ₪',
+      choices: shuffle([
+        'خطأ! التخفيض هو 40 ₪، والسعر المطلوب دفعه هو 160 ₪',
+        'حساب كريم صحيح تماماً، يدفع نسبة التخفيض',
+        'خطأ! المطلوب دفعه هو 180 ₪',
+        'خطأ! التخفيض 20% يعني أن الحقيبة أصبحت مجانية'
+      ]),
+      explanation: `كشف مالي رائع! 20% من 200 ₪ = (20 × 200) ÷ 100 = 40 ₪ (قيمة الخصم). إذن السعر بعد التخفيض = 200 - 40 = 160 ₪. كريم خلط بين نسبة التخفيض والسعر النهائي!`,
+      points: 35
+    };
+  }
+
+  if (caseType === 5) {
+    // مساحة المثلث
+    const base = rand(6, 12);
+    const height = rand(4, 8);
+    const wrongArea = base * height;
+    const correctArea = (base * height) / 2;
+    const statement = `مثلث قاعدته ${base} سم وارتفاعه ${height} سم. قال رائد: مساحته = ${base} × ${height} = ${wrongArea} سم²!`;
+
+    return {
+      type: 'detective',
+      level: 'hard',
+      category: 'تحقيق مساحة المثلث',
+      prompt: '🕵️‍♂️ مهمة المحقق: فحص قانون مساحة المثلث:',
+      caseScenario: 'في مسابقة الهندسة، قدم رائد حله:',
+      suspectEquation: statement,
+      questionText: 'ما القانون الناقص في إجابة رائد وما المساحة الصحيحة؟',
+      correctAnswer: `خطأ! نسي القسمة على 2، فمساحة المثلث الصحيحة هي ${correctArea} سم²`,
+      choices: shuffle([
+        `خطأ! نسي القسمة على 2، فمساحة المثلث الصحيحة هي ${correctArea} سم²`,
+        'حل رائد صحيح تماماً ومساحة المثلث هي القاعدة × الارتفاع',
+        `خطأ! المساحة الصحيحة هي ${base + height} سم²`,
+        `خطأ! كان يجب أن يضرب في 2 بدلاً من القسمة: ${wrongArea * 2} سم²`
+      ]),
+      explanation: `محقق هندسي بارع! قانون مساحة المثلث هو (القاعدة × الارتفاع) ÷ 2. رائد حسب مساحة مستطيل، والصحيح هو (${base} × ${height}) ÷ 2 = ${correctArea} سم².`,
+      points: 35
+    };
+  }
+
+  // caseType === 6: الأعداد الموجهة
+  const statement = '(-6) + (-4) = +10';
+  return {
+    type: 'detective',
+    level: 'hard',
+    category: 'تحقيق الأعداد الموجهة السالبة',
+    prompt: '🕵️‍♂️ مهمة المحقق: فحص إشارات الأعداد الموجهة:',
+    caseScenario: 'كتب طالب في اختبار الجبر والأعداد الموجهة:',
+    suspectEquation: statement,
+    questionText: 'ما الخطأ في إشارة الناتج؟',
+    correctAnswer: 'خطأ! جمع عددين سالبين يعطي دائماً عدداً سالباً: -10',
+    choices: shuffle([
+      'خطأ! جمع عددين سالبين يعطي دائماً عدداً سالباً: -10',
+      'صحيح تماماً، سالب مع سالب يتحول إلى موجب دائماً',
+      'خطأ! الناتج الصحيح هو -2',
+      'خطأ! الناتج الصحيح هو +2'
+    ]),
+    explanation: `كشف جبري متقن! عند جمع خسارتين تكون النتيجة خسارة أكبر: (-6) + (-4) = -10. الطالب خلط بين قاعدة الضرب (سالب × سالب = موجب) وقاعدة الجمع!`,
+    points: 35
+  };
 };
