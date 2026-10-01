@@ -351,6 +351,28 @@ export const CHAMPIONSHIP_AWARDS = [
     minScore: 450,
     condition: 'إحراز 450 نقطة في مهرجان التخفيضات والعمليات على الكسور',
     description: 'الرتبة الأسمى في إتقان النسب المئوية وتحويلات الكسور'
+  },
+  {
+    id: 'badge_geometry_architect',
+    type: 'badge',
+    tier: 'geometry',
+    name: 'وسام المهندس الرياضي الصغير 📐',
+    icon: '📐',
+    color: '#0ea5e9',
+    minScore: 200,
+    condition: 'إحراز 200 نقطة في تحدي الهندسة والقياس والزوايا',
+    description: 'إتقان خواص الأشكال الهندسية وتصنيف المثلثات وحساب المحيط'
+  },
+  {
+    id: 'cup_euclid_geometry',
+    type: 'cup',
+    tier: 'master_geometry',
+    name: 'كأس إقليدس لعلماء الهندسة والمساحات 🏆🏛️',
+    icon: '🏆',
+    color: '#0284c7',
+    minScore: 450,
+    condition: 'إحراز 450 نقطة وحل مسائل المساحات والحجوم المتقدمة',
+    description: 'الرتبة الأسمى في عبقرية الهندسة الفضائية وحساب المساحات والمركبات'
   }
 ];
 
@@ -3421,3 +3443,594 @@ export const generateFractionsPercentQuestion = (level = 'progressive', question
     points: 35
   };
 };
+
+/**
+ * =========================================================================
+ * 📐 تحدي مهندس الهندسة والمساحات والمحيط والزوايا والمجسمات
+ * متوافق مع منهاج الرياضيات لصفوف 1-6 (الأشكال، الزوايا، المحيط، المساحات، الحجوم)
+ * =========================================================================
+ */
+export const GEOMETRY_CHALLENGE = {
+  id: 'geometry_challenge',
+  title: '📐 تحدي مهندس الهندسة والمساحات والمحيط والزوايا',
+  subtitle: 'اكتشف أسرار الأشكال المستوية والمجسمات ثلاثية الأبعاد، واحسب المحيط والمساحات والزوايا المفقودة!',
+  icon: '📐',
+  color: '#0ea5e9',
+  badge: 'وسام المهندس الرياضي 📐',
+  levels: [
+    { id: 'progressive', name: 'المسار المتصاعد الشامل 🚀', desc: 'تدرج تعليمي كامل من الأشكال البسيطة (1-2) إلى المحيط والزوايا (3-4) ثم المساحات والحجوم (5-6)', icon: '🚀' },
+    { id: 'easy', name: 'المستوى السهل: الأشكال والمجسمات (1-2)', desc: 'الصفوف 1-2: التعرف على المربع والمستطيل والمثلث والدائرة، عدد الأضلاع والرؤوس والمجسمات الأساسية', icon: '🟢' },
+    { id: 'medium', name: 'المستوى المتوسط: الزوايا والمحيط (3-4)', desc: 'الصفوف 3-4: أنواع الزوايا (حادة، قائمة، منفرجة)، تصنيف المثلثات، ومحيط المستطيل والمربع والمضلعات', icon: '🟡' },
+    { id: 'hard', name: 'المستوى المتقدم: المساحات والزوايا والحجوم (5-6)', desc: 'الصفوف 5-6: مساحة المثلث ومتوازي الأضلاع وشبه المنحرف، مجموع زوايا المثلث (180°)، وحجوم المكعبات والصناديق', icon: '🔴' }
+  ]
+};
+
+export const generateGeometryQuestion = (level = 'progressive', questionIndex = 0) => {
+  let effectiveLevel = level;
+  if (level === 'progressive') {
+    if (questionIndex < 3) effectiveLevel = 'easy';
+    else if (questionIndex < 7) effectiveLevel = 'medium';
+    else effectiveLevel = 'hard';
+  }
+
+  // ==========================================
+  // المستوى السهل 🟢 (صفوف 1-2): الأشكال، الأضلاع، الرؤوس، والمجسمات
+  // ==========================================
+  if (effectiveLevel === 'easy') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // عدد الأضلاع والرؤوس للأشكال المستوية
+      const shapes = [
+        { name: 'المثلث 🔺', sides: 3, vertices: 3, icon: '🔺', exp: 'المثلث يتكون من 3 أضلاع مستقيمة و 3 رؤوس (زوايا).' },
+        { name: 'المربع ⏹️', sides: 4, vertices: 4, icon: '⏹️', exp: 'المربع له 4 أضلاع متساوية في الطول و 4 رؤوس قائمة.' },
+        { name: 'المستطيل ▭', sides: 4, vertices: 4, icon: '▭', exp: 'المستطيل له 4 أضلاع (كل ضلعين متقابلين متساويان) و 4 رؤوس.' },
+        { name: 'الشكل الخماسي ⬟', sides: 5, vertices: 5, icon: '⬟', exp: 'الخماسي مضلع له 5 أضلاع و 5 رؤوس.' },
+        { name: 'الشكل السداسي ⬢', sides: 6, vertices: 6, icon: '⬢', exp: 'السداسي مضلع له 6 أضلاع و 6 رؤوس مثل قرص العسل.' },
+        { name: 'الدائرة ⭕', sides: 0, vertices: 0, icon: '⭕', exp: 'الدائرة شكل منحنٍ مقفل، ليس لها أضلاع مستقيمة ولا رؤوس (0 أضلاع و 0 رؤوس).' }
+      ];
+      const s = shapes[rand(0, shapes.length - 1)];
+      const askForSides = Math.random() < 0.5;
+
+      const questionText = askForSides
+        ? `كم ضلعاً مستقيماً يوجد في ${s.name}؟`
+        : `كم رأساً (زاوية) يوجد في ${s.name}؟`;
+      const ans = askForSides ? `${s.sides} أضلاع` : `${s.vertices} رؤوس`;
+
+      const pool = ['0', '3', '4', '5', '6', '8'];
+      const choices = shuffle([
+        ans,
+        ...pool.filter(p => p !== String(askForSides ? s.sides : s.vertices)).slice(0, 3).map(p => askForSides ? `${p} أضلاع` : `${p} رؤوس`)
+      ]);
+
+      return {
+        type: 'geometry',
+        level: 'easy',
+        category: 'الأشكال المستوية وعدد الأضلاع والرؤوس 📐',
+        prompt: 'تأمل الشكل الهندسي وأجب بدقة:',
+        shapeDisplay: `${s.icon} ${s.name}`,
+        questionText,
+        correctAnswer: ans,
+        choices,
+        explanation: s.exp,
+        points: 20
+      };
+    }
+
+    if (caseType === 2) {
+      // تمييز المجسمات ثلاثية الأبعاد (3D Solids)
+      const solids = [
+        { name: 'المكعب 🧊', hint: 'له 6 أوجه مربعة متطابقة و 8 رؤوس و 12 حرفاً', icon: '🧊', ans: 'المكعب' },
+        { name: 'الكرة ⚽', hint: 'مجسم دائري كروي أملس تماماً، ليس له أي أوجه مستوية أو أحرف أو رؤوس', icon: '⚽', ans: 'الكرة' },
+        { name: 'الأسطوانة 🥫', hint: 'مجسم له قاعدتان دائريتان متطابقتان وسطح جانبي منحنٍ (مثل علبة العصير)', icon: '🥫', ans: 'الأسطوانة' },
+        { name: 'المخروط 🍦', hint: 'مجسم له قاعدة دائرية واحدة في الأسفل ورأس مدبب واحد في الأعلى (مثل قبعة الحفلات)', icon: '🍦', ans: 'المخروط' },
+        { name: 'الصندوق (متوازي المستطيلات) 📦', hint: 'له 6 أوجه مستطيلة الشكل و 8 رؤوس و 12 حرفاً', icon: '📦', ans: 'الصندوق (متوازي المستطيلات)' }
+      ];
+      const solid = solids[rand(0, solids.length - 1)];
+
+      return {
+        type: 'geometry',
+        level: 'easy',
+        category: 'المجسمات ثلاثية الأبعاد 🧊',
+        prompt: 'اقرأ لغز المجسم الهندسي واكتشف اسمه:',
+        shapeDisplay: `${solid.icon} مجسم هندسي غامض!`,
+        questionText: `ما هو المجسم الذي: "${solid.hint}"؟`,
+        correctAnswer: solid.ans,
+        choices: shuffle([
+          solid.ans,
+          ...solids.filter(x => x.ans !== solid.ans).slice(0, 3).map(x => x.ans)
+        ]),
+        explanation: `الإجابة هي ${solid.ans}: ${solid.hint}.`,
+        points: 20
+      };
+    }
+
+    if (caseType === 3) {
+      // حزر فزر: صفات الأشكال الهندسية
+      const riddles = [
+        {
+          q: 'شكل هندسي له 4 أضلاع متساوية تماماً في الطول، وجميع زواياه الأربع قائمة (90°)، فمن هو؟',
+          ans: 'المربع ⏹️',
+          icon: '⏹️',
+          exp: 'المربع هو الشكل الرباعي الوحيد الذي يجمع بين تساوي جميع الأضلاع وتعامد جميع الزوايا.'
+        },
+        {
+          q: 'شكل هندسي له 4 أضلاع، كل ضلعين متقابلين متساويان ومتوازيان، وزواياه الأربع قائمة، فمن هو؟',
+          ans: 'المستطيل ▭',
+          icon: '▭',
+          exp: 'المستطيل يتميز بأن كل ضلعين متقابلين متساويان وله 4 زوايا قائمة.'
+        },
+        {
+          q: 'أصغر مضلع مقفل في الهندسة يتكون من 3 أضلاع فقط و 3 زوايا، فمن هو؟',
+          ans: 'المثلث 🔺',
+          icon: '🔺',
+          exp: 'المثلث هو أصغر مضلع هندسي في الرياضيات، إذ لا يمكن تشكيل مضلع مقفل بأقل من 3 أضلاع.'
+        },
+        {
+          q: 'شكل مستوٍ لا يحتوي على أي خطوط مستقيمة، وكل نقطة على حافته تبعد نفس المسافة عن مركزه، فمن هو؟',
+          ans: 'الدائرة ⭕',
+          icon: '⭕',
+          exp: 'الدائرة هي المحل الهندسي لجميع النقاط التي تبعد مسافة ثابتة (نصف القطر) عن نقطة ثابتة (المركز).'
+        }
+      ];
+      const r = riddles[rand(0, riddles.length - 1)];
+
+      return {
+        type: 'geometry',
+        level: 'easy',
+        category: 'ألغاز صفات الأشكال المستوية 🔍',
+        prompt: 'استمع للوصف الهندسي وحدد الشكل الصحيح:',
+        shapeDisplay: `❓ لغز الأشكال الهندسية`,
+        questionText: r.q,
+        correctAnswer: r.ans,
+        choices: shuffle([
+          r.ans,
+          'المعين 🔶',
+          'متوازي الأضلاع ▱',
+          'شبه المنحرف ⏢'
+        ]),
+        explanation: r.exp,
+        points: 20
+      };
+    }
+
+    if (caseType === 4) {
+      // محاور التماثل (التناظر)
+      const symmetry = [
+        { shape: 'المربع ⏹️', count: '4 محاور تماثل', exp: 'للمربع 4 خطوط تماثل: محوران رأسي وأفقي يمران بمنتصفات الأضلاع، ومحوران قطريان يمران بالرؤوس.' },
+        { shape: 'المستطيل ▭', count: 'محوران فقط (2)', exp: 'للمستطيل محورا تماثل فقط (أحدهما أفقي والآخر عمودي)، وأقطار المستطيل ليست محاور تماثل.' },
+        { shape: 'الدائرة ⭕', count: 'عدد لا نهائي من المحاور', exp: 'أي مستقيم يمر بمركز الدائرة يقسمها إلى نصفين متطابقين، لذا فلها عدد لا نهائي من محاور التماثل.' },
+        { shape: 'المثلث متساوي الأضلاع 🔺', count: '3 محاور تماثل', exp: 'المثلث متساوي الأضلاع له 3 محاور تماثل تمر من كل رأس لمنتصف الضلع المقابل.' }
+      ];
+      const item = symmetry[rand(0, symmetry.length - 1)];
+
+      return {
+        type: 'geometry',
+        level: 'easy',
+        category: 'محاور التماثل والتناظر 🪞',
+        prompt: 'كم خط تماثل (تناظر) يقسم هذا الشكل إلى نصفين متطابقين تماماً؟',
+        shapeDisplay: `🪞 ${item.shape}`,
+        questionText: `كم عدد محاور التماثل لـ ${item.shape}؟`,
+        correctAnswer: item.count,
+        choices: shuffle([
+          item.count,
+          'محور واحد فقط (1)',
+          '5 محاور تماثل',
+          'ليس له أي محور تماثل (0)'
+        ]),
+        explanation: item.exp,
+        points: 20
+      };
+    }
+
+    // caseType === 5: علاقات المستقيمات (المتوازية والمتعامدة)
+    const lineQuestions = [
+      {
+        q: 'المستقيمان اللذان يمتدان إلى ما لا نهاية في نفس المستوى ولا يلتقيان أو يتقاطعان أبداً، يُسميان:',
+        ans: 'مستقيمان متوازيان ⏸️',
+        exp: 'المستقيمان المتوازيان تظل المسافة بينهما ثابتة دائماً مثل شريطَي سكة القطار ولا يلتقيان أبداً.'
+      },
+      {
+        q: 'المستقيمان اللذان يتقاطعان ويشكلان بينهما زاوية قائمة قياسها 90 درجة، يُسميان:',
+        ans: 'مستقيمان متعامدان ➕',
+        exp: 'المستقيمان المتعامدان يتقاطعان بزاوية قائمة تماماً (90°) مثل حرف L أو إشارة الزائد (+).'
+      }
+    ];
+    const lq = lineQuestions[rand(0, lineQuestions.length - 1)];
+
+    return {
+      type: 'geometry',
+      level: 'easy',
+      category: 'علاقات المستقيمات: التوازي والتعامد 📏',
+      prompt: 'اختر المفهوم الرياضي الدقيق:',
+      shapeDisplay: `📏 هندسة المستقيمات`,
+      questionText: lq.q,
+      correctAnswer: lq.ans,
+      choices: shuffle([
+        lq.ans,
+        'مستقيمان متطابقان',
+        'مستقيمان متباعدان دون اتجاه',
+        'مستقيمان متعرجان'
+      ]),
+      explanation: lq.exp,
+      points: 20
+    };
+  }
+
+  // ==========================================
+  // المستوى المتوسط 🟡 (صفوف 3-4): الزوايا، تصنيف المثلثات، والمحيط
+  // ==========================================
+  if (effectiveLevel === 'medium') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // أنواع الزوايا بالدرجات
+      const angleItems = [
+        { deg: 90, name: 'زاوية قائمة 📐', exp: 'الزاوية القائمة قياسها 90° تماماً وتشكل زاوية ركن المربع أو حرف L.' },
+        { deg: rand(25, 75), name: 'زاوية حادة 📐', exp: 'الزاوية الحادة قياسها أصغر من 90° (بين 0° و 90°).' },
+        { deg: rand(105, 160), name: 'زاوية منفرجة 📐', exp: 'الزاوية المنفرجة قياسها أكبر من 90° وأصغر من 180°.' },
+        { deg: 180, name: 'زاوية مستقيمة 📏', exp: 'الزاوية المستقيمة قياسها 180° تماماً وتشكل خطاً مستقيماً كاملاً.' }
+      ];
+      const ang = angleItems[rand(0, angleItems.length - 1)];
+
+      return {
+        type: 'geometry',
+        level: 'medium',
+        category: 'أنواع الزوايا وقياساتها بالدرجات 📐',
+        prompt: 'صنّف نوع الزاوية بناءً على قياسها بالدرجات:',
+        shapeDisplay: `📐 قياس الزاوية = ${ang.deg}°`,
+        questionText: `زاوية هندسية قياسها ${ang.deg} درجة، ما هو نوع هذه الزاوية؟`,
+        correctAnswer: ang.name,
+        choices: shuffle([
+          ang.name,
+          'زاوية منعكسة',
+          ang.name.includes('قائمة') ? 'زاوية حادة 📐' : 'زاوية قائمة 📐',
+          ang.name.includes('منفرجة') ? 'زاوية حادة 📐' : 'زاوية منفرجة 📐'
+        ]),
+        explanation: ang.exp,
+        points: 25
+      };
+    }
+
+    if (caseType === 2) {
+      // تصنيف المثلثات حسب أطوال الأضلاع والزوايا
+      const triClassification = [
+        {
+          desc: 'مثلث أطوال أضلاعه: 5 سم ، 5 سم ، 5 سم',
+          ans: 'مثلث متساوي الأضلاع 🔺',
+          exp: 'بما أن جميع أضلاعه الثلاثة متطابقة، فهو مثلث متساوي الأضلاع (وجميع زواياه أيضاً 60°).'
+        },
+        {
+          desc: 'مثلث أطوال أضلاعه: 7 سم ، 7 سم ، 4 سم',
+          ans: 'مثلث متساوي الساقين 🔺',
+          exp: 'بما أن فيه ضلعين فقط متساويين في الطول، فهو مثلث متساوي الساقين (وفيه زاويتا القاعدة متطابقتان).'
+        },
+        {
+          desc: 'مثلث أطوال أضلاعه: 3 سم ، 4 سم ، 5 سم',
+          ans: 'مثلث مختلف الأضلاع 🔺',
+          exp: 'بما أن أطوال أضلاعه الثلاثة مختلفة تماماً، فهو مثلث مختلف الأضلاع.'
+        },
+        {
+          desc: 'مثلث قياسات زواياه: 90° ، 40° ، 50°',
+          ans: 'مثلث قائم الزاوية 📐',
+          exp: 'بما أن إحدى زواياه قياسها 90°، فهو مثلث قائم الزاوية، والضلع المقابل للزاوية القائمة يسمى الوتر.'
+        }
+      ];
+      const tri = triClassification[rand(0, triClassification.length - 1)];
+
+      return {
+        type: 'geometry',
+        level: 'medium',
+        category: 'تصنيف المثلثات حسب الأضلاع والزوايا 🔺',
+        prompt: 'حلل معطيات المثلث وحدد نوعه بدقة:',
+        shapeDisplay: `🔺 ${tri.desc}`,
+        questionText: `ما هو التصنيف الدقيق لهذا المثلث؟`,
+        correctAnswer: tri.ans,
+        choices: shuffle([
+          tri.ans,
+          'مثلث منفرج الزاوية',
+          tri.ans.includes('متساوي الأضلاع') ? 'مثلث متساوي الساقين 🔺' : 'مثلث متساوي الأضلاع 🔺',
+          'مثلث متطابق الزوايا فقط'
+        ]),
+        explanation: tri.exp,
+        points: 25
+      };
+    }
+
+    if (caseType === 3) {
+      // حساب محيط المربع والمستطيل (Perimeter)
+      const isSquare = Math.random() < 0.5;
+
+      if (isSquare) {
+        const side = rand(4, 12);
+        const perimeter = side * 4;
+        return {
+          type: 'geometry',
+          level: 'medium',
+          category: 'حساب محيط المربع ⏹️',
+          prompt: 'طبق قانون محيط المربع = طول الضلع × 4:',
+          shapeDisplay: `⏹️ مربع طول ضلعه = ${side} سم`,
+          questionText: `مربع طول ضلعه ${side} سم، فما هو محيطه بالسنتيمتر؟`,
+          correctAnswer: `${perimeter} سم`,
+          choices: shuffle([
+            `${perimeter} سم`,
+            `${perimeter + 4} سم`,
+            `${side * side} سم`,
+            `${side * 2} سم`
+          ]),
+          explanation: `محيط المربع هو مجموع أطوال أضلاعه الأربعة: ${side} + ${side} + ${side} + ${side} = ${side} × 4 = ${perimeter} سم.`,
+          points: 25
+        };
+      } else {
+        const length = rand(6, 12);
+        const width = rand(2, length - 1);
+        const perimeter = 2 * (length + width);
+        return {
+          type: 'geometry',
+          level: 'medium',
+          category: 'حساب محيط المستطيل ▭',
+          prompt: 'طبق قانون محيط المستطيل = 2 × (الطول + العرض):',
+          shapeDisplay: `▭ مستطيل أبعاده: الطول = ${length} سم ، العرض = ${width} سم`,
+          questionText: `مستطيل طوله ${length} سم وعرضه ${width} سم، ما هو محيط هذا المستطيل؟`,
+          correctAnswer: `${perimeter} سم`,
+          choices: shuffle([
+            `${perimeter} سم`,
+            `${length * width} سم`,
+            `${length + width} سم`,
+            `${perimeter - 4} سم`
+          ]),
+          explanation: `محيط المستطيل = 2 × (الطول + العرض) = 2 × (${length} + ${width}) = 2 × ${length + width} = ${perimeter} سم.`,
+          points: 25
+        };
+      }
+    }
+
+    if (caseType === 4) {
+      // إيجاد طول ضلع المربع انطلاقاً من محيطه (العكس)
+      const side = rand(5, 12);
+      const perimeter = side * 4;
+
+      return {
+        type: 'geometry',
+        level: 'medium',
+        category: 'المسائل العكسية للمحيط 🔄',
+        prompt: 'احسب طول الضلع بمعلومية المحيط الإجمالي:',
+        shapeDisplay: `⏹️ حديقة مربعة محيط سياجها الإجمالي = ${perimeter} متراً`,
+        questionText: `حديقة مربعة الشكل محاطة بسياج طوله ${perimeter} متراً. ما هو طول ضلع الحديقة الواحدة؟`,
+        correctAnswer: `${side} أمتار`,
+        choices: shuffle([
+          `${side} أمتار`,
+          `${side + 2} أمتار`,
+          `${side * 2} أمتار`,
+          `${Math.max(1, side - 2)} أمتار`
+        ]),
+        explanation: `بما أن المربع له 4 أضلاع متساوية، فإن طول الضلع = المحيط ÷ 4 = ${perimeter} ÷ 4 = ${side} أمتار.`,
+        points: 25
+      };
+    }
+
+    // caseType === 5: خواص الأشكال الرباعية (شبه المنحرف، متوازي الأضلاع، المعين)
+    const quadProps = [
+      {
+        q: 'شكل رباعي فيه زوج واحد فقط (ضلعان متقابلان فقط) من الأضلاع المتوازية، يُسمى:',
+        ans: 'شبه المنحرف ⏢',
+        exp: 'شبه المنحرف يتميز بوجود قاعدتين متوازيتين فقط، بينما الضلعان الآخران غير متوازيين.'
+      },
+      {
+        q: 'شكل رباعي أضلاعه الأربعة متساوية في الطول، وأقطاره متعامدة وتنصف زواياه، لكن زواياه ليست قائمة:',
+        ans: 'المعين 🔶',
+        exp: 'المعين له 4 أضلاع متساوية وأقطاره متعامدة، وإذا أصبحت زواياه قائمة يتحول إلى مربع.'
+      },
+      {
+        q: 'شكل رباعي فيه كل ضلعين متقابلين متوازيان ومتساويان، وكل زاويتين متقابلتين متساويتان:',
+        ans: 'متوازي الأضلاع ▱',
+        exp: 'متوازي الأضلاع هو الأصل الذي تشتق منه المستطيل والمعين والمربع بإضافة شروط خاصة.'
+      }
+    ];
+    const qp = quadProps[rand(0, quadProps.length - 1)];
+
+    return {
+      type: 'geometry',
+      level: 'medium',
+      category: 'عائلة الأشكال الرباعية الخاصة ▱',
+      prompt: 'اكتشف الاسم الهندسي الدقيق للشكل الرباعي:',
+      shapeDisplay: `▱ خصائص الأشكال الرباعية`,
+      questionText: qp.q,
+      correctAnswer: qp.ans,
+      choices: shuffle([
+        qp.ans,
+        'الدالتون (المضلع الطائر)',
+        qp.ans.includes('شبه المنحرف') ? 'المعين 🔶' : 'شبه المنحرف ⏢',
+        'المستطيل'
+      ]),
+      explanation: qp.exp,
+      points: 25
+    };
+  }
+
+  // ==========================================
+  // المستوى المتقدم 🔴 (صفوف 5-6): المساحات، زوايا المثلث 180°، والحجوم
+  // ==========================================
+  const caseType = rand(1, 6);
+
+  if (caseType === 1) {
+    // مجموع زوايا المثلث (180°) - الزاوية المفقودة
+    const a1 = rand(30, 80);
+    const a2 = rand(30, 160 - a1);
+    const a3 = 180 - (a1 + a2);
+
+    return {
+      type: 'geometry',
+      level: 'hard',
+      category: 'مجموع زوايا المثلث (180°) 📐',
+      prompt: 'تذكر القاعدة: مجموع زوايا أي مثلث = 180 درجة:',
+      shapeDisplay: `🔺 مثلث فيه الزاوية الأولى = ${a1}° ، والزاوية الثانية = ${a2}° ، والزاوية الثالثة = [ ؟ ]`,
+      questionText: `في مثلث قياس الزاوية الأولى ${a1}° والزاوية الثانية ${a2}°، فما قياس الزاوية الثالثة؟`,
+      correctAnswer: `${a3}°`,
+      choices: shuffle([
+        `${a3}°`,
+        `${a3 + 10}°`,
+        `${Math.max(15, a3 - 10)}°`,
+        `${180 - a1}°`
+      ]),
+      explanation: `مجموع قياسات زوايا المثلث = 180°. إذن الزاوية المفقودة = 180° - (${a1}° + ${a2}°) = 180° - ${a1 + a2}° = ${a3}°.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 2) {
+    // مساحة المثلث = (القاعدة × الارتفاع) ÷ 2
+    const base = rand(4, 12) * 2; // عدد زوجي لسهولة الحساب
+    const height = rand(3, 9);
+    const area = (base * height) / 2;
+
+    return {
+      type: 'geometry',
+      level: 'hard',
+      category: 'مساحة المثلث = (القاعدة × الارتفاع) ÷ 2 🔺',
+      prompt: 'احسب مساحة المثلث باستخدام القاعدة والارتفاع العمودي:',
+      shapeDisplay: `🔺 مثلث: طول القاعدة = ${base} سم ، الارتفاع العمودي = ${height} سم`,
+      questionText: `مثلث طول قاعدته ${base} سم وارتفاعه العمودي الساقط عليها ${height} سم، فما هي مساحته بالسنتيمتر المربع (سم²)؟`,
+      correctAnswer: `${area} سم²`,
+      choices: shuffle([
+        `${area} سم²`,
+        `${base * height} سم²`,
+        `${area + 6} سم²`,
+        `${base + height} سم²`
+      ]),
+      explanation: `مساحة المثلث = (طول القاعدة × الارتفاع العمودي) ÷ 2 = (${base} × ${height}) ÷ 2 = ${base * height} ÷ 2 = ${area} سم².`,
+      points: 35
+    };
+  }
+
+  if (caseType === 3) {
+    // مساحة متوازي الأضلاع = القاعدة × الارتفاع
+    const base = rand(5, 12);
+    const height = rand(4, 8);
+    const area = base * height;
+
+    return {
+      type: 'geometry',
+      level: 'hard',
+      category: 'مساحة متوازي الأضلاع = القاعدة × الارتفاع ▱',
+      prompt: 'احسب مساحة متوازي الأضلاع بدقة:',
+      shapeDisplay: `▱ متوازي أضلاع: القاعدة = ${base} سم ، الارتفاع = ${height} سم`,
+      questionText: `متوازي أضلاع طول قاعدته ${base} سم وارتفاعه العمودي ${height} سم، ما هي مساحته بالسنتيمتر المربع (سم²)؟`,
+      correctAnswer: `${area} سم²`,
+      choices: shuffle([
+        `${area} سم²`,
+        `${area / 2} سم²`,
+        `${(base + height) * 2} سم²`,
+        `${area + 10} سم²`
+      ]),
+      explanation: `مساحة متوازي الأضلاع = طول القاعدة × الارتفاع العمودي = ${base} × ${height} = ${area} سم² (لاحظ أنه لا نقسم على 2 في متوازي الأضلاع).`,
+      points: 35
+    };
+  }
+
+  if (caseType === 4) {
+    // مساحة شبه المنحرف = ((القاعدة الصغرى + الكبرى) ÷ 2) × الارتفاع
+    const b1 = rand(4, 8);
+    const b2 = b1 + rand(2, 6); // مجموع b1+b2
+    const sum = b1 + b2;
+    // نضمن أن sum زوجي لسهولة القسمة
+    const adjSum = sum % 2 === 0 ? sum : sum + 1;
+    const finalB2 = adjSum - b1;
+    const height = rand(3, 6);
+    const area = (adjSum / 2) * height;
+
+    return {
+      type: 'geometry',
+      level: 'hard',
+      category: 'مساحة شبه المنحرف ⏢',
+      prompt: 'طبق قانون مساحة شبه المنحرف: ((القاعدة1 + القاعدة2) ÷ 2) × الارتفاع:',
+      shapeDisplay: `⏢ شبه منحرف: القاعدتان المتوازيتان = ${b1} سم و ${finalB2} سم ، الارتفاع = ${height} سم`,
+      questionText: `شبه منحرف طول قاعدتيه المتوازيتين ${b1} سم و ${finalB2} سم وارتفاعه ${height} سم، ما هي مساحته بالسنتيمتر المربع؟`,
+      correctAnswer: `${area} سم²`,
+      choices: shuffle([
+        `${area} سم²`,
+        `${adjSum * height} سم²`,
+        `${area + 5} سم²`,
+        `${(b1 + finalB2) + height} سم²`
+      ]),
+      explanation: `مساحة شبه المنحرف = ((القاعدة الأولى + القاعدة الثانية) ÷ 2) × الارتفاع = ((${b1} + ${finalB2}) ÷ 2) × ${height} = (${adjSum} ÷ 2) × ${height} = ${adjSum / 2} × ${height} = ${area} سم².`,
+      points: 35
+    };
+  }
+
+  if (caseType === 5) {
+    // حجم الصندوق (متوازي المستطيلات) أو المكعب (سم³)
+    const isCube = Math.random() < 0.5;
+
+    if (isCube) {
+      const side = rand(2, 5);
+      const volume = side * side * side;
+
+      return {
+        type: 'geometry',
+        level: 'hard',
+        category: 'حجم المكعب ثلاثي الأبعاد 🧊',
+        prompt: 'طبق قانون حجم المكعب = طول الحرف × طول الحرف × طول الحرف:',
+        shapeDisplay: `🧊 مكعب منتظم: طول حرفه (ضلعه) = ${side} سم`,
+        questionText: `مكعب طول ضلعه ${side} سم، ما هو حجمه بالسنتيمتر المكعب (سم³)؟`,
+        correctAnswer: `${volume} سم³`,
+        choices: shuffle([
+          `${volume} سم³`,
+          `${side * side} سم³`,
+          `${side * 6} سم³`,
+          `${volume + 10} سم³`
+        ]),
+        explanation: `حجم المكعب = الضلع × الضلع × الضلع = ${side} × ${side} × ${side} = ${volume} سم³.`,
+        points: 35
+      };
+    } else {
+      const l = rand(4, 7);
+      const w = rand(2, 4);
+      const h = rand(2, 5);
+      const volume = l * w * h;
+
+      return {
+        type: 'geometry',
+        level: 'hard',
+        category: 'حجم متوازي المستطيلات (الصندوق) 📦',
+        prompt: 'طبق قانون حجم الصندوق = الطول × العرض × الارتفاع:',
+        shapeDisplay: `📦 صندوق: الطول = ${l} سم ، العرض = ${w} سم ، الارتفاع = ${h} سم`,
+        questionText: `صندوق على شكل متوازي مستطيلات أبعاده ${l} سم، ${w} سم، و ${h} سم. ما حجمه الداخلي بالسنتيمتر المكعب (سم³)؟`,
+        correctAnswer: `${volume} سم³`,
+        choices: shuffle([
+          `${volume} سم³`,
+          `${(l + w + h) * 2} سم³`,
+          `${volume - 12} سم³`,
+          `${l * w} سم³`
+        ]),
+        explanation: `حجم متوازي المستطيلات = الطول × العرض × الارتفاع = ${l} × ${w} × ${h} = ${volume} سم³.`,
+        points: 35
+      };
+    }
+  }
+
+  // caseType === 6: مجموع زوايا الشكل الرباعي (360°)
+  const z1 = rand(70, 110);
+  const z2 = rand(70, 110);
+  const z3 = rand(60, 100);
+  const z4 = 360 - (z1 + z2 + z3);
+
+  return {
+    type: 'geometry',
+    level: 'hard',
+    category: 'مجموع زوايا الشكل الرباعي (360°) 🔲',
+    prompt: 'تذكر القاعدة: مجموع الزوايا الداخلية لأي شكل رباعي = 360 درجة:',
+    shapeDisplay: `🔲 شكل رباعي زواياه: ${z1}° ، ${z2}° ، ${z3}° ، [ ؟ ]`,
+    questionText: `في شكل رباعي قياسات ثلاث زوايا هي ${z1}° و ${z2}° و ${z3}°، ما هو قياس الزاوية الرابعة؟`,
+    correctAnswer: `${z4}°`,
+    choices: shuffle([
+      `${z4}°`,
+      `${z4 + 15}°`,
+      `${Math.max(20, z4 - 15)}°`,
+      `${180 - z1}°`
+    ]),
+    explanation: `مجموع زوايا الشكل الرباعي دائماً 360° (لأنه ينقسم إلى مثلثين: 180° × 2 = 360°). إذن الزاوية الرابعة = 360° - (${z1}° + ${z2}° + ${z3}°) = 360° - ${z1 + z2 + z3}° = ${z4}°.`,
+    points: 35
+  };
+};
+

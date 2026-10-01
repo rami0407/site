@@ -7,6 +7,7 @@ import {
   PEMDAS_CHALLENGE,
   PATTERNS_LOGIC_CHALLENGE,
   FRACTIONS_PERCENT_CHALLENGE,
+  GEOMETRY_CHALLENGE,
   CHAMPIONSHIP_AWARDS,
   generateMultiplicationQuestion,
   generateGradeCurriculumQuestion,
@@ -14,7 +15,8 @@ import {
   generateRealWorldMathQuestion,
   generatePemdasQuestion,
   generatePatternsLogicQuestion,
-  generateFractionsPercentQuestion
+  generateFractionsPercentQuestion,
+  generateGeometryQuestion
 } from '../data/mathCurriculumData';
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
@@ -74,6 +76,9 @@ export default function MathChampionshipArena() {
 
   // Fractions & Percentages challenge settings
   const [selectedFractionsLevel, setSelectedFractionsLevel] = useState('progressive');
+
+  // Geometry challenge settings
+  const [selectedGeometryLevel, setSelectedGeometryLevel] = useState('progressive');
 
   // In-Game state
   const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'game_over'
@@ -163,11 +168,14 @@ export default function MathChampionshipArena() {
     } else if (gameType === 'fractions') {
       const q = generateFractionsPercentQuestion(selectedFractionsLevel, correctCount);
       setCurrentQuestion(q);
+    } else if (gameType === 'geometry') {
+      const q = generateGeometryQuestion(selectedGeometryLevel, correctCount);
+      setCurrentQuestion(q);
     } else {
       const q = generateGradeCurriculumQuestion(selectedCurriculumGrade, selectedCurriculumTopic);
       setCurrentQuestion(q);
     }
-  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, selectedFractionsLevel, correctCount]);
+  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, selectedFractionsLevel, selectedGeometryLevel, correctCount]);
 
   // End game handler
   const finishGame = useCallback((reason = 'time_up') => {
@@ -205,6 +213,8 @@ export default function MathChampionshipArena() {
               ? `المتواليات والألغاز (${selectedPatternLevel === 'progressive' ? 'متدرج ذكي' : selectedPatternLevel})`
               : activeView === 'play_fractions'
               ? `الكسور والنسبة (${selectedFractionsLevel === 'progressive' ? 'متدرج ذكي' : selectedFractionsLevel})`
+              : activeView === 'play_geometry'
+              ? `الهندسة والمساحات (${selectedGeometryLevel === 'progressive' ? 'متدرج ذكي' : selectedGeometryLevel})`
               : `منهاج (${selectedCurriculumGrade})`
           },
           ...(prev.history || []).slice(0, 9)
@@ -285,6 +295,8 @@ export default function MathChampionshipArena() {
         ? 'play_pattern'
         : gameType === 'fractions'
         ? 'play_fractions'
+        : gameType === 'geometry'
+        ? 'play_geometry'
         : 'play_curriculum'
     );
 
@@ -327,7 +339,7 @@ export default function MathChampionshipArena() {
       checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
 
       // In fast speed mode, auto-advance
-      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas' || activeView === 'play_pattern' || activeView === 'play_fractions') ? 1200 : 650;
+      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas' || activeView === 'play_pattern' || activeView === 'play_fractions' || activeView === 'play_geometry') ? 1200 : 650;
       setTimeout(() => {
         loadNextQuestion(
           activeView === 'play_multiplication' 
@@ -342,6 +354,8 @@ export default function MathChampionshipArena() {
             ? 'pattern'
             : activeView === 'play_fractions'
             ? 'fractions'
+            : activeView === 'play_geometry'
+            ? 'geometry'
             : 'curriculum'
         );
       }, delay);
@@ -600,6 +614,20 @@ export default function MathChampionshipArena() {
             }}
           >
             <i className="fas fa-percent"></i> الكسور والنسبة 🏷️
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab highlight-geometry ${activeView === 'play_geometry' ? 'active' : ''}`}
+            onClick={() => {
+              setGameState('idle');
+              setActiveView('hub');
+              setTimeout(() => {
+                const el = document.getElementById('geometry-challenge-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }}
+          >
+            <i className="fas fa-shapes"></i> الهندسة والمساحات 📐
           </button>
           <button 
             type="button"
@@ -904,6 +932,54 @@ export default function MathChampionshipArena() {
               </div>
             </div>
 
+            {/* SPECIAL CHALLENGE 6: GEOMETRY, ANGLES, PERIMETER & AREA */}
+            <div id="geometry-challenge-section" className="math-geometry-challenge-card">
+              <div className="geometry-card-badge">
+                <span>📐 تحدي الهندسة والقياس المعتمد (صفوف 1 - 6)</span>
+              </div>
+              <div className="geometry-card-content">
+                <div className="geometry-header-row">
+                  <div className="geometry-avatar-icon">
+                    <span>📐</span>
+                  </div>
+                  <div className="geometry-text">
+                    <h2>{GEOMETRY_CHALLENGE.title}</h2>
+                    <p>{GEOMETRY_CHALLENGE.subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="geometry-levels-section">
+                  <label className="picker-label">اختر مسار التحدي الهندسي (متدرج من السهل إلى الصعب):</label>
+                  <div className="geometry-levels-grid">
+                    {GEOMETRY_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`geometry-level-card ${selectedGeometryLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedGeometryLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="geometry-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-geometry-btn"
+                    onClick={() => startGame('geometry')}
+                  >
+                    📐 انطلق في تحدي الهندسة والمساحات الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* CURRICULUM GRADES GAMES (GRADES 1 - 6) */}
             <div className="curriculum-grades-section">
               <div className="section-title-wrap">
@@ -1079,9 +1155,9 @@ export default function MathChampionshipArena() {
             )}
 
             {/* Question Card */}
-            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-arena-card' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-arena-card' : ''}`}>
+            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-arena-card' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-arena-card' : ''} ${currentQuestion.type === 'geometry' ? 'geometry-arena-card' : ''}`}>
               <div className="question-top-tag">
-                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-tag' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-tag' : ''}`}>
+                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-tag' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-tag' : ''} ${currentQuestion.type === 'geometry' ? 'geometry-tag' : ''}`}>
                   {currentQuestion.category}
                 </span>
                 {currentQuestion.level && (
@@ -1103,6 +1179,8 @@ export default function MathChampionshipArena() {
                       ? `${currentQuestion.prompt}. ${currentQuestion.patternDisplay || ''}. ${currentQuestion.questionText}`
                       : currentQuestion.type === 'fractions'
                       ? `${currentQuestion.prompt}. ${currentQuestion.fractionDisplay || ''}. ${currentQuestion.questionText}`
+                      : currentQuestion.type === 'geometry'
+                      ? `${currentQuestion.prompt}. ${currentQuestion.shapeDisplay || ''}. ${currentQuestion.questionText}`
                       : `${currentQuestion.prompt} ${currentQuestion.questionText}`;
                     mathAudio.speakArabic(text);
                   }}
@@ -1212,18 +1290,38 @@ export default function MathChampionshipArena() {
                 </div>
               )}
 
+              {/* GEOMETRY SPECIAL DISPLAY BOX */}
+              {currentQuestion.type === 'geometry' && (
+                <div className="geometry-case-box">
+                  <div className="geometry-case-badge-row">
+                    <span className="geometry-case-id-badge">📐 مسألة هندسية #{correctCount + 1}</span>
+                    <span className="geometry-case-level-tag">
+                      {currentQuestion.level === 'easy' ? '🟢 صفوف 1-2 (الأشكال والمجسمات)' : currentQuestion.level === 'medium' ? '🟡 صفوف 3-4 (الزوايا والمحيط)' : '🔴 صفوف 5-6 (المساحات وزوايا المثلث والحجوم)'}
+                    </span>
+                  </div>
+                  {currentQuestion.shapeDisplay && (
+                    <div className="geometry-highlight-wrap">
+                      <span className="geometry-sparkle-icon">📐</span>
+                      <div className="geometry-display-text" style={{ whiteSpace: 'pre-line' }}>
+                        {currentQuestion.shapeDisplay}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="question-prompt-text">
                 {currentQuestion.prompt}
               </div>
 
               <div className="question-main-display">
-                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : currentQuestion.type === 'pattern' ? 'pattern-verdict-prompt' : currentQuestion.type === 'fractions' ? 'fractions-verdict-prompt' : 'math-formula-text'}>
+                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : currentQuestion.type === 'pattern' ? 'pattern-verdict-prompt' : currentQuestion.type === 'fractions' ? 'fractions-verdict-prompt' : currentQuestion.type === 'geometry' ? 'geometry-verdict-prompt' : 'math-formula-text'}>
                   {currentQuestion.questionText}
                 </span>
               </div>
 
               {/* Choices Buttons */}
-              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-choices-grid' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-choices-grid' : ''}`}>
+              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-choices-grid' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-choices-grid' : ''} ${currentQuestion.type === 'geometry' ? 'geometry-choices-grid' : ''}`}>
                 {currentQuestion.choices.map((choice, idx) => {
                   let btnStateClass = '';
                   if (isAnswerRevealed) {

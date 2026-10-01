@@ -2846,6 +2846,252 @@
   }
 }
 
+/* ========================================================================== */
+/* SPECIAL CHALLENGE 6: GEOMETRY & MEASUREMENT (الهندسة والمساحات والمحيط)    */
+/* ========================================================================== */
+
+.math-nav-tab.highlight-geometry {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(2, 132, 199, 0.25) 100%);
+  border-color: rgba(14, 165, 233, 0.5);
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.math-nav-tab.highlight-geometry:hover {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(2, 132, 199, 0.4) 100%);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
+}
+
+.math-geometry-challenge-card {
+  position: relative;
+  background: linear-gradient(135deg, #082f49 0%, #0c4a6e 50%, #0369a1 100%);
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(14, 165, 233, 0.22);
+  margin-bottom: 2.5rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.math-geometry-challenge-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 20px 45px rgba(14, 165, 233, 0.35);
+}
+
+.geometry-card-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  background: rgba(2, 132, 199, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  padding: 0.35rem 1rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #f0f9ff;
+  letter-spacing: 0.5px;
+}
+
+.geometry-card-content {
+  padding: 2.2rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.geometry-header-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.geometry-avatar-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.4);
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.geometry-text h2 {
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.geometry-text p {
+  color: #bae6fd;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 820px;
+}
+
+.geometry-levels-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.geometry-levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.geometry-level-card {
+  background: rgba(12, 74, 110, 0.55);
+  border: 2px solid rgba(56, 189, 248, 0.25);
+  border-radius: 16px;
+  padding: 1.1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.geometry-level-card:hover {
+  background: rgba(12, 74, 110, 0.85);
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+}
+
+.geometry-level-card.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.35) 0%, rgba(2, 132, 199, 0.45) 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.3);
+}
+
+.geometry-action-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.launch-geometry-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  border-radius: 16px;
+  padding: 0.95rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.launch-geometry-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(14, 165, 233, 0.45);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+}
+
+/* Geometry In-Arena Styles */
+.geometry-arena-card {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 15px 40px rgba(14, 165, 233, 0.18);
+}
+
+.category-tag.geometry-tag {
+  background: linear-gradient(135deg, rgba(3, 105, 161, 0.3) 0%, rgba(14, 165, 233, 0.2) 100%);
+  color: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+.geometry-case-box {
+  background: rgba(8, 47, 73, 0.45);
+  border: 2px dashed rgba(56, 189, 248, 0.4);
+  border-radius: 18px;
+  padding: 1.5rem;
+  margin: 1.25rem 0;
+  text-align: right;
+  backdrop-filter: blur(8px);
+}
+
+.geometry-case-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.geometry-case-id-badge {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.25rem 0.8rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.geometry-case-level-tag {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.geometry-highlight-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(2, 6, 23, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  direction: rtl;
+}
+
+.geometry-sparkle-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.geometry-display-text {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 900;
+  color: #7dd3fc;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.geometry-verdict-prompt {
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+.geometry-choices-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .geometry-choices-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 
 
 
