@@ -329,6 +329,28 @@ export const CHAMPIONSHIP_AWARDS = [
     minScore: 450,
     condition: 'إحراز 450 نقطة وحل ألغاز فيبوناتشي والمعادلات الصورية المركبة',
     description: 'الرتبة الأسطورية في التفكير المنطقي والرياضي المجرد'
+  },
+  {
+    id: 'badge_fractions_master',
+    type: 'badge',
+    tier: 'fractions',
+    name: 'وسام خبير الكسور والنسب المئوية 🍰',
+    icon: '🍰',
+    color: '#ec4899',
+    minScore: 200,
+    condition: 'إحراز 200 نقطة في تحدي الكسور والنسبة المئوية',
+    description: 'فهم عميق للأجزاء والكسور المكافئة وحساب التخفيضات'
+  },
+  {
+    id: 'cup_percentages_champion',
+    type: 'cup',
+    tier: 'master_percentages',
+    name: 'كأس ساحر التخفيضات والنسب 🏆🏷️',
+    icon: '🏆',
+    color: '#be185d',
+    minScore: 450,
+    condition: 'إحراز 450 نقطة في مهرجان التخفيضات والعمليات على الكسور',
+    description: 'الرتبة الأسمى في إتقان النسب المئوية وتحويلات الكسور'
   }
 ];
 
@@ -2969,5 +2991,433 @@ export const generatePatternsLogicQuestion = (level = 'progressive', questionInd
     ]),
     explanation: `هناك مساران بالتناوب: المسار الأول في الخانات الفردية يزيد (+3): 10، 13، 16، والحد التالي هو 16 + 3 = 19! (بينما المسار الثاني في الخانات الزوجية ينقص (-5): 50، 45، 40).`,
     points: 40
+  };
+};
+
+/**
+ * تحدي الكسور والنسبة المئوية ومهرجان التخفيضات (Fractions, Decimals & Percentages)
+ */
+export const FRACTIONS_PERCENT_CHALLENGE = {
+  id: 'fractions_percent_challenge',
+  title: 'تحدي الكسور والنسبة المئوية ومهرجان التخفيضات 🏷️🍰',
+  subtitle: 'أتقن أجزاء الأعداد، الكسور المكافئة، والنسب المئوية (%) في عالم المشتريات والحساب!',
+  icon: '🏷️',
+  color: '#ec4899',
+  badge: 'سيد الكسور والنسب 🍰',
+  levels: [
+    { id: 'progressive', name: 'المسار التدريجي الذكي 🚀', desc: 'مفهوم النصف والربع (1-2) ثم الكسور المتكافئة والجمع (3-4) وصولاً للنسب المئوية والتخفيضات والضرب (5-6)', icon: '📈' },
+    { id: 'easy', name: 'أصدقاء النصف والربع (سهل 🟢)', desc: 'الصفوف 1-2: مفهوم النصف (1/2) والربع (1/4)، تجزئة الأشكال، ونصف وربع الكميات البسيطة', icon: '🍕' },
+    { id: 'medium', name: 'فرسان الكسور المتكافئة (متوسط 🟡)', desc: 'الصفوف 3-4: توسيع واختزال الكسور، جمع وطرح المقامات المتشابهة، وكسر من كمية', icon: '🍰' },
+    { id: 'hard', name: 'خبراء النسبة المئوية والتخفيضات (صعب 🔴)', desc: 'الصفوف 5-6: حساب النسبة المئوية (%)، التخفيض والربح، جمع المقامات المختلفة، والضرب', icon: '🏷️' }
+  ]
+};
+
+export const generateFractionsPercentQuestion = (level = 'progressive', questionIndex = 0) => {
+  let effectiveLevel = level;
+  if (level === 'progressive') {
+    if (questionIndex < 3) effectiveLevel = 'easy';
+    else if (questionIndex < 7) effectiveLevel = 'medium';
+    else effectiveLevel = 'hard';
+  }
+
+  // ==========================================
+  // EASY (الصفوف 1 و 2)
+  // ==========================================
+  if (effectiveLevel === 'easy') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // نصف العدد الزوجي
+      const half = rand(3, 15);
+      const total = half * 2;
+
+      return {
+        type: 'fractions',
+        level: 'easy',
+        category: 'مفهوم النصف (1/2) 🍕',
+        prompt: 'احسب نصف العدد:',
+        fractionDisplay: `نصف العدد ${total} هو: [ ؟ ]`,
+        questionText: `ما هو نصف العدد ${total}؟`,
+        correctAnswer: `${half}`,
+        choices: shuffle([
+          `${half}`,
+          `${half + 2}`,
+          `${Math.max(1, half - 2)}`,
+          `${half + 1}`
+        ]),
+        explanation: `نصف العدد يعني قسمته بالتساوي على 2: ${total} ÷ 2 = ${half}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 2) {
+      // ربع العدد
+      const quarter = rand(2, 8);
+      const total = quarter * 4;
+
+      return {
+        type: 'fractions',
+        level: 'easy',
+        category: 'مفهوم الربع (1/4) 🍰',
+        prompt: 'احسب ربع العدد:',
+        fractionDisplay: `ربع العدد ${total} هو: [ ؟ ]`,
+        questionText: `ما هو ربع العدد ${total}؟`,
+        correctAnswer: `${quarter}`,
+        choices: shuffle([
+          `${quarter}`,
+          `${quarter * 2}`,
+          `${quarter + 1}`,
+          `${Math.max(1, quarter - 1)}`
+        ]),
+        explanation: `ربع العدد يعني تقسيمه إلى 4 أجزاء متساوية: ${total} ÷ 4 = ${quarter}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 3) {
+      // مسألة لفظية عن النصف والربع
+      const parts = rand(0, 1) === 0 ? 2 : 4;
+      const fractionName = parts === 2 ? 'النصف (1/2)' : 'الربع (1/4)';
+
+      return {
+        type: 'fractions',
+        level: 'easy',
+        category: 'الكسور كأجزاء من الكل 🥪',
+        prompt: 'اقرأ الموقف الحياتي وحدد الكسر المناسب:',
+        fractionDisplay: `🥪 قسّمت الأم ساندويشاً كبيراً إلى ${parts} أجزاء متطابقة ومتساوية، وأعطت طارقاً جزءاً واحداً منها.`,
+        questionText: 'ما الكسر الذي يعبر عن الجزء الذي أخذه طارق؟',
+        correctAnswer: fractionName,
+        choices: shuffle([
+          fractionName,
+          parts === 2 ? 'الربع (1/4)' : 'النصف (1/2)',
+          'الثلث (1/3)',
+          'الخمس (1/5)'
+        ]),
+        explanation: `أخذ طارق جزءاً واحداً من أصل ${parts} أجزاء متساوية، وهو يمثل ${fractionName}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 4) {
+      // مقارنة بين النصف والربع
+      return {
+        type: 'fractions',
+        level: 'easy',
+        category: 'مقارنة الكسور البسيطة ⚖️',
+        prompt: 'قارن بين الكسرين التاليين:',
+        fractionDisplay: `1/2  ▢  1/4`,
+        questionText: 'أي الكسرين أكبر قيمة؟',
+        correctAnswer: 'النصف (1/2) أكبر من الربع (1/4)',
+        choices: shuffle([
+          'النصف (1/2) أكبر من الربع (1/4)',
+          'الربع (1/4) أكبر من النصف (1/2)',
+          'الكسران متساويان تماماً',
+          'لا يمكن المقارنة بينهما'
+        ]),
+        explanation: `كلما قسّمنا الكل إلى أجزاء أقل، كانت قيمة الجزء أكبر! نصف الرغيف أكبر بالتأكيد من ربع الرغيف (1/2 > 1/4).`,
+        points: 15
+      };
+    }
+
+    // caseType === 5: تمثيل النصف بكمية صورية
+    const total = [8, 10, 12, 16][rand(0, 3)];
+    const half = total / 2;
+
+    return {
+      type: 'fractions',
+      level: 'easy',
+      category: 'نصف مجموعة من الأشياء 🍎',
+      prompt: 'احسب نصف الكمية المعروضة:',
+      fractionDisplay: `لدينا صندوق يحتوي على ${total} تفاحة 🍎.`,
+      questionText: 'كم تفاحة نحتاج لتكوين نصف الصندوق بالضبط؟',
+      correctAnswer: `${half} تفاحات`,
+      choices: shuffle([
+        `${half} تفاحات`,
+        `${half + 2} تفاحات`,
+        `${half - 1} تفاحات`,
+        `${total - 2} تفاحات`
+      ]),
+      explanation: `نصف الـ ${total} تفاحة = ${total} ÷ 2 = ${half} تفاحات.`,
+      points: 15
+    };
+  }
+
+  // ==========================================
+  // MEDIUM (الصفوف 3 و 4)
+  // ==========================================
+  if (effectiveLevel === 'medium') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // توسيع الكسور (كسر مكافئ)
+      const num = rand(1, 3);
+      const den = [3, 4, 5][rand(0, 2)];
+      const factor = rand(2, 4);
+      const expandedNum = num * factor;
+      const expandedDen = den * factor;
+
+      return {
+        type: 'fractions',
+        level: 'medium',
+        category: 'الكسور المتكافئة والتوسيع 🔁',
+        prompt: 'أوجد العدد المفقود في الكسر المكافئ:',
+        fractionDisplay: `${num}/${den} = [ ؟ ]/${expandedDen}`,
+        questionText: `ما هو البسط المفقود [ ؟ ] ليصبح الكسران متكافئين؟`,
+        correctAnswer: `${expandedNum}`,
+        choices: shuffle([
+          `${expandedNum}`,
+          `${num * 2}`,
+          `${expandedNum + 1}`,
+          `${num + factor}`
+        ]),
+        explanation: `بما أن المقام ${den} ضرب في ${factor} ليصبح ${expandedDen}، يجب ضرب البسط ${num} في نفس العامل ${factor}: ${num} × ${factor} = ${expandedNum}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 2) {
+      // جمع وطرح كسور بمقامات متساوية
+      const isAdd = Math.random() < 0.5;
+      const den = [5, 6, 7, 8, 9, 10][rand(0, 5)];
+      const a = rand(2, den - 2);
+      const b = rand(1, isAdd ? den - a : a - 1);
+      const resultNum = isAdd ? a + b : a - b;
+
+      return {
+        type: 'fractions',
+        level: 'medium',
+        category: 'العمليات على كسور بمقامات متساوية ➕➖',
+        prompt: 'احسب ناتج العملية الكسرية:',
+        fractionDisplay: `${a}/${den} ${isAdd ? '+' : '-'} ${b}/${den} = [ ؟ ]`,
+        questionText: `ما هو الناتج بأبسط صورة؟`,
+        correctAnswer: `${resultNum}/${den}`,
+        choices: shuffle([
+          `${resultNum}/${den}`,
+          `${resultNum}/${den * 2}`, // الخطأ الشائع: جمع المقامات!
+          `${Math.max(1, resultNum - 1)}/${den}`,
+          `${resultNum + 1}/${den}`
+        ]),
+        explanation: `قاعدة ذهبية: عند جمع أو طرح كسور لها نفس المقام، نجمع/نطرح البسوط فقط ويبقى المقام ثابتاً: ${a} ${isAdd ? '+' : '-'} ${b} = ${resultNum} على المقام ${den}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 3) {
+      // كسر من كمية (Fraction of a quantity)
+      const den = [3, 4, 5][rand(0, 2)];
+      const num = rand(2, den - 1);
+      const base = den * rand(4, 9);
+      const ans = (base / den) * num;
+
+      return {
+        type: 'fractions',
+        level: 'medium',
+        category: 'كسر من كمية في الحياة اليومية 📦',
+        prompt: 'احسب قيمة الكسر من الكمية المعطاة:',
+        fractionDisplay: `ما هو ${num}/${den} من العدد ${base}؟`,
+        questionText: `احسب: (${num}/${den}) × ${base} = ؟`,
+        correctAnswer: `${ans}`,
+        choices: shuffle([
+          `${ans}`,
+          `${base / den}`,
+          `${ans + num}`,
+          `${ans - 2}`
+        ]),
+        explanation: `1) نقسم على المقام: ${base} ÷ ${den} = ${base / den}. 2) نضرب في البسط: ${base / den} × ${num} = ${ans}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 4) {
+      // إكمال الكسر إلى 1 صحيح
+      const den = rand(5, 12);
+      const num = rand(1, den - 1);
+      const complement = den - num;
+
+      return {
+        type: 'fractions',
+        level: 'medium',
+        category: 'إكمال الكسر إلى 1 صحيح 🎯',
+        prompt: 'ما الكسر المتبقي لنصل إلى 1 صحيح كامل؟',
+        fractionDisplay: `${num}/${den} + [ ؟ ] = 1 صحيح`,
+        questionText: `ما هو الكسر المفقود [ ؟ ]؟`,
+        correctAnswer: `${complement}/${den}`,
+        choices: shuffle([
+          `${complement}/${den}`,
+          `${complement - 1}/${den}`,
+          `${complement}/${den + 1}`,
+          `1/${den}`
+        ]),
+        explanation: `الواحد الصحيح يمثل ${den}/${den}. نطرح: ${den}/${den} - ${num}/${den} = ${complement}/${den}.`,
+        points: 25
+      };
+    }
+
+    // caseType === 5: مقارنة كسور متساوية البسوط
+    const num = rand(2, 4);
+    const den1 = rand(5, 7);
+    const den2 = den1 + 3;
+
+    return {
+      type: 'fractions',
+      level: 'medium',
+      category: 'مقارنة كسور متساوية البسوط ⚖️',
+      prompt: 'قارن بين الكسرين بدقة:',
+      fractionDisplay: `${num}/${den1}  ▢  ${num}/${den2}`,
+      questionText: `أي الكسرين أكبر؟`,
+      correctAnswer: `${num}/${den1} أكبر من ${num}/${den2}`,
+      choices: shuffle([
+        `${num}/${den1} أكبر من ${num}/${den2}`,
+        `${num}/${den2} أكبر من ${num}/${den1}`,
+        `الكسران متساويان لأن لهما نفس البسط (${num})`,
+        `لا يمكن معرفة ذلك`
+      ]),
+      explanation: `قاعدة مهمة: إذا تساوت البسوط، فالكسر ذو المقام الأصغر هو الأكبر (لأن الحصص فيه أكبر حجماً!). إذن ${num}/${den1} > ${num}/${den2}.`,
+      points: 25
+    };
+  }
+
+  // ==========================================
+  // HARD (الصفوف 5 و 6)
+  // ==========================================
+  const caseType = rand(1, 5);
+
+  if (caseType === 1) {
+    // مهرجان التخفيضات والنسبة المئوية (%)
+    const price = [100, 200, 300, 400, 500][rand(0, 4)];
+    const pct = [10, 20, 25, 30, 50][rand(0, 4)];
+    const discount = (price * pct) / 100;
+    const finalPrice = price - discount;
+
+    return {
+      type: 'fractions',
+      level: 'hard',
+      category: 'مهرجان التخفيضات والنسبة المئوية (%) 🏷️',
+      prompt: 'حساب التخفيضات في مهرجان التسوق المدرسي:',
+      fractionDisplay: `🏷️ معطف شتوي فاخر كان سعره ${price} ₪، أعلن المتجر عن تنزيل بنسبة ${pct}%.`,
+      questionText: `كم يدفع المشتري ثمناً للمعطف بعد التخفيض؟`,
+      correctAnswer: `${finalPrice} ₪`,
+      choices: shuffle([
+        `${finalPrice} ₪`,
+        `${discount} ₪`,
+        `${finalPrice + 20} ₪`,
+        `${price - pct} ₪` // الخطأ الشائع: طرح النسبة مباشرة من السعر!
+      ]),
+      explanation: `1) نحسب قيمة التنزيل: (${price} × ${pct}) ÷ 100 = ${discount} ₪. 2) السعر بعد التخفيض = ${price} - ${discount} = ${finalPrice} ₪.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 2) {
+    // تحويل كسر عادي إلى نسبة مئوية
+    const fractions = [
+      { frac: '1/2', pct: '50%' },
+      { frac: '1/4', pct: '25%' },
+      { frac: '3/4', pct: '75%' },
+      { frac: '1/5', pct: '20%' },
+      { frac: '2/5', pct: '40%' },
+      { frac: '3/5', pct: '60%' },
+      { frac: '4/5', pct: '80%' },
+      { frac: '1/10', pct: '10%' }
+    ];
+    const item = fractions[rand(0, fractions.length - 1)];
+
+    return {
+      type: 'fractions',
+      level: 'hard',
+      category: 'تحويل الكسر العادي إلى نسبة مئوية (%) 🔄',
+      prompt: 'حوّل الكسر العادي التالي إلى نسبة مئوية:',
+      fractionDisplay: `${item.frac} = [ ؟ ] %`,
+      questionText: `ما هي النسبة المئوية المكافئة للكسر ${item.frac}؟`,
+      correctAnswer: item.pct,
+      choices: shuffle([
+        item.pct,
+        `${parseInt(item.pct) + 10}%`,
+        `${parseInt(item.pct) - 15}%`,
+        '100%'
+      ]),
+      explanation: `لتوسيع الكسر ليصبح مقامه 100، نضرب البسط والمقام، وبالتالي ${item.frac} يعادل ${item.pct}.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 3) {
+    // جمع وطرح كسور بمقامات مختلفة (توسيع وتوحيد مقامات)
+    const pairs = [
+      { a: '1/2', b: '1/3', op: '+', ans: '5/6', exp: 'المقام المشترك هو 6: 3/6 + 2/6 = 5/6.' },
+      { a: '3/4', b: '1/2', op: '-', ans: '1/4', exp: 'نوحد المقامات إلى 4: 3/4 - 2/4 = 1/4.' },
+      { a: '1/3', b: '1/4', op: '+', ans: '7/12', exp: 'المقام المشترك هو 12: 4/12 + 3/12 = 7/12.' },
+      { a: '2/3', b: '1/6', op: '-', ans: '3/6 (أو 1/2)', exp: 'نوحد المقامات إلى 6: 4/6 - 1/6 = 3/6 = 1/2.' }
+    ];
+    const p = pairs[rand(0, pairs.length - 1)];
+
+    return {
+      type: 'fractions',
+      level: 'hard',
+      category: 'توحيد المقامات وجمع/طرح الكسور 🧮',
+      prompt: 'وحّد المقامات واحسب الناتج بأبسط صورة:',
+      fractionDisplay: `${p.a} ${p.op} ${p.b} = [ ؟ ]`,
+      questionText: `ما ناتج التعبير: ${p.a} ${p.op} ${p.b}؟`,
+      correctAnswer: p.ans,
+      choices: shuffle([
+        p.ans,
+        '2/5',
+        '2/7',
+        '1/5'
+      ]),
+      explanation: p.exp,
+      points: 35
+    };
+  }
+
+  if (caseType === 4) {
+    // ضرب الكسور العادية
+    const num1 = 2, den1 = 3;
+    const num2 = 3, den2 = 4;
+    // 2/3 * 3/4 = 6/12 = 1/2
+    return {
+      type: 'fractions',
+      level: 'hard',
+      category: 'ضرب الكسور العادية ✖️',
+      prompt: 'احسب ناتج ضرب الكسرين:',
+      fractionDisplay: `(2/3) × (3/4) = [ ؟ ]`,
+      questionText: 'ما ناتج ضرب الكسرين بأبسط صورة؟',
+      correctAnswer: '1/2 (أو 6/12)',
+      choices: shuffle([
+        '1/2 (أو 6/12)',
+        '5/7',
+        '5/12',
+        '6/7'
+      ]),
+      explanation: `في ضرب الكسور: نضرب البسط في البسط والمقام في المقام: (2 × 3) / (3 × 4) = 6/12، وباختزال الكسر بالقسمة على 6 يصبح 1/2.`,
+      points: 35
+    };
+  }
+
+  // caseType === 5: تكافؤ الكسر والكسر العشري والنسبة المئوية
+  const triplets = [
+    { dec: '0.75', pct: '75%', frac: '3/4' },
+    { dec: '0.25', pct: '25%', frac: '1/4' },
+    { dec: '0.50', pct: '50%', frac: '1/2' },
+    { dec: '0.20', pct: '20%', frac: '1/5' }
+  ];
+  const t = triplets[rand(0, triplets.length - 1)];
+
+  return {
+    type: 'fractions',
+    level: 'hard',
+    category: 'الترابط بين الكسر والعشري والنسبة المئوية 🌐',
+    prompt: 'أكمل التطابق بين الصيغ الثلاث لنفس القيمة:',
+    fractionDisplay: `الكسر العشري: ${t.dec}  =  النسبة المئوية: ${t.pct}  =  الكسر العادي: [ ؟ ]`,
+    questionText: `ما هو الكسر العادي المكافئ للقيمة ${t.pct}؟`,
+    correctAnswer: t.frac,
+    choices: shuffle([
+      t.frac,
+      '2/3',
+      '3/5',
+      '1/3'
+    ]),
+    explanation: `${t.pct} تعني ${t.pct.replace('%', '')}/100، وبالاختزال نحصل على الكسر العادي ${t.frac}، وقيمته العشرية هي ${t.dec}.`,
+    points: 35
   };
 };

@@ -6,13 +6,15 @@ import {
   REAL_WORLD_CHALLENGE,
   PEMDAS_CHALLENGE,
   PATTERNS_LOGIC_CHALLENGE,
+  FRACTIONS_PERCENT_CHALLENGE,
   CHAMPIONSHIP_AWARDS,
   generateMultiplicationQuestion,
   generateGradeCurriculumQuestion,
   generateMathDetectiveQuestion,
   generateRealWorldMathQuestion,
   generatePemdasQuestion,
-  generatePatternsLogicQuestion
+  generatePatternsLogicQuestion,
+  generateFractionsPercentQuestion
 } from '../data/mathCurriculumData';
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
@@ -69,6 +71,9 @@ export default function MathChampionshipArena() {
 
   // Patterns & Logic challenge settings
   const [selectedPatternLevel, setSelectedPatternLevel] = useState('progressive');
+
+  // Fractions & Percentages challenge settings
+  const [selectedFractionsLevel, setSelectedFractionsLevel] = useState('progressive');
 
   // In-Game state
   const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'game_over'
@@ -155,11 +160,14 @@ export default function MathChampionshipArena() {
     } else if (gameType === 'pattern') {
       const q = generatePatternsLogicQuestion(selectedPatternLevel, correctCount);
       setCurrentQuestion(q);
+    } else if (gameType === 'fractions') {
+      const q = generateFractionsPercentQuestion(selectedFractionsLevel, correctCount);
+      setCurrentQuestion(q);
     } else {
       const q = generateGradeCurriculumQuestion(selectedCurriculumGrade, selectedCurriculumTopic);
       setCurrentQuestion(q);
     }
-  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, correctCount]);
+  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, selectedFractionsLevel, correctCount]);
 
   // End game handler
   const finishGame = useCallback((reason = 'time_up') => {
@@ -195,6 +203,8 @@ export default function MathChampionshipArena() {
               ? `ترتيب العمليات (${selectedPemdasLevel === 'progressive' ? 'متدرج ذكي' : selectedPemdasLevel})`
               : activeView === 'play_pattern'
               ? `المتواليات والألغاز (${selectedPatternLevel === 'progressive' ? 'متدرج ذكي' : selectedPatternLevel})`
+              : activeView === 'play_fractions'
+              ? `الكسور والنسبة (${selectedFractionsLevel === 'progressive' ? 'متدرج ذكي' : selectedFractionsLevel})`
               : `منهاج (${selectedCurriculumGrade})`
           },
           ...(prev.history || []).slice(0, 9)
@@ -215,7 +225,7 @@ export default function MathChampionshipArena() {
         }).catch(() => {});
       } catch (e) {}
     }
-  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, wrongCount]);
+  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, selectedPatternLevel, selectedFractionsLevel, wrongCount]);
 
   // Timer tick effect
   useEffect(() => {
@@ -248,8 +258,8 @@ export default function MathChampionshipArena() {
     if (gameType === 'multiplication') {
       const m = MULTIPLICATION_TOURNAMENT.modes.find(x => x.id === selectedMultMode);
       duration = m ? m.duration : 60;
-    } else if (gameType === 'detective' || gameType === 'real_world' || gameType === 'pemdas' || gameType === 'pattern') {
-      duration = 90; // 90 seconds for detective, real-world, PEMDAS, and pattern challenges
+    } else if (gameType === 'detective' || gameType === 'real_world' || gameType === 'pemdas' || gameType === 'pattern' || gameType === 'fractions') {
+      duration = 90; // 90 seconds for detective, real-world, PEMDAS, pattern, and fractions challenges
     } else {
       duration = 75; // 75 seconds for curriculum
     }
@@ -273,6 +283,8 @@ export default function MathChampionshipArena() {
         ? 'play_pemdas'
         : gameType === 'pattern'
         ? 'play_pattern'
+        : gameType === 'fractions'
+        ? 'play_fractions'
         : 'play_curriculum'
     );
 
@@ -315,7 +327,7 @@ export default function MathChampionshipArena() {
       checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
 
       // In fast speed mode, auto-advance
-      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas' || activeView === 'play_pattern') ? 1200 : 650;
+      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas' || activeView === 'play_pattern' || activeView === 'play_fractions') ? 1200 : 650;
       setTimeout(() => {
         loadNextQuestion(
           activeView === 'play_multiplication' 
@@ -328,6 +340,8 @@ export default function MathChampionshipArena() {
             ? 'pemdas'
             : activeView === 'play_pattern'
             ? 'pattern'
+            : activeView === 'play_fractions'
+            ? 'fractions'
             : 'curriculum'
         );
       }, delay);
@@ -572,6 +586,20 @@ export default function MathChampionshipArena() {
             }}
           >
             <i className="fas fa-puzzle-piece"></i> المتواليات والألغاز 🧩
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab highlight-fractions ${activeView === 'play_fractions' ? 'active' : ''}`}
+            onClick={() => {
+              setGameState('idle');
+              setActiveView('hub');
+              setTimeout(() => {
+                const el = document.getElementById('fractions-challenge-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }}
+          >
+            <i className="fas fa-percent"></i> الكسور والنسبة 🏷️
           </button>
           <button 
             type="button"
@@ -832,6 +860,50 @@ export default function MathChampionshipArena() {
               </div>
             </div>
 
+            {/* SPECIAL CHALLENGE 5: FRACTIONS & PERCENTAGES (الكسور والنسبة المئوية ومهرجان التخفيضات) */}
+            <div className="math-fractions-challenge-card" id="fractions-challenge-section">
+              <div className="fractions-card-badge">🏷️ تحدي الكسور والنسبة المئوية والتخفيضات</div>
+              <div className="fractions-card-content">
+                <div className="fractions-header-row">
+                  <div className="fractions-avatar-icon">🍰</div>
+                  <div className="fractions-text">
+                    <h2>تحدي «الكسور والنسبة المئوية ومهرجان التخفيضات»: براعة الأجزاء والتسوق! 🏷️🍰</h2>
+                    <p>أتقن أجزاء الأعداد من النصف والربع، اختزل ووسع الكسور، أجرِ العمليات ووحّد المقامات، واحسب نسب التخفيضات في متجر الرياضيات الذكي!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="fractions-levels-section">
+                  <label className="picker-label">اختر مسار الكسور والنسبة (متدرج من السهل إلى الصعب):</label>
+                  <div className="fractions-levels-grid">
+                    {FRACTIONS_PERCENT_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`fractions-level-card ${selectedFractionsLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedFractionsLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="fractions-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-fractions-btn"
+                    onClick={() => startGame('fractions')}
+                  >
+                    🏷️ انطلق في مهرجان الكسور والنسب الآن (90 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* CURRICULUM GRADES GAMES (GRADES 1 - 6) */}
             <div className="curriculum-grades-section">
               <div className="section-title-wrap">
@@ -1007,9 +1079,9 @@ export default function MathChampionshipArena() {
             )}
 
             {/* Question Card */}
-            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-arena-card' : ''}`}>
+            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-arena-card' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-arena-card' : ''}`}>
               <div className="question-top-tag">
-                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-tag' : ''}`}>
+                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-tag' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-tag' : ''}`}>
                   {currentQuestion.category}
                 </span>
                 {currentQuestion.level && (
@@ -1029,6 +1101,8 @@ export default function MathChampionshipArena() {
                       ? `${currentQuestion.prompt}. ${currentQuestion.questionText}`
                       : currentQuestion.type === 'pattern'
                       ? `${currentQuestion.prompt}. ${currentQuestion.patternDisplay || ''}. ${currentQuestion.questionText}`
+                      : currentQuestion.type === 'fractions'
+                      ? `${currentQuestion.prompt}. ${currentQuestion.fractionDisplay || ''}. ${currentQuestion.questionText}`
                       : `${currentQuestion.prompt} ${currentQuestion.questionText}`;
                     mathAudio.speakArabic(text);
                   }}
@@ -1118,18 +1192,38 @@ export default function MathChampionshipArena() {
                 </div>
               )}
 
+              {/* FRACTIONS SPECIAL DISPLAY BOX */}
+              {currentQuestion.type === 'fractions' && (
+                <div className="fractions-case-box">
+                  <div className="fractions-case-badge-row">
+                    <span className="fractions-case-id-badge">🏷️ مسألة الكسور والنسبة #{correctCount + 1}</span>
+                    <span className="fractions-case-level-tag">
+                      {currentQuestion.level === 'easy' ? '🟢 صفوف 1-2 (النصف والربع)' : currentQuestion.level === 'medium' ? '🟡 صفوف 3-4 (كسور متكافئة وجمع)' : '🔴 صفوف 5-6 (تخفيضات % وتوحيد مقامات)'}
+                    </span>
+                  </div>
+                  {currentQuestion.fractionDisplay && (
+                    <div className="fractions-highlight-wrap">
+                      <span className="fractions-sparkle-icon">🍰</span>
+                      <div className="fractions-display-text" style={{ whiteSpace: 'pre-line' }}>
+                        {currentQuestion.fractionDisplay}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="question-prompt-text">
                 {currentQuestion.prompt}
               </div>
 
               <div className="question-main-display">
-                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : currentQuestion.type === 'pattern' ? 'pattern-verdict-prompt' : 'math-formula-text'}>
+                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : currentQuestion.type === 'pattern' ? 'pattern-verdict-prompt' : currentQuestion.type === 'fractions' ? 'fractions-verdict-prompt' : 'math-formula-text'}>
                   {currentQuestion.questionText}
                 </span>
               </div>
 
               {/* Choices Buttons */}
-              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-choices-grid' : ''}`}>
+              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''} ${currentQuestion.type === 'pattern' ? 'pattern-choices-grid' : ''} ${currentQuestion.type === 'fractions' ? 'fractions-choices-grid' : ''}`}>
                 {currentQuestion.choices.map((choice, idx) => {
                   let btnStateClass = '';
                   if (isAnswerRevealed) {
