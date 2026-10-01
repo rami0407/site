@@ -285,6 +285,28 @@ export const CHAMPIONSHIP_AWARDS = [
     minScore: 450,
     condition: 'إحراز 450 نقطة وحل المسائل الحياتية المتقدمة',
     description: 'الرتبة العليا في حل المشكلات الاقتصادية والتطبيقية'
+  },
+  {
+    id: 'badge_pemdas_master',
+    type: 'badge',
+    tier: 'pemdas',
+    name: 'وسام خبير ترتيب العمليات 🧠',
+    icon: '🧠',
+    color: '#8b5cf6',
+    minScore: 200,
+    condition: 'إحراز 200 نقطة في تحدي أسبقية العمليات والرمز المفقود',
+    description: 'إتقان قواعد ترتيب العمليات الحسابية والأقواس باقتدار'
+  },
+  {
+    id: 'cup_pemdas_genius',
+    type: 'cup',
+    tier: 'master_pemdas',
+    name: 'كأس بروفيسور الحساب والترتيب 🏆⚡',
+    icon: '🏆',
+    color: '#a855f7',
+    minScore: 450,
+    condition: 'إحراز 450 نقطة وحل معادلات الأقواس والعمليات المعقدة',
+    description: 'قمة الذكاء الرياضي في فك ألغاز العمليات الحسابية المتشابكة'
   }
 ];
 
@@ -2010,6 +2032,447 @@ export const generateRealWorldMathQuestion = (level = 'progressive', questionInd
       `${targetAvg + 5}`
     ]),
     explanation: `المعدل الحسابي = مجموع العلامات ÷ عدد الجولات = (${s1} + ${s2} + ${s3} + ${s4}) ÷ 4 = ${targetAvg * 4} ÷ 4 = ${targetAvg}.`,
+    points: 35
+  };
+};
+
+/**
+ * تحدي ترتيب العمليات الحسابية والرمز المفقود (PEMDAS & Operations Mastery)
+ */
+export const PEMDAS_CHALLENGE = {
+  id: 'pemdas_challenge',
+  title: 'تحدي ترتيب العمليات الحسابية والرمز المفقود 🧠⚡',
+  subtitle: 'أتقن أسبقية العمليات والأقواس، واكتشف الإشارة أو العدد المفقود بمهارة فائقة!',
+  icon: '🧠',
+  color: '#8b5cf6',
+  badge: 'ترتيب العمليات والأقواس 🎯',
+  levels: [
+    { id: 'progressive', name: 'المسار التدريجي الذكي 🚀', desc: 'تدرج فوري من الرمز المفقود (1-2) إلى أسبقية الضرب (3-4) ثم معادلات الأقواس (5-6)', icon: '📈' },
+    { id: 'easy', name: 'رواد العمليات والرمز المفقود (سهل 🟢)', desc: 'الصفوف 1-2: إشارة الجمع والطرح الناقصة، العدد المفقود ▢، وميزان المعادلات', icon: '➕' },
+    { id: 'medium', name: 'فرسان الترتيب والأقواس (متوسط 🟡)', desc: 'الصفوف 3-4: أسبقية الضرب والقسمة قبل الجمع، والأقواس ( ) والرمز المفقود', icon: '✖️' },
+    { id: 'hard', name: 'عباقرة المعادلات المركبة (صعب 🔴)', desc: 'الصفوف 5-6: أين تضع القوسين؟ وسلاسل العمليات المتشابكة مع كسور وأعداد عشرية', icon: '💡' }
+  ]
+};
+
+export const generatePemdasQuestion = (level = 'progressive', questionIndex = 0) => {
+  let effectiveLevel = level;
+  if (level === 'progressive') {
+    if (questionIndex < 3) effectiveLevel = 'easy';
+    else if (questionIndex < 7) effectiveLevel = 'medium';
+    else effectiveLevel = 'hard';
+  }
+
+  // ==========================================
+  // EASY (الصفوف 1 و 2)
+  // ==========================================
+  if (effectiveLevel === 'easy') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // الرمز الحسابي المفقود (+ أو -)
+      const isAdd = Math.random() < 0.5;
+      const a = rand(6, 18);
+      const b = rand(2, 9);
+      const result = isAdd ? a + b : a - b;
+
+      return {
+        type: 'pemdas',
+        level: 'easy',
+        category: 'الرمز الحسابي المفقود ◯',
+        prompt: 'ما هي الإشارة الحسابية الصحيحة التي يجب وضعها مكان الدائرة ◯؟',
+        equation: `${a} ◯ ${b} = ${result}`,
+        questionText: `${a} ◯ ${b} = ${result}`,
+        correctAnswer: isAdd ? '+' : '-',
+        choices: ['+', '-', '×', '÷'],
+        explanation: isAdd 
+          ? `نضع إشارة الجمع (+): لأن ${a} + ${b} = ${result}.`
+          : `نضع إشارة الطرح (-): لأن ${a} - ${b} = ${result}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 2) {
+      // العدد المفقود في الجمع
+      const a = rand(5, 25);
+      const missing = rand(4, 15);
+      const sum = a + missing;
+      const hideFirst = Math.random() < 0.5;
+      const eq = hideFirst ? `▢ + ${a} = ${sum}` : `${a} + ▢ = ${sum}`;
+
+      return {
+        type: 'pemdas',
+        level: 'easy',
+        category: 'العدد المفقود في الجمع ▢',
+        prompt: 'ما هو العدد الذي يجب وضعه في المربع ▢ لتكون المعادلة صحيحة؟',
+        equation: eq,
+        questionText: eq,
+        correctAnswer: `${missing}`,
+        choices: shuffle([
+          `${missing}`,
+          `${missing + rand(1, 3)}`,
+          `${Math.max(1, missing - rand(1, 3))}`,
+          `${sum}`
+        ]),
+        explanation: `لحساب المجهول نطرح: ${sum} - ${a} = ${missing}. إذن ▢ = ${missing}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 3) {
+      // العدد المفقود في الطرح
+      const result = rand(5, 16);
+      const sub = rand(3, 12);
+      const total = result + sub;
+      const eq = `${total} - ▢ = ${result}`;
+
+      return {
+        type: 'pemdas',
+        level: 'easy',
+        category: 'العدد المفقود في الطرح ▢',
+        prompt: 'ما هو العدد الناقص داخل المربع ▢؟',
+        equation: eq,
+        questionText: eq,
+        correctAnswer: `${sub}`,
+        choices: shuffle([
+          `${sub}`,
+          `${sub + 2}`,
+          `${Math.max(1, sub - 2)}`,
+          `${total}`
+        ]),
+        explanation: `لحساب المطروح: ${total} - ${result} = ${sub}. إذن ▢ = ${sub}.`,
+        points: 15
+      };
+    }
+
+    if (caseType === 4) {
+      // ميزان المعادلات (كفتا التوازن)
+      const a = rand(4, 12);
+      const b = rand(3, 9);
+      const sum = a + b;
+      const c = rand(2, sum - 2);
+      const missing = sum - c;
+
+      return {
+        type: 'pemdas',
+        level: 'easy',
+        category: 'ميزان المعادلات وتساوي الطرفين ⚖️',
+        prompt: 'وازن بين الطرفين: ما هو العدد الذي يجعل الكفتين متساويتين؟',
+        equation: `${a} + ${b} = ${c} + ▢`,
+        questionText: `${a} + ${b} = ${c} + ▢`,
+        correctAnswer: `${missing}`,
+        choices: shuffle([
+          `${missing}`,
+          `${missing + 1}`,
+          `${Math.max(1, missing - 2)}`,
+          `${sum}`
+        ]),
+        explanation: `الطرف الأيمن = ${a} + ${b} = ${sum}. ولكي يصبح الطرف الأيسر مساوياً لـ ${sum}: نحتاج ${c} + ${missing} = ${sum}. إذن ▢ = ${missing}.`,
+        points: 20
+      };
+    }
+
+    // caseType === 5: سلسلة جمع وطرح من 3 أعداد
+    const a = rand(10, 25);
+    const b = rand(3, 8);
+    const c = rand(2, 6);
+    const result = a - b + c;
+
+    return {
+      type: 'pemdas',
+      level: 'easy',
+      category: 'سلسلة العمليات المتتالية',
+      prompt: 'احسب بالترتيب من اليسار إلى اليمين:',
+      equation: `${a} - ${b} + ${c} = ؟`,
+      questionText: `${a} - ${b} + ${c} = ؟`,
+      correctAnswer: `${result}`,
+      choices: shuffle([
+        `${result}`,
+        `${a - (b + c)}`,
+        `${result + 2}`,
+        `${result - 3}`
+      ]),
+      explanation: `في الجمع والطرح فقط نحسب بالترتيب من اليسار لليمين: أولاً ${a} - ${b} = ${a - b}، ثم نضيف ${c}: ${a - b} + ${c} = ${result}.`,
+      points: 15
+    };
+  }
+
+  // ==========================================
+  // MEDIUM (الصفوف 3 و 4)
+  // ==========================================
+  if (effectiveLevel === 'medium') {
+    const caseType = rand(1, 5);
+
+    if (caseType === 1) {
+      // أسبقية الضرب على الجمع: a + b × c
+      const a = rand(3, 10);
+      const b = rand(2, 7);
+      const c = rand(2, 6);
+      const mult = b * c;
+      const correct = a + mult;
+      const wrong = (a + b) * c;
+
+      return {
+        type: 'pemdas',
+        level: 'medium',
+        category: 'أسبقية الضرب على الجمع (PEMDAS)',
+        prompt: 'طبق قواعد ترتيب العمليات الحسابية واحسب الناتج:',
+        equation: `${a} + ${b} × ${c} = ؟`,
+        questionText: `${a} + ${b} × ${c} = ؟`,
+        correctAnswer: `${correct}`,
+        choices: shuffle([
+          `${correct}`,
+          `${wrong}`,
+          `${correct + 2}`,
+          `${mult}`
+        ]),
+        explanation: `قاعدة ذهبية: الضرب يسبق الجمع دائماً! أولاً نحسب الضرب: ${b} × ${c} = ${mult}، ثم نجمع: ${a} + ${mult} = ${correct}. (احذر من جمع ${a} + ${b} أولاً!).`,
+        points: 25
+      };
+    }
+
+    if (caseType === 2) {
+      // أسبقية القسمة على الطرح: a - b ÷ c
+      const divisor = rand(2, 6);
+      const quotient = rand(2, 7);
+      const b = divisor * quotient;
+      const a = b + rand(5, 20);
+      const correct = a - quotient;
+      const wrong = Math.floor((a - b) / divisor);
+
+      return {
+        type: 'pemdas',
+        level: 'medium',
+        category: 'أسبقية القسمة على الطرح',
+        prompt: 'احسب بدقة وفق ترتيب العمليات:',
+        equation: `${a} - ${b} ÷ ${divisor} = ؟`,
+        questionText: `${a} - ${b} ÷ ${divisor} = ؟`,
+        correctAnswer: `${correct}`,
+        choices: shuffle([
+          `${correct}`,
+          `${wrong}`,
+          `${correct + 3}`,
+          `${a - b}`
+        ]),
+        explanation: `القسمة تسبق الطرح! أولاً: ${b} ÷ ${divisor} = ${quotient}. ثانياً: ${a} - ${quotient} = ${correct}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 3) {
+      // قوة الأقواس: الأقواس تكسر الترتيب المعتاد!
+      const a = rand(2, 8);
+      const b = rand(2, 7);
+      const c = rand(2, 6);
+      const parenSum = a + b;
+      const correct = parenSum * c;
+      const wrong = a + (b * c);
+
+      return {
+        type: 'pemdas',
+        level: 'medium',
+        category: 'أسبقية ما بين الأقواس ( )',
+        prompt: 'ما ناتج المعادلة بوجود الأقواس؟',
+        equation: `(${a} + ${b}) × ${c} = ؟`,
+        questionText: `(${a} + ${b}) × ${c} = ؟`,
+        correctAnswer: `${correct}`,
+        choices: shuffle([
+          `${correct}`,
+          `${wrong}`,
+          `${correct + c}`,
+          `${parenSum + c}`
+        ]),
+        explanation: `الأقواس تأتي في المرتبة الأولى دائماً! ما بين القوسين أولاً: (${a} + ${b} = ${parenSum})، ثم نضرب في ${c}: ${parenSum} × ${c} = ${correct}.`,
+        points: 25
+      };
+    }
+
+    if (caseType === 4) {
+      // اكتشف الرمز المفقود بين الضرب والجمع
+      const a = rand(3, 8);
+      const b = rand(2, 6);
+      const c = rand(4, 12);
+      const res = a * b + c;
+
+      return {
+        type: 'pemdas',
+        level: 'medium',
+        category: 'اكتشاف رمز العملية المفقود',
+        prompt: 'ما هي الإشارة المناسبة مكان ◯ لتتساوى المعادلة؟',
+        equation: `${a} ◯ ${b} + ${c} = ${res}`,
+        questionText: `${a} ◯ ${b} + ${c} = ${res}`,
+        correctAnswer: '×',
+        choices: ['×', '+', '-', '÷'],
+        explanation: `الإشارة الصحيحة هي (×): لأن الضرب أولاً: ${a} × ${b} = ${a * b}، ثم + ${c} = ${res}.`,
+        points: 25
+      };
+    }
+
+    // caseType === 5: ضرب وقسمة متتاليان (من اليسار إلى اليمين)
+    const mult = rand(2, 6);
+    const div = mult;
+    const a = rand(3, 9);
+    const b = mult;
+    const c = div;
+    const correct = (a * b) / c;
+
+    return {
+      type: 'pemdas',
+      level: 'medium',
+      category: 'تساوي رتبة الضرب والقسمة',
+      prompt: 'عند تساوي الرتبة (ضرب وقسمة معاً)، من أين نبدأ؟',
+      equation: `${a} × ${b} ÷ ${c} = ؟`,
+      questionText: `${a} × ${b} ÷ ${c} = ؟`,
+      correctAnswer: `${correct}`,
+      choices: shuffle([
+        `${correct}`,
+        `${correct * 2}`,
+        `${a + b}`,
+        `${Math.max(1, correct - 1)}`
+      ]),
+      explanation: `الضرب والقسمة لهما نفس الرتبة والأسبقية، لذا نحل بالترتيب من اليسار لليمين: ${a} × ${b} = ${a * b}، ثم ${a * b} ÷ ${c} = ${correct}.`,
+      points: 25
+    };
+  }
+
+  // ==========================================
+  // HARD (الصفوف 5 و 6)
+  // ==========================================
+  const caseType = rand(1, 5);
+
+  if (caseType === 1) {
+    // لغز: أين يجب وضع القوسين؟
+    const a = rand(2, 6);
+    const b = rand(3, 7);
+    const c = rand(2, 5);
+    const target = (a + b) * c;
+
+    return {
+      type: 'pemdas',
+      level: 'hard',
+      category: 'لغز تحديد مكان الأقواس ( )',
+      prompt: 'أين يجب وضع القوسين في الطرف الأيسر لجعل المعادلة صحيحة؟',
+      equation: `${a} + ${b} × ${c} = ${target}`,
+      questionText: `أين نضع القوسين في: ${a} + ${b} × ${c} = ${target}؟`,
+      correctAnswer: `(${a} + ${b}) × ${c}`,
+      choices: shuffle([
+        `(${a} + ${b}) × ${c}`,
+        `${a} + (${b} × ${c})`,
+        `(${a} + ${b} × ${c})`,
+        `لا حاجة لأقواس`
+      ]),
+      explanation: `بدون أقواس: ${a} + (${b} × ${c}) = ${a + b * c} (لا يساوي ${target}). أما بوضع القوسين حول الجمع: (${a} + ${b}) × ${c} = ${a + b} × ${c} = ${target}!`,
+      points: 35
+    };
+  }
+
+  if (caseType === 2) {
+    // معادلة مركبة متعددة المراحل مع أقواس
+    const a = rand(2, 5);
+    const b = rand(4, 8);
+    const innerAdd = rand(2, 6);
+    const innerMult = a * b;
+    const parenVal = innerMult + innerAdd;
+    const divisor = [2, 3, 4, 5].find(d => parenVal % d === 0) || 1;
+    const divResult = parenVal / divisor;
+    const start = divResult + rand(10, 30);
+    const finalResult = start - divResult;
+
+    return {
+      type: 'pemdas',
+      level: 'hard',
+      category: 'العمليات المركبة والأقواس المتعددة',
+      prompt: 'احسب ناتج التعبير الحسابي المركب وفق الترتيب القياسي:',
+      equation: `${start} - (${a} × ${b} + ${innerAdd}) ÷ ${divisor} = ؟`,
+      questionText: `${start} - (${a} × ${b} + ${innerAdd}) ÷ ${divisor} = ؟`,
+      correctAnswer: `${finalResult}`,
+      choices: shuffle([
+        `${finalResult}`,
+        `${finalResult + divisor}`,
+        `${start - innerMult}`,
+        `${finalResult - 5}`
+      ]),
+      explanation: `الخطوات: 1) داخل القوسين نبدأ بالضرب: ${a} × ${b} = ${innerMult}. 2) نجمع داخل القوس: ${innerMult} + ${innerAdd} = ${parenVal}. 3) نقسم: ${parenVal} ÷ ${divisor} = ${divResult}. 4) وأخيراً نطرح: ${start} - ${divResult} = ${finalResult}.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 3) {
+    // لغز الرمزين المفقودين ◯ ... ◯
+    const a = rand(3, 7);
+    const b = rand(2, 5);
+    const c = rand(4, 15);
+    const res = a * b + c;
+
+    return {
+      type: 'pemdas',
+      level: 'hard',
+      category: 'لغز الإشارتين المفقودتين ◯ و ◯',
+      prompt: 'ما هما الإشارتان الحسابيتان اللتان تجعلان العبارة صحيحة بالترتيب؟',
+      equation: `${a} ◯ ${b} ◯ ${c} = ${res}`,
+      questionText: `${a} ◯ ${b} ◯ ${c} = ${res}`,
+      correctAnswer: '× ثم +',
+      choices: shuffle([
+        '× ثم +',
+        '+ ثم ×',
+        '- ثم ×',
+        '÷ ثم +'
+      ]),
+      explanation: `الإشارتان هما (× ثم +): لأن ${a} × ${b} + ${c} = ${a * b} + ${c} = ${res}. بينما لو كانت (+ ثم ×) لكان الناتج ${a} + ${b * c} = ${a + b * c}.`,
+      points: 35
+    };
+  }
+
+  if (caseType === 4) {
+    // ترتيب عمليات مع كسور أو أعداد عشرية
+    const dec = [0.5, 0.25, 0.2, 0.4][rand(0, 3)];
+    const multInt = [8, 12, 16, 20][rand(0, 3)];
+    const decProduct = dec * multInt;
+    const addInt = rand(5, 15);
+    const total = decProduct + addInt;
+
+    return {
+      type: 'pemdas',
+      level: 'hard',
+      category: 'ترتيب العمليات مع الأعداد العشرية',
+      prompt: 'احسب بدقة متناهية مراعياً قواعد الترتيب:',
+      equation: `${addInt} + ${dec} × ${multInt} = ؟`,
+      questionText: `${addInt} + ${dec} × ${multInt} = ؟`,
+      correctAnswer: `${total}`,
+      choices: shuffle([
+        `${total}`,
+        `${(addInt + dec) * multInt}`,
+        `${total + 2}`,
+        `${addInt + multInt}`
+      ]),
+      explanation: `الضرب يسبق الجمع: أولاً نضرب ${dec} × ${multInt} = ${decProduct}. ثانياً نجمع: ${addInt} + ${decProduct} = ${total}.`,
+      points: 35
+    };
+  }
+
+  // caseType === 5: قوسان متتاليان ( ) × ( )
+  const a = rand(5, 12);
+  const b = rand(2, 4);
+  const c = rand(6, 15);
+  const d = rand(2, 5);
+  const paren1 = a + b;
+  const paren2 = c - d;
+  const finalVal = paren1 * paren2;
+
+  return {
+    type: 'pemdas',
+    level: 'hard',
+    category: 'ضرب ناتجي قوسين: ( ) × ( )',
+    prompt: 'ما ناتج ضرب القوسين معاً؟',
+    equation: `(${a} + ${b}) × (${c} - ${d}) = ؟`,
+    questionText: `(${a} + ${b}) × (${c} - ${d}) = ؟`,
+    correctAnswer: `${finalVal}`,
+    choices: shuffle([
+      `${finalVal}`,
+      `${paren1 + paren2}`,
+      `${finalVal + 10}`,
+      `${a * c - b * d}`
+    ]),
+    explanation: `الأقواس أولاً: القوس الأول (${a} + ${b} = ${paren1}). القوس الثاني (${c} - ${d} = ${paren2}). وأخيراً نضرب الناتجين: ${paren1} × ${paren2} = ${finalVal}.`,
     points: 35
   };
 };

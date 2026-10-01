@@ -4,11 +4,13 @@ import {
   MULTIPLICATION_TOURNAMENT, 
   DETECTIVE_CHALLENGE,
   REAL_WORLD_CHALLENGE,
+  PEMDAS_CHALLENGE,
   CHAMPIONSHIP_AWARDS,
   generateMultiplicationQuestion,
   generateGradeCurriculumQuestion,
   generateMathDetectiveQuestion,
-  generateRealWorldMathQuestion
+  generateRealWorldMathQuestion,
+  generatePemdasQuestion
 } from '../data/mathCurriculumData';
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
@@ -59,6 +61,9 @@ export default function MathChampionshipArena() {
 
   // Real world math settings
   const [selectedStoryLevel, setSelectedStoryLevel] = useState('progressive');
+
+  // PEMDAS & Operations challenge settings
+  const [selectedPemdasLevel, setSelectedPemdasLevel] = useState('progressive');
 
   // In-Game state
   const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'game_over'
@@ -139,11 +144,14 @@ export default function MathChampionshipArena() {
     } else if (gameType === 'real_world') {
       const q = generateRealWorldMathQuestion(selectedStoryLevel, correctCount);
       setCurrentQuestion(q);
+    } else if (gameType === 'pemdas') {
+      const q = generatePemdasQuestion(selectedPemdasLevel, correctCount);
+      setCurrentQuestion(q);
     } else {
       const q = generateGradeCurriculumQuestion(selectedCurriculumGrade, selectedCurriculumTopic);
       setCurrentQuestion(q);
     }
-  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, correctCount]);
+  }, [selectedTable, selectedMultMode, selectedCurriculumGrade, selectedCurriculumTopic, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, correctCount]);
 
   // End game handler
   const finishGame = useCallback((reason = 'time_up') => {
@@ -175,6 +183,8 @@ export default function MathChampionshipArena() {
               ? `المحقق الرياضي (${selectedDetectiveLevel === 'progressive' ? 'متدرج ذكي' : selectedDetectiveLevel})`
               : activeView === 'play_story'
               ? `المسائل الحياتية (${selectedStoryLevel === 'progressive' ? 'متدرج ذكي' : selectedStoryLevel})`
+              : activeView === 'play_pemdas'
+              ? `ترتيب العمليات (${selectedPemdasLevel === 'progressive' ? 'متدرج ذكي' : selectedPemdasLevel})`
               : `منهاج (${selectedCurriculumGrade})`
           },
           ...(prev.history || []).slice(0, 9)
@@ -195,7 +205,7 @@ export default function MathChampionshipArena() {
         }).catch(() => {});
       } catch (e) {}
     }
-  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, wrongCount]);
+  }, [activeView, checkAwards, correctCount, gameScore, maxStreakThisGame, player.grade, player.section, player.studentName, selectedCurriculumGrade, selectedTable, selectedDetectiveLevel, selectedStoryLevel, selectedPemdasLevel, wrongCount]);
 
   // Timer tick effect
   useEffect(() => {
@@ -228,8 +238,8 @@ export default function MathChampionshipArena() {
     if (gameType === 'multiplication') {
       const m = MULTIPLICATION_TOURNAMENT.modes.find(x => x.id === selectedMultMode);
       duration = m ? m.duration : 60;
-    } else if (gameType === 'detective' || gameType === 'real_world') {
-      duration = 90; // 90 seconds for detective and real-world story problems
+    } else if (gameType === 'detective' || gameType === 'real_world' || gameType === 'pemdas') {
+      duration = 90; // 90 seconds for detective, real-world, and PEMDAS challenges
     } else {
       duration = 75; // 75 seconds for curriculum
     }
@@ -249,6 +259,8 @@ export default function MathChampionshipArena() {
         ? 'play_detective'
         : gameType === 'real_world'
         ? 'play_story'
+        : gameType === 'pemdas'
+        ? 'play_pemdas'
         : 'play_curriculum'
     );
 
@@ -291,7 +303,7 @@ export default function MathChampionshipArena() {
       checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
 
       // In fast speed mode, auto-advance
-      const delay = (activeView === 'play_detective' || activeView === 'play_story') ? 1200 : 650;
+      const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas') ? 1200 : 650;
       setTimeout(() => {
         loadNextQuestion(
           activeView === 'play_multiplication' 
@@ -300,6 +312,8 @@ export default function MathChampionshipArena() {
             ? 'detective'
             : activeView === 'play_story'
             ? 'real_world'
+            : activeView === 'play_pemdas'
+            ? 'pemdas'
             : 'curriculum'
         );
       }, delay);
@@ -519,6 +533,20 @@ export default function MathChampionshipArena() {
           </button>
           <button 
             type="button"
+            className={`math-nav-tab highlight-pemdas ${activeView === 'play_pemdas' ? 'active' : ''}`}
+            onClick={() => {
+              setGameState('idle');
+              setActiveView('hub');
+              setTimeout(() => {
+                const el = document.getElementById('pemdas-challenge-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }}
+          >
+            <i className="fas fa-brain"></i> ترتيب العمليات 🧠
+          </button>
+          <button 
+            type="button"
             className={`math-nav-tab ${activeView === 'leaderboard' ? 'active' : ''}`}
             onClick={() => { setActiveView('leaderboard'); fetchLeaderboard(); }}
           >
@@ -683,6 +711,50 @@ export default function MathChampionshipArena() {
                     onClick={() => startGame('real_world')}
                   >
                     🛍️ ابدأ مغامرة التحدي الحياتي الآن (100 ثانية)!
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* SPECIAL CHALLENGE 3: PEMDAS & MISSING OPERATOR (ترتيب العمليات والرمز المفقود) */}
+            <div className="math-pemdas-challenge-card" id="pemdas-challenge-section">
+              <div className="pemdas-card-badge">🧠 تحدي أسبقية العمليات والرمز المفقود</div>
+              <div className="pemdas-card-content">
+                <div className="pemdas-header-row">
+                  <div className="pemdas-avatar-icon">⚙️</div>
+                  <div className="pemdas-text">
+                    <h2>تحدي «ترتيب العمليات الحسابية والرمز المفقود»: لغز الترتيب والأقواس! 🧠⚡</h2>
+                    <p>أتقن القواعد الذهبية للحساب: الضرب والقسمة قبل الجمع والطرح، قوة الأقواس، واكتشف الإشارة والعدد المجهول في معادلات متدرجة الصعوبة!</p>
+                  </div>
+                </div>
+
+                {/* Levels Selector: Easy to Hard */}
+                <div className="pemdas-levels-section">
+                  <label className="picker-label">اختر مسار التحدي (متدرج من السهل إلى الصعب):</label>
+                  <div className="pemdas-levels-grid">
+                    {PEMDAS_CHALLENGE.levels.map(lvl => (
+                      <div 
+                        key={lvl.id}
+                        className={`pemdas-level-card ${selectedPemdasLevel === lvl.id ? 'active' : ''}`}
+                        onClick={() => setSelectedPemdasLevel(lvl.id)}
+                      >
+                        <div className="level-card-top">
+                          <span className="level-icon">{lvl.icon}</span>
+                          <h4>{lvl.name}</h4>
+                        </div>
+                        <p className="level-desc">{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pemdas-action-row">
+                  <button 
+                    type="button" 
+                    className="launch-pemdas-btn"
+                    onClick={() => startGame('pemdas')}
+                  >
+                    ⚡ انطلق في تحدي ترتيب العمليات الآن (90 ثانية)!
                   </button>
                 </div>
               </div>
@@ -863,9 +935,9 @@ export default function MathChampionshipArena() {
             )}
 
             {/* Question Card */}
-            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''}`}>
+            <div className={`question-arena-card ${currentQuestion.type === 'detective' ? 'detective-arena-card' : ''} ${currentQuestion.type === 'real_world' ? 'story-arena-card' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-arena-card' : ''}`}>
               <div className="question-top-tag">
-                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''}`}>
+                <span className={`category-tag ${currentQuestion.type === 'detective' ? 'detective-tag' : ''} ${currentQuestion.type === 'real_world' ? 'story-tag' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-tag' : ''}`}>
                   {currentQuestion.category}
                 </span>
                 {currentQuestion.level && (
@@ -881,6 +953,8 @@ export default function MathChampionshipArena() {
                       ? `${currentQuestion.prompt}. ${currentQuestion.caseScenario || ''}. ${currentQuestion.suspectEquation || ''}. ${currentQuestion.questionText}`
                       : currentQuestion.type === 'real_world'
                       ? `${currentQuestion.prompt}. ${currentQuestion.storyText || ''}. ${currentQuestion.questionText}`
+                      : currentQuestion.type === 'pemdas'
+                      ? `${currentQuestion.prompt}. ${currentQuestion.questionText}`
                       : `${currentQuestion.prompt} ${currentQuestion.questionText}`;
                     mathAudio.speakArabic(text);
                   }}
@@ -932,18 +1006,36 @@ export default function MathChampionshipArena() {
                 </div>
               )}
 
+              {/* PEMDAS SPECIAL EQUATION BOX */}
+              {currentQuestion.type === 'pemdas' && (
+                <div className="pemdas-case-box">
+                  <div className="pemdas-case-badge-row">
+                    <span className="pemdas-case-id-badge">🧠 لغز الترتيب والرمز #{correctCount + 1}</span>
+                    <span className="pemdas-case-level-tag">
+                      {currentQuestion.level === 'easy' ? '🟢 صفوف 1-2 (رمز وعدد مفقود)' : currentQuestion.level === 'medium' ? '🟡 صفوف 3-4 (أسبقية الضرب والقسمة)' : '🔴 صفوف 5-6 (أين القوسين ومعادلات مركبة)'}
+                    </span>
+                  </div>
+                  {currentQuestion.equation && (
+                    <div className="pemdas-highlight-equation">
+                      <span className="pemdas-sparkle">⚡</span>
+                      <code className="pemdas-code">{currentQuestion.equation}</code>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="question-prompt-text">
                 {currentQuestion.prompt}
               </div>
 
               <div className="question-main-display">
-                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : 'math-formula-text'}>
+                <span className={currentQuestion.type === 'detective' ? 'detective-verdict-prompt' : currentQuestion.type === 'real_world' ? 'story-verdict-prompt' : currentQuestion.type === 'pemdas' ? 'pemdas-verdict-prompt' : 'math-formula-text'}>
                   {currentQuestion.questionText}
                 </span>
               </div>
 
               {/* Choices Buttons */}
-              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''}`}>
+              <div className={`choices-grid ${currentQuestion.choices.length === 2 ? 'binary-choices' : ''} ${currentQuestion.type === 'detective' ? 'detective-choices-grid' : ''} ${currentQuestion.type === 'real_world' ? 'story-choices-grid' : ''} ${currentQuestion.type === 'pemdas' ? 'pemdas-choices-grid' : ''}`}>
                 {currentQuestion.choices.map((choice, idx) => {
                   let btnStateClass = '';
                   if (isAnswerRevealed) {
