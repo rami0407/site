@@ -14,6 +14,7 @@ import { sanitizeText } from '../utils/security';
 import { generateReadingSummaryAndMoral } from '../utils/aiService';
 import BookBuddyModal from './BookBuddyModal';
 import StoryStudioModal from './StoryStudioModal';
+import ArabicSkillsArena from './ArabicSkillsArena';
 
 // Default starter reading logs celebrating Musheirifa students
 const DEFAULT_READING_LOGS = [
@@ -95,8 +96,8 @@ const ReadersClubPage = () => {
     targetGoal: 10,
     baseCount: 0,
     challengeTitle: 'تحدي رحلة العشر كتب 📚🎒 لكل طالب في مشيرفة',
-    heroTitle: 'نادي القُرّاء • رحلة العشر كتب 📚✨',
-    heroSubtitle: 'اقرأ 10 كتب وقصص ممتعة، واجمع محطات رحلتك خطوة بخطوة لتنال وسام التميز القرائي الذهبي!',
+    heroTitle: 'بوابة اللغة العربية • رحلة الـ 10 كتب وأولمبياد المهارات 📖🌿',
+    heroSubtitle: 'اقرأ 10 كتب وقصص ممتعة، وتدرّب على مهارات لغتنا العربية الجميلة (النحو، الإملاء، فهم المقروء، والثروة اللغوية) وفق منهاج المرحلة الابتدائية!',
     featuredBookTitle: '',
     featuredBookAuthor: '',
     featuredBookWhy: ''
@@ -115,7 +116,7 @@ const ReadersClubPage = () => {
   const [showBookBuddyModal, setShowBookBuddyModal] = useState(false);
   const [activeBuddyBook, setActiveBuddyBook] = useState({ title: '', author: '' });
   const [showStoryStudioModal, setShowStoryStudioModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'books' | 'leaders' | 'featured'
+  const [activeTab, setActiveTab] = useState('arabic-skills'); // 'arabic-skills' | 'tree' | 'wall' | 'hall-of-fame'
 
   // Passport / Certificate Student Selector
   const [certStudentName, setCertStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
@@ -400,7 +401,7 @@ const ReadersClubPage = () => {
             </a>
 
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '0.35rem 1rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, color: '#fef3c7' }}>
-              <span>🏆 مبادرة أبطال القراءة • عام التميز 2026/2027</span>
+              <span>📖 بوابة اللغة العربية • أبطال القراءة وأولمبياد المهارات 🌿</span>
             </div>
           </div>
 
@@ -606,8 +607,9 @@ const ReadersClubPage = () => {
         {/* Navigation Tabs */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
           {[
-            { id: 'wall', label: 'حائط قراءات وتوصيات الأصدقاء 💬', icon: 'fa-comments' },
+            { id: 'arabic-skills', label: 'أولمبياد مهارات لغتي العربية 📖✨', icon: 'fa-graduation-cap' },
             { id: 'tree', label: 'شجرة القراءة التفاعلية 🌳', icon: 'fa-tree' },
+            { id: 'wall', label: 'حائط قراءات وتوصيات الأصدقاء 💬', icon: 'fa-comments' },
             { id: 'hall-of-fame', label: 'لوحة شرف فرسان القراءة 🏆', icon: 'fa-award' }
           ].map((tab) => (
             <button
@@ -634,6 +636,11 @@ const ReadersClubPage = () => {
             </button>
           ))}
         </div>
+
+        {/* ==================== TAB 0: ARABIC SKILLS OLYMPIAD ==================== */}
+        {activeTab === 'arabic-skills' && (
+          <ArabicSkillsArena />
+        )}
 
         {/* ==================== TAB 1: SOCIAL REVIEWS WALL ==================== */}
         {activeTab === 'wall' && (

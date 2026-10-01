@@ -1,0 +1,258 @@
+/* ArabicSkillsArena.css */
+.arabic-arena-container {
+  direction: rtl;
+  font-family: inherit;
+  color: #1e293b;
+}
+
+.arabic-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border: 1px solid #a7f3d0;
+  margin-bottom: 0.75rem;
+}
+
+.arabic-hero-card {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+  color: white;
+  border-radius: 28px;
+  padding: 2.2rem 2.5rem;
+  box-shadow: 0 20px 45px rgba(6, 78, 59, 0.25);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(167, 243, 208, 0.3);
+}
+
+.arabic-hero-pattern {
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(110, 231, 183, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.arabic-grades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.arabic-grade-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1rem 0.85rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+.arabic-grade-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.15);
+  border-color: #10b981;
+}
+
+.arabic-grade-card.active {
+  border-color: #047857;
+  background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+  box-shadow: 0 8px 25px rgba(4, 120, 87, 0.25);
+  transform: translateY(-4px);
+}
+
+.arabic-skills-tabs {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.arabic-skill-chip {
+  background: white;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  padding: 0.6rem 1.2rem;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+}
+
+.arabic-skill-chip:hover {
+  border-color: #059669;
+  color: #059669;
+}
+
+.arabic-skill-chip.active {
+  background: #047857;
+  border-color: #047857;
+  color: white;
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.3);
+}
+
+.arabic-quiz-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 26px;
+  padding: 2.2rem;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+
+.arabic-question-context {
+  background: #f8fafc;
+  border-right: 4px solid #059669;
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.9;
+  color: #0f172a;
+  margin: 1.2rem 0;
+}
+
+.arabic-choices-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.arabic-choice-btn {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.1rem 1.3rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1e293b;
+  text-align: right;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.arabic-choice-btn:hover:not(:disabled) {
+  border-color: #059669;
+  background: #f0fdf4;
+  transform: translateY(-2px);
+}
+
+.arabic-choice-btn.correct {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+}
+
+.arabic-choice-btn.wrong {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.arabic-choice-btn:disabled {
+  cursor: default;
+}
+
+.arabic-explanation-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1.5px solid #6ee7b7;
+  border-radius: 18px;
+  padding: 1.2rem 1.5rem;
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.arabic-stats-ribbon {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.arabic-awards-row {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.25rem;
+  scrollbar-width: thin;
+}
+
+.arabic-award-item {
+  min-width: 140px;
+  background: white;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 0.85rem;
+  text-align: center;
+  opacity: 0.5;
+  filter: grayscale(0.8);
+  transition: all 0.3s ease;
+}
+
+.arabic-award-item.unlocked {
+  border: 2px solid #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+  opacity: 1;
+  filter: none;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+  transform: scale(1.03);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .arabic-hero-card {
+    padding: 1.5rem;
+    border-radius: 20px;
+  }
+  .arabic-choices-grid {
+    grid-template-columns: 1fr;
+  }
+  .arabic-grades-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .arabic-grades-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .arabic-quiz-card {
+    padding: 1.25rem;
+  }
+  .arabic-question-context {
+    font-size: 1.1rem;
+    padding: 1rem;
+  }
+}

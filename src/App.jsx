@@ -343,7 +343,7 @@ function App() {
   const isGuardLogView = currentHash.includes('guard') || currentHash.includes('appointments-log') || currentHash.includes('visitors') || currentHash.includes('gate');
   const isAppointmentsView = currentHash.includes('appointments') && !isGuardLogView;
   const isGratitudeSkyView = currentHash.includes('gratitude-sky') || currentHash.includes('stars-sky') || currentHash.includes('emtnan-sky') || currentHash.includes('stars');
-  const isReadersClubView = currentHash.includes('readers-club') || currentHash.includes('readers') || currentHash.includes('reading-club');
+  const isReadersClubView = currentHash.includes('readers-club') || currentHash.includes('readers') || currentHash.includes('reading-club') || currentHash.includes('arabic');
   const isAstronomyView = currentHash.includes('astronomy');
   const isFamilyChallengeView = currentHash.includes('family-challenge') || currentHash.includes('family');
   const isChallengeView = currentHash.includes('challenge') && !isFamilyChallengeView;

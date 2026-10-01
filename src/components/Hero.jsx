@@ -256,8 +256,8 @@ const Hero = () => {
                 cursor: 'pointer'
               }}
             >
-              <i className="fas fa-book-reader" style={{ fontSize: '1.2rem', color: '#a7f3d0' }}></i>
-              📚 رحلة الـ 10 كتب وشجرة التميز 🌿
+              <i className="fas fa-book-open" style={{ fontSize: '1.2rem', color: '#a7f3d0' }}></i>
+              📖 اللغة العربية (رحلة الـ 10 كتب والمهارات) 🌿
             </button>
 
             <button onClick={() => window.location.hash = '#/stem'} className="btn" style={{
