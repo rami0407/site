@@ -321,6 +321,23 @@ const ImportantLinks = () => {
             });
           }
 
+          // 8. Math Championship Arena (أولمبياد وبطولة الرياضيات المدرسية)
+          const hasMathChampionship = list.some(l => 
+            (l.title && (l.title.includes('رياضيات') || l.title.includes('أولمبياد') || l.title.includes('حساب'))) || 
+            (l.url && (l.url.includes('math-championship') || l.url.includes('math-arena') || l.url.includes('math')))
+          );
+          if (!hasMathChampionship) {
+            list.splice(2, 0, {
+              id: 'school-math-championship-default',
+              title: 'أولمبياد وبطولة الرياضيات (الصفوف 1 - 6)',
+              icon: 'fa-trophy',
+              url: '#/math-championship',
+              desc: 'بطولة الحساب التفاعلية وجدول الضرب الشامل لجميع الصفوف: تنافس سرعة، كؤوس ذهبية، ولوحة شرف وأوسمة وفق المنهاج الوزاري.',
+              badge: 'كؤوس وبطولة 🏆',
+              highlight: true
+            });
+          }
+
           setLinks(list);
         }
       } catch (error) {
@@ -348,7 +365,8 @@ const ImportantLinks = () => {
             const isTasbih = link.url?.includes('tasbih') || link.badge?.includes('الذكر') || link.title?.includes('مسبحة');
             const isMonawaat = link.url?.includes('monawaat') || link.badge?.includes('منوعات') || link.title?.includes('منوعات');
             const isMafatih = link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.badge?.includes('مفتاح') || link.title?.includes('مفاتيح') || link.title?.includes('مفتاح') || link.title?.includes('מפתי"ח') || link.title?.includes('מפת"ח');
-            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih;
+            const isMath = link.url?.includes('math-championship') || link.badge?.includes('بطولة') || link.badge?.includes('كؤوس') || link.title?.includes('أولمبياد') || link.title?.includes('الرياضيات');
+            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath;
 
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             let iconGradient = undefined;
@@ -359,6 +377,8 @@ const ImportantLinks = () => {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
             } else if (isExcellence) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)';
+            } else if (isMath) {
+              iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #ca8a04 100%)';
             } else if (isTasbih) {
               iconGradient = 'linear-gradient(135deg, #059669 0%, #064e3b 100%)';
             } else if (isMonawaat) {
@@ -472,6 +492,12 @@ const ImportantLinks = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
+                  if (link.url?.includes('math-championship')) {
+                    e.preventDefault();
+                    window.location.hash = '#/math-championship';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
                   if (isInternal) {
                     e.preventDefault();
                     const hashTarget = link.url.startsWith('/#') ? link.url.substring(1) : link.url;
@@ -479,7 +505,7 @@ const ImportantLinks = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`link-card ${isKiosk ? 'kiosk-highlight-card' : ''} ${isAi ? 'ai-highlight-card' : ''}`}
+                className={`link-card ${isKiosk ? 'kiosk-highlight-card' : ''} ${isMath ? 'math-highlight-card' : ''} ${isAi ? 'ai-highlight-card' : ''}`}
                 key={link.id || idx}
                 style={isKiosk ? {
                   borderRight: '4px solid #f59e0b',
@@ -492,6 +518,12 @@ const ImportantLinks = () => {
                   position: 'relative',
                   overflow: 'hidden',
                   boxShadow: '0 4px 16px rgba(245, 158, 11, 0.18)'
+                } : isMath ? {
+                  borderRight: '4px solid #f59e0b',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.22)'
                 } : isTasbih ? {
                   borderRight: '4px solid #059669',
                   background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
@@ -522,7 +554,7 @@ const ImportantLinks = () => {
                   style={iconGradient ? {
                     background: iconGradient,
                     color: isKiosk ? '#000' : '#ffffff',
-                    boxShadow: isKiosk ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isExcellence ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isTasbih ? '0 4px 12px rgba(5, 150, 105, 0.35)' : isMonawaat ? '0 4px 12px rgba(236, 72, 153, 0.35)' : isMafatih ? '0 4px 12px rgba(37, 99, 235, 0.35)' : isAi ? '0 4px 12px rgba(139, 92, 246, 0.35)' : undefined
+                    boxShadow: isKiosk ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isExcellence ? '0 4px 12px rgba(245, 158, 11, 0.35)' : isMath ? '0 4px 12px rgba(245, 158, 11, 0.38)' : isTasbih ? '0 4px 12px rgba(5, 150, 105, 0.35)' : isMonawaat ? '0 4px 12px rgba(236, 72, 153, 0.35)' : isMafatih ? '0 4px 12px rgba(37, 99, 235, 0.35)' : isAi ? '0 4px 12px rgba(139, 92, 246, 0.35)' : undefined
                   } : undefined}
                 >
                   <i className={`fas ${link.icon || 'fa-link'}`}></i>
@@ -596,6 +628,23 @@ const ImportantLinks = () => {
                         lineHeight: 1.4
                       }}>
                         <span>🌟</span> عام التميز
+                      </span>
+                    )}
+                    {isMath && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        color: '#0f172a',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(245,158,11,0.3)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>🏆</span> بطولة وكؤوس
                       </span>
                     )}
                     {isTasbih && (

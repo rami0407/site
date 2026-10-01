@@ -828,6 +828,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSyncMathToImportantLinks = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'links'));
+      let exists = false;
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.url?.includes('math-championship') || data.title?.includes('أولمبياد') || data.title?.includes('الرياضيات')) {
+          exists = true;
+        }
+      });
+      if (exists) {
+        alert('ℹ️ زر أولمبياد وبطولة الرياضيات مضاف ومفعل بالفعل ضمن قائمة الروابط الخارجية بالموقع!');
+        return;
+      }
+      await addDoc(collection(db, 'links'), {
+        title: 'أولمبياد وبطولة الرياضيات (الصفوف 1 - 6)',
+        icon: 'fa-trophy',
+        url: '#/math-championship',
+        desc: 'بطولة الحساب التفاعلية وجدول الضرب الشامل لجميع الصفوف: تنافس سرعة، كؤوس ذهبية، ولوحة شرف وأوسمة وفق المنهاج الوزاري.',
+        badge: 'كؤوس وبطولة 🏆',
+        createdAt: new Date().toISOString()
+      });
+      loadDashboardData();
+      alert('🎉 تم بنجاح تثبيت وإضافة "أولمبياد وبطولة الرياضيات" إلى الروابط الخارجية في الصفحة الرئيسية!');
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
+    }
+  };
+
   const loadStemTeacherRequests = async () => {
     let list = [];
     try {
@@ -7649,7 +7679,29 @@ const AdminDashboard = () => {
               {/* TAB 6: IMPORTANT LINKS MANAGER */}
               {activeTab === 'links' && (
                 <div>
-                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '2rem' }}>إدارة الروابط الهامة والوصول السريع</h2>
+                  <h2 style={{ fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '1.25rem' }}>إدارة الروابط الهامة والوصول السريع</h2>
+
+                  {/* Quick Preset Buttons for Instant Install */}
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleSyncMathToImportantLinks}
+                      className="btn"
+                      style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#fff', fontWeight: 800, padding: '0.65rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(245,158,11,0.25)' }}
+                      title="تثبيت أولمبياد وبطولة الرياضيات مباشرة كبطاقة في الروابط الخارجية"
+                    >
+                      <i className="fas fa-trophy"></i> 🏆 تثبيت أولمبياد الرياضيات في الروابط الخارجية
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSyncKioskToImportantLinks}
+                      className="btn"
+                      style={{ background: '#3b82f6', color: '#fff', fontWeight: 800, padding: '0.65rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer' }}
+                      title="تثبيت شاشة العرض المدرسية كبطاقة في الروابط الخارجية"
+                    >
+                      <i className="fas fa-tv"></i> 📺 تثبيت شاشة العرض (Kiosk)
+                    </button>
+                  </div>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
                     
