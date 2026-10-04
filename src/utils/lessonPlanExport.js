@@ -39,7 +39,7 @@ export const exportLessonPlanToWord = ({
   const mContent = stations.m || (isHebrew ? 'תחנת משיכה וסקרנות...' : 'محطة المدخل المحفّز...');
   const fContent = stations.f || (isHebrew ? 'תחנת פיתוח הבנה...' : 'محطة فهم وبناء المعنى...');
   const tContent = stations.t || (isHebrew ? 'תחנת תובנה והעמקה...' : 'محطة التفكير والتبصّر وأسئلة التفكير العليا...');
-  const yContent = stations.y || (isHebrew ? 'תחנת יצירה ויישום...' : 'محطة الإنجاز والتطبيق والتمايز...');
+  const yContent = stations.a || stations.y || (isHebrew ? 'תחנת יצירה ויישום...' : 'محطة الإنجاز والتطبيق والتمايز...');
   const hContent = stations.h || (isHebrew ? 'תחנת חתימה וצידה לדרך...' : 'محطة الحصاد والزوّادة ونقل الأثر...');
 
   const wordHTML = `
@@ -446,7 +446,7 @@ export const exportLessonPlanToPdf = ({
   const mContent = stations.m || (isHebrew ? 'תחנת משיכה וסקרנות...' : 'محطة المدخل المحفّز...');
   const fContent = stations.f || (isHebrew ? 'תחנת פיתוח הבנה...' : 'محطة فهم وبناء المعنى...');
   const tContent = stations.t || (isHebrew ? 'תחנת תובנה והעמקה...' : 'محطة التفكير والتبصّر وأسئلة التفكير العليا...');
-  const yContent = stations.y || (isHebrew ? 'תחנת יצירה ויישום...' : 'محطة الإنجاز والتطبيق والتمايز...');
+  const yContent = stations.a || stations.y || (isHebrew ? 'תחנת יצירה ויישום...' : 'محطة الإنجاز والتطبيق والتمايز...');
   const hContent = stations.h || (isHebrew ? 'תחנת חתימה וצידה לדרך...' : 'محطة الحصاد والزوّادة ونقل الأثر...');
 
   const html = `
@@ -630,7 +630,7 @@ export const exportLessonPlanToPdf = ({
     .station-head.m { background: #d97706; }
     .station-head.f { background: #0891b2; }
     .station-head.t { background: #7c3aed; }
-    .station-head.y { background: #059669; }
+    .station-head.y, .station-head.a { background: #059669; }
     .station-head.h { background: #db2777; }
 
     .station-body {
