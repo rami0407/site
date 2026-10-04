@@ -1677,6 +1677,242 @@ ${isSEL ? `
   };
 };
 
+/**
+ * 15.B Miftaah Teacher Companion AI Planner:
+ * Generates an end-to-end 5-station lesson specifically structured for the Miftaah Teacher Companion
+ * (كواليس المعلم وشاشة الطلاب للبروجكتور)، powered by Google Gemini & Groq AI.
+ */
+export const generateMiftaahCompanionLessonAI = async ({
+  title = '',
+  subject = '',
+  grade = '',
+  duration = 45,
+  objective = '',
+  notes = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+
+  const safeTitle = title.trim() || 'مهارة دراسية مركزية';
+  const safeSubject = subject.trim() || 'عام';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+  const safeObjective = objective.trim() || `إتقان وتطبيق المفاهيم الأساسية لدرس (${safeTitle}) وفحص الأدلة ونقل الأثر`;
+
+  const prompt = `أنت الخبير البيداغوجي الذكي لنظام «مِفتاح المعلّم» بمدرسة مشيرفة الابتدائية.
+المطلوب: توليد خطة درس متكاملة ومحكمة لمحطات مِفتاح الخمس [ م ، ف ، ت ، ا ، ح ] لدعم المعلم في كواليس الحصة وعرض شاشة الطلاب.
+
+معطيات الدرس:
+- عنوان وموضوع الدرس: "${safeTitle}"
+- المادة الدراسية: "${safeSubject}"
+- الصف: "${safeGrade}"
+- المدة الإجمالية: ${duration} دقيقة
+- الهدف المركزي: "${safeObjective}"
+${notes ? `- ملاحظات المعلم: "${notes}"` : ''}
+
+قواعد بيداغوجية ملزمة للمحطات الخمس:
+١. [ م ] مشوّق ومحفّز (٥ دقائق): سؤال استكشاف أو مشهد محير يثير الفضول، سؤال الطالب: «لماذا نتعلم هذا وما الذي يثير فضولي؟»، وتهيئة وجدانية ومعرفية.
+٢. [ ف ] فهم وبناء المعنى (١٠ دقائق): نمذجة صريحة أو استقصاء موجه، سؤال الطالب: «كيف أفهم الفكرة؟»، توضيح المفاهيم الأساسية والأمثلة.
+٣. [ ت ] تطبيق وتدريب (١٥ دقائق): مهمة تطبيق واضحة ومحددة، سؤال الطالب: «كيف أستخدم ما تعلمت؟»، سقالة دعم، مهمة تعميق للمتقدمين، وتدخل نمذجة (٤ دقائق) عند الصعوبة.
+٤. [ ا ] أدلّة الفهم (٨ دقائق): بطاقة تحقق فردي مستقلة دون مساعدة، سؤال الطالب: «كيف أُظهر ما فهمت؟»، محك صريح للحكم على بلوغ معيار النجاح.
+٥. [ ح ] حصاد ونقل الأثر (٧ دقائق): سؤال الطالب: «ماذا آخذ معي وأين أستخدمه؟»، تلخيص المفهوم، وربط التعلم بالحياة اليومية خارج المدرسة.
+
+أخرج النتيجة بصيغة JSON حصراً بهذا المخطط الدقيق بدون أي مقدمات أو علامات markdown خارج الـ JSON:
+{
+  "title": "${safeTitle}",
+  "subject": "${safeSubject}",
+  "grade": "${safeGrade}",
+  "duration": ${duration},
+  "objective": "${safeObjective}",
+  "successCriteria": "معيار النجاح الصريح والمحدد للدرس",
+  "prerequisites": "المعرفة السابقة المفترضة",
+  "resources": "الموارد المقترحة ومساحة العمل",
+  "participationBarriers": "حواجز المشاركة العامة المتوقعة ودعمها دون أسماء",
+  "stations": {
+    "m": {
+      "durationMinutes": 5,
+      "studentDisplayPrompt": "نص السؤال أو المهمة الصريحة التي ستظهر على شاشة الطلاب بالبروجكتور في محطة مشوق ومحفز",
+      "teacherNotes": "إجراءات وملاحظات المعلم السرية لإدارة الحوار الصفي واستدعاء المعرفة السابقة",
+      "scaffolds": "سقالة دعم ومساندة",
+      "extension": "سؤال أو تحدي تعميق للمبادرين"
+    },
+    "f": {
+      "durationMinutes": 10,
+      "studentDisplayPrompt": "نص شاشة الطلاب لمحطة فهم وبناء المعنى (المفاهيم والأمثلة الأساسية المعروضة)",
+      "teacherNotes": "إجراءات نمذجة المعلم وشرح المفهوم وفحص الفهم السريع",
+      "scaffolds": "مخطط أو تلميح بصري مساند",
+      "extension": "سؤال تفكير عليا للمتقدمين"
+    },
+    "t": {
+      "durationMinutes": 15,
+      "studentDisplayPrompt": "نص شاشة الطلاب لمحطة تطبيق وتدريب (المهمة التطبيقية المحددة والتعليمات)",
+      "teacherNotes": "ملاحظات المعلم في متابعة التطبيق وتفعيل مجموعة الدعم الفوري",
+      "scaffolds": "بطاقة جمل مساعدة أو تلميح حل",
+      "extension": "مهمة تعميق وتحدٍّ إضافية لمن ينهي مبكراً",
+      "modeledInterventionScenario": {
+        "difficultyName": "صعوبة شائعة في تطبيق المفهوم",
+        "targetScope": "مجموعة صغيرة",
+        "timeDuration": "٤ دقائق",
+        "steps": [
+          { "min": "الدقيقة الأولى", "desc": "نمذجة الحل بصوت مسموع وخطوات واضحة." },
+          { "min": "الدقيقة الثانية", "desc": "تطبيق موجه بمساعدة سؤال داعم." },
+          { "min": "الدقيقة الثالثة", "desc": "محاولة فردية مستقلة دون مساعدة." },
+          { "min": "الدقيقة الرابعة", "desc": "تحقق فوري من الهدف." }
+        ],
+        "restOfClassTask": "مهمة تعميق ومناقشة لبقية الصف.",
+        "verificationCheck": "محك تحقق فوري يكشف زوال الصعوبة."
+      }
+    },
+    "a": {
+      "durationMinutes": 8,
+      "studentDisplayPrompt": "نص شاشة الطلاب لمحطة أدلة الفهم (سؤال بطاقة التحقق الفردي المستقلة)",
+      "teacherNotes": "إجراءات المعلم في جمع الأدلة وتطبيق جدول القرار (تحقق / جزئياً / لم يظهر)",
+      "scaffolds": "تذكير بالمعيار دون إعطاء الإجابة",
+      "extension": "تحدي تحليلي متقدم"
+    },
+    "h": {
+      "durationMinutes": 7,
+      "studentDisplayPrompt": "نص شاشة الطلاب لمحطة حصاد ونقل الأثر (سؤال الحصاد ونقل الأثر الحياتي)",
+      "teacherNotes": "إدارة التلخيص الختامي وتوثيق الملاحظات لنقطة انطلاق الحصة القادمة",
+      "scaffolds": "بداية جملة للتأمل الحصادي",
+      "extension": "مهمة استكشاف وتطبيق منزلي في بيئة الأسرة"
+    }
+  }
+}`;
+
+  // 1. Try Groq AI (Llama 3.3 70B Versatile)
+  if (groqKey) {
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.5,
+            response_format: { type: 'json_object' }
+          })
+        }, 12000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = JSON.parse(content);
+            if (parsed.stations && parsed.stations.m && parsed.stations.t) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq companion lesson planning (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Google Gemini
+  if (geminiKey) {
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.5,
+                maxOutputTokens: 3800,
+                responseMimeType: 'application/json'
+              }
+            })
+          }, 12000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed.stations && parsed.stations.m && parsed.stations.t) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini companion lesson planning (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 3. Fallback Engine
+  return {
+    title: safeTitle,
+    subject: safeSubject,
+    grade: safeGrade,
+    duration: duration,
+    objective: safeObjective,
+    successCriteria: `تطبيق وإتقان مهارات (${safeTitle}) وتفسيرها بالدليل ومشاركتها في بطاقة التحقق`,
+    prerequisites: `معرفة وخبرة سابقة بالمفاهيم الأساسية المرتبطة بـ (${safeTitle})`,
+    resources: 'شاشة عرض، دفاتر الطلاب، بطاقات عمل داعمة',
+    participationBarriers: 'تفاوت في وتيرة الإنجاز، تردد في التعليل، حاجة لنماذج بصرية مساندة',
+    stations: {
+      m: {
+        durationMinutes: 5,
+        studentDisplayPrompt: `سؤال الاستكشاف والفضول حول (${safeTitle}):\nتأمل المشهد المعروض جيداً: ما الذي يثير فضولك؟ ولماذا نحتاج لمعرفة هذه الفكرة واستخدامها في حياتنا اليومية؟`,
+        teacherNotes: `طرح موقف حياتي أو صورة استكشافية محفزة لموضوع (${safeTitle}). جمع انطباعات وتساؤلات الطلاب دون تصويب مسبق، ثم توضيح هدف الحصة ومعيار النجاح.`,
+        scaffolds: 'إتاحة دقيقة تفكير فردي تليها مشاركة ثنائية سريعة قبل الحوار الصفي العام.',
+        extension: 'تحدي للمبادرين: صياغة تساؤل إضافي يربط الفكرة بملاحظة أخرى.'
+      },
+      f: {
+        durationMinutes: 10,
+        studentDisplayPrompt: `بناء المعنى والمفهوم المركزي لـ (${safeTitle}):\nلاحظ العلاقات والخصائص الأساسية المعروضة:\nكيف نفسر حدوث ذلك بالاعتماد على الدليل والملاحظة الدقيقة؟`,
+        teacherNotes: `شرح تفاعلي موجّه يربط الملاحظة بالنمذجة المباشرة. فحص الفهم السريع: سؤال تحقق قصير يكشف وضوح المفهوم قبل بدء التطبيق.`,
+        scaffolds: 'استخدام مخطط مرئي منظم أو بطاقة مقارنة بين نموذجين لتثبيت الفرق.',
+        extension: `سؤال تفكير متقدم: ما هو الاستثناء المحتمل لهذه القاعدة في سياق ${safeTitle}؟`
+      },
+      t: {
+        durationMinutes: 15,
+        studentDisplayPrompt: `المهمة التطبيقية:\nطبّق ما تعلمته حول (${safeTitle}) على المسائل/الحالات المعطاة.\nبرّر إجابتك واذكر الخاصية أو الدليل الذي استندت إليه في حلك.`,
+        teacherNotes: `متابعة تطبيق الطلاب الفردي والثنائي. التركيز على التبرير والدليل وليس مجرد الإجابة النهائية. تفعيل التدخل عند رصد صعوبة.`,
+        scaffolds: 'بطاقة جمل مساعدة تبدأ بـ: "أختار ... لأن الخاصية / القاعدة تنص على ...".',
+        extension: `مهمة تعميق وتحدٍّ لمن أنهى مبكراً: ابتكار مسألة أو تطبيق جديد يختبر الفكرة في سياق مغاير.`,
+        modeledInterventionScenario: {
+          difficultyName: 'صعوبة شائعة في تطبيق المفهوم',
+          targetScope: 'مجموعة صغيرة',
+          timeDuration: '٤ دقائق',
+          steps: [
+            { min: 'الدقيقة الأولى', desc: 'نمذجة الحل بصوت مسموع وخطوات واضحة.' },
+            { min: 'الدقيقة الثانية', desc: 'تطبيق موجه بمساعدة سؤال داعم.' },
+            { min: 'الدقيقة الثالثة', desc: 'محاولة فردية مستقلة دون مساعدة.' },
+            { min: 'الدقيقة الرابعة', desc: 'تحقق فوري من الهدف.' }
+          ],
+          restOfClassTask: 'مهمة تعميق ومناقشة لبقية الصف.',
+          verificationCheck: 'محك تحقق فوري يكشف زوال الصعوبة.'
+        }
+      },
+      a: {
+        durationMinutes: 8,
+        studentDisplayPrompt: `بطاقة أدلة الفهم الفردية:\nأجب عن السؤال الجديد بشكل مستقل ودون الاستعانة بزميل:\nطبّق المفهوم وبرّر قرارك بخطوات علمية واضحة في بطاقتك.`,
+        teacherNotes: `جمع استجابات الطلاب الفردية لفحص مدى تحقق معيار النجاح لدى كل طالب بدقة وتوثيق النتائج.`,
+        scaffolds: 'تذكير بالمعيار والخطوات الأساسية دون إعطاء الإجابة المباشرة.',
+        extension: `تحدي تحليلي متقدم يربط الفهم بموقف تركيبي غير مألوف.`
+      },
+      h: {
+        durationMinutes: 7,
+        studentDisplayPrompt: `الحصاد ونقل الأثر:\n١. الحصاد: ما الفكرة أو المهارة الجوهرية التي تخرج بها اليوم من درس (${safeTitle})؟\n٢. نقل الأثر: أين وكيف يمكنك استخدام ما تعلمته اليوم خارج جدران المدرسة؟`,
+        teacherNotes: `إدارة تلخيص ختامي وسماع استجابات نوعية، مع رصد ما يحتاج إلى متابعة للحصة القادمة.`,
+        scaffolds: 'بدايات جمل مساعدة: "أهم ما تعلمته اليوم هو..." / "سأستخدم ما تعلمته في...".',
+        extension: 'مهمة ملاحظة وتطبيق منزلي تربط المفهوم ببيئة البيت والمجتمع.'
+      }
+    }
+  };
+};
+
 export const generateScientificGenieAI = async (question, chatHistory = [], studentName = 'مستكشفنا البطل') => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
 
