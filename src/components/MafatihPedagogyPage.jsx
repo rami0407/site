@@ -4,6 +4,7 @@ import genieImg from '../assets/genie.png';
 import { generateMafatihLessonPlanAI, generateAiResponse, parseUploadedLessonPlanAI } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
 import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
+import MafatihTeacherCompanion from './MafatihTeacherCompanion';
 import './MafatihPedagogyPage.css';
 
 export const MIFTAAH_PRINCIPLES = [
@@ -1351,6 +1352,38 @@ ${p.stations?.h || ''}
 
           {/* Top Quick Actions */}
           <div className="mafatih-hero-actions">
+            {/* New Teacher Companion Quick Action Button */}
+            <button
+              type="button"
+              className="action-btn companion-hero-btn"
+              onClick={() => {
+                setActiveTab('teacher-companion');
+                setTimeout(() => {
+                  const el = document.querySelector('.mafatih-tab-nav');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.4)',
+                fontWeight: 900,
+                fontSize: '1.05rem',
+                padding: '0.75rem 1.8rem',
+                borderRadius: '12px',
+                boxShadow: '0 6px 20px rgba(217, 119, 6, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="دخول منصة مِفتاح المعلّم: كواليس المعلم وشاشة الطلاب"
+            >
+              <i className="fas fa-chalkboard-teacher"></i>
+              <span>مِفتاح المعلّم 🗝️ (كواليس وشاشة الحصة)</span>
+              <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>جديد ✨</span>
+            </button>
             <a 
               href="https://chatgpt.com/?surface=work&prompt=%D7%91%D7%A0%D7%94+%D7%90%D7%99%D7%AA%D7%99+%D7%9E%D7%A2%D7%A8%D7%9A+%D7%A9%D7%99%D7%A2%D7%95%D7%A8+%D7%9C%D7%A4%D7%99+%D7%9E%D7%95%D7%93%D7%9C+%D7%9E%D7%A4%D7%AA%D7%99%D7%B4%D7%97+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A9%D7%90%D7%9C%D7%95%D7%AA+%D7%9E%D7%9B%D7%95%D7%95%D7%A0%D7%95%D7%AA."
               target="_blank"
@@ -1508,6 +1541,30 @@ ${p.stations?.h || ''}
       {/* 2. NAVIGATION SUB-TABS */}
       <nav className="mafatih-tab-nav">
         <div className="container mafatih-tabs-wrapper">
+          {/* TEACHER COMPANION PRIMARY TAB */}
+          <button 
+            type="button"
+            className={`tab-btn companion-nav-tab ${activeTab === 'teacher-companion' ? 'active' : ''}`}
+            onClick={() => setActiveTab('teacher-companion')}
+            style={{
+              background: activeTab === 'teacher-companion' ? 'linear-gradient(135deg, #1e3a8a, #2563eb)' : '#ffffff',
+              color: activeTab === 'teacher-companion' ? '#ffffff' : '#1e40af',
+              borderColor: '#2563eb',
+              fontWeight: '800',
+              boxShadow: activeTab === 'teacher-companion' ? '0 4px 14px rgba(37, 99, 235, 0.35)' : 'none'
+            }}
+          >
+            <i className="fas fa-chalkboard-teacher"></i>
+            <span>مِفتاح المعلّم 🗝️ (كواليس وشاشة الحصة)</span>
+            <span style={{
+              background: '#f59e0b',
+              color: '#ffffff',
+              padding: '2px 7px',
+              borderRadius: '12px',
+              fontSize: '0.72rem',
+              marginRight: '6px'
+            }}>جديد ✨</span>
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'stations' ? 'active' : ''}`}
             onClick={() => setActiveTab('stations')}
@@ -1595,6 +1652,18 @@ ${p.stations?.h || ''}
       {/* 3. MAIN CONTENT BODY */}
       <main className="container mafatih-main-content">
         
+        {/* ========================================================================= */}
+        {/* TAB 1: THE 5 STATIONS INTERACTIVE EXPLORER */}
+        {/* ========================================================================= */}
+        {/* ========================================================================= */}
+        {/* TAB 0: TEACHER COMPANION (مِفتاح المعلّم - قبل وأثناء وبعد الحصة)          */}
+        {/* ========================================================================= */}
+        {activeTab === 'teacher-companion' && (
+          <section className="teacher-companion-section fade-in">
+            <MafatihTeacherCompanion onSwitchTab={setActiveTab} />
+          </section>
+        )}
+
         {/* ========================================================================= */}
         {/* TAB 1: THE 5 STATIONS INTERACTIVE EXPLORER */}
         {/* ========================================================================= */}
