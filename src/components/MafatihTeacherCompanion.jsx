@@ -106,7 +106,135 @@ const INITIAL_LESSONS_STORE = [
 ];
 
 // =========================================================================
-// 2. ENERGIZER BREAK SPECIFICATION (سيناريو مفتاح التجديد المعتمد)
+// 2. LESSON FACTORY & LOCAL STORAGE PERSISTENCE HELPERS
+// =========================================================================
+const STORAGE_KEY_LESSONS = 'miftaah_teacher_lessons_saved_v2';
+const STORAGE_KEY_ACTIVE_ID = 'miftaah_teacher_active_lesson_id_v2';
+
+export const createBlankLesson = (presetTitle = '', presetSubject = '') => ({
+  id: 'lesson_' + Date.now(),
+  subject: presetSubject || 'لغة عربية',
+  title: presetTitle || 'مهارة التعبير الكتابي وبناء الفقرة',
+  grade: 'الصف الخامس',
+  duration: 45,
+  status: 'draft',
+  isExemplar: false,
+  tag: 'حصة جديدة',
+  objective: 'يكتب الطالب فقرة وصفية متكاملة مراعياً علامات الترقيم وسلامة الإملاء وتوظيف ألفاظ من مخزن الكلمات.',
+  successCriteria: 'كتابة فقرة من ٤-٥ جمل تشمل جملة رئيسية وتفاصيل داعمة وجملة ختامية مع توظيف ٣ تعابير على الأقل بصورة صحيحة.',
+  prerequisites: 'معرفة أقسام الكلام وبنية الجملة البسيطة وعلامات الترقيم الأساسية.',
+  resources: 'شاشة العرض، بطاقات مخزن الكلمات، دفاتر الطلاب.',
+  participationBarriers: 'تردد في التعبير الكتابي أو تفاوت في سرعة التدوين دون تصنيف تشخيصي مسبق.',
+  studentCount: 25,
+  spaceAndResources: 'شاشة صف واحدة، دفاتر الطلاب وبطاقات ورقية داعمة.',
+  displayMode: 'single_screen',
+  stations: {
+    m: {
+      id: 'm',
+      letter: 'م',
+      name: 'مشوّق ومحفّز',
+      durationMinutes: 5,
+      studentPhrase: 'أتساءل وأستعد',
+      studentQuestion: 'ما الذي يثير فضولي؟ ولماذا نتعلم هذا؟',
+      studentDisplayPrompt: 'تأمل المشهد المعروض:\nلو أردت أن تصف هذه اللوحة لصديق لم يرها قط، ما أول كلمة ستبدأ بها لتجعله يتخيلها كأنه يراها بعينيه؟',
+      teacherNotes: 'عرض صورة حية محفزة للوصف. إثارة الفضول حول قوة الكلمات ودقة الوصف، وربط ذلك بالهدف الصريح ومعيار النجاح.',
+      materialsApproved: true,
+      scaffolds: 'عرض ثلاث كلمات مفتاحية للاختيار منها لمن يجد صعوبة في الانطلاق.',
+      extension: 'تحدي سريع: التعبير عن المشهد بتشبيه بلاغي مبتكر.'
+    },
+    f: {
+      id: 'f',
+      letter: 'ف',
+      name: 'فهم وبناء المعنى',
+      durationMinutes: 10,
+      studentPhrase: 'أفهم وأربط',
+      studentQuestion: 'كيف أفهم الفكرة؟',
+      studentDisplayPrompt: 'بنية الفقرة المتكاملة تتكون من:\n١. الجملة المفتاحية (الفكرة العامة).\n٢. الجمل الداعمة (تفاصيل، أوصاف، حواس).\n٣. الجملة الختامية (إغلاق وتأكيد الأثر).\nمع مراعاة علامات الترقيم (، . ! ؟).',
+      teacherNotes: 'نمذجة بناء فقرة قصيرة أمام الطلاب مع تلوين الأجزاء الثلاثة: المفتاحية، الداعمة، والختامية.',
+      materialsApproved: true,
+      scaffolds: 'مخطط بصري منظم يمثل شطيرة الفقرة (خبز - حشوة - خبز).',
+      extension: 'اكتشاف الخطأ في ترتيب جمل فقرة نموذجية مشوشة.'
+    },
+    t: {
+      id: 't',
+      letter: 'ت',
+      name: 'تطبيق وتدريب',
+      durationMinutes: 15,
+      studentPhrase: 'أجرّب وأتدرّب',
+      studentQuestion: 'كيف أستخدم ما تعلمت؟',
+      studentDisplayPrompt: 'مهمة التدريب:\nاختر من مخزن الكلمات (البراق، ينساب، أريج، يرفرف، سحر الطبيعة).\nاكتب فقرة وصفية من ٤ أسطر توظف فيها علامات الترقيم وثلاث كلمات على الأقل من المخزن.',
+      teacherNotes: 'متابعة كتابة الطلاب. رصد الأخطاء الشائعة (غياب الترقيم، قصر الجمل) دون مقاطعة التدفق الفردي.',
+      materialsApproved: true,
+      scaffolds: 'بطاقة جمل مساعدة تبدأ بـ: "حين نظرت إلى... لفت انتباهي... ومن أروع ما رأيت...".',
+      extension: 'مهمة تعميق: توظيف استعارة أو تشبيه إضافي من الحواس الخمس في الفقرة.',
+      modeledInterventionScenario: {
+        difficultyName: 'غياب علامات الترقيم وترابط الجمل',
+        targetScope: 'مجموعة صغيرة',
+        timeDuration: '٤ دقائق',
+        steps: [
+          { min: 'الدقيقة الأولى', desc: 'نمذجة إضافة الفاصلة والنقطة بصوت مسموع مع توضيح وقفة النفس.' },
+          { min: 'الدقيقة الثانية', desc: 'يضع الطلاب علامات الترقيم لجملتين بمساعدة سؤال موجه.' },
+          { min: 'الدقيقة الثالثة', desc: 'يكتب كل طالب جملة ترابط جديدة مع علامتي ترقيم مناسبتين.' },
+          { min: 'الدقيقة الرابعة', desc: 'تحقق فوري من الدقة اللغوية.' }
+        ],
+        restOfClassTask: 'إكمال الفقرة وتلوين الكلمات المستعارة من مخزن الكلمات بالأخضر.',
+        verificationCheck: 'فقرة قصيرة مجردة يضع الطالب علامات ترقيمها الصحيحة بشكل مستقل.'
+      }
+    },
+    a: {
+      id: 'a',
+      letter: 'ا',
+      name: 'أدلّة الفهم',
+      durationMinutes: 8,
+      studentPhrase: 'أُظهر ما فهمت',
+      studentQuestion: 'كيف أُظهر ما فهمت؟',
+      studentDisplayPrompt: 'بطاقة التحقق الفردي:\nأمامك سطران يصفان يوماً ماطراً:\nأعد كتابتهما مع إضافة علامات الترقيم المفقودة، واستبدل كلمة مكررة بكلمة أكثر بلاغة وتأثيراً.',
+      teacherNotes: 'جمع بطاقات التحقق وفحص مدى تمكن الطلاب المستهدفين من تطبيق مهارة الترقيم واختيار الألفاظ بشكل مستقل.',
+      materialsApproved: true,
+      scaffolds: 'قائمة مصغرة بعلامات الترقيم للتذكير.',
+      extension: 'كتابة عنوان مبدع للنص يجذب القارئ.'
+    },
+    h: {
+      id: 'h',
+      letter: 'ح',
+      name: 'حصاد ونقل الأثر',
+      durationMinutes: 7,
+      studentPhrase: 'ألخّص وأنقل تعلّمي',
+      studentQuestion: 'ماذا آخذ معي؟ وأين أستخدمه؟',
+      studentDisplayPrompt: 'حصاد اليوم:\n١. ما السر الذي تعلمته اليوم ليجعل كتابتك أجمل وأوضح؟\n٢. كيف ستستخدم مهارة التعبير هذه في رسالة تكتبها لأحد أفراد عائلتك أو صديق؟',
+      teacherNotes: 'تأمل ختامي، الاستماع لمشاركتين متميزتين، وتوثيق الاحتياجات لمتابعة حصة التعبير القادمة.',
+      materialsApproved: true,
+      scaffolds: 'إكمال عبارة: "سأحرص دائماً في كتابتي القادمة على...".',
+      extension: 'كتابة تدوينة أو بطاقة شكر منزلية وتطبيق علامات الترقيم فيها.'
+    }
+  }
+});
+
+const loadInitialLessons = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_LESSONS);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading saved lessons:', e);
+  }
+  return INITIAL_LESSONS_STORE;
+};
+
+const persistLessons = (lessonsList) => {
+  try {
+    localStorage.setItem(STORAGE_KEY_LESSONS, JSON.stringify(lessonsList));
+  } catch (e) {
+    console.warn('Error saving lessons to localStorage:', e);
+  }
+};
+
+// =========================================================================
+// 3. ENERGIZER BREAK SPECIFICATION (سيناريو مفتاح التجديد المعتمد)
 // =========================================================================
 const ENERGIZER_PRESET = {
   id: 'follow_the_signal',
@@ -120,7 +248,7 @@ const ENERGIZER_PRESET = {
 };
 
 // =========================================================================
-// 3. STUDENT KEYS (مفاتيح الطلاب الخمسة في وضع شاشة الصف)
+// 4. STUDENT KEYS (مفاتيح الطلاب الخمسة في وضع شاشة الصف)
 // =========================================================================
 const STUDENT_REQUEST_KEYS = [
   { id: 'need_clarify', icon: '❓', label: 'أحتاج توضيح التعليمات', color: '#0284c7' },
@@ -141,12 +269,24 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
   // 'screen8_harvest'          ➔ الشاشة ٨: حصاد المعلم بعد الحصة
   const [currentScreen, setCurrentScreen] = useState('screen1_my_lessons');
 
-  // Lessons store
-  const [lessons, setLessons] = useState(INITIAL_LESSONS_STORE);
-  const [activeLessonId, setActiveLessonId] = useState('lesson_states_of_matter');
+  // Lessons store with localStorage persistence
+  const [lessons, setLessons] = useState(loadInitialLessons);
+  const [activeLessonId, setActiveLessonId] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+      if (savedId) return savedId;
+    } catch (e) {}
+    return 'lesson_states_of_matter';
+  });
 
   // Active Lesson Object
-  const currentLesson = lessons.find(l => l.id === activeLessonId) || lessons[0];
+  const currentLesson = lessons.find(l => l.id === activeLessonId) || lessons[0] || INITIAL_LESSONS_STORE[0];
+
+  // Active Form State for Screen 2 (أجهّز حصتي)
+  const [prepForm, setPrepForm] = useState(() => {
+    return JSON.parse(JSON.stringify(currentLesson));
+  });
+  const [prepActiveStationTab, setPrepActiveStationTab] = useState('all'); // 'all' | 'm' | 'f' | 't' | 'a' | 'h'
 
   // Active Station Key in Backstage: 'm' | 'f' | 't' | 'a' | 'h'
   const [activeStationKey, setActiveStationKey] = useState('m');
@@ -156,20 +296,35 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // Screen 4 & 6: Content Currently Displayed on Student Projector Screen
-  // Rule: Moving in backstage does NOT change student screen until teacher clicks "اعرض للطلاب"
-  const [publicDisplayState, setPublicDisplayState] = useState({
-    lessonTitle: currentLesson.title,
-    objective: currentLesson.objective,
-    stationKey: 'm',
-    stationLetter: 'م',
-    stationName: 'مشوّق ومحفّز',
-    studentPhrase: 'أتساءل وأستعد',
-    headline: currentLesson.stations.m.studentDisplayPrompt,
-    isDisplayHidden: false,
-    activeEnergizer: null,
-    activeHint: null,
-    timerSeconds: 5 * 60,
-    allowedStudentKeys: ['need_clarify', 'need_hint', 'need_example', 'ready_challenge', 'need_energizer']
+  const [publicDisplayState, setPublicDisplayState] = useState(() => {
+    try {
+      const savedPayload = localStorage.getItem('miftaah_student_screen_payload');
+      if (savedPayload) {
+        const parsed = JSON.parse(savedPayload);
+        if (parsed && parsed.headline) return parsed;
+      }
+    } catch (e) {}
+    const stM = currentLesson.stations?.m || {
+      letter: 'م',
+      name: 'مشوّق ومحفّز',
+      studentPhrase: 'أتساءل وأستعد',
+      studentDisplayPrompt: currentLesson.title,
+      durationMinutes: 5
+    };
+    return {
+      lessonTitle: currentLesson.title,
+      objective: currentLesson.objective,
+      stationKey: 'm',
+      stationLetter: stM.letter,
+      stationName: stM.name,
+      studentPhrase: stM.studentPhrase,
+      headline: stM.studentDisplayPrompt,
+      isDisplayHidden: false,
+      activeEnergizer: null,
+      activeHint: null,
+      timerSeconds: (stM.durationMinutes || 5) * 60,
+      allowedStudentKeys: ['need_clarify', 'need_hint', 'need_example', 'ready_challenge', 'need_energizer']
+    };
   });
 
   // Screen 5: Drawer state (درج التدخل الجانبي)
@@ -276,23 +431,273 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
     showToast('تم فتح شاشة الطلاب في نافذة مستقلة للبروجكتور! 🎦');
   };
 
-  // Explicit Teacher Action: "اعرض للطلاب"
+  // Explicit Teacher Action: "اعرض للطلاب على الشاشة الكبيرة"
   const handleTeacherApproveDisplay = () => {
-    const activeSt = currentLesson.stations[activeStationKey];
+    const activeSt = currentLesson.stations?.[activeStationKey] || currentLesson.stations?.m;
     if (!activeSt) return;
     const newState = {
       ...publicDisplayState,
+      lessonTitle: currentLesson.title,
+      objective: currentLesson.objective,
       stationKey: activeStationKey,
       stationLetter: activeSt.letter,
       stationName: activeSt.name,
       studentPhrase: activeSt.studentPhrase,
-      headline: activeSt.studentDisplayPrompt,
+      headline: activeSt.studentDisplayPrompt || currentLesson.title,
       isDisplayHidden: false,
       activeEnergizer: null,
-      activeHint: null
+      activeHint: null,
+      timerSeconds: (activeSt.durationMinutes || 5) * 60
     };
     broadcastToStudentScreen(newState);
-    showToast(`تم تحديث شاشة الطلاب: محطة [${activeSt.name}] معروضة الآن 📤`);
+    showToast(`تم عرض محطة [${activeSt.name}] من درس "${currentLesson.title}" على شاشة الطلاب 📤`);
+  };
+
+  // Prep Form Field Modifiers
+  const updatePrepField = (field, value) => {
+    setPrepForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updatePrepStationField = (stationKey, field, value) => {
+    setPrepForm(prev => ({
+      ...prev,
+      stations: {
+        ...prev.stations,
+        [stationKey]: {
+          ...prev.stations[stationKey],
+          [field]: value
+        }
+      }
+    }));
+  };
+
+  // Smart Auto-Draft Assistant for 5 Stations
+  const handleSmartAutoGenerateDraft = () => {
+    const title = prepForm.title?.trim() || 'الدرس المحدد';
+    const subj = prepForm.subject?.trim() || 'المادة الدراسية';
+    const obj = prepForm.objective?.trim() || `فهم وتطبيق مهارات درس (${title})`;
+
+    setPrepForm(prev => ({
+      ...prev,
+      stations: {
+        m: {
+          ...prev.stations.m,
+          studentDisplayPrompt: `سؤال الاستكشاف والفضول حول (${title}):\nتأمل المشهد المعروض جيداً: ما الذي يثير فضولك؟ ولماذا نحتاج لمعرفة هذه الفكرة واستخدامها في حياتنا اليومية؟`,
+          teacherNotes: `طرح موقف حياتي أو صورة استكشافية محفزة لموضوع (${title}). جمع انطباعات وتساؤلات الطلاب دون تصويب مسبق، ثم توضيح هدف الحصة ومعيار النجاح.`,
+          scaffolds: 'إتاحة دقيقة تفكير فردي تليها مشاركة ثنائية سريعة قبل الحوار الصفي العام.',
+          extension: 'تحدي للمبادرين: صياغة تساؤل إضافي يربط الفكرة بملاحظة أخرى.'
+        },
+        f: {
+          ...prev.stations.f,
+          studentDisplayPrompt: `بناء المعنى والمفهوم المركزي لـ (${title}):\nلاحظ العلاقات والخصائص الأساسية المعروضة:\nكيف نفسر حدوث ذلك بالاعتماد على الدليل والملاحظة الدقيقة؟`,
+          teacherNotes: `شرح تفاعلي موجّه يربط الملاحظة بالنمذجة المباشرة. فحص الفهم السريع: سؤال تحقق قصير يكشف وضوح المفهوم قبل بدء التطبيق.`,
+          scaffolds: 'استخدام مخطط مرئي منظم أو بطاقة مقارنة بين نموذجين لتثبيت الفرق.',
+          extension: `سؤال تفكير متقدم: ما هو الاستثناء المحتمل لهذه القاعدة في سياق ${title}؟`
+        },
+        t: {
+          ...prev.stations.t,
+          studentDisplayPrompt: `المهمة التطبيقية:\nطبّق ما تعلمته حول (${title}) على المسائل/الحالات المعطاة.\nبرّر إجابتك واذكر الخاصية أو الدليل الذي استندت إليه في حلك.`,
+          teacherNotes: `متابعة تطبيق الطلاب الفردي والثنائي. التركيز على التبرير والدليل وليس مجرد الإجابة النهائية. تفعيل التدخل عند رصد صعوبة.`,
+          scaffolds: 'بطاقة جمل مساعدة تبدأ بـ: "أختار ... لأن الخاصية / القاعدة تنص على ...".',
+          extension: `مهمة تعميق وتحدٍّ لمن أنهى مبكراً: ابتكار مسألة أو تطبيق جديد يختبر الفكرة في سياق مغاير.`
+        },
+        a: {
+          ...prev.stations.a,
+          studentDisplayPrompt: `بطاقة أدلة الفهم الفردية:\nأجب عن السؤال الجديد بشكل مستقل ودون الاستعانة بزميل:\nطبّق المفهوم وبرّر قرارك بخطوات علمية واضحة في بطاقتك.`,
+          teacherNotes: `جمع استجابات الطلاب الفردية لفحص مدى تحقق معيار النجاح لدى كل طالب بدقة وتوثيق النتائج.`,
+          scaffolds: 'تذكير بالمعيار والخطوات الأساسية دون إعطاء الإجابة المباشرة.',
+          extension: `تحدي تحليلي متقدم يربط الفهم بموقف تركيبي غير مألوف.`
+        },
+        h: {
+          ...prev.stations.h,
+          studentDisplayPrompt: `الحصاد ونقل الأثر:\n١. الحصاد: ما الفكرة أو المهارة الجوهرية التي تخرج بها اليوم من درس (${title})؟\n٢. نقل الأثر: أين وكيف يمكنك استخدام ما تعلمته اليوم خارج جدران المدرسة؟`,
+          teacherNotes: `إدارة تلخيص ختامي وسماع استجابات نوعية، مع رصد ما يحتاج إلى متابعة للحصة القادمة.`,
+          scaffolds: 'بدايات جمل مساعدة: "أهم ما تعلمته اليوم هو..." / "سأستخدم ما تعلمته في...".',
+          extension: 'مهمة ملاحظة وتطبيق منزلي تربط المفهوم ببيئة البيت والمجتمع.'
+        }
+      }
+    }));
+    showToast('تم توليد مسودة مقترحة متكاملة للمحطات الخمس بناءً على معطيات الدرس! 🪄✨');
+  };
+
+  // Save Lesson and Immediately Start in Backstage + Student Screen
+  const handleSaveAndStartLesson = () => {
+    const title = prepForm.title?.trim() || 'حصة دراسية جديدة';
+    const lessonToSave = {
+      ...prepForm,
+      id: prepForm.id || ('lesson_' + Date.now()),
+      title,
+      subject: prepForm.subject?.trim() || 'عام',
+      status: 'ready'
+    };
+
+    const updatedList = (() => {
+      const exists = lessons.some(l => l.id === lessonToSave.id);
+      if (exists) {
+        return lessons.map(l => l.id === lessonToSave.id ? lessonToSave : l);
+      }
+      return [lessonToSave, ...lessons];
+    })();
+
+    setLessons(updatedList);
+    persistLessons(updatedList);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, lessonToSave.id);
+    setActiveLessonId(lessonToSave.id);
+    setActiveStationKey('m');
+
+    const stM = lessonToSave.stations?.m || {
+      letter: 'م',
+      name: 'مشوّق ومحفّز',
+      studentPhrase: 'أتساءل وأستعد',
+      studentDisplayPrompt: lessonToSave.title,
+      durationMinutes: 5
+    };
+    const newDisplayState = {
+      ...publicDisplayState,
+      lessonTitle: lessonToSave.title,
+      objective: lessonToSave.objective,
+      stationKey: 'm',
+      stationLetter: stM.letter,
+      stationName: stM.name,
+      studentPhrase: stM.studentPhrase,
+      headline: stM.studentDisplayPrompt || lessonToSave.title,
+      isDisplayHidden: false,
+      activeEnergizer: null,
+      activeHint: null,
+      timerSeconds: (stM.durationMinutes || 5) * 60
+    };
+    broadcastToStudentScreen(newDisplayState);
+
+    setElapsedSeconds(0);
+    setIsTimerRunning(true);
+    setCurrentScreen('screen4_backstage');
+    showToast(`تم اعتماد درس "${lessonToSave.title}" بنجاح، وبدأت الحصة في الكواليس وعلى شاشة العرض! 🚀`);
+  };
+
+  // Save Lesson and Navigate to Materials Bag
+  const handleSaveAndGoToMaterials = () => {
+    const title = prepForm.title?.trim() || 'حصة دراسية جديدة';
+    const lessonToSave = {
+      ...prepForm,
+      id: prepForm.id || ('lesson_' + Date.now()),
+      title,
+      subject: prepForm.subject?.trim() || 'عام',
+      status: 'ready'
+    };
+
+    const updatedList = (() => {
+      const exists = lessons.some(l => l.id === lessonToSave.id);
+      if (exists) {
+        return lessons.map(l => l.id === lessonToSave.id ? lessonToSave : l);
+      }
+      return [lessonToSave, ...lessons];
+    })();
+
+    setLessons(updatedList);
+    persistLessons(updatedList);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, lessonToSave.id);
+    setActiveLessonId(lessonToSave.id);
+    setCurrentScreen('screen3_materials_bag');
+    showToast(`تم حفظ التحضير والانتقال إلى حقيبة المواد الخاصة بحصة "${lessonToSave.title}" 💼`);
+  };
+
+  // Save Lesson as Draft in Hub
+  const handleSaveDraft = () => {
+    const title = prepForm.title?.trim() || 'مسودة حصة جديدة';
+    const lessonToSave = {
+      ...prepForm,
+      id: prepForm.id || ('lesson_' + Date.now()),
+      title,
+      subject: prepForm.subject?.trim() || 'عام',
+      status: 'draft'
+    };
+
+    const updatedList = (() => {
+      const exists = lessons.some(l => l.id === lessonToSave.id);
+      if (exists) {
+        return lessons.map(l => l.id === lessonToSave.id ? lessonToSave : l);
+      }
+      return [lessonToSave, ...lessons];
+    })();
+
+    setLessons(updatedList);
+    persistLessons(updatedList);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, lessonToSave.id);
+    setActiveLessonId(lessonToSave.id);
+    setCurrentScreen('screen1_my_lessons');
+    showToast(`تم حفظ مسودة "${lessonToSave.title}" في سجل حصصي بنجاح 💾`);
+  };
+
+  // Hub Screen 1 Actions
+  const handleCreateNewLesson = () => {
+    const blank = createBlankLesson();
+    setPrepForm(blank);
+    setCurrentScreen('screen2_prep_context');
+  };
+
+  const handleEditLessonFromHub = (lsn) => {
+    setActiveLessonId(lsn.id);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, lsn.id);
+    setPrepForm(JSON.parse(JSON.stringify(lsn)));
+    setCurrentScreen('screen2_prep_context');
+  };
+
+  const handleReviewBagFromHub = (lsn) => {
+    setActiveLessonId(lsn.id);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, lsn.id);
+    setCurrentScreen('screen3_materials_bag');
+  };
+
+  const handleStartLessonFromHub = (lsn) => {
+    setActiveLessonId(lsn.id);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, lsn.id);
+    setActiveStationKey('m');
+    const stM = lsn.stations?.m || {
+      letter: 'م',
+      name: 'مشوّق ومحفّز',
+      studentPhrase: 'أتساءل وأستعد',
+      studentDisplayPrompt: lsn.title,
+      durationMinutes: 5
+    };
+    const newDisplayState = {
+      ...publicDisplayState,
+      lessonTitle: lsn.title,
+      objective: lsn.objective,
+      stationKey: 'm',
+      stationLetter: stM.letter,
+      stationName: stM.name,
+      studentPhrase: stM.studentPhrase,
+      headline: stM.studentDisplayPrompt || lsn.title,
+      isDisplayHidden: false,
+      activeEnergizer: null,
+      activeHint: null,
+      timerSeconds: (stM.durationMinutes || 5) * 60
+    };
+    broadcastToStudentScreen(newDisplayState);
+
+    setElapsedSeconds(0);
+    setIsTimerRunning(true);
+    setCurrentScreen('screen4_backstage');
+    showToast(`انطلقت حصة "${lsn.title}" في الكواليس وعلى شاشة العرض! 🚀`);
+  };
+
+  const handleDeleteLesson = (lessonId, e) => {
+    e.stopPropagation();
+    if (lessonId === 'lesson_states_of_matter') {
+      alert('لا يمكن حذف الحصة النموذجية التجريبية.');
+      return;
+    }
+    if (window.confirm('هل أنت متأكد من حذف هذه الحصة من سجلك؟')) {
+      const updated = lessons.filter(l => l.id !== lessonId);
+      setLessons(updated);
+      persistLessons(updated);
+      if (activeLessonId === lessonId) {
+        const nextId = updated[0]?.id || 'lesson_states_of_matter';
+        setActiveLessonId(nextId);
+        localStorage.setItem(STORAGE_KEY_ACTIVE_ID, nextId);
+      }
+      showToast('تم حذف الحصة من السجل بنجاح 🗑️');
+    }
   };
 
   // Toggle Display Visibility (أخفِ العرض مؤقتاً)
@@ -416,7 +821,7 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
             <button 
               type="button" 
               className="btn-primary-action"
-              onClick={() => setCurrentScreen('screen2_prep_context')}
+              onClick={handleCreateNewLesson}
             >
               <i className="fas fa-plus"></i> أجهّز حصة جديدة
             </button>
@@ -431,6 +836,16 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                     {lsn.status === 'ready' ? 'جاهزة للتنفيذ' : lsn.status === 'completed' ? 'نُفذت' : 'مسودة'}
                   </span>
                   {lsn.isExemplar && <span className="exemplar-tag-chip">⭐ {lsn.tag}</span>}
+                  {!lsn.isExemplar && (
+                    <button 
+                      type="button" 
+                      className="btn-delete-lesson-card" 
+                      title="حذف الحصة"
+                      onClick={(e) => handleDeleteLesson(lsn.id, e)}
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </button>
+                  )}
                 </div>
 
                 <h4 className="lesson-card-title">{lsn.title}</h4>
@@ -448,32 +863,21 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                   <button 
                     type="button" 
                     className="btn-action-start-lesson"
-                    onClick={() => {
-                      setActiveLessonId(lsn.id);
-                      setCurrentScreen('screen4_backstage');
-                      setIsTimerRunning(true);
-                      showToast(`انطلقت حصة "${lsn.title}" في الكواليس! 🚀`);
-                    }}
+                    onClick={() => handleStartLessonFromHub(lsn)}
                   >
                     <i className="fas fa-play"></i> أبدأ الحصة 🚀
                   </button>
                   <button 
                     type="button" 
                     className="btn-action-edit-prep"
-                    onClick={() => {
-                      setActiveLessonId(lsn.id);
-                      setCurrentScreen('screen2_prep_context');
-                    }}
+                    onClick={() => handleEditLessonFromHub(lsn)}
                   >
                     <i className="fas fa-edit"></i> أكمل التحضير
                   </button>
                   <button 
                     type="button" 
                     className="btn-action-review-bag"
-                    onClick={() => {
-                      setActiveLessonId(lsn.id);
-                      setCurrentScreen('screen3_materials_bag');
-                    }}
+                    onClick={() => handleReviewBagFromHub(lsn)}
                   >
                     <i className="fas fa-briefcase"></i> حقيبة المواد
                   </button>
@@ -491,27 +895,30 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
         <section className="screen-container screen2-prep animate-fade-in">
           <div className="screen-header-banner">
             <div>
-              <h3><i className="fas fa-clipboard-check"></i> أجهّز حصتي: سياق التعلم وظروف التنفيذ</h3>
-              <p>خطوات التحضير المحكمة وفق معايير نموذج مِفتاح للحصة الفاعلة.</p>
+              <h3><i className="fas fa-clipboard-check"></i> أجهّز حصتي: سياق التعلم والمحطات الخمس</h3>
+              <p>قم بتعبئة معطيات الدرس ومهمات المحطات الخمس، ثم اضغط «اعتماد وبدء الحصة» لتظهر فوراً على شاشتك وشاشة الطلاب.</p>
             </div>
             <div className="header-actions-group">
               <button 
                 type="button" 
-                className="btn-secondary-action"
-                onClick={() => setCurrentScreen('screen3_materials_bag')}
+                className="btn-save-draft"
+                onClick={handleSaveDraft}
               >
-                <i className="fas fa-arrow-left"></i> الانتقال لحقيبة المفاتيح
+                <i className="fas fa-save"></i> حفظ كمسودة
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary-action"
+                onClick={handleSaveAndGoToMaterials}
+              >
+                <i className="fas fa-briefcase"></i> حقيبة المفاتيح والمواد
               </button>
               <button 
                 type="button" 
                 className="btn-primary-action"
-                onClick={() => {
-                  setCurrentScreen('screen4_backstage');
-                  setIsTimerRunning(true);
-                  showToast('تم اعتماد التحضير وبدء الحصة! 🚀');
-                }}
+                onClick={handleSaveAndStartLesson}
               >
-                <i className="fas fa-play"></i> اعتماد وبدء الحصة الآن
+                <i className="fas fa-play"></i> اعتماد وبدء الحصة الآن 🚀
               </button>
             </div>
           </div>
@@ -527,31 +934,60 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                 <div className="fields-row-3">
                   <div className="form-item">
                     <label>المادة الدراسية:</label>
-                    <input type="text" defaultValue={currentLesson.subject} />
+                    <input 
+                      type="text" 
+                      value={prepForm.subject || ''} 
+                      onChange={(e) => updatePrepField('subject', e.target.value)} 
+                      placeholder="مثال: لغة عربية، علوم، رياضيات..."
+                    />
                   </div>
                   <div className="form-item">
                     <label>الصف والمستوى:</label>
-                    <input type="text" defaultValue={currentLesson.grade} />
+                    <input 
+                      type="text" 
+                      value={prepForm.grade || ''} 
+                      onChange={(e) => updatePrepField('grade', e.target.value)} 
+                      placeholder="مثال: الصف الخامس أ"
+                    />
                   </div>
                   <div className="form-item">
-                    <label>المدة بالدقائق:</label>
-                    <input type="number" defaultValue={currentLesson.duration} />
+                    <label>المدة الإجمالية (دقائق):</label>
+                    <input 
+                      type="number" 
+                      value={prepForm.duration || 45} 
+                      onChange={(e) => updatePrepField('duration', parseInt(e.target.value) || 45)} 
+                    />
                   </div>
                 </div>
 
-                <div className="form-item">
-                  <label>موضوع وعنوان الحصة:</label>
-                  <input type="text" defaultValue={currentLesson.title} />
+                <div className="form-item highlight-field">
+                  <label>موضوع وعنوان الحصة (يظهر على شاشة الطلاب):</label>
+                  <input 
+                    type="text" 
+                    value={prepForm.title || ''} 
+                    onChange={(e) => updatePrepField('title', e.target.value)} 
+                    placeholder="اكتب عنوان الحصة بوضوح (مثال: مهارة التعبير وبناء الفقرة)"
+                  />
                 </div>
 
                 <div className="form-item">
-                  <label>هدف التعلّم المركزي:</label>
-                  <textarea rows={2} defaultValue={currentLesson.objective} />
+                  <label>هدف التعلّم المركزي (المعروض دائماً أمام الطلاب):</label>
+                  <textarea 
+                    rows={2} 
+                    value={prepForm.objective || ''} 
+                    onChange={(e) => updatePrepField('objective', e.target.value)} 
+                    placeholder="مثال: يكتب الطالب فقرة وصفية متكاملة موظفاً علامات الترقيم ومخزن الكلمات..."
+                  />
                 </div>
 
                 <div className="form-item">
-                  <label>معيار النجاح (أداء صريح يكشف تحقق الهدف):</label>
-                  <textarea rows={2} defaultValue={currentLesson.successCriteria} />
+                  <label>معيار النجاح (أداء صريح ومحدد يكشف تحقق الهدف):</label>
+                  <textarea 
+                    rows={2} 
+                    value={prepForm.successCriteria || ''} 
+                    onChange={(e) => updatePrepField('successCriteria', e.target.value)} 
+                    placeholder="مثال: كتابة فقرة من ٤ أسطر تتضمن فكرة رئيسية وعلامات ترقيم و٣ كلمات من المخزن دون خطأ إملائي..."
+                  />
                 </div>
               </div>
             </div>
@@ -565,18 +1001,30 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
               <div className="step-card-fields">
                 <div className="form-item">
                   <label>المعرفة السابقة المفترضة:</label>
-                  <textarea rows={2} defaultValue={currentLesson.prerequisites} />
+                  <textarea 
+                    rows={2} 
+                    value={prepForm.prerequisites || ''} 
+                    onChange={(e) => updatePrepField('prerequisites', e.target.value)} 
+                    placeholder="ما الذي يفترض أن يعرفه الطالب من حصص سابقة؟"
+                  />
                 </div>
 
                 <div className="fields-row-2">
                   <div className="form-item">
                     <label>عدد الطلاب:</label>
-                    <input type="number" defaultValue={currentLesson.studentCount} />
+                    <input 
+                      type="number" 
+                      value={prepForm.studentCount || 25} 
+                      onChange={(e) => updatePrepField('studentCount', parseInt(e.target.value) || 25)} 
+                    />
                   </div>
                   <div className="form-item">
                     <label>تجهيز شاشات العرض:</label>
-                    <select defaultValue={currentLesson.displayMode}>
-                      <option value="single_screen">شاشة صف واحدة (الوضع الأساسي)</option>
+                    <select 
+                      value={prepForm.displayMode || 'single_screen'}
+                      onChange={(e) => updatePrepField('displayMode', e.target.value)}
+                    >
+                      <option value="single_screen">شاشة صف واحدة (البروجكتور الرئيسي)</option>
                       <option value="student_devices">أجهزة فردية للطلاب + شاشة صف</option>
                     </select>
                   </div>
@@ -584,42 +1032,176 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
 
                 <div className="form-item">
                   <label>الموارد والمساحة المتاحة:</label>
-                  <input type="text" defaultValue={currentLesson.resources} />
+                  <input 
+                    type="text" 
+                    value={prepForm.resources || ''} 
+                    onChange={(e) => updatePrepField('resources', e.target.value)} 
+                    placeholder="مثال: شاشة عرض، دفاتر الطلاب، بطاقات مخزن الكلمات المطبوعة..."
+                  />
                 </div>
 
                 <div className="form-item">
-                  <label>حواجز المشاركة الملحوظة (دون بيانات تعريفية):</label>
-                  <textarea rows={2} defaultValue={currentLesson.participationBarriers} />
+                  <label>حواجز المشاركة الملحوظة (عامة ودون بيانات تعريفية):</label>
+                  <textarea 
+                    rows={2} 
+                    value={prepForm.participationBarriers || ''} 
+                    onChange={(e) => updatePrepField('participationBarriers', e.target.value)} 
+                    placeholder="مثال: تفاوت في سرعة التدوين، تردد في صياغة الجمل، حاجة لتلميحات بصرية..."
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Step 3: Five Stations Plan Overview */}
-            <div className="prep-step-card">
-              <div className="step-card-head">
-                <span className="step-number-circle">٣</span>
-                <h4>خطة المحطات الخمس المترابطة</h4>
+            {/* Step 3: Five Stations Plan with Full Editing & Smart Auto-Draft */}
+            <div className="prep-step-card step3-stations-editor">
+              <div className="step-card-head stations-editor-head">
+                <div className="head-left-group">
+                  <span className="step-number-circle">٣</span>
+                  <div>
+                    <h4>خطة المحطات الخمس المترابطة (مِفتاح)</h4>
+                    <small>كل ما تدخله هنا في «نص شاشة الطلاب» سيظهر مباشرة على الشاشة الكبيرة عند ضغط زر العرض.</small>
+                  </div>
+                </div>
+
+                <button 
+                  type="button" 
+                  className="btn-smart-draft-trigger"
+                  onClick={handleSmartAutoGenerateDraft}
+                  title="توليد مسودة نموذجية للمحطات الخمس بناءً على عنوان وهدف الحصة"
+                >
+                  <i className="fas fa-wand-magic-sparkles"></i> توليد مسودة المحطات تلقائياً 🪄
+                </button>
               </div>
-              <div className="stations-accordion-list">
-                {Object.keys(currentLesson.stations).map((k) => {
-                  const st = currentLesson.stations[k];
+
+              {/* Station Filter Tabs */}
+              <div className="prep-stations-tabs-strip">
+                <button
+                  type="button"
+                  className={`prep-st-tab-btn ${prepActiveStationTab === 'all' ? 'active' : ''}`}
+                  onClick={() => setPrepActiveStationTab('all')}
+                >
+                  جميع المحطات (٥)
+                </button>
+                {['m', 'f', 't', 'a', 'h'].map((k) => {
+                  const st = prepForm.stations?.[k] || {};
                   return (
-                    <div key={k} className="station-prep-row">
-                      <div className="st-prep-header">
-                        <span className={`st-prep-badge letter-${k}`}>{st.letter}</span>
-                        <div>
-                          <strong>{st.name} ({st.durationMinutes} د)</strong>
-                          <small>«{st.studentPhrase}» — {st.studentQuestion}</small>
-                        </div>
-                      </div>
-                      <div className="st-prep-content-box">
-                        <div className="content-line"><strong>المهمة المعروضة:</strong> {st.studentDisplayPrompt}</div>
-                        <div className="content-line"><strong>إجراء المعلم:</strong> {st.teacherNotes}</div>
-                        <div className="content-line scaffold"><strong>سقالة الدعم:</strong> {st.scaffolds}</div>
-                      </div>
-                    </div>
+                    <button
+                      key={k}
+                      type="button"
+                      className={`prep-st-tab-btn letter-${k} ${prepActiveStationTab === k ? 'active' : ''}`}
+                      onClick={() => setPrepActiveStationTab(k)}
+                    >
+                      <span className="tab-letter-dot">{st.letter || k}</span>
+                      {st.name || k}
+                    </button>
                   );
                 })}
+              </div>
+
+              {/* Editable Stations List */}
+              <div className="editable-stations-list">
+                {['m', 'f', 't', 'a', 'h']
+                  .filter(k => prepActiveStationTab === 'all' || prepActiveStationTab === k)
+                  .map((k) => {
+                    const st = prepForm.stations?.[k] || {};
+                    return (
+                      <div key={k} className={`station-edit-card letter-${k}`}>
+                        <div className="st-edit-top-header">
+                          <div className="st-edit-meta">
+                            <span className={`st-edit-badge letter-${k}`}>{st.letter || k}</span>
+                            <div>
+                              <h5>محطة {st.name} — «{st.studentPhrase}»</h5>
+                              <span className="st-query-hint">{st.studentQuestion}</span>
+                            </div>
+                          </div>
+                          <div className="st-duration-input-box">
+                            <label>المدة:</label>
+                            <input 
+                              type="number" 
+                              value={st.durationMinutes || 5} 
+                              onChange={(e) => updatePrepStationField(k, 'durationMinutes', parseInt(e.target.value) || 5)} 
+                            />
+                            <span>د</span>
+                          </div>
+                        </div>
+
+                        <div className="st-edit-fields-grid">
+                          <div className="st-field-col main-prompt-col">
+                            <label className="label-bold label-student-screen">
+                              <i className="fas fa-desktop"></i> نص شاشة الطلاب (المهمة / السؤال المعروض على البروجكتور):
+                            </label>
+                            <textarea 
+                              rows={4}
+                              value={st.studentDisplayPrompt || ''}
+                              onChange={(e) => updatePrepStationField(k, 'studentDisplayPrompt', e.target.value)}
+                              placeholder="اكتب السؤال أو المهمة الصريحة التي سيقرؤها الطلاب على شاشة الصف..."
+                            />
+                          </div>
+
+                          <div className="st-field-col">
+                            <label className="label-bold label-teacher-notes">
+                              <i className="fas fa-user-secret"></i> إجراء وملاحظات المعلم (كواليس خاصة لا تظهر للطلاب):
+                            </label>
+                            <textarea 
+                              rows={3}
+                              value={st.teacherNotes || ''}
+                              onChange={(e) => updatePrepStationField(k, 'teacherNotes', e.target.value)}
+                              placeholder="إجراءاتك في إدارة الحوار، توجيه الطلاب، والتعامل مع الخطأ الشائع..."
+                            />
+                          </div>
+
+                          <div className="st-field-col">
+                            <label className="label-bold label-scaffold">
+                              <i className="fas fa-life-ring"></i> سقالة الدعم الجاهزة (تلميح / جمل مساعدة):
+                            </label>
+                            <textarea 
+                              rows={2}
+                              value={st.scaffolds || ''}
+                              onChange={(e) => updatePrepStationField(k, 'scaffolds', e.target.value)}
+                              placeholder="بداية جملة، مفتاح حل، أو تلميح يقدم لمن يتعثر..."
+                            />
+                          </div>
+
+                          <div className="st-field-col">
+                            <label className="label-bold label-challenge">
+                              <i className="fas fa-rocket"></i> مهمة التحدي والتعميق لمن ينهي مبكراً:
+                            </label>
+                            <textarea 
+                              rows={2}
+                              value={st.extension || ''}
+                              onChange={(e) => updatePrepStationField(k, 'extension', e.target.value)}
+                              placeholder="سؤال تفكير عليا أو مهمة تطبيق إضافية..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Bottom Save & Start Repeating Bar */}
+              <div className="prep-bottom-actions-bar">
+                <button 
+                  type="button" 
+                  className="btn-primary-action large"
+                  onClick={handleSaveAndStartLesson}
+                >
+                  <i className="fas fa-play"></i> اعتماد وبدء الحصة الآن على الشاشة الكبيرة 🚀
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-secondary-action"
+                  onClick={handleSaveAndGoToMaterials}
+                >
+                  <i className="fas fa-briefcase"></i> حفظ والانتقال لحقيبة المفاتيح
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-save-draft"
+                  onClick={handleSaveDraft}
+                >
+                  <i className="fas fa-save"></i> حفظ كمسودة في حصصي
+                </button>
               </div>
             </div>
           </div>
@@ -633,10 +1215,17 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
         <section className="screen-container screen3-materials-bag animate-fade-in">
           <div className="screen-header-banner">
             <div>
-              <h3><i className="fas fa-briefcase"></i> حقيبة المفاتيح والمواد المعتمدة</h3>
+              <h3><i className="fas fa-briefcase"></i> حقيبة المفاتيح والمواد المعتمدة: {currentLesson.title}</h3>
               <p>معاينة مواد الدعم والتدخل وتأكيد جاهزية الحصة قبل دخول الصف.</p>
             </div>
             <div className="header-actions-group">
+              <button 
+                type="button" 
+                className="btn-action-edit-prep"
+                onClick={() => handleEditLessonFromHub(currentLesson)}
+              >
+                <i className="fas fa-edit"></i> تعديل في خطة الحصة
+              </button>
               <button 
                 type="button" 
                 className="btn-print-materials"
@@ -647,13 +1236,9 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
               <button 
                 type="button" 
                 className="btn-primary-action"
-                onClick={() => {
-                  setCurrentScreen('screen4_backstage');
-                  setIsTimerRunning(true);
-                  showToast('تم تأكيد الحقيبة وبدء الحصة! 🚀');
-                }}
+                onClick={() => handleStartLessonFromHub(currentLesson)}
               >
-                <i className="fas fa-play"></i> جاهز — أبدأ الحصة
+                <i className="fas fa-play"></i> جاهز — أبدأ الحصة 🚀
               </button>
             </div>
           </div>
@@ -825,6 +1410,9 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                   )}
                 </div>
                 <div className="preview-box-screen">
+                  <div className="preview-lesson-topic-chip">
+                    <i className="fas fa-book-reader"></i> موضوع الحصة: {publicDisplayState.lessonTitle}
+                  </div>
                   <div className="preview-station-pin">
                     محطة {publicDisplayState.stationLetter} ({publicDisplayState.stationName}) • «{publicDisplayState.studentPhrase}»
                   </div>
@@ -1264,10 +1852,16 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
           <div className="student-view-main-card">
             {/* Goal & Criteria Banner (Always Visible on Student Screen) */}
             <div className="student-goal-header-bar">
-              <div className="goal-row">
-                <span className="goal-label">🎯 هدف التعلم:</span>
-                <span className="goal-text">{publicDisplayState.objective}</span>
+              <div className="goal-row title-row">
+                <span className="goal-label">📖 موضوع الدرس:</span>
+                <span className="goal-text lesson-name">{publicDisplayState.lessonTitle}</span>
               </div>
+              {publicDisplayState.objective && (
+                <div className="goal-row">
+                  <span className="goal-label">🎯 هدف التعلم:</span>
+                  <span className="goal-text">{publicDisplayState.objective}</span>
+                </div>
+              )}
             </div>
 
             {/* Display Body or Hidden Screen */}
