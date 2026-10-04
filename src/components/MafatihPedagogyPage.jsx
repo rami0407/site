@@ -1638,7 +1638,7 @@ ${p.stations?.h || ''}
 
               <div className="infographic-image-wrapper">
                 <img 
-                  src="/mafatih_key_model.png?v=2" 
+                  src="/mafatih_key_model.png?v=1791088636340" 
                   alt="المخطط البصري لنموذج مِفتاح للحصة الفاعلة" 
                   className="key-model-img"
                   loading="lazy"
@@ -3966,7 +3966,7 @@ ${p.stations?.h || ''}
                   }}
                 >
                   <img 
-                    src="/mafatih_key_hebrew_model.png?v=3" 
+                    src="/mafatih_key_hebrew_model.png?v=1791088636340" 
                     alt="תרשים מודל מַפְתֵּי&quot;חַ הרשמי - מודל מפתיח" 
                     style={{ 
                       maxWidth: '100%', 
