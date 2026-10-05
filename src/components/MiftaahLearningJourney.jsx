@@ -253,6 +253,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [isHelpKeyModalOpen, setIsHelpKeyModalOpen] = useState(false);
   const [studentActiveHelpResponse, setStudentActiveHelpResponse] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isVideoPickerOpen, setIsVideoPickerOpen] = useState(false);
+  const [customVideoUrl, setCustomVideoUrl] = useState('');
 
   // Broadcast channel for live multi-tab & multi-window sync
   const channelRef = useRef(null);
@@ -593,6 +595,293 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       text: explanation
     });
     setIsHelpKeyModalOpen(false);
+  };
+
+  // =========================================================================
+  // EDUCATIONAL VIDEO RESOLVER & EMBEDDED MEDIA COMPONENT (الفيديو والفيلم التعليمي)
+  // =========================================================================
+  const EDUCATIONAL_VIDEOS_LIBRARY = [
+    {
+      topic: 'excellence',
+      title: 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
+      youtubeId: 'EUm-vAOmWV1', // Ormie the Pig / perseverance classic
+      embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+      searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
+      caption: 'قصة كرتونية مشوقة وممتعة توضح أن التميز لا يتحقق إلا بالإصرار والبحث المستمر عن حلول غير تقليدية'
+    },
+    {
+      topic: 'growth_mindset',
+      title: 'فيلم كرتوني: عقلية النمو وكيف أكون طالباً متميزاً؟',
+      youtubeId: '7V-eFmF9f2Q',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/7V-eFmF9f2Q?rel=0',
+      searchQuery: 'عقلية النمو للاطفال رسوم متحركة',
+      caption: 'كيف ينمو التميز والذكاء بالممارسة والتعلم من الأخطاء'
+    },
+    {
+      topic: 'the_dot',
+      title: 'قصة النقطة (بيتر رينولدز): رحلة صناعة التميز',
+      youtubeId: 'Z0o8Z6GqP2o',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/Z0o8Z6GqP2o?rel=0',
+      searchQuery: 'قصة النقطة بيتر رينولدز مترجمة للاطفال',
+      caption: 'كيف تصنع تميزك الخاص حين تبدأ بخطوة صغيرة وبثقة عالية في قدراتك'
+    },
+    {
+      topic: 'science_matter',
+      title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+      youtubeId: 'bMnmJjL3hF8',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
+      searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
+      caption: 'رحلة تفاعلية رائعة لاستكشاف المواد الصلبة والسائلة والغازية'
+    },
+    {
+      topic: 'math',
+      title: 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
+      youtubeId: '4b2b-y4hPoc',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/4b2b-y4hPoc?rel=0',
+      searchQuery: 'مغامرة الرياضيات والحساب للاطفال',
+      caption: 'مواقف وألغاز رياضية ممتعة تستثير الفضول والتحدي'
+    }
+  ];
+
+  const getYouTubeEmbedUrl = (urlOrId) => {
+    if (!urlOrId) return null;
+    const str = String(urlOrId).trim();
+    const match = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (match && match[1]) {
+      return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0&modestbranding=1`;
+    }
+    if (/^[\w-]{11}$/.test(str)) {
+      return `https://www.youtube-nocookie.com/embed/${str}?rel=0&modestbranding=1`;
+    }
+    if (str.startsWith('http')) return str;
+    return null;
+  };
+
+  const resolveStationVideo = (lesson, station) => {
+    if (station?.media?.embedUrl) {
+      return {
+        title: station.media.title || 'فيلم تعليمي للمحطة',
+        embedUrl: station.media.embedUrl,
+        searchQuery: station.media.searchQuery || lesson.title,
+        reflectionQuestion: station.media.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
+      };
+    }
+
+    if (station?.media?.youtubeUrl || station?.media?.url) {
+      const embed = getYouTubeEmbedUrl(station.media.youtubeUrl || station.media.url);
+      if (embed) {
+        return {
+          title: station.media.title || 'فيلم تعليمي للمحطة',
+          embedUrl: embed,
+          searchQuery: station.media.searchQuery || lesson.title,
+          reflectionQuestion: station.media.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
+        };
+      }
+    }
+
+    const combinedText = `${lesson?.title || ''} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
+    
+    if (combinedText.includes('تميز') || combinedText.includes('التميز') || combinedText.includes('نجاح') || combinedText.includes('تفوق') || combinedText.includes('طموح')) {
+      return {
+        title: 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+        searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
+        reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز؟ ولماذا ينجح الثاني أكثر؟'
+      };
+    }
+
+    if (combinedText.includes('مادة') || combinedText.includes('حالات المادة') || combinedText.includes('صلب') || combinedText.includes('سائل') || combinedText.includes('غاز') || combinedText.includes('علوم')) {
+      return {
+        title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
+        searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
+        reflectionQuestion: 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
+      };
+    }
+
+    if (combinedText.includes('حساب') || combinedText.includes('رياضيات') || combinedText.includes('كسور') || combinedText.includes('ضرب')) {
+      return {
+        title: 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/4b2b-y4hPoc?rel=0',
+        searchQuery: `فيديو تعليمي للأطفال عن ${lesson.title}`,
+        reflectionQuestion: 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟'
+      };
+    }
+
+    return {
+      title: `فيلم تعليمي قصير: ${lesson?.title || 'مدخل الحصة'}`,
+      embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+      searchQuery: `فيلم قصير للاطفال عن ${lesson?.title || 'الدرس'}`,
+      reflectionQuestion: 'بعد مشاهدة الفيديو، ما التساؤل الأول الذي تبادر لذهنك وله علاقة بهدف درسنا اليوم؟'
+    };
+  };
+
+  const handleUpdateStationVideo = (videoObj) => {
+    const stIdx = sessionState.activeStationIndex;
+    const stKey = STATION_KEYS_ORDER[stIdx - 1] || '1_hook';
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stKey]: {
+          ...activeLesson.stations[stKey],
+          media: videoObj
+        }
+      }
+    };
+    setActiveLesson(updatedLesson);
+    const nextSession = {
+      ...sessionState,
+      lastVideoUpdate: Date.now()
+    };
+    broadcastSession(nextSession);
+    showToast('تم تحديث وعرض الفيلم على شاشة الصف وأجهزة الطلاب فوراً! 🎬✨');
+  };
+
+  const renderStationMedia = (stationData, isProjector = true) => {
+    const hasExplicitVideo = stationData?.media?.type === 'video' || stationData?.media?.youtubeUrl || stationData?.media?.url;
+    const promptHasVideoWords = (stationData?.studentPrompt || '').match(/فيديو|فيلم|مقطع|شاهدوا/i);
+    const requestsHasVideoWords = (activeLesson.specialRequests || '').match(/فيديو|فيلم|video|film/i);
+    const titleHasExcellence = (activeLesson.title || '').includes('تميز') || (activeLesson.title || '').includes('التميز');
+
+    const shouldShowVideo = hasExplicitVideo || promptHasVideoWords || requestsHasVideoWords || (stationData.number === 1 && titleHasExcellence);
+
+    if (!shouldShowVideo) {
+      return null;
+    }
+
+    const resolved = resolveStationVideo(activeLesson, stationData);
+    const activeEmbedUrl = stationData?.media?.embedUrl || getYouTubeEmbedUrl(stationData?.media?.youtubeUrl || stationData?.media?.url) || resolved.embedUrl;
+    const activeTitle = stationData?.media?.title || resolved.title;
+    const activeSearchQuery = stationData?.media?.searchQuery || resolved.searchQuery;
+    const activeReflection = stationData?.media?.reflectionQuestion || resolved.reflectionQuestion;
+
+    return (
+      <div className={`station-video-showcase-box ${isProjector ? 'projector-mode' : 'student-mode'} animate-fade-in`}>
+        {/* Video Top Header */}
+        <div className="video-player-top-header">
+          <div className="video-badge-title">
+            <span className="play-pulse-icon">▶</span>
+            <div>
+              <span className="vid-tag-label">فيلم ومقطع المحطة:</span>
+              <strong className="vid-name-text">{activeTitle}</strong>
+            </div>
+          </div>
+
+          <div className="video-header-actions">
+            <a
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(activeSearchQuery)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-yt-direct-search"
+              title="البحث المباشر على يوتيوب عن مقاطع أخرى لنفس موضوع الدرس"
+            >
+              <i className="fab fa-youtube"></i> بحث في YouTube ↗
+            </a>
+            {isProjector && (
+              <button
+                type="button"
+                className="btn-toggle-video-picker"
+                onClick={() => setIsVideoPickerOpen(prev => !prev)}
+                title="تغيير الفيلم أو لصق رابط يوتيوب آخر"
+              >
+                <i className="fas fa-exchange-alt"></i> {isVideoPickerOpen ? 'إغلاق الخيارات' : 'تغيير الفيلم 🎬'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Video Responsive Player */}
+        <div className="video-iframe-wrapper">
+          <iframe
+            src={activeEmbedUrl}
+            title={activeTitle}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="video-main-iframe"
+          ></iframe>
+        </div>
+
+        {/* Reflection Box below video */}
+        <div className="video-reflection-bar">
+          <div className="reflection-title-tag">
+            <i className="fas fa-lightbulb"></i> سؤال التأمل والمناقشة الصفية بعد المشاهدة:
+          </div>
+          <p className="reflection-question-content">{activeReflection}</p>
+        </div>
+
+        {/* Video Picker Drawer (for teacher) */}
+        {isProjector && isVideoPickerOpen && (
+          <div className="video-picker-quick-drawer animate-pop">
+            <div className="drawer-head">
+              <h4><i className="fas fa-film"></i> اختر من الفيديوهات المقترحة للدرس أو الصق رابطاً:</h4>
+              <button type="button" onClick={() => setIsVideoPickerOpen(false)}>&times;</button>
+            </div>
+
+            <div className="curated-videos-grid">
+              {EDUCATIONAL_VIDEOS_LIBRARY.map((v, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`curated-vid-card ${activeEmbedUrl.includes(v.youtubeId) ? 'selected' : ''}`}
+                  onClick={() => {
+                    handleUpdateStationVideo({
+                      type: 'video',
+                      title: v.title,
+                      youtubeId: v.youtubeId,
+                      embedUrl: v.embedUrl,
+                      searchQuery: v.searchQuery,
+                      reflectionQuestion: activeReflection
+                    });
+                    setIsVideoPickerOpen(false);
+                  }}
+                >
+                  <span className="cv-icon">🎬</span>
+                  <div className="cv-info">
+                    <strong>{v.title}</strong>
+                    <small>{v.caption}</small>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="custom-yt-input-row">
+              <input
+                type="text"
+                placeholder="ألصق رابط يوتيوب هنا (مثل: https://www.youtube.com/watch?v=...)"
+                value={customVideoUrl}
+                onChange={e => setCustomVideoUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-apply-custom-video"
+                onClick={() => {
+                  if (!customVideoUrl.trim()) return;
+                  const embed = getYouTubeEmbedUrl(customVideoUrl);
+                  if (!embed) {
+                    showToast('يرجى التأكد من صحة رابط يوتيوب المدخل');
+                    return;
+                  }
+                  handleUpdateStationVideo({
+                    type: 'video',
+                    title: `فيديو مخصص: ${activeLesson.title}`,
+                    embedUrl: embed,
+                    youtubeUrl: customVideoUrl,
+                    searchQuery: activeLesson.title,
+                    reflectionQuestion: activeReflection
+                  });
+                  setCustomVideoUrl('');
+                  setIsVideoPickerOpen(false);
+                }}
+              >
+                <i className="fas fa-check"></i> تطبيق وعرض الفيلم 📺
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // =========================================================================
@@ -1285,6 +1574,32 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 >
                   <i className="fas fa-paper-plane"></i> اعرض التعديل للطلاب الآن 📤
                 </button>
+
+                {/* Backstage Video Manager */}
+                <div className="backstage-video-manager-panel">
+                  <div className="bvm-header">
+                    <i className="fas fa-video"></i>
+                    <span>مقطع وفيلم المحطة (يوتيوب):</span>
+                  </div>
+                  <div className="bvm-controls-row">
+                    <button
+                      type="button"
+                      className="btn-bvm-picker"
+                      onClick={() => setIsVideoPickerOpen(prev => !prev)}
+                    >
+                      🎬 {isVideoPickerOpen ? 'إغلاق نافذة الفيديو' : 'اختيار / تغيير الفيلم'}
+                    </button>
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent((activeLesson.title || 'درس') + ' فيلم قصير كرتوني للاطفال')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-bvm-yt"
+                      title="ابحث في يوتيوب عن مقاطع مناسبة"
+                    >
+                      <i className="fab fa-youtube"></i> بحث يوتيوب ↗
+                    </a>
+                  </div>
+                </div>
               </div>
             </aside>
 
@@ -1527,6 +1842,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 ) : (
                   /* Standard Station Content */
                   <div className="projector-task-prompt-card animate-fade-in">
+                    {/* Embedded Large Video Player (if video/film requested or attached) */}
+                    {renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
+
                     <div className="prompt-content-text">
                       {getStationByIndex(sessionState.activeStationIndex).studentPrompt.split('\n').map((line, lIdx) => (
                         <p key={lIdx}>{line}</p>
@@ -1595,6 +1913,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <span className="st-icon">{studentCurrentStationData.icon}</span>
                 <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
               </div>
+
+              {/* Station Video Player (if active station has video) */}
+              {renderStationMedia(studentCurrentStationData, false)}
 
               <div className="task-prompt-body">
                 {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (

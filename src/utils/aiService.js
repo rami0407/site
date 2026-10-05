@@ -2638,6 +2638,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
 
 المعايير البيداغوجية الصارمة:
 - اكتب نصوص وأسئلة الطلاب الحقيقية الصريحة (studentPrompt) الجاهزة للعرض فوراً، وليس نصائح للمعلم.
+- إذا كان هناك فيديو أو فيلم (أو إذا طلب المعلم في الطلبات الخاصة "فيديو" أو "فيلم"): أضف كائن "media" داخل "1_hook" بنوع "video" مع عنوان الفيلم وكلمات بحث يوتيوب الصريحة وسؤال التأمل.
 - في المحطة الثانية: اختر الطريقة الأنسب ("guided_exploration" أو "direct_instruction" أو "blended") واكتب مادتها ومفاهيمها الصريحة.
 - في المحطة الثالثة: وفّر ٣ مهمات وتحديات متمايزة (support, core, advanced) مع سقالة لكل منها.
 - في المحطة الرابعة: حدد مهمة الدليل الفردي ومعيار النجاح الصريح.
@@ -2658,7 +2659,14 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       "studentPrompt": "اللغز أو الموقف المثير الصريح المعروض للطلاب...",
       "teacherGuidance": "إرشادات المعلم السرية لإدارة المدخل المحفز وكتابة الهدف على اللوح...",
       "suggestedDuration": 6,
-      "scaffold": "تلميح للبدء..."
+      "scaffold": "تلميح للبدء...",
+      "media": {
+        "type": "video",
+        "title": "عنوان الفيلم أو المقطع المشوق",
+        "searchQuery": "كلمات بحث يوتيوب الدقيقة للفيلم",
+        "youtubeUrl": "رابط مقترح إن وجد",
+        "reflectionQuestion": "سؤال التأمل والمناقشة بعد المشاهدة"
+      }
     },
     "2_understanding": {
       "name": "فهم وبناء المعنى",
@@ -2735,6 +2743,34 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     }
   };
 
+  const postProcessLesson = (lesson) => {
+    if (!lesson || !lesson.stations) return lesson;
+    const isVideoRequested = (safeRequests + ' ' + safeTitle).match(/فيلم|فيديو|مقطع|video|film|movie/i);
+    const hook = lesson.stations['1_hook'];
+    if (hook) {
+      const promptHasVideo = (hook.studentPrompt || '').match(/فيديو|فيلم|مقطع|شاهدوا/);
+      if (isVideoRequested || promptHasVideo || !hook.media) {
+        if (!hook.media || hook.media.type !== 'video' || !hook.media.title) {
+          const isExcellence = (safeTitle + ' ' + safeRequests).includes('تميز') || (safeTitle + ' ' + safeRequests).includes('نجاح');
+          hook.media = {
+            type: 'video',
+            title: isExcellence 
+              ? 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين الشخص العادي والمتميز؟' 
+              : `فيلم تعليمي قصير: ${safeTitle}`,
+            searchQuery: isExcellence 
+              ? 'فيلم كرتوني عن التميز والنجاح للاطفال رسوم متحركة' 
+              : `فيديو تعليمي للاطفال عن ${safeTitle}`,
+            youtubeUrl: isExcellence
+              ? 'https://www.youtube.com/watch?v=EUm-vAOmWV1'
+              : '',
+            reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري الذي استنتجتموه؟ وكيف نطبق ذلك في درسنا اليوم؟'
+          };
+        }
+      }
+    }
+    return lesson;
+  };
+
   // 1. Try Groq AI
   if (groqKey) {
     const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
@@ -2759,7 +2795,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
           const raw = data.choices?.[0]?.message?.content;
           const parsed = parseSafeJson(raw);
           if (parsed && parsed.stations && parsed.stations['1_hook']) {
-            return parsed;
+            return postProcessLesson(parsed);
           }
         }
       } catch (e) {
@@ -2791,7 +2827,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
           const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
           const parsed = parseSafeJson(txt);
           if (parsed && parsed.stations && parsed.stations['1_hook']) {
-            return parsed;
+            return postProcessLesson(parsed);
           }
         }
       } catch (e) {
