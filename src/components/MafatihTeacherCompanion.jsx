@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './MafatihTeacherCompanion.css';
-import { generateMiftaahCompanionLessonAI } from '../utils/aiService';
+import { generateMiftaahCompanionLessonAI, generateMiftaahStationAlternativeAI } from '../utils/aiService';
 
 // =========================================================================
 // 1. OFFICIAL EXEMPLAR LESSON (حالات المادة - النص والمواد الأصلية للمواصفة)
@@ -288,7 +288,115 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
     return JSON.parse(JSON.stringify(currentLesson));
   });
   const [prepActiveStationTab, setPrepActiveStationTab] = useState('all');
-  const [isAiGenerating, setIsAiGenerating] = useState(false); // 'all' | 'm' | 'f' | 't' | 'a' | 'h'
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+
+  // Screen 2 Step 3: Station Alternatives AI Modal State
+  const [stationAltModal, setStationAltModal] = useState({
+    isOpen: false,
+    stationKey: null,
+    stationName: '',
+    alternatives: [],
+    loading: false,
+    customInstruction: '',
+    currentPrompt: ''
+  });
+
+  // Open Station Alternatives Modal & fetch AI suggestions
+  const handleOpenStationAlternatives = async (stationKey) => {
+    const st = prepForm.stations?.[stationKey] || {};
+    const stationNames = {
+      m: 'مشوّق ومحفّز',
+      f: 'فهم وبناء المعنى',
+      t: 'تطبيق وتدريب',
+      a: 'أدلّة الفهم',
+      h: 'حصاد ونقل الأثر'
+    };
+    const sName = st.name || stationNames[stationKey] || stationKey;
+    const currentPrompt = st.studentDisplayPrompt || '';
+
+    setStationAltModal({
+      isOpen: true,
+      stationKey,
+      stationName: sName,
+      alternatives: [],
+      loading: true,
+      customInstruction: '',
+      currentPrompt
+    });
+
+    try {
+      const res = await generateMiftaahStationAlternativeAI({
+        title: prepForm.title || '',
+        subject: prepForm.subject || '',
+        grade: prepForm.grade || '',
+        stationKey,
+        currentPrompt,
+        customInstruction: ''
+      });
+      if (res && Array.isArray(res.alternatives) && res.alternatives.length > 0) {
+        setStationAltModal(prev => ({
+          ...prev,
+          alternatives: res.alternatives,
+          loading: false
+        }));
+      } else {
+        setStationAltModal(prev => ({ ...prev, loading: false }));
+      }
+    } catch (err) {
+      console.warn('Failed to load station alternatives:', err);
+      setStationAltModal(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Re-generate alternatives with custom teacher prompt
+  const handleRegenerateStationAlternatives = async () => {
+    if (!stationAltModal.stationKey) return;
+    setStationAltModal(prev => ({ ...prev, loading: true }));
+    try {
+      const res = await generateMiftaahStationAlternativeAI({
+        title: prepForm.title || '',
+        subject: prepForm.subject || '',
+        grade: prepForm.grade || '',
+        stationKey: stationAltModal.stationKey,
+        currentPrompt: stationAltModal.currentPrompt,
+        customInstruction: stationAltModal.customInstruction
+      });
+      if (res && Array.isArray(res.alternatives)) {
+        setStationAltModal(prev => ({
+          ...prev,
+          alternatives: res.alternatives,
+          loading: false
+        }));
+        showToast('تم توليد بدائل جديدة بنجاح! 🪄✨');
+      }
+    } catch (e) {
+      setStationAltModal(prev => ({ ...prev, loading: false }));
+      showToast('حدث خطأ أثناء توليد البدائل');
+    }
+  };
+
+  // Apply chosen alternative to current station in prepForm
+  const handleApplyAlternative = (alt) => {
+    const k = stationAltModal.stationKey;
+    if (!k) return;
+
+    setPrepForm(prev => ({
+      ...prev,
+      stations: {
+        ...prev.stations,
+        [k]: {
+          ...prev.stations[k],
+          studentDisplayPrompt: alt.studentDisplayPrompt || prev.stations[k].studentDisplayPrompt,
+          teacherNotes: alt.teacherNotes || prev.stations[k].teacherNotes,
+          scaffolds: alt.scaffolds || prev.stations[k].scaffolds,
+          extension: alt.extension || prev.stations[k].extension
+        }
+      }
+    }));
+
+    setStationAltModal(prev => ({ ...prev, isOpen: false }));
+    showToast(`تم اعتماد البديل بنجاح لمحطة [${stationAltModal.stationName}]! 🎯✨`);
+  }; // 'all' | 'm' | 'f' | 't' | 'a' | 'h'
 
   // Active Station Key in Backstage: 'm' | 'f' | 't' | 'a' | 'h'
   const [activeStationKey, setActiveStationKey] = useState('m');
@@ -1161,14 +1269,24 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                               <span className="st-query-hint">{st.studentQuestion}</span>
                             </div>
                           </div>
-                          <div className="st-duration-input-box">
-                            <label>المدة:</label>
-                            <input 
-                              type="number" 
-                              value={st.durationMinutes || 5} 
-                              onChange={(e) => updatePrepStationField(k, 'durationMinutes', parseInt(e.target.value) || 5)} 
-                            />
-                            <span>د</span>
+                          <div className="st-edit-actions-right">
+                            <button
+                              type="button"
+                              className="btn-station-ai-alternatives"
+                              onClick={() => handleOpenStationAlternatives(k)}
+                              title="اقتراح ٣ بدائل تعليمية جاهزة لهذه المحطة عبر الذكاء الاصطناعي"
+                            >
+                              <i className="fas fa-magic"></i> بدائل مقترحة لهذه المحطة (AI) ✨
+                            </button>
+                            <div className="st-duration-input-box">
+                              <label>المدة:</label>
+                              <input 
+                                type="number" 
+                                value={st.durationMinutes || 5} 
+                                onChange={(e) => updatePrepStationField(k, 'durationMinutes', parseInt(e.target.value) || 5)} 
+                              />
+                              <span>د</span>
+                            </div>
                           </div>
                         </div>
 
@@ -2058,6 +2176,130 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
             </div>
           </div>
         </section>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL: AI STATION ALTERNATIVES (اقتراح بدائل للمحطة)                */}
+      {/* =================================================================== */}
+      {stationAltModal.isOpen && (
+        <div className="miftaah-modal-overlay" onClick={() => setStationAltModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="miftaah-alt-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="alt-modal-head">
+              <div className="alt-modal-title-group">
+                <span className={`st-edit-badge letter-${stationAltModal.stationKey}`}>
+                  {prepForm.stations?.[stationAltModal.stationKey]?.letter || stationAltModal.stationKey}
+                </span>
+                <div>
+                  <h3>بدائل مقترحة لمحطة [{stationAltModal.stationName}] (AI) ✨</h3>
+                  <p>اختر البديل التدريسي الأنسب لأسلوبك أو لطلابك، أو اكتب توجيهاً لتوليد بدائل أخرى:</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="alt-modal-close-btn"
+                onClick={() => setStationAltModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Current Prompt Preview */}
+            {stationAltModal.currentPrompt && (
+              <div className="alt-current-preview-box">
+                <span className="preview-label"><i className="fas fa-eye"></i> المحتوى الحالي المعروض للمحطة:</span>
+                <p>{stationAltModal.currentPrompt}</p>
+              </div>
+            )}
+
+            {/* Custom Instruction Box */}
+            <div className="alt-custom-prompt-box">
+              <input 
+                type="text"
+                placeholder="توجيه خاص لتخصيص البدائل؟ (مثال: أريد لعبة لغوية تفاعلية، أو مدخلاً قصصياً، أو نشاطاً ثنائياً، أو تمريناً بـ 3 مستويات...)"
+                value={stationAltModal.customInstruction}
+                onChange={e => setStationAltModal(prev => ({ ...prev, customInstruction: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleRegenerateStationAlternatives(); }}
+              />
+              <button
+                type="button"
+                className="btn-regenerate-alt"
+                onClick={handleRegenerateStationAlternatives}
+                disabled={stationAltModal.loading}
+              >
+                {stationAltModal.loading ? (
+                  <><i className="fas fa-spinner fa-spin"></i> جاري التوليد...</>
+                ) : (
+                  <><i className="fas fa-sync-alt"></i> توليد بدائل جديدة</>
+                )}
+              </button>
+            </div>
+
+            {/* Alternatives Cards List */}
+            <div className="alt-cards-scroll-container">
+              {stationAltModal.loading ? (
+                <div className="alt-loading-state">
+                  <i className="fas fa-brain fa-spin fa-2x"></i>
+                  <p>جاري صياغة ٣ بدائل تدريسية متمايزة ومكتوبة بالكامل عبر الذكاء الاصطناعي... ⏳</p>
+                </div>
+              ) : stationAltModal.alternatives.length === 0 ? (
+                <div className="alt-empty-state">
+                  <p>لم يتم العثور على بدائل. اضغط زر "توليد بدائل جديدة".</p>
+                </div>
+              ) : (
+                stationAltModal.alternatives.map((alt, idx) => (
+                  <div key={alt.id || idx} className="alt-choice-card">
+                    <div className="alt-choice-header">
+                      <div className="alt-choice-title">
+                        <span className="alt-number-badge">#{idx + 1}</span>
+                        <h4>{alt.title}</h4>
+                      </div>
+                      <span className="alt-style-tag">{alt.styleBadge || 'بديل تدريسي'}</span>
+                    </div>
+
+                    <div className="alt-choice-body">
+                      <div className="alt-section-block student-screen-block">
+                        <label><i className="fas fa-desktop"></i> ما سيظهر للطلاب على شاشة العرض (النص الفعلي):</label>
+                        <div className="alt-text-preview">{alt.studentDisplayPrompt}</div>
+                      </div>
+
+                      {alt.teacherNotes && (
+                        <div className="alt-section-block teacher-notes-block">
+                          <label><i className="fas fa-user-secret"></i> ملاحظات وإرشادات المعلم:</label>
+                          <div className="alt-text-preview subtle">{alt.teacherNotes}</div>
+                        </div>
+                      )}
+
+                      {(alt.scaffolds || alt.extension) && (
+                        <div className="alt-meta-pills">
+                          {alt.scaffolds && (
+                            <span className="alt-pill scaffold" title="سقالة الدعم">
+                              <i className="fas fa-life-ring"></i> {alt.scaffolds}
+                            </span>
+                          )}
+                          {alt.extension && (
+                            <span className="alt-pill extension" title="مهمة التعميق">
+                              <i className="fas fa-rocket"></i> {alt.extension}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="alt-choice-footer">
+                      <button
+                        type="button"
+                        className="btn-apply-alt-choice"
+                        onClick={() => handleApplyAlternative(alt)}
+                      >
+                        <i className="fas fa-check-circle"></i> اعتماد هذا البديل واستبدال المحطة فوراً 🎯
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
