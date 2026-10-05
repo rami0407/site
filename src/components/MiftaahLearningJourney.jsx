@@ -28,8 +28,24 @@ const DEFAULT_EXEMPLAR_LESSON = {
       teacherGuidance: 'اعرض كأسين مختلفين وحجراً. استمع لفضول الطلاب دون إعلان الحل. اكتب الهدف المركزي ومعيار النجاح بخط بارز على اللوح وناقشه بعد لحظة الفضول.',
       scaffold: 'لاحظ: هل ينسكب الحجر؟ وهل يأخذ الماء شكل كل إناء يوضع فيه؟',
       interactiveActivity: {
-        type: 'video',
-        title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+        type: 'riddle',
+        title: 'لغز المشهد المحيّر: نقل الماء وحجر الصوان',
+        riddle: {
+          title: 'لغز المشهد المحيّر: نقل الماء وحجر الصوان',
+          riddleText: 'إذا نقلنا نفس كمية الماء من كأس عريض إلى أنبوب ضيق، ماذا يحدث للشكل وماذا يحدث للحجم؟ وهل يتغير حجر الصوان إذا وضعناه في الكأس أو الأنبوب؟ فكر وشارك توقعك! 🧪',
+          clues: [
+            '🔑 تلميح 1: هل سكب الماء يغير كميته وحجمه، أم يغير فقط شكله وارتفاعه في الأنبوب؟',
+            '🔑 تلميح 2: تأمل حجر الصوان: هل انسكب أو تغير شكله عند نقله؟ ما الفرق الجوهري بين المادة السائلة والمادة الصلبة؟'
+          ],
+          options: [
+            'يتغير شكل الماء وحجمه معاً، ويتغير شكل حجر الصوان وحجمه',
+            'يتغير شكل الماء فقط مع ثبات حجمه، بينما لا يتغير شكل حجر الصوان ولا حجمه 🎯',
+            'يزيد حجم الماء في الأنبوب الضيق ويقل حجم الحجر',
+            'لا يتغير شكل الماء ولا شكل حجر الصوان'
+          ],
+          solution: 'يتغير شكل الماء فقط مع ثبات حجمه، بينما لا يتغير شكل حجر الصوان ولا حجمه 🎯',
+          explanation: 'الماء مادة سائلة تأخذ شكل الإناء الذي توضع فيه مع بقاء حجمها ثابتاً، بينما حجر الصوان مادة صلبة تحتفظ بشكل ثابت وحجم ثابت في كل الأحوال!'
+        },
         video: {
           title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
           embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
@@ -37,28 +53,17 @@ const DEFAULT_EXEMPLAR_LESSON = {
           searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
           reflectionQuestion: 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
         },
-        riddle: {
-          title: 'أحجية المادة السحرية',
-          riddleText: 'أنا مادة سحرية في صفوف مشيرفة؛ إن وضعتني في كأس أصبحتُ كأساً، وإن صببتني في زجاجة أخذتُ شكل الزجاجة، ومع ذلك فحجمي باقٍ لا ينقص ولا يزيد! وإذا جمدتني صرتُ صلباً كالصخر، وإذا غليتني طرتُ كالدخان... فمن أكون؟ 🧪',
-          clues: [
-            '🔑 تلميح 1: أنا أشهر سائل على وجه الأرض ومن دونه لا تعيش الكائنات!',
-            '🔑 تلميح 2: استرجع حالات المادة الثلاث: أتحول بين الصلب والسائل والغاز.'
-          ],
-          options: ['حجر الصوان الصلب', 'الماء العجيب (H₂O) 💧', 'الهواء داخل البالون', 'قطعة الخشب'],
-          solution: 'الماء العجيب (H₂O) 💧',
-          explanation: 'الماء يمثل الحالة السائلة؛ حيث يأخذ شكل الإناء مع ثبات حجمه، كما يوضح لنا تحولات المادة الثلاث بالحرارة والبرودة!'
-        },
         puzzle: {
-          title: 'بازل تحولات حالات المادة',
-          instruction: 'رتب تحولات حالات المادة بتسلسلها الحراري الصحيح من الأبرد إلى الأسخن لاكتمال البازل:',
+          title: 'بازل تصنيف حالات المادة الثلاث',
+          instruction: 'رتب خصائص وحالات المادة بالترتيب المنطقي لاكتمال البازل:',
           pieces: [
-            { id: 'p1', text: '١. مكعب جليد صلب وجزيئاته متراصة وساكنة 🧊', order: 1 },
-            { id: 'p2', text: '٢. انصهار الجليد بالحرارة ليتحول إلى ماء سائل ينساب 💧', order: 2 },
-            { id: 'p3', text: '٣. تسخين الماء حتى الغليان وتباعد الجزيئات ♨️', order: 3 },
-            { id: 'p4', text: '٤. تصاعد بخار الماء كغاز ينتشر في كامل الغرفة 💨', order: 4 }
+            { id: 'p1', text: '١. المادة الصلبة: شكل ثابت وحجم ثابت (مثل حجر الصوان) 🪨', order: 1 },
+            { id: 'p2', text: '٢. المادة السائلة: شكل متغير وحجم ثابت ينساب (مثل الماء) 💧', order: 2 },
+            { id: 'p3', text: '٣. المادة الغازية: شكل متغير وحجم متغير ينتشر (مثل الهواء) 💨', order: 3 },
+            { id: 'p4', text: '٤. القاعدة الذهبية: ثبات الحجم والشكل هو معيار التمييز بين الحالات 🎯', order: 4 }
           ],
-          targetConcept: 'دورة تحولات المادة الثلاث بتأثير درجة الحرارة',
-          successMessage: '🎉 مبروك! اكتمل بازل المادة بنجاح وتكشف سر تحول الجزيئات بالحرارة!'
+          targetConcept: 'المعيار العلمي الدقيق لتصنيف حالات المادة الثلاث',
+          successMessage: '🎉 رائع جداً! لقد أكملتم بازل المادة وربطتم بين اللغز والتصنيف العلمي!'
         }
       }
     },
@@ -219,13 +224,65 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       const saved = localStorage.getItem(STORAGE_KEY_SAVED_LESSONS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(l => {
+            const hook = l.stations?.['1_hook'];
+            if (hook && (hook.studentPrompt || '').includes('لغز') && hook.interactiveActivity?.type === 'video') {
+              return {
+                ...l,
+                stations: {
+                  ...l.stations,
+                  '1_hook': {
+                    ...hook,
+                    interactiveActivity: {
+                      ...DEFAULT_EXEMPLAR_LESSON.stations['1_hook'].interactiveActivity,
+                      ...hook.interactiveActivity,
+                      type: 'riddle',
+                      riddle: DEFAULT_EXEMPLAR_LESSON.stations['1_hook'].interactiveActivity.riddle
+                    }
+                  }
+                }
+              };
+            }
+            return l;
+          });
+        }
       }
     } catch (e) {}
     return [DEFAULT_EXEMPLAR_LESSON];
   });
 
-  const [activeLesson, setActiveLesson] = useState(DEFAULT_EXEMPLAR_LESSON);
+  const [activeLesson, setActiveLesson] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SAVED_LESSONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const l = parsed[0];
+          const hook = l.stations?.['1_hook'];
+          if (hook && (hook.studentPrompt || '').includes('لغز') && hook.interactiveActivity?.type === 'video') {
+            return {
+              ...l,
+              stations: {
+                ...l.stations,
+                '1_hook': {
+                  ...hook,
+                  interactiveActivity: {
+                    ...DEFAULT_EXEMPLAR_LESSON.stations['1_hook'].interactiveActivity,
+                    ...hook.interactiveActivity,
+                    type: 'riddle',
+                    riddle: DEFAULT_EXEMPLAR_LESSON.stations['1_hook'].interactiveActivity.riddle
+                  }
+                }
+              }
+            };
+          }
+          return l;
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_EXEMPLAR_LESSON;
+  });
 
   // 3 Initial Inputs for Creator
   const [creatorTitle, setCreatorTitle] = useState(DEFAULT_EXEMPLAR_LESSON.title);
@@ -386,6 +443,21 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       });
 
       if (res && res.stations && res.stations['1_hook']) {
+        const hook = res.stations['1_hook'];
+        const reqs = (creatorSpecialRequests || '').toLowerCase();
+        const pText = (hook.studentPrompt || '').toLowerCase();
+        let derivedType = hook.interactiveActivity?.type;
+        if (reqs.match(/أحجية|احجية|لغز|فزورة|غموض/) || pText.match(/لغز|أحجية|احجية|فزورة|غموض|مشهد محير/)) {
+          derivedType = 'riddle';
+        } else if (reqs.match(/بازل|puzzle|ترتيب|تركيب/) || pText.match(/بازل|puzzle|ترتيب|تركيب|رتب/)) {
+          derivedType = 'puzzle';
+        } else if (reqs.match(/فيلم|فيديو|مقطع|video/) || pText.match(/فيلم|فيديو|شاهد|مقطع/)) {
+          derivedType = 'video';
+        }
+        if (hook.interactiveActivity) {
+          hook.interactiveActivity.type = derivedType || 'riddle';
+        }
+
         const newLesson = {
           ...res,
           id: 'lesson_' + Date.now(),
@@ -394,6 +466,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           specialRequests: creatorSpecialRequests
         };
         setActiveLesson(newLesson);
+        setSessionState(prev => {
+          const next = { ...prev, activityTypeByStation: {} };
+          try {
+            localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
         const updated = [newLesson, ...lessonsList.filter(l => l.id !== newLesson.id)];
         setLessonsList(updated);
         try {
@@ -800,61 +879,102 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       reflectionQuestion: act.video?.reflectionQuestion || station?.media?.reflectionQuestion || resolvedVid.reflectionQuestion
     };
 
-    // 2. Resolve Riddle
-    const riddleData = act.riddle || (isExcellence ? {
-      title: 'أحجية التميز والإتقان',
-      riddleText: 'لستُ شيئاً تشتريه بالمال، ولا حجراً تجده في الرمال. إن بدأتَ عملاً أتقنته، وإن واجهك فشلٌ تحديته وتجاوزته! لا أرضى بالعادي بل أطمح للأفضل دائماً... فمن أكون؟ 🔮',
-      clues: [
-        '🔑 تلميح 1: كلمة تبدأ بحرف التاء، وترتبط بالإتقان والشغف والاجتهاد.',
-        '🔑 تلميح 2: هو شعار مدرستنا مشيرفة، والسر وراء كل عالم ومبتكر ومبدع!'
-      ],
-      options: ['الكسل والانتظار', 'العمل العادي', 'التميّز والإتقان ⭐', 'الاستسلام السريع'],
-      solution: 'التميّز والإتقان ⭐',
-      explanation: 'التميز ليس موهبة نولد بها فحسب، بل هو قرار واختيار يومي بالسعي والاجتهاد والتطور المستمر كما سنكتشف في محطات درسنا اليوم!'
-    } : {
-      title: `أحجية استنتاجية: ${safeTitle}`,
-      riddleText: `أنا سرٌّ يرتبط بـ (${safeTitle})، أظهر في البداية كمفارقة محيرة، ولكن حينما تفكر في أسبابي وتستكشف خصائصه، أصبح مفتاحك للحل والنجاح... فما هو التفسير العلمي المنطقي وراء هذا الموقف؟ 🔮`,
-      clues: [
-        '🔑 تلميح 1: فكر في العلاقة المباشرة بين المعطيات وما تعلمته سابقاً.',
-        '🔑 تلميح 2: استبعد التخمينات العشوائية وركز على الخاصية الأساسية التي لا تتغير.'
-      ],
-      options: ['تفسير عشوائي بدون دليل', `المفهوم العلمي المنطقي لـ ${safeTitle} 🎯`, 'تجاهل الموقف', 'الاعتماد على الحظ'],
-      solution: `المفهوم العلمي المنطقي لـ (${safeTitle}) 🎯`,
-      explanation: `الحل يكمن في تطبيق التفكير المنطقي وربط الملاحظة بالدليل للوصول للهدف التعليمي للحصة.`
-    });
+    // 2. Resolve Riddle (Align directly with planning text)
+    const planPrompt = station?.studentPrompt || '';
+    let riddleData = act.riddle;
+    if (!riddleData || (!riddleData.riddleText && !riddleData.title)) {
+      if (planPrompt.match(/لغز|أحجية|احجية|فزورة|غموض|مشهد محير|توقعك/i)) {
+        const lines = planPrompt.split('\n').filter(l => l.trim().length > 0);
+        const titleLine = lines[0] ? lines[0].replace(/[🧪🔮🔥🎯💡•]/g, '').trim() : `أحجية: ${safeTitle}`;
+        const bodyLines = lines.slice(1).join(' ').trim() || lines[0] || planPrompt;
+        riddleData = {
+          title: titleLine,
+          riddleText: bodyLines,
+          clues: station.scaffold ? [`🔑 تلميح التفكير (سقالة): ${station.scaffold}`] : ['🔑 تلميح التفكير: قارن بين المعطيات وما تعلمته سابقاً بدقة.'],
+          options: ['خيار أ: فرضية تحتاج لفحص وتجريب', 'خيار ب: الاستنتاج العلمي المطابق للواقع 🎯', 'خيار ج: تخمين سطحي غير دقيق'],
+          solution: 'الاستنتاج العلمي المطابق للواقع 🎯',
+          explanation: 'الربط المباشر بين الملاحظة الدقيقة وتطبيق المفهوم العلمي لتحقيق هدف الدرس.'
+        };
+      } else if (isExcellence) {
+        riddleData = {
+          title: 'أحجية التميز والإتقان',
+          riddleText: 'لستُ شيئاً تشتريه بالمال، ولا حجراً تجده في الرمال. إن بدأتَ عملاً أتقنته، وإن واجهك فشلٌ تحديته وتجاوزته! لا أرضى بالعادي بل أطمح للأفضل دائماً... فمن أكون؟ 🔮',
+          clues: [
+            '🔑 تلميح 1: كلمة تبدأ بحرف التاء، وترتبط بالإتقان والشغف والاجتهاد.',
+            '🔑 تلميح 2: هو شعار مدرستنا مشيرفة، والسر وراء كل عالم ومبتكر ومبدع!'
+          ],
+          options: ['الكسل والانتظار', 'العمل العادي', 'التميّز والإتقان ⭐', 'الاستسلام السريع'],
+          solution: 'التميّز والإتقان ⭐',
+          explanation: 'التميز ليس موهبة نولد بها فحسب، بل هو قرار واختيار يومي بالسعي والاجتهاد والتطور المستمر كما سنكتشف في محطات درسنا اليوم!'
+        };
+      } else {
+        riddleData = {
+          title: `أحجية استنتاجية: ${safeTitle}`,
+          riddleText: `أنا سرٌّ يرتبط بـ (${safeTitle})، أظهر في البداية كمفارقة محيرة، ولكن حينما تفكر في أسبابي وتستكشف خصائصه، أصبح مفتاحك للحل والنجاح... فما هو التفسير العلمي المنطقي وراء هذا الموقف؟ 🔮`,
+          clues: [
+            '🔑 تلميح 1: فكر في العلاقة المباشرة بين المعطيات وما تعلمته سابقاً.',
+            '🔑 تلميح 2: استبعد التخمينات العشوائية وركز على الخاصية الأساسية التي لا تتغير.'
+          ],
+          options: ['تفسير عشوائي بدون دليل', `المفهوم العلمي المنطقي لـ ${safeTitle} 🎯`, 'تجاهل الموقف', 'الاعتماد على الحظ'],
+          solution: `المفهوم العلمي المنطقي لـ (${safeTitle}) 🎯`,
+          explanation: `الحل يكمن في تطبيق التفكير المنطقي وربط الملاحظة بالدليل للوصول للهدف التعليمي للحصة.`
+        };
+      }
+    }
 
-    // 3. Resolve Puzzle
-    const puzzleData = act.puzzle || (isExcellence ? {
-      title: 'بازل قمة التميز',
-      instruction: 'رتب مراحل صعود قمة التميز بالترتيب الذهبي الصحيح لاكتمال البازل:',
-      pieces: [
-        { id: 'p1', text: '١. تحديد الهدف والشغف 🎯', order: 1 },
-        { id: 'p2', text: '٢. البدء بالمحاولة الأولى والتدريب المستمر 🏃‍♂️', order: 2 },
-        { id: 'p3', text: '٣. التعلم من الأخطاء وتجاوز العثرات 💡', order: 3 },
-        { id: 'p4', text: '٤. الوصول إلى الإتقان والتميز وخدمة المجتمع 🌟', order: 4 }
-      ],
-      targetConcept: 'معادلة التميز الحقيقي في مدرسة مشيرفة الابتدائية',
-      successMessage: '🎉 رائع جداً! لقد ركّبتم بازل التميز واكتشفتم أن التميز رحلة إصرار وعمل مستمر!'
-    } : {
-      title: `بازل خطوات: ${safeTitle}`,
-      instruction: `رتب خطوات استكشاف وتطبيق (${safeTitle}) بالترتيب الصحيح لاكتمال البازل المعرفي:`,
-      pieces: [
-        { id: 'p1', text: '١. الملاحظة واستكشاف الموقف وتحديد المشكلة 🔍', order: 1 },
-        { id: 'p2', text: '٢. تحليل المعطيات وربط العلاقات ببعضها 🧩', order: 2 },
-        { id: 'p3', text: '٣. صياغة الاستنتاج وتطبيق القاعدة الحسابية/العلمية ⚙️', order: 3 },
-        { id: 'p4', text: '٤. التحقق من صحة الحل وتقديم الدليل الفردي ✅', order: 4 }
-      ],
-      targetConcept: `المسار المتكامل لفهم وتطبيق (${safeTitle})`,
-      successMessage: `🎉 ممتاز! اكتمل بازل المعرفة بنجاح وحصلتم على المفتاح الذهبي للمحطة!`
-    });
+    // 3. Resolve Puzzle (Align with planning content)
+    let puzzleData = act.puzzle;
+    if (!puzzleData || (!puzzleData.pieces || puzzleData.pieces.length === 0)) {
+      if (isExcellence) {
+        puzzleData = {
+          title: 'بازل قمة التميز',
+          instruction: 'رتب مراحل صعود قمة التميز بالترتيب الذهبي الصحيح لاكتمال البازل:',
+          pieces: [
+            { id: 'p1', text: '١. تحديد الهدف والشغف 🎯', order: 1 },
+            { id: 'p2', text: '٢. البدء بالمحاولة الأولى والتدريب المستمر 🏃‍♂️', order: 2 },
+            { id: 'p3', text: '٣. التعلم من الأخطاء وتجاوز العثرات 💡', order: 3 },
+            { id: 'p4', text: '٤. الوصول إلى الإتقان والتميز وخدمة المجتمع 🌟', order: 4 }
+          ],
+          targetConcept: 'معادلة التميز الحقيقي في مدرسة مشيرفة الابتدائية',
+          successMessage: '🎉 رائع جداً! لقد ركّبتم بازل التميز واكتشفتم أن التميز رحلة إصرار وعمل مستمر!'
+        };
+      } else {
+        puzzleData = {
+          title: `بازل خطوات: ${safeTitle}`,
+          instruction: `رتب خطوات استكشاف وتطبيق (${safeTitle}) بالترتيب الصحيح لاكتمال البازل المعرفي:`,
+          pieces: [
+            { id: 'p1', text: '١. الملاحظة واستكشاف الموقف وتحديد المشكلة 🔍', order: 1 },
+            { id: 'p2', text: '٢. تحليل المعطيات وربط العلاقات ببعضها 🧩', order: 2 },
+            { id: 'p3', text: '٣. صياغة الاستنتاج وتطبيق القاعدة الحسابية/العلمية ⚙️', order: 3 },
+            { id: 'p4', text: '٤. التحقق من صحة الحل وتقديم الدليل الفردي ✅', order: 4 }
+          ],
+          targetConcept: `المسار المتكامل لفهم وتطبيق (${safeTitle})`,
+          successMessage: `🎉 ممتاز! اكتمل بازل المعرفة بنجاح وحصلتم على المفتاح الذهبي للمحطة!`
+        };
+      }
+    }
 
-    // Current active type override from sessionState or lesson
+    // Determine Active Type to strictly match the Planning Content (فحوى التخطيط)
     const stNum = station.number || 1;
     const sessionOverride = sessionState.activityTypeByStation?.[stNum];
-    let activeType = sessionOverride || act.type || 'video';
-    if (!sessionOverride && !act.type) {
-      if (combined.match(/أحجية|احجية|لغز|فزورة|غموض|riddle/i)) activeType = 'riddle';
-      else if (combined.match(/بازل|puzzle|ترتيب|تركيب/i)) activeType = 'puzzle';
+    let activeType = sessionOverride;
+
+    if (!activeType) {
+      const promptLower = planPrompt.toLowerCase();
+      const reqLower = (lesson?.specialRequests || '').toLowerCase();
+      const actType = act.type;
+
+      if (promptLower.match(/لغز|أحجية|احجية|فزورة|غموض|مشهد محير|توقعك/) || reqLower.match(/أحجية|احجية|لغز/)) {
+        activeType = 'riddle';
+      } else if (promptLower.match(/بازل|puzzle|ترتيب|تركيب|رتب/) || reqLower.match(/بازل|puzzle/)) {
+        activeType = 'puzzle';
+      } else if (promptLower.match(/فيلم|فيديو|video|شاهد|مقطع/) || reqLower.match(/فيلم|فيديو/) || actType === 'video' || station?.media?.embedUrl || station?.media?.youtubeUrl) {
+        activeType = 'video';
+      } else if (actType && ['video', 'riddle', 'puzzle'].includes(actType)) {
+        activeType = actType;
+      } else {
+        activeType = 'riddle';
+      }
     }
 
     return {
@@ -2430,25 +2550,48 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 ) : (
                   /* Standard Station Content */
                   <div className="projector-task-prompt-card animate-fade-in">
-                    {/* Embedded Large Video Player (if video/film requested or attached) */}
-                    {renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
+                    {/* Station 1: The Interactive Hook Hero matching the plan */}
+                    {sessionState.activeStationIndex === 1 ? (
+                      renderStationMedia(getStationByIndex(1), true)
+                    ) : (
+                      <>
+                        {/* Stations 2-5: Show media ONLY if explicitly defined in lesson plan */}
+                        {getStationByIndex(sessionState.activeStationIndex)?.interactiveActivity && 
+                         renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
 
-                    <div className="prompt-content-text">
-                      {getStationByIndex(sessionState.activeStationIndex).studentPrompt.split('\n').map((line, lIdx) => (
-                        <p key={lIdx}>{line}</p>
-                      ))}
-                    </div>
+                        <div className="prompt-content-text">
+                          {getStationByIndex(sessionState.activeStationIndex).studentPrompt.split('\n').map((line, lIdx) => (
+                            <p key={lIdx}>{line}</p>
+                          ))}
+                        </div>
 
-                    {/* In Station 3: Show Group Tiers Showcase */}
-                    {sessionState.activeStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
-                      <div className="projector-tiered-tasks-row">
-                        {activeLesson.stations['3_practice'].tasks.map((task, idx) => (
-                          <div key={idx} className={`proj-tier-card tier-${task.tier}`}>
-                            <span className="tier-badge">{task.badge}</span>
-                            <p>{task.task}</p>
+                        {/* In Station 3: Show Group Tiers Showcase */}
+                        {sessionState.activeStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
+                          <div className="projector-tiered-tasks-row">
+                            {activeLesson.stations['3_practice'].tasks.map((task, idx) => (
+                              <div key={idx} className={`proj-tier-card tier-${task.tier}`}>
+                                <span className="tier-badge">{task.badge}</span>
+                                <p>{task.task}</p>
+                                {task.scaffold && (
+                                  <div className="tier-scaffold-hint">
+                                    <small>🗝️ سقالة المساندة:</small> {task.scaffold}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        )}
+
+                        {/* In Station 4: Evidence of understanding criterion */}
+                        {sessionState.activeStationIndex === 4 && activeLesson.stations['4_evidence']?.criterion && (
+                          <div className="projector-criterion-ribbon">
+                            <span className="crit-icon">🎯</span>
+                            <div>
+                              <strong>معيار التحقق والدليل الفردي:</strong> {activeLesson.stations['4_evidence'].criterion}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -2502,14 +2645,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
               </div>
 
-              {/* Station Video Player (if active station has video) */}
-              {renderStationMedia(studentCurrentStationData, false)}
+              {/* Station 1: The Interactive Hook matching the plan */}
+              {studentCurrentStationIndex === 1 ? (
+                renderStationMedia(studentCurrentStationData, false)
+              ) : (
+                <>
+                  {studentCurrentStationData.interactiveActivity && renderStationMedia(studentCurrentStationData, false)}
 
-              <div className="task-prompt-body">
-                {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
-                  <p key={i}>{l}</p>
-                ))}
-              </div>
+                  <div className="task-prompt-body">
+                    {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
+                      <p key={i}>{l}</p>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Station 3 Specific: Tier Selector */}
               {studentCurrentStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
