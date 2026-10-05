@@ -1433,67 +1433,49 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   };
 
   // =========================================================================
-  // SUB-COMPONENT: PHYSICAL KEY MAP (خريطة فعلية على شكل مفتاح مقسّم إلى ٥ قطع)
+  // SUB-COMPONENT: SLEEK MIFTAAH KEY SPINE (م ف ت ا ح)
   // =========================================================================
   const renderPhysicalKeyMap = (activeIdx, onSelectStation = null, isStudentDevice = false) => {
     const stations = [
-      { idx: 1, letter: 'م', name: 'مشوّق ومحفّز', icon: '🔥', shape: 'key-bow-head' },
-      { idx: 2, letter: 'ف', name: 'فهم وبناء المعنى', icon: '🧩', shape: 'key-stem-top' },
-      { idx: 3, letter: 'ت', name: 'التطبيق والتدريب', icon: '🛠️', shape: 'key-stem-mid' },
-      { idx: 4, letter: 'ا', name: 'أدلة الفهم', icon: '🔎', shape: 'key-stem-bot' },
-      { idx: 5, letter: 'ح', name: 'حصاد ونقل الأثر', icon: '🎒', shape: 'key-bit-teeth' }
+      { idx: 1, letter: 'م', name: 'مشوّق ومحفّز', icon: '🔥' },
+      { idx: 2, letter: 'ف', name: 'فهم وبناء المعنى', icon: '🧩' },
+      { idx: 3, letter: 'ت', name: 'التطبيق والتدريب', icon: '🛠️' },
+      { idx: 4, letter: 'ا', name: 'أدلة الفهم', icon: '🔎' },
+      { idx: 5, letter: 'ح', name: 'حصاد ونقل الأثر', icon: '🎒' }
     ];
 
     return (
-      <div className={`physical-key-container ${isStudentDevice ? 'student-compact' : ''}`}>
-        <div className="key-map-header-label">
-          <span className="key-symbol-lead">🗝️</span>
-          <span className="key-map-title">خريطة مفتاح التعلم</span>
-        </div>
+      <div className={`miftaah-letters-key-spine ${isStudentDevice ? 'horizontal-device' : 'vertical-spine'}`}>
+        {stations.map(st => {
+          const isActive = st.idx === activeIdx;
+          const isCompleted = st.idx < activeIdx;
+          const isLocked = sessionState.pacingMode === 'whole_class'
+            ? st.idx > activeIdx
+            : st.idx > (sessionState.stationUnlockedMax || activeIdx);
 
-        {/* The 5 Key Segments */}
-        <div className="physical-key-body">
-          {stations.map(st => {
-            const isActive = st.idx === activeIdx;
-            const isCompleted = st.idx < activeIdx;
-            const isLocked = sessionState.pacingMode === 'whole_class'
-              ? st.idx > activeIdx
-              : st.idx > (sessionState.stationUnlockedMax || activeIdx);
-
-            return (
-              <button
-                key={st.idx}
-                type="button"
-                className={`key-segment-block ${st.shape} ${isActive ? 'active-glow' : ''} ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
-                onClick={() => {
-                  if (onSelectStation) {
-                    if (isLocked && sessionState.pacingMode === 'whole_class') {
-                      showToast('هذه المحطة مغلقة الآن، يفتحها المعلم عند انتقال الصف معاً 🔒');
-                    } else {
-                      onSelectStation(st.idx);
-                    }
+          return (
+            <button
+              key={st.idx}
+              type="button"
+              className={`key-letter-token ${isActive ? 'is-active-glowing' : ''} ${isCompleted ? 'is-completed' : ''} ${isLocked ? 'is-locked' : ''}`}
+              onClick={() => {
+                if (onSelectStation) {
+                  if (isLocked && sessionState.pacingMode === 'whole_class') {
+                    showToast(`المحطة [${st.letter}] مغلقة الآن، يفتحها المعلم عند انتقال الصف 🔒`);
+                  } else {
+                    onSelectStation(st.idx);
                   }
-                }}
-                title={`المحطة ${st.idx}: ${st.name} (${isActive ? 'المحطة الحالية' : isCompleted ? 'منجزة ✓' : isLocked ? 'مغلقة' : 'متاحة'})`}
-              >
-                <div className="segment-number-badge">{st.idx}</div>
-                <div className="segment-icon-wrap">{st.icon}</div>
-                <div className="segment-text-meta">
-                  <strong className="segment-name">{st.name}</strong>
-                  <span className="segment-symbol-tag">[{st.letter}]</span>
-                </div>
-                {isCompleted && <span className="segment-check-mark">✓</span>}
-                {isActive && <span className="segment-you-are-here">أنت هنا 📍</span>}
-                {isLocked && !isActive && <span className="segment-lock-icon">🔒</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="key-active-station-status-phrase">
-          <span>أنت الآن في المحطة: </span>
-          <strong>[{getStationByIndex(activeIdx).name}]</strong>
-        </div>
+                }
+              }}
+              title={`المحطة ${st.idx}: ${st.name} [${st.letter}] - ${isActive ? 'المحطة الحالية (أنت هنا الآن)' : isCompleted ? 'منجزة ✓' : isLocked ? 'مغلقة' : 'متاحة'}`}
+            >
+              <span className="token-letter-glyph">{st.letter}</span>
+              <span className="token-num-tiny">{st.idx}</span>
+              {isCompleted && <span className="token-check-dot">✓</span>}
+              {isLocked && !isActive && <span className="token-lock-dot">🔒</span>}
+            </button>
+          );
+        })}
       </div>
     );
   };
@@ -2412,20 +2394,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
             {/* Projector Main Stage */}
             <div className="projector-main-stage-grid">
-              {/* Left Side: The Physical Key Map */}
+              {/* Left Side: Sleek Miftaah Letters Key Spine (م ف ت ا ح) */}
               <div className="projector-key-map-column">
                 {renderPhysicalKeyMap(sessionState.activeStationIndex, null, false)}
-                
-                {/* Board Reminder for Teacher in Station 1 */}
-                {sessionState.activeStationIndex === 1 && (
-                  <div className="board-reminder-card animate-pop">
-                    <span className="reminder-icon">📋</span>
-                    <div>
-                      <strong>تذكير المعلم:</strong>
-                      <p>اكتب هدف الدرس ومعيار النجاح الآن على اللوح بخط بارز ليظل مرجعاً للصف طوال الحصة.</p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Center: Large Content Display / Showcase */}
