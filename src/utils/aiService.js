@@ -2636,9 +2636,13 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
 4. أدلة الفهم
 5. حصاد ونقل الأثر
 
-المعايير البيداغوجية الصارمة:
+- المعايير البيداغوجية الصارمة:
 - اكتب نصوص وأسئلة الطلاب الحقيقية الصريحة (studentPrompt) الجاهزة للعرض فوراً، وليس نصائح للمعلم.
-- إذا كان هناك فيديو أو فيلم (أو إذا طلب المعلم في الطلبات الخاصة "فيديو" أو "فيلم"): أضف كائن "media" داخل "1_hook" بنوع "video" مع عنوان الفيلم وكلمات بحث يوتيوب الصريحة وسؤال التأمل.
+- الأنشطة التفاعلية في المحطة الأولى (مشوّق ومحفّز) أو أي محطة أخرى:
+  * إذا طلب المعلم في الطلبات الخاصة "أحجية" أو "لغز" (riddle): جهّز كائن "interactiveActivity" بنوع "riddle" يتضمن نص الأحجية، تلميحات كسقالات مساندة، خيارات تفاعلية، والحل الصريح مع ربطه بهدف الدرس.
+  * إذا طلب المعلم "بازل" أو "puzzle" أو "ترتيب" أو "تركيب": جهّز كائن "interactiveActivity" بنوع "puzzle" يتضمن تعليمات الترتيب، قطع البازل المرقمة المنطقية، المفهوم المستهدف، ورسالة النجاح.
+  * إذا طلب المعلم "فيديو" أو "فيلم": جهّز كائن "interactiveActivity" بنوع "video" مع عنوان الفيلم وكلمات بحث يوتيوب الدقيقة ورابط مقترح وسؤال التأمل.
+  * إذا لم يحدد المعلم، جهّز النشاط الأنسب لطبيعة الموضوع والصف وضع بيانات كاملة للأحجية والبازل والفيديو حتى يتمكن المعلم من التبديل بينها بنقرة واحدة داخل الصف!
 - في المحطة الثانية: اختر الطريقة الأنسب ("guided_exploration" أو "direct_instruction" أو "blended") واكتب مادتها ومفاهيمها الصريحة.
 - في المحطة الثالثة: وفّر ٣ مهمات وتحديات متمايزة (support, core, advanced) مع سقالة لكل منها.
 - في المحطة الرابعة: حدد مهمة الدليل الفردي ومعيار النجاح الصريح.
@@ -2660,6 +2664,37 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       "teacherGuidance": "إرشادات المعلم السرية لإدارة المدخل المحفز وكتابة الهدف على اللوح...",
       "suggestedDuration": 6,
       "scaffold": "تلميح للبدء...",
+      "interactiveActivity": {
+        "type": "video",
+        "title": "عنوان النشاط المشوق",
+        "riddle": {
+          "riddleText": "نص الأحجية أو اللغز الذكي والمحفز لفضول الطلاب...",
+          "clues": [
+            "التلميح الأول (سقالة مساعدة 1)",
+            "التلميح الثاني (سقالة مساعدة 2)"
+          ],
+          "options": ["خيار أ", "خيار ب", "خيار ج", "خيار د"],
+          "solution": "حل الأحجية الصريح",
+          "explanation": "ربط الحل بهدف الدرس ومفهومه الأساسي"
+        },
+        "puzzle": {
+          "instruction": "رتب قطع أو خطوات البازل بالتسلسل المنطقي الصحيح",
+          "pieces": [
+            { "id": "p1", "text": "القطعة أو الخطوة الأولى", "order": 1 },
+            { "id": "p2", "text": "القطعة أو الخطوة الثانية", "order": 2 },
+            { "id": "p3", "text": "القطعة أو الخطوة الثالثة", "order": 3 },
+            { "id": "p4", "text": "القطعة أو الخطوة الرابعة", "order": 4 }
+          ],
+          "targetConcept": "المفهوم النهائي الذي يكشفه اكتمال البازل",
+          "successMessage": "أحسنت! اكتمل البازل وتكشف المفتاح المعرفي"
+        },
+        "video": {
+          "title": "عنوان الفيلم أو المقطع المشوق",
+          "searchQuery": "كلمات بحث يوتيوب الدقيقة للفيلم",
+          "youtubeUrl": "رابط مقترح إن وجد",
+          "reflectionQuestion": "سؤال التأمل والمناقشة بعد المشاهدة"
+        }
+      },
       "media": {
         "type": "video",
         "title": "عنوان الفيلم أو المقطع المشوق",
@@ -2745,28 +2780,109 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
 
   const postProcessLesson = (lesson) => {
     if (!lesson || !lesson.stations) return lesson;
-    const isVideoRequested = (safeRequests + ' ' + safeTitle).match(/فيلم|فيديو|مقطع|video|film|movie/i);
+    const reqAndTitle = (safeRequests + ' ' + safeTitle).toLowerCase();
+    const isVideoRequested = reqAndTitle.match(/فيلم|فيديو|مقطع|video|film|movie/i);
+    const isRiddleRequested = reqAndTitle.match(/أحجية|احجية|لغز|فزورة|غموض|riddle|mystery/i);
+    const isPuzzleRequested = reqAndTitle.match(/بازل|puzzle|ترتيب|تركيب|jigsaw/i);
+
     const hook = lesson.stations['1_hook'];
     if (hook) {
-      const promptHasVideo = (hook.studentPrompt || '').match(/فيديو|فيلم|مقطع|شاهدوا/);
-      if (isVideoRequested || promptHasVideo || !hook.media) {
-        if (!hook.media || hook.media.type !== 'video' || !hook.media.title) {
-          const isExcellence = (safeTitle + ' ' + safeRequests).includes('تميز') || (safeTitle + ' ' + safeRequests).includes('نجاح');
-          hook.media = {
-            type: 'video',
-            title: isExcellence 
-              ? 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين الشخص العادي والمتميز؟' 
-              : `فيلم تعليمي قصير: ${safeTitle}`,
-            searchQuery: isExcellence 
-              ? 'فيلم كرتوني عن التميز والنجاح للاطفال رسوم متحركة' 
-              : `فيديو تعليمي للاطفال عن ${safeTitle}`,
-            youtubeUrl: isExcellence
-              ? 'https://www.youtube.com/watch?v=EUm-vAOmWV1'
-              : '',
-            reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري الذي استنتجتموه؟ وكيف نطبق ذلك في درسنا اليوم؟'
-          };
+      const isExcellence = reqAndTitle.includes('تميز') || reqAndTitle.includes('التميز') || reqAndTitle.includes('نجاح') || reqAndTitle.includes('تفوق');
+
+      // 1. Build rich video data
+      const defaultVideo = {
+        title: isExcellence 
+          ? 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين الشخص العادي والمتميز؟' 
+          : `فيلم تعليمي قصير: ${safeTitle}`,
+        searchQuery: isExcellence 
+          ? 'فيلم كرتوني عن التميز والنجاح للاطفال رسوم متحركة' 
+          : `فيديو تعليمي للاطفال عن ${safeTitle}`,
+        youtubeUrl: isExcellence
+          ? 'https://www.youtube.com/watch?v=EUm-vAOmWV1'
+          : '',
+        reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري الذي استنتجتموه؟ وكيف نطبق ذلك في درسنا اليوم؟'
+      };
+
+      // 2. Build rich riddle data
+      const defaultRiddle = isExcellence ? {
+        riddleText: 'لستُ شيئاً تشتريه بالمال، ولا حجراً تجده في الرمال. إن بدأتَ عملاً أتقنته، وإن واجهك فشلٌ تحديته وتجاوزته! لا أرضى بالعادي بل أطمح للأفضل دائماً... فمن أكون؟',
+        clues: [
+          '🔑 تلميح 1: كلمة تبدأ بحرف التاء، وترتبط بالإتقان والشغف والاجتهاد.',
+          '🔑 تلميح 2: هو شعار مدرستنا مشيرفة، والسر وراء كل عالم ومبتكر ومبدع!'
+        ],
+        options: ['الكسل والانتظار', 'العمل العادي', 'التميّز والإتقان ⭐', 'الاستسلام السريع'],
+        solution: 'التميّز والإتقان المستمر ⭐',
+        explanation: 'التميز ليس موهبة نولد بها فحسب، بل هو قرار واختيار يومي بالسعي والاجتهاد والتطور المستمر كما سنكتشف في محطات درسنا اليوم!'
+      } : {
+        riddleText: `أنا سرٌّ يرتبط بـ (${safeTitle})، أظهر في البداية كلغز محير، ولكن حينما تفكر في أسبابه وتستكشف خصائصه، أصبح مفتاحك للحل والنجاح... فما هو التفسير العلمي المنطقي وراء هذا الموقف؟`,
+        clues: [
+          '🔑 تلميح 1: فكر في العلاقة المباشرة بين المعطيات وما تعلمته سابقاً.',
+          '🔑 تلميح 2: استبعد التخمينات العشوائية وركز على الخاصية الأساسية التي لا تتغير.'
+        ],
+        options: ['تفسير عشوائي بدون دليل', `المفهوم العلمي المنطقي لـ ${safeTitle} 🎯`, 'تجاهل الموقف', 'الاعتماد على الحظ'],
+        solution: `المفهوم العلمي المنطقي لـ (${safeTitle}) 🎯`,
+        explanation: `الحل يكمن في تطبيق التفكير المنطقي وربط الملاحظة بالدليل للوصول للهدف التعليمي للحصة.`
+      };
+
+      // 3. Build rich puzzle data
+      const defaultPuzzle = isExcellence ? {
+        instruction: 'رتب مراحل صعود قمة التميز بالترتيب الذهبي الصحيح لاكتمال البازل:',
+        pieces: [
+          { id: 'p1', text: '١. تحديد الهدف والشغف 🎯', order: 1 },
+          { id: 'p2', text: '٢. البدء بالمحاولة الأولى والتدريب المستمر 🏃‍♂️', order: 2 },
+          { id: 'p3', text: '٣. التعلم من الأخطاء وتجاوز العثرات 💡', order: 3 },
+          { id: 'p4', text: '٤. الوصول إلى الإتقان والتميز وخدمة المجتمع 🌟', order: 4 }
+        ],
+        targetConcept: 'معادلة التميز الحقيقي في مدرسة مشيرفة الابتدائية',
+        successMessage: '🎉 رائع جداً! لقد ركّبتم بازل التميز واكتشفتم أن التميز رحلة إصرار وعمل مستمر!'
+      } : {
+        instruction: `رتب خطوات استكشاف وتطبيق (${safeTitle}) بالترتيب الصحيح لاكتمال البازل المعرفي:`,
+        pieces: [
+          { id: 'p1', text: '١. الملاحظة واستكشاف الموقف وتحديد المشكلة 🔍', order: 1 },
+          { id: 'p2', text: '٢. تحليل المعطيات وربط العلاقات ببعضها 🧩', order: 2 },
+          { id: 'p3', text: '٣. صياغة الاستنتاج وتطبيق القاعدة الحسابية/العلمية ⚙️', order: 3 },
+          { id: 'p4', text: '٤. التحقق من صحة الحل وتقديم الدليل الفردي ✅', order: 4 }
+        ],
+        targetConcept: `المسار المتكامل لفهم وتطبيق (${safeTitle})`,
+        successMessage: `🎉 ممتاز! اكتمل بازل المعرفة بنجاح وحصلتم على المفتاح الذهبي للمحطة!`
+      };
+
+      // Determine active activity type
+      let activeType = 'video';
+      if (isRiddleRequested) activeType = 'riddle';
+      else if (isPuzzleRequested) activeType = 'puzzle';
+      else if (isVideoRequested) activeType = 'video';
+      else if (hook.interactiveActivity?.type) activeType = hook.interactiveActivity.type;
+
+      // Merge into interactiveActivity
+      hook.interactiveActivity = {
+        type: activeType,
+        title: activeType === 'riddle' ? (hook.interactiveActivity?.riddle?.riddleText ? 'أحجية المحطة' : `أحجية ولغز: ${safeTitle}`)
+             : activeType === 'puzzle' ? `بازل التحدي: ${safeTitle}`
+             : defaultVideo.title,
+        riddle: {
+          ...defaultRiddle,
+          ...(hook.interactiveActivity?.riddle || {})
+        },
+        puzzle: {
+          ...defaultPuzzle,
+          ...(hook.interactiveActivity?.puzzle || {})
+        },
+        video: {
+          ...defaultVideo,
+          ...(hook.interactiveActivity?.video || {}),
+          ...(hook.media || {})
         }
-      }
+      };
+
+      // Also keep hook.media synchronized for backwards compatibility
+      hook.media = {
+        type: 'video',
+        title: hook.interactiveActivity.video.title,
+        searchQuery: hook.interactiveActivity.video.searchQuery,
+        youtubeUrl: hook.interactiveActivity.video.youtubeUrl,
+        reflectionQuestion: hook.interactiveActivity.video.reflectionQuestion
+      };
     }
     return lesson;
   };
@@ -2837,7 +2953,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
   }
 
   // High quality rich fallback
-  return {
+  return postProcessLesson({
     title: safeTitle,
     grade: safeGrade,
     objective: `أن يتمكن الطالب من استيعاب وتطبيق المهارات والمفاهيم الأساسية لدرس (${safeTitle}) وتبرير خطواته بدقة.`,
@@ -2919,7 +3035,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
         }
       }
     }
-  };
+  });
 };
 
 export const generateScientificGenieAI = async (question, chatHistory = [], studentName = 'مستكشفنا البطل') => {

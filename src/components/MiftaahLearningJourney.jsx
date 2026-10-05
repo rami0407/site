@@ -26,7 +26,41 @@ const DEFAULT_EXEMPLAR_LESSON = {
       suggestedDuration: 6,
       studentPrompt: 'لغز المشهد المحيّر 🧪\nإذا نقلنا نفس كمية الماء من كأس عريض إلى أنبوب ضيق، ماذا يحدث للشكل وماذا يحدث للحجم؟ وهل يتغير حجر الصوان إذا وضعناه في الكأس أو الأنبوب؟ فكر وشارك توقعك!',
       teacherGuidance: 'اعرض كأسين مختلفين وحجراً. استمع لفضول الطلاب دون إعلان الحل. اكتب الهدف المركزي ومعيار النجاح بخط بارز على اللوح وناقشه بعد لحظة الفضول.',
-      scaffold: 'لاحظ: هل ينسكب الحجر؟ وهل يأخذ الماء شكل كل إناء يوضع فيه؟'
+      scaffold: 'لاحظ: هل ينسكب الحجر؟ وهل يأخذ الماء شكل كل إناء يوضع فيه؟',
+      interactiveActivity: {
+        type: 'video',
+        title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+        video: {
+          title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+          embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
+          youtubeUrl: 'https://www.youtube.com/watch?v=bMnmJjL3hF8',
+          searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
+          reflectionQuestion: 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
+        },
+        riddle: {
+          title: 'أحجية المادة السحرية',
+          riddleText: 'أنا مادة سحرية في صفوف مشيرفة؛ إن وضعتني في كأس أصبحتُ كأساً، وإن صببتني في زجاجة أخذتُ شكل الزجاجة، ومع ذلك فحجمي باقٍ لا ينقص ولا يزيد! وإذا جمدتني صرتُ صلباً كالصخر، وإذا غليتني طرتُ كالدخان... فمن أكون؟ 🧪',
+          clues: [
+            '🔑 تلميح 1: أنا أشهر سائل على وجه الأرض ومن دونه لا تعيش الكائنات!',
+            '🔑 تلميح 2: استرجع حالات المادة الثلاث: أتحول بين الصلب والسائل والغاز.'
+          ],
+          options: ['حجر الصوان الصلب', 'الماء العجيب (H₂O) 💧', 'الهواء داخل البالون', 'قطعة الخشب'],
+          solution: 'الماء العجيب (H₂O) 💧',
+          explanation: 'الماء يمثل الحالة السائلة؛ حيث يأخذ شكل الإناء مع ثبات حجمه، كما يوضح لنا تحولات المادة الثلاث بالحرارة والبرودة!'
+        },
+        puzzle: {
+          title: 'بازل تحولات حالات المادة',
+          instruction: 'رتب تحولات حالات المادة بتسلسلها الحراري الصحيح من الأبرد إلى الأسخن لاكتمال البازل:',
+          pieces: [
+            { id: 'p1', text: '١. مكعب جليد صلب وجزيئاته متراصة وساكنة 🧊', order: 1 },
+            { id: 'p2', text: '٢. انصهار الجليد بالحرارة ليتحول إلى ماء سائل ينساب 💧', order: 2 },
+            { id: 'p3', text: '٣. تسخين الماء حتى الغليان وتباعد الجزيئات ♨️', order: 3 },
+            { id: 'p4', text: '٤. تصاعد بخار الماء كغاز ينتشر في كامل الغرفة 💨', order: 4 }
+          ],
+          targetConcept: 'دورة تحولات المادة الثلاث بتأثير درجة الحرارة',
+          successMessage: '🎉 مبروك! اكتمل بازل المادة بنجاح وتكشف سر تحول الجزيئات بالحرارة!'
+        }
+      }
     },
     '2_understanding': {
       name: 'فهم وبناء المعنى',
@@ -255,6 +289,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [toastMessage, setToastMessage] = useState(null);
   const [isVideoPickerOpen, setIsVideoPickerOpen] = useState(false);
   const [customVideoUrl, setCustomVideoUrl] = useState('');
+
+  // Interactive Activity States (Riddle & Puzzle)
+  const [revealedCluesMap, setRevealedCluesMap] = useState({});
+  const [isSolutionRevealedMap, setIsSolutionRevealedMap] = useState({});
+  const [studentRiddleGuess, setStudentRiddleGuess] = useState('');
+  const [riddleGuessFeedback, setRiddleGuessFeedback] = useState(null);
+  const [puzzlePiecesState, setPuzzlePiecesState] = useState({});
+  const [puzzleStatusMap, setPuzzleStatusMap] = useState({});
+  const [puzzleSelectedPieceIndex, setPuzzleSelectedPieceIndex] = useState(null);
 
   // Broadcast channel for live multi-tab & multi-window sync
   const channelRef = useRef(null);
@@ -738,150 +781,652 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast('تم تحديث وعرض الفيلم على شاشة الصف وأجهزة الطلاب فوراً! 🎬✨');
   };
 
-  const renderStationMedia = (stationData, isProjector = true) => {
-    const hasExplicitVideo = stationData?.media?.type === 'video' || stationData?.media?.youtubeUrl || stationData?.media?.url;
-    const promptHasVideoWords = (stationData?.studentPrompt || '').match(/فيديو|فيلم|مقطع|شاهدوا/i);
-    const requestsHasVideoWords = (activeLesson.specialRequests || '').match(/فيديو|فيلم|video|film/i);
-    const titleHasExcellence = (activeLesson.title || '').includes('تميز') || (activeLesson.title || '').includes('التميز');
+  // =========================================================================
+  // INTERACTIVE ACTIVITY RESOLVER & HANDLERS (Video, Riddle, Puzzle)
+  // =========================================================================
+  const resolveStationActivity = (lesson, station) => {
+    const act = station?.interactiveActivity || {};
+    const safeTitle = lesson?.title || 'الدرس';
+    const combined = `${safeTitle} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
+    const isExcellence = combined.includes('تميز') || combined.includes('التميز') || combined.includes('نجاح') || combined.includes('تفوق');
 
-    const shouldShowVideo = hasExplicitVideo || promptHasVideoWords || requestsHasVideoWords || (stationData.number === 1 && titleHasExcellence);
+    // 1. Resolve Video
+    const resolvedVid = resolveStationVideo(lesson, station);
+    const videoData = {
+      title: act.video?.title || station?.media?.title || resolvedVid.title,
+      embedUrl: act.video?.embedUrl || station?.media?.embedUrl || getYouTubeEmbedUrl(act.video?.youtubeUrl || station?.media?.youtubeUrl) || resolvedVid.embedUrl,
+      youtubeUrl: act.video?.youtubeUrl || station?.media?.youtubeUrl || '',
+      searchQuery: act.video?.searchQuery || station?.media?.searchQuery || resolvedVid.searchQuery,
+      reflectionQuestion: act.video?.reflectionQuestion || station?.media?.reflectionQuestion || resolvedVid.reflectionQuestion
+    };
 
-    if (!shouldShowVideo) {
-      return null;
+    // 2. Resolve Riddle
+    const riddleData = act.riddle || (isExcellence ? {
+      title: 'أحجية التميز والإتقان',
+      riddleText: 'لستُ شيئاً تشتريه بالمال، ولا حجراً تجده في الرمال. إن بدأتَ عملاً أتقنته، وإن واجهك فشلٌ تحديته وتجاوزته! لا أرضى بالعادي بل أطمح للأفضل دائماً... فمن أكون؟ 🔮',
+      clues: [
+        '🔑 تلميح 1: كلمة تبدأ بحرف التاء، وترتبط بالإتقان والشغف والاجتهاد.',
+        '🔑 تلميح 2: هو شعار مدرستنا مشيرفة، والسر وراء كل عالم ومبتكر ومبدع!'
+      ],
+      options: ['الكسل والانتظار', 'العمل العادي', 'التميّز والإتقان ⭐', 'الاستسلام السريع'],
+      solution: 'التميّز والإتقان ⭐',
+      explanation: 'التميز ليس موهبة نولد بها فحسب، بل هو قرار واختيار يومي بالسعي والاجتهاد والتطور المستمر كما سنكتشف في محطات درسنا اليوم!'
+    } : {
+      title: `أحجية استنتاجية: ${safeTitle}`,
+      riddleText: `أنا سرٌّ يرتبط بـ (${safeTitle})، أظهر في البداية كمفارقة محيرة، ولكن حينما تفكر في أسبابي وتستكشف خصائصه، أصبح مفتاحك للحل والنجاح... فما هو التفسير العلمي المنطقي وراء هذا الموقف؟ 🔮`,
+      clues: [
+        '🔑 تلميح 1: فكر في العلاقة المباشرة بين المعطيات وما تعلمته سابقاً.',
+        '🔑 تلميح 2: استبعد التخمينات العشوائية وركز على الخاصية الأساسية التي لا تتغير.'
+      ],
+      options: ['تفسير عشوائي بدون دليل', `المفهوم العلمي المنطقي لـ ${safeTitle} 🎯`, 'تجاهل الموقف', 'الاعتماد على الحظ'],
+      solution: `المفهوم العلمي المنطقي لـ (${safeTitle}) 🎯`,
+      explanation: `الحل يكمن في تطبيق التفكير المنطقي وربط الملاحظة بالدليل للوصول للهدف التعليمي للحصة.`
+    });
+
+    // 3. Resolve Puzzle
+    const puzzleData = act.puzzle || (isExcellence ? {
+      title: 'بازل قمة التميز',
+      instruction: 'رتب مراحل صعود قمة التميز بالترتيب الذهبي الصحيح لاكتمال البازل:',
+      pieces: [
+        { id: 'p1', text: '١. تحديد الهدف والشغف 🎯', order: 1 },
+        { id: 'p2', text: '٢. البدء بالمحاولة الأولى والتدريب المستمر 🏃‍♂️', order: 2 },
+        { id: 'p3', text: '٣. التعلم من الأخطاء وتجاوز العثرات 💡', order: 3 },
+        { id: 'p4', text: '٤. الوصول إلى الإتقان والتميز وخدمة المجتمع 🌟', order: 4 }
+      ],
+      targetConcept: 'معادلة التميز الحقيقي في مدرسة مشيرفة الابتدائية',
+      successMessage: '🎉 رائع جداً! لقد ركّبتم بازل التميز واكتشفتم أن التميز رحلة إصرار وعمل مستمر!'
+    } : {
+      title: `بازل خطوات: ${safeTitle}`,
+      instruction: `رتب خطوات استكشاف وتطبيق (${safeTitle}) بالترتيب الصحيح لاكتمال البازل المعرفي:`,
+      pieces: [
+        { id: 'p1', text: '١. الملاحظة واستكشاف الموقف وتحديد المشكلة 🔍', order: 1 },
+        { id: 'p2', text: '٢. تحليل المعطيات وربط العلاقات ببعضها 🧩', order: 2 },
+        { id: 'p3', text: '٣. صياغة الاستنتاج وتطبيق القاعدة الحسابية/العلمية ⚙️', order: 3 },
+        { id: 'p4', text: '٤. التحقق من صحة الحل وتقديم الدليل الفردي ✅', order: 4 }
+      ],
+      targetConcept: `المسار المتكامل لفهم وتطبيق (${safeTitle})`,
+      successMessage: `🎉 ممتاز! اكتمل بازل المعرفة بنجاح وحصلتم على المفتاح الذهبي للمحطة!`
+    });
+
+    // Current active type override from sessionState or lesson
+    const stNum = station.number || 1;
+    const sessionOverride = sessionState.activityTypeByStation?.[stNum];
+    let activeType = sessionOverride || act.type || 'video';
+    if (!sessionOverride && !act.type) {
+      if (combined.match(/أحجية|احجية|لغز|فزورة|غموض|riddle/i)) activeType = 'riddle';
+      else if (combined.match(/بازل|puzzle|ترتيب|تركيب/i)) activeType = 'puzzle';
     }
 
-    const resolved = resolveStationVideo(activeLesson, stationData);
-    const activeEmbedUrl = stationData?.media?.embedUrl || getYouTubeEmbedUrl(stationData?.media?.youtubeUrl || stationData?.media?.url) || resolved.embedUrl;
-    const activeTitle = stationData?.media?.title || resolved.title;
-    const activeSearchQuery = stationData?.media?.searchQuery || resolved.searchQuery;
-    const activeReflection = stationData?.media?.reflectionQuestion || resolved.reflectionQuestion;
+    return {
+      activeType,
+      video: videoData,
+      riddle: riddleData,
+      puzzle: puzzleData
+    };
+  };
+
+  const handleSwitchStationActivityType = (stNum, newType) => {
+    const stKey = STATION_KEYS_ORDER[stNum - 1] || '1_hook';
+    const currentAct = activeLesson.stations[stKey]?.interactiveActivity || {};
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stKey]: {
+          ...activeLesson.stations[stKey],
+          interactiveActivity: {
+            ...currentAct,
+            type: newType
+          }
+        }
+      }
+    };
+    setActiveLesson(updatedLesson);
+
+    const nextSession = {
+      ...sessionState,
+      activityTypeByStation: {
+        ...(sessionState.activityTypeByStation || {}),
+        [stNum]: newType
+      },
+      lastActivityUpdate: Date.now()
+    };
+    broadcastSession(nextSession);
+
+    const typeLabels = { video: 'فيلم ومقطع فيديو 🎬', riddle: 'أحجية ولغز تفاعلي 🔮', puzzle: 'بازل تفاعلي 🧩' };
+    showToast(`تم التبديل إلى ${typeLabels[newType] || newType} وعرضه للجميع! ✨`);
+  };
+
+  // Riddle Handlers
+  const handleRevealClue = (stNum, maxClues) => {
+    setRevealedCluesMap(prev => {
+      const cur = prev[stNum] || 0;
+      if (cur < maxClues) {
+        showToast(`تم فتح السقالة ${cur + 1} بنجاح! 🔑💡`);
+        return { ...prev, [stNum]: cur + 1 };
+      }
+      return prev;
+    });
+  };
+
+  const handleToggleSolution = (stNum) => {
+    setIsSolutionRevealedMap(prev => {
+      const nextVal = !prev[stNum];
+      if (nextVal) showToast('تم كشف سر الأحجية والحل مع ربطه بالدرس! 🔓✨');
+      return { ...prev, [stNum]: nextVal };
+    });
+  };
+
+  const handleStudentRiddleOptionClick = (stNum, opt, solution) => {
+    const isCorrect = solution.includes(opt) || opt.includes(solution) || opt.includes('⭐') || opt.includes('🎯');
+    if (isCorrect) {
+      setRiddleGuessFeedback({ stNum, isCorrect: true, msg: '🎉 إجابة عبقرية وصحيحة! أحسنتم التفكير الاستنتاجي!' });
+      setIsSolutionRevealedMap(prev => ({ ...prev, [stNum]: true }));
+      showToast('🎉 إجابة صحيحة! أحسنتم كشف سر اللغز!');
+    } else {
+      setRiddleGuessFeedback({ stNum, isCorrect: false, msg: '💡 محاولة ذكية! استعينوا بالسقالات (التلميحات) وجربوا مجدداً.' });
+    }
+  };
+
+  // Puzzle Handlers
+  const getStationPuzzlePieces = (stNum, defaultPieces = []) => {
+    if (puzzlePiecesState[stNum] && puzzlePiecesState[stNum].length > 0) {
+      return puzzlePiecesState[stNum];
+    }
+    // Return slightly scrambled default pieces for initial interaction
+    const scrambled = [...defaultPieces];
+    if (scrambled.length > 2) {
+      // swap piece 0 and 1 or reverse middle
+      const temp = scrambled[0];
+      scrambled[0] = scrambled[1];
+      scrambled[1] = temp;
+    }
+    return scrambled;
+  };
+
+  const handleMovePuzzlePiece = (stNum, index, direction, defaultPieces) => {
+    const currentList = [...getStationPuzzlePieces(stNum, defaultPieces)];
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= currentList.length) return;
+
+    const temp = currentList[index];
+    currentList[index] = currentList[targetIdx];
+    currentList[targetIdx] = temp;
+
+    setPuzzlePiecesState(prev => ({ ...prev, [stNum]: currentList }));
+    setPuzzleSelectedPieceIndex(null);
+  };
+
+  const handlePuzzlePieceClick = (stNum, clickedIdx, defaultPieces) => {
+    const currentList = [...getStationPuzzlePieces(stNum, defaultPieces)];
+    if (puzzleSelectedPieceIndex === null) {
+      setPuzzleSelectedPieceIndex(clickedIdx);
+      showToast('اضغط على قطعة أخرى للتبديل بينهما 🔄');
+    } else if (puzzleSelectedPieceIndex === clickedIdx) {
+      setPuzzleSelectedPieceIndex(null);
+    } else {
+      const temp = currentList[puzzleSelectedPieceIndex];
+      currentList[puzzleSelectedPieceIndex] = currentList[clickedIdx];
+      currentList[clickedIdx] = temp;
+      setPuzzlePiecesState(prev => ({ ...prev, [stNum]: currentList }));
+      setPuzzleSelectedPieceIndex(null);
+      showToast('تم تبديل موقع القطعتين 🔄');
+    }
+  };
+
+  const handleCheckPuzzle = (stNum, pieces, successMessage, targetConcept) => {
+    const currentList = getStationPuzzlePieces(stNum, pieces);
+    const isSolved = currentList.every((p, idx) => p.order === (idx + 1));
+    if (isSolved) {
+      setPuzzleStatusMap(prev => ({
+        ...prev,
+        [stNum]: {
+          isSolved: true,
+          msg: successMessage || '🎉 رائع جداً! اكتمل البازل بنجاح وتكشف مفتاح المعرفة!'
+        }
+      }));
+      showToast('🎉 مبارك! اكتمل البازل بالتسلسل المنطقي الصحيح!');
+    } else {
+      setPuzzleStatusMap(prev => ({
+        ...prev,
+        [stNum]: {
+          isSolved: false,
+          msg: '💡 ما زالت بعض القطع بحاجة لإعادة ترتيب، استعن بزر «سقالة (ترتيب قطعة)» للمساعدة!'
+        }
+      }));
+      showToast('💡 بعض القطع تحتاج لمراجعة، حاول مجدداً!');
+    }
+  };
+
+  const handleScaffoldSolvePiece = (stNum, pieces) => {
+    const currentList = [...getStationPuzzlePieces(stNum, pieces)];
+    // Find first misplaced slot
+    for (let i = 0; i < currentList.length; i++) {
+      if (currentList[i].order !== (i + 1)) {
+        const correctPieceIdx = currentList.findIndex(p => p.order === (i + 1));
+        if (correctPieceIdx !== -1) {
+          const temp = currentList[i];
+          currentList[i] = currentList[correctPieceIdx];
+          currentList[correctPieceIdx] = temp;
+          setPuzzlePiecesState(prev => ({ ...prev, [stNum]: currentList }));
+          showToast(`تم استخدام السقالة لترتيب القطعة (${i + 1}) في مكانها الصحيح! 🔑✨`);
+          return;
+        }
+      }
+    }
+    showToast('جميع القطع في أماكنها الصحيحة بالفعل! 🎯');
+  };
+
+  const handleScramblePuzzle = (stNum, pieces) => {
+    const shuffled = [...pieces].sort(() => Math.random() - 0.5);
+    setPuzzlePiecesState(prev => ({ ...prev, [stNum]: shuffled }));
+    setPuzzleStatusMap(prev => ({ ...prev, [stNum]: null }));
+    setPuzzleSelectedPieceIndex(null);
+    showToast('تمت إعادة خلط قطع البازل للتحدي من جديد 🔄');
+  };
+
+  // =========================================================================
+  // SUB-RENDERERS: INTERACTIVE ACTIVITIES (Video, Riddle, Puzzle)
+  // =========================================================================
+  const renderStationInteractiveActivity = (stationData, isProjector = true) => {
+    if (!stationData) return null;
+    const stNum = stationData.number || 1;
+    const resolvedActivity = resolveStationActivity(activeLesson, stationData);
+    const activeType = resolvedActivity.activeType;
 
     return (
-      <div className={`station-video-showcase-box ${isProjector ? 'projector-mode' : 'student-mode'} animate-fade-in`}>
-        {/* Video Top Header */}
-        <div className="video-player-top-header">
-          <div className="video-badge-title">
-            <span className="play-pulse-icon">▶</span>
-            <div>
-              <span className="vid-tag-label">فيلم ومقطع المحطة:</span>
-              <strong className="vid-name-text">{activeTitle}</strong>
-            </div>
+      <div className={`station-interactive-showcase-box ${isProjector ? 'projector-mode' : 'student-mode'} animate-fade-in`}>
+        {/* Activity Mode Switcher Ribbon */}
+        <div className="activity-type-switcher-bar">
+          <div className="switcher-badge-label">
+            <i className="fas fa-sparkles"></i> <strong>المدخل التفاعلي للمحطة:</strong>
           </div>
-
-          <div className="video-header-actions">
-            <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(activeSearchQuery)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-yt-direct-search"
-              title="البحث المباشر على يوتيوب عن مقاطع أخرى لنفس موضوع الدرس"
+          <div className="switcher-buttons-group">
+            <button
+              type="button"
+              className={`btn-act-tab ${activeType === 'video' ? 'active' : ''}`}
+              onClick={() => handleSwitchStationActivityType(stNum, 'video')}
+              title="عرض فيلم أو مقطع فيديو تعليمي مشوّق"
             >
-              <i className="fab fa-youtube"></i> بحث في YouTube ↗
-            </a>
-            {isProjector && (
-              <button
-                type="button"
-                className="btn-toggle-video-picker"
-                onClick={() => setIsVideoPickerOpen(prev => !prev)}
-                title="تغيير الفيلم أو لصق رابط يوتيوب آخر"
-              >
-                <i className="fas fa-exchange-alt"></i> {isVideoPickerOpen ? 'إغلاق الخيارات' : 'تغيير الفيلم 🎬'}
-              </button>
+              🎬 فيلم ومقطع
+            </button>
+            <button
+              type="button"
+              className={`btn-act-tab ${activeType === 'riddle' ? 'active' : ''}`}
+              onClick={() => handleSwitchStationActivityType(stNum, 'riddle')}
+              title="عرض أحجية ولغز استنتاجي مع سقالات"
+            >
+              🔮 أحجية ولغز
+            </button>
+            <button
+              type="button"
+              className={`btn-act-tab ${activeType === 'puzzle' ? 'active' : ''}`}
+              onClick={() => handleSwitchStationActivityType(stNum, 'puzzle')}
+              title="عرض بازل تركيبي وترتيب خطوات تفاعلي"
+            >
+              🧩 بازل تفاعلي
+            </button>
+          </div>
+        </div>
+
+        {/* 1. Video Player Mode */}
+        {activeType === 'video' && (
+          <div className="activity-subview-video animate-fade-in">
+            <div className="video-player-top-header">
+              <div className="video-badge-title">
+                <span className="play-pulse-icon">▶</span>
+                <div>
+                  <span className="vid-tag-label">فيلم ومقطع المحطة:</span>
+                  <strong className="vid-name-text">{resolvedActivity.video.title}</strong>
+                </div>
+              </div>
+
+              <div className="video-header-actions">
+                <a
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(resolvedActivity.video.searchQuery)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-yt-direct-search"
+                  title="البحث المباشر على يوتيوب عن مقاطع أخرى لنفس موضوع الدرس"
+                >
+                  <i className="fab fa-youtube"></i> بحث في YouTube ↗
+                </a>
+                {isProjector && (
+                  <button
+                    type="button"
+                    className="btn-toggle-video-picker"
+                    onClick={() => setIsVideoPickerOpen(prev => !prev)}
+                    title="تغيير الفيلم أو لصق رابط يوتيوب آخر"
+                  >
+                    <i className="fas fa-exchange-alt"></i> {isVideoPickerOpen ? 'إغلاق الخيارات' : 'تغيير الفيلم 🎬'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="video-iframe-wrapper">
+              <iframe
+                src={resolvedActivity.video.embedUrl}
+                title={resolvedActivity.video.title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="video-main-iframe"
+              ></iframe>
+            </div>
+
+            <div className="video-reflection-bar">
+              <div className="reflection-title-tag">
+                <i className="fas fa-lightbulb"></i> سؤال التأمل والمناقشة الصفية بعد المشاهدة:
+              </div>
+              <p className="reflection-question-content">{resolvedActivity.video.reflectionQuestion}</p>
+            </div>
+
+            {/* Video Picker Drawer (for teacher) */}
+            {isProjector && isVideoPickerOpen && (
+              <div className="video-picker-quick-drawer animate-pop">
+                <div className="drawer-head">
+                  <h4><i className="fas fa-film"></i> اختر من الفيديوهات المقترحة للدرس أو الصق رابطاً:</h4>
+                  <button type="button" onClick={() => setIsVideoPickerOpen(false)}>&times;</button>
+                </div>
+
+                <div className="curated-videos-grid">
+                  {EDUCATIONAL_VIDEOS_LIBRARY.map((v, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`curated-vid-card ${resolvedActivity.video.embedUrl.includes(v.youtubeId) ? 'selected' : ''}`}
+                      onClick={() => {
+                        handleUpdateStationVideo({
+                          type: 'video',
+                          title: v.title,
+                          youtubeId: v.youtubeId,
+                          embedUrl: v.embedUrl,
+                          searchQuery: v.searchQuery,
+                          reflectionQuestion: resolvedActivity.video.reflectionQuestion
+                        });
+                        setIsVideoPickerOpen(false);
+                      }}
+                    >
+                      <span className="cv-icon">🎬</span>
+                      <div className="cv-info">
+                        <strong>{v.title}</strong>
+                        <small>{v.caption}</small>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="custom-yt-input-row">
+                  <input
+                    type="text"
+                    placeholder="ألصق رابط يوتيوب هنا (مثل: https://www.youtube.com/watch?v=...)"
+                    value={customVideoUrl}
+                    onChange={e => setCustomVideoUrl(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn-apply-custom-video"
+                    onClick={() => {
+                      if (!customVideoUrl.trim()) return;
+                      const embed = getYouTubeEmbedUrl(customVideoUrl);
+                      if (!embed) {
+                        showToast('يرجى التأكد من صحة رابط يوتيوب المدخل');
+                        return;
+                      }
+                      handleUpdateStationVideo({
+                        type: 'video',
+                        title: `فيديو مخصص: ${activeLesson.title}`,
+                        embedUrl: embed,
+                        youtubeUrl: customVideoUrl,
+                        searchQuery: activeLesson.title,
+                        reflectionQuestion: resolvedActivity.video.reflectionQuestion
+                      });
+                      setCustomVideoUrl('');
+                      setIsVideoPickerOpen(false);
+                    }}
+                  >
+                    <i className="fas fa-check"></i> تطبيق وعرض الفيلم 📺
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Video Responsive Player */}
-        <div className="video-iframe-wrapper">
-          <iframe
-            src={activeEmbedUrl}
-            title={activeTitle}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="video-main-iframe"
-          ></iframe>
-        </div>
-
-        {/* Reflection Box below video */}
-        <div className="video-reflection-bar">
-          <div className="reflection-title-tag">
-            <i className="fas fa-lightbulb"></i> سؤال التأمل والمناقشة الصفية بعد المشاهدة:
-          </div>
-          <p className="reflection-question-content">{activeReflection}</p>
-        </div>
-
-        {/* Video Picker Drawer (for teacher) */}
-        {isProjector && isVideoPickerOpen && (
-          <div className="video-picker-quick-drawer animate-pop">
-            <div className="drawer-head">
-              <h4><i className="fas fa-film"></i> اختر من الفيديوهات المقترحة للدرس أو الصق رابطاً:</h4>
-              <button type="button" onClick={() => setIsVideoPickerOpen(false)}>&times;</button>
+        {/* 2. Riddle Mode */}
+        {activeType === 'riddle' && (
+          <div className="activity-subview-riddle animate-fade-in">
+            <div className="riddle-top-header">
+              <div className="riddle-badge">
+                <span className="mystery-orb-icon">🔮</span>
+                <div>
+                  <span className="riddle-tag-label">أحجية ومفارقة المحطة:</span>
+                  <strong className="riddle-title-text">{resolvedActivity.riddle.title}</strong>
+                </div>
+              </div>
+              <div className="riddle-scaffold-counter">
+                <span className="scaffold-key-badge">
+                  🔑 السقالات المفتوحة: {revealedCluesMap[stNum] || 0} من {resolvedActivity.riddle.clues?.length || 2}
+                </span>
+              </div>
             </div>
 
-            <div className="curated-videos-grid">
-              {EDUCATIONAL_VIDEOS_LIBRARY.map((v, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`curated-vid-card ${activeEmbedUrl.includes(v.youtubeId) ? 'selected' : ''}`}
-                  onClick={() => {
-                    handleUpdateStationVideo({
-                      type: 'video',
-                      title: v.title,
-                      youtubeId: v.youtubeId,
-                      embedUrl: v.embedUrl,
-                      searchQuery: v.searchQuery,
-                      reflectionQuestion: activeReflection
-                    });
-                    setIsVideoPickerOpen(false);
-                  }}
-                >
-                  <span className="cv-icon">🎬</span>
-                  <div className="cv-info">
-                    <strong>{v.title}</strong>
-                    <small>{v.caption}</small>
+            <div className="riddle-statement-card">
+              <div className="riddle-watermark-icon">؟</div>
+              <p className="riddle-text">{resolvedActivity.riddle.riddleText}</p>
+            </div>
+
+            {/* Scaffolds / Clues Area */}
+            <div className="riddle-clues-section">
+              <div className="clues-header-row">
+                <span><i className="fas fa-key"></i> مفاتيح وسقالات الحل (للتفكير والاستنتاج):</span>
+                {(revealedCluesMap[stNum] || 0) < (resolvedActivity.riddle.clues?.length || 2) && (
+                  <button
+                    type="button"
+                    className="btn-unlock-clue"
+                    onClick={() => handleRevealClue(stNum, resolvedActivity.riddle.clues?.length || 2)}
+                  >
+                    <i className="fas fa-lock-open"></i> افتح سقالة تلميح ({((revealedCluesMap[stNum] || 0) + 1)}) 💡
+                  </button>
+                )}
+              </div>
+              <div className="clues-list">
+                {(resolvedActivity.riddle.clues || []).slice(0, revealedCluesMap[stNum] || 0).map((clue, cIdx) => (
+                  <div key={cIdx} className="clue-item-card animate-slide-down">
+                    <span className="clue-num">مفتاح {cIdx + 1}:</span>
+                    <span className="clue-content">{clue}</span>
                   </div>
-                </button>
-              ))}
+                ))}
+                {(revealedCluesMap[stNum] || 0) === 0 && (
+                  <div className="clues-placeholder-hint">
+                    💡 هل تحتاجون لسقالة مساندة؟ اضغطوا على «افتح سقالة تلميح» لكشف أول مفتاح تفكير!
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="custom-yt-input-row">
-              <input
-                type="text"
-                placeholder="ألصق رابط يوتيوب هنا (مثل: https://www.youtube.com/watch?v=...)"
-                value={customVideoUrl}
-                onChange={e => setCustomVideoUrl(e.target.value)}
-              />
+            {/* Multiple Choice Options */}
+            {resolvedActivity.riddle.options && resolvedActivity.riddle.options.length > 0 && (
+              <div className="riddle-options-block">
+                <h5 className="options-title"><i className="fas fa-check-circle"></i> اختبر فرضيتك: اختر الإجابة التي تكشف سر الأحجية:</h5>
+                <div className="riddle-options-grid">
+                  {resolvedActivity.riddle.options.map((opt, oIdx) => (
+                    <button
+                      key={oIdx}
+                      type="button"
+                      className="riddle-option-btn"
+                      onClick={() => handleStudentRiddleOptionClick(stNum, opt, resolvedActivity.riddle.solution)}
+                    >
+                      <span className="opt-letter">{String.fromCharCode(65 + oIdx)}</span>
+                      <span className="opt-text">{opt}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Feedback Banner */}
+            {riddleGuessFeedback && riddleGuessFeedback.stNum === stNum && (
+              <div className={`riddle-feedback-banner ${riddleGuessFeedback.isCorrect ? 'correct' : 'try-again'} animate-bounce`}>
+                {riddleGuessFeedback.msg}
+              </div>
+            )}
+
+            {/* Solution & Explanation Footer */}
+            <div className="riddle-solution-footer">
               <button
                 type="button"
-                className="btn-apply-custom-video"
-                onClick={() => {
-                  if (!customVideoUrl.trim()) return;
-                  const embed = getYouTubeEmbedUrl(customVideoUrl);
-                  if (!embed) {
-                    showToast('يرجى التأكد من صحة رابط يوتيوب المدخل');
-                    return;
-                  }
-                  handleUpdateStationVideo({
-                    type: 'video',
-                    title: `فيديو مخصص: ${activeLesson.title}`,
-                    embedUrl: embed,
-                    youtubeUrl: customVideoUrl,
-                    searchQuery: activeLesson.title,
-                    reflectionQuestion: activeReflection
-                  });
-                  setCustomVideoUrl('');
-                  setIsVideoPickerOpen(false);
-                }}
+                className="btn-toggle-solution"
+                onClick={() => handleToggleSolution(stNum)}
               >
-                <i className="fas fa-check"></i> تطبيق وعرض الفيلم 📺
+                <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
+                {isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والربط بالدرس ✨'}
               </button>
+
+              {isSolutionRevealedMap[stNum] && (
+                <div className="riddle-solution-box animate-pop">
+                  <div className="solution-head">
+                    <span className="gold-star">⭐</span>
+                    <strong>الحل الصحيح: {resolvedActivity.riddle.solution}</strong>
+                  </div>
+                  {resolvedActivity.riddle.explanation && (
+                    <p className="solution-explanation">
+                      <strong>💡 الربط بهدف الحصة: </strong>{resolvedActivity.riddle.explanation}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
+
+        {/* 3. Puzzle Mode */}
+        {activeType === 'puzzle' && (() => {
+          const pieces = resolvedActivity.puzzle.pieces || [];
+          const currentPieces = getStationPuzzlePieces(stNum, pieces);
+          const puzzleStatus = puzzleStatusMap[stNum];
+
+          return (
+            <div className="activity-subview-puzzle animate-fade-in">
+              <div className="puzzle-top-header">
+                <div className="puzzle-badge">
+                  <span className="puzzle-icon-spin">🧩</span>
+                  <div>
+                    <span className="puzzle-tag-label">بازل التحدي الذهني والترتيب:</span>
+                    <strong className="puzzle-title-text">{resolvedActivity.puzzle.title}</strong>
+                  </div>
+                </div>
+                <div className="puzzle-header-actions">
+                  <button
+                    type="button"
+                    className="btn-puzzle-scaffold"
+                    onClick={() => handleScaffoldSolvePiece(stNum, pieces)}
+                    title="ترتيب قطعة واحدة كمساعدة"
+                  >
+                    <i className="fas fa-magic"></i> سقالة (ترتيب قطعة) 🔑
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-puzzle-reset"
+                    onClick={() => handleScramblePuzzle(stNum, pieces)}
+                    title="إعادة خلط القطع للتحدي"
+                  >
+                    <i className="fas fa-random"></i> إعادة خلط 🔄
+                  </button>
+                </div>
+              </div>
+
+              <div className="puzzle-instruction-bar">
+                <i className="fas fa-info-circle"></i> {resolvedActivity.puzzle.instruction || 'رتب قطع البازل بالتسلسل المنطقي الصحيح لإكمال المفتاح المعرفي!'}
+              </div>
+
+              {/* Pieces Container */}
+              <div className="puzzle-pieces-container">
+                {currentPieces.map((piece, pIdx) => {
+                  const isCorrectPosition = piece.order === (pIdx + 1);
+                  const isSelected = puzzleSelectedPieceIndex === pIdx;
+
+                  return (
+                    <div
+                      key={piece.id || pIdx}
+                      className={`puzzle-piece-card ${isCorrectPosition ? 'in-correct-slot' : 'misplaced'} ${isSelected ? 'selected-for-swap' : ''}`}
+                      onClick={() => handlePuzzlePieceClick(stNum, pIdx, pieces)}
+                    >
+                      <div className="piece-index-slot">
+                        <span className="slot-num">{pIdx + 1}</span>
+                        {isCorrectPosition && <span className="slot-check-icon">✓</span>}
+                      </div>
+                      <div className="piece-text-area">
+                        <p>{piece.text}</p>
+                      </div>
+                      <div className="piece-controls">
+                        <button
+                          type="button"
+                          className="btn-move-piece"
+                          disabled={pIdx === 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMovePuzzlePiece(stNum, pIdx, -1, pieces);
+                          }}
+                          title="تحريك للأعلى"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-move-piece"
+                          disabled={pIdx === currentPieces.length - 1}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMovePuzzlePiece(stNum, pIdx, 1, pieces);
+                          }}
+                          title="تحريك للأسفل"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Check & Result Footer */}
+              <div className="puzzle-action-footer">
+                <button
+                  type="button"
+                  className="btn-check-puzzle"
+                  onClick={() => handleCheckPuzzle(stNum, pieces, resolvedActivity.puzzle.successMessage, resolvedActivity.puzzle.targetConcept)}
+                >
+                  <i className="fas fa-check-double"></i> تحقق من اكتمال البازل 🎯
+                </button>
+
+                {puzzleStatus && (
+                  <div className={`puzzle-result-alert ${puzzleStatus.isSolved ? 'solved-banner' : 'try-again-banner'} animate-pop`}>
+                    <div className="alert-content">
+                      <span className="alert-emoji">{puzzleStatus.isSolved ? '🎉' : '💡'}</span>
+                      <div>
+                        <strong>{puzzleStatus.msg}</strong>
+                        {puzzleStatus.isSolved && resolvedActivity.puzzle.targetConcept && (
+                          <p className="target-concept-reveal">
+                            🔑 <strong>المفتاح المعرفي المكتشف:</strong> {resolvedActivity.puzzle.targetConcept}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
+  };
+
+  // Backwards compatibility alias for renderStationMedia
+  const renderStationMedia = (stationData, isProjector = true) => {
+    return renderStationInteractiveActivity(stationData, isProjector);
   };
 
   // =========================================================================
@@ -1575,29 +2120,98 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   <i className="fas fa-paper-plane"></i> اعرض التعديل للطلاب الآن 📤
                 </button>
 
-                {/* Backstage Video Manager */}
+                {/* Backstage Interactive Activity Manager */}
                 <div className="backstage-video-manager-panel">
                   <div className="bvm-header">
-                    <i className="fas fa-video"></i>
-                    <span>مقطع وفيلم المحطة (يوتيوب):</span>
+                    <i className="fas fa-sparkles"></i>
+                    <span>المدخل التفاعلي للمحطة ({sessionState.activeStationIndex}):</span>
                   </div>
-                  <div className="bvm-controls-row">
+                  <div className="bvm-type-tabs">
                     <button
                       type="button"
-                      className="btn-bvm-picker"
-                      onClick={() => setIsVideoPickerOpen(prev => !prev)}
+                      className={`btn-bvm-tab ${(!sessionState.activityTypeByStation?.[sessionState.activeStationIndex] || sessionState.activityTypeByStation?.[sessionState.activeStationIndex] === 'video') ? 'active' : ''}`}
+                      onClick={() => handleSwitchStationActivityType(sessionState.activeStationIndex, 'video')}
                     >
-                      🎬 {isVideoPickerOpen ? 'إغلاق نافذة الفيديو' : 'اختيار / تغيير الفيلم'}
+                      🎬 فيلم
                     </button>
-                    <a
-                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent((activeLesson.title || 'درس') + ' فيلم قصير كرتوني للاطفال')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-bvm-yt"
-                      title="ابحث في يوتيوب عن مقاطع مناسبة"
+                    <button
+                      type="button"
+                      className={`btn-bvm-tab ${sessionState.activityTypeByStation?.[sessionState.activeStationIndex] === 'riddle' ? 'active' : ''}`}
+                      onClick={() => handleSwitchStationActivityType(sessionState.activeStationIndex, 'riddle')}
                     >
-                      <i className="fab fa-youtube"></i> بحث يوتيوب ↗
-                    </a>
+                      🔮 أحجية
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn-bvm-tab ${sessionState.activityTypeByStation?.[sessionState.activeStationIndex] === 'puzzle' ? 'active' : ''}`}
+                      onClick={() => handleSwitchStationActivityType(sessionState.activeStationIndex, 'puzzle')}
+                    >
+                      🧩 بازل
+                    </button>
+                  </div>
+                  <div className="bvm-controls-row">
+                    {sessionState.activityTypeByStation?.[sessionState.activeStationIndex] === 'riddle' ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-bvm-picker"
+                          onClick={() => handleRevealClue(sessionState.activeStationIndex, 3)}
+                        >
+                          🔑 فتح سقالة تلميح للطلاب 💡
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-bvm-yt"
+                          onClick={() => handleToggleSolution(sessionState.activeStationIndex)}
+                        >
+                          🔓 كشف/إخفاء الحل
+                        </button>
+                      </>
+                    ) : sessionState.activityTypeByStation?.[sessionState.activeStationIndex] === 'puzzle' ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-bvm-picker"
+                          onClick={() => {
+                            const curSt = getStationByIndex(sessionState.activeStationIndex);
+                            const pieces = resolveStationActivity(activeLesson, curSt).puzzle.pieces || [];
+                            handleScaffoldSolvePiece(sessionState.activeStationIndex, pieces);
+                          }}
+                        >
+                          🔑 سقالة (ترتيب قطعة)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-bvm-yt"
+                          onClick={() => {
+                            const curSt = getStationByIndex(sessionState.activeStationIndex);
+                            const pieces = resolveStationActivity(activeLesson, curSt).puzzle.pieces || [];
+                            handleScramblePuzzle(sessionState.activeStationIndex, pieces);
+                          }}
+                        >
+                          🔄 إعادة خلط
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-bvm-picker"
+                          onClick={() => setIsVideoPickerOpen(prev => !prev)}
+                        >
+                          🎬 {isVideoPickerOpen ? 'إغلاق الخيارات' : 'تغيير الفيلم'}
+                        </button>
+                        <a
+                          href={`https://www.youtube.com/results?search_query=${encodeURIComponent((activeLesson.title || 'درس') + ' فيلم قصير كرتوني للاطفال')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-bvm-yt"
+                          title="ابحث في يوتيوب عن مقاطع مناسبة"
+                        >
+                          <i className="fab fa-youtube"></i> بحث يوتيوب ↗
+                        </a>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
