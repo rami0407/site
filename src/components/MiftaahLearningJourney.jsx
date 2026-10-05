@@ -1,0 +1,2083 @@
+import React, { useState, useEffect, useRef } from 'react';
+import './MiftaahLearningJourney.css';
+import {
+  generateMiftaahFullJourneyLessonAI,
+  modifyMiftaahStationWithPromptAI,
+  generateMiftaahGroupTasksAI
+} from '../utils/aiService';
+
+// =========================================================================
+// 1. DEFAULT EXEMPLARY LESSON (حصة نموذجية متكاملة لـ «مِفتاح — رحلة التعلّم»)
+// =========================================================================
+const DEFAULT_EXEMPLAR_LESSON = {
+  id: 'exemplar_matter_states',
+  title: 'حالات المادة وخصائصها وتغيراتها (صلب، سائل، غاز)',
+  grade: 'الصف الرابع',
+  specialRequests: 'التركيز على التجريب العملي والاستكشاف الموجّه مع تمايز التحديات',
+  objective: 'يصنّف الطالب مواد مألوفة إلى صلبة وسائلة وغازية ويبرر التصنيف بخاصية مناسبة.',
+  successCriteria: 'تصنيف ثلاثة أمثلة جديدة تصنيفاً صحيحاً مع تبرير مناسب يرتكز على الشكل أو الحجم.',
+  suggestedDuration: 45,
+  stations: {
+    '1_hook': {
+      name: 'مشوّق ومحفّز',
+      number: 1,
+      icon: '🔥',
+      symbol: 'م',
+      suggestedDuration: 6,
+      studentPrompt: 'لغز المشهد المحيّر 🧪\nإذا نقلنا نفس كمية الماء من كأس عريض إلى أنبوب ضيق، ماذا يحدث للشكل وماذا يحدث للحجم؟ وهل يتغير حجر الصوان إذا وضعناه في الكأس أو الأنبوب؟ فكر وشارك توقعك!',
+      teacherGuidance: 'اعرض كأسين مختلفين وحجراً. استمع لفضول الطلاب دون إعلان الحل. اكتب الهدف المركزي ومعيار النجاح بخط بارز على اللوح وناقشه بعد لحظة الفضول.',
+      scaffold: 'لاحظ: هل ينسكب الحجر؟ وهل يأخذ الماء شكل كل إناء يوضع فيه؟'
+    },
+    '2_understanding': {
+      name: 'فهم وبناء المعنى',
+      number: 2,
+      icon: '🧩',
+      symbol: 'ف',
+      suggestedDuration: 12,
+      pedagogicalMode: 'guided_exploration', // 'guided_exploration' | 'direct_instruction' | 'blended'
+      pedagogicalModeName: 'الاستكشاف الموجّه',
+      studentPrompt: 'قاعدة حالات المادة الثلاث:\n• المادة الصلبة: تحتفظ بشكل ثابت وحجم ثابت في الظروف العادية (مثل الحجر، الخشب).\n• المادة السائلة: تحتفظ بحجم ثابت ولكنها تأخذ شكل الوعاء الذي توضع فيه وتنساب (مثل الماء، العصير).\n• المادة الغازية: ليس لها شكل ثابت ولا حجم ثابت؛ تنتشر لملء الحيز المتاح ويمكن ضغطها (مثل الهواء داخل المحقنة).',
+      teacherGuidance: 'وجّه الطلاب لملاحظة النماذج (حجر، ماء، هواء في محقنة). لا يُعتمد اللون أو القساوة معياراً للحالة بل ثبات الشكل والحجم.',
+      scaffold: 'جدول المقارنة: اسأل نفسك دائماً: هل الشكل ثابت؟ هل الحجم ثابت؟'
+    },
+    '3_practice': {
+      name: 'التطبيق والتدريب',
+      number: 3,
+      icon: '🛠️',
+      symbol: 'ت',
+      suggestedDuration: 15,
+      workMode: 'groups', // 'individual' | 'pairs' | 'groups'
+      tasks: [
+        {
+          tier: 'support',
+          badge: '🌱 فريق الانطلاق والتمكن',
+          title: 'تحدي الملاحظة والتصنيف المباشر',
+          task: 'أمامك المواد التالية: (قطعة خشب، زيت طعام، هواء داخل بالون، حجر صغير).\nصنّف كل مادة في الجدول إلى (صلب، سائل، غاز)، واذكر هل شكلها يتغير بتغير الوعاء؟',
+          scaffold: 'تلميح: تخيل أنك نقلت المادة من صحن مسطح إلى قارورة زجاجية، أي منها سيغير شكله؟'
+        },
+        {
+          tier: 'core',
+          badge: '⭐ فريق الممارسة والإتقان',
+          title: 'تحدي التبرير وتطبيق المعيار',
+          task: 'صنّف المواد الآتية مع تبرير علمي صريح لكل مادة بالاستناد إلى خاصيتي الشكل والحجم:\n(عصير البرتقال، بخار الشاي المتصاعد، قطعة طباشير، معجون الأسنان).\nلماذا يُعد التبرير أهم من مجرد تسمية الحالة؟',
+          scaffold: 'تلميح: استخدم جملة الربط: "أصنّف ... بأنه ... لأن شكله ... وحجمه ...".'
+        },
+        {
+          tier: 'advanced',
+          badge: '🚀 فريق الرواد والتحدي',
+          title: 'تحدي المحقق العلمي والمواقف المركبة',
+          task: '١. الرمل الناعم يأخذ شكل الكوب الذي يوضع فيه، فهل هو سائل؟ برهن علمياً مع دحض هذا الادعاء.\n٢. الزبدة قبل تسخينها وبعده: كيف تحولت حالتها وما الدليل على ذلك؟\n٣. صمم لغزاً حول مادة غامضة لاختبار زملائك.',
+          scaffold: 'تلميح: تأمل حبة الرمل الواحدة المفردة بالمكبر: هل تغير شكل الحبة الواحدة عند سكبها؟'
+        }
+      ]
+    },
+    '4_evidence': {
+      name: 'أدلة الفهم',
+      number: 4,
+      icon: '🔎',
+      symbol: 'ا',
+      suggestedDuration: 7,
+      criterion: 'يصنف كل طالب مادة جديدة تصنيفاً صحيحاً ومبرراً بخاصية واحدة على الأقل تتعلق بالشكل أو الحجم بشكل مستقل.',
+      individualTask: 'مهمة التحقق الفردي المستقل (حل بمفردك في بطاقتك):\nالمادة: «العسل الطبيعي»\n١. ما حالة المادة للعسل؟ (صلب / سائل / غاز)\n٢. برر إجابتك علمياً بالاستناد إلى خاصية الشكل والحجم والانسياب.\n٣. هل يؤثر بطء سيلان العسل على تصنيفه؟ وضح باختصار.',
+      allowedHelp: ['تلميح بسيط', 'توضيح التعليمات'],
+      evalLevels: {
+        mastered: 'حقق الهدف (صنف سائل وبرر بالشكل أو الحجم والانسياب)',
+        partial: 'حققه جزئياً (صنف سائل دون تبرير أو بتبرير غير مكتمل)',
+        needs_support: 'يحتاج دعماً (صنف صلب لبطء السيلان أو لم يقدم إجابة)',
+        insufficient_data: 'الدليل غير كافٍ للحكم (إجابة غامضة تتطلب سؤالاً إضافياً)'
+      }
+    },
+    '5_harvest': {
+      name: 'حصاد ونقل الأثر',
+      number: 5,
+      icon: '🎒',
+      symbol: 'ح',
+      suggestedDuration: 5,
+      exitTicket: {
+        q1: 'ما أهم فكرة أو مهارة تعلّمتها اليوم؟',
+        q2: 'ما الذي ساعدك أكثر على الفهم: التجربة، الشرح، أم النقاش مع الزملاء؟',
+        q3: 'ما الذي ما زلت تشعر أنك بحاجة إلى مزيد من التوضيح فيه؟ (يمكنك كتابة: لا أحتاج إلى توضيح إضافي)',
+        q4_transfer: 'أين وكيف تستطيع استخدام ما تعلّمته اليوم عند مساعدتك في إعداد وجبة في المنزل؟'
+      }
+    }
+  }
+};
+
+const STORAGE_KEY_SAVED_LESSONS = 'miftaah_journey_lessons_v3';
+const STORAGE_KEY_SESSION_DATA = 'miftaah_journey_active_session_v3';
+const BROADCAST_CHANNEL_NAME = 'miftaah_journey_sync_v3';
+
+// =========================================================================
+// 2. MAIN COMPONENT: MiftaahLearningJourney
+// =========================================================================
+export default function MiftaahLearningJourney({ onSwitchTab }) {
+  // Check URL query parameters for default view
+  const initialView = (() => {
+    try {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      const combined = hash + search;
+      if (combined.includes('view=student')) return 'student';
+      if (combined.includes('view=projector') || combined.includes('view=screen')) return 'projector';
+      if (combined.includes('view=teacher')) return 'teacher';
+      if (combined.includes('view=creator')) return 'creator';
+      if (combined.includes('view=sandbox') || combined.includes('view=sim')) return 'sandbox';
+      if (combined.includes('view=summary')) return 'summary';
+    } catch (e) {}
+    return 'creator';
+  })();
+
+  // Primary active interface:
+  // 'creator'   ➔ 1. إنشاء الحصة وتعديلها
+  // 'teacher'   ➔ 2. لوحة المعلم أثناء التدريس
+  // 'projector' ➔ 3. الشاشة الرئيسية للصف (البروجكتور)
+  // 'student'   ➔ 4. واجهة الطالب أو المجموعة
+  // 'summary'   ➔ 5. ملخص الحصة والإنهاء
+  // 'sandbox'   ➔ 6. مختبر المحاكاة الصفيّة الحية
+  const [activeInterface, setActiveInterface] = useState(initialView);
+
+  // Lesson Creator & Saved Lessons
+  const [lessonsList, setLessonsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SAVED_LESSONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [DEFAULT_EXEMPLAR_LESSON];
+  });
+
+  const [activeLesson, setActiveLesson] = useState(DEFAULT_EXEMPLAR_LESSON);
+
+  // 3 Initial Inputs for Creator
+  const [creatorTitle, setCreatorTitle] = useState(DEFAULT_EXEMPLAR_LESSON.title);
+  const [creatorGrade, setCreatorGrade] = useState(DEFAULT_EXEMPLAR_LESSON.grade);
+  const [creatorSpecialRequests, setCreatorSpecialRequests] = useState(DEFAULT_EXEMPLAR_LESSON.specialRequests);
+  const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
+  const [selectedStationToEdit, setSelectedStationToEdit] = useState('1_hook');
+
+  // Single station prompt AI modal
+  const [stationPromptModal, setStationPromptModal] = useState({
+    isOpen: false,
+    stationKey: '1_hook',
+    stationName: 'مشوّق ومحفّز',
+    promptText: '',
+    loading: false
+  });
+
+  // =========================================================================
+  // LIVE CLASSROOM SESSION STATE
+  // =========================================================================
+  const [sessionState, setSessionState] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SESSION_DATA);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.pin) return parsed;
+      }
+    } catch (e) {}
+    return {
+      pin: 'MFT-924',
+      isActive: true,
+      pacingMode: 'whole_class', // 'whole_class' | 'group_paced' | 'self_paced'
+      workMode: 'groups', // 'individual' | 'pairs' | 'groups'
+      activeStationIndex: 1, // 1..5 for whole class
+      stationUnlockedMax: 1, // up to which station is unlocked in self-paced
+      elapsedSeconds: 0,
+      isTimerRunning: true,
+      participants: [
+        { id: 'p_sami', name: 'سامي خلدون', type: 'individual', groupName: 'فردي', currentStation: 1, status: 'active', avatar: '👨‍🎓' },
+        { id: 'p_pair1', name: 'كريم وزياد', type: 'pair', groupName: 'ثنائي الأبطال', currentStation: 1, status: 'active', avatar: '🤝', activeTurn: 'كريم' },
+        { id: 'p_group_stars', name: 'فريق الرواد (منى، سلمى، آية، عمر)', type: 'group', groupName: 'مجموعة الرواد 🚀', currentStation: 1, status: 'active', avatar: '👥' },
+        { id: 'p_group_support', name: 'فريق الانطلاق (أحمد، بلال، رنا)', type: 'group', groupName: 'مجموعة الانطلاق 🌱', currentStation: 1, status: 'active', avatar: '🌱' }
+      ],
+      submissions: [],
+      helpRequests: [],
+      showcasedItem: null,
+      showcaseShowNames: true,
+      station2Mode: 'guided_exploration',
+      station5IncludeQ4: true,
+      station4AllowedHelp: ['تلميح بسيط', 'توضيح التعليمات']
+    };
+  });
+
+  // Active student participant context (for student interface & sandbox)
+  const [currentStudentId, setCurrentStudentId] = useState('p_sami');
+  const [studentInputText, setStudentInputText] = useState('');
+  const [studentChosenTier, setStudentChosenTier] = useState('core'); // 'support' | 'core' | 'advanced'
+  const [studentExitTicket, setStudentExitTicket] = useState({ q1: '', q2: '', q3: '', q4: '' });
+  const [isHelpKeyModalOpen, setIsHelpKeyModalOpen] = useState(false);
+  const [studentActiveHelpResponse, setStudentActiveHelpResponse] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Broadcast channel for live multi-tab & multi-window sync
+  const channelRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      channelRef.current = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      channelRef.current.onmessage = (e) => {
+        if (e.data && e.data.type === 'SYNC_SESSION') {
+          setSessionState(e.data.payload);
+        } else if (e.data && e.data.type === 'TOAST') {
+          showToast(e.data.payload);
+        }
+      };
+    } catch (err) {
+      console.warn('BroadcastChannel error:', err);
+    }
+    return () => {
+      if (channelRef.current) channelRef.current.close();
+    };
+  }, []);
+
+  const broadcastSession = (newSession) => {
+    setSessionState(newSession);
+    try {
+      localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(newSession));
+      if (channelRef.current) {
+        channelRef.current.postMessage({ type: 'SYNC_SESSION', payload: newSession });
+      }
+    } catch (e) {
+      console.warn('Sync error:', e);
+    }
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Timer Tick
+  useEffect(() => {
+    let interval = null;
+    if (sessionState.isTimerRunning) {
+      interval = setInterval(() => {
+        setSessionState(prev => {
+          const next = { ...prev, elapsedSeconds: prev.elapsedSeconds + 1 };
+          try {
+            localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [sessionState.isTimerRunning]);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  // Helper station keys map
+  const STATION_KEYS_ORDER = ['1_hook', '2_understanding', '3_practice', '4_evidence', '5_harvest'];
+
+  const getStationByIndex = (idx) => {
+    const k = STATION_KEYS_ORDER[idx - 1] || '1_hook';
+    return activeLesson.stations[k] || activeLesson.stations['1_hook'];
+  };
+
+  // =========================================================================
+  // ACTIONS: GENERATION & EDITING
+  // =========================================================================
+  const handleGenerateFullLesson = async () => {
+    if (!creatorTitle.trim()) {
+      showToast('يرجى إدخال عنوان الدرس أولاً ✍️');
+      return;
+    }
+    setIsGeneratingLesson(true);
+    showToast('جاري توليد الحصة بمحطات مِفتاح الخمس بالذكاء الاصطناعي... ⏳');
+    try {
+      const res = await generateMiftaahFullJourneyLessonAI({
+        title: creatorTitle,
+        grade: creatorGrade,
+        specialRequests: creatorSpecialRequests
+      });
+
+      if (res && res.stations && res.stations['1_hook']) {
+        const newLesson = {
+          ...res,
+          id: 'lesson_' + Date.now(),
+          title: res.title || creatorTitle,
+          grade: res.grade || creatorGrade,
+          specialRequests: creatorSpecialRequests
+        };
+        setActiveLesson(newLesson);
+        const updated = [newLesson, ...lessonsList.filter(l => l.id !== newLesson.id)];
+        setLessonsList(updated);
+        try {
+          localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
+        } catch (e) {}
+        showToast('تم توليد الحصة ومحطاتها الخمس بنجاح! تفضل بمراجعتها وتعديلها ✨');
+      }
+    } catch (err) {
+      console.warn('AI full generation failed:', err);
+      showToast('تعذر التوليد، جرى تحميل مسودة الحصة النموذجية.');
+    } finally {
+      setIsGeneratingLesson(false);
+    }
+  };
+
+  // Apply Station Prompt Modification
+  const handleApplyStationPromptModification = async () => {
+    if (!stationPromptModal.promptText.trim()) return;
+    setStationPromptModal(prev => ({ ...prev, loading: true }));
+    try {
+      const currentSt = activeLesson.stations[stationPromptModal.stationKey] || {};
+      const res = await modifyMiftaahStationWithPromptAI({
+        stationKey: currentSt.symbol || 'م',
+        stationTitle: currentSt.name,
+        currentPrompt: currentSt.studentPrompt,
+        instruction: stationPromptModal.promptText,
+        title: activeLesson.title,
+        grade: activeLesson.grade
+      });
+
+      if (res && res.studentDisplayPrompt) {
+        const updatedStations = {
+          ...activeLesson.stations,
+          [stationPromptModal.stationKey]: {
+            ...currentSt,
+            studentPrompt: res.studentDisplayPrompt,
+            teacherGuidance: res.teacherNotes || currentSt.teacherGuidance,
+            scaffold: res.scaffolds || currentSt.scaffold
+          }
+        };
+        const updatedLesson = { ...activeLesson, stations: updatedStations };
+        setActiveLesson(updatedLesson);
+        setStationPromptModal(prev => ({ ...prev, isOpen: false, loading: false }));
+        showToast(`تم تعديل محطة [${currentSt.name}] بالذكاء الاصطناعي بنجاح! 🎯`);
+      }
+    } catch (e) {
+      console.warn('Modify error:', e);
+      setStationPromptModal(prev => ({ ...prev, loading: false }));
+      showToast('حدث خطأ أثناء تعديل المحطة.');
+    }
+  };
+
+  // Duplicate active lesson
+  const handleDuplicateLesson = () => {
+    const copy = {
+      ...JSON.parse(JSON.stringify(activeLesson)),
+      id: 'lesson_copy_' + Date.now(),
+      title: activeLesson.title + ' (نسخة مكررة)'
+    };
+    const updated = [copy, ...lessonsList];
+    setLessonsList(updated);
+    setActiveLesson(copy);
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
+    } catch (e) {}
+    showToast('تم نسخ الحصة بنجاح! 📋 يمكنك تعديل نسختك الجديدة.');
+  };
+
+  // Start Classroom Session from Creator
+  const handleStartSession = () => {
+    const newSession = {
+      ...sessionState,
+      pin: 'MFT-' + Math.floor(100 + Math.random() * 900),
+      isActive: true,
+      activeStationIndex: 1,
+      elapsedSeconds: 0,
+      isTimerRunning: true
+    };
+    broadcastSession(newSession);
+    setActiveInterface('teacher');
+    showToast('بدأت جلسة الصف المباشرة بنجاح! 🚀 تم فتح لوحة المعلم.');
+  };
+
+  // =========================================================================
+  // ACTIONS: TEACHER CONTROLS
+  // =========================================================================
+  const handleChangePacingMode = (mode) => {
+    const next = { ...sessionState, pacingMode: mode };
+    broadcastSession(next);
+    const names = {
+      whole_class: 'الصف كله يتقدّم معاً',
+      group_paced: 'كل مجموعة تتقدّم حسب سرعتها',
+      self_paced: 'كل طالب يتقدّم حسب سرعته'
+    };
+    showToast(`تم تغيير نمط التقدّم إلى: ${names[mode]} 🔄`);
+  };
+
+  const handleNextStation = () => {
+    if (sessionState.activeStationIndex < 5) {
+      const nextIdx = sessionState.activeStationIndex + 1;
+      const next = {
+        ...sessionState,
+        activeStationIndex: nextIdx,
+        stationUnlockedMax: Math.max(sessionState.stationUnlockedMax, nextIdx)
+      };
+      broadcastSession(next);
+      showToast(`تم الانتقال إلى المحطة ${nextIdx}: [${getStationByIndex(nextIdx).name}] 🚀`);
+    }
+  };
+
+  const handlePrevStation = () => {
+    if (sessionState.activeStationIndex > 1) {
+      const prevIdx = sessionState.activeStationIndex - 1;
+      const next = { ...sessionState, activeStationIndex: prevIdx };
+      broadcastSession(next);
+      showToast(`تم الرجوع إلى المحطة ${prevIdx}: [${getStationByIndex(prevIdx).name}]`);
+    }
+  };
+
+  const handleTeacherEvaluate = (submissionId, rating, feedback) => {
+    const nextSubs = sessionState.submissions.map(sub => {
+      if (sub.id === submissionId) {
+        return { ...sub, formativeScore: rating, teacherFeedback: feedback || sub.teacherFeedback };
+      }
+      return sub;
+    });
+    const next = { ...sessionState, submissions: nextSubs };
+    broadcastSession(next);
+    showToast('تم حفظ التقييم والتغذية الراجعة وإرسالها للطالب! 🎯');
+  };
+
+  const handleToggleShowcase = (submission) => {
+    const isAlready = sessionState.showcasedItem?.id === submission.id;
+    const next = {
+      ...sessionState,
+      showcasedItem: isAlready ? null : submission
+    };
+    broadcastSession(next);
+    showToast(isAlready ? 'تم إلغاء عرض الحل من الشاشة الرئيسية' : 'تم عرض حل الطالب على شاشة الصف الرئيسية! 📺✨');
+  };
+
+  const handleAcknowledgeHelp = (requestId) => {
+    const nextReqs = sessionState.helpRequests.map(r => r.id === requestId ? { ...r, resolved: true } : r);
+    const next = { ...sessionState, helpRequests: nextReqs };
+    broadcastSession(next);
+    showToast('تم تأكيد تقديم المساعدة للطالب 👍');
+  };
+
+  // =========================================================================
+  // ACTIONS: STUDENT INTERACTIONS
+  // =========================================================================
+  const currentParticipant = sessionState.participants.find(p => p.id === currentStudentId) || sessionState.participants[0];
+
+  const studentCurrentStationIndex = sessionState.pacingMode === 'whole_class'
+    ? sessionState.activeStationIndex
+    : (currentParticipant.currentStation || 1);
+
+  const studentCurrentStationData = getStationByIndex(studentCurrentStationIndex);
+
+  const handleStudentSubmitAnswer = (stationNum, text, tier = 'core') => {
+    if (!text.trim()) {
+      showToast('يرجى كتابة إجابتك أو تدوين محاولتك أولاً ✍️');
+      return;
+    }
+    const newSub = {
+      id: 'sub_' + Date.now(),
+      participantId: currentParticipant.id,
+      participantName: currentParticipant.name,
+      groupName: currentParticipant.groupName,
+      stationNumber: stationNum,
+      stationName: getStationByIndex(stationNum).name,
+      text: text.trim(),
+      tier,
+      scaffoldsUsed: studentActiveHelpResponse ? [studentActiveHelpResponse.type] : [],
+      formativeScore: null,
+      teacherFeedback: '',
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // In self/group paced mode, advance student station
+    let nextParts = sessionState.participants;
+    if (sessionState.pacingMode !== 'whole_class' && studentCurrentStationIndex < 5) {
+      nextParts = sessionState.participants.map(p =>
+        p.id === currentParticipant.id ? { ...p, currentStation: p.currentStation + 1 } : p
+      );
+    }
+
+    const next = {
+      ...sessionState,
+      submissions: [newSub, ...sessionState.submissions],
+      participants: nextParts
+    };
+    broadcastSession(next);
+    setStudentInputText('');
+    setStudentActiveHelpResponse(null);
+    showToast('تم إرسال إجابتك بنجاح لمعلم الصف! 🚀 ستظهر له فوراً.');
+  };
+
+  // Student Help Key Request
+  const handleRequestHelpOption = (helpOptionKey) => {
+    const st = studentCurrentStationData;
+    let explanation = '';
+    const optionLabels = {
+      clarify: 'توضيح التعليمات',
+      hint: 'تلميح مساند',
+      explain_diff: 'شرح بطريقة أخرى',
+      example: 'مثال مشابه',
+      teacher: 'طلب مساعدة المعلم'
+    };
+
+    if (helpOptionKey === 'clarify') {
+      explanation = 'المطلوب في هذه المحطة قراءة المهمة جيداً وتدوين استنتاجك مدعوماً بالسبب.';
+    } else if (helpOptionKey === 'hint') {
+      explanation = st.scaffold || 'فكر في الخاصية المركزية التي تعلمناها في بداية الدرس، ولا تستعجل الإجابة!';
+    } else if (helpOptionKey === 'explain_diff') {
+      explanation = 'تخيل الموقف كأنك تشرحه لطفل أصغر سناً: ماذا يتغير بالعين المجردة وماذا يبقى ثابتاً؟';
+    } else if (helpOptionKey === 'example') {
+      explanation = 'مثال مشابه: قارن بين عصير في علبة وبين مكعب ثلج في صحن: أيهما غيّر شكله عند النقل؟';
+    } else if (helpOptionKey === 'teacher') {
+      // Send private alert to teacher
+      const newHelpAlert = {
+        id: 'help_' + Date.now(),
+        participantId: currentParticipant.id,
+        participantName: currentParticipant.name,
+        groupName: currentParticipant.groupName,
+        stationNumber: studentCurrentStationIndex,
+        stationName: st.name,
+        helpType: 'طلب المعلم شخصياً',
+        timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+        resolved: false
+      };
+      const next = {
+        ...sessionState,
+        helpRequests: [newHelpAlert, ...sessionState.helpRequests]
+      };
+      broadcastSession(next);
+      explanation = 'تم إرسال إشعار فوري وخاص لمعلمك! سينضم إليك المعلم لمساعدتك فوراً. 👨‍🏫';
+    }
+
+    setStudentActiveHelpResponse({
+      type: optionLabels[helpOptionKey] || helpOptionKey,
+      text: explanation
+    });
+    setIsHelpKeyModalOpen(false);
+  };
+
+  // =========================================================================
+  // SUB-COMPONENT: PHYSICAL KEY MAP (خريطة فعلية على شكل مفتاح مقسّم إلى ٥ قطع)
+  // =========================================================================
+  const renderPhysicalKeyMap = (activeIdx, onSelectStation = null, isStudentDevice = false) => {
+    const stations = [
+      { idx: 1, letter: 'م', name: 'مشوّق ومحفّز', icon: '🔥', shape: 'key-bow-head' },
+      { idx: 2, letter: 'ف', name: 'فهم وبناء المعنى', icon: '🧩', shape: 'key-stem-top' },
+      { idx: 3, letter: 'ت', name: 'التطبيق والتدريب', icon: '🛠️', shape: 'key-stem-mid' },
+      { idx: 4, letter: 'ا', name: 'أدلة الفهم', icon: '🔎', shape: 'key-stem-bot' },
+      { idx: 5, letter: 'ح', name: 'حصاد ونقل الأثر', icon: '🎒', shape: 'key-bit-teeth' }
+    ];
+
+    return (
+      <div className={`physical-key-container ${isStudentDevice ? 'student-compact' : ''}`}>
+        <div className="key-map-header-label">
+          <span className="key-symbol-lead">🗝️</span>
+          <span className="key-map-title">خريطة مفتاح التعلم</span>
+        </div>
+
+        {/* The 5 Key Segments */}
+        <div className="physical-key-body">
+          {stations.map(st => {
+            const isActive = st.idx === activeIdx;
+            const isCompleted = st.idx < activeIdx;
+            const isLocked = sessionState.pacingMode === 'whole_class'
+              ? st.idx > activeIdx
+              : st.idx > (sessionState.stationUnlockedMax || activeIdx);
+
+            return (
+              <button
+                key={st.idx}
+                type="button"
+                className={`key-segment-block ${st.shape} ${isActive ? 'active-glow' : ''} ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
+                onClick={() => {
+                  if (onSelectStation) {
+                    if (isLocked && sessionState.pacingMode === 'whole_class') {
+                      showToast('هذه المحطة مغلقة الآن، يفتحها المعلم عند انتقال الصف معاً 🔒');
+                    } else {
+                      onSelectStation(st.idx);
+                    }
+                  }
+                }}
+                title={`المحطة ${st.idx}: ${st.name} (${isActive ? 'المحطة الحالية' : isCompleted ? 'منجزة ✓' : isLocked ? 'مغلقة' : 'متاحة'})`}
+              >
+                <div className="segment-number-badge">{st.idx}</div>
+                <div className="segment-icon-wrap">{st.icon}</div>
+                <div className="segment-text-meta">
+                  <strong className="segment-name">{st.name}</strong>
+                  <span className="segment-symbol-tag">[{st.letter}]</span>
+                </div>
+                {isCompleted && <span className="segment-check-mark">✓</span>}
+                {isActive && <span className="segment-you-are-here">أنت هنا 📍</span>}
+                {isLocked && !isActive && <span className="segment-lock-icon">🔒</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="key-active-station-status-phrase">
+          <span>أنت الآن في المحطة: </span>
+          <strong>[{getStationByIndex(activeIdx).name}]</strong>
+        </div>
+      </div>
+    );
+  };
+
+  // =========================================================================
+  // RENDER MAIN APPLICATION INTERFACES
+  // =========================================================================
+  return (
+    <div className="miftaah-learning-journey-app" dir="rtl">
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="miftaah-global-toast animate-slide-down">
+          <i className="fas fa-bell"></i>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* TOP ROLE & INTERFACE SWITCHER NAVBAR                                   */}
+      {/* ===================================================================== */}
+      <header className="miftaah-journey-master-header">
+        <div className="header-brand-group">
+          <div className="brand-logo-icon">🗝️</div>
+          <div>
+            <h1 className="brand-title">مِفتاح — رحلة التعلّم</h1>
+            <span className="brand-sub">مدرسة مشيرفة الابتدائية • المنظومة الصفية التفاعلية</span>
+          </div>
+        </div>
+
+        {/* 4 Main Interfaces + Sandbox Switcher */}
+        <nav className="header-interfaces-nav">
+          <button
+            type="button"
+            className={`nav-tab-btn ${activeInterface === 'creator' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('creator')}
+          >
+            <i className="fas fa-edit"></i> ١. إعداد وتعديل الحصة
+          </button>
+          <button
+            type="button"
+            className={`nav-tab-btn ${activeInterface === 'teacher' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('teacher')}
+          >
+            <i className="fas fa-chalkboard-teacher"></i> ٢. كواليس المعلم
+          </button>
+          <button
+            type="button"
+            className={`nav-tab-btn ${activeInterface === 'projector' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('projector')}
+          >
+            <i className="fas fa-desktop"></i> ٣. شاشة الصف (البروجكتور)
+          </button>
+          <button
+            type="button"
+            className={`nav-tab-btn ${activeInterface === 'student' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('student')}
+          >
+            <i className="fas fa-mobile-alt"></i> ٤. واجهة الطالب / المجموعة
+          </button>
+          <button
+            type="button"
+            className={`nav-tab-btn sandbox-btn ${activeInterface === 'sandbox' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('sandbox')}
+            title="تجربة تفاعلية للصف كاملاً في شاشة واحدة: المعلم والبروجكتور والطلاب والفرق"
+          >
+            <i className="fas fa-vial"></i> 🧪 محاكي الصف المتكامل
+          </button>
+          <button
+            type="button"
+            className={`nav-tab-btn ${activeInterface === 'summary' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('summary')}
+          >
+            <i className="fas fa-chart-pie"></i> ٥. ملخص الحصة والإنهاء
+          </button>
+        </nav>
+
+        <div className="header-status-badge">
+          <span className="session-pin-chip" title="رمز الجلسة الصفية">
+            رمز الصف: <strong>{sessionState.pin}</strong>
+          </span>
+          {onSwitchTab && (
+            <button
+              type="button"
+              className="btn-exit-to-portal"
+              onClick={() => onSwitchTab('stations')}
+            >
+              <i className="fas fa-arrow-left"></i> دليل المنهاج
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* ===================================================================== */}
+      {/* 1. INTERFACE 1: LESSON CREATOR & AI EDITOR                            */}
+      {/* ===================================================================== */}
+      {activeInterface === 'creator' && (
+        <section className="interface-canvas creator-canvas animate-fade-in">
+          <div className="interface-hero-card">
+            <div className="hero-content">
+              <h2><i className="fas fa-wand-magic-sparkles"></i> إنشاء الحصة وتعديلها بالذكاء الاصطناعي</h2>
+              <p>ابدأ بثلاث خانات أساسية فقط، وسيولّد الذكاء الاصطناعي مسودة متكاملة لمسار مِفتاح بالمحطات الخمس مع أهداف واضحة ومهام متمايزة.</p>
+            </div>
+            <div className="hero-actions">
+              <button
+                type="button"
+                className="btn-duplicate-action"
+                onClick={handleDuplicateLesson}
+                title="نسخ هذه الحصة لإنشاء حصة موازية"
+              >
+                <i className="fas fa-copy"></i> نسخ الحصة
+              </button>
+              <button
+                type="button"
+                className="btn-launch-live-session"
+                onClick={handleStartSession}
+              >
+                <i className="fas fa-play-circle"></i> اعتماد وبدء جلسة الصف 🚀
+              </button>
+            </div>
+          </div>
+
+          {/* 3 INITIAL INPUTS ONLY */}
+          <div className="creator-initial-inputs-card">
+            <h3 className="section-title"><i className="fas fa-sliders-h"></i> معطيات الحصة الأساسية (٣ خانات):</h3>
+            <div className="inputs-three-grid">
+              <div className="input-group">
+                <label>١. عنوان وموضوع الدرس:</label>
+                <input
+                  type="text"
+                  value={creatorTitle}
+                  onChange={e => setCreatorTitle(e.target.value)}
+                  placeholder="مثال: حالات المادة وتغيراتها، الهمزة المتطرفة..."
+                />
+              </div>
+
+              <div className="input-group">
+                <label>٢. الصف والمستوى الدراسي:</label>
+                <select value={creatorGrade} onChange={e => setCreatorGrade(e.target.value)}>
+                  <option value="الصف الأول">الصف الأول الابتدائي</option>
+                  <option value="الصف الثاني">الصف الثاني الابتدائي</option>
+                  <option value="الصف الثالث">الصف الثالث الابتدائي</option>
+                  <option value="الصف الرابع">الصف الرابع الابتدائي</option>
+                  <option value="الصف الخامس">الصف الخامس الابتدائي</option>
+                  <option value="الصف السادس">الصف السادس الابتدائي</option>
+                  <option value="شريحة مخصصة">شريحة أو مستوى مخصص...</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label>٣. طلبات وتوجيهات خاصة (اختيارية):</label>
+                <input
+                  type="text"
+                  value={creatorSpecialRequests}
+                  onChange={e => setCreatorSpecialRequests(e.target.value)}
+                  placeholder="مثال: نشاط عملي حركي، عمل في مجموعات، تركيز على المفاهيم..."
+                />
+              </div>
+            </div>
+
+            <div className="generate-cta-row">
+              <button
+                type="button"
+                className={`btn-generate-full-lesson ${isGeneratingLesson ? 'loading' : ''}`}
+                onClick={handleGenerateFullLesson}
+                disabled={isGeneratingLesson}
+              >
+                {isGeneratingLesson ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> جاري استدعاء الذكاء الاصطناعي وهندسة محطات الحصة...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-robot"></i> ولّد الحصة بمحطات مِفتاح الخمس (AI) ✨
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* PEDAGOGICAL PILLARS & GOALS BAR */}
+          <div className="creator-goals-summary-strip">
+            <div className="goal-box">
+              <span className="goal-label">🎯 هدف التعلّم المركزي:</span>
+              <p className="goal-text">{activeLesson.objective}</p>
+            </div>
+            <div className="goal-box">
+              <span className="goal-label">📏 معيار النجاح الصريح:</span>
+              <p className="goal-text">{activeLesson.successCriteria}</p>
+            </div>
+            <div className="pillars-badges">
+              <span className="pillar-badge">🤝 الاحتواء والمشاركة</span>
+              <span className="pillar-badge">⚖️ التمايز والتكيف</span>
+              <span className="pillar-badge">🔄 التقويم التكويني</span>
+            </div>
+          </div>
+
+          {/* 5 STATIONS REVIEW & EDIT TABS */}
+          <div className="creator-stations-review-layout">
+            {/* Stations Navigation Bar */}
+            <div className="creator-stations-nav-pills">
+              {STATION_KEYS_ORDER.map((k, idx) => {
+                const st = activeLesson.stations[k];
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`station-pill-btn ${selectedStationToEdit === k ? 'active' : ''}`}
+                    onClick={() => setSelectedStationToEdit(k)}
+                  >
+                    <span className="pill-number">{idx + 1}</span>
+                    <span className="pill-icon">{st.icon}</span>
+                    <span className="pill-name">{st.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Station Detailed Editor */}
+            {(() => {
+              const currentSt = activeLesson.stations[selectedStationToEdit] || activeLesson.stations['1_hook'];
+              return (
+                <div className="station-editor-card animate-fade-in">
+                  <div className="editor-card-header">
+                    <div className="header-meta">
+                      <span className="station-icon-lg">{currentSt.icon}</span>
+                      <div>
+                        <h3>المحطة {currentSt.number}: {currentSt.name}</h3>
+                        <small>الوقت المقترح: {currentSt.suggestedDuration} دقائق</small>
+                      </div>
+                    </div>
+
+                    <div className="header-actions">
+                      <button
+                        type="button"
+                        className="btn-ai-prompt-modify"
+                        onClick={() => {
+                          setStationPromptModal({
+                            isOpen: true,
+                            stationKey: selectedStationToEdit,
+                            stationName: currentSt.name,
+                            promptText: '',
+                            loading: false
+                          });
+                        }}
+                      >
+                        <i className="fas fa-comment-dots"></i> 💬 اطلب تعديلاً مخصصاً (AI)
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-preview-student-screen"
+                        onClick={() => setActiveInterface('projector')}
+                      >
+                        <i className="fas fa-eye"></i> معاينة ما سيشاهده الطلاب 🎦
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Station 2 Specific: 3 Pedagogical Modes Switcher */}
+                  {selectedStationToEdit === '2_understanding' && (
+                    <div className="pedagogical-mode-box">
+                      <label className="mode-label">
+                        <i className="fas fa-chalkboard"></i> طريقة إكساب المعرفة (اختر النمط المناسب):
+                      </label>
+                      <div className="mode-options-group">
+                        {[
+                          { id: 'guided_exploration', name: 'الاستكشاف الموجّه', desc: 'يتوصل الطلاب للفكرة من خلال الأنشطة والأسئلة' },
+                          { id: 'direct_instruction', name: 'الشرح الوجاهي المباشر', desc: 'نمذجة وشرح صريح من المعلم' },
+                          { id: 'blended', name: 'الجمع بين الاستكشاف والشرح', desc: 'استكشاف تمهيدي تليه نمذجة وتلخيص' }
+                        ].map(m => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className={`mode-toggle-chip ${(sessionState.station2Mode || currentSt.pedagogicalMode) === m.id ? 'active' : ''}`}
+                            onClick={() => {
+                              const next = { ...sessionState, station2Mode: m.id };
+                              broadcastSession(next);
+                              const updatedLesson = {
+                                ...activeLesson,
+                                stations: {
+                                  ...activeLesson.stations,
+                                  '2_understanding': {
+                                    ...currentSt,
+                                    pedagogicalMode: m.id,
+                                    pedagogicalModeName: m.name
+                                  }
+                                }
+                              };
+                              setActiveLesson(updatedLesson);
+                              showToast(`تم اعتماد طريقة: ${m.name} لمرحلة بناء المعنى 👍`);
+                            }}
+                          >
+                            <strong>{m.name}</strong>
+                            <small>{m.desc}</small>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Student-facing content vs Teacher planning */}
+                  <div className="editor-two-columns-grid">
+                    <div className="col-student-content">
+                      <div className="col-header student">
+                        <i className="fas fa-desktop"></i> المحتوى الموجّه للطلاب (يظهر على شاشة الصف وأجهزتهم):
+                      </div>
+                      <textarea
+                        rows={6}
+                        value={currentSt.studentPrompt || ''}
+                        onChange={e => {
+                          const updated = {
+                            ...activeLesson,
+                            stations: {
+                              ...activeLesson.stations,
+                              [selectedStationToEdit]: {
+                                ...currentSt,
+                                studentPrompt: e.target.value
+                              }
+                            }
+                          };
+                          setActiveLesson(updated);
+                        }}
+                        placeholder="النص الصريح للطلاب..."
+                      />
+                      <div className="scaffold-input-row">
+                        <label>🗝️ تلميح ومفتاح المساعدة الجاهز للمحطة:</label>
+                        <input
+                          type="text"
+                          value={currentSt.scaffold || ''}
+                          onChange={e => {
+                            const updated = {
+                              ...activeLesson,
+                              stations: {
+                                ...activeLesson.stations,
+                                [selectedStationToEdit]: {
+                                  ...currentSt,
+                                  scaffold: e.target.value
+                                }
+                              }
+                            };
+                            setActiveLesson(updated);
+                          }}
+                          placeholder="تلميح مساند دون حرق الحل..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="col-teacher-planning">
+                      <div className="col-header teacher">
+                        <i className="fas fa-user-secret"></i> التخطيط وإرشادات المعلم (كواليس خاصة لا تظهر للطلاب):
+                      </div>
+                      <textarea
+                        rows={6}
+                        value={currentSt.teacherGuidance || ''}
+                        onChange={e => {
+                          const updated = {
+                            ...activeLesson,
+                            stations: {
+                              ...activeLesson.stations,
+                              [selectedStationToEdit]: {
+                                ...currentSt,
+                                teacherGuidance: e.target.value
+                              }
+                            }
+                          };
+                          setActiveLesson(updated);
+                        }}
+                        placeholder="إرشاداتك لإدارة الحوار والملاحظة..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Station 3 Specific: Tiered Tasks Manager */}
+                  {selectedStationToEdit === '3_practice' && currentSt.tasks && (
+                    <div className="station3-tiered-tasks-editor">
+                      <h4 className="tiered-title"><i className="fas fa-layer-group"></i> المهام المتمايزة (٣ مستويات دعم وتحدي):</h4>
+                      <div className="tiered-tasks-grid">
+                        {currentSt.tasks.map((task, tIdx) => (
+                          <div key={tIdx} className={`tiered-card-editor tier-${task.tier}`}>
+                            <div className="tiered-head">
+                              <span>{task.badge}</span>
+                              <strong>{task.title || 'مهمة المستوى'}</strong>
+                            </div>
+                            <textarea
+                              rows={4}
+                              value={task.task}
+                              onChange={e => {
+                                const newTasks = [...currentSt.tasks];
+                                newTasks[tIdx] = { ...task, task: e.target.value };
+                                const updated = {
+                                  ...activeLesson,
+                                  stations: {
+                                    ...activeLesson.stations,
+                                    '3_practice': { ...currentSt, tasks: newTasks }
+                                  }
+                                };
+                                setActiveLesson(updated);
+                              }}
+                            />
+                            <div className="tiered-scaffold-row">
+                              <small>🗝️ سقالة المستوى:</small>
+                              <input
+                                type="text"
+                                value={task.scaffold}
+                                onChange={e => {
+                                  const newTasks = [...currentSt.tasks];
+                                  newTasks[tIdx] = { ...task, scaffold: e.target.value };
+                                  const updated = {
+                                    ...activeLesson,
+                                    stations: {
+                                      ...activeLesson.stations,
+                                      '3_practice': { ...currentSt, tasks: newTasks }
+                                    }
+                                  };
+                                  setActiveLesson(updated);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Station 4 Specific: Formative Rubric & Evidence Criterion */}
+                  {selectedStationToEdit === '4_evidence' && (
+                    <div className="station4-evidence-editor">
+                      <div className="criterion-box">
+                        <label>🎯 معيار التحقق: ما الدليل على أن كل طالب حقق هدف التعلّم؟</label>
+                        <input
+                          type="text"
+                          value={currentSt.criterion || ''}
+                          onChange={e => {
+                            const updated = {
+                              ...activeLesson,
+                              stations: {
+                                ...activeLesson.stations,
+                                '4_evidence': { ...currentSt, criterion: e.target.value }
+                              }
+                            };
+                            setActiveLesson(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="eval-levels-preview">
+                        <strong>مستويات التقييم الأربعة المعتمدة:</strong>
+                        <div className="levels-chips">
+                          <span className="level-chip mastered">✓ حقق الهدف</span>
+                          <span className="level-chip partial">◐ حققه جزئياً</span>
+                          <span className="level-chip needs_support">! يحتاج دعماً</span>
+                          <span className="level-chip insufficient_data">? الدليل غير كافٍ للحكم</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Station 5 Specific: Exit Ticket Questions */}
+                  {selectedStationToEdit === '5_harvest' && currentSt.exitTicket && (
+                    <div className="station5-exit-ticket-editor">
+                      <h4><i className="fas fa-ticket-alt"></i> أسئلة بطاقة الخروج الإلزامية:</h4>
+                      <div className="exit-questions-list">
+                        <div className="exit-q-item">
+                          <span className="q-num">١</span>
+                          <p>{currentSt.exitTicket.q1}</p>
+                        </div>
+                        <div className="exit-q-item">
+                          <span className="q-num">٢</span>
+                          <p>{currentSt.exitTicket.q2}</p>
+                        </div>
+                        <div className="exit-q-item">
+                          <span className="q-num">٣</span>
+                          <p>{currentSt.exitTicket.q3}</p>
+                        </div>
+                        <div className="exit-q-item transfer-q">
+                          <span className="q-num">٤</span>
+                          <div className="q-flex-toggle">
+                            <p>{currentSt.exitTicket.q4_transfer}</p>
+                            <label className="toggle-label">
+                              <input
+                                type="checkbox"
+                                checked={sessionState.station5IncludeQ4}
+                                onChange={e => {
+                                  const next = { ...sessionState, station5IncludeQ4: e.target.checked };
+                                  broadcastSession(next);
+                                  showToast(e.target.checked ? 'تم تفعيل سؤال نقل الأثر للطلاب' : 'تم تعطيل سؤال نقل الأثر');
+                                }}
+                              />
+                              <span>سؤال اختياري لنقل الأثر</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 2. INTERFACE 2: TEACHER LIVE BACKSTAGE DASHBOARD                      */}
+      {/* ===================================================================== */}
+      {activeInterface === 'teacher' && (
+        <section className="interface-canvas teacher-canvas animate-fade-in">
+          {/* Top Session Status Ribbon */}
+          <div className="teacher-top-control-ribbon">
+            <div className="session-meta">
+              <span className="live-pulse-led"></span>
+              <strong>جلسة صفية حية</strong>
+              <span className="session-pin-tag">رمز الانضمام: {sessionState.pin}</span>
+              <span className="lesson-name-chip">{activeLesson.title}</span>
+            </div>
+
+            <div className="session-timer-box">
+              <i className="fas fa-stopwatch"></i>
+              <span className="timer-readout">{formatTime(sessionState.elapsedSeconds)}</span>
+              <button
+                type="button"
+                className="btn-timer-toggle"
+                onClick={() => {
+                  const next = { ...sessionState, isTimerRunning: !sessionState.isTimerRunning };
+                  broadcastSession(next);
+                }}
+              >
+                {sessionState.isTimerRunning ? <i className="fas fa-pause"></i> : <i className="fas fa-play"></i>}
+              </button>
+            </div>
+
+            {/* Pacing Mode Switcher */}
+            <div className="pacing-mode-selector-group">
+              <span className="pacing-label">نمط التقدّم:</span>
+              <button
+                type="button"
+                className={`pacing-btn ${sessionState.pacingMode === 'whole_class' ? 'active' : ''}`}
+                onClick={() => handleChangePacingMode('whole_class')}
+              >
+                الصف كله معاً 👥
+              </button>
+              <button
+                type="button"
+                className={`pacing-btn ${sessionState.pacingMode === 'group_paced' ? 'active' : ''}`}
+                onClick={() => handleChangePacingMode('group_paced')}
+              >
+                حسب سرعة المجموعة 🚀
+              </button>
+              <button
+                type="button"
+                className={`pacing-btn ${sessionState.pacingMode === 'self_paced' ? 'active' : ''}`}
+                onClick={() => handleChangePacingMode('self_paced')}
+              >
+                تقدّم فردي مستقل 👤
+              </button>
+            </div>
+
+            {/* Quick Station Navigation */}
+            <div className="quick-step-nav">
+              <button
+                type="button"
+                className="btn-nav-prev"
+                onClick={handlePrevStation}
+                disabled={sessionState.activeStationIndex <= 1}
+              >
+                <i className="fas fa-chevron-right"></i> السابق
+              </button>
+              <span className="current-station-num">المحطة {sessionState.activeStationIndex} من ٥</span>
+              <button
+                type="button"
+                className="btn-nav-next"
+                onClick={handleNextStation}
+                disabled={sessionState.activeStationIndex >= 5}
+              >
+                التالي <i className="fas fa-chevron-left"></i>
+              </button>
+            </div>
+          </div>
+
+          {/* Three-Column Live Dashboard Layout */}
+          <div className="teacher-dashboard-layout">
+            {/* Left Column: Physical Key Map Progress */}
+            <aside className="dashboard-left-sidebar">
+              {renderPhysicalKeyMap(sessionState.activeStationIndex, (idx) => {
+                const next = { ...sessionState, activeStationIndex: idx };
+                broadcastSession(next);
+              })}
+
+              {/* Behind-The-Scenes Quick Edit Panel */}
+              <div className="backstage-editor-box">
+                <h4><i className="fas fa-tools"></i> تعديل خلف الكواليس للمحطة الحالية:</h4>
+                <textarea
+                  rows={4}
+                  value={sessionState.backstageDraftUpdate !== undefined ? sessionState.backstageDraftUpdate : getStationByIndex(sessionState.activeStationIndex).studentPrompt}
+                  onChange={e => setSessionState(prev => ({ ...prev, backstageDraftUpdate: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="btn-push-backstage-update"
+                  onClick={() => {
+                    const stIdx = sessionState.activeStationIndex;
+                    const stKey = STATION_KEYS_ORDER[stIdx - 1];
+                    const newText = sessionState.backstageDraftUpdate || getStationByIndex(stIdx).studentPrompt;
+                    const updatedLesson = {
+                      ...activeLesson,
+                      stations: {
+                        ...activeLesson.stations,
+                        [stKey]: {
+                          ...activeLesson.stations[stKey],
+                          studentPrompt: newText
+                        }
+                      }
+                    };
+                    setActiveLesson(updatedLesson);
+                    setSessionState(prev => ({ ...prev, backstageDraftUpdate: undefined }));
+                    broadcastSession(sessionState);
+                    showToast('تم اعتماد التعديل وعرضه فوراً للطلاب على الشاشات! 📤✨');
+                  }}
+                >
+                  <i className="fas fa-paper-plane"></i> اعرض التعديل للطلاب الآن 📤
+                </button>
+              </div>
+            </aside>
+
+            {/* Center Column: Live Submissions & Formative Assessment */}
+            <main className="dashboard-center-feed">
+              <div className="center-feed-header">
+                <h3><i className="fas fa-inbox"></i> إجابات وأدلة الطلاب المباشرة ({sessionState.submissions.length})</h3>
+                <div className="feed-toggles">
+                  <label className="toggle-names-chip">
+                    <input
+                      type="checkbox"
+                      checked={sessionState.showcaseShowNames}
+                      onChange={e => {
+                        const next = { ...sessionState, showcaseShowNames: e.target.checked };
+                        broadcastSession(next);
+                      }}
+                    />
+                    <span>إظهار أسماء الطلاب عند العرض</span>
+                  </label>
+                </div>
+              </div>
+
+              {sessionState.submissions.length === 0 ? (
+                <div className="empty-submissions-placeholder">
+                  <div className="placeholder-icon">📬</div>
+                  <h4>في انتظار إرسال الطلاب لمحاولاتهم...</h4>
+                  <p>عندما يرسل الطلاب أو المجموعات حلولهم في محطة التطريب أو أدلة الفهم، ستظهر هنا فوراً مع خيارات التقييم وعرضها على الشاشة.</p>
+                </div>
+              ) : (
+                <div className="submissions-cards-list">
+                  {sessionState.submissions.map(sub => {
+                    const isShowcased = sessionState.showcasedItem?.id === sub.id;
+                    return (
+                      <div key={sub.id} className={`submission-card ${isShowcased ? 'showcased' : ''}`}>
+                        <div className="sub-card-head">
+                          <div className="author-info">
+                            <strong>{sub.participantName}</strong>
+                            <span className="author-group-tag">({sub.groupName})</span>
+                            <span className="station-tag">محطة {sub.stationNumber}</span>
+                          </div>
+                          <div className="sub-time">{sub.timestamp}</div>
+                        </div>
+
+                        <div className="sub-body-text">
+                          <p>{sub.text}</p>
+                        </div>
+
+                        {sub.scaffoldsUsed && sub.scaffoldsUsed.length > 0 && (
+                          <div className="sub-scaffolds-used-tag">
+                            <i className="fas fa-life-ring"></i> استخدم المساعدة: {sub.scaffoldsUsed.join(', ')}
+                          </div>
+                        )}
+
+                        {/* Formative Evaluation Level (Station 4) */}
+                        <div className="sub-formative-evaluation-row">
+                          <span className="eval-title">تقييم تحقق الهدف:</span>
+                          <div className="eval-buttons-group">
+                            {[
+                              { id: 'mastered', label: 'حقق الهدف', cls: 'mastered' },
+                              { id: 'partial', label: 'حققه جزئياً', cls: 'partial' },
+                              { id: 'needs_support', label: 'يحتاج دعماً', cls: 'needs_support' },
+                              { id: 'insufficient_data', label: 'غير كافٍ للحكم', cls: 'insufficient' }
+                            ].map(ev => (
+                              <button
+                                key={ev.id}
+                                type="button"
+                                className={`btn-eval-level ${ev.cls} ${sub.formativeScore === ev.id ? 'selected' : ''}`}
+                                onClick={() => handleTeacherEvaluate(sub.id, ev.id)}
+                              >
+                                {ev.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Card Actions: Showcase & Quick Feedback */}
+                        <div className="sub-card-footer-actions">
+                          <button
+                            type="button"
+                            className={`btn-toggle-showcase ${isShowcased ? 'active' : ''}`}
+                            onClick={() => handleToggleShowcase(sub)}
+                          >
+                            <i className="fas fa-tv"></i> {isShowcased ? 'معروض على شاشة الصف ✓' : 'اعرض على شاشة الصف 📺'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-send-quick-feedback"
+                            onClick={() => {
+                              const fb = prompt('اكتب تغذية راجعة موجهة للطالب:', sub.teacherFeedback || 'أحسنت! فكر في تعليل الخطوة الثانية لتعزيز إجابتك.');
+                              if (fb !== null) {
+                                handleTeacherEvaluate(sub.id, sub.formativeScore, fb);
+                              }
+                            }}
+                          >
+                            <i className="fas fa-comment"></i> تغذية راجعة 💬
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </main>
+
+            {/* Right Column: Live Roster & Help Requests */}
+            <aside className="dashboard-right-sidebar">
+              {/* Help Requests Banner */}
+              <div className="help-requests-feed-box">
+                <h4>
+                  <i className="fas fa-hand-holding-heart"></i> طلبات المساعدة الفورية ({sessionState.helpRequests.filter(r => !r.resolved).length})
+                </h4>
+                {sessionState.helpRequests.length === 0 ? (
+                  <p className="no-help-requests">لا توجد طلبات مساعدة معلقة. الصف يسير بانسيابية 👍</p>
+                ) : (
+                  <div className="help-alerts-list">
+                    {sessionState.helpRequests.map(req => (
+                      <div key={req.id} className={`help-alert-item ${req.resolved ? 'resolved' : 'urgent'}`}>
+                        <div className="alert-meta">
+                          <strong>{req.participantName}</strong>
+                          <small>({req.stationName})</small>
+                        </div>
+                        <div className="alert-action-row">
+                          <span className="help-type-tag">{req.helpType}</span>
+                          {!req.resolved && (
+                            <button
+                              type="button"
+                              className="btn-ack-help"
+                              onClick={() => handleAcknowledgeHelp(req.id)}
+                            >
+                              تمت المساعدة ✓
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Connected Students Roster */}
+              <div className="connected-roster-box">
+                <h4><i className="fas fa-users"></i> الطلاب والمجموعات المتصلة ({sessionState.participants.length})</h4>
+                <div className="roster-grid">
+                  {sessionState.participants.map(p => (
+                    <div key={p.id} className="roster-card">
+                      <div className="roster-avatar">{p.avatar || '👤'}</div>
+                      <div className="roster-info">
+                        <strong>{p.name}</strong>
+                        <small>{p.groupName}</small>
+                        <span className="roster-station-tag">المحطة: {p.currentStation || 1}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 3. INTERFACE 3: CLASSROOM MAIN DISPLAY (شاشة الصف الكبيرة)             */}
+      {/* ===================================================================== */}
+      {activeInterface === 'projector' && (
+        <section className="interface-canvas projector-canvas animate-fade-in">
+          <div className="projector-viewport-wrapper">
+            {/* Projector Header */}
+            <div className="projector-top-bar">
+              <div className="school-brand-tag">
+                <span>مدرسة مشيرفة الابتدائية</span>
+                <span className="sep">•</span>
+                <span>مِفتاح — رحلة التعلّم</span>
+              </div>
+              <div className="projector-station-title-banner">
+                <span className="station-icon-proj">{getStationByIndex(sessionState.activeStationIndex).icon}</span>
+                <h2>المحطة {sessionState.activeStationIndex}: {getStationByIndex(sessionState.activeStationIndex).name}</h2>
+              </div>
+              <div className="projector-session-pin-badge">
+                انضم الآن: <strong>{sessionState.pin}</strong>
+              </div>
+            </div>
+
+            {/* Projector Main Stage */}
+            <div className="projector-main-stage-grid">
+              {/* Left Side: The Physical Key Map */}
+              <div className="projector-key-map-column">
+                {renderPhysicalKeyMap(sessionState.activeStationIndex, null, false)}
+                
+                {/* Board Reminder for Teacher in Station 1 */}
+                {sessionState.activeStationIndex === 1 && (
+                  <div className="board-reminder-card animate-pop">
+                    <span className="reminder-icon">📋</span>
+                    <div>
+                      <strong>تذكير المعلم:</strong>
+                      <p>اكتب هدف الدرس ومعيار النجاح الآن على اللوح بخط بارز ليظل مرجعاً للصف طوال الحصة.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Center: Large Content Display / Showcase */}
+              <div className="projector-center-display">
+                {/* Lesson Goal Permanent Banner */}
+                <div className="projector-objective-ribbon">
+                  <span className="obj-icon">🎯</span>
+                  <div className="obj-text">
+                    <strong>هدف التعلّم:</strong> {activeLesson.objective}
+                  </div>
+                </div>
+
+                {/* If a Student's Solution is Showcased */}
+                {sessionState.showcasedItem ? (
+                  <div className="projector-showcase-card animate-pop">
+                    <div className="showcase-header">
+                      <span className="showcase-star">⭐ حل متميز للمناقشة الصفية</span>
+                      {sessionState.showcaseShowNames && (
+                        <span className="showcase-author">
+                          إعداد: {sessionState.showcasedItem.participantName} ({sessionState.showcasedItem.groupName})
+                        </span>
+                      )}
+                    </div>
+                    <div className="showcase-body">
+                      <h3>{sessionState.showcasedItem.text}</h3>
+                    </div>
+                    <div className="showcase-footer-hint">
+                      <span>تأملوا هذا الحل: ما الجوانب الدقيقة فيه؟ وكيف يمكننا تطوير الفكرة أكثر؟</span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Standard Station Content */
+                  <div className="projector-task-prompt-card animate-fade-in">
+                    <div className="prompt-content-text">
+                      {getStationByIndex(sessionState.activeStationIndex).studentPrompt.split('\n').map((line, lIdx) => (
+                        <p key={lIdx}>{line}</p>
+                      ))}
+                    </div>
+
+                    {/* In Station 3: Show Group Tiers Showcase */}
+                    {sessionState.activeStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
+                      <div className="projector-tiered-tasks-row">
+                        {activeLesson.stations['3_practice'].tasks.map((task, idx) => (
+                          <div key={idx} className={`proj-tier-card tier-${task.tier}`}>
+                            <span className="tier-badge">{task.badge}</span>
+                            <p>{task.task}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 4. INTERFACE 4: STUDENT / PAIR / GROUP DEVICE                         */}
+      {/* ===================================================================== */}
+      {activeInterface === 'student' && (
+        <section className="interface-canvas student-device-canvas animate-fade-in">
+          <div className="student-device-container">
+            {/* Student Device Top Bar */}
+            <div className="student-device-header">
+              <div className="student-user-badge">
+                <span className="user-avatar">{currentParticipant.avatar}</span>
+                <div>
+                  <strong>{currentParticipant.name}</strong>
+                  <small>{currentParticipant.groupName} • {currentParticipant.type === 'pair' ? `الدور الآن: ${currentParticipant.activeTurn || 'كريم'}` : 'جهاز متصل'}</small>
+                </div>
+              </div>
+
+              <div className="student-station-badge">
+                محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
+              </div>
+            </div>
+
+            {/* Mobile / Device Key Map (Collapsible) */}
+            <div className="student-device-key-bar">
+              {renderPhysicalKeyMap(studentCurrentStationIndex, null, true)}
+            </div>
+
+            {/* Active Station Task Card */}
+            <div className="student-station-task-card">
+              <div className="task-header-title">
+                <span className="st-icon">{studentCurrentStationData.icon}</span>
+                <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
+              </div>
+
+              <div className="task-prompt-body">
+                {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
+                  <p key={i}>{l}</p>
+                ))}
+              </div>
+
+              {/* Station 3 Specific: Tier Selector */}
+              {studentCurrentStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
+                <div className="student-tier-choice-section">
+                  <span className="choice-label">اختر مستوى التحدي الذي ستبدأ به:</span>
+                  <div className="tier-buttons-trio">
+                    {activeLesson.stations['3_practice'].tasks.map((t, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className={`btn-tier-select ${studentChosenTier === t.tier ? 'active' : ''}`}
+                        onClick={() => setStudentChosenTier(t.tier)}
+                      >
+                        <span>{t.badge}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {(() => {
+                    const sel = activeLesson.stations['3_practice'].tasks.find(t => t.tier === studentChosenTier) || activeLesson.stations['3_practice'].tasks[0];
+                    return (
+                      <div className="chosen-tier-task-box animate-fade-in">
+                        <strong>المهمة المحددة:</strong>
+                        <p>{sel.task}</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Active Help Scaffold Banner (if student used help key) */}
+              {studentActiveHelpResponse && (
+                <div className="student-help-result-card animate-pop">
+                  <div className="help-result-head">
+                    <span>🗝️ مفتاح المساعدة: {studentActiveHelpResponse.type}</span>
+                    <button type="button" onClick={() => setStudentActiveHelpResponse(null)}>&times;</button>
+                  </div>
+                  <p>{studentActiveHelpResponse.text}</p>
+                </div>
+              )}
+
+              {/* Station 5 Specific: Exit Ticket Form */}
+              {studentCurrentStationIndex === 5 ? (
+                <div className="student-exit-ticket-form">
+                  <div className="ticket-q-field">
+                    <label>١. ما أهم فكرة تعلّمتها اليوم؟</label>
+                    <textarea
+                      rows={2}
+                      value={studentExitTicket.q1}
+                      onChange={e => setStudentExitTicket(prev => ({ ...prev, q1: e.target.value }))}
+                      placeholder="اكتب أهم ما خرجت به اليوم..."
+                    />
+                  </div>
+                  <div className="ticket-q-field">
+                    <label>٢. ما الذي ساعدك على الفهم؟</label>
+                    <textarea
+                      rows={2}
+                      value={studentExitTicket.q2}
+                      onChange={e => setStudentExitTicket(prev => ({ ...prev, q2: e.target.value }))}
+                      placeholder="التجربة، النقاش، الشرح، الخطأ الذي صححته..."
+                    />
+                  </div>
+                  <div className="ticket-q-field">
+                    <label>٣. ما الذي ما زلت تحتاج إلى توضيحه؟</label>
+                    <div className="quick-q3-options">
+                      <button
+                        type="button"
+                        className="btn-quick-q3"
+                        onClick={() => setStudentExitTicket(prev => ({ ...prev, q3: 'لا أحتاج إلى توضيح إضافي، الفكرة واضحة تماماً الحمد لله!' }))}
+                      >
+                        ✓ لا أحتاج إلى توضيح إضافي
+                      </button>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={studentExitTicket.q3}
+                      onChange={e => setStudentExitTicket(prev => ({ ...prev, q3: e.target.value }))}
+                      placeholder="أي نقطة غامضة أو اكتب: لا أحتاج..."
+                    />
+                  </div>
+                  {sessionState.station5IncludeQ4 && (
+                    <div className="ticket-q-field transfer">
+                      <label>٤. أين وكيف تستطيع استخدام ما تعلّمته؟</label>
+                      <textarea
+                        rows={2}
+                        value={studentExitTicket.q4}
+                        onChange={e => setStudentExitTicket(prev => ({ ...prev, q4: e.target.value }))}
+                        placeholder="في البيت، في اللعب، في الحياة اليومية..."
+                      />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-submit-student-answer large"
+                    onClick={() => {
+                      const compiled = `١. أهم فكرة: ${studentExitTicket.q1 || 'لا إجابة'} | ٢. ما ساعدني: ${studentExitTicket.q2 || 'لا إجابة'} | ٣. ما أحتاجه: ${studentExitTicket.q3 || 'لا إجابة'}` + (sessionState.station5IncludeQ4 ? ` | ٤. نقل الأثر: ${studentExitTicket.q4 || 'لا إجابة'}` : '');
+                      handleStudentSubmitAnswer(5, compiled);
+                    }}
+                  >
+                    <i className="fas fa-paper-plane"></i> إرسال بطاقة الخروج والحصاد 🎓
+                  </button>
+                </div>
+              ) : (
+                /* Standard Response Box for Stations 1, 2, 3, 4 */
+                <div className="student-response-entry-box">
+                  <label>مساحة الحل والإجابة الخاصة بك:</label>
+                  <textarea
+                    rows={4}
+                    value={studentInputText}
+                    onChange={e => setStudentInputText(e.target.value)}
+                    placeholder="اكتب حلك، تفسيرك، أو ملاحظاتك هنا بعناية..."
+                  />
+                  <div className="student-actions-row">
+                    <button
+                      type="button"
+                      className="btn-submit-student-answer"
+                      onClick={() => handleStudentSubmitAnswer(studentCurrentStationIndex, studentInputText, studentChosenTier)}
+                    >
+                      <i className="fas fa-paper-plane"></i> إرسال إجابتي للمعلم 📤
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Permanent Sticky Help Key (مفتاح المساعدة) */}
+            <button
+              type="button"
+              className="sticky-help-key-btn animate-bounce-subtle"
+              onClick={() => setIsHelpKeyModalOpen(true)}
+              title="مفتاح المساعدة: اضغط للحصول على تلميح أو توضيح"
+            >
+              <span className="key-icon">🗝️</span>
+              <span className="key-text">مفتاح المساعدة</span>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 5. INTERFACE 5: SESSION SUMMARY & REPORT                              */}
+      {/* ===================================================================== */}
+      {activeInterface === 'summary' && (
+        <section className="interface-canvas summary-canvas animate-fade-in">
+          <div className="summary-page-wrapper">
+            <div className="summary-header-card">
+              <div>
+                <h2><i className="fas fa-clipboard-check"></i> ملخص الحصة وحصاد التعلّم</h2>
+                <p>تقرير ختامي يرصد مدى تحقق هدف الدرس والأدلة المتاحة والمساعدات المستخدمة واقتراحات الحصة القادمة.</p>
+              </div>
+              <div className="summary-header-actions">
+                <button type="button" className="btn-print-summary" onClick={() => window.print()}>
+                  <i className="fas fa-print"></i> طباعة التقرير
+                </button>
+              </div>
+            </div>
+
+            {/* Analytics Stats Grid */}
+            <div className="summary-stats-grid">
+              <div className="stat-card">
+                <span className="stat-num">{sessionState.participants.length}</span>
+                <span className="stat-label">إجمالي الطلاب والفرق</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-num">{sessionState.submissions.length}</span>
+                <span className="stat-label">المحاولات والأدلة المجمّعة</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-num">
+                  {sessionState.submissions.filter(s => s.formativeScore === 'mastered').length}
+                </span>
+                <span className="stat-label">حققوا الهدف بنجاح ✓</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-num">{sessionState.helpRequests.length}</span>
+                <span className="stat-label">طلبات المساعدة المستخدمة</span>
+              </div>
+            </div>
+
+            {/* Evidence & Objective Mastery Table */}
+            <div className="summary-evidence-table-card">
+              <h3><i className="fas fa-check-double"></i> سجل أدلة الفهم وتقييم الهدف:</h3>
+              {sessionState.submissions.length === 0 ? (
+                <p className="no-data-msg">لم يتم تسجيل أدلة بعد خلال الجلسة.</p>
+              ) : (
+                <table className="summary-table">
+                  <thead>
+                    <tr>
+                      <th>الطالب / المجموعة</th>
+                      <th>المحطة</th>
+                      <th>الدليل المقدّم</th>
+                      <th>المساعدات المستخدمة</th>
+                      <th>حكم المعيار</th>
+                      <th>التغذية الراجعة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessionState.submissions.map(sub => (
+                      <tr key={sub.id}>
+                        <td><strong>{sub.participantName}</strong></td>
+                        <td>محطة {sub.stationNumber}</td>
+                        <td className="evidence-cell">{sub.text}</td>
+                        <td>{sub.scaffoldsUsed?.length > 0 ? sub.scaffoldsUsed.join(', ') : 'بدون مساعدة'}</td>
+                        <td>
+                          <span className={`table-eval-badge ${sub.formativeScore || 'pending'}`}>
+                            {sub.formativeScore === 'mastered' ? 'حقق الهدف' : sub.formativeScore === 'partial' ? 'حققه جزئياً' : sub.formativeScore === 'needs_support' ? 'يحتاج دعماً' : 'قيد المراجعة'}
+                          </span>
+                        </td>
+                        <td>{sub.teacherFeedback || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Next Lesson AI Recommendations */}
+            <div className="next-lesson-ai-card">
+              <div className="ai-head">
+                <i className="fas fa-lightbulb"></i>
+                <h4>توصيات ومقترحات الذكاء الاصطناعي للحصة القادمة:</h4>
+              </div>
+              <ul className="recommendations-list">
+                <li>
+                  <strong>تعزيز التبرير العلمي:</strong> تخصيص مدخل الحصة القادمة لنشاط تمييز سريع حول المواد التي تجمع بين خصائص متعددة.
+                </li>
+                <li>
+                  <strong>مجموعة الدعم المرنة:</strong> تشكيل فريق دعم مؤقت لمدة ٥ دقائق لمتابعة تطبيق المعيار على الأمثلة المركبة.
+                </li>
+                <li>
+                  <strong>نقل الأثر المستمر:</strong> الاستناد لإجابات بطاقة الخروج في ربط مفاهيم الدرس بمشروع العلوم والبيئة المدرسية.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 6. INTERFACE 6: LIVE MULTI-ACTOR CLASSROOM SANDBOX                    */}
+      {/* ===================================================================== */}
+      {activeInterface === 'sandbox' && (
+        <section className="interface-canvas sandbox-canvas animate-fade-in">
+          <div className="sandbox-header-banner">
+            <div>
+              <h2><i className="fas fa-vial"></i> مختبر المحاكاة الصفيّة الحية المتكاملة</h2>
+              <p>جرّب واختبر التفاعل الحي المتزامن بين جميع أطراف الصف: المعلم، شاشة العرض الصفية، الطلاب، والمجموعات في وقت واحد!</p>
+            </div>
+            <div className="sandbox-quick-actions">
+              <button
+                type="button"
+                className="btn-sandbox-trigger"
+                onClick={() => {
+                  handleStudentSubmitAnswer(3, 'صنفنا حجر الصوان كصلب لأنه يحتفظ بحجمه وشكله، والماء كسائل لأنه أخذ شكل الوعاء.', 'core');
+                }}
+              >
+                + محاكاة إرسال حل من سامي 👤
+              </button>
+              <button
+                type="button"
+                className="btn-sandbox-trigger"
+                onClick={() => {
+                  handleRequestHelpOption('hint');
+                }}
+              >
+                + محاكاة طلب مساعدة من سامي 🗝️
+              </button>
+            </div>
+          </div>
+
+          <div className="sandbox-split-grid">
+            {/* Box 1: Teacher Dashboard View */}
+            <div className="sandbox-actor-panel teacher-actor">
+              <div className="actor-panel-head">
+                <span>👨‍🏫 لوحة المعلم (التحكم والتوجيه)</span>
+                <span className="live-tag">مباشر 🔴</span>
+              </div>
+              <div className="actor-panel-body">
+                <div className="mini-actor-meta">
+                  <span>المحطة الحالية: {sessionState.activeStationIndex}</span>
+                  <span>النمط: {sessionState.pacingMode}</span>
+                  <span>المشاركون: {sessionState.participants.length}</span>
+                </div>
+                <div className="mini-actor-submissions">
+                  <strong>آخر الحلول المستلمة:</strong>
+                  {sessionState.submissions.slice(0, 3).map(s => (
+                    <div key={s.id} className="mini-sub-card">
+                      <div><strong>{s.participantName}:</strong> {s.text.substring(0, 50)}...</div>
+                      <button
+                        type="button"
+                        className="btn-mini-eval"
+                        onClick={() => handleTeacherEvaluate(s.id, 'mastered', 'ممتاز!')}
+                      >
+                        قيّم: حقق الهدف ✓
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Box 2: Classroom Projector Screen */}
+            <div className="sandbox-actor-panel projector-actor">
+              <div className="actor-panel-head">
+                <span>📺 الشاشة الرئيسية للصف (البروجكتور)</span>
+                <span className="live-tag">عرض عام</span>
+              </div>
+              <div className="actor-panel-body">
+                <div className="mini-proj-station">
+                  <h4>المحطة {sessionState.activeStationIndex}: {getStationByIndex(sessionState.activeStationIndex).name}</h4>
+                  <p>{getStationByIndex(sessionState.activeStationIndex).studentPrompt.substring(0, 110)}...</p>
+                </div>
+                {sessionState.showcasedItem && (
+                  <div className="mini-proj-showcased animate-pop">
+                    <strong>⭐ معروض للمناقشة:</strong>
+                    <p>{sessionState.showcasedItem.text}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Box 3: Student 1 (Sami) */}
+            <div className="sandbox-actor-panel student-actor">
+              <div className="actor-panel-head">
+                <span>👤 طالب ١: سامي خلدون (جهاز فردي)</span>
+                <button
+                  type="button"
+                  className="btn-switch-actor"
+                  onClick={() => { setCurrentStudentId('p_sami'); setActiveInterface('student'); }}
+                >
+                  فتح واجهته ↗
+                </button>
+              </div>
+              <div className="actor-panel-body">
+                <p>محطته: {studentCurrentStationIndex}</p>
+                <button
+                  type="button"
+                  className="btn-actor-act"
+                  onClick={() => handleRequestHelpOption('clarify')}
+                >
+                  طلب توضيح التعليمات 📋
+                </button>
+              </div>
+            </div>
+
+            {/* Box 4: Group Stars (Team) */}
+            <div className="sandbox-actor-panel group-actor">
+              <div className="actor-panel-head">
+                <span>👥 مجموعة الرواد (جهاز مشترك)</span>
+                <button
+                  type="button"
+                  className="btn-switch-actor"
+                  onClick={() => { setCurrentStudentId('p_group_stars'); setActiveInterface('student'); }}
+                >
+                  فتح واجهتهم ↗
+                </button>
+              </div>
+              <div className="actor-panel-body">
+                <p>فريق النجوم: منى، سلمى، آية، عمر</p>
+                <button
+                  type="button"
+                  className="btn-actor-act"
+                  onClick={() => {
+                    handleStudentSubmitAnswer(3, 'فريق الرواد: دحضنا فكرة أن الرمل سائل، لأن حبة الرمل المنفردة صلبة تحتفظ بشكلها.', 'advanced');
+                  }}
+                >
+                  إرسال حل تحدي الرواد 🚀
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 1: THE HELP KEY (مفتاح المساعدة - بماذا أساعدك؟)                 */}
+      {/* ===================================================================== */}
+      {isHelpKeyModalOpen && (
+        <div className="miftaah-modal-overlay" onClick={() => setIsHelpKeyModalOpen(false)}>
+          <div className="miftaah-help-modal-card animate-pop" onClick={e => e.stopPropagation()}>
+            <div className="help-modal-header">
+              <div className="header-title">
+                <span className="key-icon-large">🗝️</span>
+                <div>
+                  <h3>بماذا أساعدك؟</h3>
+                  <small>مفتاح السقالات المساندة — محطة [{studentCurrentStationData.name}]</small>
+                </div>
+              </div>
+              <button type="button" className="btn-close-modal" onClick={() => setIsHelpKeyModalOpen(false)}>&times;</button>
+            </div>
+
+            <div className="help-modal-body">
+              <p className="help-intro-text">
+                اختر نوع المساعدة التي تحتاجها وسنقدم لك توجيهاً ذكياً يساعدك على التفكير خطوة بخطوة دون إعطائك الحل النهائي:
+              </p>
+
+              <div className="help-options-grid">
+                <button
+                  type="button"
+                  className="help-option-card clarify"
+                  onClick={() => handleRequestHelpOption('clarify')}
+                >
+                  <span className="opt-icon">📋</span>
+                  <div className="opt-info">
+                    <strong>وضّح لي التعليمات</strong>
+                    <small>إعادة صياغة خطوات المهمة بأسلوب مبسط جداً</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="help-option-card hint"
+                  onClick={() => handleRequestHelpOption('hint')}
+                >
+                  <span className="opt-icon">💡</span>
+                  <div className="opt-info">
+                    <strong>أعطني تلميحاً</strong>
+                    <small>إشارة ذكية تلفت انتباهك للجزء الأساسي في السؤال</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="help-option-card explain"
+                  onClick={() => handleRequestHelpOption('explain_diff')}
+                >
+                  <span className="opt-icon">🔄</span>
+                  <div className="opt-info">
+                    <strong>اشرح بطريقة أخرى</strong>
+                    <small>طريقة تمثيل وتشبيه مختلفة تقرب المعنى لذهنك</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="help-option-card example"
+                  onClick={() => handleRequestHelpOption('example')}
+                >
+                  <span className="opt-icon">🔍</span>
+                  <div className="opt-info">
+                    <strong>أعطني مثالاً مشابهاً</strong>
+                    <small>نموذج محلول لمسألة مكافئة تقيس نفس المهارة</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="help-option-card teacher-alert"
+                  onClick={() => handleRequestHelpOption('teacher')}
+                >
+                  <span className="opt-icon">🙋‍♂️</span>
+                  <div className="opt-info">
+                    <strong>أحتاج مساعدة المعلم</strong>
+                    <small>إرسال تنبيه مباشر وسري إلى شاشة معلم الصف</small>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="help-modal-footer">
+              <button
+                type="button"
+                className="btn-close-help-footer"
+                onClick={() => setIsHelpKeyModalOpen(false)}
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 2: SINGLE STATION PROMPT AI MODAL                               */}
+      {/* ===================================================================== */}
+      {stationPromptModal.isOpen && (
+        <div className="miftaah-modal-overlay" onClick={() => !stationPromptModal.loading && setStationPromptModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="miftaah-prompt-modal-card animate-pop" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="header-meta">
+                <i className="fas fa-robot"></i>
+                <div>
+                  <h3>طلب تعديل مخصص بالذكاء الاصطناعي</h3>
+                  <small>محطة [{stationPromptModal.stationName}]</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-close-modal"
+                onClick={() => !stationPromptModal.loading && setStationPromptModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p>اكتب أي فكرة أو رغبة خاصة ترغب بتطبيقها في هذه المحطة، وسيعيد الذكاء الاصطناعي صياغتها مع الحفاظ على بقية محطات الدرس:</p>
+
+              <div className="quick-suggestions-pills">
+                {[
+                  '🎯 اجعل النشاط حركياً وتفاعلياً يشارك فيه جميع الطلاب',
+                  '🔍 حوّل المهمة إلى لغز ومحققين أذكياء',
+                  '🌱 بسّط الخطوات لتناسب الطلاب الذين يحتاجون دعماً',
+                  '🚀 أضف سؤال تفكير عليا وتحدٍ للمتفوقين'
+                ].map((sug, sIdx) => (
+                  <button
+                    key={sIdx}
+                    type="button"
+                    className="sug-pill"
+                    onClick={() => setStationPromptModal(prev => ({ ...prev, promptText: sug }))}
+                  >
+                    {sug}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                rows={4}
+                value={stationPromptModal.promptText}
+                onChange={e => setStationPromptModal(prev => ({ ...prev, promptText: e.target.value }))}
+                placeholder="اكتب طلبك الخاص هنا بالتفصيل..."
+                disabled={stationPromptModal.loading}
+              />
+
+              {stationPromptModal.loading && (
+                <div className="loading-banner">
+                  <i className="fas fa-spinner fa-spin"></i> جاري استدعاء المعلم الخبير وإعادة صياغة المحطة... ⏳
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setStationPromptModal(prev => ({ ...prev, isOpen: false }))}
+                disabled={stationPromptModal.loading}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                className="btn-submit-ai"
+                onClick={handleApplyStationPromptModification}
+                disabled={stationPromptModal.loading || !stationPromptModal.promptText.trim()}
+              >
+                {stationPromptModal.loading ? 'جاري التطبيق...' : 'تطبيق التعديل الآن ✨'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

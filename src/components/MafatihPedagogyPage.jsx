@@ -5,6 +5,7 @@ import { generateMafatihLessonPlanAI, generateAiResponse, parseUploadedLessonPla
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
 import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
 import MafatihTeacherCompanion from './MafatihTeacherCompanion';
+import MiftaahLearningJourney from './MiftaahLearningJourney';
 import './MafatihPedagogyPage.css';
 
 export const MIFTAAH_PRINCIPLES = [
@@ -398,7 +399,15 @@ const STANDARD_GRADE_OPTIONS = [
 ];
 
 const MafatihPedagogyPage = () => {
-  const [activeTab, setActiveTab] = useState('stations'); // 'stations', 'ruler', 'pedagogy', 'toolkit', 'planner', 'library', 'rubric', 'vision'
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('stations')) return 'stations';
+    if (hash.includes('ruler')) return 'ruler';
+    if (hash.includes('planner')) return 'planner';
+    if (hash.includes('library')) return 'library';
+    if (hash.includes('companion')) return 'teacher-companion';
+    return 'miftaah-journey';
+  });
   const [selectedStationIndex, setSelectedStationIndex] = useState(0);
   const [lessonDurationMode, setLessonDurationMode] = useState(45); // 45 or 90
   const [activeTimerSeconds, setActiveTimerSeconds] = useState(0);
@@ -1352,6 +1361,38 @@ ${p.stations?.h || ''}
 
           {/* Top Quick Actions */}
           <div className="mafatih-hero-actions">
+            {/* Miftaah Learning Journey Suite Button */}
+            <button
+              type="button"
+              className="action-btn"
+              onClick={() => {
+                setActiveTab('miftaah-journey');
+                setTimeout(() => {
+                  const el = document.querySelector('.mafatih-tab-nav');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.4)',
+                fontWeight: 900,
+                fontSize: '1.05rem',
+                padding: '0.75rem 1.8rem',
+                borderRadius: '12px',
+                boxShadow: '0 6px 20px rgba(16, 185, 129, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="دخول منصة «مِفتاح — رحلة التعلّم» التفاعلية الكاملة (توليد، كواليس، شاشة، طالب)"
+            >
+              <i className="fas fa-rocket"></i>
+              <span>«مِفتاح — رحلة التعلّم» 🌟</span>
+              <span style={{ background: '#f59e0b', color: '#1e293b', fontWeight: 900, fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>الأحدث 🚀</span>
+            </button>
             {/* New Teacher Companion Quick Action Button */}
             <button
               type="button"
@@ -1541,6 +1582,30 @@ ${p.stations?.h || ''}
       {/* 2. NAVIGATION SUB-TABS */}
       <nav className="mafatih-tab-nav">
         <div className="container mafatih-tabs-wrapper">
+          {/* MIFTAAH LEARNING JOURNEY FULL SUITE TAB */}
+          <button 
+            type="button"
+            className={`tab-btn companion-nav-tab ${activeTab === 'miftaah-journey' ? 'active' : ''}`}
+            onClick={() => setActiveTab('miftaah-journey')}
+            style={{
+              background: activeTab === 'miftaah-journey' ? 'linear-gradient(135deg, #047857, #10b981)' : '#ffffff',
+              color: activeTab === 'miftaah-journey' ? '#ffffff' : '#065f46',
+              borderColor: '#10b981',
+              fontWeight: '900',
+              boxShadow: activeTab === 'miftaah-journey' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none'
+            }}
+          >
+            <i className="fas fa-rocket"></i>
+            <span>«مِفتاح — رحلة التعلّم» 🌟</span>
+            <span style={{
+              background: '#f59e0b',
+              color: '#ffffff',
+              padding: '2px 7px',
+              borderRadius: '12px',
+              fontSize: '0.72rem',
+              marginRight: '6px'
+            }}>تفاعلي كامل ✨</span>
+          </button>
           {/* TEACHER COMPANION PRIMARY TAB */}
           <button 
             type="button"
@@ -1655,6 +1720,15 @@ ${p.stations?.h || ''}
         {/* ========================================================================= */}
         {/* TAB 1: THE 5 STATIONS INTERACTIVE EXPLORER */}
         {/* ========================================================================= */}
+        {/* ========================================================================= */}
+        {/* TAB: MIFTAAH LEARNING JOURNEY FULL SUITE                                  */}
+        {/* ========================================================================= */}
+        {activeTab === 'miftaah-journey' && (
+          <section className="miftaah-journey-section fade-in" style={{ padding: '0.5rem 0 2rem' }}>
+            <MiftaahLearningJourney />
+          </section>
+        )}
+
         {/* ========================================================================= */}
         {/* TAB 0: TEACHER COMPANION (مِفتاح المعلّم - قبل وأثناء وبعد الحصة)          */}
         {/* ========================================================================= */}

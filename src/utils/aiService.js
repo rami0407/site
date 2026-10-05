@@ -2607,6 +2607,285 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
   };
 };
 
+/**
+ * 15.G Miftaah Full Learning Journey Lesson Planner:
+ * Generates an end-to-end 5-station cohesive lesson from only 3 inputs:
+ * (title, grade, specialRequests)
+ * Includes: objective, success criteria, stations 1-5, pedagogical mode, tiered tasks, formative rubric, exit ticket.
+ */
+export const generateMiftaahFullJourneyLessonAI = async ({
+  title = '',
+  grade = '',
+  specialRequests = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = title.trim() || 'مهارة مركزية تفاعلية';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+  const safeRequests = specialRequests.trim();
+
+  const prompt = `أنت مصمم التعليم والمناهج لنظام «مِفتاح — رحلة التعلّم» بمدرسة مشيرفة الابتدائية.
+المعلم أدخل ٣ مدخلات فقط لإنشاء الحصة:
+- عنوان الدرس: ${safeTitle}
+- الصف: ${safeGrade}
+${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
+
+المطلوب: توليد مسودة متكاملة ومترابطة للحصة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
+1. مشوّق ومحفّز
+2. فهم وبناء المعنى
+3. التطبيق والتدريب
+4. أدلة الفهم
+5. حصاد ونقل الأثر
+
+المعايير البيداغوجية الصارمة:
+- اكتب نصوص وأسئلة الطلاب الحقيقية الصريحة (studentPrompt) الجاهزة للعرض فوراً، وليس نصائح للمعلم.
+- في المحطة الثانية: اختر الطريقة الأنسب ("guided_exploration" أو "direct_instruction" أو "blended") واكتب مادتها ومفاهيمها الصريحة.
+- في المحطة الثالثة: وفّر ٣ مهمات وتحديات متمايزة (support, core, advanced) مع سقالة لكل منها.
+- في المحطة الرابعة: حدد مهمة الدليل الفردي ومعيار النجاح الصريح.
+- في المحطة الخامسة: ضع أسئلة بطاقة الخروج (الثلاثة الإلزامية وسؤال نقل الأثر).
+
+أخرج JSON صالحاً فقط:
+{
+  "title": "${safeTitle}",
+  "grade": "${safeGrade}",
+  "objective": "الهدف الصريح والمحدد للدرس...",
+  "successCriteria": "معيار النجاح الصريح القابل للقياس...",
+  "suggestedDuration": 45,
+  "stations": {
+    "1_hook": {
+      "name": "مشوّق ومحفّز",
+      "number": 1,
+      "icon": "🔥",
+      "studentPrompt": "اللغز أو الموقف المثير الصريح المعروض للطلاب...",
+      "teacherGuidance": "إرشادات المعلم السرية لإدارة المدخل المحفز وكتابة الهدف على اللوح...",
+      "suggestedDuration": 6,
+      "scaffold": "تلميح للبدء..."
+    },
+    "2_understanding": {
+      "name": "فهم وبناء المعنى",
+      "number": 2,
+      "icon": "🧩",
+      "pedagogicalMode": "guided_exploration",
+      "pedagogicalModeName": "الاستكشاف الموجّه",
+      "studentPrompt": "المفاهيم والأمثلة والشرح الصريح للطلاب...",
+      "teacherGuidance": "إرشادات النمذجة أو قيادة الاستكشاف الصفي...",
+      "suggestedDuration": 12,
+      "scaffold": "منظم بصري أو خطوة مساعدة..."
+    },
+    "3_practice": {
+      "name": "التطبيق والتدريب",
+      "number": 3,
+      "icon": "🛠️",
+      "suggestedDuration": 15,
+      "workMode": "groups",
+      "tasks": [
+        { "tier": "support", "badge": "🌱 فريق الانطلاق والتمكن", "task": "تمرين مباشر مع خيارات وسقالة...", "scaffold": "سقالة مساندة..." },
+        { "tier": "core", "badge": "⭐ فريق الممارسة والإتقان", "task": "تطبيق المعيار الأساسي للدرس مع التعليل...", "scaffold": "سقالة مساندة..." },
+        { "tier": "advanced", "badge": "🚀 فريق الرواد والتحدي", "task": "مهمة تفكير عليا وتطبيق مركب أو اكتشاف أخطاء...", "scaffold": "تلميح للتفكير..." }
+      ]
+    },
+    "4_evidence": {
+      "name": "أدلة الفهم",
+      "number": 4,
+      "icon": "🔎",
+      "suggestedDuration": 7,
+      "criterion": "معيار التحقق: ما الذي يثبت تحقق هدف التعلم لدى كل طالب...",
+      "individualTask": "مهمة الدليل الفردي الصريحة التي يحلها كل طالب بمفرده...",
+      "allowedHelp": ["تلميح بسيط", "توضيح التعليمات"],
+      "evalLevels": {
+        "mastered": "حقق الهدف",
+        "partial": "حققه جزئياً",
+        "needs_support": "يحتاج دعماً",
+        "insufficient_data": "الدليل غير كافٍ للحكم"
+      }
+    },
+    "5_harvest": {
+      "name": "حصاد ونقل الأثر",
+      "number": 5,
+      "icon": "🎒",
+      "suggestedDuration": 5,
+      "exitTicket": {
+        "q1": "ما أهم فكرة تعلّمتها اليوم؟",
+        "q2": "ما الذي ساعدني على الفهم؟",
+        "q3": "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
+        "q4_transfer": "أين أستطيع استخدام ما تعلّمته؟"
+      }
+    }
+  }
+}`;
+
+  const parseSafeJson = (raw) => {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        try {
+          const cleaned = raw.substring(first, last + 1)
+            .replace(/[“”؟‘’]/g, '"')
+            .replace(/,\s*}/g, '}')
+            .replace(/,\s*]/g, ']');
+          return JSON.parse(cleaned);
+        } catch (err2) {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  // 1. Try Groq AI
+  if (groqKey) {
+    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.45,
+            max_tokens: 3200
+          })
+        }, 16000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const raw = data.choices?.[0]?.message?.content;
+          const parsed = parseSafeJson(raw);
+          if (parsed && parsed.stations && parsed.stations['1_hook']) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq full journey (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only:` }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 3200, responseMimeType: 'application/json' }
+            })
+          },
+          16000
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          const parsed = parseSafeJson(txt);
+          if (parsed && parsed.stations && parsed.stations['1_hook']) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini full journey (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // High quality rich fallback
+  return {
+    title: safeTitle,
+    grade: safeGrade,
+    objective: `أن يتمكن الطالب من استيعاب وتطبيق المهارات والمفاهيم الأساسية لدرس (${safeTitle}) وتبرير خطواته بدقة.`,
+    successCriteria: `حل وتطبيق ثلاثة تمارين متنوعة بنجاح، وتقديم دليل فردي يثبت الفهم المستقل، ونقل الأثر لموقف حياتي.`,
+    suggestedDuration: 45,
+    stations: {
+      "1_hook": {
+        name: "مشوّق ومحفّز",
+        number: 1,
+        icon: "🔥",
+        studentPrompt: `لغز وتحدي المدخل لدرس (${safeTitle}):\nتأمل هذا الموقف المثير: حدثت مفارقة تجعلنا نتساءل: كيف يمكننا التفسير بدقة ودون غموض؟ ما الذي يثير فضولك وما أول فكرة تخطر ببالك؟`,
+        teacherGuidance: `اعرض الموقف وناقش فضول الطلاب دون إعلان الحل فوراً. اكتب الهدف ومعيار النجاح بخط بارز على اللوح.`,
+        suggestedDuration: 6,
+        scaffold: `فكر في العلاقة بين المعطيات وما درسته في الحصة السابقة.`
+      },
+      "2_understanding": {
+        name: "فهم وبناء المعنى",
+        number: 2,
+        icon: "🧩",
+        pedagogicalMode: "guided_exploration",
+        pedagogicalModeName: "الاستكشاف الموجّه",
+        studentPrompt: `بناء المفاهيم والقاعدة الذهبية لـ (${safeTitle}):\n١. المفهوم الأساسي: التعريف والخصائص المركزية.\n٢. القاعدة التطبيقية: الخطوات الثلاث للوصول للحل الصحيح.\n٣. مثال محلول توضيحي خطوة بخطوة.`,
+        teacherGuidance: `وجّه الطلاب لملاحظة النمط واستخراج القاعدة بأنفسهم قبل التلخيص الجماعي.`,
+        suggestedDuration: 12,
+        scaffold: `مخطط بصري ملخص للقاعدة وللكلمات المفتاحية.`
+      },
+      "3_practice": {
+        name: "التطبيق والتدريب",
+        number: 3,
+        icon: "🛠️",
+        suggestedDuration: 15,
+        workMode: "groups",
+        tasks: [
+          {
+            tier: "support",
+            badge: "🌱 فريق الانطلاق والتمكن",
+            task: `حل تمرين مباشر حول (${safeTitle}): اختر الإجابة المناسبة من بين الخيارات مع توضيح بسيط للسبب.`,
+            scaffold: `تلميح: راجع المثال الأول في بطاقة الشرح واستبعد الخيار غير المنطقي.`
+          },
+          {
+            tier: "core",
+            badge: "⭐ فريق الممارسة والإتقان",
+            task: `طبق القاعدة الأساسية لـ (${safeTitle}) على ثلاث فقرات جديدة في دفترك، مع كتابة تعليل موجز لكل خطوة.`,
+            scaffold: `تلميح: تأكد من مطابقة جميع معايير النجاح وتدوين خطواتك بوضوح.`
+          },
+          {
+            tier: "advanced",
+            badge: "🚀 فريق الرواد والتحدي",
+            task: `اكتشف الخطأ الخفي في نموذج الحل المعروض وفسر سببه، ثم صغ مسألة جديدة لتحدي زملائك في باقي الفرق.`,
+            scaffold: `تلميح: ركز على الحالات الاستثنائية التي نوقشت أثناء الدرس.`
+          }
+        ]
+      },
+      "4_evidence": {
+        name: "أدلة الفهم",
+        number: 4,
+        icon: "🔎",
+        suggestedDuration: 7,
+        criterion: `تقديم إجابة فردية مستقلة ومبررة تثبت امتلاك مهارة (${safeTitle}) دون مساعدة.`,
+        individualTask: `مهمة التحقق الفردي:\nأجب عن السؤالين التاليين في بطاقتك الخاصة بمفردك:\n١. تطبيق مباشر على المفهوم المركزي.\n٢. تعليل علمي أو لغوي موجز لسبب اختيارك.`,
+        allowedHelp: ["تلميح بسيط", "توضيح التعليمات"],
+        evalLevels: {
+          mastered: "حقق الهدف",
+          partial: "حققه جزئياً",
+          needs_support: "يحتاج دعماً",
+          insufficient_data: "الدليل غير كافٍ للحكم"
+        }
+      },
+      "5_harvest": {
+        name: "حصاد ونقل الأثر",
+        number: 5,
+        icon: "🎒",
+        suggestedDuration: 5,
+        exitTicket: {
+          q1: "ما أهم فكرة تعلّمتها اليوم؟",
+          q2: "ما الذي ساعدني على الفهم؟",
+          q3: "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
+          q4_transfer: "أين أستطيع استخدام ما تعلّمته في حياتي خارج المدرسة؟"
+        }
+      }
+    }
+  };
+};
+
 export const generateScientificGenieAI = async (question, chatHistory = [], studentName = 'مستكشفنا البطل') => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
 

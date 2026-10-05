@@ -81,6 +81,7 @@ const StudentDismissalPage = lazyWithRetry(() => import('./components/StudentDis
 const EduStaffingPortal = lazyWithRetry(() => import('./components/EduStaffingPortal'));
 const ScientificResearchQuest = lazyWithRetry(() => import('./components/ScientificResearchQuest'));
 const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPedagogyPage'));
+const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 
 
@@ -576,6 +577,17 @@ function App() {
       <Suspense fallback={<Loader />}>
         <Loader />
         <ScientificResearchQuest />
+      </Suspense>
+    );
+  }
+
+  const isMiftaahJourneyView = currentHash.includes('miftaah') || currentHash.includes('miftah') || currentHash.includes('journey') || currentHash.includes('rihla');
+
+  if (isMiftaahJourneyView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <MiftaahLearningJourney />
       </Suspense>
     );
   }
