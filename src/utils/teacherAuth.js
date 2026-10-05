@@ -50,6 +50,35 @@ export const findTeacherByName = (name) => {
 };
 
 /**
+ * Find a teacher by Email (supports official email, aliases, or principal email)
+ */
+export const findTeacherByEmail = (email) => {
+  if (!email) return null;
+  const clean = email.trim().toLowerCase();
+  const teachers = getAllTeachers();
+  
+  // 1. Direct email match
+  let found = teachers.find(t => t.email && t.email.trim().toLowerCase() === clean);
+  if (found) return found;
+
+  // 2. Principal / admin email aliases
+  if (clean === 'admin@musherfe.com' || clean === 'rami@musherfe.com' || clean === 'principal@musherfe.com' || clean === 'rami@musheirifa.edu.hl') {
+    const principal = teachers.find(t => t.id === 'tch_36' || (t.nameAr && t.nameAr.includes('رامي')));
+    if (principal) return principal;
+  }
+
+  // 3. Match username prefix (e.g. "teacher1" or "teacher36")
+  const prefix = clean.split('@')[0];
+  if (prefix) {
+    found = teachers.find(t => t.email && t.email.split('@')[0].toLowerCase() === prefix);
+    if (found) return found;
+  }
+
+  // 4. Fallback search by name if user typed their name into email field
+  return findTeacherByName(clean);
+};
+
+/**
  * Fetch all teacher accounts from Firestore cloud collection `teacher_accounts`
  */
 export const fetchTeacherCloudAccounts = async () => {

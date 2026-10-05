@@ -1361,7 +1361,36 @@ ${p.stations?.h || ''}
 
           {/* Top Quick Actions */}
           <div className="mafatih-hero-actions">
-            {/* Miftaah Learning Journey Suite Button */}
+            {/* Teacher Private Prep Button */}
+            <button
+              type="button"
+              className="action-btn"
+              onClick={() => {
+                window.location.hash = '#/miftaah-prep';
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.4)',
+                fontWeight: 900,
+                fontSize: '1rem',
+                padding: '0.75rem 1.4rem',
+                borderRadius: '12px',
+                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="صفحة خاصة بالمعلم لإعداد وتخطيط الحصص بالذكاء الاصطناعي (تتطلب تسجيل الدخول بالايميل والرقم السري)"
+            >
+              <i className="fas fa-lock"></i>
+              <span>شاشة تحضير الحصص 🔐</span>
+              <span style={{ background: '#fef3c7', color: '#92400e', fontWeight: 900, fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>خاص بالمعلم 👨‍🏫</span>
+            </button>
+
+            {/* Student Learning Journey Button (Shared code or guest) */}
             <button
               type="button"
               className="action-btn"
@@ -1373,8 +1402,8 @@ ${p.stations?.h || ''}
                 color: 'white',
                 border: '1px solid rgba(255,255,255,0.4)',
                 fontWeight: 900,
-                fontSize: '1.05rem',
-                padding: '0.75rem 1.8rem',
+                fontSize: '1rem',
+                padding: '0.75rem 1.4rem',
                 borderRadius: '12px',
                 boxShadow: '0 6px 20px rgba(16, 185, 129, 0.45)',
                 display: 'inline-flex',
@@ -1383,11 +1412,11 @@ ${p.stations?.h || ''}
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              title="فتح منصة «مِفتاح — رحلة التعلّم» كصفحة مستقلة مخصصة للحصة كاملة الشاشة بدون أي عناوين إضافية"
+              title="واجهة رحلة التعلّم للطلاب — المشاركة عبر رمز المدرسة المشترك أو كضيف مباشرةً"
             >
               <i className="fas fa-rocket"></i>
-              <span>«مِفتاح — رحلة التعلّم» 🌟</span>
-              <span style={{ background: '#f59e0b', color: '#1e293b', fontWeight: 900, fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>صفحة مستقلة 🚀</span>
+              <span>رحلة التعلّم للطلاب 🎒</span>
+              <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 900, fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>بالرمز أو كضيف 🌟</span>
             </button>
             {/* New Teacher Companion Quick Action Button */}
             <button
@@ -1578,6 +1607,34 @@ ${p.stations?.h || ''}
       {/* 2. NAVIGATION SUB-TABS */}
       <nav className="mafatih-tab-nav">
         <div className="container mafatih-tabs-wrapper">
+          {/* TEACHER PRIVATE PREPARATION TAB */}
+          <button 
+            type="button"
+            className="tab-btn companion-nav-tab"
+            onClick={() => {
+              window.location.hash = '#/miftaah-prep';
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+              color: '#ffffff',
+              borderColor: '#0284c7',
+              fontWeight: '900',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)'
+            }}
+            title="صفحة خاصة بالمعلم لإعداد وتخطيط الحصص بالذكاء الاصطناعي (دخول بالايميل والرقم السري)"
+          >
+            <i className="fas fa-lock"></i>
+            <span>تحضير الحصص (المعلم) 🔐</span>
+            <span style={{
+              background: '#fef3c7',
+              color: '#92400e',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              fontSize: '0.72rem',
+              marginRight: '6px',
+              fontWeight: 900
+            }}>خاص 👨‍🏫</span>
+          </button>
           {/* MIFTAAH LEARNING JOURNEY FULL SUITE TAB */}
           <button 
             type="button"
@@ -1592,19 +1649,19 @@ ${p.stations?.h || ''}
               fontWeight: '900',
               boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
             }}
-            title="الانتقال إلى منصة مِفتاح رحلة التعلّم كصفحة مستقلة كاملة الشاشة بدون أي عناوين علوية"
+            title="الانتقال إلى منصة مِفتاح رحلة التعلّم كصفحة مستقلة للطلاب (بالرمز أو كضيف)"
           >
             <i className="fas fa-external-link-alt"></i>
             <span>«مِفتاح — رحلة التعلّم» 🌟</span>
             <span style={{
-              background: '#f59e0b',
-              color: '#1e293b',
+              background: '#dcfce7',
+              color: '#166534',
               padding: '2px 8px',
               borderRadius: '12px',
               fontSize: '0.72rem',
               marginRight: '6px',
               fontWeight: 900
-            }}>صفحة مستقلة ⛶</span>
+            }}>للطلاب 🎒</span>
           </button>
           {/* TEACHER COMPANION PRIMARY TAB */}
           <button 

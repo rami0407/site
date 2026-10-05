@@ -5,6 +5,15 @@ import {
   modifyMiftaahStationWithPromptAI,
   generateMiftaahGroupTasksAI
 } from '../utils/aiService';
+import {
+  getAllTeachers,
+  findTeacherByEmail,
+  verifyTeacherCredentials,
+  getActiveTeacherSession,
+  setActiveTeacherSession,
+  logoutTeacherSession,
+  DEFAULT_TEACHER_PIN
+} from '../utils/teacherAuth';
 
 // =========================================================================
 // 1. DEFAULT EXEMPLARY LESSON (حصة نموذجية متكاملة لـ «مِفتاح — رحلة التعلّم»)
@@ -230,30 +239,224 @@ const BROADCAST_CHANNEL_NAME = 'miftaah_journey_sync_v3';
 // 2. MAIN COMPONENT: MiftaahLearningJourney
 // =========================================================================
 export default function MiftaahLearningJourney({ onSwitchTab }) {
-  // Check URL query parameters for default view
+  // Check URL query parameters for default view (Private Prep vs Student vs Projector)
   const initialView = (() => {
     try {
-      const hash = window.location.hash || '';
-      const search = window.location.search || '';
+      const hash = (window.location.hash || '').toLowerCase();
+      const search = (window.location.search || '').toLowerCase();
       const combined = hash + search;
-      if (combined.includes('view=student')) return 'student';
-      if (combined.includes('view=projector') || combined.includes('view=screen')) return 'projector';
-      if (combined.includes('view=teacher')) return 'teacher';
-      if (combined.includes('view=creator')) return 'creator';
-      if (combined.includes('view=sandbox') || combined.includes('view=sim')) return 'sandbox';
-      if (combined.includes('view=summary')) return 'summary';
+      if (combined.includes('prep') || combined.includes('creator') || combined.includes('tahdir')) return 'creator';
+      if (combined.includes('view=teacher') || combined.includes('kawaliss')) return 'teacher';
+      if (combined.includes('view=projector') || combined.includes('view=screen') || combined.includes('screen') || combined.includes('projector')) return 'projector';
+      if (combined.includes('view=sandbox') || combined.includes('view=sim') || combined.includes('sandbox')) return 'sandbox';
+      if (combined.includes('view=summary') || combined.includes('summary')) return 'summary';
+      if (combined.includes('view=student') || combined.includes('student') || combined.includes('talib')) return 'student';
     } catch (e) {}
-    return 'creator';
+    // Default to student journey when entering without parameters so students/visitors don't land on teacher prep
+    return 'student';
   })();
 
   // Primary active interface:
-  // 'creator'   ➔ 1. إنشاء الحصة وتعديلها
+  // 'creator'   ➔ 1. إنشاء الحصة وتعديلها (محمي بحساب المعلم الخاص)
   // 'teacher'   ➔ 2. لوحة المعلم أثناء التدريس
   // 'projector' ➔ 3. الشاشة الرئيسية للصف (البروجكتور)
-  // 'student'   ➔ 4. واجهة الطالب أو المجموعة
+  // 'student'   ➔ 4. واجهة الطالب أو المجموعة (دخول بالرمز المشترك أو كضيف)
   // 'summary'   ➔ 5. ملخص الحصة والإنهاء
   const [activeInterface, setActiveInterface] = useState(initialView);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // -------------------------------------------------------------------------
+  // TEACHER AUTHENTICATION (شاشة التحضير خاصة بحساب المعلم بالايميل والرقم السري)
+  // -------------------------------------------------------------------------
+  const [authenticatedTeacher, setAuthenticatedTeacher] = useState(() => {
+    try {
+      const saved = localStorage.getItem('miftaah_teacher_auth');
+      if (saved) return JSON.parse(saved);
+      const active = getActiveTeacherSession();
+      if (active && (active.id || active.email)) return active;
+    } catch (e) {}
+    return null;
+  });
+
+  const [teacherEmailInput, setTeacherEmailInput] = useState('');
+  const [teacherPasswordInput, setTeacherPasswordInput] = useState('');
+  const [showTeacherPassword, setShowTeacherPassword] = useState(false);
+  const [teacherAuthError, setTeacherAuthError] = useState('');
+  const [isSubmittingTeacherAuth, setIsSubmittingTeacherAuth] = useState(false);
+  const [rememberTeacher, setRememberTeacher] = useState(true);
+
+  // -------------------------------------------------------------------------
+  // STUDENT PARTICIPATION (مشاركة الطالب بالرمز المشترك 318212 أو كضيف)
+  // -------------------------------------------------------------------------
+  const [studentAuth, setStudentAuth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('miftaah_student_participant');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+
+  const [studentCodeInput, setStudentCodeInput] = useState('');
+  const [studentNameInput, setStudentNameInput] = useState('');
+  const [guestNameInput, setGuestNameInput] = useState('');
+  const [studentGateError, setStudentGateError] = useState('');
+
+  // Teacher Login Handler
+  const handleTeacherLoginSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setTeacherAuthError('');
+    const email = (teacherEmailInput || '').trim();
+    const password = (teacherPasswordInput || '').trim();
+
+    if (!email) {
+      setTeacherAuthError('⚠️ يرجى إدخال البريد الإلكتروني للمعلم.');
+      return;
+    }
+    if (!password) {
+      setTeacherAuthError('⚠️ يرجى إدخال الرقم السري / كلمة المرور.');
+      return;
+    }
+
+    setIsSubmittingTeacherAuth(true);
+
+    try {
+      const foundTeacher = findTeacherByEmail(email);
+      if (!foundTeacher) {
+        setTeacherAuthError('⛔ البريد الإلكتروني غير مسجل في قائمة معلمي المدرسة. يرجى اختيار اسمك من القائمة المقترحة أو التأكد من العنوان.');
+        setIsSubmittingTeacherAuth(false);
+        return;
+      }
+
+      // Verify password against teacherAuth (handles default 318212, cloud pin, hash)
+      const isPasswordCorrect = await verifyTeacherCredentials(foundTeacher.id, password);
+
+      if (!isPasswordCorrect) {
+        setTeacherAuthError('❌ الرقم السري غير صحيح. يرجى التأكد من كلمة المرور (الرمز الموحد الافتراضي للمعلمين: 318212).');
+        setIsSubmittingTeacherAuth(false);
+        return;
+      }
+
+      const teacherSession = {
+        id: foundTeacher.id,
+        nameAr: foundTeacher.nameAr,
+        nameHe: foundTeacher.nameHe || '',
+        email: foundTeacher.email || email,
+        role: foundTeacher.role || 'معلم ومربي صف',
+        loginAt: new Date().toISOString()
+      };
+
+      setAuthenticatedTeacher(teacherSession);
+      if (rememberTeacher) {
+        try {
+          localStorage.setItem('miftaah_teacher_auth', JSON.stringify(teacherSession));
+        } catch (e) {}
+      }
+      setActiveTeacherSession(teacherSession);
+      setTeacherPasswordInput('');
+      setTeacherAuthError('');
+      showToast(`أهلاً بك المعلم/ة ${teacherSession.nameAr}! تم فتح شاشة التحضير بنجاح 👨‍🏫✨`);
+    } catch (err) {
+      console.warn('Teacher login error:', err);
+      setTeacherAuthError('حدث خطأ أثناء التحقق من الاعتماد، يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsSubmittingTeacherAuth(false);
+    }
+  };
+
+  // Teacher Logout Handler
+  const handleTeacherLogout = () => {
+    setAuthenticatedTeacher(null);
+    try {
+      localStorage.removeItem('miftaah_teacher_auth');
+    } catch (e) {}
+    logoutTeacherSession();
+    showToast('تم تسجيل خروج المعلم بنجاح.');
+  };
+
+  // Student Join with Shared Code (الرمز المشترك 318212 أو رمز الصف)
+  const handleJoinWithSharedCode = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setStudentGateError('');
+    const code = (studentCodeInput || '').trim();
+    if (!code) {
+      setStudentGateError('⚠️ يرجى إدخال رمز الدخول المشترك للموقع (318212) أو رمز جلسة الصف.');
+      return;
+    }
+
+    const validCode = (code === '318212' || code === DEFAULT_TEACHER_PIN || code === String(sessionState.pin));
+    if (!validCode) {
+      setStudentGateError('⛔ رمز الدخول غير صحيح. الرمز الموحد للموقع هو (318212)، أو يمكنك الدخول كضيف مباشرةً بدون رمز.');
+      return;
+    }
+
+    const sName = (studentNameInput || '').trim() || 'طالب متميز';
+    const newPart = {
+      id: 'stu_' + Date.now(),
+      name: sName,
+      groupName: 'الطلاب المشاركون بالرمز',
+      avatar: '🎓',
+      type: 'individual',
+      mode: 'code',
+      currentStation: 1
+    };
+
+    setStudentAuth(newPart);
+    setCurrentStudentId(newPart.id);
+    try {
+      localStorage.setItem('miftaah_student_participant', JSON.stringify(newPart));
+    } catch (e) {}
+
+    // Add to session participants list
+    setSessionState(prev => {
+      const exists = prev.participants.some(p => p.id === newPart.id);
+      const nextParts = exists ? prev.participants : [newPart, ...prev.participants];
+      const next = { ...prev, participants: nextParts };
+      try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
+    showToast(`أهلاً بك يا ${sName}! تم تسجيل دخولك برمز المدرسة المشترك بنجاح 🚀`);
+  };
+
+  // Student Join as Guest (المشاركة كضيف فوراً)
+  const handleJoinAsGuest = () => {
+    setStudentGateError('');
+    const gName = (guestNameInput || '').trim() || 'طالب زائر (ضيف)';
+    const guestPart = {
+      id: 'guest_' + Date.now(),
+      name: gName,
+      groupName: 'ضيوف مِفتاح',
+      avatar: '🌟',
+      type: 'individual',
+      mode: 'guest',
+      currentStation: 1
+    };
+
+    setStudentAuth(guestPart);
+    setCurrentStudentId(guestPart.id);
+    try {
+      localStorage.setItem('miftaah_student_participant', JSON.stringify(guestPart));
+    } catch (e) {}
+
+    setSessionState(prev => {
+      const exists = prev.participants.some(p => p.id === guestPart.id);
+      const nextParts = exists ? prev.participants : [guestPart, ...prev.participants];
+      const next = { ...prev, participants: nextParts };
+      try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
+    showToast(`مرحباً بك يا ${gName}! تم دخولك كضيف بنجاح، استمتع بالرحلة 🌟`);
+  };
+
+  // Student Logout / Switch Identity Handler
+  const handleStudentLogout = () => {
+    setStudentAuth(null);
+    try {
+      localStorage.removeItem('miftaah_student_participant');
+    } catch (e) {}
+    showToast('تم الخروج من حساب الطالب. يمكنك إعادة الانضمام بالرمز أو كضيف.');
+  };
 
   const toggleFullscreen = () => {
     try {
@@ -760,7 +963,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // =========================================================================
   // ACTIONS: STUDENT INTERACTIONS
   // =========================================================================
-  const currentParticipant = sessionState.participants.find(p => p.id === currentStudentId) || sessionState.participants[0];
+  const currentParticipant = (studentAuth ? (sessionState.participants.find(p => p.id === studentAuth.id) || studentAuth) : null) || sessionState.participants.find(p => p.id === currentStudentId) || sessionState.participants[0];
 
   const studentCurrentStationIndex = sessionState.pacingMode === 'whole_class'
     ? sessionState.activeStationIndex
@@ -1819,10 +2022,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         <nav className="header-interfaces-nav">
           <button
             type="button"
-            className={`nav-tab-btn ${activeInterface === 'creator' ? 'active' : ''}`}
+            className={`nav-tab-btn ${activeInterface === 'creator' ? 'active' : ''} ${!authenticatedTeacher ? 'tab-locked-btn' : 'tab-auth-btn'}`}
             onClick={() => setActiveInterface('creator')}
+            title={authenticatedTeacher ? `شاشة تحضير الحصص (المعلم: ${authenticatedTeacher.nameAr})` : 'شاشة تحضير الحصص (صفحة خاصة بالمعلم - تتطلب تسجيل الدخول بالايميل والرقم السري)'}
           >
-            <i className="fas fa-edit"></i> ١. إعداد وتعديل الحصة
+            <i className={`fas ${authenticatedTeacher ? 'fa-edit' : 'fa-lock'}`}></i>
+            <span>١. إعداد وتعديل الحصة</span>
+            {authenticatedTeacher ? (
+              <span className="tab-pill-badge active">معتمد ✓</span>
+            ) : (
+              <span className="tab-pill-badge locked">خاص بالمعلم 🔒</span>
+            )}
           </button>
           <button
             type="button"
@@ -1844,6 +2054,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             onClick={() => setActiveInterface('student')}
           >
             <i className="fas fa-mobile-alt"></i> ٤. واجهة الطالب / المجموعة
+            {studentAuth && (
+              <span className="tab-pill-badge student-badge">
+                {studentAuth.mode === 'guest' ? 'ضيف' : 'بالرمز'}
+              </span>
+            )}
           </button>
           <button
             type="button"
@@ -1863,6 +2078,35 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         </nav>
 
         <div className="header-status-badge">
+          {/* Active Teacher or Student Chip */}
+          {authenticatedTeacher ? (
+            <div className="header-active-user-chip teacher-chip">
+              <span className="chip-icon">👨‍🏫</span>
+              <span className="chip-name">{authenticatedTeacher.nameAr}</span>
+              <button
+                type="button"
+                className="btn-chip-logout"
+                onClick={handleTeacherLogout}
+                title="تسجيل خروج المعلم"
+              >
+                خروج
+              </button>
+            </div>
+          ) : studentAuth ? (
+            <div className="header-active-user-chip student-chip">
+              <span className="chip-icon">{studentAuth.avatar || '👤'}</span>
+              <span className="chip-name">{studentAuth.name}</span>
+              <button
+                type="button"
+                className="btn-chip-logout"
+                onClick={handleStudentLogout}
+                title="تبديل حساب الطالب"
+              >
+                تبديل
+              </button>
+            </div>
+          ) : null}
+
           <button
             type="button"
             className={`btn-header-fullscreen ${isFullscreen ? 'active-fs' : ''}`}
@@ -1903,11 +2147,160 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       </header>
 
       {/* ===================================================================== */}
-      {/* 1. INTERFACE 1: LESSON CREATOR & AI EDITOR                            */}
+      {/* 1. INTERFACE 1: LESSON CREATOR & AI EDITOR (PROTECTED BY TEACHER AUTH)*/}
       {/* ===================================================================== */}
       {activeInterface === 'creator' && (
-        <section className="interface-canvas creator-canvas animate-fade-in">
-          <div className="interface-hero-card">
+        !authenticatedTeacher ? (
+          /* TEACHER LOGIN GATE SCREEN */
+          <section className="interface-canvas teacher-auth-canvas animate-fade-in">
+            <div className="teacher-auth-card">
+              <div className="auth-card-badge">
+                <i className="fas fa-lock"></i> منطقة خاصة ومحمية بكادر المعلمين
+              </div>
+              <div className="auth-card-icon">🗝️</div>
+              <h2>شاشة إعداد وتخطيط الحصص — مِفتاح</h2>
+              <p className="auth-card-subtitle">
+                هذه الصفحة مخصصة لمعلمي وإدارة المدرسة لإعداد مسارات الحصص، وضبط الأهداف، وتوليد المحطات بالذكاء الاصطناعي.
+                <br />
+                يرجى تسجيل الدخول بحساب المعلم الخاص بك (البريد الإلكتروني والرقم السري):
+              </p>
+
+              <form onSubmit={handleTeacherLoginSubmit} className="teacher-auth-form">
+                {teacherAuthError && (
+                  <div className="auth-error-alert animate-pop">
+                    <i className="fas fa-exclamation-circle"></i>
+                    <span>{teacherAuthError}</span>
+                  </div>
+                )}
+
+                <div className="auth-input-group">
+                  <label>
+                    <i className="fas fa-envelope"></i> البريد الإلكتروني للمعلم:
+                  </label>
+                  <input
+                    type="email"
+                    value={teacherEmailInput}
+                    onChange={(e) => {
+                      setTeacherEmailInput(e.target.value);
+                      setTeacherAuthError('');
+                    }}
+                    placeholder="مثال: teacher1@musheirifa.edu.hl"
+                    required
+                  />
+
+                  {/* Quick Teacher Suggestion / Selector */}
+                  <div className="quick-teacher-select-row">
+                    <span className="quick-label">أو اختر اسمك للتعبئة السريعة:</span>
+                    <select
+                      className="quick-teacher-dropdown"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setTeacherEmailInput(e.target.value);
+                          setTeacherAuthError('');
+                        }
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>-- قائمة معلّمي وإدارة المدرسة --</option>
+                      {getAllTeachers().map(t => (
+                        <option key={t.id} value={t.email}>
+                          {t.nameAr} ({t.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="auth-input-group">
+                  <label>
+                    <i className="fas fa-key"></i> الرقم السري / كلمة المرور:
+                  </label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showTeacherPassword ? 'text' : 'password'}
+                      value={teacherPasswordInput}
+                      onChange={(e) => {
+                        setTeacherPasswordInput(e.target.value);
+                        setTeacherAuthError('');
+                      }}
+                      placeholder="أدخل الرقم السري الخاص بك (الرمز الموحد: 318212)"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn-toggle-pwd-visibility"
+                      onClick={() => setShowTeacherPassword(prev => !prev)}
+                      tabIndex="-1"
+                      title={showTeacherPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      <i className={`fas ${showTeacherPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
+                  <small className="field-hint">💡 الرمز الموحد الافتراضي لجميع معلمي المدرسة: <strong>318212</strong></small>
+                </div>
+
+                <div className="auth-remember-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={rememberTeacher}
+                      onChange={(e) => setRememberTeacher(e.target.checked)}
+                    />
+                    <span>تذكر حسابي على هذا الجهاز</span>
+                  </label>
+                </div>
+
+                <button type="submit" className="btn-teacher-login-submit" disabled={isSubmittingTeacherAuth}>
+                  {isSubmittingTeacherAuth ? (
+                    <span>جاري التحقق من الحساب... ⏳</span>
+                  ) : (
+                    <>
+                      <i className="fas fa-sign-in-alt"></i> تسجيل الدخول إلى شاشة التحضير 🔐
+                    </>
+                  )}
+                </button>
+
+                <div className="auth-alternative-actions">
+                  <button
+                    type="button"
+                    className="btn-link-student"
+                    onClick={() => setActiveInterface('student')}
+                  >
+                    🎒 أنا طالب — الانتقال إلى واجهة الطالب
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-link-projector"
+                    onClick={() => setActiveInterface('projector')}
+                  >
+                    📺 عرض شاشة الصف (البروجكتور)
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        ) : (
+          <section className="interface-canvas creator-canvas animate-fade-in">
+            {/* Teacher Logged-In Identity Banner */}
+            <div className="teacher-logged-header-banner">
+              <div className="teacher-info-group">
+                <span className="teacher-avatar-icon">👨‍🏫</span>
+                <div>
+                  <span className="teacher-status-label">حساب المعلم المعتمد لغرفة التحضير:</span>
+                  <strong className="teacher-name-title">{authenticatedTeacher.nameAr}</strong>
+                  <span className="teacher-email-chip">{authenticatedTeacher.email}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-teacher-signout"
+                onClick={handleTeacherLogout}
+                title="تسجيل الخروج من حساب المعلم"
+              >
+                <i className="fas fa-sign-out-alt"></i> تسجيل خروج المعلم
+              </button>
+            </div>
+            <div className="interface-hero-card">
             <div className="hero-content">
               <h2><i className="fas fa-wand-magic-sparkles"></i> إنشاء الحصة وتعديلها بالذكاء الاصطناعي</h2>
               <p>ابدأ بثلاث خانات أساسية فقط، وسيولّد الذكاء الاصطناعي مسودة متكاملة لمسار مِفتاح بالمحطات الخمس مع أهداف واضحة ومهام متمايزة.</p>
@@ -2336,6 +2729,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             })()}
           </div>
         </section>
+        )
       )}
 
       {/* ===================================================================== */}
@@ -2838,33 +3232,137 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       {/* 4. INTERFACE 4: STUDENT / PAIR / GROUP DEVICE                         */}
       {/* ===================================================================== */}
       {activeInterface === 'student' && (
-        <section className="interface-canvas student-device-canvas animate-fade-in">
-          <div className="student-device-container">
-            {/* Student Device Top Bar */}
-            <div className="student-device-header">
-              <div className="student-user-badge">
-                <span className="user-avatar">{currentParticipant.avatar}</span>
-                <div>
-                  <strong>{currentParticipant.name}</strong>
-                  <small>{currentParticipant.groupName} • {currentParticipant.type === 'pair' ? `الدور الآن: ${currentParticipant.activeTurn || 'كريم'}` : 'جهاز متصل'}</small>
-                </div>
+        !studentAuth ? (
+          /* STUDENT PARTICIPATION GATEWAY (رمز دخول مشترك لكل الموقع أو كضيف) */
+          <section className="interface-canvas student-gate-canvas animate-fade-in">
+            <div className="student-gate-card">
+              <div className="gate-header">
+                <div className="gate-hero-icon">🗝️✨</div>
+                <h2>انضمام الطلاب إلى رحلة التعلّم — مِفتاح</h2>
+                <p>مدرسة مشيرفة الابتدائية • شارك في محطات التعلم التفاعلية واكتشف المفاتيح المعرفية</p>
               </div>
 
-              <div className="student-header-right-tools">
-                <button
-                  type="button"
-                  className="btn-student-fullscreen-toggle"
-                  onClick={toggleFullscreen}
-                  title="توسيع واجهة الطالب على كامل مساحة الشاشة (100%)"
-                >
-                  <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
-                  <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
-                </button>
-                <div className="student-station-badge">
-                  محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
+              {studentGateError && (
+                <div className="gate-error-alert animate-pop">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <span>{studentGateError}</span>
+                </div>
+              )}
+
+              <div className="student-participation-options-grid">
+                {/* Option 1: Shared School / Site Code */}
+                <div className="participation-option-box code-option">
+                  <div className="opt-ribbon">🔑 المسار الأول</div>
+                  <div className="opt-icon-circle">🏫</div>
+                  <h3>رمز الدخول المشترك للموقع</h3>
+                  <p>أدخل رمز المدرسة المشترك أو رمز الصف للمشاركة باسمك وتوثيق أدلتك:</p>
+
+                  <div className="gate-input-group">
+                    <label>رمز الدخول المشترك للموقع / الصف:</label>
+                    <input
+                      type="text"
+                      value={studentCodeInput}
+                      onChange={(e) => {
+                        setStudentCodeInput(e.target.value);
+                        setStudentGateError('');
+                      }}
+                      placeholder="أدخل الرمز الموحد (318212) أو رمز الصف"
+                    />
+                  </div>
+
+                  <div className="gate-input-group">
+                    <label>اسمك أو اسم مجموعتك:</label>
+                    <input
+                      type="text"
+                      value={studentNameInput}
+                      onChange={(e) => setStudentNameInput(e.target.value)}
+                      placeholder="مثال: ريان، جنى، فريق العلماء الصغار..."
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-join-with-code"
+                    onClick={handleJoinWithSharedCode}
+                  >
+                    <i className="fas fa-key"></i> دخول برمز المدرسة المشترك 🚀
+                  </button>
+                  <span className="code-hint-text">💡 الرمز الموحد لجميع طلاب المدرسة: <strong>318212</strong></span>
+                </div>
+
+                {/* Option 2: Guest Instant Access */}
+                <div className="participation-option-box guest-option">
+                  <div className="opt-ribbon guest-ribbon">👋 المسار الثاني (فوري ومباشر)</div>
+                  <div className="opt-icon-circle guest-icon">🌟</div>
+                  <h3>المشاركة السريعة كضيف</h3>
+                  <p>لا تملك رمزاً؟ ادخل فوراً كضيف، وتصفح المحطات الخمس وتفاعل مع الأنشطة بحرية كاملة:</p>
+
+                  <div className="gate-input-group">
+                    <label>اسمك كضيف (اختياري):</label>
+                    <input
+                      type="text"
+                      value={guestNameInput}
+                      onChange={(e) => setGuestNameInput(e.target.value)}
+                      placeholder="مثال: طالب زائر، أو اسمك الشخصي"
+                    />
+                  </div>
+
+                  <div className="guest-feature-checklist">
+                    <div className="feature-item">✓ لا يتطلب أي رمز دخول</div>
+                    <div className="feature-item">✓ تصفح كامل محطات مِفتاح (م ف ت ا ح)</div>
+                    <div className="feature-item">✓ حل الأحاجي والبازل ومشاهدة الأفلام</div>
+                    <div className="feature-item">✓ إرسال المحاولات لمعلم الصف مباشرةً</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-join-as-guest"
+                    onClick={handleJoinAsGuest}
+                  >
+                    <i className="fas fa-rocket"></i> الدخول المباشر كضيف 🌟
+                  </button>
                 </div>
               </div>
             </div>
+          </section>
+        ) : (
+          <section className="interface-canvas student-device-canvas animate-fade-in">
+            <div className="student-device-container">
+              {/* Student Device Top Bar */}
+              <div className="student-device-header">
+                <div className="student-user-badge">
+                  <span className="user-avatar">{currentParticipant.avatar || '👤'}</span>
+                  <div>
+                    <strong>{currentParticipant.name}</strong>
+                    <small>
+                      {currentParticipant.mode === 'guest' ? '👋 مشارك كضيف' : '🔑 مشترك برمز المدرسة'} • {currentParticipant.groupName}
+                    </small>
+                  </div>
+                </div>
+
+                <div className="student-header-right-tools">
+                  <button
+                    type="button"
+                    className="btn-student-switch-user"
+                    onClick={handleStudentLogout}
+                    title="تبديل الحساب أو تغيير الاسم / نمط الدخول"
+                  >
+                    <i className="fas fa-exchange-alt"></i> تبديل / خروج
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-student-fullscreen-toggle"
+                    onClick={toggleFullscreen}
+                    title="توسيع واجهة الطالب على كامل مساحة الشاشة (100%)"
+                  >
+                    <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+                    <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
+                  </button>
+                  <div className="student-station-badge">
+                    محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
+                  </div>
+                </div>
+              </div>
 
             {/* Mobile / Device Key Map (Collapsible) */}
             <div className="student-device-key-bar">
@@ -3028,6 +3526,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             </button>
           </div>
         </section>
+        )
       )}
 
       {/* ===================================================================== */}
