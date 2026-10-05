@@ -112,6 +112,28 @@ const INITIAL_LESSONS_STORE = [
 const STORAGE_KEY_LESSONS = 'miftaah_teacher_lessons_saved_v2';
 const STORAGE_KEY_ACTIVE_ID = 'miftaah_teacher_active_lesson_id_v2';
 
+export const PRESET_SUBJECTS = [
+  'لغة عربية',
+  'لغة إنجليزية',
+  'لغة عبرية',
+  'رياضيات',
+  'علوم وتكنولوجيا',
+  'تربية إسلامية',
+  'موطن وجغرافيا ودراسات اجتماعية',
+  'مهارات حياتية وتربية اجتماعية',
+  'فنون وموسيقى',
+  'تربية بدنية'
+];
+
+export const PRESET_GRADES = [
+  'الصف الأول',
+  'الصف الثاني',
+  'الصف الثالث',
+  'الصف الرابع',
+  'الصف الخامس',
+  'الصف السادس'
+];
+
 export const createBlankLesson = (presetTitle = '', presetSubject = '') => ({
   id: 'lesson_' + Date.now(),
   subject: presetSubject || 'لغة عربية',
@@ -997,7 +1019,7 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                 <h4 className="lesson-card-title">{lsn.title}</h4>
                 <div className="lesson-card-info-row">
                   <span><i className="fas fa-graduation-cap"></i> {lsn.grade}</span>
-                  <span><i className="fas fa-clock"></i> {lsn.duration} دقيقة</span>
+                  <span><i className="fas fa-clock"></i> {lsn.duration === 'وحدة كاملة' ? 'وحدة تعليمية كاملة' : `${lsn.duration} دقيقة`}</span>
                   <span><i className="fas fa-users"></i> {lsn.studentCount} طالباً</span>
                 </div>
 
@@ -1078,31 +1100,112 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
               </div>
               <div className="step-card-fields">
                 <div className="fields-row-3">
+                  {/* المادة الدراسية / المواضيع العامة */}
                   <div className="form-item">
                     <label>المادة الدراسية:</label>
-                    <input 
-                      type="text" 
-                      value={prepForm.subject || ''} 
-                      onChange={(e) => updatePrepField('subject', e.target.value)} 
-                      placeholder="مثال: لغة عربية، علوم، رياضيات..."
-                    />
+                    <select
+                      value={PRESET_SUBJECTS.includes(prepForm.subject) ? prepForm.subject : 'other'}
+                      onChange={(e) => {
+                        if (e.target.value === 'other') {
+                          if (PRESET_SUBJECTS.includes(prepForm.subject)) {
+                            updatePrepField('subject', '');
+                          }
+                        } else {
+                          updatePrepField('subject', e.target.value);
+                        }
+                      }}
+                    >
+                      <option value="" disabled>-- اختر الموضوع / المادة --</option>
+                      {PRESET_SUBJECTS.map((sub) => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                      <option value="other">موضوع عام / مادة أخرى...</option>
+                    </select>
+                    {(!PRESET_SUBJECTS.includes(prepForm.subject) || prepForm.subject === '') && (
+                      <input 
+                        type="text" 
+                        style={{ marginTop: '7px' }}
+                        value={prepForm.subject || ''} 
+                        onChange={(e) => updatePrepField('subject', e.target.value)} 
+                        placeholder="اكتب اسم المادة أو الموضوع العام..."
+                        autoFocus
+                      />
+                    )}
                   </div>
+
+                  {/* الصفوف من الأول حتى السادس وأخرى */}
                   <div className="form-item">
                     <label>الصف والمستوى:</label>
-                    <input 
-                      type="text" 
-                      value={prepForm.grade || ''} 
-                      onChange={(e) => updatePrepField('grade', e.target.value)} 
-                      placeholder="مثال: الصف الخامس أ"
-                    />
+                    <select
+                      value={PRESET_GRADES.includes(prepForm.grade) ? prepForm.grade : 'other'}
+                      onChange={(e) => {
+                        if (e.target.value === 'other') {
+                          if (PRESET_GRADES.includes(prepForm.grade)) {
+                            updatePrepField('grade', '');
+                          }
+                        } else {
+                          updatePrepField('grade', e.target.value);
+                        }
+                      }}
+                    >
+                      <option value="" disabled>-- اختر الصف --</option>
+                      {PRESET_GRADES.map((gr) => (
+                        <option key={gr} value={gr}>{gr}</option>
+                      ))}
+                      <option value="other">شريحة عمرية أو صف آخر...</option>
+                    </select>
+                    {(!PRESET_GRADES.includes(prepForm.grade) || prepForm.grade === '') && (
+                      <input 
+                        type="text" 
+                        style={{ marginTop: '7px' }}
+                        value={prepForm.grade || ''} 
+                        onChange={(e) => updatePrepField('grade', e.target.value)} 
+                        placeholder="اكتب الشريحة أو الصف المخصص (مثال: شريحة الرواد / التعليم الخاص)..."
+                        autoFocus
+                      />
+                    )}
                   </div>
+
+                  {/* المدة الإجمالية: 45، 90، أو وحدة كاملة */}
                   <div className="form-item">
-                    <label>المدة الإجمالية (دقائق):</label>
-                    <input 
-                      type="number" 
-                      value={prepForm.duration || 45} 
-                      onChange={(e) => updatePrepField('duration', parseInt(e.target.value) || 45)} 
-                    />
+                    <label>المدة الإجمالية:</label>
+                    <select
+                      value={
+                        prepForm.duration === 45 || prepForm.duration === '45' 
+                          ? '45' 
+                          : (prepForm.duration === 90 || prepForm.duration === '90' 
+                              ? '90' 
+                              : (prepForm.duration === 'وحدة كاملة' ? 'وحدة كاملة' : 'other'))
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '45') {
+                          updatePrepField('duration', 45);
+                        } else if (val === '90') {
+                          updatePrepField('duration', 90);
+                        } else if (val === 'وحدة كاملة') {
+                          updatePrepField('duration', 'وحدة كاملة');
+                        } else {
+                          updatePrepField('duration', 60);
+                        }
+                      }}
+                    >
+                      <option value="45">٤٥ دقيقة (حصة فردية)</option>
+                      <option value="90">٩٠ دقيقة (حصة مزدوجة)</option>
+                      <option value="وحدة كاملة">وحدة تعليمية كاملة (ممتدة)</option>
+                      <option value="other">مدة مخصصة أخرى...</option>
+                    </select>
+                    {prepForm.duration !== 45 && prepForm.duration !== '45' && prepForm.duration !== 90 && prepForm.duration !== '90' && prepForm.duration !== 'وحدة كاملة' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '7px' }}>
+                        <input 
+                          type="number" 
+                          value={typeof prepForm.duration === 'number' ? prepForm.duration : 60} 
+                          onChange={(e) => updatePrepField('duration', parseInt(e.target.value) || 45)} 
+                          placeholder="المدة بالدقائق"
+                        />
+                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>دقيقة</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

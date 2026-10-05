@@ -1304,7 +1304,7 @@ ${notes ? `- דגשים והערות נוספות: "${notes}"` : ''}
   "title": "${topic || 'נושא השיעור'}",
   "subject": "${subject}",
   "grade": "${grade}",
-  "duration": ${duration},
+  "duration": ${typeof duration === 'number' ? duration : (duration === 'وحدة كاملة' ? 90 : 45)},
   "objective": "${objective || 'מטרת השיעור ומדדי ההצלחה'}",
   "language": "he",
   "stations": {
@@ -1719,7 +1719,7 @@ export const generateMiftaahCompanionLessonAI = async ({
 - عنوان وموضوع الدرس: "${safeTitle}"
 - المادة الدراسية: "${safeSubject}"
 - الصف: "${safeGrade}"
-- المدة الإجمالية: ${duration} دقيقة
+- المدة الإجمالية: ${duration === 'وحدة كاملة' ? 'وحدة تعليمية متكاملة ممتدة (عدة حصص)' : `${duration} دقيقة`}
 - الهدف المركزي: "${safeObjective}"
 ${notes ? `- ملاحظات وظروف التنفيذ: "${notes}"` : ''}
 
