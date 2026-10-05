@@ -2154,6 +2154,459 @@ ${customInstruction ? `- رغبة وتوجيه المعلم الخاص للبد�
 };
 
 
+/**
+ * 15.D Miftaah Instant Objectives Generator:
+ * Formulates central learning objective, explicit success criteria, and prerequisite knowledge
+ * tailored to topic, subject, and grade.
+ */
+export const generateMiftaahLessonObjectivesAI = async ({
+  title = '',
+  subject = '',
+  grade = '',
+  duration = 45
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = title.trim() || 'مهارة دراسية مركزية';
+  const safeSubject = subject.trim() || 'عام';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+
+  const prompt = `أنت مصمم المناهج لنظام «مِفتاح المعلّم» بمدرسة مشيرفة الابتدائية.
+المعلم أدخل بيانات الحصة:
+- الموضوع: ${safeTitle}
+- المادة الدراسية: ${safeSubject}
+- الصف: ${safeGrade}
+- المدة: ${duration === 'وحدة كاملة' ? 'وحدة تعليمية كاملة' : `${duration} دقيقة`}
+
+المطلوب: كتابة صياغات تربوية دقيقة ومحكمة بصيغة السلوك الملاحظ الصريح:
+1. "objective": هدف التعلم المركزي الصريح (ماذا سيتقن الطالب بنهاية الحصة).
+2. "successCriteria": معيار النجاح المحدد بدقة (أداء صريح ومحك كمي أو كيفي يثبت تحقق الهدف، مثلا: حل ٣ مسائل دون خطأ، تصنيف ٤ عناصر وتبريرها).
+3. "prerequisites": المعرفة والمهارة السابقة المفترضة التي يحتاجها الطالب للانطلاق في الدرس.
+
+أخرج JSON فقط بالهيكل التالي (املأ القيم بنصوص عربية فصيحة ومتقنة):
+{
+  "objective": "",
+  "successCriteria": "",
+  "prerequisites": ""
+}`;
+
+  const parseSafeJson = (raw) => {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        try {
+          const cleaned = raw.substring(first, last + 1)
+            .replace(/[“”؟‘’]/g, '"')
+            .replace(/,\s*}/g, '}')
+            .replace(/,\s*]/g, ']');
+          return JSON.parse(cleaned);
+        } catch (err2) {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  // 1. Try Groq AI
+  if (groqKey) {
+    const models = ['openai/gpt-oss-120b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.5,
+            max_tokens: 1000,
+            response_format: { type: 'json_object' }
+          })
+        }, 10000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = parseSafeJson(content);
+            if (parsed && parsed.objective) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq objectives (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only:` }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 1000, responseMimeType: 'application/json' }
+            })
+          },
+          10000
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = parseSafeJson(txt);
+            if (parsed && parsed.objective) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini objectives (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // Fallback
+  return {
+    objective: `أن يتقن الطالب مهارة (${safeTitle}) وتطبيق قواعدها ومفاهيمها بدقة في سياقات تعليمية متنوعة.`,
+    successCriteria: `حل وتطبيق ثلاثة أمثلة أو أنشطة جديدة بنجاح وبشكل مستقل، مع تقديم تبرير أو تفسير مناسب.`,
+    prerequisites: `معرفة مسبقة بالمفاهيم الأساسية المرتبطة بـ (${safeSubject}) وخبرات تعليمية من الدروس السابقة.`
+  };
+};
+
+/**
+ * 15.E Miftaah Prompt-to-Modify Station AI:
+ * Takes the teacher's custom instruction / prompt and rewrites a specific station
+ * according to their exact creative and pedagogical desires.
+ */
+export const modifyMiftaahStationWithPromptAI = async ({
+  stationKey = 'm',
+  stationTitle = '',
+  currentPrompt = '',
+  instruction = '',
+  title = '',
+  subject = '',
+  grade = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = title.trim() || 'الدرس';
+  const safeSubject = subject.trim() || 'عام';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+  const safeInstruction = instruction.trim() || 'تحسين وإثراء المحطة لتكون أكثر تفاعلية وتشويقاً ومناسبة للطلاب';
+
+  const prompt = `أنت المعلم الخبير ومصمم المناهج لنظام «مِفتاح المعلّم» بمدرسة مشيرفة الابتدائية.
+المعلم يريد تعديلاً وتخصيصاً فورياً لمحتوى إحدى محطات الدرس بناءً على طلبه وتوجيهه الخاص:
+- موضوع الحصة: ${safeTitle}
+- المادة الدراسية: ${safeSubject}
+- الصف: ${safeGrade}
+- المحطة المستهدفة: [ ${stationKey} ] ${stationTitle}
+- المحتوى الحالي لشاشة الطلاب:
+"""
+${currentPrompt}
+"""
+- توجيه وطلب المعلم الصريح للتعديل:
+"""
+${safeInstruction}
+"""
+
+قواعد صارمة:
+1. في حقل (studentDisplayPrompt): اكتب النص الحقيقي الكامل المخصص لشاشة الطلاب (الأسئلة، الألغاز، النصوص، أو التمارين الحقيقية الصريحة الجاهزة للحل مباشرة)، وليس نصائح عامة للمعلم.
+2. التزم تماماً برغبة وتوجيه المعلم أعلاه وطبقها بإبداع وإتقان تربوي.
+3. وفر ملاحظات معلم واضحة، وسقالة مساندة (تلميح دون حرق الحل)، ومهمة تحدٍّ للمتفوقين.
+
+أخرج JSON فقط بالهيكل التالي:
+{
+  "studentDisplayPrompt": "",
+  "teacherNotes": "",
+  "scaffolds": "",
+  "extension": ""
+}`;
+
+  const parseSafeJson = (raw) => {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        try {
+          const cleaned = raw.substring(first, last + 1)
+            .replace(/[“”؟‘’]/g, '"')
+            .replace(/,\s*}/g, '}')
+            .replace(/,\s*]/g, ']');
+          return JSON.parse(cleaned);
+        } catch (err2) {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  // 1. Try Groq AI
+  if (groqKey) {
+    const models = ['openai/gpt-oss-120b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.5,
+            max_tokens: 2800,
+            response_format: { type: 'json_object' }
+          })
+        }, 14000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = parseSafeJson(content);
+            if (parsed && parsed.studentDisplayPrompt) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq modify station (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only:` }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 2500, responseMimeType: 'application/json' }
+            })
+          },
+          14000
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = parseSafeJson(txt);
+            if (parsed && parsed.studentDisplayPrompt) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini modify station (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // Fallback
+  return {
+    studentDisplayPrompt: `[تعديل مقترح لـ ${stationTitle}]:\n${currentPrompt}\n\n⭐ تطبيق لتوجيهك: تدريب تفاعلي إضافي موجه للمجموعات الصفيّة مع التركيز على التحليل والتفكير المستقل.`,
+    teacherNotes: `إدارة النشاط وفق توجيه المعلم: "${safeInstruction}". منح الطلاب دقيقة تفكير مستقل قبل بدء العمل المشترك.`,
+    scaffolds: `بطاقة تلميح داعمة: مراجعة القاعدة الأساسية وتحديد الكلمات المفتاحية في السؤال.`,
+    extension: `مهمة تحدٍ إضافية: صياغة مسألة أو مثال مشابه من الحياة اليومية لعرضه على الزملاء.`
+  };
+};
+
+/**
+ * 15.F Miftaah Differentiated Group Tasks Generator (Station [ت]):
+ * Generates 3 tiered group challenges (Support, Core, Advanced) with tailored scaffolds.
+ */
+export const generateMiftaahGroupTasksAI = async ({
+  title = '',
+  subject = '',
+  grade = '',
+  coreTask = ''
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = title.trim() || 'الدرس';
+  const safeSubject = subject.trim() || 'عام';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+
+  const prompt = `أنت مصمم التدريس المتمايز بنظام «مِفتاح المعلّم» بمدرسة مشيرفة الابتدائية.
+المعلم يريد توليد ٣ مهام وتحديات متمايزة لمجموعات الصف في محطة [ت] تطبيق وتدريب:
+- موضوع الدرس: ${safeTitle}
+- المادة الدراسية: ${safeSubject}
+- الصف: ${safeGrade}
+${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''}
+
+المطلوب: توليد ٣ تحديات جماعية محددة بنصوصها وأسئلتها الفعلية الجاهزة فوراً للحل على شاشات أو دفاتر الطلاب:
+1. مجموعة الانطلاق والدعم: تحدي مباشر ومبسط مع خيارات وسقالة واضحة للمساندة.
+2. مجموعة الممارسة والإتقان: تطبيق المعيار الأساسي للدرس بدقة وتبرير.
+3. مجموعة التحدي والابتكار: سؤال تفكير عليا، اكتشاف أخطاء، أو تأليف موقف جديد.
+
+لكل مجموعة:
+- level ("support" | "core" | "advanced")
+- groupName (اسم تربوي محفز للمجموعة)
+- badge (وسام تعبيري)
+- task (الأسئلة والتمارين الصريحة الحقيقية)
+- scaffold (سقالة مساندة وتلميح ذكي دون حرق الحل النهائي)
+
+أخرج JSON فقط بالهيكل التالي:
+{
+  "groups": [
+    {
+      "level": "support",
+      "groupName": "فريق الانطلاق والتمكن",
+      "badge": "🌱 دعم ومساندة",
+      "task": "",
+      "scaffold": ""
+    },
+    {
+      "level": "core",
+      "groupName": "فريق الممارسة والإتقان",
+      "badge": "⭐ ممارسة المعيار",
+      "task": "",
+      "scaffold": ""
+    },
+    {
+      "level": "advanced",
+      "groupName": "فريق الرواد والتحدي",
+      "badge": "🚀 تحدٍّ وابتكار",
+      "task": "",
+      "scaffold": ""
+    }
+  ]
+}`;
+
+  const parseSafeJson = (raw) => {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        try {
+          const cleaned = raw.substring(first, last + 1)
+            .replace(/[“”؟‘’]/g, '"')
+            .replace(/,\s*}/g, '}')
+            .replace(/,\s*]/g, ']');
+          return JSON.parse(cleaned);
+        } catch (err2) {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  // 1. Try Groq AI
+  if (groqKey) {
+    const models = ['openai/gpt-oss-120b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.5,
+            max_tokens: 2800,
+            response_format: { type: 'json_object' }
+          })
+        }, 14000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = parseSafeJson(content);
+            if (parsed && Array.isArray(parsed.groups) && parsed.groups.length > 0) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq group tasks (${m}) failed:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey) {
+    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    for (const gm of models) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only:` }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 2500, responseMimeType: 'application/json' }
+            })
+          },
+          14000
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) {
+            const parsed = parseSafeJson(txt);
+            if (parsed && Array.isArray(parsed.groups) && parsed.groups.length > 0) return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini group tasks (${gm}) failed:`, e);
+      }
+    }
+  }
+
+  // Fallback
+  return {
+    groups: [
+      {
+        level: 'support',
+        groupName: 'فريق الانطلاق والتمكن',
+        badge: '🌱 دعم ومساندة',
+        task: `حل التمرين المباشر حول موضوع (${safeTitle}): اختر الإجابة المناسبة لكل عبارة مع وضع خط تحت الكلمة الدالة.`,
+        scaffold: `تلميح: راجع المثال التوضيحي الأول واستعن ببطاقة القواعد المكتوبة أعلى الصفحة.`
+      },
+      {
+        level: 'core',
+        groupName: 'فريق الممارسة والإتقان',
+        badge: '⭐ ممارسة المعيار',
+        task: `طبق القاعدة الأساسية لـ (${safeTitle}) على ثلاث فقرات جديدة، مع كتابة تعليل موجز لكل خطوة.`,
+        scaffold: `تلميح: تأكد من مراجعة معيار النجاح والتأكد من مطابقة جميع الشروط المطلوبة.`
+      },
+      {
+        level: 'advanced',
+        groupName: 'فريق الرواد والتحدي',
+        badge: '🚀 تحدٍّ وابتكار',
+        task: `اكتشف الخطأ الخفي في نموذج الحل المعروض وفسر سببه، ثم قم بصياغة مثال جديد لاختبار زملائك في باقي الفرق.`,
+        scaffold: `تلميح: فكر في الحالات الخاصة والاستثناءات التي نوقشت أثناء الدرس.`
+      }
+    ]
+  };
+};
+
 export const generateScientificGenieAI = async (question, chatHistory = [], studentName = 'مستكشفنا البطل') => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
 

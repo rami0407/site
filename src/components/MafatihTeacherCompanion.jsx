@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './MafatihTeacherCompanion.css';
-import { generateMiftaahCompanionLessonAI, generateMiftaahStationAlternativeAI } from '../utils/aiService';
+import {
+  generateMiftaahCompanionLessonAI,
+  generateMiftaahStationAlternativeAI,
+  generateMiftaahLessonObjectivesAI,
+  modifyMiftaahStationWithPromptAI,
+  generateMiftaahGroupTasksAI
+} from '../utils/aiService';
 
 // =========================================================================
 // 1. OFFICIAL EXEMPLAR LESSON (حالات المادة - النص والمواد الأصلية للمواصفة)
@@ -373,6 +379,8 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
       studentPhrase: st.studentPhrase || info.phrase,
       headline: currentPrompt,
       isDisplayHidden: false,
+      scaffolds: st.scaffolds || '',
+      groupTasks: st.groupTasks || null,
       timerSeconds: (st.durationMinutes || info.dur) * 60
     };
 
@@ -396,6 +404,175 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
       });
     } else {
       prompt('رابط شاشة البروجكتور للنسخ:', url);
+    }
+  };
+
+  // Instant Objectives AI State
+  const [isAiObjectivesLoading, setIsAiObjectivesLoading] = useState(false);
+
+  // Prompt-to-Modify Station Modal State
+  const [stationPromptModal, setStationPromptModal] = useState({
+    isOpen: false,
+    stationKey: null,
+    stationName: '',
+    currentPrompt: '',
+    promptInstruction: '',
+    loading: false
+  });
+
+  // Differentiated Group Tasks Loading State (Station T)
+  const [isGroupTasksLoading, setIsGroupTasksLoading] = useState(false);
+
+  // Student Interactive Scaffold Modal State
+  const [isStudentScaffoldModalOpen, setIsStudentScaffoldModalOpen] = useState(false);
+  const [studentGroupTab, setStudentGroupTab] = useState('all');
+
+  // Instant AI Objectives Generator
+  const handleGenerateObjectivesAI = async () => {
+    const title = prepForm.title?.trim();
+    if (!title) {
+      showToast('يرجى كتابة موضوع أو عنوان الحصة أولاً لصياغة الأهداف 🎯');
+      return;
+    }
+    setIsAiObjectivesLoading(true);
+    showToast('جاري صياغة أهداف الحصة ومعيار النجاح بالذكاء الاصطناعي... ⏳');
+    try {
+      const res = await generateMiftaahLessonObjectivesAI({
+        title,
+        subject: prepForm.subject || '',
+        grade: prepForm.grade || '',
+        duration: prepForm.duration || 45
+      });
+      if (res && res.objective) {
+        setPrepForm(prev => ({
+          ...prev,
+          objective: res.objective,
+          successCriteria: res.successCriteria || prev.successCriteria,
+          prerequisites: res.prerequisites || prev.prerequisites
+        }));
+        showToast('تمت صياغة الأهداف ومعيار النجاح بنجاح! يمكنك مراجعتها وتعديلها. ✨🎯');
+      }
+    } catch (err) {
+      console.warn('Objectives generation failed:', err);
+      showToast('تعذر صياغة الأهداف، يرجى المحاولة ثانية.');
+    } finally {
+      setIsAiObjectivesLoading(false);
+    }
+  };
+
+  // Open Prompt-to-Modify Station Modal
+  const handleOpenStationPromptModal = (stationKey) => {
+    const st = prepForm.stations?.[stationKey] || currentLesson.stations?.[stationKey] || {};
+    const stationNames = {
+      m: 'مشوّق ومحفّز',
+      f: 'فهم وبناء المعنى',
+      t: 'تطبيق وتدريب',
+      a: 'أدلّة الفهم',
+      h: 'حصاد ونقل الأثر'
+    };
+    const sName = st.name || stationNames[stationKey] || stationKey;
+    const currentPrompt = st.studentDisplayPrompt || '';
+
+    setStationPromptModal({
+      isOpen: true,
+      stationKey,
+      stationName: sName,
+      currentPrompt,
+      promptInstruction: '',
+      loading: false
+    });
+  };
+
+  // Apply Station Prompt Modification with AI
+  const handleApplyStationPromptModification = async () => {
+    if (!stationPromptModal.stationKey) return;
+    const k = stationPromptModal.stationKey;
+    const instruction = stationPromptModal.promptInstruction?.trim();
+    if (!instruction) {
+      showToast('يرجى كتابة توجيه التعديل المطلوب 💬');
+      return;
+    }
+    setStationPromptModal(prev => ({ ...prev, loading: true }));
+    try {
+      const res = await modifyMiftaahStationWithPromptAI({
+        stationKey: k,
+        stationTitle: stationPromptModal.stationName,
+        currentPrompt: stationPromptModal.currentPrompt,
+        instruction,
+        title: prepForm.title || currentLesson.title || '',
+        subject: prepForm.subject || currentLesson.subject || '',
+        grade: prepForm.grade || currentLesson.grade || ''
+      });
+
+      if (res && res.studentDisplayPrompt) {
+        setPrepForm(prev => ({
+          ...prev,
+          stations: {
+            ...prev.stations,
+            [k]: {
+              ...prev.stations[k],
+              studentDisplayPrompt: res.studentDisplayPrompt,
+              teacherNotes: res.teacherNotes || prev.stations[k].teacherNotes,
+              scaffolds: res.scaffolds || prev.stations[k].scaffolds,
+              extension: res.extension || prev.stations[k].extension
+            }
+          }
+        }));
+
+        // If currently in backstage and modifying the active station, update public display too
+        if (currentScreen === 'screen4_backstage' && activeStationKey === k) {
+          const updatedDisp = {
+            ...publicDisplayState,
+            headline: res.studentDisplayPrompt,
+            scaffolds: res.scaffolds || publicDisplayState.scaffolds
+          };
+          broadcastToStudentScreen(updatedDisp);
+        }
+
+        setStationPromptModal(prev => ({ ...prev, isOpen: false, loading: false }));
+        showToast(`تم تطبيق تعديلك بالذكاء الاصطناعي على محطة [${stationPromptModal.stationName}] بنجاح! 🎯✨`);
+      } else {
+        setStationPromptModal(prev => ({ ...prev, loading: false }));
+        showToast('تعذر تطبيق التعديل، يرجى المحاولة ثانية.');
+      }
+    } catch (err) {
+      console.warn('Station prompt modify error:', err);
+      setStationPromptModal(prev => ({ ...prev, loading: false }));
+      showToast('حدث خطأ أثناء تعديل المحطة.');
+    }
+  };
+
+  // Generate Differentiated Group Tasks for Station T
+  const handleGenerateGroupTasksAI = async () => {
+    const currentStT = prepForm.stations?.t || {};
+    setIsGroupTasksLoading(true);
+    showToast('جاري توليد ٣ مهام وتحديات متمايزة للمجموعات بالذكاء الاصطناعي... 👥⏳');
+    try {
+      const res = await generateMiftaahGroupTasksAI({
+        title: prepForm.title || '',
+        subject: prepForm.subject || '',
+        grade: prepForm.grade || '',
+        coreTask: currentStT.studentDisplayPrompt || ''
+      });
+
+      if (res && Array.isArray(res.groups) && res.groups.length > 0) {
+        setPrepForm(prev => ({
+          ...prev,
+          stations: {
+            ...prev.stations,
+            t: {
+              ...prev.stations.t,
+              groupTasks: res.groups
+            }
+          }
+        }));
+        showToast('تم توليد مهام المجموعات المتمايزة بنجاح! 🌱⭐🚀 ستظهر على شاشة العرض.');
+      }
+    } catch (err) {
+      console.warn('Group tasks error:', err);
+      showToast('تعذر توليد مهام المجموعات.');
+    } finally {
+      setIsGroupTasksLoading(false);
     }
   };
 
@@ -665,6 +842,8 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
       isDisplayHidden: false,
       activeEnergizer: null,
       activeHint: null,
+      scaffolds: activeSt.scaffolds || '',
+      groupTasks: activeSt.groupTasks || null,
       timerSeconds: (activeSt.durationMinutes || 5) * 60
     };
     broadcastToStudentScreen(newState);
@@ -1304,7 +1483,26 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                 </div>
 
                 <div className="form-item highlight-field">
-                  <label>موضوع وعنوان الحصة (يظهر على شاشة الطلاب):</label>
+                  <div className="title-label-with-ai-btn">
+                    <label>موضوع وعنوان الحصة (يظهر على شاشة الطلاب):</label>
+                    <button
+                      type="button"
+                      className={`btn-ai-objectives-generator ${isAiObjectivesLoading ? 'loading' : ''}`}
+                      onClick={handleGenerateObjectivesAI}
+                      disabled={isAiObjectivesLoading}
+                      title="صياغة أهداف الحصة ومعيار النجاح والمعرفة السابقة فوراً بالذكاء الاصطناعي بناءً على العنوان"
+                    >
+                      {isAiObjectivesLoading ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin"></i> جاري الصياغة...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-magic"></i> ✨ صياغة فورية للهدف ومعيار النجاح (AI)
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <input 
                     type="text" 
                     value={prepForm.title || ''} 
@@ -1473,8 +1671,35 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                               onClick={() => handleOpenStationAlternatives(k)}
                               title="اقتراح ٣ بدائل تعليمية جاهزة لهذه المحطة عبر الذكاء الاصطناعي"
                             >
-                              <i className="fas fa-magic"></i> بدائل مقترحة لهذه المحطة (AI) ✨
+                              <i className="fas fa-magic"></i> بدائل مقترحة (AI) ✨
                             </button>
+                            <button
+                              type="button"
+                              className="btn-station-prompt-modify"
+                              onClick={() => handleOpenStationPromptModal(k)}
+                              title="اطلب تعديلاً مخصصاً بالذكاء الاصطناعي لهذه المحطة (اكتب أي رغبة أو فكرة)"
+                            >
+                              <i className="fas fa-comment-dots"></i> 💬 اطلب تعديلاً مخصصاً (AI)
+                            </button>
+                            {k === 't' && (
+                              <button
+                                type="button"
+                                className={`btn-generate-group-tasks ${isGroupTasksLoading ? 'loading' : ''}`}
+                                onClick={handleGenerateGroupTasksAI}
+                                disabled={isGroupTasksLoading}
+                                title="توليد مهام متمايزة لـ ٣ مجموعات صفيّة بالذكاء الاصطناعي"
+                              >
+                                {isGroupTasksLoading ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i> جاري التوليد...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fas fa-users-cog"></i> 👥 تحديات المجموعات المتمايزة (AI)
+                                  </>
+                                )}
+                              </button>
+                            )}
                             <div className="st-duration-input-box">
                               <label>المدة:</label>
                               <input 
@@ -1574,6 +1799,41 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                             />
                           </div>
                         </div>
+
+                        {/* Differentiated Group Tasks Display for Station T */}
+                        {k === 't' && st.groupTasks && st.groupTasks.length > 0 && (
+                          <div className="st-group-tasks-container animate-fade-in">
+                            <div className="group-tasks-header">
+                              <h6><i className="fas fa-users"></i> مهام المجموعات المتمايزة الجاهزة للعرض على شاشة الصف (٣ فِرق):</h6>
+                              <button 
+                                type="button" 
+                                className="btn-clear-group-tasks" 
+                                onClick={() => updatePrepStationField('t', 'groupTasks', null)}
+                              >
+                                <i className="fas fa-trash-alt"></i> إزالة المهام المتمايزة
+                              </button>
+                            </div>
+                            <div className="group-tasks-grid">
+                              {st.groupTasks.map((gt, gIdx) => (
+                                <div key={gIdx} className={`group-task-card level-${gt.level}`}>
+                                  <div className="group-task-card-head">
+                                    <span className="group-badge">{gt.badge}</span>
+                                    <strong>{gt.groupName}</strong>
+                                  </div>
+                                  <div className="group-task-content">
+                                    <p className="gt-task-text">{gt.task}</p>
+                                    {gt.scaffold && (
+                                      <div className="gt-scaffold-box">
+                                        <span className="gt-scaffold-label">🗝️ سقالة وتلميح الفريق:</span>
+                                        <p>{gt.scaffold}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1799,31 +2059,112 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
                 <p className="secret-notes-body">{currentStationData.teacherNotes}</p>
               </div>
 
-              {/* Exact Live Preview of What Students See */}
-              <div className="workspace-live-preview-box">
+              {/* Exact Live Teacher Mirror Monitor (عين المعلم على شاشة الصف) */}
+              <div className="workspace-live-preview-box teacher-mirror-monitor">
                 <div className="preview-box-header">
-                  <span className="preview-label">
-                    <i className="fas fa-tv"></i> محاكاة شاشة الطلاب المعروضة حالياً:
-                  </span>
-                  {publicDisplayState.isDisplayHidden && (
-                    <span className="hidden-warning-badge">⚠️ العرض مخفي مؤقتاً عن الطلاب</span>
-                  )}
+                  <div className="mirror-header-title">
+                    <span className="live-camera-pulse"></span>
+                    <span className="preview-label">
+                      <i className="fas fa-satellite-dish"></i> عين المعلم الدائمة على شاشة الصف (بث حي متزامن):
+                    </span>
+                  </div>
+                  <div className="mirror-header-badges">
+                    {publicDisplayState.isDisplayHidden ? (
+                      <span className="hidden-warning-badge">⚠️ العرض متوقف مؤقتاً بأمرك</span>
+                    ) : (
+                      <span className="live-synced-badge">🟢 متزامن ومطابق للبروجكتور</span>
+                    )}
+                    <button 
+                      type="button"
+                      className="btn-quick-mirror-proj-open"
+                      onClick={handleOpenStudentProjector}
+                      title="فتح شاشة البروجكتور في نافذة جديدة للتأكد"
+                    >
+                      <i className="fas fa-external-link-alt"></i> شاشة البروجكتور
+                    </button>
+                  </div>
                 </div>
-                <div className="preview-box-screen">
-                  <div className="preview-lesson-topic-chip">
-                    <i className="fas fa-book-reader"></i> موضوع الحصة: {publicDisplayState.lessonTitle}
+                
+                <div className="preview-box-screen live-mirror-canvas">
+                  <div className="preview-screen-ribbon">
+                    <div className="preview-lesson-topic-chip">
+                      <i className="fas fa-book-reader"></i> {publicDisplayState.lessonTitle}
+                    </div>
+                    {publicDisplayState.objective && (
+                      <div className="preview-objective-snippet" title={publicDisplayState.objective}>
+                        🎯 الهدف: {publicDisplayState.objective}
+                      </div>
+                    )}
                   </div>
+
                   <div className="preview-station-pin">
-                    محطة {publicDisplayState.stationLetter} ({publicDisplayState.stationName}) • «{publicDisplayState.studentPhrase}»
+                    <span className="station-mini-bubble">{publicDisplayState.stationLetter}</span>
+                    <span>محطة {publicDisplayState.stationName} • «{publicDisplayState.studentPhrase}»</span>
                   </div>
-                  <h4 className="preview-headline">{publicDisplayState.headline}</h4>
+
+                  <div className="preview-headline-wrapper">
+                    <h4 className="preview-headline">{publicDisplayState.headline}</h4>
+                  </div>
                   
+                  {/* If Scaffold is available for students */}
+                  {publicDisplayState.scaffolds && (
+                    <div className="preview-scaffold-bar">
+                      <span className="scaffold-key-tag">🗝️ مفتاح السقالة المتاح للطلاب:</span>
+                      <p>{publicDisplayState.scaffolds}</p>
+                    </div>
+                  )}
+
+                  {/* If Group Tasks exist for Station T */}
+                  {publicDisplayState.groupTasks && publicDisplayState.groupTasks.length > 0 && publicDisplayState.stationKey === 't' && (
+                    <div className="preview-group-tasks-strip">
+                      <div className="strip-label">👥 مهام المجموعات المتمايزة المعروضة:</div>
+                      <div className="preview-groups-mini-grid">
+                        {publicDisplayState.groupTasks.map((gt, i) => (
+                          <div key={i} className="mini-group-cell">
+                            <strong>{gt.badge} {gt.groupName}</strong>
+                            <p>{gt.task.substring(0, 65)}...</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {publicDisplayState.activeEnergizer && (
                     <div className="preview-energizer-banner">
                       <strong>⚡ {publicDisplayState.activeEnergizer.title}</strong>
                       <p>{publicDisplayState.activeEnergizer.studentDisplayPrompt}</p>
                     </div>
                   )}
+                </div>
+
+                {/* Live Backstage In-Flight Adjustments */}
+                <div className="mirror-quick-adjust-bar">
+                  <span className="adjust-bar-hint">
+                    <i className="fas fa-sliders-h"></i> التحكم الفوري في المحتوى المعروض:
+                  </span>
+                  <div className="adjust-buttons-group">
+                    <button
+                      type="button"
+                      className="btn-quick-edit-live"
+                      onClick={() => {
+                        const newTxt = prompt('عدّل نص شاشة الطلاب المعروض الآن فوراً:', publicDisplayState.headline);
+                        if (newTxt !== null && newTxt.trim() !== '') {
+                          const updated = { ...publicDisplayState, headline: newTxt.trim() };
+                          broadcastToStudentScreen(updated);
+                          showToast('تم تحديث شاشة الطلاب المعروضة في الصف فوراً! 🎦✨');
+                        }
+                      }}
+                    >
+                      <i className="fas fa-edit"></i> تعديل النص المعروض يدوياً ✏️
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-quick-ai-tweak-live"
+                      onClick={() => handleOpenStationPromptModal(activeStationKey)}
+                    >
+                      <i className="fas fa-robot"></i> اطلب تعديلاً بالذكاء الاصطناعي (AI) 🪄
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2283,17 +2624,85 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
               </div>
             ) : (
               <div className="student-task-active-box">
-                <div className="task-badge-tag">سؤال ومهمة المحطة:</div>
-                <div className="student-main-prompt-text">
-                  {publicDisplayState.headline.split('\n').map((line, idx) => (
-                    <p key={idx}>{line}</p>
-                  ))}
+                <div className="task-header-with-scaffold">
+                  <div className="task-badge-tag">سؤال ومهمة المحطة:</div>
+                  <button 
+                    type="button"
+                    className="btn-student-scaffold-trigger animate-bounce-subtle"
+                    onClick={() => setIsStudentScaffoldModalOpen(true)}
+                    title="انقر هنا للحصول على مفتاح التفكير وسقالة المساعدة"
+                  >
+                    <i className="fas fa-key"></i> 🗝️ مفتاح السقالة (تلميح مساند)
+                  </button>
                 </div>
 
-                {/* Scaffold Hint Banner (if pushed) */}
+                {/* If Station [ت] has tiered group tasks */}
+                {publicDisplayState.groupTasks && publicDisplayState.groupTasks.length > 0 && publicDisplayState.stationKey === 't' ? (
+                  <div className="student-group-tasks-viewport">
+                    <div className="student-group-tabs-selector">
+                      <button
+                        type="button"
+                        className={`btn-group-tab ${studentGroupTab === 'all' ? 'active' : ''}`}
+                        onClick={() => setStudentGroupTab('all')}
+                      >
+                        📌 المهمة العامة المشتركة
+                      </button>
+                      {publicDisplayState.groupTasks.map((gt, gIdx) => (
+                        <button
+                          key={gIdx}
+                          type="button"
+                          className={`btn-group-tab level-${gt.level} ${studentGroupTab === gt.level ? 'active' : ''}`}
+                          onClick={() => setStudentGroupTab(gt.level)}
+                        >
+                          {gt.badge} {gt.groupName}
+                        </button>
+                      ))}
+                    </div>
+
+                    {studentGroupTab === 'all' ? (
+                      <div className="student-main-prompt-text">
+                        {publicDisplayState.headline.split('\n').map((line, idx) => (
+                          <p key={idx}>{line}</p>
+                        ))}
+                      </div>
+                    ) : (
+                      (() => {
+                        const currentGt = publicDisplayState.groupTasks.find(g => g.level === studentGroupTab);
+                        if (!currentGt) return null;
+                        return (
+                          <div className={`student-focused-group-task card-${currentGt.level} animate-fade-in`}>
+                            <div className="focused-group-head">
+                              <span className="focused-badge">{currentGt.badge}</span>
+                              <h3>تحدي {currentGt.groupName}</h3>
+                            </div>
+                            <div className="focused-group-task-body">
+                              {currentGt.task.split('\n').map((line, idx) => (
+                                <p key={idx}>{line}</p>
+                              ))}
+                            </div>
+                            {currentGt.scaffold && (
+                              <div className="focused-group-scaffold-card">
+                                <strong>🗝️ مفتاح السقالة للفريق:</strong>
+                                <p>{currentGt.scaffold}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()
+                    )}
+                  </div>
+                ) : (
+                  <div className="student-main-prompt-text">
+                    {publicDisplayState.headline.split('\n').map((line, idx) => (
+                      <p key={idx}>{line}</p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Scaffold Hint Banner (if pushed directly by teacher) */}
                 {publicDisplayState.activeHint && (
                   <div className="student-active-hint-card animate-pop">
-                    <div className="hint-card-head">💡 تلميح ومساندة:</div>
+                    <div className="hint-card-head">💡 تلميح ومساندة من المعلم:</div>
                     <p>{publicDisplayState.activeHint}</p>
                   </div>
                 )}
@@ -2421,6 +2830,139 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Prompt-to-Modify Station AI Modal */}
+      {stationPromptModal.isOpen && (
+        <div className="station-prompt-modal-overlay" onClick={() => !stationPromptModal.loading && setStationPromptModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="station-prompt-modal-card animate-pop" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="header-title-flex">
+                <i className="fas fa-robot modal-ai-icon"></i>
+                <div>
+                  <h3>طلب تعديل مخصص بالذكاء الاصطناعي</h3>
+                  <small>محطة [{stationPromptModal.stationName}]</small>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="btn-modal-close" 
+                onClick={() => !stationPromptModal.loading && setStationPromptModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p className="modal-description">
+                اكتب أي فكرة أو رغبة بيداغوجية ترغب في تطبيقها على هذه المحطة، وسيقوم الذكاء الاصطناعي بإعادة صياغة المهمة وملاحظات المعلم وسقالة الدعم فوراً:
+              </p>
+
+              {/* Quick suggestion chips */}
+              <div className="prompt-suggestion-chips">
+                <span className="chips-label">أفكار مقترحة سريعة (انقر للإضافة):</span>
+                <div className="chips-list">
+                  {[
+                    '🎯 اجعل النشاط حركياً وتفاعلياً يشارك فيه جميع الطلاب',
+                    '🔍 حوّل المهمة إلى لغز وتحدي محققين أذكياء',
+                    '🌱 بسّط الصياغة والخطوات لتناسب الطلاب المتعثرين',
+                    '🚀 أضف أسئلة تفكير عليا وتحدٍّ إضافي للمتفوقين',
+                    '📝 اجعل الحل على شكل خطوات قصيرة وممتعة في الدفتر'
+                  ].map((chip, cIdx) => (
+                    <button
+                      key={cIdx}
+                      type="button"
+                      className="chip-btn"
+                      onClick={() => setStationPromptModal(prev => ({ ...prev, promptInstruction: chip }))}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-item prompt-input-group">
+                <label>توجيهك الخاص للذكاء الاصطناعي:</label>
+                <textarea 
+                  rows={4}
+                  value={stationPromptModal.promptInstruction}
+                  onChange={e => setStationPromptModal(prev => ({ ...prev, promptInstruction: e.target.value }))}
+                  placeholder="مثال: أريد التمرين على شكل ٣ ألغاز سريعة، أو ربط المشوّق بموقف من المدرسة..."
+                  disabled={stationPromptModal.loading}
+                  autoFocus
+                />
+              </div>
+
+              {stationPromptModal.loading && (
+                <div className="modal-loading-banner">
+                  <i className="fas fa-spinner fa-spin"></i>
+                  <span>جاري استدعاء المعلم الخبير وهندسة المحطة بذكاء... ⏳</span>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn-cancel-modal"
+                onClick={() => setStationPromptModal(prev => ({ ...prev, isOpen: false }))}
+                disabled={stationPromptModal.loading}
+              >
+                إلغاء
+              </button>
+              <button 
+                type="button" 
+                className="btn-submit-modal-ai"
+                onClick={handleApplyStationPromptModification}
+                disabled={stationPromptModal.loading || !stationPromptModal.promptInstruction.trim()}
+              >
+                {stationPromptModal.loading ? 'جاري التطبيق...' : 'تطبيق التعديل بالذكاء الاصطناعي الآن ✨'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Interactive Scaffold Popover Modal */}
+      {isStudentScaffoldModalOpen && (
+        <div className="scaffold-student-modal-overlay" onClick={() => setIsStudentScaffoldModalOpen(false)}>
+          <div className="scaffold-student-modal-card animate-pop" onClick={e => e.stopPropagation()}>
+            <div className="scaffold-modal-header">
+              <div className="scaffold-header-title">
+                <span className="scaffold-key-icon">🗝️</span>
+                <h3>مفتاح وسقالة التفكير للمحطة</h3>
+              </div>
+              <button 
+                type="button" 
+                className="btn-scaffold-close"
+                onClick={() => setIsStudentScaffoldModalOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="scaffold-modal-body">
+              <div className="scaffold-guidance-box">
+                <span className="guidance-tag">💡 تلميح ومفتاح للتفكير خطوة بخطوة:</span>
+                <p className="guidance-text">
+                  {publicDisplayState.scaffolds || 'تذكر القاعدة الأساسية التي شرحناها، وابدأ بتحديد المعطيات قبل كتابة الحل!'}
+                </p>
+              </div>
+              <div className="scaffold-pedagogy-reminder">
+                <i className="fas fa-shield-alt"></i>
+                <span>هذا المفتاح مصمم ليرشد تفكيرك خطوة بخطوة دون إعطاء الإجابة النهائية!</span>
+              </div>
+            </div>
+            <div className="scaffold-modal-footer">
+              <button 
+                type="button" 
+                className="btn-scaffold-understood"
+                onClick={() => setIsStudentScaffoldModalOpen(false)}
+              >
+                فهمت التلميح، سأحاول بنفسي الآن! 🚀
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* =================================================================== */}
