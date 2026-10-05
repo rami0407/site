@@ -1256,10 +1256,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       key={oIdx}
                       type="button"
                       className="riddle-option-btn"
+                      style={{ color: '#ffffff', backgroundColor: '#1e293b' }}
                       onClick={() => handleStudentRiddleOptionClick(stNum, opt, resolvedActivity.riddle.solution)}
                     >
                       <span className="opt-letter">{String.fromCharCode(65 + oIdx)}</span>
-                      <span className="opt-text">{opt}</span>
+                      <span className="opt-text" style={{ color: '#ffffff', fontWeight: 800, fontSize: '1.12rem' }}>
+                        {opt}
+                      </span>
                     </button>
                   ))}
                 </div>
