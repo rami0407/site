@@ -768,37 +768,37 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const getYouTubeEmbedUrl = (urlOrId) => {
     if (!urlOrId) return null;
     const str = String(urlOrId).trim();
-    const match = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (!str || str === 'https://www.youtube.com' || str === 'https://www.youtube.com/' || str === 'http://www.youtube.com' || str === 'http://www.youtube.com/' || str === 'about:blank') {
+      return null;
+    }
+    // If it's already an embed URL with 11-char ID
+    const embedMatch = str.match(/youtube(?:-nocookie)?\.com\/embed\/([\w-]{11})/i);
+    if (embedMatch && embedMatch[1]) {
+      return `https://www.youtube-nocookie.com/embed/${embedMatch[1]}?rel=0&modestbranding=1`;
+    }
+    // Match standard youtu.be / watch?v= / shorts / live / v/
+    const match = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/i);
     if (match && match[1]) {
       return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0&modestbranding=1`;
     }
+    // Direct 11-character video ID
     if (/^[\w-]{11}$/.test(str)) {
       return `https://www.youtube-nocookie.com/embed/${str}?rel=0&modestbranding=1`;
     }
-    if (str.startsWith('http')) return str;
+    // Never return raw URL because YouTube blocks non-embed URLs via X-Frame-Options: SAMEORIGIN
     return null;
   };
 
   const resolveStationVideo = (lesson, station) => {
-    if (station?.media?.embedUrl) {
+    const rawUrl = station?.media?.embedUrl || station?.media?.youtubeUrl || station?.media?.url;
+    const validEmbed = getYouTubeEmbedUrl(rawUrl);
+    if (validEmbed) {
       return {
         title: station.media.title || 'فيلم تعليمي للمحطة',
-        embedUrl: station.media.embedUrl,
+        embedUrl: validEmbed,
         searchQuery: station.media.searchQuery || lesson.title,
         reflectionQuestion: station.media.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
       };
-    }
-
-    if (station?.media?.youtubeUrl || station?.media?.url) {
-      const embed = getYouTubeEmbedUrl(station.media.youtubeUrl || station.media.url);
-      if (embed) {
-        return {
-          title: station.media.title || 'فيلم تعليمي للمحطة',
-          embedUrl: embed,
-          searchQuery: station.media.searchQuery || lesson.title,
-          reflectionQuestion: station.media.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
-        };
-      }
     }
 
     const combinedText = `${lesson?.title || ''} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
@@ -869,11 +869,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const combined = `${safeTitle} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
     const isExcellence = combined.includes('تميز') || combined.includes('التميز') || combined.includes('نجاح') || combined.includes('تفوق');
 
-    // 1. Resolve Video
+    // 1. Resolve Video (Ensure strictly valid embed URL to eliminate X-Frame-Options error)
     const resolvedVid = resolveStationVideo(lesson, station);
+    const candidateEmbed = getYouTubeEmbedUrl(act.video?.embedUrl) ||
+                           getYouTubeEmbedUrl(station?.media?.embedUrl) ||
+                           getYouTubeEmbedUrl(act.video?.youtubeUrl) ||
+                           getYouTubeEmbedUrl(station?.media?.youtubeUrl) ||
+                           resolvedVid.embedUrl;
+
     const videoData = {
       title: act.video?.title || station?.media?.title || resolvedVid.title,
-      embedUrl: act.video?.embedUrl || station?.media?.embedUrl || getYouTubeEmbedUrl(act.video?.youtubeUrl || station?.media?.youtubeUrl) || resolvedVid.embedUrl,
+      embedUrl: candidateEmbed,
       youtubeUrl: act.video?.youtubeUrl || station?.media?.youtubeUrl || '',
       searchQuery: act.video?.searchQuery || station?.media?.searchQuery || resolvedVid.searchQuery,
       reflectionQuestion: act.video?.reflectionQuestion || station?.media?.reflectionQuestion || resolvedVid.reflectionQuestion
@@ -1225,14 +1231,21 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             </div>
 
             <div className="video-iframe-wrapper">
-              <iframe
-                src={resolvedActivity.video.embedUrl}
-                title={resolvedActivity.video.title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="video-main-iframe"
-              ></iframe>
+              {resolvedActivity.video.embedUrl ? (
+                <iframe
+                  src={resolvedActivity.video.embedUrl}
+                  title={resolvedActivity.video.title}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="video-main-iframe"
+                ></iframe>
+              ) : (
+                <div className="video-placeholder-frame">
+                  <i className="fab fa-youtube"></i>
+                  <p>يرجى اختيار مقطع فيديو تعليمي من قائمة الفيديوهات أو لصق رابط صالح</p>
+                </div>
+              )}
             </div>
 
             <div className="video-reflection-bar">
