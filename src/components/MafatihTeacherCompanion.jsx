@@ -313,6 +313,71 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
 
   // Screen 2 Step 3: Station Alternatives AI Modal State
+  // Screen 2: Projector Preview Modal State
+  const [projectorPreviewModal, setProjectorPreviewModal] = useState({
+    isOpen: false,
+    stationKey: 'm',
+    stationName: '',
+    studentPhrase: '',
+    letter: 'م',
+    lessonTitle: '',
+    objective: '',
+    headline: '',
+    timerSeconds: 300
+  });
+
+  const handlePreviewStationOnProjector = (stationKey) => {
+    const st = prepForm.stations?.[stationKey] || {};
+    const stationNames = {
+      m: { name: 'مشوّق ومحفّز', phrase: 'أتساءل وأستعد', letter: 'م', dur: 5 },
+      f: { name: 'فهم وبناء المعنى', phrase: 'أفهم وأربط', letter: 'ف', dur: 10 },
+      t: { name: 'تطبيق وتدريب', phrase: 'أجرّب وأتدرّب', letter: 'ت', dur: 15 },
+      a: { name: 'أدلّة الفهم', phrase: 'أُظهر ما فهمت', letter: 'ا', dur: 8 },
+      h: { name: 'حصاد ونقل الأثر', phrase: 'ألخّص وأنقل تعلّمي', letter: 'ح', dur: 7 }
+    };
+    const info = stationNames[stationKey] || stationNames.m;
+
+    setProjectorPreviewModal({
+      isOpen: true,
+      stationKey,
+      stationName: st.name || info.name,
+      studentPhrase: st.studentPhrase || info.phrase,
+      letter: st.letter || info.letter,
+      lessonTitle: prepForm.title || 'عنوان الحصة',
+      objective: prepForm.objective || '',
+      headline: st.studentDisplayPrompt || 'لا يوجد نص مدخل حالياً لهذه المحطة',
+      timerSeconds: (st.durationMinutes || info.dur) * 60
+    });
+  };
+
+  const handleLaunchProjectorFromStation = (stationKey) => {
+    const st = prepForm.stations?.[stationKey] || {};
+    const stationNames = {
+      m: { name: 'مشوّق ومحفّز', phrase: 'أتساءل وأستعد', letter: 'م', dur: 5 },
+      f: { name: 'فهم وبناء المعنى', phrase: 'أفهم وأربط', letter: 'ف', dur: 10 },
+      t: { name: 'تطبيق وتدريب', phrase: 'أجرّب وأتدرّب', letter: 'ت', dur: 15 },
+      a: { name: 'أدلّة الفهم', phrase: 'أُظهر ما فهمت', letter: 'ا', dur: 8 },
+      h: { name: 'حصاد ونقل الأثر', phrase: 'ألخّص وأنقل تعلّمي', letter: 'ح', dur: 7 }
+    };
+    const info = stationNames[stationKey] || stationNames.m;
+
+    const newState = {
+      ...publicDisplayState,
+      lessonTitle: prepForm.title || 'عنوان الحصة',
+      objective: prepForm.objective || '',
+      stationKey,
+      stationLetter: st.letter || info.letter,
+      stationName: st.name || info.name,
+      studentPhrase: st.studentPhrase || info.phrase,
+      headline: st.studentDisplayPrompt || prepForm.title || '',
+      isDisplayHidden: false,
+      timerSeconds: (st.durationMinutes || info.dur) * 60
+    };
+
+    broadcastToStudentScreen(newState);
+    handleOpenStudentProjector();
+  };
+
   const [stationAltModal, setStationAltModal] = useState({
     isOpen: false,
     stationKey: null,
@@ -1069,6 +1134,14 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
             <div className="header-actions-group">
               <button 
                 type="button" 
+                className="btn-projector-launch-nav"
+                onClick={handleOpenStudentProjector}
+                title="فتح شاشة البروجكتور المخصصة للطلاب في نافذة مستقلة"
+              >
+                <i className="fas fa-desktop"></i> شاشة البروجكتور للصف 🎦
+              </button>
+              <button 
+                type="button" 
                 className="btn-save-draft"
                 onClick={handleSaveDraft}
               >
@@ -1395,9 +1468,29 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
 
                         <div className="st-edit-fields-grid">
                           <div className="st-field-col main-prompt-col">
-                            <label className="label-bold label-student-screen">
-                              <i className="fas fa-desktop"></i> نص شاشة الطلاب (المهمة / السؤال المعروض على البروجكتور):
-                            </label>
+                            <div className="st-prompt-header-flex">
+                              <label className="label-bold label-student-screen">
+                                <i className="fas fa-desktop"></i> نص شاشة الطلاب (المهمة / السؤال المعروض على البروجكتور):
+                              </label>
+                              <div className="st-prompt-header-actions">
+                                <button
+                                  type="button"
+                                  className="btn-quick-preview-proj"
+                                  onClick={() => handlePreviewStationOnProjector(k)}
+                                  title="معاينة شكل هذه الشاشة كما يراها الطلاب على البروجكتور"
+                                >
+                                  <i className="fas fa-eye"></i> معاينة شاشة البروجكتور 🎦
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-quick-launch-proj"
+                                  onClick={() => handleLaunchProjectorFromStation(k)}
+                                  title="فتح شاشة البروجكتور المستقلة للعرض الفوري في الصف"
+                                >
+                                  <i className="fas fa-external-link-alt"></i> فتح البروجكتور للصف 🚀
+                                </button>
+                              </div>
+                            </div>
                             <textarea 
                               rows={4}
                               value={st.studentDisplayPrompt || ''}
@@ -2404,6 +2497,92 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
           </div>
         </div>
       )}
+
+      {/* =================================================================== */}
+      {/* MODAL: LIVE PROJECTOR PREVIEW (معاينة شاشة البروجكتور الحية)         */}
+      {/* =================================================================== */}
+      {projectorPreviewModal.isOpen && (
+        <div className="miftaah-modal-overlay" onClick={() => setProjectorPreviewModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="miftaah-projector-preview-modal" onClick={e => e.stopPropagation()}>
+            <div className="proj-preview-head-bar">
+              <div className="proj-preview-title">
+                <i className="fas fa-desktop"></i>
+                <span>شاشة البروجكتور: كيف ستظهر للطلاب على شاشة العرض الكبيرة 🎦</span>
+              </div>
+              <div className="proj-preview-controls">
+                <button
+                  type="button"
+                  className="btn-open-proj-external"
+                  onClick={() => {
+                    handleLaunchProjectorFromStation(projectorPreviewModal.stationKey);
+                    setProjectorPreviewModal(prev => ({ ...prev, isOpen: false }));
+                  }}
+                >
+                  <i className="fas fa-external-link-alt"></i> فتح في نافذة بروجكتور مستقلة للصف 🚀
+                </button>
+                <button
+                  type="button"
+                  className="alt-modal-close-btn"
+                  onClick={() => setProjectorPreviewModal(prev => ({ ...prev, isOpen: false }))}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Simulated Projector Screen Canvas */}
+            <div className="projector-canvas-simulated">
+              <div className="student-view-top-header">
+                <div className="proj-school-info">مدرسة مشيرفة الابتدائية • نموذج مِفتاح للحصة الفاعلة</div>
+                <div className="proj-active-station-banner">
+                  <span className="proj-letter-gem">{projectorPreviewModal.letter}</span>
+                  <h3>محطة {projectorPreviewModal.stationName} — «{projectorPreviewModal.studentPhrase}»</h3>
+                </div>
+                <div className="proj-timer-readout">
+                  <i className="fas fa-stopwatch"></i> {formatSeconds(projectorPreviewModal.timerSeconds)}
+                </div>
+              </div>
+
+              <div className="student-view-main-card">
+                <div className="student-goal-header-bar">
+                  <div className="goal-row title-row">
+                    <span className="goal-label">📖 موضوع الدرس:</span>
+                    <span className="goal-text lesson-name">{projectorPreviewModal.lessonTitle}</span>
+                  </div>
+                  {projectorPreviewModal.objective && (
+                    <div className="goal-row">
+                      <span className="goal-label">🎯 هدف التعلم:</span>
+                      <span className="goal-text">{projectorPreviewModal.objective}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="student-task-active-box">
+                  <div className="task-badge-tag">سؤال ومهمة المحطة المعروضة على الشاشة:</div>
+                  <div className="student-main-prompt-text">
+                    {projectorPreviewModal.headline.split('\n').map((line, idx) => (
+                      <p key={idx}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="student-interactive-keys-dock">
+                  <div className="keys-dock-title">مفاتيح المشاركة وطلب الدعم للطلاب:</div>
+                  <div className="keys-buttons-row">
+                    {STUDENT_REQUEST_KEYS.map((sk) => (
+                      <button key={sk.id} type="button" className="student-key-btn">
+                        <span className="k-icon">{sk.icon}</span>
+                        <span className="k-label">{sk.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
