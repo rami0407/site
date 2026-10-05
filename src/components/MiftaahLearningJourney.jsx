@@ -133,8 +133,51 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // 'projector' ➔ 3. الشاشة الرئيسية للصف (البروجكتور)
   // 'student'   ➔ 4. واجهة الطالب أو المجموعة
   // 'summary'   ➔ 5. ملخص الحصة والإنهاء
-  // 'sandbox'   ➔ 6. مختبر المحاكاة الصفيّة الحية
   const [activeInterface, setActiveInterface] = useState(initialView);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    try {
+      if (!document.fullscreenElement) {
+        const docEl = document.documentElement;
+        const requestFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (requestFs) {
+          requestFs.call(docEl).then(() => {
+            setIsFullscreen(true);
+          }).catch(() => {
+            setIsFullscreen(prev => !prev);
+          });
+        } else {
+          setIsFullscreen(prev => !prev);
+        }
+      } else {
+        const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exitFs) {
+          exitFs.call(document).then(() => {
+            setIsFullscreen(false);
+          }).catch(() => {
+            setIsFullscreen(false);
+          });
+        } else {
+          setIsFullscreen(false);
+        }
+      }
+    } catch (e) {
+      setIsFullscreen(prev => !prev);
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
 
   // Lesson Creator & Saved Lessons
   const [lessonsList, setLessonsList] = useState(() => {
@@ -622,7 +665,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // RENDER MAIN APPLICATION INTERFACES
   // =========================================================================
   return (
-    <div className="miftaah-learning-journey-app" dir="rtl">
+    <div className={`miftaah-learning-journey-app ${isFullscreen ? 'is-fullscreen' : ''} interface-${activeInterface}-active`} dir="rtl">
       {/* Toast Notification Banner */}
       {toastMessage && (
         <div className="miftaah-global-toast animate-slide-down">
@@ -691,6 +734,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         </nav>
 
         <div className="header-status-badge">
+          <button
+            type="button"
+            className={`btn-header-fullscreen ${isFullscreen ? 'active-fs' : ''}`}
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'الخروج من ملء الشاشة' : 'توسيع العرض على كامل مساحة الشاشة (100%)'}
+          >
+            <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+            <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
+          </button>
           <span className="session-pin-chip" title="رمز الجلسة الصفية">
             رمز الصف: <strong>{sessionState.pin}</strong>
           </span>
@@ -1410,8 +1462,19 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <span className="station-icon-proj">{getStationByIndex(sessionState.activeStationIndex).icon}</span>
                 <h2>المحطة {sessionState.activeStationIndex}: {getStationByIndex(sessionState.activeStationIndex).name}</h2>
               </div>
-              <div className="projector-session-pin-badge">
-                انضم الآن: <strong>{sessionState.pin}</strong>
+              <div className="projector-top-actions">
+                <button
+                  type="button"
+                  className="btn-proj-fullscreen-toggle"
+                  onClick={toggleFullscreen}
+                  title="توسيع شاشة العرض لتملأ الشاشة والبروجكتور بالكامل (100%)"
+                >
+                  <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+                  <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
+                </button>
+                <div className="projector-session-pin-badge">
+                  انضم الآن: <strong>{sessionState.pin}</strong>
+                </div>
               </div>
             </div>
 
@@ -1505,8 +1568,19 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               </div>
 
-              <div className="student-station-badge">
-                محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
+              <div className="student-header-right-tools">
+                <button
+                  type="button"
+                  className="btn-student-fullscreen-toggle"
+                  onClick={toggleFullscreen}
+                  title="توسيع واجهة الطالب على كامل مساحة الشاشة (100%)"
+                >
+                  <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+                  <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
+                </button>
+                <div className="student-station-badge">
+                  محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
+                </div>
               </div>
             </div>
 

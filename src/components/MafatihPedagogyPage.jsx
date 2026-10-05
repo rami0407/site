@@ -1715,7 +1715,7 @@ ${p.stations?.h || ''}
       </nav>
 
       {/* 3. MAIN CONTENT BODY */}
-      <main className="container mafatih-main-content">
+      <main className={activeTab === 'miftaah-journey' ? 'mafatih-main-content miftaah-fullwidth-mode' : 'container mafatih-main-content'}>
         
         {/* ========================================================================= */}
         {/* TAB 1: THE 5 STATIONS INTERACTIVE EXPLORER */}

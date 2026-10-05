@@ -1647,12 +1647,14 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .projector-viewport-wrapper {
-  max-width: 1500px;
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1667,6 +1669,8 @@
   padding: 12px 24px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .school-brand-tag {
@@ -1696,6 +1700,12 @@
   font-weight: 900;
 }
 
+.projector-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .projector-session-pin-badge {
   background: #0f172a;
   color: #38bdf8;
@@ -1710,6 +1720,7 @@
   grid-template-columns: 320px 1fr;
   gap: 24px;
   flex: 1;
+  width: 100%;
 }
 
 @media (max-width: 950px) {
@@ -1875,30 +1886,64 @@
 /* 4. INTERFACE 4: STUDENT / PAIR / GROUP DEVICE                             */
 /* ========================================================================= */
 .student-device-canvas {
-  padding: 16px;
-  max-width: 760px;
-  margin: 0 auto;
+  padding: 20px 24px;
+  max-width: 100%;
   width: 100%;
+  margin: 0;
   box-sizing: border-box;
+  flex: 1;
 }
 
 .student-device-container {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
   position: relative;
-  padding-bottom: 80px; /* space for sticky help key */
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: 90px; /* space for sticky help key */
+}
+
+@media (min-width: 960px) {
+  .student-device-container {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    grid-template-areas:
+      "header header"
+      "keymap maincard";
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .student-device-header {
+    grid-area: header;
+  }
+
+  .student-device-key-bar {
+    grid-area: keymap;
+    position: sticky;
+    top: 20px;
+  }
+
+  .student-station-task-card {
+    grid-area: maincard;
+    width: 100%;
+  }
 }
 
 .student-device-header {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 12px 18px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .student-user-badge {
@@ -1922,6 +1967,12 @@
   font-size: 0.78rem;
 }
 
+.student-header-right-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .student-station-badge {
   background: #e0f2fe;
   color: #0369a1;
@@ -1929,6 +1980,7 @@
   border-radius: 999px;
   font-weight: 800;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .student-device-key-bar .physical-key-container {
@@ -2830,4 +2882,115 @@
 @keyframes slideDown {
   from { opacity: 0; transform: translate(-50%, -12px); }
   to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ========================================================================= */
+/* FULLSCREEN & FULL-WIDTH CONTROLS (توسيع العرض وملء الشاشة بالكامل)       */
+/* ========================================================================= */
+.btn-header-fullscreen,
+.btn-proj-fullscreen-toggle,
+.btn-student-fullscreen-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-header-fullscreen {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-header-fullscreen:hover,
+.btn-header-fullscreen.active-fs {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.45);
+}
+
+.btn-proj-fullscreen-toggle {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.btn-proj-fullscreen-toggle:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(56, 189, 248, 0.5);
+}
+
+.btn-student-fullscreen-toggle {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.btn-student-fullscreen-toggle:hover {
+  background: #e2e8f0;
+  color: #0284c7;
+  border-color: #0284c7;
+}
+
+/* Fullscreen Mode Overrides */
+.miftaah-learning-journey-app.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  z-index: 999999;
+  overflow-y: auto;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.miftaah-learning-journey-app.is-fullscreen .miftaah-journey-master-header {
+  display: none !important;
+}
+
+.miftaah-learning-journey-app.is-fullscreen.interface-projector-active {
+  background: #091e42;
+}
+
+.miftaah-learning-journey-app.is-fullscreen.interface-student-active {
+  background: #f8fafc;
+}
+
+.miftaah-learning-journey-app.is-fullscreen .projector-canvas {
+  min-height: 100vh;
+  padding: 18px 24px;
+}
+
+.miftaah-learning-journey-app.is-fullscreen .student-device-canvas {
+  min-height: 100vh;
+  padding: 18px 24px;
+}
+
+/* Ensure wide cards and prompt areas take full horizontal advantage */
+.projector-canvas .prompt-content-text p {
+  font-size: 1.45rem;
+  line-height: 1.8;
+}
+
+.projector-canvas .projector-showcase-card h3 {
+  font-size: 2rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 1200px) {
+  .projector-main-stage-grid {
+    grid-template-columns: 360px 1fr;
+    gap: 32px;
+  }
 }
