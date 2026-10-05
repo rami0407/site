@@ -86,6 +86,9 @@ const DEFAULT_EXEMPLAR_LESSON = {
       symbol: 'ت',
       suggestedDuration: 15,
       workMode: 'groups', // 'individual' | 'pairs' | 'groups'
+      studentPrompt: 'مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🔬\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول حالات المادة الثلاث وخصائصها.\n• تذكّروا المعيار الأساسي: ثبات الشكل وثبات الحجم هما المفتاح العلمي للتمييز.\n• ستعمل المجموعات وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• ناقشوا معاً داخل الفريق، دوّنوا استنتاجاتكم، وبرروا كل إجابة علمياً قبل الانتقال إلى المهمة التالية!',
+      teacherGuidance: 'إرشادات المعلم لإدارة المحطة:\n١. وجّه الطلاب إلى مجموعاتهم المتمايزة بحسب مستويات الجاهزية.\n٢. ابدأ بالتأكيد على تطبيق المعيارين (ثبات الشكل، وثبات الحجم).\n٣. تنقّل بين المجموعات: شجّع فريق الانطلاق بالسقالة المتاحة، وادفع فريق الإتقان لصياغة تبرير علمي دقيق، وتحدَّ فريق الرواد بتفسير الظواهر المركبة.\n٤. ركّز على الحوار التفاعلي بين الأقران وتجنب إعطاء الحلول الجاهزة.',
+      scaffold: 'تلميح مساند: تأمل المادة دائماً في وعائين مختلفين: هل يتغير حجمها؟ هل يتغير شكلها؟ هذا يكشف لك الحالة فوراً!',
       tasks: [
         {
           tier: 'support',
@@ -117,6 +120,9 @@ const DEFAULT_EXEMPLAR_LESSON = {
       symbol: 'ا',
       suggestedDuration: 7,
       criterion: 'يصنف كل طالب مادة جديدة تصنيفاً صحيحاً ومبرراً بخاصية واحدة على الأقل تتعلق بالشكل أو الحجم بشكل مستقل.',
+      studentPrompt: 'مهمة التحقق الفردي المستقل (حل بمفردك في بطاقتك):\nالمادة: «العسل الطبيعي»\n١. ما حالة المادة للعسل؟ (صلب / سائل / غاز)\n٢. برر إجابتك علمياً بالاستناد إلى خاصيتي الشكل والحجم والانسياب.\n٣. هل يؤثر بطء سيلان العسل على تصنيفه؟ وضح باختصار.',
+      teacherGuidance: 'إرشادات المعلم لتقييم الدليل الفردي:\n١. تأكد من أن كل طالب يحل بمفرده لقياس الأثر الفردي.\n٢. راقب المفاهيم البديلة: بعض الطلاب يعتقدون أن لزوجة العسل أو بطء انسيابه يجعله صلباً؛ لا تصحح مباشرة بل اسأل: هل أخذ شكل الوعاء؟\n٣. صنّف الأداء فورياً وفق مستويات الإتقان لتحديد الطلاب المستهدفين بالدعم.',
+      scaffold: 'تذكّر: السرعة أو اللزوجة لا تحدد الحالة، بل قابلية الانسياب وأخذ شكل الوعاء مع ثبات الحجم!',
       individualTask: 'مهمة التحقق الفردي المستقل (حل بمفردك في بطاقتك):\nالمادة: «العسل الطبيعي»\n١. ما حالة المادة للعسل؟ (صلب / سائل / غاز)\n٢. برر إجابتك علمياً بالاستناد إلى خاصية الشكل والحجم والانسياب.\n٣. هل يؤثر بطء سيلان العسل على تصنيفه؟ وضح باختصار.',
       allowedHelp: ['تلميح بسيط', 'توضيح التعليمات'],
       evalLevels: {
@@ -132,6 +138,9 @@ const DEFAULT_EXEMPLAR_LESSON = {
       icon: '🎒',
       symbol: 'ح',
       suggestedDuration: 5,
+      studentPrompt: 'محطة الحصاد ونقل الأثر 🎒✨\nحان وقت تلخيص رحلتنا التعليمية اليوم ورصد ثمار التعلم:\n١. ما الفكرة الذهبية التي ستتذكرها دائماً عن هذا الدرس؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف يمكنك تطبيق هذه المهارة خارج جدران المدرسة وفي حياتك اليومية؟',
+      teacherGuidance: 'إرشادات المعلم لإغلاق الحصة:\n١. امنح الطلاب ٤ دقائق للإجابة عن بطاقة الخروج بهدوء واستقلالية.\n٢. استمع لـ ٢-٣ مشاركات نوعية حول نقل الأثر إلى الواقع.\n٣. اجمع بطاقات الخروج أو راجعها إلكترونياً لتحليل الفجوات والتخطيط للحصة القادمة.\n٤. اختم بكلمة تعزيزية تلخّص إنجاز الصف وتكافئ التفكير الاستنتاجي.',
+      scaffold: 'تأمل: كيف تغير فهمك للموضوع بين بداية الحصة ونهايتها؟',
       exitTicket: {
         q1: 'ما أهم فكرة أو مهارة تعلّمتها اليوم؟',
         q2: 'ما الذي ساعدك أكثر على الفهم: التجربة، الشرح، أم النقاش مع الزملاء؟',
@@ -140,6 +149,77 @@ const DEFAULT_EXEMPLAR_LESSON = {
       }
     }
   }
+};
+
+// =========================================================================
+// NORMALIZATION: GUARANTEE EVERY STATION HAS RICH STUDENT PROMPT & GUIDANCE
+// =========================================================================
+const normalizeMiftaahLesson = (lesson) => {
+  if (!lesson || !lesson.stations) return lesson;
+  const l = { ...lesson, stations: { ...lesson.stations } };
+  const safeTitle = l.title || 'الدرس';
+
+  // Station 2
+  if (l.stations['2_understanding']) {
+    const st2 = { ...l.stations['2_understanding'] };
+    if (!st2.studentPrompt || !st2.studentPrompt.trim()) {
+      st2.studentPrompt = `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
+    }
+    if (!st2.teacherGuidance || !st2.teacherGuidance.trim()) {
+      st2.teacherGuidance = `إرشادات المعلم لمحطة بناء المعنى:\n١. وجّه الطلاب نحو النمذجة والاستكشاف الصفي النشط.\n٢. اطرح أسئلة توجيهية تساعد الطلاب على صياغة الاستنتاج بأنفسهم.\n٣. ركّز على تثبيت المفهوم المركزي ومعايير التمييز بدقة.`;
+    }
+    if (!st2.scaffold || !st2.scaffold.trim()) {
+      st2.scaffold = 'منظم بصري أو خطوة استرشادية مساندة.';
+    }
+    l.stations['2_understanding'] = st2;
+  }
+
+  // Station 3
+  if (l.stations['3_practice']) {
+    const st3 = { ...l.stations['3_practice'] };
+    if (!st3.studentPrompt || !st3.studentPrompt.trim()) {
+      st3.studentPrompt = `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
+    }
+    if (!st3.teacherGuidance || !st3.teacherGuidance.trim()) {
+      st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب:\n١. وجّه الطلاب إلى فرقهم المتمايزة بحسب مستويات الجاهزية والاستعداد.\n٢. أكّد على تطبيق المعايير العلمية المستهدفة والتعاون الإيجابي.\n٣. تجوّل بين المجموعات: وجّه فريق الانطلاق بالسقالات المساندة، وادفع فريق الإتقان لدقة الصياغة والتبرير، وتحدَّ فريق الرواد بأسئلة تفكير عليا.\n٤. راقب التفاعل وحفّز الطلاب على تصحيح أخطائهم ذاتياً عبر الحوار.`;
+    }
+    if (!st3.scaffold || !st3.scaffold.trim()) {
+      st3.scaffold = 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
+    }
+    l.stations['3_practice'] = st3;
+  }
+
+  // Station 4
+  if (l.stations['4_evidence']) {
+    const st4 = { ...l.stations['4_evidence'] };
+    if (!st4.studentPrompt || !st4.studentPrompt.trim()) {
+      st4.studentPrompt = st4.individualTask || `مهمة التحقق الفردي المستقل (حل بمفردك) ✍️\nأثبت فهمك وإتقانك لـ (${safeTitle}) بحل التمرين المخصص لك في بطاقتك دون مساعدة خارجية، وقدّم تبريراً واضحاً لإجابتك.`;
+    }
+    if (!st4.teacherGuidance || !st4.teacherGuidance.trim()) {
+      st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي:\n١. تأكد من استقلالية كل طالب أثناء الحل لقياس الأثر الحقيقي للتعلم.\n٢. راقب المفاهيم البديلة وصنّف الإجابات فورياً وفق مستويات الإتقان الأربعة.\n٣. حدد الفجوات الشائعة لتناولها في بداية الحصة القادمة أو ضمن الدعم المركز.`;
+    }
+    if (!st4.scaffold || !st4.scaffold.trim()) {
+      st4.scaffold = 'تذكّر: اقرأ السؤال بدقة، وركّز على تقديم دليل علمي مقنع.';
+    }
+    l.stations['4_evidence'] = st4;
+  }
+
+  // Station 5
+  if (l.stations['5_harvest']) {
+    const st5 = { ...l.stations['5_harvest'] };
+    if (!st5.studentPrompt || !st5.studentPrompt.trim()) {
+      st5.studentPrompt = `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`;
+    }
+    if (!st5.teacherGuidance || !st5.teacherGuidance.trim()) {
+      st5.teacherGuidance = `إرشادات المعلم لإغلاق الحصة:\n١. امنح الطلاب ٤-٥ دقائق لإتمام بطاقة الخروج بهدوء وتأمل ذاتي.\n٢. استمع لـ ٢-٣ مشاركات ملهمة حول نقل الأثر إلى الحياة اليومية.\n٣. اجمع بطاقات الخروج أو تفقد النتائج إلكترونياً لتقييم نسبة تحقق الهدف العام.\n٤. وجّه كلمة شكر وتشجيع للطلاب على شغفهم وتفكيرهم الاستنتاجي.`;
+    }
+    if (!st5.scaffold || !st5.scaffold.trim()) {
+      st5.scaffold = 'تأمل: كيف تطوّر فهمك وثقتك بالمفهوم منذ بداية الدرس حتى الآن؟';
+    }
+    l.stations['5_harvest'] = st5;
+  }
+
+  return l;
 };
 
 const STORAGE_KEY_SAVED_LESSONS = 'miftaah_journey_lessons_v3';
@@ -227,8 +307,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map(l => {
             const hook = l.stations?.['1_hook'];
+            let lessonObj = l;
             if (hook && (hook.studentPrompt || '').includes('لغز') && hook.interactiveActivity?.type === 'video') {
-              return {
+              lessonObj = {
                 ...l,
                 stations: {
                   ...l.stations,
@@ -244,12 +325,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 }
               };
             }
-            return l;
+            return normalizeMiftaahLesson(lessonObj);
           });
         }
       }
     } catch (e) {}
-    return [DEFAULT_EXEMPLAR_LESSON];
+    return [normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON)];
   });
 
   const [activeLesson, setActiveLesson] = useState(() => {
@@ -260,8 +341,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const l = parsed[0];
           const hook = l.stations?.['1_hook'];
+          let lessonObj = l;
           if (hook && (hook.studentPrompt || '').includes('لغز') && hook.interactiveActivity?.type === 'video') {
-            return {
+            lessonObj = {
               ...l,
               stations: {
                 ...l.stations,
@@ -277,11 +359,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               }
             };
           }
-          return l;
+          return normalizeMiftaahLesson(lessonObj);
         }
       }
     } catch (e) {}
-    return DEFAULT_EXEMPLAR_LESSON;
+    return normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON);
   });
 
   // 3 Initial Inputs for Creator
@@ -458,13 +540,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           hook.interactiveActivity.type = derivedType || 'riddle';
         }
 
-        const newLesson = {
+        const newLesson = normalizeMiftaahLesson({
           ...res,
           id: 'lesson_' + Date.now(),
           title: res.title || creatorTitle,
           grade: res.grade || creatorGrade,
           specialRequests: creatorSpecialRequests
-        };
+        });
         setActiveLesson(newLesson);
         setSessionState(prev => {
           const next = { ...prev, activityTypeByStation: {} };
@@ -513,7 +595,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             scaffold: res.scaffolds || currentSt.scaffold
           }
         };
-        const updatedLesson = { ...activeLesson, stations: updatedStations };
+        const updatedLesson = normalizeMiftaahLesson({ ...activeLesson, stations: updatedStations });
         setActiveLesson(updatedLesson);
         setStationPromptModal(prev => ({ ...prev, isOpen: false, loading: false }));
         showToast(`تم تعديل محطة [${currentSt.name}] بالذكاء الاصطناعي بنجاح! 🎯`);
@@ -522,6 +604,60 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       console.warn('Modify error:', e);
       setStationPromptModal(prev => ({ ...prev, loading: false }));
       showToast('حدث خطأ أثناء تعديل المحطة.');
+    }
+  };
+
+  // Quick AI Generate for Student Prompt & Teacher Guidance
+  const [isGeneratingStationContent, setIsGeneratingStationContent] = useState(false);
+
+  const handleQuickAiGenerateStationContent = async (stationKey) => {
+    const currentSt = activeLesson.stations[stationKey] || {};
+    setIsGeneratingStationContent(true);
+    showToast(`جاري توليد الشرح وإرشادات المعلم لمحطة [${currentSt.name || stationKey}] بالذكاء الاصطناعي... ⏳`);
+    try {
+      const instruction = stationKey === '3_practice'
+        ? 'اكتب شرحاً توجيهياً وتطبيقياً وافياً للطلاب يلخص المفاهيم وكيفية تطبيقها عملياً وخطوات العمل الجماعي للمهام المتمايزة، وجهّز إرشادات التخطيط وكواليس المعلم لإدارة المجموعات ومتابعة الفروق الفردية، مع تلميح مساند.'
+        : `اكتب شرحاً تعليمياً صريحاً وموجهاً للطلاب يشرح الموضوع بوضوح، وجهّز كواليس وإرشادات المعلم لإدارة الحوار والملاحظة، مع تلميح مساند.`;
+
+      const res = await modifyMiftaahStationWithPromptAI({
+        stationKey: currentSt.symbol || 'ت',
+        stationTitle: currentSt.name || 'المحطة',
+        currentPrompt: currentSt.studentPrompt || '',
+        instruction,
+        title: activeLesson.title,
+        grade: activeLesson.grade
+      });
+
+      if (res && res.studentDisplayPrompt) {
+        const updatedStations = {
+          ...activeLesson.stations,
+          [stationKey]: {
+            ...currentSt,
+            studentPrompt: res.studentDisplayPrompt,
+            teacherGuidance: res.teacherNotes || currentSt.teacherGuidance,
+            scaffold: res.scaffolds || currentSt.scaffold
+          }
+        };
+        const updatedLesson = normalizeMiftaahLesson({ ...activeLesson, stations: updatedStations });
+        setActiveLesson(updatedLesson);
+        const updatedList = lessonsList.map(l => l.id === updatedLesson.id ? updatedLesson : l);
+        setLessonsList(updatedList);
+        try {
+          localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updatedList));
+        } catch (e) {}
+        showToast(`تم توليد وتحديث شرح الطلاب وإرشادات المعلم لمحطة [${currentSt.name}] بنجاح! ✨`);
+      } else {
+        const norm = normalizeMiftaahLesson(activeLesson);
+        setActiveLesson(norm);
+        showToast(`تم إدراج الشرح النموذجي وإرشادات المعلم للمحطة بنجاح! 🎯`);
+      }
+    } catch (e) {
+      console.warn('Quick AI generate failed:', e);
+      const norm = normalizeMiftaahLesson(activeLesson);
+      setActiveLesson(norm);
+      showToast(`تم إدراج الشرح النموذجي وإرشادات المعلم للمحطة بنجاح! 🎯`);
+    } finally {
+      setIsGeneratingStationContent(false);
     }
   };
 
@@ -1908,6 +2044,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <div className="header-actions">
                       <button
                         type="button"
+                        className="btn-ai-generate-guidance"
+                        onClick={() => handleQuickAiGenerateStationContent(selectedStationToEdit)}
+                        disabled={isGeneratingStationContent}
+                        title="توليد شرح المادة للطلاب وإعداد كواليس المعلم بالذكاء الاصطناعي"
+                      >
+                        <i className={`fas ${isGeneratingStationContent ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                        <span>{isGeneratingStationContent ? 'جاري التوليد...' : '✨ توليد الشرح وإرشادات المعلم (AI)'}</span>
+                      </button>
+                      <button
+                        type="button"
                         className="btn-ai-prompt-modify"
                         onClick={() => {
                           setStationPromptModal({
@@ -1970,6 +2116,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Quick Auto-generate Banner if empty */}
+                  {(!currentSt.studentPrompt || !currentSt.teacherGuidance) && (
+                    <div className="ai-empty-station-prompt-banner animate-pop">
+                      <div className="banner-info">
+                        <i className="fas fa-lightbulb"></i>
+                        <span>المحتوى الموجه أو إرشادات المعلم فارغة في هذه المحطة! يمكنك توليد شرح علمي متكامل وإرشادات للمعلم بنقرة واحدة:</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-banner-ai-fill"
+                        onClick={() => handleQuickAiGenerateStationContent(selectedStationToEdit)}
+                        disabled={isGeneratingStationContent}
+                      >
+                        <i className="fas fa-wand-magic-sparkles"></i> توليد الشرح وإعداد المعلم فوراً بالذكاء الاصطناعي 🚀
+                      </button>
                     </div>
                   )}
 
