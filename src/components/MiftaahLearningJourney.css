@@ -158,20 +158,26 @@
 }
 
 .btn-exit-to-portal {
-  background: transparent;
-  color: #94a3b8;
-  border: 1px solid #475569;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
 }
 
 .btn-exit-to-portal:hover {
-  color: #ffffff;
-  border-color: #94a3b8;
+  background: rgba(255, 255, 255, 0.16);
+  color: #38bdf8;
+  border-color: #38bdf8;
+  transform: translateY(-1px);
 }
 
 /* ========================================================================= */

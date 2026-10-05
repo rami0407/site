@@ -1685,15 +1685,30 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           <span className="session-pin-chip" title="رمز الجلسة الصفية">
             رمز الصف: <strong>{sessionState.pin}</strong>
           </span>
-          {onSwitchTab && (
-            <button
-              type="button"
-              className="btn-exit-to-portal"
-              onClick={() => onSwitchTab('stations')}
-            >
-              <i className="fas fa-arrow-left"></i> دليل المنهاج
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn-exit-to-portal"
+            onClick={() => {
+              if (onSwitchTab) {
+                onSwitchTab('stations');
+              } else {
+                window.location.hash = '#/mafatih';
+              }
+            }}
+            title="الانتقال إلى دليل وبنك خطط نموذج مِفتاح"
+          >
+            <i className="fas fa-book-open"></i> دليل مِفتاح
+          </button>
+          <button
+            type="button"
+            className="btn-exit-to-portal"
+            onClick={() => {
+              window.location.hash = '';
+            }}
+            title="العودة للصفحة الرئيسية لموقع المدرسة"
+          >
+            <i className="fas fa-home"></i> موقع المدرسة
+          </button>
         </div>
       </header>
 

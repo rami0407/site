@@ -406,7 +406,7 @@ const MafatihPedagogyPage = () => {
     if (hash.includes('planner')) return 'planner';
     if (hash.includes('library')) return 'library';
     if (hash.includes('companion')) return 'teacher-companion';
-    return 'miftaah-journey';
+    return 'stations';
   });
   const [selectedStationIndex, setSelectedStationIndex] = useState(0);
   const [lessonDurationMode, setLessonDurationMode] = useState(45); // 45 or 90
@@ -1366,11 +1366,7 @@ ${p.stations?.h || ''}
               type="button"
               className="action-btn"
               onClick={() => {
-                setActiveTab('miftaah-journey');
-                setTimeout(() => {
-                  const el = document.querySelector('.mafatih-tab-nav');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 50);
+                window.location.hash = '#/miftaah-journey';
               }}
               style={{
                 background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
@@ -1387,11 +1383,11 @@ ${p.stations?.h || ''}
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              title="دخول منصة «مِفتاح — رحلة التعلّم» التفاعلية الكاملة (توليد، كواليس، شاشة، طالب)"
+              title="فتح منصة «مِفتاح — رحلة التعلّم» كصفحة مستقلة مخصصة للحصة كاملة الشاشة بدون أي عناوين إضافية"
             >
               <i className="fas fa-rocket"></i>
               <span>«مِفتاح — رحلة التعلّم» 🌟</span>
-              <span style={{ background: '#f59e0b', color: '#1e293b', fontWeight: 900, fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>الأحدث 🚀</span>
+              <span style={{ background: '#f59e0b', color: '#1e293b', fontWeight: 900, fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px' }}>صفحة مستقلة 🚀</span>
             </button>
             {/* New Teacher Companion Quick Action Button */}
             <button
@@ -1585,26 +1581,30 @@ ${p.stations?.h || ''}
           {/* MIFTAAH LEARNING JOURNEY FULL SUITE TAB */}
           <button 
             type="button"
-            className={`tab-btn companion-nav-tab ${activeTab === 'miftaah-journey' ? 'active' : ''}`}
-            onClick={() => setActiveTab('miftaah-journey')}
+            className="tab-btn companion-nav-tab"
+            onClick={() => {
+              window.location.hash = '#/miftaah-journey';
+            }}
             style={{
-              background: activeTab === 'miftaah-journey' ? 'linear-gradient(135deg, #047857, #10b981)' : '#ffffff',
-              color: activeTab === 'miftaah-journey' ? '#ffffff' : '#065f46',
+              background: 'linear-gradient(135deg, #047857, #10b981)',
+              color: '#ffffff',
               borderColor: '#10b981',
               fontWeight: '900',
-              boxShadow: activeTab === 'miftaah-journey' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none'
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
             }}
+            title="الانتقال إلى منصة مِفتاح رحلة التعلّم كصفحة مستقلة كاملة الشاشة بدون أي عناوين علوية"
           >
-            <i className="fas fa-rocket"></i>
+            <i className="fas fa-external-link-alt"></i>
             <span>«مِفتاح — رحلة التعلّم» 🌟</span>
             <span style={{
               background: '#f59e0b',
-              color: '#ffffff',
-              padding: '2px 7px',
+              color: '#1e293b',
+              padding: '2px 8px',
               borderRadius: '12px',
               fontSize: '0.72rem',
-              marginRight: '6px'
-            }}>تفاعلي كامل ✨</span>
+              marginRight: '6px',
+              fontWeight: 900
+            }}>صفحة مستقلة ⛶</span>
           </button>
           {/* TEACHER COMPANION PRIMARY TAB */}
           <button 
