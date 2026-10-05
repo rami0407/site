@@ -1038,17 +1038,29 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const handleToggleSolution = (stNum) => {
     setIsSolutionRevealedMap(prev => {
       const nextVal = !prev[stNum];
-      if (nextVal) showToast('تم كشف سر الأحجية والحل مع ربطه بالدرس! 🔓✨');
+      if (nextVal) {
+        showToast('تم كشف سر الأحجية والحل مع ربطه بالدرس! 🔓✨');
+        setTimeout(() => {
+          const el = document.getElementById(`riddle-solution-box-${stNum}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+      }
       return { ...prev, [stNum]: nextVal };
     });
   };
 
   const handleStudentRiddleOptionClick = (stNum, opt, solution) => {
-    const isCorrect = solution.includes(opt) || opt.includes(solution) || opt.includes('⭐') || opt.includes('🎯');
+    const s = (solution || '').trim().toLowerCase();
+    const o = (opt || '').trim().toLowerCase();
+    const isCorrect = s.includes(o) || o.includes(s) || (s.includes('المفهوم العلمي') && o.includes('المفهوم العلمي')) || opt.includes('⭐') || opt.includes('🎯');
     if (isCorrect) {
       setRiddleGuessFeedback({ stNum, isCorrect: true, msg: '🎉 إجابة عبقرية وصحيحة! أحسنتم التفكير الاستنتاجي!' });
       setIsSolutionRevealedMap(prev => ({ ...prev, [stNum]: true }));
       showToast('🎉 إجابة صحيحة! أحسنتم كشف سر اللغز!');
+      setTimeout(() => {
+        const el = document.getElementById(`riddle-solution-box-${stNum}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 80);
     } else {
       setRiddleGuessFeedback({ stNum, isCorrect: false, msg: '💡 محاولة ذكية! استعينوا بالسقالات (التلميحات) وجربوا مجدداً.' });
     }
@@ -1342,6 +1354,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <span className="scaffold-key-badge">
                   🔑 السقالات المفتوحة: {revealedCluesMap[stNum] || 0} من {resolvedActivity.riddle.clues?.length || 2}
                 </span>
+                <button
+                  type="button"
+                  className={`btn-riddle-quick-solution ${isSolutionRevealedMap[stNum] ? 'revealed' : ''}`}
+                  onClick={() => handleToggleSolution(stNum)}
+                  title={isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والحل'}
+                >
+                  <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
+                  <span>{isSolutionRevealedMap[stNum] ? 'إخفاء الحل ✖' : 'كشف سر الأحجية والحل ✨'}</span>
+                </button>
               </div>
             </div>
 
@@ -1349,6 +1370,25 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               <div className="riddle-watermark-icon">؟</div>
               <p className="riddle-text">{resolvedActivity.riddle.riddleText}</p>
             </div>
+
+            {/* PROMINENT IN-SCREEN SOLUTION SHOWCASE (تدخل الحل لداخل الشاشة بطريقة جذابة ومباشرة) */}
+            {isSolutionRevealedMap[stNum] && (
+              <div id={`riddle-solution-box-${stNum}`} className="riddle-solution-box prominent-in-screen animate-pop">
+                <div className="solution-head">
+                  <span className="gold-star">🌟</span>
+                  <span className="solution-badge-tag">سر الأحجية والحل المعتمد:</span>
+                  <strong className="solution-highlight-text">{resolvedActivity.riddle.solution}</strong>
+                </div>
+                {resolvedActivity.riddle.explanation && (
+                  <div className="solution-explanation-card">
+                    <i className="fas fa-lightbulb"></i>
+                    <p className="solution-explanation">
+                      <strong>💡 الربط بالهدف التعليمي للحصة: </strong>{resolvedActivity.riddle.explanation}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Scaffolds / Clues Area */}
             <div className="riddle-clues-section">
@@ -1384,20 +1424,35 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               <div className="riddle-options-block">
                 <h5 className="options-title"><i className="fas fa-check-circle"></i> اختبر فرضيتك: اختر الإجابة التي تكشف سر الأحجية:</h5>
                 <div className="riddle-options-grid">
-                  {resolvedActivity.riddle.options.map((opt, oIdx) => (
-                    <button
-                      key={oIdx}
-                      type="button"
-                      className="riddle-option-btn"
-                      style={{ color: '#ffffff', backgroundColor: '#1e293b' }}
-                      onClick={() => handleStudentRiddleOptionClick(stNum, opt, resolvedActivity.riddle.solution)}
-                    >
-                      <span className="opt-letter">{String.fromCharCode(65 + oIdx)}</span>
-                      <span className="opt-text" style={{ color: '#ffffff', fontWeight: 800, fontSize: '1.12rem' }}>
-                        {opt}
-                      </span>
-                    </button>
-                  ))}
+                  {resolvedActivity.riddle.options.map((opt, oIdx) => {
+                    const sol = (resolvedActivity.riddle.solution || '').trim().toLowerCase();
+                    const optNorm = (opt || '').trim().toLowerCase();
+                    const isSolutionWinner = isSolutionRevealedMap[stNum] && (
+                      sol.includes(optNorm) ||
+                      optNorm.includes(sol) ||
+                      (sol.includes('المفهوم العلمي') && optNorm.includes('المفهوم العلمي')) ||
+                      opt.includes('⭐') || opt.includes('🎯')
+                    );
+
+                    return (
+                      <button
+                        key={oIdx}
+                        type="button"
+                        className={`riddle-option-btn ${isSolutionWinner ? 'is-solution-winner animate-pulse' : ''}`}
+                        onClick={() => handleStudentRiddleOptionClick(stNum, opt, resolvedActivity.riddle.solution)}
+                      >
+                        <span className="opt-letter">{String.fromCharCode(65 + oIdx)}</span>
+                        <span className="opt-text" style={{ color: '#ffffff', fontWeight: 800, fontSize: '1.08rem' }}>
+                          {opt}
+                          {isSolutionWinner && (
+                            <span className="winner-option-badge">
+                              <i className="fas fa-check-circle"></i> الحل الصحيح ✨
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1419,20 +1474,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
                 {isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والربط بالدرس ✨'}
               </button>
-
-              {isSolutionRevealedMap[stNum] && (
-                <div className="riddle-solution-box animate-pop">
-                  <div className="solution-head">
-                    <span className="gold-star">⭐</span>
-                    <strong>الحل الصحيح: {resolvedActivity.riddle.solution}</strong>
-                  </div>
-                  {resolvedActivity.riddle.explanation && (
-                    <p className="solution-explanation">
-                      <strong>💡 الربط بهدف الحصة: </strong>{resolvedActivity.riddle.explanation}
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         )}

@@ -1648,28 +1648,28 @@
 .projector-canvas {
   background: #091e42;
   color: #ffffff;
-  height: calc(100vh - 80px);
-  max-height: calc(100vh - 80px);
+  min-height: calc(100vh - 80px);
+  height: auto;
   padding: 14px 18px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .projector-viewport-wrapper {
   max-width: 100%;
   width: 100%;
-  height: 100%;
+  height: auto;
   margin: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .projector-top-bar {
@@ -1733,8 +1733,8 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  height: auto;
+  overflow: visible;
 }
 
 @media (max-width: 950px) {
@@ -1767,8 +1767,8 @@
   gap: 8px;
   flex: 1;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
+  height: auto;
+  overflow-y: auto;
 }
 
 .projector-objective-ribbon {
@@ -1787,11 +1787,11 @@
   background: rgba(255, 255, 255, 0.98);
   color: #0f172a;
   border-radius: 18px;
-  padding: 20px 28px;
+  padding: 16px 22px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   min-height: 0;
   overflow-y: auto;
@@ -2966,7 +2966,8 @@
   height: 100vh !important;
   max-width: 100vw !important;
   z-index: 999999;
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -2984,10 +2985,10 @@
 }
 
 .miftaah-learning-journey-app.is-fullscreen .projector-canvas {
-  height: 100vh !important;
-  max-height: 100vh !important;
+  min-height: 100vh !important;
+  height: auto !important;
   padding: 12px 18px !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
 }
 
 .miftaah-learning-journey-app.is-fullscreen .student-device-canvas {
@@ -3403,7 +3404,7 @@
   margin-bottom: 24px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
   color: #ffffff;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .station-interactive-showcase-box.projector-mode {
@@ -3512,7 +3513,7 @@
 .activity-subview-riddle {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .riddle-top-header {
@@ -3546,6 +3547,12 @@
   color: #f1f5f9;
 }
 
+.riddle-scaffold-counter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .scaffold-key-badge {
   background: rgba(168, 85, 247, 0.2);
   border: 1px solid rgba(168, 85, 247, 0.4);
@@ -3556,12 +3563,42 @@
   font-weight: 700;
 }
 
+/* Quick Solution button in top header */
+.btn-riddle-quick-solution {
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border: 1.5px solid #a855f7;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.btn-riddle-quick-solution:hover {
+  background: #a855f7;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-riddle-quick-solution.revealed {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
 .riddle-statement-card {
   position: relative;
   background: linear-gradient(135deg, rgba(88, 28, 135, 0.3) 0%, rgba(30, 27, 75, 0.4) 100%);
   border: 1.5px solid rgba(168, 85, 247, 0.3);
   border-radius: 14px;
-  padding: 22px 24px;
+  padding: 14px 20px;
   overflow: hidden;
 }
 
@@ -3569,7 +3606,7 @@
   position: absolute;
   left: 20px;
   bottom: -15px;
-  font-size: 6rem;
+  font-size: 5rem;
   font-weight: 900;
   color: rgba(168, 85, 247, 0.08);
   user-select: none;
@@ -3578,12 +3615,74 @@
 
 .riddle-text {
   margin: 0;
-  font-size: 1.25rem;
-  line-height: 1.8;
+  font-size: 1.15rem;
+  line-height: 1.65;
   color: #f8fafc;
   font-weight: 700;
   position: relative;
   z-index: 1;
+}
+
+/* PROMINENT IN-SCREEN SOLUTION SHOWCASE (تدخل الحل لداخل الشاشة بطريقة جذابة ومباشرة) */
+.riddle-solution-box.prominent-in-screen {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 95, 70, 0.38) 100%);
+  border: 2px solid #10b981;
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  margin-top: 4px;
+  margin-bottom: 6px;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.riddle-solution-box.prominent-in-screen .solution-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 1.1rem;
+  color: #a7f3d0;
+  margin-bottom: 8px;
+}
+
+.riddle-solution-box.prominent-in-screen .solution-badge-tag {
+  background: #10b981;
+  color: #064e3b;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.riddle-solution-box.prominent-in-screen .solution-highlight-text {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.riddle-solution-box.prominent-in-screen .solution-explanation-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  border: 1px dashed rgba(52, 211, 153, 0.4);
+}
+
+.riddle-solution-box.prominent-in-screen .solution-explanation-card i {
+  color: #fbbf24;
+  font-size: 1.2rem;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.riddle-solution-box.prominent-in-screen .solution-explanation {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: #f0fdf4;
 }
 
 /* Riddle Scaffolds */
@@ -3591,14 +3690,14 @@
   background: rgba(0, 0, 0, 0.25);
   border: 1px dashed rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 10px 14px;
 }
 
 .clues-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 0.88rem;
   color: #cbd5e1;
   font-weight: 700;
@@ -3610,9 +3709,9 @@
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: #ffffff;
   border: none;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   cursor: pointer;
   font-family: inherit;
@@ -3637,9 +3736,9 @@
   gap: 10px;
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid rgba(245, 158, 11, 0.35);
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   color: #fef3c7;
 }
 
@@ -3650,20 +3749,20 @@
 }
 
 .clues-placeholder-hint {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: #94a3b8;
   font-style: italic;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 /* Riddle Multiple Choice Options */
 .riddle-options-block {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .options-title {
-  margin: 0 0 10px 0;
-  font-size: 0.95rem;
+  margin: 0 0 8px 0;
+  font-size: 0.92rem;
   color: #38bdf8;
   display: flex;
   align-items: center;
@@ -3673,7 +3772,7 @@
 .riddle-options-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 @media (max-width: 640px) {
@@ -3685,15 +3784,15 @@
 .riddle-option-btn {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   background: #1e293b !important;
   border: 2px solid #475569 !important;
   color: #ffffff !important;
-  padding: 14px 18px;
+  padding: 10px 14px;
   border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   text-align: right;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -3708,17 +3807,44 @@
   box-shadow: 0 6px 18px rgba(56, 189, 248, 0.35);
 }
 
+/* Winning Solution Option Glow */
+.riddle-option-btn.is-solution-winner {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%) !important;
+  border: 2.5px solid #34d399 !important;
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.5) !important;
+  transform: scale(1.01);
+}
+
+.riddle-option-btn.is-solution-winner .opt-letter {
+  background: #10b981 !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+}
+
+.winner-option-badge {
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .riddle-option-btn .opt-letter {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
   color: #ffffff !important;
-  width: 36px !important;
-  height: 36px !important;
+  width: 32px !important;
+  height: 32px !important;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 900 !important;
-  font-size: 1.05rem !important;
+  font-size: 1rem !important;
   flex-shrink: 0;
   border: 2px solid #38bdf8 !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -3726,18 +3852,18 @@
 
 .riddle-option-btn .opt-text {
   color: #ffffff !important;
-  font-size: 1.15rem !important;
+  font-size: 1.08rem !important;
   font-weight: 800 !important;
-  line-height: 1.5;
+  line-height: 1.45;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   flex: 1;
   display: inline-block;
 }
 
 .riddle-feedback-banner {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
   text-align: center;
 }
@@ -3758,8 +3884,8 @@
 .riddle-solution-footer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .btn-toggle-solution {
@@ -3767,9 +3893,9 @@
   background: transparent;
   color: #a855f7;
   border: 1.5px solid #a855f7;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 800;
   cursor: pointer;
   font-family: inherit;
@@ -3788,7 +3914,7 @@
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.2) 100%);
   border: 1.5px solid #10b981;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 
 .solution-head {
