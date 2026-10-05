@@ -350,7 +350,7 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
     });
   };
 
-  const handleLaunchProjectorFromStation = (stationKey) => {
+  const handleLaunchProjectorFromStation = (stationKey, openWindow = true) => {
     const st = prepForm.stations?.[stationKey] || {};
     const stationNames = {
       m: { name: 'مشوّق ومحفّز', phrase: 'أتساءل وأستعد', letter: 'م', dur: 5 },
@@ -361,6 +361,8 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
     };
     const info = stationNames[stationKey] || stationNames.m;
 
+    const currentPrompt = st.studentDisplayPrompt || prepForm.title || '';
+
     const newState = {
       ...publicDisplayState,
       lessonTitle: prepForm.title || 'عنوان الحصة',
@@ -369,13 +371,32 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
       stationLetter: st.letter || info.letter,
       stationName: st.name || info.name,
       studentPhrase: st.studentPhrase || info.phrase,
-      headline: st.studentDisplayPrompt || prepForm.title || '',
+      headline: currentPrompt,
       isDisplayHidden: false,
       timerSeconds: (st.durationMinutes || info.dur) * 60
     };
 
     broadcastToStudentScreen(newState);
-    handleOpenStudentProjector();
+
+    if (openWindow) {
+      const url = window.location.origin + window.location.pathname + '#/mafatih?view=student';
+      window.open(url, 'MiftaahProjectorWindow', 'width=1280,height=800,menubar=no,toolbar=no');
+      showToast('تم فتح شاشة العرض (البروجكتور) للتأكد من المحتوى! 🎦👁️');
+    }
+  };
+
+  const handleCopyProjectorLink = (stationKey) => {
+    handleLaunchProjectorFromStation(stationKey, false);
+    const url = window.location.origin + window.location.pathname + '#/mafatih?view=student';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('تم نسخ رابط شاشة البروجكتور بنجاح! 📋 يمكنك فتحه على أي جهاز بالصف.');
+      }).catch(() => {
+        prompt('رابط شاشة البروجكتور للنسخ:', url);
+      });
+    } else {
+      prompt('رابط شاشة البروجكتور للنسخ:', url);
+    }
   };
 
   const [stationAltModal, setStationAltModal] = useState({
@@ -1468,35 +1489,53 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
 
                         <div className="st-edit-fields-grid">
                           <div className="st-field-col main-prompt-col">
-                            <div className="st-prompt-header-flex">
-                              <label className="label-bold label-student-screen">
-                                <i className="fas fa-desktop"></i> نص شاشة الطلاب (المهمة / السؤال المعروض على البروجكتور):
-                              </label>
-                              <div className="st-prompt-header-actions">
+                            <label className="label-bold label-student-screen">
+                              <i className="fas fa-desktop"></i> نص شاشة الطلاب (المهمة / السؤال المعروض على البروجكتور):
+                            </label>
+
+                            {/* Direct Projector Live Link Banner */}
+                            <div className="st-prompt-link-banner">
+                              <div className="st-prompt-link-title">
+                                <span className="live-gem-tag"><i className="fas fa-satellite-dish"></i> شاشة العرض للصف</span>
+                                <strong>رابط الشاشة المعروضة:</strong>
+                              </div>
+                              <div className="st-prompt-link-buttons">
                                 <button
                                   type="button"
-                                  className="btn-quick-preview-proj"
-                                  onClick={() => handlePreviewStationOnProjector(k)}
-                                  title="معاينة شكل هذه الشاشة كما يراها الطلاب على البروجكتور"
+                                  className="btn-inspect-live-display"
+                                  onClick={() => handleLaunchProjectorFromStation(k, true)}
+                                  title="اضغط هنا لفتح شاشة العرض ومشاهدة المحتوى والتأكد منه"
                                 >
-                                  <i className="fas fa-eye"></i> معاينة شاشة البروجكتور 🎦
+                                  <i className="fas fa-external-link-alt"></i> اضغط هنا لفتح شاشة العرض ومشاهدة المحتوى المعروض للطلاب 👁️
                                 </button>
                                 <button
                                   type="button"
-                                  className="btn-quick-launch-proj"
-                                  onClick={() => handleLaunchProjectorFromStation(k)}
-                                  title="فتح شاشة البروجكتور المستقلة للعرض الفوري في الصف"
+                                  className="btn-inspect-modal-display"
+                                  onClick={() => handlePreviewStationOnProjector(k)}
+                                  title="معاينة سريعة داخل الصفحة"
                                 >
-                                  <i className="fas fa-external-link-alt"></i> فتح البروجكتور للصف 🚀
+                                  <i className="fas fa-eye"></i> معاينة سريعة
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-inspect-copy-display"
+                                  onClick={() => handleCopyProjectorLink(k)}
+                                  title="نسخ الرابط المباشر لشاشة البروجكتور لفتحه في أي جهاز آخر"
+                                >
+                                  <i className="fas fa-link"></i> نسخ الرابط 📋
                                 </button>
                               </div>
                             </div>
+
                             <textarea 
                               rows={4}
                               value={st.studentDisplayPrompt || ''}
                               onChange={(e) => updatePrepStationField(k, 'studentDisplayPrompt', e.target.value)}
                               placeholder="اكتب السؤال أو المهمة الصريحة التي سيقرؤها الطلاب على شاشة الصف..."
                             />
+                            <div className="prompt-field-footnote">
+                              <span className="live-indicator-dot"></span> المحتوى المكتوب أعلاه هو ما يُعرض حرفياً للطلاب على شاشة البروجكتور في محطة [{st.name}].
+                            </div>
                           </div>
 
                           <div className="st-field-col">
@@ -2204,8 +2243,18 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
               <span className="proj-letter-gem">{publicDisplayState.stationLetter}</span>
               <h3>محطة {publicDisplayState.stationName} — «{publicDisplayState.studentPhrase}»</h3>
             </div>
-            <div className="proj-timer-readout">
-              <i className="fas fa-stopwatch"></i> {formatSeconds(publicDisplayState.timerSeconds)}
+            <div className="proj-top-actions-right">
+              <div className="proj-timer-readout">
+                <i className="fas fa-stopwatch"></i> {formatSeconds(publicDisplayState.timerSeconds)}
+              </div>
+              <button 
+                type="button" 
+                className="btn-return-from-student-view"
+                onClick={() => setCurrentScreen('screen2_prep_context')}
+                title="الرجوع إلى صفحة إعداد وتعديل الحصة"
+              >
+                <i className="fas fa-arrow-right"></i> عودة لإعداد الحصة
+              </button>
             </div>
           </div>
 
