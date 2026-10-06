@@ -1992,40 +1992,34 @@
 .student-device-container {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   position: relative;
   width: 100%;
   max-width: 100%;
-  padding-bottom: 90px; /* space for sticky help key */
+  padding-bottom: 80px; /* space for sticky help key */
 }
 
-@media (min-width: 960px) {
-  .student-device-container {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    grid-template-areas:
-      "header header"
-      "keymap maincard";
-    gap: 24px;
-    align-items: start;
-    width: 100%;
-    max-width: 100%;
-  }
+/* Vertical layout: slim column for keys on the side, task card takes rest of space */
+.student-main-stage-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+}
 
-  .student-device-header {
-    grid-area: header;
-  }
+.student-device-key-bar {
+  flex-shrink: 0;
+  width: 48px;
+  position: sticky;
+  top: 14px;
+  z-index: 10;
+}
 
-  .student-device-key-bar {
-    grid-area: keymap;
-    position: sticky;
-    top: 20px;
-  }
-
-  .student-station-task-card {
-    grid-area: maincard;
-    width: 100%;
-  }
+.student-station-task-card {
+  flex: 1;
+  min-width: 0;
+  width: auto;
 }
 
 .student-device-header {
@@ -2313,35 +2307,36 @@
   cursor: pointer;
 }
 
-/* Permanent Sticky Help Key */
+/* Permanent Sticky Help Key - Compact Circular Floating Logo */
 .sticky-help-key-btn {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
+  bottom: 24px;
+  left: 24px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: #ffffff;
-  border: none;
-  padding: 12px 22px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45);
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
   z-index: 999;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
 }
 
 .sticky-help-key-btn:hover {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  transform: translateY(-3px) scale(1.04);
-  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.55);
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: 0 10px 26px rgba(245, 158, 11, 0.65);
 }
 
 .sticky-help-key-btn .key-icon {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 /* ========================================================================= */
@@ -4304,6 +4299,32 @@
   width: 100%;
   padding: 6px 0;
   gap: 12px;
+}
+
+.miftaah-letters-key-spine.student-vertical-spine {
+  flex-direction: column;
+  width: auto;
+  padding: 4px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.student-vertical-spine .key-letter-token {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.student-vertical-spine .token-letter-glyph {
+  font-size: 1.15rem;
+}
+
+.student-vertical-spine .token-num-tiny {
+  font-size: 0.55rem;
 }
 
 .miftaah-letters-key-spine.horizontal-device {

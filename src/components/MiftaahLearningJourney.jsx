@@ -1966,7 +1966,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     ];
 
     return (
-      <div className={`miftaah-letters-key-spine ${isStudentDevice ? 'horizontal-device' : 'vertical-spine'}`}>
+      <div className={`miftaah-letters-key-spine ${isStudentDevice ? 'vertical-spine student-vertical-spine' : 'vertical-spine'}`}>
         {stations.map(st => {
           const isActive = st.idx === activeIdx;
           const isCompleted = st.idx < activeIdx;
@@ -3351,16 +3351,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
 
                 <div className="student-header-right-tools">
-                  {authenticatedTeacher && (
-                    <button
-                      type="button"
-                      className="btn-student-back-to-teacher"
-                      onClick={() => setActiveInterface('teacher')}
-                      title="العودة لشاشة كواليس المعلم"
-                    >
-                      <i className="fas fa-chalkboard-teacher"></i> كواليس المعلم ↩
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="btn-exit-to-portal-student"
@@ -3392,17 +3382,19 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               </div>
 
-            {/* Mobile / Device Key Map (Collapsible) */}
-            <div className="student-device-key-bar">
-              {renderPhysicalKeyMap(studentCurrentStationIndex, null, true)}
-            </div>
+              {/* Main Student Stage with Vertical Slim Key Spine on the side */}
+              <div className="student-main-stage-flex">
+                {/* Vertical Spine (م ف ت ا ح) - Slim & Compact */}
+                <div className="student-device-key-bar">
+                  {renderPhysicalKeyMap(studentCurrentStationIndex, null, true)}
+                </div>
 
-            {/* Active Station Task Card */}
-            <div className="student-station-task-card">
-              <div className="task-header-title">
-                <span className="st-icon">{studentCurrentStationData.icon}</span>
-                <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
-              </div>
+                {/* Active Station Task Card */}
+                <div className="student-station-task-card">
+                  <div className="task-header-title">
+                    <span className="st-icon">{studentCurrentStationData.icon}</span>
+                    <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
+                  </div>
 
               {/* Station 1: The Interactive Hook matching the plan */}
               {studentCurrentStationIndex === 1 ? (
@@ -3594,16 +3586,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 );
               })()}
             </div>
+          </div>
 
-            {/* Permanent Sticky Help Key (مفتاح المساعدة) */}
+            {/* Permanent Sticky Help Key (مفتاح المساعدة - دائري مدمج لوجو فقط) */}
             <button
               type="button"
               className="sticky-help-key-btn animate-bounce-subtle"
               onClick={() => setIsHelpKeyModalOpen(true)}
-              title="مفتاح المساعدة: اضغط للحصول على تلميح أو توضيح"
+              title="مفتاح المساعدة 🗝️ (اضغط للحصول على تلميح أو مساندة)"
+              aria-label="مفتاح المساعدة"
             >
               <span className="key-icon">🗝️</span>
-              <span className="key-text">مفتاح المساعدة</span>
             </button>
           </div>
         </section>
