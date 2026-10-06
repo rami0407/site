@@ -1513,38 +1513,40 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
     return (
       <div className={`station-interactive-showcase-box ${isProjector ? 'projector-mode' : 'student-mode'} animate-fade-in`}>
-        {/* Activity Mode Switcher Ribbon */}
-        <div className="activity-type-switcher-bar">
-          <div className="switcher-badge-label">
-            <i className="fas fa-sparkles"></i> <strong>المدخل التفاعلي للمحطة:</strong>
+        {/* Activity Mode Switcher Ribbon - Only for Projector / Teacher, Hidden for Students */}
+        {isProjector && (
+          <div className="activity-type-switcher-bar">
+            <div className="switcher-badge-label">
+              <i className="fas fa-sparkles"></i> <strong>المدخل التفاعلي للمحطة:</strong>
+            </div>
+            <div className="switcher-buttons-group">
+              <button
+                type="button"
+                className={`btn-act-tab ${activeType === 'video' ? 'active' : ''}`}
+                onClick={() => handleSwitchStationActivityType(stNum, 'video')}
+                title="عرض فيلم أو مقطع فيديو تعليمي مشوّق"
+              >
+                🎬 فيلم ومقطع
+              </button>
+              <button
+                type="button"
+                className={`btn-act-tab ${activeType === 'riddle' ? 'active' : ''}`}
+                onClick={() => handleSwitchStationActivityType(stNum, 'riddle')}
+                title="عرض أحجية ولغز استنتاجي مع سقالات"
+              >
+                🔮 أحجية ولغز
+              </button>
+              <button
+                type="button"
+                className={`btn-act-tab ${activeType === 'puzzle' ? 'active' : ''}`}
+                onClick={() => handleSwitchStationActivityType(stNum, 'puzzle')}
+                title="عرض بازل تركيبي وترتيب خطوات تفاعلي"
+              >
+                🧩 بازل تفاعلي
+              </button>
+            </div>
           </div>
-          <div className="switcher-buttons-group">
-            <button
-              type="button"
-              className={`btn-act-tab ${activeType === 'video' ? 'active' : ''}`}
-              onClick={() => handleSwitchStationActivityType(stNum, 'video')}
-              title="عرض فيلم أو مقطع فيديو تعليمي مشوّق"
-            >
-              🎬 فيلم ومقطع
-            </button>
-            <button
-              type="button"
-              className={`btn-act-tab ${activeType === 'riddle' ? 'active' : ''}`}
-              onClick={() => handleSwitchStationActivityType(stNum, 'riddle')}
-              title="عرض أحجية ولغز استنتاجي مع سقالات"
-            >
-              🔮 أحجية ولغز
-            </button>
-            <button
-              type="button"
-              className={`btn-act-tab ${activeType === 'puzzle' ? 'active' : ''}`}
-              onClick={() => handleSwitchStationActivityType(stNum, 'puzzle')}
-              title="عرض بازل تركيبي وترتيب خطوات تفاعلي"
-            >
-              🧩 بازل تفاعلي
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* 1. Video Player Mode */}
         {activeType === 'video' && (
@@ -1693,15 +1695,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <span className="scaffold-key-badge">
                   🔑 السقالات المفتوحة: {revealedCluesMap[stNum] || 0} من {resolvedActivity.riddle.clues?.length || 2}
                 </span>
-                <button
-                  type="button"
-                  className={`btn-riddle-quick-solution ${isSolutionRevealedMap[stNum] ? 'revealed' : ''}`}
-                  onClick={() => handleToggleSolution(stNum)}
-                  title={isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والحل'}
-                >
-                  <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
-                  <span>{isSolutionRevealedMap[stNum] ? 'إخفاء الحل ✖' : 'كشف سر الأحجية والحل ✨'}</span>
-                </button>
+                {isProjector && (
+                  <button
+                    type="button"
+                    className={`btn-riddle-quick-solution ${isSolutionRevealedMap[stNum] ? 'revealed' : ''}`}
+                    onClick={() => handleToggleSolution(stNum)}
+                    title={isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والحل'}
+                  >
+                    <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
+                    <span>{isSolutionRevealedMap[stNum] ? 'إخفاء الحل ✖' : 'كشف سر الأحجية والحل ✨'}</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1803,17 +1807,19 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               </div>
             )}
 
-            {/* Solution & Explanation Footer */}
-            <div className="riddle-solution-footer">
-              <button
-                type="button"
-                className="btn-toggle-solution"
-                onClick={() => handleToggleSolution(stNum)}
-              >
-                <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
-                {isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والربط بالدرس ✨'}
-              </button>
-            </div>
+            {/* Solution & Explanation Footer - Only for Projector / Teacher */}
+            {isProjector && (
+              <div className="riddle-solution-footer">
+                <button
+                  type="button"
+                  className="btn-toggle-solution"
+                  onClick={() => handleToggleSolution(stNum)}
+                >
+                  <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-unlock-alt'}`}></i>
+                  {isSolutionRevealedMap[stNum] ? 'إخفاء الحل والتفسير' : 'كشف سر الأحجية والربط بالدرس ✨'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1833,24 +1839,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <strong className="puzzle-title-text">{resolvedActivity.puzzle.title}</strong>
                   </div>
                 </div>
-                <div className="puzzle-header-actions">
-                  <button
-                    type="button"
-                    className="btn-puzzle-scaffold"
-                    onClick={() => handleScaffoldSolvePiece(stNum, pieces)}
-                    title="ترتيب قطعة واحدة كمساعدة"
-                  >
-                    <i className="fas fa-magic"></i> سقالة (ترتيب قطعة) 🔑
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-puzzle-reset"
-                    onClick={() => handleScramblePuzzle(stNum, pieces)}
-                    title="إعادة خلط القطع للتحدي"
-                  >
-                    <i className="fas fa-random"></i> إعادة خلط 🔄
-                  </button>
-                </div>
+                {isProjector && (
+                  <div className="puzzle-header-actions">
+                    <button
+                      type="button"
+                      className="btn-puzzle-scaffold"
+                      onClick={() => handleScaffoldSolvePiece(stNum, pieces)}
+                      title="ترتيب قطعة واحدة كمساعدة"
+                    >
+                      <i className="fas fa-magic"></i> سقالة (ترتيب قطعة) 🔑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-puzzle-reset"
+                      onClick={() => handleScramblePuzzle(stNum, pieces)}
+                      title="إعادة خلط القطع للتحدي"
+                    >
+                      <i className="fas fa-random"></i> إعادة خلط 🔄
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="puzzle-instruction-bar">
@@ -2007,9 +2015,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       )}
 
       {/* ===================================================================== */}
-      {/* TOP ROLE & INTERFACE SWITCHER NAVBAR                                   */}
+      {/* TOP ROLE & INTERFACE SWITCHER NAVBAR (Hidden for Student Interface)   */}
       {/* ===================================================================== */}
-      <header className="miftaah-journey-master-header">
+      {activeInterface !== 'student' && (
+        <header className="miftaah-journey-master-header">
         <div className="header-brand-group">
           <div className="brand-logo-icon">🗝️</div>
           <div>
@@ -2145,6 +2154,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </button>
         </div>
       </header>
+      )}
 
       {/* ===================================================================== */}
       {/* 1. INTERFACE 1: LESSON CREATOR & AI EDITOR (PROTECTED BY TEACHER AUTH)*/}
@@ -3341,6 +3351,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
 
                 <div className="student-header-right-tools">
+                  {authenticatedTeacher && (
+                    <button
+                      type="button"
+                      className="btn-student-back-to-teacher"
+                      onClick={() => setActiveInterface('teacher')}
+                      title="العودة لشاشة كواليس المعلم"
+                    >
+                      <i className="fas fa-chalkboard-teacher"></i> كواليس المعلم ↩
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-exit-to-portal-student"
+                    onClick={() => { window.location.hash = ''; }}
+                    title="العودة للصفحة الرئيسية لموقع المدرسة"
+                  >
+                    <i className="fas fa-home"></i> الرئيسية 🏫
+                  </button>
                   <button
                     type="button"
                     className="btn-student-switch-user"
@@ -3423,7 +3451,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               {studentActiveHelpResponse && (
                 <div className="student-help-result-card animate-pop">
                   <div className="help-result-head">
-                    <span>🗝️ مفتاح المساعدة: {studentActiveHelpResponse.type}</span>
+                    <span>🗝️ ما طلبته من مساعدة ({studentActiveHelpResponse.type}):</span>
                     <button type="button" onClick={() => setStudentActiveHelpResponse(null)}>&times;</button>
                   </div>
                   <p>{studentActiveHelpResponse.text}</p>
@@ -3512,6 +3540,59 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
                 </div>
               )}
+
+              {/* ========================================================= */}
+              {/* TEACHER FEEDBACK & FORMATIVE NOTES (ملاحظات وتوجيهات المعلم) */}
+              {/* ========================================================= */}
+              {(() => {
+                const myStationSubs = (sessionState.submissions || []).filter(
+                  s => s.participantId === currentParticipant.id && s.stationNumber === studentCurrentStationIndex
+                );
+                const latestSub = myStationSubs[0];
+
+                if (!latestSub) return null;
+
+                return (
+                  <div className="student-teacher-notes-card animate-fade-in">
+                    <div className="teacher-notes-header">
+                      <div className="teacher-badge-tag">
+                        <span className="teacher-icon-circle">👨‍🏫</span>
+                        <strong>ملاحظات وتوجيهات المعلم على حلك:</strong>
+                      </div>
+                      {latestSub.formativeScore ? (
+                        <span className={`eval-score-pill score-${latestSub.formativeScore}`}>
+                          {latestSub.formativeScore === 'mastered' && '🌟 متقن بامتياز'}
+                          {latestSub.formativeScore === 'partial' && '⚡ إتقان جزئي - بحاجة لتطوير'}
+                          {latestSub.formativeScore === 'needs_support' && '🌱 بحاجة لدعم ومساندة'}
+                        </span>
+                      ) : (
+                        <span className="eval-score-pill score-pending">
+                          <i className="fas fa-clock"></i> تم التسليم للمعلم ✓ بانتظار الملاحظات
+                        </span>
+                      )}
+                    </div>
+
+                    {latestSub.teacherFeedback ? (
+                      <div className="teacher-feedback-body">
+                        <p className="feedback-text">
+                          <i className="fas fa-comment-dots"></i> {latestSub.teacherFeedback}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="student-sub-pending-banner">
+                        <p>
+                          <i className="fas fa-check-circle"></i> تم استلام إجابتك في المحطة بنجاح عند <strong>{latestSub.timestamp}</strong>. سيكتب معلمك توجيهه وملاحظاته هنا فور مراجعتها.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="student-sent-answer-preview">
+                      <small>نص إجابتك المرسلة للمعلم:</small>
+                      <p>"{latestSub.text}"</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Permanent Sticky Help Key (مفتاح المساعدة) */}

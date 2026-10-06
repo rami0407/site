@@ -5134,4 +5134,176 @@
   }
 }
 
+/* ========================================================================= */
+/* STUDENT INTERFACE: TEACHER FEEDBACK CARD & DIRECT NAVIGATION BUTTONS      */
+/* ========================================================================= */
+.btn-student-back-to-teacher {
+  background: #f59e0b;
+  color: #1e1b4b;
+  border: 1px solid #d97706;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-student-back-to-teacher:hover {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.btn-exit-to-portal-student {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-exit-to-portal-student:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #ffffff;
+}
+
+.student-teacher-notes-card {
+  margin-top: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.teacher-notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.teacher-badge-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.96rem;
+  color: #0f172a;
+}
+
+.teacher-icon-circle {
+  font-size: 1.3rem;
+  background: #e0e7ff;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.eval-score-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eval-score-pill.score-mastered {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.eval-score-pill.score-partial {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde047;
+}
+
+.eval-score-pill.score-needs_support {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.eval-score-pill.score-pending {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+
+.teacher-feedback-body {
+  margin-top: 14px;
+  background: #ffffff;
+  border-right: 4px solid #3b82f6;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.teacher-feedback-body .feedback-text {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.student-sub-pending-banner {
+  margin-top: 12px;
+  background: #f0fdf4;
+  border: 1px dashed #86efac;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.student-sub-pending-banner p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #166534;
+}
+
+.student-sent-answer-preview {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.student-sent-answer-preview small {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.student-sent-answer-preview p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #475569;
+  font-style: italic;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+
 
