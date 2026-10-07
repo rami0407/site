@@ -1492,6 +1492,119 @@ const AdminDashboard = () => {
     }
   };
 
+  // ----------------------------------------------------
+  // 📌 SCHOOL PADLET ADMIN DATA & MANAGEMENT
+  // ----------------------------------------------------
+  const [adminPadletTopics, setAdminPadletTopics] = useState([]);
+  const [adminPadletCards, setAdminPadletCards] = useState([]);
+  const [editingPadletTopic, setEditingPadletTopic] = useState(null);
+  const [selectedPadletTopicId, setSelectedPadletTopicId] = useState('all');
+
+  const loadPadletAdminData = async () => {
+    // 1. Load Topics
+    try {
+      const snapTopics = await getDocs(collection(db, 'school_padlet_topics'));
+      const tList = [];
+      if (!snapTopics.empty) {
+        snapTopics.forEach(d => tList.push({ id: d.id, ...d.data() }));
+        tList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setAdminPadletTopics(tList);
+        localStorage.setItem('db_school_padlet_topics', JSON.stringify(tList));
+      } else {
+        const localT = JSON.parse(localStorage.getItem('db_school_padlet_topics') || '[]');
+        setAdminPadletTopics(localT);
+      }
+    } catch (err) {
+      const localT = JSON.parse(localStorage.getItem('db_school_padlet_topics') || '[]');
+      setAdminPadletTopics(localT);
+    }
+
+    // 2. Load Cards
+    try {
+      const snapCards = await getDocs(collection(db, 'school_padlet_cards'));
+      const cList = [];
+      if (!snapCards.empty) {
+        snapCards.forEach(d => cList.push({ id: d.id, ...d.data() }));
+        cList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setAdminPadletCards(cList);
+        localStorage.setItem('db_school_padlet_cards', JSON.stringify(cList));
+      } else {
+        const localC = JSON.parse(localStorage.getItem('db_school_padlet_cards') || '[]');
+        setAdminPadletCards(localC);
+      }
+    } catch (err) {
+      const localC = JSON.parse(localStorage.getItem('db_school_padlet_cards') || '[]');
+      setAdminPadletCards(localC);
+    }
+  };
+
+  const handleDeleteAdminPadletTopic = async (topicId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه الفعالية بالكامل مع جميع بطاقات الإجابات التابعة لها؟')) return;
+
+    try {
+      const updatedTopics = adminPadletTopics.filter(t => t.id !== topicId);
+      setAdminPadletTopics(updatedTopics);
+      localStorage.setItem('db_school_padlet_topics', JSON.stringify(updatedTopics));
+
+      const updatedCards = adminPadletCards.filter(c => c.topicId !== topicId);
+      setAdminPadletCards(updatedCards);
+      localStorage.setItem('db_school_padlet_cards', JSON.stringify(updatedCards));
+
+      try {
+        await deleteDoc(doc(db, 'school_padlet_topics', topicId));
+      } catch (e) {
+        console.warn('Firestore topic delete note:', e);
+      }
+
+      alert('🗑️ تم حذف الفعالية وبطاقاتها بنجاح.');
+    } catch (err) {
+      alert('حدث خطأ أثناء الحذف: ' + err.message);
+    }
+  };
+
+  const handleDeleteAdminPadletCard = async (cardId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه البطاقة نهائياً؟')) return;
+
+    try {
+      const updatedCards = adminPadletCards.filter(c => c.id !== cardId);
+      setAdminPadletCards(updatedCards);
+      localStorage.setItem('db_school_padlet_cards', JSON.stringify(updatedCards));
+
+      try {
+        await deleteDoc(doc(db, 'school_padlet_cards', cardId));
+      } catch (e) {
+        console.warn('Firestore card delete note:', e);
+      }
+      alert('🗑️ تم حذف البطاقة بنجاح.');
+    } catch (err) {
+      alert('حدث خطأ أثناء الحذف: ' + err.message);
+    }
+  };
+
+  const handleSaveAdminPadletTopic = async (e) => {
+    e.preventDefault();
+    if (!editingPadletTopic) return;
+
+    try {
+      const updatedTopics = adminPadletTopics.map(t => 
+        t.id === editingPadletTopic.id ? { ...editingPadletTopic, updatedAt: new Date().toISOString() } : t
+      );
+      setAdminPadletTopics(updatedTopics);
+      localStorage.setItem('db_school_padlet_topics', JSON.stringify(updatedTopics));
+
+      try {
+        await setDoc(doc(db, 'school_padlet_topics', editingPadletTopic.id), editingPadletTopic, { merge: true });
+      } catch (e) {
+        console.warn('Firestore topic update note:', e);
+      }
+
+      alert('✅ تم تحديث بيانات الفعالية بنجاح!');
+      setEditingPadletTopic(null);
+    } catch (err) {
+      alert('حدث خطأ أثناء الحفظ: ' + err.message);
+    }
+  };
+
   const handleSaveWorldIdeasConfig = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setIsSavingWorldConfig(true);
@@ -4622,6 +4735,30 @@ const AdminDashboard = () => {
               🚀 "شارك أفكارك للعالم" ({adminWorldIdeas.length})
             </button>
 
+            {/* TOP ITEM: SCHOOL PADLET CONTROL TAB */}
+            <button 
+              onClick={() => {
+                loadPadletAdminData();
+                setActiveTab('school-padlet-admin');
+              }} 
+              className={`filter-chip ${activeTab === 'school-padlet-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'school-padlet-admin' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#fffbeb',
+                color: activeTab === 'school-padlet-admin' ? '#0f172a' : '#b45309',
+                fontWeight: 900,
+                border: '2px solid #fbbf24',
+                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+              }}
+            >
+              <i className="fas fa-chalkboard" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: '#f59e0b' }}></i>
+              📌 "بادليت المدرسة" ({adminPadletTopics.length} سؤال / {adminPadletCards.length} بطاقة)
+            </button>
+
             {/* TOP ITEM 4: GRATITUDE SKY CONTROL */}
             <button 
               onClick={() => {
@@ -6110,6 +6247,335 @@ const AdminDashboard = () => {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: SCHOOL PADLET CONTROL & MODERATION */}
+              {activeTab === 'school-padlet-admin' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 style={{ fontWeight: 900, color: '#b45309', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span>📌 إدارة ومراقبة "بادليت المدرسة" التفاعلي</span>
+                        <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem' }}>لوحة التحكم الرسمية</span>
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                        تحكم كامل في أسئلة وفعاليات البادليت: تعديل السؤال، تغيير الجمهور والكود، وحذف أي فعالية أو بطاقة مشاركة فورياً!
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <a 
+                        href="#/padlet" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        style={{ background: '#0284c7', color: 'white', textDecoration: 'none', padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)' }}
+                      >
+                        <i className="fas fa-external-link-alt"></i> فتح صفحة البادليت
+                      </a>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          loadPadletAdminData();
+                          alert('🔄 تم تحديث وجلب أحدث بيانات البادليت السحابية!');
+                        }}
+                        style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: 900, fontSize: '0.92rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)' }}
+                      >
+                        <i className="fas fa-sync-alt"></i> تحديث البيانات 🔄
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 1. TOPICS MANAGEMENT SECTION */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', marginBottom: '2.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#d97706', marginBottom: '1.25rem', borderBottom: '2px solid #fde68a', paddingBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <i className="fas fa-question-circle"></i> أسئلة وفعاليات البادليت المطروحة ({adminPadletTopics.length})
+                    </h3>
+
+                    {/* EDIT TOPIC INLINE MODAL / DRAWER */}
+                    {editingPadletTopic && (
+                      <div style={{ background: '#fffbeb', border: '2px solid #fcd34d', borderRadius: '18px', padding: '1.5rem', marginBottom: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                          <h4 style={{ margin: 0, color: '#92400e', fontWeight: 900, fontSize: '1.1rem' }}>
+                            ✏️ تعديل بيانات الفعالية: "{editingPadletTopic.question}"
+                          </h4>
+                          <button 
+                            type="button"
+                            onClick={() => setEditingPadletTopic(null)}
+                            style={{ background: 'none', border: 'none', color: '#92400e', fontSize: '1.2rem', cursor: 'pointer' }}
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleSaveAdminPadletTopic}>
+                          <div className="form-group-row">
+                            <div className="form-group">
+                              <label className="form-label">اسم المعلمة أو المسؤول:</label>
+                              <input 
+                                type="text"
+                                className="form-input"
+                                required
+                                value={editingPadletTopic.authorName || ''}
+                                onChange={e => setEditingPadletTopic({ ...editingPadletTopic, authorName: e.target.value })}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">جمهور الهدف:</label>
+                              <input 
+                                type="text"
+                                className="form-input"
+                                value={editingPadletTopic.targetAudience || 'الجميع'}
+                                onChange={e => setEditingPadletTopic({ ...editingPadletTopic, targetAudience: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">نص السؤال أو الفعالية المطروحة:</label>
+                            <textarea 
+                              className="form-input"
+                              rows={3}
+                              required
+                              value={editingPadletTopic.question || ''}
+                              onChange={e => setEditingPadletTopic({ ...editingPadletTopic, question: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">توضيح إضافي (اختياري):</label>
+                            <textarea 
+                              className="form-input"
+                              rows={2}
+                              value={editingPadletTopic.description || ''}
+                              onChange={e => setEditingPadletTopic({ ...editingPadletTopic, description: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="form-group-row">
+                            <div className="form-group">
+                              <label className="form-label">وضع المشاركة:</label>
+                              <select 
+                                className="form-input"
+                                value={editingPadletTopic.accessMode || 'open'}
+                                onChange={e => setEditingPadletTopic({ ...editingPadletTopic, accessMode: e.target.value })}
+                              >
+                                <option value="open">🌐 مفتوحة للجميع دون قيود</option>
+                                <option value="code">🔒 محمية بكود سري محدد</option>
+                              </select>
+                            </div>
+                            {editingPadletTopic.accessMode === 'code' && (
+                              <div className="form-group">
+                                <label className="form-label">كود الدخول المخصص:</label>
+                                <input 
+                                  type="text"
+                                  className="form-input"
+                                  required
+                                  value={editingPadletTopic.accessCode || ''}
+                                  onChange={e => setEditingPadletTopic({ ...editingPadletTopic, accessCode: e.target.value })}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                            <button 
+                              type="submit" 
+                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}
+                            >
+                              💾 حفظ التعديلات الآن
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => setEditingPadletTopic(null)}
+                              style={{ background: '#e2e8f0', color: '#475569', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {adminPadletTopics.length === 0 ? (
+                      <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>لا توجد فعاليات مسجلة حالياً.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.25rem' }}>
+                        {adminPadletTopics.map(t => {
+                          const topicCardsCount = adminPadletCards.filter(c => c.topicId === t.id).length;
+                          return (
+                            <div 
+                              key={t.id} 
+                              style={{ 
+                                background: '#f8fafc', 
+                                border: '1px solid #e2e8f0', 
+                                borderRadius: '18px', 
+                                padding: '1.25rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                              }}
+                            >
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>
+                                    👤 {t.authorName} ({t.authorRole || 'معلمة'})
+                                  </span>
+                                  {t.accessMode === 'code' ? (
+                                    <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: '#fef3c7', color: '#d97706', fontWeight: 800 }}>
+                                      🔒 كود: {t.accessCode}
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: '#dcfce7', color: '#16a34a', fontWeight: 800 }}>
+                                      🌐 مفتوحة
+                                    </span>
+                                  )}
+                                </div>
+
+                                <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', lineHeight: '1.5' }}>
+                                  {t.question}
+                                </h4>
+
+                                {t.description && (
+                                  <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.5', margin: '0 0 0.85rem 0' }}>
+                                    {t.description}
+                                  </p>
+                                )}
+
+                                <div style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.75rem' }}>
+                                  🎯 الجمهور: {t.targetAudience || 'الجميع'} • 📝 {topicCardsCount} بطاقة مشاركة
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', flexWrap: 'wrap' }}>
+                                <button 
+                                  type="button"
+                                  onClick={() => setEditingPadletTopic(t)}
+                                  style={{ background: '#fef3c7', color: '#b45309', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                                >
+                                  <i className="fas fa-edit"></i> تعديل
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleDeleteAdminPadletTopic(t.id)}
+                                  style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                                >
+                                  <i className="fas fa-trash-alt"></i> حذف بالكامل
+                                </button>
+                                <a 
+                                  href={`#/padlet?topic=${t.id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ background: '#f1f5f9', color: '#475569', textDecoration: 'none', padding: '0.4rem 0.85rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                                >
+                                  <i className="fas fa-eye"></i> عرض الحائط
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. CARDS MODERATION SECTION */}
+                  <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                        🗂️ بطاقات وإجابات المشاركين ({adminPadletCards.length})
+                      </h3>
+                      {/* Topic filter for cards */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>عرض بطاقات:</span>
+                        <select 
+                          className="form-input" 
+                          style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', width: 'auto' }}
+                          value={selectedPadletTopicId}
+                          onChange={e => setSelectedPadletTopicId(e.target.value)}
+                        >
+                          <option value="all">كل الفعاليات والأسئلة</option>
+                          {adminPadletTopics.map(t => (
+                            <option key={t.id} value={t.id}>{t.question.substring(0, 45)}...</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const displayedCards = selectedPadletTopicId === 'all' 
+                        ? adminPadletCards 
+                        : adminPadletCards.filter(c => c.topicId === selectedPadletTopicId);
+
+                      if (displayedCards.length === 0) {
+                        return <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>لا توجد بطاقات مشاركة في هذا التصنيف.</p>;
+                      }
+
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '1.25rem' }}>
+                          {displayedCards.map(c => {
+                            const topic = adminPadletTopics.find(t => t.id === c.topicId);
+                            return (
+                              <div 
+                                key={c.id} 
+                                style={{ 
+                                  background: c.color === 'yellow' ? '#fef3c7' : c.color === 'blue' ? '#e0f2fe' : c.color === 'green' ? '#dcfce7' : c.color === 'pink' ? '#fce7f3' : c.color === 'purple' ? '#f3e8ff' : '#1e293b',
+                                  color: c.color === 'dark' ? '#f8fafc' : '#0f172a',
+                                  border: '1px solid rgba(0,0,0,0.1)', 
+                                  borderRadius: '16px', 
+                                  padding: '1.25rem',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
+                                }}
+                              >
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', opacity: 0.85 }}>
+                                    <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>
+                                      👤 {c.authorName} ({c.authorRole})
+                                    </span>
+                                    <span style={{ fontSize: '0.72rem' }}>
+                                      {c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-EG') : ''}
+                                    </span>
+                                  </div>
+
+                                  {topic && (
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.75, marginBottom: '0.5rem' }}>
+                                      📌 لسؤال: {topic.question.substring(0, 35)}...
+                                    </div>
+                                  )}
+
+                                  {c.imageUrl && (
+                                    <img src={c.imageUrl} alt="مرفق البطاقة" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '10px', marginBottom: '0.65rem' }} />
+                                  )}
+
+                                  <p style={{ fontSize: '0.92rem', lineHeight: '1.6', margin: '0 0 1rem 0', fontWeight: 600 }}>
+                                    {c.content}
+                                  </p>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.65rem' }}>
+                                  <div style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', gap: '0.4rem' }}>
+                                    <span>👍 {c.reactions?.like || 0}</span>
+                                    <span>❤️ {c.reactions?.heart || 0}</span>
+                                    <span>👏 {c.reactions?.clap || 0}</span>
+                                  </div>
+
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleDeleteAdminPadletCard(c.id)}
+                                    style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                  >
+                                    <i className="fas fa-trash-alt"></i> حذف البطاقة
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

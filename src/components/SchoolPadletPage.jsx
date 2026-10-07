@@ -141,6 +141,141 @@ export default function SchoolPadletPage() {
     setAccessCode(String(randomNum));
   };
 
+  // Edit Topic State & Modal
+  const [isEditTopicOpen, setIsEditTopicOpen] = useState(false);
+  const [editTopicQuestion, setEditTopicQuestion] = useState('');
+  const [editTopicDesc, setEditTopicDesc] = useState('');
+  const [editTopicAuthor, setEditTopicAuthor] = useState('');
+  const [editTopicAudience, setEditTopicAudience] = useState('');
+  const [editTopicMode, setEditTopicMode] = useState('open');
+  const [editTopicCode, setEditTopicCode] = useState('');
+  const [isSavingEditTopic, setIsSavingEditTopic] = useState(false);
+
+  // Check if current user is admin / teacher
+  const [isAdminUser, setIsAdminUser] = useState(() => {
+    try {
+      const activeTch = sessionStorage.getItem('musherfe_active_teacher_session');
+      const adminAuth = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+      return !!(activeTch || adminAuth);
+    } catch {
+      return false;
+    }
+  });
+
+  const openEditCurrentTopic = () => {
+    if (!activeTopic) return;
+    setEditTopicQuestion(activeTopic.question || '');
+    setEditTopicDesc(activeTopic.description || '');
+    setEditTopicAuthor(activeTopic.authorName || '');
+    setEditTopicAudience(activeTopic.targetAudience || 'الجميع');
+    setEditTopicMode(activeTopic.accessMode || 'open');
+    setEditTopicCode(activeTopic.accessCode || '');
+    setIsEditTopicOpen(true);
+  };
+
+  const handleUpdateTopic = async (e) => {
+    e.preventDefault();
+    if (!editTopicQuestion.trim()) {
+      alert('يرجى إدخال نص السؤال أو الفعالية');
+      return;
+    }
+
+    setIsSavingEditTopic(true);
+    try {
+      const updatedTopicData = {
+        ...activeTopic,
+        question: editTopicQuestion.trim(),
+        description: editTopicDesc.trim(),
+        authorName: editTopicAuthor.trim() || activeTopic.authorName,
+        targetAudience: editTopicAudience || 'الجميع',
+        accessMode: editTopicMode,
+        accessCode: editTopicMode === 'code' ? editTopicCode.trim() : '',
+        updatedAt: new Date().toISOString()
+      };
+
+      // 1. Local update
+      setActiveTopic(updatedTopicData);
+      setAllTopics(prev => prev.map(t => t.id === updatedTopicData.id ? updatedTopicData : t));
+      const currentStored = getStoredTopics();
+      const newStored = currentStored.map(t => t.id === updatedTopicData.id ? updatedTopicData : t);
+      saveStoredTopics(newStored);
+
+      // 2. Firestore update
+      try {
+        await updateDoc(doc(db, 'school_padlet_topics', updatedTopicData.id), updatedTopicData);
+      } catch (err) {
+        console.warn('Topic cloud update fallback:', err);
+      }
+
+      setIsEditTopicOpen(false);
+      alert('✅ تم تعديل الفعالية بنجاح!');
+    } catch (err) {
+      console.error('Error updating topic:', err);
+      alert('حدث خطأ أثناء تعديل الفعالية');
+    } finally {
+      setIsSavingEditTopic(false);
+    }
+  };
+
+  const handleDeleteCurrentTopic = async (topicId) => {
+    const targetId = topicId || activeTopic?.id;
+    if (!targetId) return;
+
+    if (!window.confirm('هل أنت متأكد من حذف هذه الفعالية / السؤال من البادليت مع كافة البطاقات التابعة له؟ لا يمكن التراجع!')) {
+      return;
+    }
+
+    try {
+      // 1. Remove from local topics
+      const updatedTopics = allTopics.filter(t => t.id !== targetId);
+      setAllTopics(updatedTopics);
+      saveStoredTopics(updatedTopics);
+
+      // 2. Remove all related cards locally
+      const allCards = getStoredCards();
+      const remainingCards = allCards.filter(c => c.topicId !== targetId);
+      saveStoredCards(remainingCards);
+
+      // 3. Switch active topic
+      const nextActive = updatedTopics[0] || DEFAULT_PADLET_TOPIC;
+      setActiveTopic(nextActive);
+      window.location.hash = `#/padlet?topic=${nextActive.id}`;
+
+      // 4. Firestore sync
+      try {
+        await deleteDoc(doc(db, 'school_padlet_topics', targetId));
+      } catch (err) {
+        console.warn('Topic cloud delete fallback:', err);
+      }
+
+      alert('🗑️ تم حذف الفعالية بنجاح.');
+    } catch (err) {
+      console.error('Error deleting topic:', err);
+      alert('حدث خطأ أثناء الحذف.');
+    }
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه البطاقة من الحائط؟')) return;
+
+    try {
+      // 1. Remove locally
+      setCards(prev => prev.filter(c => c.id !== cardId));
+      const allCards = getStoredCards();
+      const updatedCards = allCards.filter(c => c.id !== cardId);
+      saveStoredCards(updatedCards);
+
+      // 2. Firestore delete
+      try {
+        await deleteDoc(doc(db, 'school_padlet_cards', cardId));
+      } catch (err) {
+        console.warn('Card cloud delete fallback:', err);
+      }
+    } catch (err) {
+      console.error('Error deleting card:', err);
+    }
+  };
+
   // Helper for Local Storage Topics & Cards
   const getStoredTopics = () => {
     try {
@@ -708,6 +843,30 @@ export default function SchoolPadletPage() {
                 <span>رابط هذا السؤال</span>
               </button>
 
+              {/* Edit Topic Button */}
+              <button 
+                type="button" 
+                className="padlet-nav-btn"
+                style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}
+                onClick={openEditCurrentTopic}
+                title="تعديل نص السؤال أو الصلاحيات أو الكود"
+              >
+                <i className="fas fa-edit"></i>
+                <span>تعديل الفعالية ✏️</span>
+              </button>
+
+              {/* Delete Topic Button */}
+              <button 
+                type="button" 
+                className="padlet-nav-btn"
+                style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.35)' }}
+                onClick={() => handleDeleteCurrentTopic(activeTopic.id)}
+                title="حذف هذا السؤال وحائط البطاقات نهائياً"
+              >
+                <i className="fas fa-trash-alt"></i>
+                <span>حذف 🗑️</span>
+              </button>
+
               <button 
                 type="button" 
                 className="padlet-add-card-btn"
@@ -833,9 +992,32 @@ export default function SchoolPadletPage() {
                         <span className="padlet-author-role">{card.authorRole}</span>
                       </div>
                     </div>
-                    <span className="padlet-card-time">
-                      {card.createdAt ? new Date(card.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="padlet-card-time">
+                        {card.createdAt ? new Date(card.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCard(card.id)}
+                        title="حذف هذه البطاقة"
+                        style={{
+                          background: 'rgba(0,0,0,0.08)',
+                          border: 'none',
+                          color: '#ef4444',
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '50%',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.75rem',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Attached Image if any */}
@@ -1317,6 +1499,151 @@ export default function SchoolPadletPage() {
                 >
                   <i className="fas fa-bullhorn"></i>
                   <span>{isSubmittingQuestion ? 'جاري النشر...' : 'نشر وتوليد رابط البادليت 🚀'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: EDIT EXISTING TOPIC OR ACTIVITY (تعديل الفعالية)
+          ========================================================================= */}
+      {isEditTopicOpen && (
+        <div className="padlet-modal-overlay" onClick={() => setIsEditTopicOpen(false)}>
+          <div className="padlet-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="padlet-modal-header">
+              <div className="padlet-modal-title" style={{ color: '#fbbf24' }}>
+                <i className="fas fa-edit"></i>
+                <span>تعديل الفعالية / سؤال البادليت</span>
+              </div>
+              <button 
+                type="button" 
+                className="padlet-modal-close"
+                onClick={() => setIsEditTopicOpen(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTopic}>
+              <div className="padlet-form-group">
+                <label className="padlet-form-label">اسم المعلمة أو المسؤول:</label>
+                <input 
+                  type="text" 
+                  className="padlet-input"
+                  required
+                  value={editTopicAuthor}
+                  onChange={e => setEditTopicAuthor(e.target.value)}
+                />
+              </div>
+
+              <div className="padlet-form-group">
+                <label className="padlet-form-label">نص السؤال أو الفعالية المطروحة:</label>
+                <textarea 
+                  className="padlet-textarea"
+                  rows={3}
+                  required
+                  value={editTopicQuestion}
+                  onChange={e => setEditTopicQuestion(e.target.value)}
+                />
+              </div>
+
+              <div className="padlet-form-group">
+                <label className="padlet-form-label">توضيح أو تعليمات إضافية:</label>
+                <textarea 
+                  className="padlet-textarea"
+                  rows={2}
+                  value={editTopicDesc}
+                  onChange={e => setEditTopicDesc(e.target.value)}
+                />
+              </div>
+
+              <div className="padlet-form-group">
+                <label className="padlet-form-label">جمهور الهدف:</label>
+                <select 
+                  className="padlet-select"
+                  value={editTopicAudience}
+                  onChange={e => setEditTopicAudience(e.target.value)}
+                >
+                  <option value="الجميع (معلمون، أولياء أمور، طلاب)">الجميع (معلمون، أولياء أمور، طلاب)</option>
+                  <option value="طاقم المعلمين والمعلمات فقط">طاقم المعلمين والمعلمات فقط</option>
+                  <option value="أولياء الأمور الكرام">أولياء الأمور الكرام</option>
+                  <option value="طلاب وطالبات المدرسة">طلاب وطالبات المدرسة</option>
+                  <option value="صف محدد (مثال: الخامس أ)">صف محدد</option>
+                </select>
+              </div>
+
+              {/* Mode & PIN */}
+              <div className="padlet-form-group" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <label className="padlet-form-label" style={{ color: '#fbbf24', fontSize: '0.92rem' }}>
+                  ⚙️ وضع المشاركة:
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div 
+                    onClick={() => setEditTopicMode('open')}
+                    style={{
+                      padding: '0.75rem',
+                      borderRadius: '12px',
+                      background: editTopicMode === 'open' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
+                      border: editTopicMode === 'open' ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>🌐</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#ffffff' }}>مفتوحة للجميع</div>
+                  </div>
+
+                  <div 
+                    onClick={() => setEditTopicMode('code')}
+                    style={{
+                      padding: '0.75rem',
+                      borderRadius: '12px',
+                      background: editTopicMode === 'code' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                      border: editTopicMode === 'code' ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>🔒</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#ffffff' }}>محمية بكود</div>
+                  </div>
+                </div>
+
+                {editTopicMode === 'code' && (
+                  <div style={{ marginTop: '0.75rem', background: 'rgba(245,158,11,0.08)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
+                      كود المشاركة:
+                    </label>
+                    <input 
+                      type="text" 
+                      className="padlet-input"
+                      required={editTopicMode === 'code'}
+                      value={editTopicCode}
+                      onChange={e => setEditTopicCode(e.target.value)}
+                      style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 900, letterSpacing: '2px', color: '#fbbf24' }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="padlet-modal-footer">
+                <button 
+                  type="button" 
+                  className="padlet-nav-btn"
+                  onClick={() => setIsEditTopicOpen(false)}
+                >
+                  إلغاء
+                </button>
+                <button 
+                  type="submit" 
+                  className="padlet-nav-btn primary"
+                  disabled={isSavingEditTopic}
+                >
+                  <i className="fas fa-save"></i>
+                  <span>{isSavingEditTopic ? 'جاري الحفظ...' : 'حفظ التعديلات 💾'}</span>
                 </button>
               </div>
             </form>
