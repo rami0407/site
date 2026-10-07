@@ -6354,6 +6354,33 @@ const AdminDashboard = () => {
 
                           <div className="form-group-row">
                             <div className="form-group">
+                              <label className="form-label" style={{ color: '#ef4444' }}>
+                                <i className="fab fa-youtube"></i> رابط فيديو يوتيوب للفعالية (اختياري):
+                              </label>
+                              <input 
+                                type="url"
+                                className="form-input"
+                                placeholder="https://www.youtube.com/watch?v=..."
+                                value={editingPadletTopic.youtubeUrl || ''}
+                                onChange={e => setEditingPadletTopic({ ...editingPadletTopic, youtubeUrl: e.target.value })}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ color: '#0284c7' }}>
+                                <i className="fas fa-image"></i> رابط صورة الفعالية (اختياري):
+                              </label>
+                              <input 
+                                type="text"
+                                className="form-input"
+                                placeholder="رابط صورة أو Base64..."
+                                value={editingPadletTopic.imageUrl || ''}
+                                onChange={e => setEditingPadletTopic({ ...editingPadletTopic, imageUrl: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-group-row">
+                            <div className="form-group">
                               <label className="form-label">وضع المشاركة:</label>
                               <select 
                                 className="form-input"

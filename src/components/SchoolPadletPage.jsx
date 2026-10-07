@@ -16,6 +16,18 @@ import {
 } from 'firebase/firestore';
 import './SchoolPadletPage.css';
 
+// Helper to convert any YouTube URL into an embed URL
+export const getYouTubeEmbedUrl = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}`;
+  }
+  return null;
+};
+
 // Default starter question if none created yet
 const DEFAULT_PADLET_TOPIC = {
   id: 'school-padlet-main-topic',
@@ -26,6 +38,8 @@ const DEFAULT_PADLET_TOPIC = {
   targetAudience: 'المعلمون وأولياء الأمور',
   accessMode: 'open', // 'open' | 'code'
   accessCode: '',
+  imageUrl: '',
+  youtubeUrl: '',
   status: 'active',
   createdAt: new Date().toISOString()
 };
@@ -124,6 +138,8 @@ export default function SchoolPadletPage() {
   const [targetAudience, setTargetAudience] = useState('الجميع (معلمون، أولياء أمور، طلاب)');
   const [accessMode, setAccessMode] = useState('open'); // 'open' | 'code'
   const [accessCode, setAccessCode] = useState('');
+  const [questionImageUrl, setQuestionImageUrl] = useState('');
+  const [questionYoutubeUrl, setQuestionYoutubeUrl] = useState('');
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
   // Local reaction tracker
@@ -149,6 +165,8 @@ export default function SchoolPadletPage() {
   const [editTopicAudience, setEditTopicAudience] = useState('');
   const [editTopicMode, setEditTopicMode] = useState('open');
   const [editTopicCode, setEditTopicCode] = useState('');
+  const [editTopicImageUrl, setEditTopicImageUrl] = useState('');
+  const [editTopicYoutubeUrl, setEditTopicYoutubeUrl] = useState('');
   const [isSavingEditTopic, setIsSavingEditTopic] = useState(false);
 
   // Check if current user is admin / teacher
@@ -170,6 +188,8 @@ export default function SchoolPadletPage() {
     setEditTopicAudience(activeTopic.targetAudience || 'الجميع');
     setEditTopicMode(activeTopic.accessMode || 'open');
     setEditTopicCode(activeTopic.accessCode || '');
+    setEditTopicImageUrl(activeTopic.imageUrl || '');
+    setEditTopicYoutubeUrl(activeTopic.youtubeUrl || '');
     setIsEditTopicOpen(true);
   };
 
@@ -190,6 +210,8 @@ export default function SchoolPadletPage() {
         targetAudience: editTopicAudience || 'الجميع',
         accessMode: editTopicMode,
         accessCode: editTopicMode === 'code' ? editTopicCode.trim() : '',
+        imageUrl: editTopicImageUrl.trim(),
+        youtubeUrl: editTopicYoutubeUrl.trim(),
         updatedAt: new Date().toISOString()
       };
 
@@ -563,6 +585,8 @@ export default function SchoolPadletPage() {
         targetAudience: targetAudience || 'الجميع',
         accessMode: accessMode || 'open',
         accessCode: accessMode === 'code' ? accessCode.trim() : '',
+        imageUrl: questionImageUrl.trim(),
+        youtubeUrl: questionYoutubeUrl.trim(),
         status: 'active',
         createdAt: new Date().toISOString()
       };
@@ -593,6 +617,8 @@ export default function SchoolPadletPage() {
       setNewQuestionDesc('');
       setAccessCode('');
       setAccessMode('open');
+      setQuestionImageUrl('');
+      setQuestionYoutubeUrl('');
       setIsNewQuestionOpen(false);
       setIsShareModalOpen(true); // Offer direct link immediately!
     } catch (err) {
@@ -850,6 +876,33 @@ export default function SchoolPadletPage() {
             <p className="padlet-question-desc">
               {activeTopic.description}
             </p>
+          )}
+
+          {/* Teacher Attached YouTube Video or Image */}
+          {(activeTopic.youtubeUrl || activeTopic.imageUrl) && (
+            <div style={{ margin: '1rem 0 1.25rem 0', maxWidth: '850px' }}>
+              {activeTopic.youtubeUrl && getYouTubeEmbedUrl(activeTopic.youtubeUrl) && (
+                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '16px', border: '2px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', marginBottom: activeTopic.imageUrl ? '1rem' : '0' }}>
+                  <iframe
+                    src={getYouTubeEmbedUrl(activeTopic.youtubeUrl)}
+                    title="فيديو توضيحي للفعالية"
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+
+              {activeTopic.imageUrl && (
+                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', maxHeight: '420px', background: '#000' }}>
+                  <img 
+                    src={activeTopic.imageUrl} 
+                    alt="صورة الفعالية" 
+                    style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', display: 'block' }} 
+                  />
+                </div>
+              )}
+            </div>
           )}
 
           <div className="padlet-question-toolbar">
@@ -1453,6 +1506,52 @@ export default function SchoolPadletPage() {
                 </select>
               </div>
 
+              {/* YouTube Video URL Input */}
+              <div className="padlet-form-group">
+                <label className="padlet-form-label" style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <i className="fab fa-youtube"></i> رابط فيديو يوتيوب توضيحي للفعالية (اختياري):
+                </label>
+                <input 
+                  type="url" 
+                  className="padlet-input"
+                  placeholder="مثال: https://www.youtube.com/watch?v=..."
+                  value={questionYoutubeUrl}
+                  onChange={e => setQuestionYoutubeUrl(e.target.value)}
+                />
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginTop: '0.25rem' }}>
+                  💡 سيعرض الفيديو مباشرة داخل هيدر الفعالية ليشاهده الطلاب قبل الإجابة.
+                </span>
+              </div>
+
+              {/* Question Image Attachment */}
+              <div className="padlet-form-group">
+                <label className="padlet-form-label" style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <i className="fas fa-image"></i> إرفاق صورة أو رسم توضيحي للسؤال (اختياري):
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 2 ميغابايت');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = evt => setQuestionImageUrl(evt.target.result);
+                    reader.readAsDataURL(file);
+                  }}
+                  style={{ color: '#94a3b8', fontSize: '0.85rem' }}
+                />
+                {questionImageUrl && (
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <img src={questionImageUrl} alt="معاينة" style={{ height: '70px', borderRadius: '8px', border: '1px solid #38bdf8' }} />
+                    <button type="button" onClick={() => setQuestionImageUrl('')} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>إزالة الصورة</button>
+                  </div>
+                )}
+              </div>
+
               {/* ---------------- ACCESS MODE: OPEN VS CODE ---------------- */}
               <div className="padlet-form-group" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label className="padlet-form-label" style={{ color: '#fbbf24', fontSize: '0.92rem' }}>
@@ -1609,6 +1708,49 @@ export default function SchoolPadletPage() {
                   <option value="طلاب وطالبات المدرسة">طلاب وطالبات المدرسة</option>
                   <option value="صف محدد (مثال: الخامس أ)">صف محدد</option>
                 </select>
+              </div>
+
+              {/* YouTube Video URL Input */}
+              <div className="padlet-form-group">
+                <label className="padlet-form-label" style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <i className="fab fa-youtube"></i> رابط فيديو يوتيوب توضيحي للفعالية:
+                </label>
+                <input 
+                  type="url" 
+                  className="padlet-input"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={editTopicYoutubeUrl}
+                  onChange={e => setEditTopicYoutubeUrl(e.target.value)}
+                />
+              </div>
+
+              {/* Image attachment */}
+              <div className="padlet-form-group">
+                <label className="padlet-form-label" style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <i className="fas fa-image"></i> صورة توضيحية للفعالية:
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 2 ميغابايت');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = evt => setEditTopicImageUrl(evt.target.result);
+                    reader.readAsDataURL(file);
+                  }}
+                  style={{ color: '#94a3b8', fontSize: '0.85rem' }}
+                />
+                {editTopicImageUrl && (
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <img src={editTopicImageUrl} alt="معاينة" style={{ height: '70px', borderRadius: '8px', border: '1px solid #38bdf8' }} />
+                    <button type="button" onClick={() => setEditTopicImageUrl('')} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>إزالة الصورة</button>
+                  </div>
+                )}
               </div>
 
               {/* Mode & PIN */}
