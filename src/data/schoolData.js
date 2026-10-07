@@ -128,6 +128,14 @@ export const newsData = [
 
 export const importantLinks = [
   { 
+    title: 'منصة مِفتاح AI — رحلة التعلم التفاعلية (طلاب ومعلمون)', 
+    icon: 'fa-key', 
+    url: '#/miftaah', 
+    desc: 'الحصة التفاعلية الممتعة لطلاب المدرسة بمحطات التحدي والاستكشاف بالذكاء الاصطناعي، واستوديو المعلم لتحضير وإدارة الحصص النموذجية.', 
+    badge: 'منصة مِفتاح AI 🗝️',
+    isAi: true 
+  },
+  { 
     title: 'بريد السعادة والتميّز', 
     icon: 'fa-envelope-open-text', 
     url: '#happiness-mail', 
