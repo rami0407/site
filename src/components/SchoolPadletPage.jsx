@@ -141,6 +141,42 @@ export default function SchoolPadletPage() {
     setAccessCode(String(randomNum));
   };
 
+  // Helper for Local Storage Topics & Cards
+  const getStoredTopics = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('db_school_padlet_topics') || '[]');
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveStoredTopics = (newList) => {
+    try {
+      localStorage.setItem('db_school_padlet_topics', JSON.stringify(newList));
+    } catch (e) {
+      console.warn('Failed to save topics to localStorage', e);
+    }
+  };
+
+  const getStoredCards = (topicId) => {
+    try {
+      const allCards = JSON.parse(localStorage.getItem('db_school_padlet_cards') || '[]');
+      if (!Array.isArray(allCards)) return [];
+      return topicId ? allCards.filter(c => c.topicId === topicId) : allCards;
+    } catch {
+      return [];
+    }
+  };
+
+  const saveStoredCards = (newCardsList) => {
+    try {
+      localStorage.setItem('db_school_padlet_cards', JSON.stringify(newCardsList));
+    } catch (e) {
+      console.warn('Failed to save cards to localStorage', e);
+    }
+  };
+
   // 1. Check URL parameters for specific topic selection: #/padlet?topic=xyz
   const getTopicIdFromUrl = () => {
     const hash = window.location.hash || '';
@@ -148,35 +184,63 @@ export default function SchoolPadletPage() {
     return match ? match[1] : null;
   };
 
-  // 2. Real-time Topic Listener
+  // 2. Real-time Topic Listener with Seamless Local Fallback
   useEffect(() => {
-    const q = query(collection(db, 'school_padlet_topics'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        setDoc(doc(db, 'school_padlet_topics', DEFAULT_PADLET_TOPIC.id), DEFAULT_PADLET_TOPIC).catch(() => {});
-        setActiveTopic(DEFAULT_PADLET_TOPIC);
-        setAllTopics([DEFAULT_PADLET_TOPIC]);
-      } else {
-        const list = [];
-        snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
-        setAllTopics(list);
+    // Prime state with local storage right away for zero-latency load
+    const localTopics = getStoredTopics();
+    const starterTopics = localTopics.length > 0 ? localTopics : [DEFAULT_PADLET_TOPIC];
+    setAllTopics(starterTopics);
 
-        const urlTopicId = getTopicIdFromUrl();
-        if (urlTopicId) {
-          const found = list.find(t => t.id === urlTopicId);
-          if (found) {
-            setActiveTopic(found);
-            return;
+    const urlTopicId = getTopicIdFromUrl();
+    if (urlTopicId) {
+      const found = starterTopics.find(t => t.id === urlTopicId);
+      if (found) setActiveTopic(found);
+    } else {
+      const current = starterTopics.find(t => t.status === 'active') || starterTopics[0] || DEFAULT_PADLET_TOPIC;
+      setActiveTopic(current);
+    }
+
+    let unsub = () => {};
+    try {
+      const q = query(collection(db, 'school_padlet_topics'), orderBy('createdAt', 'desc'));
+      unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudTopics = [];
+          snapshot.forEach(docSnap => cloudTopics.push({ id: docSnap.id, ...docSnap.data() }));
+
+          // Merge cloud topics with local ones
+          const mergedMap = new Map();
+          cloudTopics.forEach(t => mergedMap.set(t.id, t));
+          localTopics.forEach(t => {
+            if (!mergedMap.has(t.id)) mergedMap.set(t.id, t);
+          });
+          const mergedList = Array.from(mergedMap.values());
+          mergedList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+          setAllTopics(mergedList);
+          saveStoredTopics(mergedList);
+
+          const curUrlId = getTopicIdFromUrl();
+          if (curUrlId) {
+            const found = mergedList.find(t => t.id === curUrlId);
+            if (found) {
+              setActiveTopic(found);
+              return;
+            }
           }
+          const active = mergedList.find(t => t.status === 'active') || mergedList[0] || DEFAULT_PADLET_TOPIC;
+          setActiveTopic(active);
+        } else {
+          // If Firestore is empty, try seeding default
+          setDoc(doc(db, 'school_padlet_topics', DEFAULT_PADLET_TOPIC.id), DEFAULT_PADLET_TOPIC).catch(() => {});
         }
-
-        const current = list.find(t => t.status === 'active') || list[0] || DEFAULT_PADLET_TOPIC;
-        setActiveTopic(current);
-      }
-    }, (error) => {
-      console.warn("Using offline fallback topic:", error);
-      setActiveTopic(DEFAULT_PADLET_TOPIC);
-    });
+      }, (error) => {
+        // Safe fallback without interrupting user experience
+        console.warn("School Padlet topics cloud sync (using local storage):", error?.message || error);
+      });
+    } catch (err) {
+      console.warn("Could not attach topic snapshot listener:", err);
+    }
 
     return () => unsub();
   }, []);
@@ -197,30 +261,54 @@ export default function SchoolPadletPage() {
   // 4. Real-time Cards Listener for current active topic
   useEffect(() => {
     if (!activeTopic?.id) return;
-    const q = query(
-      collection(db, 'school_padlet_cards'),
-      where('topicId', '==', activeTopic.id)
-    );
-    const unsub = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        if (activeTopic.id === DEFAULT_PADLET_TOPIC.id) {
-          SEED_CARDS.forEach(card => {
-            setDoc(doc(db, 'school_padlet_cards', card.id), card).catch(() => {});
-          });
-          setCards(SEED_CARDS);
-        } else {
-          setCards([]);
-        }
-      } else {
-        const list = [];
-        snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
-        list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        setCards(list);
-      }
-    }, (error) => {
-      console.warn("Error fetching padlet cards:", error);
+
+    // Load from local storage immediately
+    const localCards = getStoredCards(activeTopic.id);
+    if (localCards.length > 0) {
+      setCards(localCards);
+    } else if (activeTopic.id === DEFAULT_PADLET_TOPIC.id) {
       setCards(SEED_CARDS);
-    });
+      // seed into local storage
+      const existingAll = getStoredCards();
+      const updated = [...existingAll, ...SEED_CARDS.filter(s => !existingAll.some(x => x.id === s.id))];
+      saveStoredCards(updated);
+    } else {
+      setCards([]);
+    }
+
+    let unsub = () => {};
+    try {
+      const q = query(
+        collection(db, 'school_padlet_cards'),
+        where('topicId', '==', activeTopic.id)
+      );
+      unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudCards = [];
+          snapshot.forEach(docSnap => cloudCards.push({ id: docSnap.id, ...docSnap.data() }));
+
+          // Merge local cards for this topic with cloud cards
+          const mergedMap = new Map();
+          cloudCards.forEach(c => mergedMap.set(c.id, c));
+          localCards.forEach(c => {
+            if (!mergedMap.has(c.id)) mergedMap.set(c.id, c);
+          });
+
+          const mergedCards = Array.from(mergedMap.values());
+          mergedCards.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          setCards(mergedCards);
+
+          // Update storage with merged
+          const allStored = getStoredCards();
+          const otherStored = allStored.filter(c => c.topicId !== activeTopic.id);
+          saveStoredCards([...otherStored, ...mergedCards]);
+        }
+      }, (error) => {
+        console.warn("School Padlet cards cloud sync (using local storage):", error?.message || error);
+      });
+    } catch (err) {
+      console.warn("Could not attach cards snapshot listener:", err);
+    }
 
     return () => unsub();
   }, [activeTopic?.id]);
@@ -280,7 +368,9 @@ export default function SchoolPadletPage() {
       localStorage.setItem('padlet_user_name', cardAuthorName.trim());
       localStorage.setItem('padlet_user_role', cardAuthorRole);
 
+      const newCardId = 'card_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const newCard = {
+        id: newCardId,
         topicId: activeTopic.id,
         authorName: cardAuthorName.trim(),
         authorRole: cardAuthorRole,
@@ -291,13 +381,23 @@ export default function SchoolPadletPage() {
         createdAt: new Date().toISOString()
       };
 
-      await addDoc(collection(db, 'school_padlet_cards'), newCard);
+      // 1. Immediately update local state & local storage (Zero-delay UI)
+      setCards(prev => [newCard, ...prev]);
+      const currentAll = getStoredCards();
+      saveStoredCards([newCard, ...currentAll]);
+
+      // 2. Sync to Firestore in background
+      try {
+        await addDoc(collection(db, 'school_padlet_cards'), newCard);
+      } catch (cloudErr) {
+        console.warn('Firestore card cloud save fallback:', cloudErr?.message || cloudErr);
+      }
+
       setCardContent('');
       setCardImageBase64('');
       setIsAddCardOpen(false);
     } catch (err) {
       console.error('Failed to post padlet card:', err);
-      alert('حدث خطأ أثناء نشر البطاقة، يرجى المحاولة ثانية');
     } finally {
       setIsSubmittingCard(false);
     }
@@ -332,16 +432,27 @@ export default function SchoolPadletPage() {
         createdAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'school_padlet_topics', newTopicId), topicData);
+      // 1. Save locally immediately & update active topic
+      const currentTopics = getStoredTopics();
+      const updatedTopics = [topicData, ...currentTopics.filter(t => t.id !== newTopicId)];
+      saveStoredTopics(updatedTopics);
+      setAllTopics(updatedTopics);
       setActiveTopic(topicData);
       
       // Auto unlock for creating teacher
-      const updated = [...unlockedTopics, newTopicId];
-      setUnlockedTopics(updated);
-      sessionStorage.setItem('padlet_unlocked_topics', JSON.stringify(updated));
+      const updatedUnlocked = [...unlockedTopics, newTopicId];
+      setUnlockedTopics(updatedUnlocked);
+      sessionStorage.setItem('padlet_unlocked_topics', JSON.stringify(updatedUnlocked));
 
       // Update URL hash with new topic ID
       window.location.hash = `#/padlet?topic=${newTopicId}`;
+
+      // 2. Try Firestore in background
+      try {
+        await setDoc(doc(db, 'school_padlet_topics', newTopicId), topicData);
+      } catch (cloudErr) {
+        console.warn('Firestore topic cloud save fallback:', cloudErr?.message || cloudErr);
+      }
 
       setNewQuestionText('');
       setNewQuestionDesc('');
@@ -351,7 +462,6 @@ export default function SchoolPadletPage() {
       setIsShareModalOpen(true); // Offer direct link immediately!
     } catch (err) {
       console.error('Failed to create padlet topic:', err);
-      alert('حدث خطأ أثناء إنشاء السؤال');
     } finally {
       setIsSubmittingQuestion(false);
     }
@@ -362,17 +472,51 @@ export default function SchoolPadletPage() {
     const key = `${cardId}_${type}`;
     if (userReactions[key]) return;
 
+    // 1. Update UI state immediately
+    setCards(prev => prev.map(c => {
+      if (c.id === cardId) {
+        const reactions = c.reactions || { like: 0, clap: 0, heart: 0 };
+        return {
+          ...c,
+          reactions: {
+            ...reactions,
+            [type]: (reactions[type] || 0) + 1
+          }
+        };
+      }
+      return c;
+    }));
+
+    // Save reaction locally
+    const updatedReactions = { ...userReactions, [key]: true };
+    setUserReactions(updatedReactions);
+    localStorage.setItem('padlet_user_reactions', JSON.stringify(updatedReactions));
+
+    // Update local card store
+    const allStored = getStoredCards();
+    const updatedStored = allStored.map(c => {
+      if (c.id === cardId) {
+        const reactions = c.reactions || { like: 0, clap: 0, heart: 0 };
+        return {
+          ...c,
+          reactions: {
+            ...reactions,
+            [type]: (reactions[type] || 0) + 1
+          }
+        };
+      }
+      return c;
+    });
+    saveStoredCards(updatedStored);
+
+    // 2. Attempt Firestore sync in background
     try {
       const cardRef = doc(db, 'school_padlet_cards', cardId);
       await updateDoc(cardRef, {
         [`reactions.${type}`]: increment(1)
       });
-
-      const updated = { ...userReactions, [key]: true };
-      setUserReactions(updated);
-      localStorage.setItem('padlet_user_reactions', JSON.stringify(updated));
     } catch (err) {
-      console.error('Reaction failed:', err);
+      console.warn('Reaction cloud sync fallback:', err?.message || err);
     }
   };
 
