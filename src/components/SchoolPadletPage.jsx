@@ -701,16 +701,15 @@ export default function SchoolPadletPage() {
         </div>
 
         <div className="padlet-topbar-actions">
-          {allTopics.length > 1 && (
-            <button 
-              type="button" 
-              className="padlet-nav-btn"
-              onClick={() => setIsTopicListOpen(!isTopicListOpen)}
-            >
-              <i className="fas fa-history"></i>
-              <span>الأسئلة السابقة ({allTopics.length})</span>
-            </button>
-          )}
+          <button 
+            type="button" 
+            className={`padlet-nav-btn ${isTopicListOpen ? 'primary' : ''}`}
+            onClick={() => setIsTopicListOpen(!isTopicListOpen)}
+            title="عرض أرشيف جميع فعاليات وأسئلة المعلمين"
+          >
+            <i className="fas fa-layer-group"></i>
+            <span>كل الفعاليات المطروحة ({allTopics.length})</span>
+          </button>
 
           <button 
             type="button" 
@@ -738,6 +737,44 @@ export default function SchoolPadletPage() {
           </a>
         </div>
       </header>
+
+      {/* ---------------- Horizontal Quick Topics Ribbon (شريط الفعاليات السريع للتنقل) ---------------- */}
+      {allTopics.length > 1 && (
+        <div style={{ maxWidth: '1300px', margin: '0.85rem auto 0 auto', padding: '0 1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', overflowX: 'auto', paddingBottom: '0.4rem', scrollbarWidth: 'thin' }}>
+            <span style={{ fontSize: '0.82rem', color: '#fbbf24', fontWeight: 900, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <i className="fas fa-compass"></i> تنقل بين الفعاليات:
+            </span>
+            {allTopics.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleSelectTopic(t)}
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '12px',
+                  background: activeTopic.id === t.id ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(30, 41, 59, 0.75)',
+                  color: activeTopic.id === t.id ? '#0f172a' : '#cbd5e1',
+                  border: activeTopic.id === t.id ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.08)',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  transition: 'all 0.2s',
+                  boxShadow: activeTopic.id === t.id ? '0 4px 12px rgba(245, 158, 11, 0.35)' : 'none'
+                }}
+              >
+                <span>{t.accessMode === 'code' ? '🔒' : '📌'}</span>
+                <span>{t.question.length > 32 ? t.question.substring(0, 32) + '...' : t.question}</span>
+                <span style={{ opacity: 0.75, fontSize: '0.72rem' }}>({t.authorName})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ---------------- Topic List Drawer (if opened) ---------------- */}
       {isTopicListOpen && (
