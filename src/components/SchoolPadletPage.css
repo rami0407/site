@@ -332,10 +332,14 @@
   position: relative;
   transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-col: column;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  direction: rtl !important;
+  text-align: right !important;
 }
 
 .padlet-card:hover {
@@ -399,16 +403,19 @@
 .padlet-card.color-dark .padlet-pin { background: #f59e0b; }
 
 .padlet-card-header {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
   padding-right: 1.5rem; /* Room for the pin */
+  width: 100% !important;
 }
 
 .padlet-card-author {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
   gap: 0.5rem;
 }
@@ -416,6 +423,7 @@
 .padlet-author-avatar {
   width: 32px;
   height: 32px;
+  min-width: 32px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.12);
   display: flex;
@@ -431,8 +439,8 @@
 }
 
 .padlet-author-info {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .padlet-author-name {
@@ -450,15 +458,21 @@
 .padlet-card-time {
   font-size: 0.68rem;
   opacity: 0.65;
+  white-space: nowrap;
 }
 
 .padlet-card-body {
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.7;
   font-weight: 600;
   margin-bottom: 1rem;
-  word-break: break-word;
-  white-space: pre-line;
+  width: 100% !important;
+  display: block !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  direction: rtl !important;
+  text-align: right !important;
 }
 
 .padlet-card-image {
@@ -477,12 +491,14 @@
 }
 
 .padlet-card-footer {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
   justify-content: space-between;
   padding-top: 0.75rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   margin-top: auto;
+  width: 100% !important;
 }
 
 .padlet-card.color-dark .padlet-card-footer {
