@@ -24,6 +24,8 @@ const DEFAULT_PADLET_TOPIC = {
   authorName: 'المعلمة / طاقم التربية',
   authorRole: 'معلمة مسؤولة',
   targetAudience: 'المعلمون وأولياء الأمور',
+  accessMode: 'open', // 'open' | 'code'
+  accessCode: '',
   status: 'active',
   createdAt: new Date().toISOString()
 };
@@ -92,6 +94,20 @@ export default function SchoolPadletPage() {
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [isNewQuestionOpen, setIsNewQuestionOpen] = useState(false);
   const [isTopicListOpen, setIsTopicListOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copySuccessMsg, setCopySuccessMsg] = useState('');
+
+  // Password / Code verification modal for code-protected topics
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [enteredCode, setEnteredCode] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [unlockedTopics, setUnlockedTopics] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('padlet_unlocked_topics') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
   // New Card Form
   const [cardAuthorName, setCardAuthorName] = useState(() => localStorage.getItem('padlet_user_name') || '');
@@ -106,6 +122,8 @@ export default function SchoolPadletPage() {
   const [newQuestionDesc, setNewQuestionDesc] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [targetAudience, setTargetAudience] = useState('الجميع (معلمون، أولياء أمور، طلاب)');
+  const [accessMode, setAccessMode] = useState('open'); // 'open' | 'code'
+  const [accessCode, setAccessCode] = useState('');
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
   // Local reaction tracker
@@ -117,12 +135,24 @@ export default function SchoolPadletPage() {
     }
   });
 
-  // 1. Real-time Topic Listener
+  // Generate random 4-digit code helper
+  const generateRandomCode = () => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    setAccessCode(String(randomNum));
+  };
+
+  // 1. Check URL parameters for specific topic selection: #/padlet?topic=xyz
+  const getTopicIdFromUrl = () => {
+    const hash = window.location.hash || '';
+    const match = hash.match(/topic=([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+  };
+
+  // 2. Real-time Topic Listener
   useEffect(() => {
     const q = query(collection(db, 'school_padlet_topics'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
-        // Seed default topic if empty
         setDoc(doc(db, 'school_padlet_topics', DEFAULT_PADLET_TOPIC.id), DEFAULT_PADLET_TOPIC).catch(() => {});
         setActiveTopic(DEFAULT_PADLET_TOPIC);
         setAllTopics([DEFAULT_PADLET_TOPIC]);
@@ -130,6 +160,16 @@ export default function SchoolPadletPage() {
         const list = [];
         snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
         setAllTopics(list);
+
+        const urlTopicId = getTopicIdFromUrl();
+        if (urlTopicId) {
+          const found = list.find(t => t.id === urlTopicId);
+          if (found) {
+            setActiveTopic(found);
+            return;
+          }
+        }
+
         const current = list.find(t => t.status === 'active') || list[0] || DEFAULT_PADLET_TOPIC;
         setActiveTopic(current);
       }
@@ -141,7 +181,20 @@ export default function SchoolPadletPage() {
     return () => unsub();
   }, []);
 
-  // 2. Real-time Cards Listener for current active topic
+  // 3. Listen for hash changes to switch topic via link
+  useEffect(() => {
+    const handleHashChange = () => {
+      const urlTopicId = getTopicIdFromUrl();
+      if (urlTopicId && allTopics.length > 0) {
+        const found = allTopics.find(t => t.id === urlTopicId);
+        if (found) setActiveTopic(found);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [allTopics]);
+
+  // 4. Real-time Cards Listener for current active topic
   useEffect(() => {
     if (!activeTopic?.id) return;
     const q = query(
@@ -150,7 +203,6 @@ export default function SchoolPadletPage() {
     );
     const unsub = onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
-        // If it's the default topic and empty, seed initial demo cards
         if (activeTopic.id === DEFAULT_PADLET_TOPIC.id) {
           SEED_CARDS.forEach(card => {
             setDoc(doc(db, 'school_padlet_cards', card.id), card).catch(() => {});
@@ -162,7 +214,6 @@ export default function SchoolPadletPage() {
       } else {
         const list = [];
         snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
-        // Sort descending by creation
         list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         setCards(list);
       }
@@ -189,11 +240,38 @@ export default function SchoolPadletPage() {
     reader.readAsDataURL(file);
   };
 
+  // Check if topic is code protected and if student/user has unlocked it
+  const isTopicCodeProtected = activeTopic.accessMode === 'code' && activeTopic.accessCode;
+  const isTopicUnlocked = !isTopicCodeProtected || unlockedTopics.includes(activeTopic.id);
+
+  const handleOpenAddCard = () => {
+    if (isTopicCodeProtected && !isTopicUnlocked) {
+      setIsCodeModalOpen(true);
+      return;
+    }
+    setIsAddCardOpen(true);
+  };
+
+  const handleVerifyCode = (e) => {
+    e.preventDefault();
+    if (enteredCode.trim() === String(activeTopic.accessCode).trim()) {
+      const updated = [...unlockedTopics, activeTopic.id];
+      setUnlockedTopics(updated);
+      sessionStorage.setItem('padlet_unlocked_topics', JSON.stringify(updated));
+      setIsCodeModalOpen(false);
+      setEnteredCode('');
+      setCodeError('');
+      setIsAddCardOpen(true);
+    } else {
+      setCodeError('رمز الدخول غير صحيح، يرجى التأكد من المعلمة.');
+    }
+  };
+
   // Submit New Card (Answer / Sticky Note)
   const handleSubmitCard = async (e) => {
     e.preventDefault();
     if (!cardAuthorName.trim() || !cardContent.trim()) {
-      alert('يرجى كتابة الاسم ونص المشاركة');
+      alert('يرجى كتابة الاسم ونصف المشاركة');
       return;
     }
 
@@ -233,10 +311,14 @@ export default function SchoolPadletPage() {
       return;
     }
 
+    if (accessMode === 'code' && !accessCode.trim()) {
+      alert('يرجى تحديد أو توليد كود الدخول الخاص بالمجموعة');
+      return;
+    }
+
     setIsSubmittingQuestion(true);
     try {
-      // 1. Mark existing topics as archived or keep active
-      const newTopicId = 'topic-' + Date.now();
+      const newTopicId = 'padlet-' + Date.now();
       const topicData = {
         id: newTopicId,
         question: newQuestionText.trim(),
@@ -244,15 +326,29 @@ export default function SchoolPadletPage() {
         authorName: teacherName.trim(),
         authorRole: 'معلمة / طاقم المدرسة',
         targetAudience: targetAudience || 'الجميع',
+        accessMode: accessMode || 'open',
+        accessCode: accessMode === 'code' ? accessCode.trim() : '',
         status: 'active',
         createdAt: new Date().toISOString()
       };
 
       await setDoc(doc(db, 'school_padlet_topics', newTopicId), topicData);
       setActiveTopic(topicData);
+      
+      // Auto unlock for creating teacher
+      const updated = [...unlockedTopics, newTopicId];
+      setUnlockedTopics(updated);
+      sessionStorage.setItem('padlet_unlocked_topics', JSON.stringify(updated));
+
+      // Update URL hash with new topic ID
+      window.location.hash = `#/padlet?topic=${newTopicId}`;
+
       setNewQuestionText('');
       setNewQuestionDesc('');
+      setAccessCode('');
+      setAccessMode('open');
       setIsNewQuestionOpen(false);
+      setIsShareModalOpen(true); // Offer direct link immediately!
     } catch (err) {
       console.error('Failed to create padlet topic:', err);
       alert('حدث خطأ أثناء إنشاء السؤال');
@@ -261,10 +357,10 @@ export default function SchoolPadletPage() {
     }
   };
 
-  // Handle Reaction
+  // Reaction
   const handleReact = async (cardId, type) => {
     const key = `${cardId}_${type}`;
-    if (userReactions[key]) return; // Already reacted
+    if (userReactions[key]) return;
 
     try {
       const cardRef = doc(db, 'school_padlet_cards', cardId);
@@ -278,6 +374,28 @@ export default function SchoolPadletPage() {
     } catch (err) {
       console.error('Reaction failed:', err);
     }
+  };
+
+  // Construct Direct Share Link for Current Active Topic
+  const getShareLink = () => {
+    const origin = window.location.origin || 'https://musherfe.com';
+    return `${origin}/#/padlet?topic=${activeTopic.id}`;
+  };
+
+  const handleCopyLink = () => {
+    const url = getShareLink();
+    navigator.clipboard.writeText(url).then(() => {
+      setCopySuccessMsg('تم نسخ الرابط بنجاح! 📋✨');
+      setTimeout(() => setCopySuccessMsg(''), 3500);
+    }).catch(() => {
+      prompt('انسخ الرابط التالي:', url);
+    });
+  };
+
+  const handleSelectTopic = (t) => {
+    setActiveTopic(t);
+    window.location.hash = `#/padlet?topic=${t.id}`;
+    setIsTopicListOpen(false);
   };
 
   // Filtered Cards
@@ -317,12 +435,22 @@ export default function SchoolPadletPage() {
 
           <button 
             type="button" 
+            className="padlet-nav-btn share"
+            onClick={() => setIsShareModalOpen(true)}
+            title="مشاركة ورابط هذا البادليت"
+          >
+            <i className="fas fa-share-alt"></i>
+            <span>مشاركة الرابط 🔗</span>
+          </button>
+
+          <button 
+            type="button" 
             className="padlet-nav-btn primary"
             onClick={() => setIsNewQuestionOpen(true)}
-            title="تتيح للمعلمة وضع سؤال جديد ومحور نقاش"
+            title="تتيح للمعلمة وضع سؤال أو فعالية جديدة بكود خاص أو مفتوحة للجميع"
           >
             <i className="fas fa-plus-circle"></i>
-            <span>سؤال جديد (للمعلمات)</span>
+            <span>سؤال / فعالية جديدة</span>
           </button>
 
           <a href="#/" className="padlet-nav-btn">
@@ -343,7 +471,7 @@ export default function SchoolPadletPage() {
               {allTopics.map(t => (
                 <div 
                   key={t.id}
-                  onClick={() => { setActiveTopic(t); setIsTopicListOpen(false); }}
+                  onClick={() => handleSelectTopic(t)}
                   style={{
                     padding: '0.85rem 1rem',
                     borderRadius: '12px',
@@ -353,8 +481,15 @@ export default function SchoolPadletPage() {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff', marginBottom: '0.3rem' }}>
-                    {t.question}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>
+                      {t.question}
+                    </div>
+                    {t.accessMode === 'code' && (
+                      <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.4)', fontWeight: 800 }}>
+                        🔒 كود
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                     بواسطة: {t.authorName} • {new Date(t.createdAt).toLocaleDateString('ar-EG')}
@@ -376,6 +511,16 @@ export default function SchoolPadletPage() {
             </div>
             <div className="padlet-topic-meta">
               <span>🎯 الجمهور: {activeTopic.targetAudience || 'الجميع'}</span>
+              <span>•</span>
+              {isTopicCodeProtected ? (
+                <span className="padlet-code-pill">
+                  🔒 كود المشاركة: {activeTopic.accessCode}
+                </span>
+              ) : (
+                <span style={{ color: '#34d399', fontWeight: 800 }}>
+                  🌐 مفتوحة للجميع دون قيود
+                </span>
+              )}
               <span>•</span>
               <span>🕒 {new Date(activeTopic.createdAt).toLocaleDateString('ar-EG')}</span>
             </div>
@@ -399,18 +544,35 @@ export default function SchoolPadletPage() {
               </div>
               <div className="padlet-chip">
                 <i className="fas fa-eye"></i>
-                <span>مفتوح ومتاح للجميع للتعليق والمشاهدة</span>
+                <span>الإجابات ظاهرة للجميع مباشرة</span>
               </div>
+              {isTopicCodeProtected && (
+                <div className="padlet-chip code-chip">
+                  <i className="fas fa-key"></i>
+                  <span>يتطلب إدخال الكود ({activeTopic.accessCode}) للمشاركة</span>
+                </div>
+              )}
             </div>
 
-            <button 
-              type="button" 
-              className="padlet-add-card-btn"
-              onClick={() => setIsAddCardOpen(true)}
-            >
-              <i className="fas fa-pen"></i>
-              <span>علّق ببطاقتك الآن (إضافة إجابة)</span>
-            </button>
+            <div className="padlet-hero-actions">
+              <button 
+                type="button" 
+                className="padlet-nav-btn share"
+                onClick={() => setIsShareModalOpen(true)}
+              >
+                <i className="fas fa-link"></i>
+                <span>رابط هذا السؤال</span>
+              </button>
+
+              <button 
+                type="button" 
+                className="padlet-add-card-btn"
+                onClick={handleOpenAddCard}
+              >
+                <i className="fas fa-pen"></i>
+                <span>علّق ببطاقتك الآن (إضافة إجابة)</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -499,7 +661,7 @@ export default function SchoolPadletPage() {
             <button 
               type="button" 
               className="padlet-add-card-btn"
-              onClick={() => setIsAddCardOpen(true)}
+              onClick={handleOpenAddCard}
             >
               <i className="fas fa-plus"></i>
               <span>ضع بطاقتك الأولى الآن</span>
@@ -511,7 +673,6 @@ export default function SchoolPadletPage() {
               const likes = card.reactions?.like || 0;
               const claps = card.reactions?.clap || 0;
               const hearts = card.reactions?.heart || 0;
-              const isDark = card.color === 'dark';
 
               return (
                 <div key={card.id} className={`padlet-card color-${card.color || 'yellow'}`}>
@@ -592,11 +753,163 @@ export default function SchoolPadletPage() {
       <button 
         type="button" 
         className="padlet-floating-fab"
-        onClick={() => setIsAddCardOpen(true)}
+        onClick={handleOpenAddCard}
         title="أضف بطاقتك الآن"
       >
         <i className="fas fa-plus"></i>
       </button>
+
+      {/* =========================================================================
+          MODAL: ENTER CODE FOR PROTECTED TOPIC
+          ========================================================================= */}
+      {isCodeModalOpen && (
+        <div className="padlet-modal-overlay" onClick={() => setIsCodeModalOpen(false)}>
+          <div className="padlet-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', textAlign: 'center' }}>
+            <div className="padlet-modal-header" style={{ justifyContent: 'center' }}>
+              <div className="padlet-modal-title" style={{ color: '#fbbf24' }}>
+                <i className="fas fa-lock"></i>
+                <span>هذا السؤال محمي بكود مشاركة خاص</span>
+              </div>
+            </div>
+
+            <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '1.25rem', lineHeight: '1.6' }}>
+              حددت المعلمة كوداً خاصاً لإشراك هذا الجمهور المحدد في النشاط. يرجى إدخال الكود لتتمكن من وضع بطاقتك:
+            </p>
+
+            <form onSubmit={handleVerifyCode}>
+              <div className="padlet-form-group">
+                <input 
+                  type="text" 
+                  className="padlet-input"
+                  required
+                  autoFocus
+                  placeholder="أدخل رمز الدخول (الكود)..."
+                  value={enteredCode}
+                  onChange={e => { setEnteredCode(e.target.value); setCodeError(''); }}
+                  style={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 900, letterSpacing: '4px' }}
+                />
+                {codeError && (
+                  <div style={{ color: '#f87171', fontSize: '0.82rem', marginTop: '0.5rem', fontWeight: 700 }}>
+                    {codeError}
+                  </div>
+                )}
+              </div>
+
+              <div className="padlet-modal-footer" style={{ justifyContent: 'center' }}>
+                <button 
+                  type="button" 
+                  className="padlet-nav-btn"
+                  onClick={() => setIsCodeModalOpen(false)}
+                >
+                  إلغاء
+                </button>
+                <button 
+                  type="submit" 
+                  className="padlet-nav-btn primary"
+                >
+                  <i className="fas fa-unlock"></i>
+                  <span>تأكيد والبدء بالمشاركة</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: SHARE PADLET LINK & CODE
+          ========================================================================= */}
+      {isShareModalOpen && (
+        <div className="padlet-modal-overlay" onClick={() => setIsShareModalOpen(false)}>
+          <div className="padlet-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="padlet-modal-header">
+              <div className="padlet-modal-title">
+                <i className="fas fa-share-alt" style={{ color: '#38bdf8' }}></i>
+                <span>مشاركة ورابط هذا البادليت</span>
+              </div>
+              <button 
+                type="button" 
+                className="padlet-modal-close"
+                onClick={() => setIsShareModalOpen(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                {activeTopic.question}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                {isTopicCodeProtected ? `🔒 محمي بكود: ${activeTopic.accessCode}` : '🌐 متاح للجميع'}
+              </div>
+            </div>
+
+            <label className="padlet-form-label">الرابط المباشر للبادليت:</label>
+            <div className="padlet-share-box">
+              <span className="padlet-share-url-text">{getShareLink()}</span>
+              <button 
+                type="button" 
+                className="padlet-copy-btn"
+                onClick={handleCopyLink}
+              >
+                <i className="fas fa-copy"></i>
+                <span>نسخ الرابط</span>
+              </button>
+            </div>
+
+            {copySuccessMsg && (
+              <div style={{ color: '#34d399', fontWeight: 800, fontSize: '0.88rem', textAlign: 'center', marginBottom: '1rem' }}>
+                {copySuccessMsg}
+              </div>
+            )}
+
+            {isTopicCodeProtected && (
+              <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '12px', padding: '0.85rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.35rem' }}>
+                  🔑 لا تنسَ إرسال كود المشاركة للجمهور مع الرابط:
+                </span>
+                <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fbbf24', letterSpacing: '3px' }}>
+                  {activeTopic.accessCode}
+                </span>
+              </div>
+            )}
+
+            <label className="padlet-form-label">مشاركة سريعة عبر التطبيقات:</label>
+            <div className="padlet-share-social-grid">
+              <a 
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`دعوة للمشاركة في بادليت مدرسة مشيرفة 📌✨\n\nالسؤال: ${activeTopic.question}\n${isTopicCodeProtected ? `كود الدخول: ${activeTopic.accessCode}\n` : ''}الرابط: ${getShareLink()}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="padlet-social-btn whatsapp"
+              >
+                <i className="fab fa-whatsapp" style={{ fontSize: '1.2rem' }}></i>
+                <span>إرسال عبر واتساب</span>
+              </a>
+
+              <a 
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareLink())}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="padlet-social-btn facebook"
+              >
+                <i className="fab fa-facebook" style={{ fontSize: '1.2rem' }}></i>
+                <span>مشاركة عبر فيسبوك</span>
+              </a>
+            </div>
+
+            <div className="padlet-modal-footer">
+              <button 
+                type="button" 
+                className="padlet-nav-btn primary"
+                onClick={() => setIsShareModalOpen(false)}
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =========================================================================
           MODAL: ADD NEW CARD (STICKY NOTE)
@@ -708,14 +1021,14 @@ export default function SchoolPadletPage() {
       )}
 
       {/* =========================================================================
-          MODAL: TEACHER NEW QUESTION (بادليت جديد)
+          MODAL: TEACHER NEW QUESTION OR ACTIVITY (إمكانية توليد كود أو مفتوحة)
           ========================================================================= */}
       {isNewQuestionOpen && (
         <div className="padlet-modal-overlay" onClick={() => setIsNewQuestionOpen(false)}>
           <div className="padlet-modal-content" onClick={e => e.stopPropagation()}>
             <div className="padlet-modal-header">
               <div className="padlet-modal-title">
-                <span>👩‍🏫 وضع سؤال بادليت جديد (للمعلمات)</span>
+                <span>👩‍🏫 وضع سؤال أو فعالية بادليت جديدة</span>
               </div>
               <button 
                 type="button" 
@@ -728,7 +1041,7 @@ export default function SchoolPadletPage() {
 
             <form onSubmit={handleCreateQuestion}>
               <div className="padlet-form-group">
-                <label className="padlet-form-label">اسم المعلمة أو المشرفة:</label>
+                <label className="padlet-form-label">اسم المعلمة أو المنظم:</label>
                 <input 
                   type="text" 
                   className="padlet-input"
@@ -740,12 +1053,12 @@ export default function SchoolPadletPage() {
               </div>
 
               <div className="padlet-form-group">
-                <label className="padlet-form-label">السؤال الرئيسي للنقاش والتفاعل:</label>
+                <label className="padlet-form-label">السؤال الرئيسي أو الفعالية المطروحة:</label>
                 <textarea 
                   className="padlet-textarea"
                   rows={3}
                   required
-                  placeholder="ما هو السؤال أو القضية التي تريدين من المعلمين أو الجمهور الإجابة عليها؟"
+                  placeholder="ما هو السؤال أو الفعالية التي تريدين من الجمهور التفاعل معها؟"
                   value={newQuestionText}
                   onChange={e => setNewQuestionText(e.target.value)}
                 />
@@ -756,14 +1069,14 @@ export default function SchoolPadletPage() {
                 <textarea 
                   className="padlet-textarea"
                   rows={2}
-                  placeholder="مثال: نرجو من الجميع كتابة تجاربكم في دقيقة واحدة مع أمثلة عملية..."
+                  placeholder="مثال: نرجو من الجميع كتابة أفكاركم والتجارب العملية في دقيقة..."
                   value={newQuestionDesc}
                   onChange={e => setNewQuestionDesc(e.target.value)}
                 />
               </div>
 
               <div className="padlet-form-group">
-                <label className="padlet-form-label">جمهور الهدف المطلوب تفاعله:</label>
+                <label className="padlet-form-label">جمهور الهدف للفعالية:</label>
                 <select 
                   className="padlet-select"
                   value={targetAudience}
@@ -772,8 +1085,77 @@ export default function SchoolPadletPage() {
                   <option value="الجميع (معلمون، أولياء أمور، طلاب)">الجميع (معلمون، أولياء أمور، طلاب)</option>
                   <option value="طاقم المعلمين والمعلمات فقط">طاقم المعلمين والمعلمات فقط</option>
                   <option value="أولياء الأمور الكرام">أولياء الأمور الكرام</option>
-                  <option value="الطلاب والطالبات">الطلاب والطالبات</option>
+                  <option value="طلاب وطالبات المدرسة">طلاب وطالبات المدرسة</option>
+                  <option value="صف محدد (مثال: الخامس أ)">صف محدد</option>
                 </select>
+              </div>
+
+              {/* ---------------- ACCESS MODE: OPEN VS CODE ---------------- */}
+              <div className="padlet-form-group" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <label className="padlet-form-label" style={{ color: '#fbbf24', fontSize: '0.92rem' }}>
+                  ⚙️ إمكانية المشاركة والتحكم بالجمهور:
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div 
+                    onClick={() => setAccessMode('open')}
+                    style={{
+                      padding: '0.75rem',
+                      borderRadius: '12px',
+                      background: accessMode === 'open' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
+                      border: accessMode === 'open' ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>🌐</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#ffffff' }}>مفتوحة للجميع</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>أي زائر يكتب دون كود</div>
+                  </div>
+
+                  <div 
+                    onClick={() => { setAccessMode('code'); if (!accessCode) generateRandomCode(); }}
+                    style={{
+                      padding: '0.75rem',
+                      borderRadius: '12px',
+                      background: accessMode === 'code' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                      border: accessMode === 'code' ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>🔒</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#ffffff' }}>توليد كود خاص</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>لجمهور هدف محدد فقط</div>
+                  </div>
+                </div>
+
+                {accessMode === 'code' && (
+                  <div style={{ marginTop: '0.75rem', background: 'rgba(245,158,11,0.08)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 700 }}>كود الدخول المخصص:</span>
+                      <button 
+                        type="button"
+                        onClick={generateRandomCode}
+                        style={{ background: 'none', border: 'none', color: '#fbbf24', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        🔄 توليد كود تلقائي
+                      </button>
+                    </div>
+                    <input 
+                      type="text" 
+                      className="padlet-input"
+                      required={accessMode === 'code'}
+                      placeholder="مثال: 5421 أو ARABIC-5"
+                      value={accessCode}
+                      onChange={e => setAccessCode(e.target.value)}
+                      style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 900, letterSpacing: '2px', color: '#fbbf24' }}
+                    />
+                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginTop: '0.35rem' }}>
+                      💡 سترسل المعلمة هذا الكود مع الرابط للجمهور المستهدف لكي يتمكنوا من الإجابة.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="padlet-modal-footer">
@@ -790,7 +1172,7 @@ export default function SchoolPadletPage() {
                   disabled={isSubmittingQuestion}
                 >
                   <i className="fas fa-bullhorn"></i>
-                  <span>{isSubmittingQuestion ? 'جاري النشر...' : 'نشر السؤال وتحديث البادليت 🚀'}</span>
+                  <span>{isSubmittingQuestion ? 'جاري النشر...' : 'نشر وتوليد رابط البادليت 🚀'}</span>
                 </button>
               </div>
             </form>
