@@ -14,8 +14,9 @@ export const defaultMainNavigation = [
   { id: "nav_challenge", label: "🏆 التحدي الأسبوعي", type: "page", target: "challenge", category: "main", order: 6 },
   { id: "nav_worksheets", label: "📑 أوراق العمل", type: "page", target: "worksheets", category: "main", order: 7 },
   { id: "nav_parent_polls", label: "📊 تصويت الأهالي", type: "page", target: "parent-polls", category: "main", order: 8 },
-  { id: "nav_3", label: "🗓️ الرزنامة السنوية", type: "page", target: "calendar", category: "main", order: 9 },
-  { id: "nav_4", label: "📰 الأخبار والبث المباشر", type: "page", target: "news", category: "main", order: 10 }
+  { id: "nav_padlet", label: "📌 بادليت المدرسة", type: "page", target: "padlet", category: "main", order: 9 },
+  { id: "nav_3", label: "🗓️ الرزنامة السنوية", type: "page", target: "calendar", category: "main", order: 10 },
+  { id: "nav_4", label: "📰 الأخبار والبث المباشر", type: "page", target: "news", category: "main", order: 11 }
 ];
 
 export const defaultNavigation = [...defaultMainNavigation, ...defaultTopNavigation];

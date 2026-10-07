@@ -35,6 +35,22 @@ const ImportantLinks = () => {
             });
           }
 
+          // Ensure Padlet is always present
+          const hasPadlet = list.some(l => 
+            (l.url && (l.url.includes('padlet') || l.url.includes('badlet'))) || 
+            (l.title && l.title.includes('بادليت'))
+          );
+          if (!hasPadlet) {
+            list.unshift({
+              id: 'school-padlet-default',
+              title: 'بادليت مدرسة مشيرفة',
+              icon: 'fa-chalkboard',
+              url: '#/padlet',
+              desc: 'حائط البادليت التفاعلي: تضع المعلمة الأسئلة ويشارك المعلمون والجمهور ببطاقات وإجابات حية.',
+              badge: 'جديد 📌'
+            });
+          }
+
           // Ensure Kiosk is always included even if not manually added in Firestore yet
           const hasKiosk = list.some(l => 
             (l.url && (l.url.includes('kiosk') || l.url.includes('display'))) || 

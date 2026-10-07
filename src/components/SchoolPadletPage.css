@@ -1,0 +1,762 @@
+/* ==========================================================================
+   School Padlet (بادليت المدرسة التفاعلي) - Stylesheet
+   ========================================================================== */
+
+:root {
+  --padlet-bg-cork: #f3f0e6;
+  --padlet-card-radius: 16px;
+  --padlet-shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --padlet-shadow-hover: 0 12px 28px rgba(15, 23, 42, 0.16);
+  --padlet-primary: #f59e0b;
+}
+
+.school-padlet-page {
+  min-height: 100vh;
+  background-color: #0f172a;
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px;
+  color: #f8fafc;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  direction: rtl;
+  padding-bottom: 5rem;
+}
+
+/* ---------------- Top Navigation Bar ---------------- */
+.padlet-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.75rem;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.padlet-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.padlet-brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  font-size: 1.35rem;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+}
+
+.padlet-brand-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.padlet-brand-badge {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-weight: 700;
+}
+
+.padlet-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.padlet-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.padlet-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.padlet-nav-btn.primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  color: #0f172a;
+  border: none;
+  font-weight: 900;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.padlet-nav-btn.primary:hover {
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+  color: #000;
+}
+
+/* ---------------- Hero & Topic Card ---------------- */
+.padlet-hero {
+  max-width: 1300px;
+  margin: 1.5rem auto;
+  padding: 0 1.25rem;
+}
+
+.padlet-question-banner {
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  border-radius: 24px;
+  padding: 2rem 2.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.padlet-question-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, #f59e0b, #ec4899, #3b82f6);
+}
+
+.padlet-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.padlet-author-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 0.45rem 1rem;
+  border-radius: 50px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.padlet-author-badge .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.padlet-topic-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.padlet-question-text {
+  font-size: clamp(1.3rem, 2.8vw, 1.95rem);
+  font-weight: 900;
+  line-height: 1.45;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.padlet-question-desc {
+  font-size: 1rem;
+  color: #cbd5e1;
+  line-height: 1.65;
+  max-width: 950px;
+  margin-bottom: 1.25rem;
+}
+
+.padlet-question-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.padlet-stats-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.padlet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+
+.padlet-chip.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* ---------------- Board Filter & Actions Bar ---------------- */
+.padlet-controls-bar {
+  max-width: 1300px;
+  margin: 1.25rem auto;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.padlet-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(30, 41, 59, 0.6);
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.padlet-filter-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.padlet-filter-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.padlet-filter-btn.active {
+  background: #f59e0b;
+  color: #0f172a;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.padlet-add-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+}
+
+.padlet-add-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+/* ---------------- Board Cards Grid (Masonry Padlet Style) ---------------- */
+.padlet-board-container {
+  max-width: 1300px;
+  margin: 1.5rem auto;
+  padding: 0 1.25rem;
+}
+
+.padlet-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.35rem;
+  align-items: start;
+}
+
+/* Individual Sticky Card */
+.padlet-card {
+  border-radius: 20px;
+  padding: 1.35rem 1.25rem 1rem 1.25rem;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-col: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.padlet-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  z-index: 10;
+}
+
+/* Sticky Pin visual decoration */
+.padlet-pin {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* Color Presets (Sticky Notes Palette) */
+.padlet-card.color-yellow {
+  background: linear-gradient(145deg, #fef3c7, #fde68a);
+  color: #1e293b;
+  border-color: #fcd34d;
+}
+.padlet-card.color-yellow .padlet-pin { background: #d97706; }
+
+.padlet-card.color-blue {
+  background: linear-gradient(145deg, #e0f2fe, #bae6fd);
+  color: #0f172a;
+  border-color: #7dd3fc;
+}
+.padlet-card.color-blue .padlet-pin { background: #0284c7; }
+
+.padlet-card.color-green {
+  background: linear-gradient(145deg, #dcfce7, #bbf7d0);
+  color: #064e3b;
+  border-color: #86efac;
+}
+.padlet-card.color-green .padlet-pin { background: #059669; }
+
+.padlet-card.color-pink {
+  background: linear-gradient(145deg, #fce7f3, #fbcfe8);
+  color: #831843;
+  border-color: #f472b6;
+}
+.padlet-card.color-pink .padlet-pin { background: #db2777; }
+
+.padlet-card.color-purple {
+  background: linear-gradient(145deg, #f3e8ff, #e9d5ff);
+  color: #581c87;
+  border-color: #d8b4fe;
+}
+.padlet-card.color-purple .padlet-pin { background: #9333ea; }
+
+.padlet-card.color-dark {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.padlet-card.color-dark .padlet-pin { background: #f59e0b; }
+
+.padlet-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-right: 1.5rem; /* Room for the pin */
+}
+
+.padlet-card-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.padlet-author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.padlet-card.color-dark .padlet-author-avatar {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f59e0b;
+}
+
+.padlet-author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.padlet-author-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.padlet-author-role {
+  font-size: 0.7rem;
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.padlet-card-time {
+  font-size: 0.68rem;
+  opacity: 0.65;
+}
+
+.padlet-card-body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.padlet-card-image {
+  margin: 0.5rem -0.5rem 0.85rem -0.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 220px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.padlet-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.padlet-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: auto;
+}
+
+.padlet-card.color-dark .padlet-card-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.padlet-reactions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.padlet-react-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.padlet-card.color-dark .padlet-react-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+.padlet-react-btn:hover {
+  transform: scale(1.08);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.padlet-card.color-dark .padlet-react-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.padlet-react-btn.reacted {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.padlet-card.color-dark .padlet-react-btn.reacted {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+.padlet-card-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.padlet-card.color-dark .padlet-card-badge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ---------------- Floating Action Button ---------------- */
+.padlet-floating-fab {
+  position: fixed;
+  bottom: 2rem;
+  left: 2rem;
+  z-index: 50;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  color: #0f172a;
+  border: none;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.padlet-floating-fab:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.6);
+}
+
+/* ---------------- Modals (Post Card & Teacher Ask Question) ---------------- */
+.padlet-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.padlet-modal-content {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  max-width: 560px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  direction: rtl;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.padlet-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.padlet-modal-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.padlet-modal-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.padlet-modal-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.padlet-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.padlet-form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 0.45rem;
+}
+
+.padlet-input,
+.padlet-textarea,
+.padlet-select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: #ffffff;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.padlet-input:focus,
+.padlet-textarea:focus,
+.padlet-select:focus {
+  border-color: #f59e0b;
+}
+
+.padlet-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.padlet-color-opt {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.padlet-color-opt:hover {
+  transform: scale(1.15);
+}
+
+.padlet-color-opt.active {
+  border-color: #ffffff;
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.padlet-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------------- Empty State ---------------- */
+.padlet-empty-board {
+  text-align: center;
+  padding: 4rem 1rem;
+  background: rgba(30, 41, 59, 0.4);
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.padlet-empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.padlet-empty-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+}
+
+.padlet-empty-sub {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+/* ---------------- Mobile Responsive Media Queries ---------------- */
+@media (max-width: 768px) {
+  .padlet-topbar {
+    padding: 0.75rem 1rem;
+  }
+  .padlet-question-banner {
+    padding: 1.5rem 1.25rem;
+    border-radius: 18px;
+  }
+  .padlet-question-text {
+    font-size: 1.25rem;
+  }
+  .padlet-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .padlet-floating-fab {
+    bottom: 1.25rem;
+    left: 1.25rem;
+    width: 52px;
+    height: 52px;
+  }
+}

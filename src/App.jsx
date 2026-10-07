@@ -83,6 +83,7 @@ const ScientificResearchQuest = lazyWithRetry(() => import('./components/Scienti
 const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPedagogyPage'));
 const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
+const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 
 
 function App() {
@@ -360,6 +361,7 @@ function App() {
   const isCalendarView = currentHash.includes('calendar');
   const isTasbihView = currentHash.includes('tasbih');
   const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
+  const isPadletView = currentHash.includes('padlet') || currentHash.includes('badlet');
   const isStudentDismissalView = currentHash.includes('student-dismissal') || currentHash.includes('tasreeh') || currentHash.includes('dismissal');
   const isResearchQuestView = currentHash.includes('scientific-research') || 
     currentHash.includes('research-quest') || 
@@ -367,6 +369,15 @@ function App() {
     currentHash.includes('bahth') || 
     (currentHash.includes('research') && !currentHash.includes('stem'));
   const customPageId = isCustomPageView ? currentHash.replace(/^#\/?page\//, '') : null;
+
+  if (isPadletView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <Loader />
+        <SchoolPadletPage />
+      </Suspense>
+    );
+  }
 
   if (isStudentDismissalView) {
     return (
