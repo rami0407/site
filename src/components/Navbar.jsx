@@ -33,7 +33,8 @@ const Navbar = () => {
       const id = item.id || '';
       const target = item.target || '';
       const label = item.label || '';
-      // Exclude: prep_day, monawaat, excellence, astronomy, stem, tasbih, appointments, books, principal, initiatives, articles
+      // Exclude: prep_day, monawaat, excellence, astronomy, stem, tasbih, appointments, books, principal, initiatives, articles, and miftaah (moved to Important Links)
+      if (id === 'top_miftaah' || id === 'nav_miftaah' || target === 'miftaah' || label.includes('منصة مِفتاح') || label.includes('مِفتاح AI')) return true;
       if (id === 'nav_prep_day' || target === 'prep-day' || target === 'monawaat') return true;
       if (id === 'nav_excellence' || target === 'excellence') return true;
       if (id === 'nav_astronomy' || target === 'astronomy') return true;
@@ -53,17 +54,6 @@ const Navbar = () => {
       
       const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'gratitude-sky', 'stars', 'padlet', 'miftaah', 'mafatih'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
-
-      if (!items.some(item => item.id === 'nav_miftaah' || item.target === 'miftaah')) {
-        items.push({
-          id: "nav_miftaah",
-          label: "🗝️ منصة مِفتاح AI",
-          type: "page",
-          target: "miftaah",
-          category: "main",
-          order: 2
-        });
-      }
 
       if (!items.some(item => item.id === 'nav_parent_polls' || item.target === 'parent-polls')) {
         items.push({
@@ -251,29 +241,6 @@ const Navbar = () => {
               </li>
             ))}
 
-
-            {/* Direct Quick Link for Miftaah AI Platform */}
-            <li>
-              <a 
-                href="#/miftaah"
-                className="top-miftaah-link-btn"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: '#ffffff',
-                  padding: '3px 12px',
-                  borderRadius: '16px',
-                  fontWeight: 900,
-                  fontSize: '0.88rem',
-                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)',
-                  textDecoration: 'none'
-                }}
-              >
-                <span>🗝️</span> منصة مِفتاح AI
-              </a>
-            </li>
 
             {/* Direct Quick Link for Teachers Dismissal */}
             <li>

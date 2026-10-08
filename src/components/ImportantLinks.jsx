@@ -19,13 +19,40 @@ const ImportantLinks = () => {
         if (list.length === 0) {
           setLinks(fallbackLinks);
         } else {
+          // Ensure Miftaah AI Platform is always present at the very top
+          const hasMiftaah = list.some(l => 
+            (l.title && (l.title.includes('مِفتاح AI') || l.title.includes('منصة مِفتاح') || l.title.includes('مفتاح AI'))) || 
+            (l.url && (l.url.includes('miftaah') || l.url.includes('miftah')))
+          );
+          if (!hasMiftaah) {
+            list.unshift({
+              id: 'school-miftaah-ai-default',
+              title: 'منصة مِفتاح AI — رحلة التعلم التفاعلية (طلاب ومعلمون)',
+              icon: 'fa-key',
+              url: '#/miftaah',
+              desc: 'الحصة التفاعلية الممتعة لطلاب المدرسة بمحطات التحدي والاستكشاف بالذكاء الاصطناعي، واستوديو المعلم لتحضير وإدارة الحصص النموذجية.',
+              badge: 'منصة مِفتاح AI 🗝️',
+              isAi: true,
+              highlight: true
+            });
+          } else {
+            const mIndex = list.findIndex(l => 
+              (l.title && (l.title.includes('مِفتاح AI') || l.title.includes('منصة مِفتاح') || l.title.includes('مفتاح AI'))) || 
+              (l.url && (l.url.includes('miftaah') || l.url.includes('miftah')))
+            );
+            if (mIndex > 0) {
+              const [mItem] = list.splice(mIndex, 1);
+              list.unshift(mItem);
+            }
+          }
+
           // Ensure Happiness Mail is always present at the top
           const hasHappinessMail = list.some(l => 
             (l.title && (l.title.includes('بريد السعادة') || l.title.includes('بريد التميز') || l.title.includes('بريد'))) || 
             (l.url && (l.url.includes('happiness-mail') || l.url.includes('bareed')))
           );
           if (!hasHappinessMail) {
-            list.unshift({
+            list.splice(1, 0, {
               id: 'school-happiness-mail-default',
               title: 'بريد التميز',
               icon: 'fa-envelope-open-text',
@@ -380,13 +407,16 @@ const ImportantLinks = () => {
             const isExcellence = link.url?.includes('excellence') || link.badge?.includes('التميز');
             const isTasbih = link.url?.includes('tasbih') || link.badge?.includes('الذكر') || link.title?.includes('مسبحة');
             const isMonawaat = link.url?.includes('monawaat') || link.badge?.includes('منوعات') || link.title?.includes('منوعات');
-            const isMafatih = link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.badge?.includes('مفتاح') || link.title?.includes('مفاتيح') || link.title?.includes('مفتاح') || link.title?.includes('מפתי"ח') || link.title?.includes('מפת"ח');
+            const isMiftaah = link.url?.includes('miftaah') || link.badge?.includes('مِفتاح AI') || link.badge?.includes('منصة مِفتاح') || link.title?.includes('مِفتاح AI') || link.title?.includes('منصة مِفتاح');
+            const isMafatih = !isMiftaah && (link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.badge?.includes('مفتاح') || link.title?.includes('مفاتيح') || link.title?.includes('مفتاح') || link.title?.includes('מפתי"ח') || link.title?.includes('מפת"ح'));
             const isMath = link.url?.includes('math-championship') || link.badge?.includes('بطولة') || link.badge?.includes('كؤوس') || link.title?.includes('أولمبياد') || link.title?.includes('الرياضيات');
-            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath;
+            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath && !isMiftaah;
 
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             let iconGradient = undefined;
-            if (isServices) {
+            if (isMiftaah) {
+              iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)';
+            } else if (isServices) {
               iconGradient = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
             } else 
             if (isKiosk) {
@@ -430,6 +460,12 @@ const ImportantLinks = () => {
                   if (link.action === 'open-homework-helper' || link.url?.includes('homework-helper')) {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-homework-helper'));
+                    return;
+                  }
+                  if (link.url?.includes('miftaah')) {
+                    e.preventDefault();
+                    window.location.hash = '#/miftaah';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
                   if (link.url?.includes('excellence')) {

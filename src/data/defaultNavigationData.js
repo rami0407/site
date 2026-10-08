@@ -1,14 +1,12 @@
 // Default navigation links for Musheirifa Elementary School
 export const defaultTopNavigation = [
-  { id: "top_miftaah", label: "🗝️ منصة مِفتاح AI", type: "page", target: "miftaah", category: "top", order: 1 },
-  { id: "top_links", label: "🔗 روابط هامة", type: "section", target: "links", category: "top", order: 2 },
-  { id: "top_gallery", label: "🖼️ المعرض المصور", type: "page", target: "gallery", category: "top", order: 3 },
-  { id: "top_contact", label: "📞 اتصل بنا", type: "section", target: "contact", category: "top", order: 4 }
+  { id: "top_links", label: "🔗 روابط هامة", type: "section", target: "links", category: "top", order: 1 },
+  { id: "top_gallery", label: "🖼️ المعرض المصور", type: "page", target: "gallery", category: "top", order: 2 },
+  { id: "top_contact", label: "📞 اتصل بنا", type: "section", target: "contact", category: "top", order: 3 }
 ];
 
 export const defaultMainNavigation = [
   { id: "nav_1", label: "الرئيسية", type: "section", target: "home", category: "main", order: 1 },
-  { id: "nav_miftaah", label: "🗝️ منصة مِفتاح AI", type: "page", target: "miftaah", category: "main", order: 2 },
   { id: "nav_prep_day", label: "🎨 اليوم التحضيري", type: "page", target: "prep-day", category: "main", order: 3 },
   { id: "nav_world_ideas", label: "🚀 شارِك أفكارك للعالم", type: "page", target: "world-ideas", category: "main", order: 4 },
   { id: "nav_fb", label: "📱 فيس بوك المدرسة", type: "page", target: "facebook", category: "main", order: 5 },
