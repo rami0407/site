@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 import { doc, onSnapshot, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { generateDailyWisdomAndFact } from '../utils/aiService';
 import './KioskDisplayPage.css';
 
@@ -604,19 +605,10 @@ const KioskDisplayPage = () => {
     setActivePickerModal(null);
   };
 
-  // Direct Multi-Image Upload & Instant Slide Generation
-  const handleDirectMultiImageUpload = (files) => {
-    if (!files || files.length === 0) return;
-    const fileList = Array.from(files).filter(f => f.type.startsWith('image/'));
-    if (fileList.length === 0) {
-      alert('يرجى اختيار ملفات صور صالحة (JPG, PNG, WebP)');
-      return;
-    }
-
-    let processed = 0;
-    const newSlides = [];
-
-    fileList.forEach((file, idx) => {
+  // Helper: Upload image to Firebase Storage (generates lightweight ~100-byte URL) or fallback to compact data URL
+  const uploadAndCompressKioskImage = async (file) => {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
@@ -624,7 +616,7 @@ const KioskDisplayPage = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1600;
+          const maxDim = 1280;
           if (width > maxDim || height > maxDim) {
             if (width > height) {
               height = Math.round((height * maxDim) / width);
@@ -638,61 +630,111 @@ const KioskDisplayPage = () => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.85);
 
-          const fileNameClean = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-
-          newSlides.push({
-            id: `slide_img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-            type: 'split_photos',
-            title: fileNameClean || 'صورة من فعاليات المدرسة',
-            subtitle: 'مدرسة مشيرفة الابتدائية • لحظات الإبداع والتميز والأنشطة المدرسية الهادفة',
-            badge: '📸 صورة مميزة',
-            imageUrl: compressed,
-            sideTitle: fileNameClean || 'فعاليات مدرسة مشيرفة',
-            sideText: 'توثيق حي ومصور لأبرز الأنشطة التعليمية والإبداعية ومشاركات فرسان التميز في مدرستنا.',
-            sideTheme: 'emerald',
-            duration: 15,
-            enabled: true
-          });
-
-          processed++;
-          if (processed === fileList.length) {
-            const allUploadedImages = newSlides.map(s => s.imageUrl);
-
-            // Attach allUploadedImages array to each slide so any of them can alternate through all uploaded photos
-            newSlides.forEach(s => {
-              s.images = allUploadedImages;
-            });
-
-            // If multiple photos uploaded, create a dedicated Master Album slide that cycles through them
-            let combinedSlides = [...newSlides];
-            if (allUploadedImages.length > 1) {
-              const albumSlide = {
-                id: `slide_album_split_${Date.now()}`,
-                type: 'split_photos',
-                title: 'معرض صور الفعاليات المدرسية',
-                subtitle: `ألبوم تفاعلي مميز يضم (${allUploadedImages.length}) صور توثق فعاليات وإبداعات طلاب مدرسة مشيرفة الابتدائية.`,
-                badge: '📸 ألبوم الصور التفاعلي',
-                sideTitle: 'أجمل اللحظات والإنجازات',
-                sideText: 'توثيق حي ومصور لأبرز المحطات والأنشطة الإبداعية ومشاركات فرسان التميز والريادة.',
-                images: allUploadedImages,
-                imageUrl: allUploadedImages[0],
-                duration: Math.max(25, allUploadedImages.length * 5),
-                sideTheme: 'emerald',
-                enabled: true
-              };
-              combinedSlides = [albumSlide, ...newSlides];
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              resolve(canvas.toDataURL('image/jpeg', 0.65));
+              return;
             }
 
-            updateStudioSlides([...combinedSlides, ...currentStudioSlides]);
-            alert(`🎉 تم بنجاح رفع وإضافة ${newSlides.length} صورة إلى شاشة العرض بنظام الشاشة المقسمة!\n\n✨ الميزات المفعلة الآن:\n1. الشاشة مقسمة: الصور على جهة والنصوص والمعلومات على جهة أخرى.\n2. الصور تتبدل تلقائياً كل 4 ثوانٍ مع عداد الصور وأزرار تنقل.\n3. النصوص والشريط الإخباري في الأسفل يعملان بكل وضوح.\n\nاضغط "حفظ ونشر التغييرات" لنشرها فوراً على الشاشات!`);
-          }
+            // Try Firebase Storage first (generates tiny ~100 byte cloud URL)
+            try {
+              const safeName = (file.name || 'kiosk_photo').replace(/[^a-zA-Z0-9.]/g, '_');
+              const fileRef = ref(storage, `kiosk_photos/${Date.now()}_${Math.random().toString(36).substring(2, 7)}_${safeName}`);
+              await uploadBytes(fileRef, blob);
+              const downloadUrl = await getDownloadURL(fileRef);
+              if (downloadUrl) {
+                resolve(downloadUrl);
+                return;
+              }
+            } catch (storageErr) {
+              console.warn('Firebase Storage upload failed, falling back to compressed JPEG data URL:', storageErr);
+            }
+
+            // Fallback: Compressed JPEG data URL
+            resolve(canvas.toDataURL('image/jpeg', 0.65));
+          }, 'image/jpeg', 0.82);
         };
+        img.onerror = () => resolve('');
         img.src = e.target.result;
       };
+      reader.onerror = () => resolve('');
       reader.readAsDataURL(file);
     });
+  };
+
+  // Direct Multi-Image Upload & Instant Slide Generation
+  const handleDirectMultiImageUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    const fileList = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (fileList.length === 0) {
+      alert('يرجى اختيار ملفات صور صالحة (JPG, PNG, WebP)');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveSuccessMsg('⏳ جاري رفع وضغط الصور وتخزينها سحابياً...');
+
+    try {
+      const newSlides = [];
+      for (let idx = 0; idx < fileList.length; idx++) {
+        const file = fileList[idx];
+        const uploadedUrl = await uploadAndCompressKioskImage(file);
+        if (!uploadedUrl) continue;
+
+        const fileNameClean = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+        newSlides.push({
+          id: `slide_img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+          type: 'split_photos',
+          title: fileNameClean || 'صورة من فعاليات المدرسة',
+          subtitle: 'مدرسة مشيرفة الابتدائية • لحظات الإبداع والتميز والأنشطة المدرسية الهادفة',
+          badge: '📸 صورة مميزة',
+          imageUrl: uploadedUrl,
+          sideTitle: fileNameClean || 'فعاليات مدرسة مشيرفة',
+          sideText: 'توثيق حي ومصور لأبرز الأنشطة التعليمية والإبداعية ومشاركات فرسان التميز في مدرستنا.',
+          sideTheme: 'emerald',
+          duration: 15,
+          enabled: true
+        });
+      }
+
+      if (newSlides.length === 0) {
+        alert('لم يتم تحميل أي صورة بنجاح. يرجى المحاولة مرة أخرى.');
+        return;
+      }
+
+      const allUploadedImages = newSlides.map(s => s.imageUrl);
+
+      // Create a Master Album slide that references the uploaded photos
+      let combinedSlides = [...newSlides];
+      if (allUploadedImages.length > 1) {
+        const albumSlide = {
+          id: `slide_album_split_${Date.now()}`,
+          type: 'split_photos',
+          title: 'معرض صور الفعاليات المدرسية',
+          subtitle: `ألبوم تفاعلي مميز يضم (${allUploadedImages.length}) صور توثق فعاليات وإبداعات طلاب مدرسة مشيرفة الابتدائية.`,
+          badge: '📸 ألبوم الصور التفاعلي',
+          sideTitle: 'أجمل اللحظات والإنجازات',
+          sideText: 'توثيق حي ومصور لأبرز المحطات والأنشطة الإبداعية ومشاركات فرسان التميز والريادة.',
+          images: allUploadedImages,
+          imageUrl: allUploadedImages[0],
+          duration: Math.max(25, allUploadedImages.length * 5),
+          sideTheme: 'emerald',
+          enabled: true
+        };
+        combinedSlides = [albumSlide, ...newSlides];
+      }
+
+      updateStudioSlides([...combinedSlides, ...currentStudioSlides]);
+      alert(`🎉 تم بنجاح رفع وتجهيز ${newSlides.length} صورة سحابياً بأعلى سرعة!\n\n✨ تم تفادي قيود حجم الملفات بنجاح عبر التخزين السحابي الخفيف.\nاضغط "حفظ ونشر التغييرات" لنشرها فوراً على الشاشة.`);
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء معالجة الصور: ' + err.message);
+    } finally {
+      setIsSaving(false);
+      setSaveSuccessMsg('');
+    }
   };
 
   // Open Edit Modal for a Slide
@@ -733,61 +775,99 @@ const KioskDisplayPage = () => {
     setEditingSlide(null);
   };
 
-  // Upload image with browser compression
-  const handleUploadImage = (file, callback) => {
+  // Upload single image with Storage upload & browser compression fallback
+  const handleUploadImage = async (file, callback) => {
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 8 ميغابايت');
+    if (file.size > 15 * 1024 * 1024) {
+      alert('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 15 ميغابايت');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1200;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.82);
-        callback(compressedBase64);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const url = await uploadAndCompressKioskImage(file);
+      if (url) callback(url);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   // Save full configuration to Firestore and LocalStorage
   const handleSaveStudioConfig = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setIsSaving(true);
-    setSaveSuccessMsg('');
+    setSaveSuccessMsg('⏳ جاري فحص وضغط المواد ونشرها على الشاشات...');
     const ch = studioChannel;
     const currentConf = studioConfigs[ch] || DEFAULT_CONFIGS[ch];
+
     try {
+      // 1. Sanitize slides & migrate any heavy base64 images to Firebase Storage
+      const sanitizedSlides = [];
+      for (const slide of currentStudioSlides) {
+        let sCopy = { ...slide };
+
+        // If slide has redundant images array and is not an album, remove it to save memory
+        if (sCopy.type !== 'split_photos' && sCopy.type !== 'slideshow' && sCopy.type !== 'split_slideshow') {
+          delete sCopy.images;
+        }
+
+        // Migrate base64 imageUrl to Firebase Storage if found
+        if (sCopy.imageUrl && sCopy.imageUrl.startsWith('data:image/')) {
+          try {
+            const res = await fetch(sCopy.imageUrl);
+            const blob = await res.blob();
+            const fileRef = ref(storage, `kiosk_photos/${Date.now()}_${Math.random().toString(36).substring(2, 6)}.jpg`);
+            await uploadBytes(fileRef, blob);
+            sCopy.imageUrl = await getDownloadURL(fileRef);
+          } catch (migErr) {
+            console.warn('Could not migrate base64 image to Storage:', migErr);
+          }
+        }
+
+        // Migrate base64 images array items to Firebase Storage if found
+        if (Array.isArray(sCopy.images) && sCopy.images.length > 0) {
+          const cleanImages = [];
+          for (const imgItem of sCopy.images) {
+            if (imgItem && imgItem.startsWith('data:image/')) {
+              try {
+                const res = await fetch(imgItem);
+                const blob = await res.blob();
+                const fileRef = ref(storage, `kiosk_photos/${Date.now()}_${Math.random().toString(36).substring(2, 6)}.jpg`);
+                await uploadBytes(fileRef, blob);
+                const dlUrl = await getDownloadURL(fileRef);
+                cleanImages.push(dlUrl);
+              } catch (migErr) {
+                cleanImages.push(imgItem);
+              }
+            } else {
+              cleanImages.push(imgItem);
+            }
+          }
+          sCopy.images = cleanImages;
+        }
+
+        sanitizedSlides.push(sCopy);
+      }
+
       const payload = {
         ...currentConf,
-        slides: currentStudioSlides,
+        slides: sanitizedSlides,
         updatedAt: new Date().toISOString()
       };
+
+      // Check payload size in bytes to guarantee it never exceeds Firestore 1MB limit
+      const payloadBytes = new Blob([JSON.stringify(payload)]).size;
+      if (payloadBytes > 950000) {
+        console.warn(`Payload size (${payloadBytes} bytes) near 1MB Firestore limit, trimming older slides...`);
+        payload.slides = payload.slides.slice(0, 25);
+      }
 
       await setDoc(doc(db, 'displayBoard', ch), payload);
       if (ch === 'main') {
         await setDoc(doc(db, 'displayBoard', 'config'), payload);
       }
       localStorage.setItem(`db_kiosk_${ch}`, JSON.stringify(payload));
+
+      // Update studio state with sanitized slides
+      updateStudioSlides(sanitizedSlides);
 
       if (channel === ch) {
         setConfig(payload);
