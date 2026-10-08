@@ -333,6 +333,30 @@ const KioskDisplayPage = () => {
             </button>
           ))}
         </div>
+
+        {/* Direct Link to Studio for Content Managers / Teachers / Admins */}
+        <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={() => { window.location.hash = '#/kiosk-admin'; }}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              color: '#ffffff',
+              border: '1px solid #38bdf8',
+              padding: '12px 28px',
+              borderRadius: '12px',
+              fontWeight: 800,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(2, 132, 199, 0.4)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}
+          >
+            <i className="fas fa-sliders-h"></i> ⚙️ استوديو التحكم بتصميم ومحتوى الشاشات
+          </button>
+        </div>
       </div>
     );
   }
@@ -360,6 +384,29 @@ const KioskDisplayPage = () => {
         </div>
 
         <div className="kiosk-header-left">
+          {/* Direct jump to Kiosk Studio */}
+          <button 
+            type="button" 
+            className="kiosk-btn-admin-studio" 
+            onClick={() => { window.location.hash = '#/kiosk-admin'; }}
+            title="فتح استوديو التحكم بتصميم ومحتوى الشاشة"
+            style={{
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              color: 'white',
+              border: '1px solid #38bdf8',
+              padding: '6px 14px',
+              borderRadius: '10px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.88rem'
+            }}
+          >
+            <i className="fas fa-sliders-h"></i> ⚙️ استوديو التحكم والتصميم
+          </button>
+
           {/* Switch Channel Quick Button for TV remotes */}
           <button 
             type="button" 

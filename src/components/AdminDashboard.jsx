@@ -422,7 +422,33 @@ const AdminDashboard = () => {
 
   const [autoAddToNav, setAutoAddToNav] = useState(true);
 
-  const [activeTab, setActiveTab] = useState('add-page'); // default to add-page (Google Sites Page Builder)
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('kiosk') || hash.includes('kiosk-display') || hash.includes('kiosk-admin')) {
+      return 'kiosk-display';
+    }
+    const match = hash.match(/[?&]tab=([^&]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return 'add-page';
+  });
+
+  useEffect(() => {
+    const handleHashTab = () => {
+      const hash = window.location.hash || '';
+      if (hash.includes('kiosk') || hash.includes('kiosk-display') || hash.includes('kiosk-admin')) {
+        setActiveTab('kiosk-display');
+      } else {
+        const match = hash.match(/[?&]tab=([^&]+)/);
+        if (match && match[1]) {
+          setActiveTab(match[1]);
+        }
+      }
+    };
+    window.addEventListener('hashchange', handleHashTab);
+    return () => window.removeEventListener('hashchange', handleHashTab);
+  }, []);
 
   // Dashboard Data Lists
   const [events, setEvents] = useState([]);
@@ -4711,6 +4737,27 @@ const AdminDashboard = () => {
               🔗 سطر العناوين ({navigation.length})
             </button>
 
+            {/* TOP ITEM: DIGITAL KIOSK DISPLAY CONTROL STUDIO */}
+            <button 
+              onClick={() => setActiveTab('kiosk-display')} 
+              className={`filter-chip ${activeTab === 'kiosk-display' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.05rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'kiosk-display' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#e0f2fe',
+                color: activeTab === 'kiosk-display' ? 'white' : '#0369a1',
+                fontWeight: 900,
+                border: '2px solid #38bdf8',
+                boxShadow: '0 2px 6px rgba(2,132,199,0.2)'
+              }}
+            >
+              <i className="fas fa-desktop" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              📺 شاشات العرض الذكية (Kiosk Studio)
+            </button>
+
             {/* TOP ITEM 3: WORLD IDEAS CONTROL TAB */}
             <button 
               onClick={() => {
@@ -5212,25 +5259,6 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-chalkboard-teacher" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
               👨‍🏫 تراخيص المعلمين ({teachersList.filter(t => t.status === 'pending').length} معلّق)
-            </button>
-
-            <button 
-              onClick={() => setActiveTab('kiosk-display')} 
-              className={`filter-chip ${activeTab === 'kiosk-display' ? 'active' : ''}`}
-              style={{
-                width: '100%',
-                justify: 'flex-start',
-                padding: '0.9rem 1.2rem',
-                fontSize: '1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: activeTab === 'kiosk-display' ? '#0ea5e9' : '#e0f2fe',
-                color: activeTab === 'kiosk-display' ? 'white' : '#0369a1',
-                fontWeight: 800,
-                border: '2px solid #7dd3fc'
-              }}
-            >
-              <i className="fas fa-desktop" style={{ marginLeft: '0.85rem', width: '20px' }}></i>
-              📺 شاشة العرض الرقمية (Display Kiosk)
             </button>
 
             <button 
@@ -8194,6 +8222,15 @@ const AdminDashboard = () => {
                     >
                       <i className="fas fa-tv"></i> 📺 تثبيت شاشة العرض (Kiosk)
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('kiosk-display')}
+                      className="btn"
+                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', fontWeight: 900, padding: '0.65rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2,132,199,0.3)' }}
+                      title="الانتقال لاستوديو التحكم بتصميم وبث شاشات العرض الذكية"
+                    >
+                      <i className="fas fa-sliders-h"></i> ⚙️ استوديو تصميم وتحكم شاشات العرض
+                    </button>
                   </div>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem', alignItems: 'start' }}>
@@ -8294,7 +8331,17 @@ const AdminDashboard = () => {
                                     <a href={link.url} target="_blank" rel="noopener noreferrer">{link.url}</a>
                                   </td>
                                   <td style={{ padding: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{link.desc}</td>
-                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.75rem' }}>
+                                  <td style={{ padding: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                    {Boolean(link.url?.includes('kiosk') || link.title?.includes('شاشة العرض')) && (
+                                      <button 
+                                        type="button"
+                                        onClick={() => setActiveTab('kiosk-display')} 
+                                        style={{ border: 'none', background: '#e0f2fe', color: '#0284c7', cursor: 'pointer', padding: '6px 10px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                        title="فتح استوديو تصميم والتحكم بشاشات العرض"
+                                      >
+                                        <i className="fas fa-sliders-h"></i> استوديو الشاشة
+                                      </button>
+                                    )}
                                     <button 
                                       onClick={() => startEditLink(link)} 
                                       style={{ border: 'none', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '1.1rem' }}
