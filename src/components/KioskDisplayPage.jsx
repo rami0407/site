@@ -589,6 +589,67 @@ const KioskDisplayPage = () => {
     setActivePickerModal(null);
   };
 
+  // Direct Multi-Image Upload & Instant Slide Generation
+  const handleDirectMultiImageUpload = (files) => {
+    if (!files || files.length === 0) return;
+    const fileList = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (fileList.length === 0) {
+      alert('يرجى اختيار ملفات صور صالحة (JPG, PNG, WebP)');
+      return;
+    }
+
+    let processed = 0;
+    const newSlides = [];
+
+    fileList.forEach((file, idx) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1600;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+
+          const fileNameClean = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+          newSlides.push({
+            id: `slide_img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+            type: 'photo',
+            title: fileNameClean || 'صورة من فعاليات المدرسة',
+            subtitle: 'مدرسة مشيرفة الابتدائية • لحظات الإبداع والتميز',
+            badge: '📸 صورة مميزة',
+            imageUrl: compressed,
+            duration: 15,
+            enabled: true
+          });
+
+          processed++;
+          if (processed === fileList.length) {
+            updateStudioSlides([...newSlides, ...currentStudioSlides]);
+            alert(`🎉 تم بنجاح رفع وإضافة ${newSlides.length} صورة إلى قائمة العرض! الصور جاهزة في القائمة بالأسفل، اضغط "حفظ ونشر" لبثها على التلفاز.`);
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Open Edit Modal for a Slide
   const handleStartEditSlide = (slide) => {
     setEditingSlide({ ...slide });
@@ -888,7 +949,33 @@ const KioskDisplayPage = () => {
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* DIRECT PHOTO UPLOAD BUTTON */}
+            <label style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: '#fff',
+              border: '2px solid #34d399',
+              padding: '0.75rem 1.6rem',
+              borderRadius: '12px',
+              fontWeight: 900,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 15px rgba(16,185,129,0.4)',
+              transition: 'all 0.2s ease'
+            }}>
+              <i className="fas fa-camera"></i> 📸 رفع صور من جهازي وعرضها في الشاشة
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*" 
+                style={{ display: 'none' }}
+                onChange={(e) => handleDirectMultiImageUpload(e.target.files)} 
+              />
+            </label>
+
             <button
               type="button"
               onClick={handleStartCreateSlide}
@@ -907,7 +994,7 @@ const KioskDisplayPage = () => {
                 boxShadow: '0 4px 15px rgba(2, 132, 199, 0.3)'
               }}
             >
-              <i className="fas fa-plus-circle"></i> ➕ إضافة مادة / إعلان مخصص
+              <i className="fas fa-plus-circle"></i> ➕ إضافة إعلان مخصص
             </button>
 
             <button
@@ -927,7 +1014,7 @@ const KioskDisplayPage = () => {
                 gap: '8px'
               }}
             >
-              <i className="fas fa-newspaper"></i> 📰 اختيار من أخبار المدرسة المنشورة ({availableNews.length})
+              <i className="fas fa-newspaper"></i> 📰 اختيار من أخبار المدرسة ({availableNews.length})
             </button>
 
             <button
@@ -967,8 +1054,60 @@ const KioskDisplayPage = () => {
                 gap: '8px'
               }}
             >
-              <i className="fas fa-palette"></i> 🎨 اختيار من إبداعات ورسومات الطلاب ({availableDrawings.length})
+              <i className="fas fa-palette"></i> 🎨 إبداعات ورسومات الطلاب ({availableDrawings.length})
             </button>
+          </div>
+        </div>
+
+        {/* PROMINENT DRAG & DROP PHOTO UPLOAD ZONE */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.05) 100%)',
+          border: '2.5px dashed #10b981',
+          borderRadius: '24px',
+          padding: '2.5rem 2rem',
+          textAlign: 'center',
+          marginBottom: '2.5rem',
+          position: 'relative',
+          cursor: 'pointer',
+          boxShadow: '0 8px 30px rgba(16, 185, 129, 0.12)',
+          transition: 'all 0.2s ease'
+        }}>
+          <input 
+            type="file" 
+            multiple 
+            accept="image/*" 
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: 0,
+              cursor: 'pointer',
+              width: '100%',
+              height: '100%',
+              zIndex: 10
+            }}
+            onChange={(e) => handleDirectMultiImageUpload(e.target.files)} 
+          />
+          <div style={{ pointerEvents: 'none' }}>
+            <div style={{
+              width: '75px',
+              height: '75px',
+              background: 'rgba(16, 185, 129, 0.25)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              color: '#34d399',
+              fontSize: '2.2rem'
+            }}>
+              <i className="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h3 style={{ margin: 0, color: '#34d399', fontSize: '1.4rem', fontWeight: 900 }}>
+              📸 اضغط هنا أو اسحب صوراً من جهازك لعرضها فوراً على الشاشة
+            </h3>
+            <p style={{ margin: '0.6rem 0 0 0', color: '#e2e8f0', fontSize: '1rem' }}>
+              يمكنك تحديد صورة واحدة أو عشرات الصور معاً من هاتفك أو حاسوبك • ستُدرج تلقائياً في قائمة العرض بملء الشاشة
+            </p>
           </div>
         </div>
 
@@ -2134,6 +2273,83 @@ const KioskDisplayPage = () => {
                   <div className="side-image-container">
                     <img src={currentSlide.sideImageUrl || currentSlide.imageUrl} alt="صورة جانبية" className="side-image" />
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 6.5. DEDICATED FULL-SCREEN PHOTO / IMAGE SLIDE */}
+        {currentSlide.type === 'photo' && (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'radial-gradient(circle at center, #1e293b 0%, #090d16 100%)',
+            overflow: 'hidden'
+          }}>
+            {currentSlide.imageUrl ? (
+              <img 
+                src={currentSlide.imageUrl} 
+                alt={currentSlide.title || 'صورة العرض'} 
+                style={{ 
+                  maxWidth: '96%', 
+                  maxHeight: '94%', 
+                  objectFit: 'contain',
+                  borderRadius: '18px',
+                  boxShadow: '0 25px 65px rgba(0,0,0,0.85)',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }} 
+              />
+            ) : (
+              <div style={{ color: '#94a3b8', textAlign: 'center' }}>
+                <i className="fas fa-image" style={{ fontSize: '4rem', marginBottom: '1rem', display: 'block' }}></i>
+                <p>لا توجد صورة محددة</p>
+              </div>
+            )}
+
+            {/* Bottom Caption Overlay */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(0deg, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.72) 65%, transparent 100%)',
+              padding: '2.5rem 3.5rem 1.75rem',
+              color: '#fff',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              pointerEvents: 'none'
+            }}>
+              <div>
+                <span style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#fff',
+                  padding: '5px 16px',
+                  borderRadius: '12px',
+                  fontSize: '0.92rem',
+                  fontWeight: 900,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginBottom: '0.6rem',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
+                }}>
+                  <i className="fas fa-camera"></i> {currentSlide.badge || '📸 صورة مميزة'}
+                </span>
+                <h2 style={{ margin: 0, fontSize: '2.1rem', fontWeight: 900, textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
+                  {currentSlide.title}
+                </h2>
+                {currentSlide.subtitle && currentSlide.subtitle !== 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع' && (
+                  <p style={{ margin: '0.35rem 0 0 0', color: '#e2e8f0', fontSize: '1.15rem', textShadow: '0 2px 8px rgba(0,0,0,0.85)' }}>
+                    {currentSlide.subtitle}
+                  </p>
                 )}
               </div>
             </div>
