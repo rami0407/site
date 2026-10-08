@@ -115,8 +115,9 @@ function App() {
     }
   }, [currentHash]);
 
-  const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin') || currentHash.includes('kiosk-admin') || currentHash.includes('kiosk/control') || currentHash.includes('kiosk/admin');
-  const isKioskView = !isAdminView && (currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display') || currentHash.includes('tv') || currentHash.includes('screen'));
+  const isKioskAdmin = currentHash.includes('kiosk-admin') || currentHash.includes('kiosk/control') || currentHash.includes('kiosk/admin') || currentHash.includes('kiosk-studio');
+  const isAdminView = (currentHash.startsWith('#/admin') || currentHash.startsWith('#admin')) && !isKioskAdmin;
+  const isKioskView = !isAdminView && (isKioskAdmin || currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display') || currentHash.includes('tv') || currentHash.includes('screen'));
   const isFormView = currentHash.includes('form/') || currentHash.startsWith('#form/') || currentHash.startsWith('#/form/');
   const isExcellenceView = currentHash.includes('excellence');
 
