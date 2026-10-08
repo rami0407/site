@@ -1,4 +1,4 @@
-const CACHE_NAME = 'musherfe-pwa-v9';
+const CACHE_NAME = 'musherfe-pwa-v10';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -6,17 +6,7 @@ const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/apple-touch-icon.png',
-  '/favicon.svg',
-  '/audio/quest/welcome.mp3',
-  '/audio/quest/station1.mp3',
-  '/audio/quest/station2.mp3',
-  '/audio/quest/station3.mp3',
-  '/audio/quest/station4.mp3',
-  '/audio/quest/comic1.mp3',
-  '/audio/quest/comic2.mp3',
-  '/audio/quest/comic3.mp3',
-  '/audio/quest/feedback_approved.mp3',
-  '/audio/quest/feedback_hint.mp3'
+  '/favicon.svg'
 ];
 
 // Install Event: cache core app shell and immediately activate
