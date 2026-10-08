@@ -832,9 +832,10 @@ const KioskDisplayPage = () => {
         payloadBytes = new Blob([JSON.stringify(payload)]).size;
       }
 
-      // If still > 750KB, keep the most recent 25 slides
-      if (payloadBytes > 750000) {
-        payload.slides = payload.slides.slice(0, 25);
+      // If still > 750KB, truncate slides until safe
+      while (payloadBytes > 750000 && payload.slides.length > 2) {
+        payload.slides = payload.slides.slice(0, payload.slides.length - 1);
+        payloadBytes = new Blob([JSON.stringify(payload)]).size;
       }
 
       await setDoc(doc(db, 'displayBoard', ch), payload);
