@@ -13,7 +13,13 @@ const parseGradeAndSection = (fullClassString) => {
 };
 
 const Initiatives = () => {
-  const [initiatives, setInitiatives] = useState([]);
+  const [initiatives, setInitiatives] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_initiatives');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return fallbackInitiatives;
+  });
   const [studentName, setStudentName] = useState(localStorage.getItem('school_unified_student_name') || '');
   const initialParsed = parseGradeAndSection(localStorage.getItem('school_unified_student_class'));
   const [selectedGrade, setSelectedGrade] = useState(initialParsed.grade);
@@ -41,6 +47,9 @@ const Initiatives = () => {
           setInitiatives(fallbackInitiatives);
         } else {
           setInitiatives(list);
+          try {
+            localStorage.setItem('cached_initiatives', JSON.stringify(list));
+          } catch (e) {}
         }
       } catch (error) {
         console.error("Error fetching initiatives from Firestore:", error);

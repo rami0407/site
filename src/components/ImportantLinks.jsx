@@ -4,7 +4,13 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { importantLinks as fallbackLinks } from '../data/schoolData';
 
 const ImportantLinks = () => {
-  const [links, setLinks] = useState([]);
+  const [links, setLinks] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_important_links');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return fallbackLinks;
+  });
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -382,6 +388,9 @@ const ImportantLinks = () => {
           }
 
           setLinks(list);
+          try {
+            localStorage.setItem('cached_important_links', JSON.stringify(list));
+          } catch (e) {}
         }
       } catch (error) {
         console.error("Error fetching important links from Firestore:", error);

@@ -11,8 +11,26 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
-  const [topNavItems, setTopNavItems] = useState([]);
-  const [mainNavItems, setMainNavItems] = useState([]);
+  const [topNavItems, setTopNavItems] = useState(() => {
+    try {
+      const local = localStorage.getItem('db_navigation');
+      if (local) {
+        const parsed = JSON.parse(local);
+        return parsed.filter(item => item.category === 'top' || ['links', 'gallery', 'contact'].includes(item.target));
+      }
+    } catch (e) {}
+    return defaultTopNavigation;
+  });
+  const [mainNavItems, setMainNavItems] = useState(() => {
+    try {
+      const local = localStorage.getItem('db_navigation');
+      if (local) {
+        const parsed = JSON.parse(local);
+        return parsed.filter(item => item.category !== 'top' && !['links', 'gallery', 'contact'].includes(item.target));
+      }
+    } catch (e) {}
+    return defaultMainNavigation;
+  });
   const [studentSession, setStudentSession] = useState(getStudentSession());
   const [authModalOpen, setAuthModalOpen] = useState(false);
 

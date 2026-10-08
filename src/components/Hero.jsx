@@ -69,53 +69,18 @@ const Hero = () => {
   const [isLaunching, setIsLaunching] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [stars, setStars] = useState([]);
+  const [stars, setStars] = useState(() => Array.from({ length: 28 }, (_, i) => ({
+    id: i,
+    top: `${Math.round(Math.random() * 100)}%`,
+    left: `${Math.round(Math.random() * 100)}%`,
+    size: `${(Math.random() * 2.5 + 1).toFixed(1)}px`,
+    duration: `${(Math.random() * 2.5 + 2).toFixed(1)}s`,
+    delay: `${(Math.random() * 2).toFixed(1)}s`,
+    opacity: Number((Math.random() * 0.7 + 0.3).toFixed(2))
+  })));
   const [isTasbihPublished, setIsTasbihPublished] = useState(() => {
     return localStorage.getItem('tasbih_is_published') !== 'false';
   });
-
-  // Cloud & Local Sync for Tasbih portal visibility
-  useEffect(() => {
-    try {
-      const dRef = doc(db, 'students', 'tasbih_live_portal');
-      const unsubscribe = onSnapshot(dRef, (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (typeof data.isPublished === 'boolean') {
-            setIsTasbihPublished(data.isPublished);
-            localStorage.setItem('tasbih_is_published', String(data.isPublished));
-          }
-        }
-      }, () => {});
-      return () => unsubscribe();
-    } catch (e) {}
-  }, []);
-
-  useEffect(() => {
-    const handlePublishSync = () => {
-      setIsTasbihPublished(localStorage.getItem('tasbih_is_published') !== 'false');
-    };
-    window.addEventListener('tasbihPublishChanged', handlePublishSync);
-    window.addEventListener('storage', handlePublishSync);
-    return () => {
-      window.removeEventListener('tasbihPublishChanged', handlePublishSync);
-      window.removeEventListener('storage', handlePublishSync);
-    };
-  }, []);
-
-  // Generate randomized stars for cosmic background
-  useEffect(() => {
-    const starList = Array.from({ length: 45 }, (_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      size: `${Math.random() * 3 + 1}px`,
-      duration: `${Math.random() * 3 + 2}s`,
-      delay: `${Math.random() * 3}s`,
-      opacity: Math.random() * 0.8 + 0.2
-    }));
-    setStars(starList);
-  }, []);
 
   const handleRocketLaunch = () => {
     if (isLaunching) return;
@@ -191,6 +156,9 @@ const Hero = () => {
               src={`${import.meta.env.BASE_URL}school_logo.png`} 
               alt="شعار مدرسة مشيرفة الابتدائية" 
               className="hero-logo"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
               onError={(e) => { e.currentTarget.src = `${import.meta.env.BASE_URL}icon-512.png`; }}
             />
           </div>

@@ -6,26 +6,7 @@ import Initiatives from './components/Initiatives';
 import Values from './components/Values';
 import ImportantLinks from './components/ImportantLinks';
 import ContactForm from './components/ContactForm';
-import FloatingActions from './components/FloatingActions';
-import AiAssistant from './components/AiAssistant';
-import PwaInstallPrompt from './components/PwaInstallPrompt';
-import NotificationPromptBanner from './components/NotificationPromptBanner';
-import SocraticHomeworkModal from './components/SocraticHomeworkModal';
-import CentralNotificationModal from './components/CentralNotificationModal';
-import { db, auth } from './firebase';
 import { getScientificResearchVisibility, subscribeScientificResearchVisibility } from './utils/pageVisibilityService';
-import { collection, getDocs, getDoc, addDoc, doc, setDoc } from 'firebase/firestore';
-import { 
-  calendarEvents, 
-  newsData, 
-  valuesData, 
-  initiativesData,
-  principalMessage, 
-  importantLinks, 
-  galleryPhotos 
-} from './data/schoolData';
-import { defaultBooks, defaultUniform, defaultLetter } from './data/schoolGuideData';
-import { defaultNavigation, defaultPages } from './data/defaultNavigationData';
 import './App.css';
 
 // Helper for lazy loading that automatically refreshes if a new deployment changed chunk hashes
@@ -84,6 +65,12 @@ const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPeda
 const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
+const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
+const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
+const PwaInstallPrompt = lazyWithRetry(() => import('./components/PwaInstallPrompt'));
+const NotificationPromptBanner = lazyWithRetry(() => import('./components/NotificationPromptBanner'));
+const SocraticHomeworkModal = lazyWithRetry(() => import('./components/SocraticHomeworkModal'));
+const CentralNotificationModal = lazyWithRetry(() => import('./components/CentralNotificationModal'));
 
 
 function App() {
@@ -117,191 +104,16 @@ function App() {
     };
   }, []);
 
-  // Firebase Auto-Seeding: only run in admin view to avoid freezing client visits
+  // Firebase Auto-Seeding: only dynamically imported and run in admin view to keep public visits ultra-fast
   useEffect(() => {
-    const seedFirebaseIfEmpty = async () => {
-      // If already seeded in this browser, skip redundant queries
-      if (localStorage.getItem('db_firestore_seeded_v1') === 'true') {
-        return;
-      }
-      // Never perform mass seeding queries for normal visitors browsing the site
-      if (!window.location.hash.includes('admin')) {
-        return;
-      }
-
-      try {
-        // 1. Seed Events
-        const eventsRef = collection(db, 'events');
-        const eventsSnap = await getDocs(eventsRef);
-        if (eventsSnap.empty) {
-          console.log("Firestore events collection is empty. Seeding defaults...");
-          for (const evt of calendarEvents) {
-            await addDoc(eventsRef, evt);
-          }
-          console.log("Events successfully seeded!");
-        }
-
-        // 2. Seed News
-        const newsRef = collection(db, 'news');
-        const newsSnap = await getDocs(newsRef);
-        if (newsSnap.empty) {
-          console.log("Firestore news collection is empty. Seeding defaults...");
-          for (const item of newsData) {
-            await addDoc(newsRef, {
-              ...item,
-              createdAt: new Date().toISOString()
-            });
-          }
-          console.log("News successfully seeded!");
-        }
-
-        // 3. Seed Values (bronze, silver, gold) individually
-        for (const val of valuesData) {
-          const valDocRef = doc(db, 'values', val.id);
-          const valDocSnap = await getDoc(valDocRef);
-          if (!valDocSnap.exists()) {
-            console.log(`Seeding value ${val.id}...`);
-            await setDoc(valDocRef, val);
-          }
-        }
-
-        // 4. Seed Principal Word (document "info" in collection "principal")
-        const principalRef = collection(db, 'principal');
-        const principalSnap = await getDocs(principalRef);
-        if (principalSnap.empty) {
-          console.log("Firestore principal collection is empty. Seeding defaults...");
-          await setDoc(doc(db, 'principal', 'info'), principalMessage);
-          console.log("Principal info successfully seeded!");
-        }
-
-        // 5. Seed Important Links
-        const linksRef = collection(db, 'links');
-        const linksSnap = await getDocs(linksRef);
-        if (linksSnap.empty) {
-          console.log("Firestore links collection is empty. Seeding defaults...");
-          for (const link of importantLinks) {
-            await addDoc(linksRef, {
-              ...link,
-              createdAt: new Date().toISOString()
-            });
-          }
-          console.log("Important Links successfully seeded!");
-        }
-
-        // 6. Seed Gallery Photos
-        const galleryRef = collection(db, 'gallery');
-        const gallerySnap = await getDocs(galleryRef);
-        if (gallerySnap.empty) {
-          console.log("Firestore gallery collection is empty. Seeding defaults...");
-          for (const photo of galleryPhotos) {
-            await addDoc(galleryRef, {
-              ...photo,
-              createdAt: new Date().toISOString()
-            });
-          }
-          console.log("Gallery Photos successfully seeded!");
-        }
-
-        // 7. Seed Initiatives individually
-        for (const init of initiativesData) {
-          const initDocRef = doc(db, 'initiatives', init.id);
-          const initDocSnap = await getDoc(initDocRef);
-          if (!initDocSnap.exists()) {
-            console.log(`Seeding initiative ${init.id}...`);
-            await setDoc(initDocRef, {
-              ...init,
-              createdAt: new Date().toISOString()
-            });
-          }
-        }
-        // 8. Seed Contact Details
-        const contactDocRef = doc(db, 'contactDetails', 'info');
-        const contactDocSnap = await getDoc(contactDocRef);
-        if (!contactDocSnap.exists()) {
-          console.log("Seeding contact details...");
-          await setDoc(contactDocRef, {
-            phone: '04-6111111',
-            fax: '04-6222222',
-            email: 'musheirifa.primary@gmail.com',
-            address: 'قرية مشيرفة، طلعة عارة، الرمز البريدي 30026',
-            facebook: 'https://facebook.com',
-            instagram: 'https://instagram.com',
-            youtube: 'https://youtube.com'
-          });
-          console.log("Contact details successfully seeded!");
-        }
-
-        // 9. Seed Books
-        const booksRef = collection(db, 'books');
-        const booksSnap = await getDocs(booksRef);
-        if (booksSnap.empty) {
-          console.log("Firestore books collection is empty. Seeding defaults...");
-          for (const book of defaultBooks) {
-            await setDoc(doc(db, 'books', book.id), book);
-          }
-          console.log("Books successfully seeded!");
-        }
-
-        // 10. Seed Uniform
-        const uniformRef = collection(db, 'uniform');
-        const uniformSnap = await getDocs(uniformRef);
-        if (uniformSnap.empty) {
-          console.log("Firestore uniform collection is empty. Seeding defaults...");
-          for (const uni of defaultUniform) {
-            await setDoc(doc(db, 'uniform', uni.id), uni);
-          }
-          console.log("Uniform successfully seeded!");
-        }
-
-        // 11. Seed School Guide Letter
-        const schoolGuideRef = collection(db, 'schoolGuide');
-        const letterDocRef = doc(db, 'schoolGuide', 'letter');
-        const letterDocSnap = await getDoc(letterDocRef);
-        if (!letterDocSnap.exists()) {
-          console.log("Seeding school guide letter...");
-          await setDoc(letterDocRef, defaultLetter);
-          console.log("School guide letter successfully seeded!");
-        }
-
-        // 12. Seed Navigation Links (Only seed once on initial setup)
-        const navigationRef = collection(db, 'navigation');
-        const navigationSnap = await getDocs(navigationRef);
-        if (navigationSnap.empty && localStorage.getItem('db_nav_seeded') !== 'true') {
-          console.log("Firestore navigation collection is empty. Seeding defaults once...");
-          for (const item of defaultNavigation) {
-            await setDoc(doc(db, 'navigation', item.id), item);
-          }
-          localStorage.setItem('db_nav_seeded', 'true');
-          console.log("Navigation links successfully seeded!");
-        } else if (!navigationSnap.empty) {
-          localStorage.setItem('db_nav_seeded', 'true');
-        }
-
-        // 13. Seed Pages & Ensure excellence page exists
-        const pagesRef = collection(db, 'pages');
-        const pagesSnap = await getDocs(pagesRef);
-        if (pagesSnap.empty) {
-          console.log("Firestore pages collection is empty. Seeding defaults...");
-          for (const page of defaultPages) {
-            await setDoc(doc(db, 'pages', page.id), page);
-          }
-          console.log("Pages successfully seeded!");
-        }
-        await setDoc(doc(db, 'pages', 'excellence'), {
-          id: "excellence",
-          title: "عام التميز 2026 / 2027 - رؤية مدرسة مشيرفة الابتدائية",
-          content: `عام التميز في مدرسة مشيرفة الابتدائية - 30.8.2026\nمن سفينة النجاة إلى سفينة الفضاء 🚀✨`,
-          createdAt: new Date().toISOString()
-        });
-
-        localStorage.setItem('db_firestore_seeded_v1', 'true');
-      } catch (error) {
-        console.warn("Firebase auto-seeding skipped (normal for offline/unconfigured environments):", error.message);
-      }
-    };
-
-    seedFirebaseIfEmpty();
-  }, []);
+    if (window.location.hash.includes('admin') && localStorage.getItem('db_firestore_seeded_v1') !== 'true') {
+      import('./utils/firebaseSeeder').then((seeder) => {
+        seeder.seedFirebaseIfEmpty();
+      }).catch((err) => {
+        console.warn('Seeder load failed:', err);
+      });
+    }
+  }, [currentHash]);
 
   const isAdminView = currentHash.startsWith('#/admin') || currentHash.startsWith('#admin');
   const isKioskView = currentHash.includes('kiosk') || currentHash.includes('display-board') || currentHash.includes('display') || currentHash.includes('tv') || currentHash.includes('screen');
@@ -712,25 +524,19 @@ function App() {
       </footer>
 
       {/* Floating Helpers (WhatsApp, ScrollToTop, PWA button) */}
-      <FloatingActions />
-
-      {/* Gemini AI Assistant Chatbot */}
-      <AiAssistant />
-
-      {/* PWA Mobile App Installation Prompt */}
-      <PwaInstallPrompt />
-
-      {/* Global Phone Notification Permission Prompt Banner */}
-      <NotificationPromptBanner />
-
-      {/* Central Phone & Screen Notification Alert Modal */}
-      <CentralNotificationModal />
-
-      {/* Global Socratic Homework Helper Modal */}
-      <SocraticHomeworkModal
-        isOpen={isGlobalHomeworkHelperOpen}
-        onClose={() => setIsGlobalHomeworkHelperOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <FloatingActions />
+        <AiAssistant />
+        <PwaInstallPrompt />
+        <NotificationPromptBanner />
+        <CentralNotificationModal />
+        {isGlobalHomeworkHelperOpen && (
+          <SocraticHomeworkModal
+            isOpen={isGlobalHomeworkHelperOpen}
+            onClose={() => setIsGlobalHomeworkHelperOpen(false)}
+          />
+        )}
+      </Suspense>
     </>
   );
 }

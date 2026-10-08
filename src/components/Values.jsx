@@ -4,7 +4,13 @@ import { collection, getDocs } from 'firebase/firestore';
 import { valuesData as fallbackValues } from '../data/schoolData';
 
 const Values = () => {
-  const [values, setValues] = useState([]);
+  const [values, setValues] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_values');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return fallbackValues;
+  });
 
   useEffect(() => {
     const fetchValues = async () => {
@@ -23,6 +29,9 @@ const Values = () => {
           const order = { bronze: 1, silver: 2, gold: 3 };
           list.sort((a, b) => (order[a.id] || 99) - (order[b.id] || 99));
           setValues(list);
+          try {
+            localStorage.setItem('cached_values', JSON.stringify(list));
+          } catch (e) {}
         }
       } catch (error) {
         console.error("Error fetching values from Firestore:", error);

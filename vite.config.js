@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   base: '/',
   build: {
+    target: 'es2020',
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -14,6 +16,15 @@ export default defineConfig({
           }
           if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
             return 'vendor-react';
+          }
+          if (id.includes('node_modules/mammoth')) {
+            return 'vendor-mammoth';
+          }
+          if (id.includes('node_modules/qrcode')) {
+            return 'vendor-qrcode';
+          }
+          if (id.includes('node_modules/lottie-web')) {
+            return 'vendor-lottie';
           }
         }
       }
