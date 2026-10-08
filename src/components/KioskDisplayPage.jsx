@@ -672,11 +672,11 @@ const KioskDisplayPage = () => {
         newSlides.push({
           id: `slide_img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
           type: 'split_photos',
-          title: fileNameClean || 'صورة من فعاليات المدرسة',
+          title: fileNameClean || 'إبداع',
           subtitle: 'مدرسة مشيرفة الابتدائية • لحظات الإبداع والتميز والأنشطة المدرسية الهادفة',
-          badge: '📸 صورة مميزة',
+          badge: '',
           imageUrl: compressed,
-          sideTitle: fileNameClean || 'فعاليات مدرسة مشيرفة',
+          sideTitle: fileNameClean || 'إبداع',
           sideText: 'توثيق حي ومصور لأبرز الأنشطة التعليمية والإبداعية ومشاركات فرسان التميز في مدرستنا.',
           sideTheme: 'emerald',
           duration: 15,
@@ -697,7 +697,7 @@ const KioskDisplayPage = () => {
           type: 'split_photos',
           title: 'معرض صور الفعاليات المدرسية',
           subtitle: `ألبوم تفاعلي مميز يضم (${newSlides.length}) صور توثق فعاليات وإبداعات طلاب مدرسة مشيرفة الابتدائية.`,
-          badge: '📸 ألبوم الصور التفاعلي',
+          badge: '',
           sideTitle: 'أجمل اللحظات والإنجازات',
           sideText: 'توثيق حي ومصور لأبرز المحطات والأنشطة الإبداعية ومشاركات فرسان التميز والريادة.',
           imageUrl: newSlides[0].imageUrl,
@@ -2469,10 +2469,12 @@ const KioskDisplayPage = () => {
               <div className="kiosk-split-side">
                 <div className={`kiosk-side-card theme-${currentSlide.sideTheme || 'emerald'}`}>
                   <div>
-                    {/* Badge */}
-                    <div className="side-badge">
-                      <i className="fas fa-star"></i> {currentSlide.badge || '📸 فعاليات مدرسة مشيرفة'}
-                    </div>
+                    {/* Optional Custom Badge (Only if explicitly set and not generic photo label) */}
+                    {currentSlide.badge && !currentSlide.badge.includes('صورة') && !currentSlide.badge.includes('فعاليات') && (
+                      <div className="side-badge">
+                        <i className="fas fa-star"></i> {currentSlide.badge}
+                      </div>
+                    )}
 
                     {/* Main Title */}
                     <h2 className="side-title" style={{ fontSize: '2.1rem', fontWeight: 900, lineHeight: 1.35, marginBottom: '1rem', color: '#fff' }}>
