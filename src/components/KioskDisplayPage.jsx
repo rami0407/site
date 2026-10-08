@@ -450,6 +450,21 @@ const KioskDisplayPage = () => {
     return () => clearTimeout(timer);
   }, [currentSlideIndex, activeSlides, isStudioOpen, isLauncherMode, isPaused, config.slideInterval]);
 
+  // Gallery Sub-Photo Cycling (Internal photo rotator every 4.2s inside Split Photo Showcase)
+  const [galleryPhotoIndex, setGalleryPhotoIndex] = useState(0);
+
+  useEffect(() => {
+    if (isStudioOpen || isLauncherMode || isPaused) return;
+    const photoCycleTimer = setInterval(() => {
+      setGalleryPhotoIndex(prev => prev + 1);
+    }, 4200);
+    return () => clearInterval(photoCycleTimer);
+  }, [isStudioOpen, isLauncherMode, isPaused]);
+
+  useEffect(() => {
+    setGalleryPhotoIndex(0);
+  }, [currentSlideIndex]);
+
   // Safe YouTube embed URL generator
   const getSafeYoutubeEmbedUrl = (url) => {
     if (!url) return '';
@@ -629,19 +644,49 @@ const KioskDisplayPage = () => {
 
           newSlides.push({
             id: `slide_img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-            type: 'photo',
+            type: 'split_photos',
             title: fileNameClean || 'صورة من فعاليات المدرسة',
-            subtitle: 'مدرسة مشيرفة الابتدائية • لحظات الإبداع والتميز',
+            subtitle: 'مدرسة مشيرفة الابتدائية • لحظات الإبداع والتميز والأنشطة المدرسية الهادفة',
             badge: '📸 صورة مميزة',
             imageUrl: compressed,
+            sideTitle: fileNameClean || 'فعاليات مدرسة مشيرفة',
+            sideText: 'توثيق حي ومصور لأبرز الأنشطة التعليمية والإبداعية ومشاركات فرسان التميز في مدرستنا.',
+            sideTheme: 'emerald',
             duration: 15,
             enabled: true
           });
 
           processed++;
           if (processed === fileList.length) {
-            updateStudioSlides([...newSlides, ...currentStudioSlides]);
-            alert(`🎉 تم بنجاح رفع وإضافة ${newSlides.length} صورة إلى قائمة العرض! الصور جاهزة في القائمة بالأسفل، اضغط "حفظ ونشر" لبثها على التلفاز.`);
+            const allUploadedImages = newSlides.map(s => s.imageUrl);
+
+            // Attach allUploadedImages array to each slide so any of them can alternate through all uploaded photos
+            newSlides.forEach(s => {
+              s.images = allUploadedImages;
+            });
+
+            // If multiple photos uploaded, create a dedicated Master Album slide that cycles through them
+            let combinedSlides = [...newSlides];
+            if (allUploadedImages.length > 1) {
+              const albumSlide = {
+                id: `slide_album_split_${Date.now()}`,
+                type: 'split_photos',
+                title: 'معرض صور الفعاليات المدرسية',
+                subtitle: `ألبوم تفاعلي مميز يضم (${allUploadedImages.length}) صور توثق فعاليات وإبداعات طلاب مدرسة مشيرفة الابتدائية.`,
+                badge: '📸 ألبوم الصور التفاعلي',
+                sideTitle: 'أجمل اللحظات والإنجازات',
+                sideText: 'توثيق حي ومصور لأبرز المحطات والأنشطة الإبداعية ومشاركات فرسان التميز والريادة.',
+                images: allUploadedImages,
+                imageUrl: allUploadedImages[0],
+                duration: Math.max(25, allUploadedImages.length * 5),
+                sideTheme: 'emerald',
+                enabled: true
+              };
+              combinedSlides = [albumSlide, ...newSlides];
+            }
+
+            updateStudioSlides([...combinedSlides, ...currentStudioSlides]);
+            alert(`🎉 تم بنجاح رفع وإضافة ${newSlides.length} صورة إلى شاشة العرض بنظام الشاشة المقسمة!\n\n✨ الميزات المفعلة الآن:\n1. الشاشة مقسمة: الصور على جهة والنصوص والمعلومات على جهة أخرى.\n2. الصور تتبدل تلقائياً كل 4 ثوانٍ مع عداد الصور وأزرار تنقل.\n3. النصوص والشريط الإخباري في الأسفل يعملان بكل وضوح.\n\nاضغط "حفظ ونشر التغييرات" لنشرها فوراً على الشاشات!`);
           }
         };
         img.src = e.target.result;
@@ -1728,10 +1773,12 @@ const KioskDisplayPage = () => {
                     نوع وتصميم المادة:
                   </label>
                   <select
-                    value={editingSlide.type || 'announcement'}
+                    value={editingSlide.type || 'split_photos'}
                     onChange={(e) => setEditingSlide({ ...editingSlide, type: e.target.value })}
                     style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.75rem', color: '#fff', fontSize: '0.95rem' }}
                   >
+                    <option value="split_photos">📸 شاشة مقسمة تفاعلية (معرض صور متبدلة + نص وتفاصيل على الجانب)</option>
+                    <option value="photo">🖼️ صورة مع لوحة نصوص وشارة على الجانب</option>
                     <option value="announcement">📢 إعلان مدرسي رسمي (نص عريض وشارة)</option>
                     <option value="split_video">🎬 شاشة منقسمة (فيديو يوتيوب + لوحة جانبية)</option>
                     <option value="video">🔴 فيديو يوتيوب كامل (Full Video)</option>
@@ -2241,120 +2288,187 @@ const KioskDisplayPage = () => {
           </div>
         )}
 
-        {/* 6. SPLIT SLIDESHOW */}
-        {currentSlide.type === 'split_slideshow' && (
-          <div className="kiosk-split-layout">
-            <div className="kiosk-split-main">
-              <div className="kiosk-fullscreen-slideshow">
-                {currentSlide.images && currentSlide.images.length > 0 ? (
-                  <img 
-                    src={currentSlide.images[currentSlideIndex % currentSlide.images.length] || currentSlide.images[0]} 
-                    alt="معرض الصور" 
-                    className="kiosk-slide-img" 
-                  />
-                ) : (
-                  <div className="kiosk-slideshow-empty">
-                    <i className="fas fa-images"></i>
-                    <p>معرض صور الأنشطة</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="kiosk-split-side">
-              <div className={`kiosk-side-card theme-${currentSlide.sideTheme || 'emerald'}`}>
-                <div>
-                  <div className="side-badge">
-                    <i className="fas fa-star"></i> {currentSlide.badge || 'ركن التميز'}
-                  </div>
-                  <h2 className="side-title">{currentSlide.sideTitle || currentSlide.title}</h2>
-                  <p className="side-text">{currentSlide.sideText || currentSlide.subtitle}</p>
+        {/* 6. SPLIT SCREEN PHOTO SHOWCASE & ALBUM (تقسيم الشاشة الذكي للصور مع لوحة النصوص) */}
+        {(currentSlide.type === 'split_photos' || currentSlide.type === 'photo' || currentSlide.type === 'split_slideshow') && (() => {
+          // Resolve list of photos: current slide images, or collected playlist photos, or current imageUrl
+          const currentSlideImages = (currentSlide.images && currentSlide.images.length > 0)
+            ? currentSlide.images
+            : (activeSlideList.flatMap(s => (s.images && s.images.length > 0 ? s.images : (s.imageUrl ? [s.imageUrl] : []))).filter(Boolean).length > 1)
+              ? activeSlideList.flatMap(s => (s.images && s.images.length > 0 ? s.images : (s.imageUrl ? [s.imageUrl] : []))).filter(Boolean)
+              : (currentSlide.imageUrl ? [currentSlide.imageUrl] : []);
+
+          const totalPhotos = currentSlideImages.length;
+          const activeIdx = totalPhotos > 0 ? (galleryPhotoIndex % totalPhotos) : 0;
+          const activeImgSrc = totalPhotos > 0 ? currentSlideImages[activeIdx] : null;
+
+          return (
+            <div className="kiosk-split-wrapper">
+              {/* MAIN ZONE: DYNAMIC PHOTO GALLERY & CYCLING DISPLAY */}
+              <div className="kiosk-split-main">
+                <div className="kiosk-split-photo-frame">
+                  {activeImgSrc ? (
+                    <img 
+                      key={activeImgSrc}
+                      src={activeImgSrc} 
+                      alt={currentSlide.title || 'صورة الفعالية'} 
+                      className="kiosk-split-photo-img" 
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                      <i className="fas fa-images" style={{ fontSize: '4.5rem', marginBottom: '1rem', color: '#f59e0b', display: 'block' }}></i>
+                      <h3 style={{ margin: 0, color: '#fff', fontSize: '1.4rem' }}>معرض صور مدرسة مشيرفة</h3>
+                      <p style={{ color: '#cbd5e1' }}>يرجى رفع صور من جهازك أو اختيار صور من المعرض</p>
+                    </div>
+                  )}
+
+                  {/* Photo Counter Pill at Top Right */}
+                  {totalPhotos > 1 && (
+                    <div className="kiosk-split-photo-badge">
+                      <i className="fas fa-camera"></i>
+                      <span>صورة {activeIdx + 1} من {totalPhotos}</span>
+                    </div>
+                  )}
+
+                  {/* Manual Arrow Controls on hover / remote */}
+                  {totalPhotos > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setGalleryPhotoIndex(prev => (prev - 1 + totalPhotos) % totalPhotos); }}
+                        style={{
+                          position: 'absolute',
+                          right: '15px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'rgba(15, 23, 42, 0.8)',
+                          border: '1px solid rgba(255,255,255,0.25)',
+                          color: '#fff',
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.2rem',
+                          zIndex: 20,
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+                        }}
+                        title="الصورة السابقة"
+                      >
+                        <i className="fas fa-chevron-right"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setGalleryPhotoIndex(prev => (prev + 1) % totalPhotos); }}
+                        style={{
+                          position: 'absolute',
+                          left: '15px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'rgba(15, 23, 42, 0.8)',
+                          border: '1px solid rgba(255,255,255,0.25)',
+                          color: '#fff',
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.2rem',
+                          zIndex: 20,
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+                        }}
+                        title="الصورة التالية"
+                      >
+                        <i className="fas fa-chevron-left"></i>
+                      </button>
+                    </>
+                  )}
+
+                  {/* Dot Indicators at Bottom */}
+                  {totalPhotos > 1 && (
+                    <div className="kiosk-split-photo-dots">
+                      {currentSlideImages.slice(0, 15).map((_, dotIdx) => (
+                        <button
+                          key={dotIdx}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setGalleryPhotoIndex(dotIdx); }}
+                          className={`kiosk-split-photo-dot ${dotIdx === activeIdx ? 'active' : ''}`}
+                          title={`صورة رقم ${dotIdx + 1}`}
+                        />
+                      ))}
+                      {totalPhotos > 15 && (
+                        <span style={{ color: '#94a3b8', fontSize: '0.8rem', marginRight: '4px', fontWeight: 800 }}>+{totalPhotos - 15}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {(currentSlide.sideImageUrl || currentSlide.imageUrl) && (
-                  <div className="side-image-container">
-                    <img src={currentSlide.sideImageUrl || currentSlide.imageUrl} alt="صورة جانبية" className="side-image" />
+              </div>
+
+              {/* SIDE ZONE: STRUCTURED RICH INFORMATION & SCHOOL TEXT */}
+              <div className="kiosk-split-side">
+                <div className={`kiosk-side-card theme-${currentSlide.sideTheme || 'emerald'}`}>
+                  <div>
+                    {/* Badge */}
+                    <div className="side-badge">
+                      <i className="fas fa-star"></i> {currentSlide.badge || '📸 فعاليات مدرسة مشيرفة'}
+                    </div>
+
+                    {/* Main Title */}
+                    <h2 className="side-title" style={{ fontSize: '2.1rem', fontWeight: 900, lineHeight: 1.35, marginBottom: '1rem', color: '#fff' }}>
+                      {currentSlide.title || currentSlide.sideTitle || 'معرض الصور والأنشطة'}
+                    </h2>
+
+                    {/* Full Text / Description */}
+                    <p className="side-text" style={{ fontSize: '1.25rem', color: '#e2e8f0', lineHeight: 1.8, marginBottom: '1.5rem', fontWeight: 600 }}>
+                      {currentSlide.subtitle || currentSlide.sideText || 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع والقيادة التربوية'}
+                    </p>
+
+                    {/* Daily Wisdom / School Fact / Quote */}
+                    {aiWisdom && (
+                      <div style={{
+                        background: 'rgba(0, 0, 0, 0.35)',
+                        borderRadius: '16px',
+                        padding: '1.1rem 1.3rem',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        marginTop: '1.25rem'
+                      }}>
+                        <div style={{ color: '#fbbf24', fontSize: '0.9rem', fontWeight: 900, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <i className="fas fa-lightbulb"></i> حكمة اليوم المدرسية
+                        </div>
+                        <div style={{ color: '#f1f5f9', fontSize: '1.05rem', lineHeight: 1.6, fontWeight: 700 }}>
+                          "{aiWisdom.wisdom}"
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* School Footer Branding Inside Side Card */}
+                  <div style={{
+                    borderTop: '1px solid rgba(255,255,255,0.15)',
+                    paddingTop: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.92rem',
+                    color: '#94a3b8'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1', fontWeight: 800 }}>
+                      <i className="fas fa-school" style={{ color: '#f59e0b' }}></i>
+                      <span>مدرسة مشيرفة الابتدائية</span>
+                    </div>
+                    <div style={{ color: '#38bdf8', fontWeight: 900 }}>
+                      {formattedDate}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* 6.5. DEDICATED FULL-SCREEN PHOTO / IMAGE SLIDE */}
-        {currentSlide.type === 'photo' && (
-          <div style={{
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'radial-gradient(circle at center, #1e293b 0%, #090d16 100%)',
-            overflow: 'hidden'
-          }}>
-            {currentSlide.imageUrl ? (
-              <img 
-                src={currentSlide.imageUrl} 
-                alt={currentSlide.title || 'صورة العرض'} 
-                style={{ 
-                  maxWidth: '96%', 
-                  maxHeight: '94%', 
-                  objectFit: 'contain',
-                  borderRadius: '18px',
-                  boxShadow: '0 25px 65px rgba(0,0,0,0.85)',
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }} 
-              />
-            ) : (
-              <div style={{ color: '#94a3b8', textAlign: 'center' }}>
-                <i className="fas fa-image" style={{ fontSize: '4rem', marginBottom: '1rem', display: 'block' }}></i>
-                <p>لا توجد صورة محددة</p>
-              </div>
-            )}
-
-            {/* Bottom Caption Overlay */}
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: 'linear-gradient(0deg, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.72) 65%, transparent 100%)',
-              padding: '2.5rem 3.5rem 1.75rem',
-              color: '#fff',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-end',
-              flexWrap: 'wrap',
-              gap: '1rem',
-              pointerEvents: 'none'
-            }}>
-              <div>
-                <span style={{
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: '#fff',
-                  padding: '5px 16px',
-                  borderRadius: '12px',
-                  fontSize: '0.92rem',
-                  fontWeight: 900,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginBottom: '0.6rem',
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
-                }}>
-                  <i className="fas fa-camera"></i> {currentSlide.badge || '📸 صورة مميزة'}
-                </span>
-                <h2 style={{ margin: 0, fontSize: '2.1rem', fontWeight: 900, textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
-                  {currentSlide.title}
-                </h2>
-                {currentSlide.subtitle && currentSlide.subtitle !== 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع' && (
-                  <p style={{ margin: '0.35rem 0 0 0', color: '#e2e8f0', fontSize: '1.15rem', textShadow: '0 2px 8px rgba(0,0,0,0.85)' }}>
-                    {currentSlide.subtitle}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 7. FULL ANNOUNCEMENT CARD */}
         {(currentSlide.type === 'announcement' || currentSlide.type === 'custom') && (
@@ -2393,20 +2507,20 @@ const KioskDisplayPage = () => {
         )}
 
         {/* Running News Ticker Bar */}
-        {config.showTicker && (
+        {(config.showTicker !== false) && (
           <div className="kiosk-ticker-bar">
             <div className="ticker-label">
-              <i className="fas fa-rss"></i> أخبار حية
+              <i className="fas fa-bullhorn"></i> شريط الأخبار
             </div>
             <div className="ticker-track">
               <div className="ticker-content">
-                {config.tickerText}
-                {config.autoNewsTicker && availableNews.length > 0 && availableNews.slice(0, 5).map(n => ` • 📢 ${n.title}`).join('')}
-                {aiWisdom && ` • 💡 حكمة اليوم: ${aiWisdom.wisdom} • 🔬 معلومة اليوم العلمية: ${aiWisdom.fact}`}
+                {config.tickerText || 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع والقيادة التربوية • أهلاً وسهلاً بكم'}
+                {config.autoNewsTicker !== false && availableNews.length > 0 && availableNews.slice(0, 5).map(n => ` • 📢 ${n.title}`).join('')}
+                {aiWisdom && ` • 💡 حكمة اليوم: ${aiWisdom.wisdom} • 🔬 معلومة اليوم: ${aiWisdom.fact}`}
                 &nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;
-                {config.tickerText}
-                {config.autoNewsTicker && availableNews.length > 0 && availableNews.slice(0, 5).map(n => ` • 📢 ${n.title}`).join('')}
-                {aiWisdom && ` • 💡 حكمة اليوم: ${aiWisdom.wisdom} • 🔬 معلومة اليوم العلمية: ${aiWisdom.fact}`}
+                {config.tickerText || 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع والقيادة التربوية • أهلاً وسهلاً بكم'}
+                {config.autoNewsTicker !== false && availableNews.length > 0 && availableNews.slice(0, 5).map(n => ` • 📢 ${n.title}`).join('')}
+                {aiWisdom && ` • 💡 حكمة اليوم: ${aiWisdom.wisdom} • 🔬 معلومة اليوم: ${aiWisdom.fact}`}
               </div>
             </div>
           </div>
