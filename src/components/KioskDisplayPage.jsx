@@ -733,6 +733,25 @@ const KioskDisplayPage = () => {
     setActivePickerModal('edit_slide');
   };
 
+  // Live quick update of a slide property directly from the display
+  const handleQuickUpdateSlide = async (slideId, updates) => {
+    const ch = channel || 'main';
+    const conf = studioConfigs[ch] || config;
+    const updatedSlides = (conf.slides || []).map(s => (s.id === slideId ? { ...s, ...updates } : s));
+    const newConf = { ...conf, slides: updatedSlides };
+    setConfig(newConf);
+    updateStudioSlides(updatedSlides);
+    localStorage.setItem(`db_kiosk_${ch}`, JSON.stringify(newConf));
+    try {
+      await setDoc(doc(db, 'displayBoard', ch), newConf);
+      if (ch === 'main') {
+        await setDoc(doc(db, 'displayBoard', 'config'), newConf);
+      }
+    } catch (e) {
+      console.warn('Silent sync error:', e);
+    }
+  };
+
   // Open Create New Slide Modal
   const handleStartCreateSlide = () => {
     setEditingSlide({
@@ -1913,6 +1932,60 @@ const KioskDisplayPage = () => {
                   </select>
                 </div>
 
+                {/* Screen Split Options */}
+                {(editingSlide.type === 'split_photos' || editingSlide.type === 'photo' || editingSlide.type === 'split_slideshow') && (
+                  <div style={{ marginBottom: '1.25rem', background: 'rgba(15,23,42,0.6)', padding: '1rem', borderRadius: '12px', border: '1px solid #334155' }}>
+                    <label style={{ display: 'block', fontWeight: 900, fontSize: '0.95rem', color: '#38bdf8', marginBottom: '0.75rem' }}>
+                      📐 خيارات تقسيم مساحة الشاشة (مكان وحجم الصور والنصوص):
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '0.3rem', fontWeight: 700 }}>
+                          نسبة تقسيم المساحة:
+                        </label>
+                        <select
+                          value={editingSlide.splitRatio || 'photo_focus'}
+                          onChange={(e) => setEditingSlide({ ...editingSlide, splitRatio: e.target.value })}
+                          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.88rem' }}
+                        >
+                          <option value="photo_focus">🖼️ تركيز على الصور (65% صور | 35% نصوص)</option>
+                          <option value="equal">⚖️ نصف بنصف متساوٍ (50% صور | 50% نصوص)</option>
+                          <option value="wide_photo">📸 صور عريضة جداً (75% صور | 25% نصوص)</option>
+                          <option value="text_focus">📝 نصوص أوسع وأكبر (60% نصوص | 40% صور)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '0.3rem', fontWeight: 700 }}>
+                          مكان اللوحة المكتوبة:
+                        </label>
+                        <select
+                          value={editingSlide.splitPosition || 'side_left'}
+                          onChange={(e) => setEditingSlide({ ...editingSlide, splitPosition: e.target.value })}
+                          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.88rem' }}
+                        >
+                          <option value="side_left">⬅️ اللوحة على اليسار والصور على اليمين</option>
+                          <option value="side_right">➡️ اللوحة على اليمين والصور على اليسار</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '0.3rem', fontWeight: 700 }}>
+                          اتجاه التقسيم:
+                        </label>
+                        <select
+                          value={editingSlide.splitOrientation || 'horizontal'}
+                          onChange={(e) => setEditingSlide({ ...editingSlide, splitOrientation: e.target.value })}
+                          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.88rem' }}
+                        >
+                          <option value="horizontal">↔️ أفقي (جنباً إلى جنب)</option>
+                          <option value="vertical">↕️ رأسي (الصور بالأعلى والنصوص بالأسفل)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Note / Wisdom box in Side Card */}
                 <div style={{ marginBottom: '1.25rem', background: 'rgba(15,23,42,0.6)', padding: '1rem', borderRadius: '12px', border: '1px solid #334155' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -2420,10 +2493,34 @@ const KioskDisplayPage = () => {
           const activeIdx = totalPhotos > 0 ? (galleryPhotoIndex % totalPhotos) : 0;
           const activeImgSrc = totalPhotos > 0 ? currentSlideImages[activeIdx] : null;
 
+          const splitRatio = currentSlide.splitRatio || config.splitRatio || 'photo_focus';
+          const splitPos = currentSlide.splitPosition || config.splitPosition || 'side_left';
+          const splitOrient = currentSlide.splitOrientation || config.splitOrientation || 'horizontal';
+
+          let mainFlex = '1.85';
+          let sideFlex = '1';
+          if (splitRatio === 'equal') {
+            mainFlex = '1';
+            sideFlex = '1';
+          } else if (splitRatio === 'wide_photo') {
+            mainFlex = '2.8';
+            sideFlex = '1';
+          } else if (splitRatio === 'text_focus') {
+            mainFlex = '1';
+            sideFlex = '1.6';
+          }
+
+          let flexDir = 'row';
+          if (splitOrient === 'vertical') {
+            flexDir = 'column';
+          } else if (splitPos === 'side_right') {
+            flexDir = 'row-reverse';
+          }
+
           return (
-            <div className="kiosk-split-wrapper">
+            <div className="kiosk-split-wrapper" style={{ flexDirection: flexDir, gap: '1.5rem' }}>
               {/* MAIN ZONE: DYNAMIC PHOTO GALLERY & CYCLING DISPLAY */}
-              <div className="kiosk-split-main">
+              <div className="kiosk-split-main" style={{ flex: mainFlex, minHeight: splitOrient === 'vertical' ? '380px' : undefined }}>
                 <div className="kiosk-split-photo-frame">
                   {activeImgSrc ? (
                     <img 
@@ -2528,7 +2625,7 @@ const KioskDisplayPage = () => {
               </div>
 
               {/* SIDE ZONE: STRUCTURED RICH INFORMATION & SCHOOL TEXT */}
-              <div className="kiosk-split-side">
+              <div className="kiosk-split-side" style={{ flex: sideFlex, minWidth: splitOrient === 'vertical' ? '100%' : '320px' }}>
                 <div className={`kiosk-side-card theme-${currentSlide.sideTheme || 'emerald'}`}>
                   <div>
                     {/* Optional Custom Badge (Only if explicitly set and not generic photo label) */}
@@ -2565,8 +2662,8 @@ const KioskDisplayPage = () => {
                         </div>
                       </div>
                     )}
-                    {/* Direct Quick Edit Button for Side Card Content */}
-                    <div style={{ marginTop: '1.25rem', marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-start' }}>
+                    {/* Direct Quick Controls for Side Card & Split Layout */}
+                    <div style={{ marginTop: '1.25rem', marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -2574,8 +2671,8 @@ const KioskDisplayPage = () => {
                           handleEditCurrentSlideFromDisplay(currentSlide);
                         }}
                         style={{
-                          background: 'rgba(255, 255, 255, 0.12)',
-                          border: '1px solid rgba(255, 255, 255, 0.28)',
+                          background: 'rgba(255, 255, 255, 0.15)',
+                          border: '1px solid rgba(255, 255, 255, 0.35)',
                           color: '#fff',
                           borderRadius: '10px',
                           padding: '6px 14px',
@@ -2592,7 +2689,61 @@ const KioskDisplayPage = () => {
                         title="تعديل نصوص وألوان هذه اللوحة الجانبية مباشرة"
                       >
                         <i className="fas fa-edit" style={{ color: '#38bdf8' }}></i>
-                        <span>✏️ تعديل نصوص ولون هذه اللوحة الخضراء</span>
+                        <span>✏️ تعديل النصوص والتصميم</span>
+                      </button>
+
+                      {/* Quick Ratio Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nextRatio = splitRatio === 'equal' ? 'photo_focus' : (splitRatio === 'photo_focus' ? 'wide_photo' : (splitRatio === 'wide_photo' ? 'text_focus' : 'equal'));
+                          handleQuickUpdateSlide(currentSlide.id, { splitRatio: nextRatio });
+                        }}
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.65)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#f8fafc',
+                          borderRadius: '10px',
+                          padding: '6px 12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                        title="تغيير نسبة تقسيم الشاشة فورياً"
+                      >
+                        <i className="fas fa-columns" style={{ color: '#fbbf24' }}></i>
+                        <span>{splitRatio === 'equal' ? 'نسبة 50/50' : splitRatio === 'wide_photo' ? 'صور عريضة 75%' : splitRatio === 'text_focus' ? 'نصوص أوسع 60%' : 'نسبة 65/35'}</span>
+                      </button>
+
+                      {/* Quick Swap Left/Right */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nextPos = splitPos === 'side_right' ? 'side_left' : 'side_right';
+                          handleQuickUpdateSlide(currentSlide.id, { splitPosition: nextPos });
+                        }}
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.65)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#f8fafc',
+                          borderRadius: '10px',
+                          padding: '6px 12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                        title="نقل اللوحة المكتوبة إلى اليمين أو اليسار"
+                      >
+                        <i className="fas fa-arrows-alt-h" style={{ color: '#34d399' }}></i>
+                        <span>{splitPos === 'side_right' ? 'اللوحة يميناً' : 'اللوحة يساراً'}</span>
                       </button>
                     </div>
                   </div>
