@@ -725,6 +725,14 @@ const KioskDisplayPage = () => {
     setActivePickerModal('edit_slide');
   };
 
+  // Open Edit Modal directly from the display screen
+  const handleEditCurrentSlideFromDisplay = (slide) => {
+    setStudioChannel(channel);
+    setIsStudioOpen(true);
+    setEditingSlide({ ...slide });
+    setActivePickerModal('edit_slide');
+  };
+
   // Open Create New Slide Modal
   const handleStartCreateSlide = () => {
     setEditingSlide({
@@ -1877,14 +1885,67 @@ const KioskDisplayPage = () => {
                 {/* Subtitle / Text */}
                 <div style={{ marginBottom: '1.25rem' }}>
                   <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '0.4rem' }}>
-                    المضمون / النص الكامل:
+                    المضمون / النص الكامل (يظهر في اللوحة الجانبية):
                   </label>
                   <textarea
                     rows="3"
                     value={editingSlide.subtitle || editingSlide.sideText || ''}
                     onChange={(e) => setEditingSlide({ ...editingSlide, subtitle: e.target.value, sideText: e.target.value })}
+                    placeholder="اكتب تفاصيل الكلمة أو الترحيب أو وصف الفعالية..."
                     style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.75rem', color: '#fff', fontSize: '0.95rem' }}
                   />
+                </div>
+
+                {/* Side Theme Selection */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '0.4rem' }}>
+                    🎨 لون وتصميم اللوحة الجانبية:
+                  </label>
+                  <select
+                    value={editingSlide.sideTheme || 'emerald'}
+                    onChange={(e) => setEditingSlide({ ...editingSlide, sideTheme: e.target.value })}
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.75rem', color: '#fff', fontSize: '0.95rem' }}
+                  >
+                    <option value="emerald">🟢 أخضر زمردي هادئ (Emerald) - المظهر المدرسي الحالي</option>
+                    <option value="blue">🔵 أزرق نيلي ملكي (Blue) - مظهر رسمي أنيق</option>
+                    <option value="gold">🟡 ذهبي ملكي دافئ (Gold) - تكريم واحتفالات</option>
+                    <option value="purple">🟣 بنفسجي إبداعي (Purple) - إبداع وتميز</option>
+                  </select>
+                </div>
+
+                {/* Note / Wisdom box in Side Card */}
+                <div style={{ marginBottom: '1.25rem', background: 'rgba(15,23,42,0.6)', padding: '1rem', borderRadius: '12px', border: '1px solid #334155' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <label style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fbbf24', margin: 0 }}>
+                      💡 الصندوق الإضافي بالأسفل (حكمة اليوم أو كلمة خاصة):
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer', margin: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={editingSlide.hideWisdom === true}
+                        onChange={(e) => setEditingSlide({ ...editingSlide, hideWisdom: e.target.checked })}
+                      />
+                      إخفاء هذا الصندوق
+                    </label>
+                  </div>
+                  {!editingSlide.hideWisdom && (
+                    <>
+                      <input
+                        type="text"
+                        value={editingSlide.customNoteTitle || ''}
+                        onChange={(e) => setEditingSlide({ ...editingSlide, customNoteTitle: e.target.value })}
+                        placeholder="عنوان الصندوق (اتركه فارغاً ليظهر: حكمة اليوم المدرسية)"
+                        style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.55rem', color: '#fff', fontSize: '0.88rem', marginBottom: '0.5rem' }}
+                      />
+                      <textarea
+                        rows="2"
+                        value={editingSlide.customNote || ''}
+                        onChange={(e) => setEditingSlide({ ...editingSlide, customNote: e.target.value })}
+                        placeholder="اتركه فارغاً لعرض حكمة اليوم تلقائياً، أو اكتب نصاً مخصصاً هنا..."
+                        style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.55rem', color: '#fff', fontSize: '0.88rem' }}
+                      />
+                    </>
+                  )}
                 </div>
 
                 {/* Image upload / URL */}
@@ -2487,8 +2548,8 @@ const KioskDisplayPage = () => {
                       {currentSlide.subtitle || currentSlide.sideText || 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع والقيادة التربوية'}
                     </p>
 
-                    {/* Daily Wisdom / School Fact / Quote */}
-                    {aiWisdom && (
+                    {/* Daily Wisdom / School Fact / Quote / Custom Note */}
+                    {!currentSlide.hideWisdom && (currentSlide.customNote || aiWisdom) && (
                       <div style={{
                         background: 'rgba(0, 0, 0, 0.35)',
                         borderRadius: '16px',
@@ -2497,13 +2558,43 @@ const KioskDisplayPage = () => {
                         marginTop: '1.25rem'
                       }}>
                         <div style={{ color: '#fbbf24', fontSize: '0.9rem', fontWeight: 900, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <i className="fas fa-lightbulb"></i> حكمة اليوم المدرسية
+                          <i className="fas fa-lightbulb"></i> {currentSlide.customNoteTitle || 'حكمة اليوم المدرسية'}
                         </div>
                         <div style={{ color: '#f1f5f9', fontSize: '1.05rem', lineHeight: 1.6, fontWeight: 700 }}>
-                          "{aiWisdom.wisdom}"
+                          {currentSlide.customNote ? currentSlide.customNote : `"${aiWisdom?.wisdom}"`}
                         </div>
                       </div>
                     )}
+                    {/* Direct Quick Edit Button for Side Card Content */}
+                    <div style={{ marginTop: '1.25rem', marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-start' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCurrentSlideFromDisplay(currentSlide);
+                        }}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.12)',
+                          border: '1px solid rgba(255, 255, 255, 0.28)',
+                          color: '#fff',
+                          borderRadius: '10px',
+                          padding: '6px 14px',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          backdropFilter: 'blur(8px)',
+                          transition: 'all 0.2s ease',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                        }}
+                        title="تعديل نصوص وألوان هذه اللوحة الجانبية مباشرة"
+                      >
+                        <i className="fas fa-edit" style={{ color: '#38bdf8' }}></i>
+                        <span>✏️ تعديل نصوص ولون هذه اللوحة الخضراء</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* School Footer Branding Inside Side Card */}
