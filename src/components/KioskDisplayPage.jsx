@@ -2480,8 +2480,13 @@ const KioskDisplayPage = () => {
           </div>
         )}
 
-        {/* 6. SPLIT SCREEN PHOTO SHOWCASE & ALBUM (تقسيم الشاشة الذكي للصور مع لوحة النصوص) */}
-        {(currentSlide.type === 'split_photos' || currentSlide.type === 'photo' || currentSlide.type === 'split_slideshow') && (() => {
+        {/* 6. SPLIT SCREEN PHOTO SHOWCASE & ALBUM (تقسيم الشاشة الذكي للصور مع لوحة النصوص والإعلانات) */}
+        {(
+          currentSlide.type === 'split_photos' || 
+          currentSlide.type === 'photo' || 
+          currentSlide.type === 'split_slideshow' || 
+          ((currentSlide.type === 'announcement' || currentSlide.type === 'custom' || currentSlide.type === 'news') && currentSlide.layout !== 'full_card')
+        ) && (() => {
           // Resolve list of photos: current slide images, or collected playlist photos, or current imageUrl
           const currentSlideImages = (currentSlide.images && currentSlide.images.length > 0)
             ? currentSlide.images
@@ -2641,9 +2646,11 @@ const KioskDisplayPage = () => {
                     </h2>
 
                     {/* Full Text / Description */}
-                    <p className="side-text" style={{ fontSize: '1.25rem', color: '#e2e8f0', lineHeight: 1.8, marginBottom: '1.5rem', fontWeight: 600 }}>
-                      {currentSlide.subtitle || currentSlide.sideText || 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع والقيادة التربوية'}
-                    </p>
+                    <div style={{ maxHeight: '44vh', overflowY: 'auto', paddingRight: '4px', marginBottom: '1rem' }}>
+                      <p className="side-text" style={{ fontSize: '1.2rem', color: '#e2e8f0', lineHeight: 1.8, margin: 0, fontWeight: 600, whiteSpace: 'pre-line' }}>
+                        {currentSlide.subtitle || currentSlide.sideText || 'مدرسة مشيرفة الابتدائية • صرح التميز والإبداع والقيادة التربوية'}
+                      </p>
+                    </div>
 
                     {/* Daily Wisdom / School Fact / Quote / Custom Note */}
                     {!currentSlide.hideWisdom && (currentSlide.customNote || aiWisdom) && (
@@ -2745,6 +2752,32 @@ const KioskDisplayPage = () => {
                         <i className="fas fa-arrows-alt-h" style={{ color: '#34d399' }}></i>
                         <span>{splitPos === 'side_right' ? 'اللوحة يميناً' : 'اللوحة يساراً'}</span>
                       </button>
+
+                      {/* Toggle Full Card / Split */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickUpdateSlide(currentSlide.id, { layout: 'full_card' });
+                        }}
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.65)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#cbd5e1',
+                          borderRadius: '10px',
+                          padding: '6px 12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                        title="عرض كبطاقة واحدة عريضة في المنتصف بدون صور جانبية"
+                      >
+                        <i className="fas fa-square" style={{ color: '#94a3b8' }}></i>
+                        <span>بطاقة كاملة</span>
+                      </button>
                     </div>
                   </div>
 
@@ -2772,19 +2805,47 @@ const KioskDisplayPage = () => {
           );
         })()}
 
-        {/* 7. FULL ANNOUNCEMENT CARD */}
-        {(currentSlide.type === 'announcement' || currentSlide.type === 'custom') && (
+        {/* 7. FULL ANNOUNCEMENT CARD (فقط عند اختيار نمط البطاقة الكاملة) */}
+        {(currentSlide.type === 'announcement' || currentSlide.type === 'custom') && currentSlide.layout === 'full_card' && (
           <div className="kiosk-announcement-card">
             <div className="announcement-badge">
               <i className="fas fa-bullhorn"></i> {currentSlide.badge || 'إعلان مدرسي رسمي'}
             </div>
             <h2 className="announcement-title">{currentSlide.title}</h2>
-            <p className="announcement-text">{currentSlide.subtitle}</p>
+            <p className="announcement-text" style={{ whiteSpace: 'pre-line' }}>{currentSlide.subtitle}</p>
             {currentSlide.imageUrl && (
               <div style={{ marginTop: '1.5rem', maxHeight: '350px', overflow: 'hidden', borderRadius: '16px' }}>
                 <img src={currentSlide.imageUrl} alt="صورة الإعلان" style={{ maxHeight: '350px', width: 'auto', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
               </div>
             )}
+            {/* Quick Switch to Split Screen */}
+            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuickUpdateSlide(currentSlide.id, { layout: 'split' });
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#fff',
+                  border: '1.5px solid #34d399',
+                  borderRadius: '12px',
+                  padding: '10px 22px',
+                  fontSize: '1rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 6px 20px rgba(16,185,129,0.4)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <i className="fas fa-columns"></i>
+                <span>📸 تحويل إلى شاشة مقسمة (معرض صور متبدلة + نص الإعلان)</span>
+              </button>
+            </div>
           </div>
         )}
 
