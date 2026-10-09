@@ -2632,13 +2632,41 @@ const KioskDisplayPage = () => {
               {/* SIDE ZONE: STRUCTURED RICH INFORMATION & SCHOOL TEXT */}
               <div className="kiosk-split-side" style={{ flex: sideFlex, minWidth: splitOrient === 'vertical' ? '100%' : '320px' }}>
                 <div className={`kiosk-side-card theme-${currentSlide.sideTheme || 'emerald'}`}>
-                  <div>
-                    {/* Optional Custom Badge (Only if explicitly set and not generic photo label) */}
-                    {currentSlide.badge && !currentSlide.badge.includes('صورة') && !currentSlide.badge.includes('فعاليات') && (
-                      <div className="side-badge">
-                        <i className="fas fa-star"></i> {currentSlide.badge}
-                      </div>
-                    )}
+                  <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                    {/* Header Row: Badge & Quick Edit Button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '8px' }}>
+                      {currentSlide.badge && !currentSlide.badge.includes('صورة') && !currentSlide.badge.includes('فعاليات') ? (
+                        <div className="side-badge">
+                          <i className="fas fa-star"></i> {currentSlide.badge}
+                        </div>
+                      ) : <span />}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCurrentSlideFromDisplay(currentSlide);
+                        }}
+                        style={{
+                          background: 'rgba(56, 189, 248, 0.25)',
+                          border: '1.5px solid #38bdf8',
+                          color: '#fff',
+                          borderRadius: '8px',
+                          padding: '5px 12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 900,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title="تعديل هذا النص والعنوان مباشرة"
+                      >
+                        <i className="fas fa-edit" style={{ color: '#38bdf8' }}></i>
+                        <span>✏️ تعديل هذا النص</span>
+                      </button>
+                    </div>
 
                     {/* Main Title */}
                     <h2 className="side-title" style={{ fontSize: '2.1rem', fontWeight: 900, lineHeight: 1.35, marginBottom: '1rem', color: '#fff' }}>
