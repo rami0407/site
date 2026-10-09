@@ -1,7 +1,8 @@
-const CACHE_NAME = 'musherfe-pwa-v13';
+const CACHE_NAME = 'musherfe-pwa-v14';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/favicon.ico',
   '/manifest.webmanifest',
   '/icon-192.png',
   '/icon-512.png',
