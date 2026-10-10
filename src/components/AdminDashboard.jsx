@@ -685,7 +685,10 @@ const AdminDashboard = () => {
     const channels = ['main', 'students', 'teachers', 'parents'];
     for (const ch of channels) {
       try {
-        const snap = await getDoc(doc(db, 'displayBoard', ch));
+        let snap = await getDoc(doc(db, 'display_board', ch));
+        if (!snap.exists()) {
+          snap = await getDoc(doc(db, 'displayBoard', ch));
+        }
         if (snap.exists()) {
           const data = snap.data();
           setKioskChannelsConfig(prev => ({
@@ -799,6 +802,12 @@ const AdminDashboard = () => {
         updatedAt: new Date().toISOString()
       };
 
+      try {
+        await setDoc(doc(db, 'display_board', ch), payload);
+        if (ch === 'main') {
+          await setDoc(doc(db, 'display_board', 'config'), payload);
+        }
+      } catch (err1) {}
       await setDoc(doc(db, 'displayBoard', ch), payload);
       if (ch === 'main') {
         await setDoc(doc(db, 'displayBoard', 'config'), payload);

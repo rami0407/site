@@ -1,8 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { doc, onSnapshot, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { generateDailyWisdomAndFact } from '../utils/aiService';
 import './KioskDisplayPage.css';
+
+const PARENTS_MEETING_SLIDE = {
+  id: 'main_slide_meeting_2026',
+  type: 'split_photos',
+  title: 'اجتماع اولياء الامور للسنة الدراسية 2026-2027',
+  subtitle: `أهلنا الأعزاء،
+
+تخيّلوا ابنكم يأتي إلى المدرسة صباح الأحد ، يسمع زملاءه يتحدثون بحماس عن يوم السبت، وعن الوقت الجميل الذي قضوه برفقة آبائهم وأمهاتهم في المدرسة...
+
+ثم يسألهم بفضول: ماذا فعلتم؟ ماذا قال لكم المعلمون؟ وما الذي أعجبكم في ذلك اليوم؟
+
+كم سيتمنى حينها لو كان بينكم، يشارككم تلك اللحظات الجميلة!
+
+أهلنا الأحباء، نحن لا ندعوكم إلى اجتماع عادي، بل نريدكم أن تأتوا لنكتشف أبناءنا معًا، لنسمع منهم ما قد لا يقولونه في البيت، ولنرى فيهم قدرات ربما لم ننتبه إليها بعد، ولنسأل أنفسنا معًا: من هو هذا الطفل الذي نربيه؟ ما الذي يُسعده؟ ما الذي يُقلقه؟ وما الذي يحتاجه منا ليصبح أفضل نسخة من نفسه؟
+
+في مدرسة مشيرفة، أعلنا هذا العام «عام التميّز»، لكننا نؤمن بأن التميّز لا يبدأ من العلامات ولا من الجوائز... بل يبدأ من طفل يشعر أن أهله ومدرسته يؤمنون به.
+
+أعزائي الآباء والأمهات، قد ينسى أبناؤنا بعد سنوات كثيرة ما قلناه لهم في هذا اليوم، لكنهم لن ينسوا أنكم تركتم مشاغلكم وجئتم من أجلهم، لا تجعلوا أبناءكم يسمعون عن هذا اليوم من زملائهم فقط، تعالوا لنمنحهم معًا رسالة لا تحتاج إلى كلمات: «أنتم مهمون بالنسبة لنا، ونحن هنا من أجلكم، نثق بكم ومستقبلكم»
+
+ننتظركم يوم السبت في لقاء سيظل نجمًا مضيئًا في ذاكرة أبنائنا 🌟`,
+  badge: '📢 إعلان مدرسي',
+  sideTheme: 'emerald',
+  splitRatio: 'photo_focus',
+  splitPosition: 'side_left',
+  splitOrientation: 'horizontal',
+  customNoteTitle: 'حكمة اليوم المدرسية',
+  customNote: 'لا تكن أفضل من غيرك، كن أفضل من نفسك. التميز هو أن تستغل كل مواردك لتكون أفضل ما يمكن 💡',
+  duration: 35,
+  enabled: true
+};
 
 // Initial default presentation slides for each school channel
 const createInitialSlides = (ch) => {
@@ -85,6 +115,7 @@ const createInitialSlides = (ch) => {
   }
   if (ch === 'parents') {
     return [
+      PARENTS_MEETING_SLIDE,
       {
         id: 'prn_slide_1',
         type: 'split_slideshow',
@@ -116,6 +147,7 @@ const createInitialSlides = (ch) => {
   }
   // Default 'main'
   return [
+    PARENTS_MEETING_SLIDE,
     {
       id: 'main_slide_1',
       type: 'split_video',
@@ -170,16 +202,16 @@ const DEFAULT_CONFIGS = {
   main: {
     mode: 'playlist',
     title: 'أهلاً وسهلاً بكم في مدرسة مشيرفة الابتدائية',
-    subtitle: 'بوابة التميز، الإبداع، والقيادة التربوية 🌟',
+    subtitle: 'يوم اولياء الامور 2026-2027',
     slides: createInitialSlides('main'),
-    tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً دراسياً ملؤه التميز والعطاء!',
+    tickerText: 'مرحباً بكم في البوابة الرقمية لمدرسة مشيرفة الابتدائية • نتمنى لطلابنا وأهالينا الكرام يوماً ملؤه التميز والمتعة! 🌟',
     autoNewsTicker: true,
     showTicker: true,
     showClock: true,
     showQr: true,
     showLogo: true,
     theme: 'dark',
-    slideInterval: 20
+    slideInterval: 25
   },
   students: {
     mode: 'playlist',
@@ -324,9 +356,9 @@ const KioskDisplayPage = () => {
         }
       } catch (e) {}
 
+      // 1. Listen to public collection display_board (readable by guests without login)
       try {
-        const configRef = doc(db, 'displayBoard', ch);
-        const unsub = onSnapshot(configRef, (docSnap) => {
+        const unsubPub = onSnapshot(doc(db, 'display_board', ch), (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setStudioConfigs(prev => ({
@@ -339,7 +371,25 @@ const KioskDisplayPage = () => {
             }));
           }
         }, () => {});
-        unsubs.push(unsub);
+        unsubs.push(unsubPub);
+      } catch (e) {}
+
+      // 2. Also listen to displayBoard (fallback when logged in)
+      try {
+        const unsubPriv = onSnapshot(doc(db, 'displayBoard', ch), (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setStudioConfigs(prev => ({
+              ...prev,
+              [ch]: { 
+                ...DEFAULT_CONFIGS[ch], 
+                ...data, 
+                slides: ensureSlidesForConfig(data, ch)
+              }
+            }));
+          }
+        }, () => {});
+        unsubs.push(unsubPriv);
       } catch (e) {}
     });
 
@@ -389,43 +439,68 @@ const KioskDisplayPage = () => {
     return () => window.removeEventListener('hashchange', detectChannel);
   }, []);
 
-  // Real-time Firestore listener for target channel
+  // Real-time Firestore listener for target channel (Public display_board + authenticated displayBoard)
   useEffect(() => {
     if (isLauncherMode) return;
 
-    let unsubscribe = () => {};
+    const unsubs = [];
+    const defaultForChannel = DEFAULT_CONFIGS[channel] || DEFAULT_CONFIGS.main;
+
+    const applyData = (data) => {
+      if (!data) return;
+      const merged = { 
+        ...defaultForChannel, 
+        ...data,
+        slides: ensureSlidesForConfig(data, channel)
+      };
+      setConfig(merged);
+      try { localStorage.setItem(`db_kiosk_${channel}`, JSON.stringify(merged)); } catch(e){}
+    };
+
+    // 1. Listen to public display_board (accessible by any guest without login)
     try {
-      const configRef = doc(db, 'displayBoard', channel);
-      unsubscribe = onSnapshot(configRef, (docSnap) => {
-        const defaultForChannel = DEFAULT_CONFIGS[channel] || DEFAULT_CONFIGS.main;
+      const unsubPub = onSnapshot(doc(db, 'display_board', channel), (docSnap) => {
         if (docSnap.exists()) {
-          const merged = { 
-            ...defaultForChannel, 
-            ...docSnap.data(),
-            slides: ensureSlidesForConfig(docSnap.data(), channel)
-          };
-          setConfig(merged);
-          try { localStorage.setItem(`db_kiosk_${channel}`, JSON.stringify(merged)); } catch(e){}
-        } else {
-          try {
-            const localConf = localStorage.getItem(`db_kiosk_${channel}`);
-            if (localConf) {
-              const parsed = JSON.parse(localConf);
-              setConfig({ ...defaultForChannel, ...parsed, slides: ensureSlidesForConfig(parsed, channel) });
-            } else {
-              setConfig({ ...defaultForChannel, slides: ensureSlidesForConfig(defaultForChannel, channel) });
+          applyData(docSnap.data());
+        }
+      }, () => {});
+      unsubs.push(unsubPub);
+    } catch(e) {}
+
+    // 2. Also listen to displayBoard (fallback when logged in)
+    try {
+      const unsubPriv = onSnapshot(doc(db, 'displayBoard', channel), (docSnap) => {
+        if (docSnap.exists()) {
+          applyData(docSnap.data());
+        }
+      }, () => {});
+      unsubs.push(unsubPriv);
+    } catch(e) {}
+
+    return () => {
+      unsubs.forEach(u => typeof u === 'function' && u());
+    };
+  }, [channel, isLauncherMode]);
+
+  // Auto-sync local saved config to public display_board so all guests see the latest version
+  useEffect(() => {
+    const syncLocalToPublic = async () => {
+      try {
+        const ch = channel || 'main';
+        const localConf = localStorage.getItem(`db_kiosk_${ch}`);
+        if (localConf) {
+          const parsed = JSON.parse(localConf);
+          if (parsed && Array.isArray(parsed.slides) && parsed.slides.length > 0) {
+            await setDoc(doc(db, 'display_board', ch), parsed, { merge: true });
+            if (ch === 'main') {
+              await setDoc(doc(db, 'display_board', 'config'), parsed, { merge: true });
             }
-          } catch(e){
-            setConfig({ ...defaultForChannel, slides: ensureSlidesForConfig(defaultForChannel, channel) });
           }
         }
-      }, (err) => {
-        console.warn(`Kiosk listener warning for channel ${channel}:`, err);
-      });
-    } catch (e) {}
-
-    return () => unsubscribe();
-  }, [channel, isLauncherMode]);
+      } catch (e) {}
+    };
+    syncLocalToPublic();
+  }, [channel]);
 
   // Real-time clock interval
   useEffect(() => {
@@ -521,13 +596,28 @@ const KioskDisplayPage = () => {
   const currentStudioSlides = ensureSlidesForConfig(currentStudioConf, studioChannel);
 
   const updateStudioSlides = (newSlides) => {
-    setStudioConfigs(prev => ({
-      ...prev,
-      [studioChannel]: {
+    setStudioConfigs(prev => {
+      const nextConf = {
         ...prev[studioChannel],
-        slides: newSlides
-      }
-    }));
+        slides: newSlides,
+        updatedAt: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem(`db_kiosk_${studioChannel}`, JSON.stringify(nextConf));
+        if (channel === studioChannel) {
+          setConfig(nextConf);
+        }
+        setDoc(doc(db, 'display_board', studioChannel), nextConf).catch(() => {});
+        if (studioChannel === 'main') {
+          setDoc(doc(db, 'display_board', 'config'), nextConf).catch(() => {});
+        }
+        setDoc(doc(db, 'displayBoard', studioChannel), nextConf).catch(() => {});
+      } catch(e) {}
+      return {
+        ...prev,
+        [studioChannel]: nextConf
+      };
+    });
   };
 
   const handleToggleSlide = (slideId) => {
@@ -738,18 +828,22 @@ const KioskDisplayPage = () => {
     const ch = channel || 'main';
     const conf = studioConfigs[ch] || config;
     const updatedSlides = (conf.slides || []).map(s => (s.id === slideId ? { ...s, ...updates } : s));
-    const newConf = { ...conf, slides: updatedSlides };
+    const newConf = { ...conf, slides: updatedSlides, updatedAt: new Date().toISOString() };
     setConfig(newConf);
     updateStudioSlides(updatedSlides);
     localStorage.setItem(`db_kiosk_${ch}`, JSON.stringify(newConf));
+    try {
+      await setDoc(doc(db, 'display_board', ch), newConf);
+      if (ch === 'main') {
+        await setDoc(doc(db, 'display_board', 'config'), newConf);
+      }
+    } catch (e1) {}
     try {
       await setDoc(doc(db, 'displayBoard', ch), newConf);
       if (ch === 'main') {
         await setDoc(doc(db, 'displayBoard', 'config'), newConf);
       }
-    } catch (e) {
-      console.warn('Silent sync error:', e);
-    }
+    } catch (e2) {}
   };
 
   // Open Create New Slide Modal
@@ -768,8 +862,8 @@ const KioskDisplayPage = () => {
     setActivePickerModal('edit_slide');
   };
 
-  // Save the slide being edited
-  const handleSaveSlideChanges = (e) => {
+  // Save the slide being edited with instant auto-sync to Firestore display_board
+  const handleSaveSlideChanges = async (e) => {
     e.preventDefault();
     if (!editingSlide) return;
     const exists = currentStudioSlides.some(s => s.id === editingSlide.id);
@@ -782,6 +876,29 @@ const KioskDisplayPage = () => {
     updateStudioSlides(updated);
     setActivePickerModal(null);
     setEditingSlide(null);
+
+    // Instant sync to local storage & public Firestore display_board
+    const ch = studioChannel || channel || 'main';
+    const conf = studioConfigs[ch] || DEFAULT_CONFIGS[ch] || config;
+    const payload = {
+      ...conf,
+      slides: updated,
+      updatedAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem(`db_kiosk_${ch}`, JSON.stringify(payload));
+      if (channel === ch) setConfig(payload);
+      await setDoc(doc(db, 'display_board', ch), payload);
+      if (ch === 'main') {
+        await setDoc(doc(db, 'display_board', 'config'), payload);
+      }
+    } catch (e1) {}
+    try {
+      await setDoc(doc(db, 'displayBoard', ch), payload);
+      if (ch === 'main') {
+        await setDoc(doc(db, 'displayBoard', 'config'), payload);
+      }
+    } catch (e2) {}
   };
 
   // Upload single image with browser compression
@@ -865,10 +982,26 @@ const KioskDisplayPage = () => {
         payloadBytes = new Blob([JSON.stringify(payload)]).size;
       }
 
-      await setDoc(doc(db, 'displayBoard', ch), payload);
-      if (ch === 'main') {
-        await setDoc(doc(db, 'displayBoard', 'config'), payload);
+      // Save to public collection display_board (accessible by all guests without login)
+      try {
+        await setDoc(doc(db, 'display_board', ch), payload);
+        if (ch === 'main') {
+          await setDoc(doc(db, 'display_board', 'config'), payload);
+        }
+      } catch (e1) {
+        console.warn('Sync to display_board warning:', e1);
       }
+
+      // Also save to displayBoard
+      try {
+        await setDoc(doc(db, 'displayBoard', ch), payload);
+        if (ch === 'main') {
+          await setDoc(doc(db, 'displayBoard', 'config'), payload);
+        }
+      } catch (e2) {
+        console.warn('Sync to displayBoard warning:', e2);
+      }
+
       localStorage.setItem(`db_kiosk_${ch}`, JSON.stringify(payload));
 
       // Update studio state with sanitized slides
