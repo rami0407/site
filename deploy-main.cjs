@@ -80,6 +80,7 @@ try {
   });
 
   console.log("4. Committing and pushing all source code and production build to GitHub main branch...");
+  execSync('git add -f assets', { stdio: 'inherit' });
   execSync('git add .', { stdio: 'inherit' });
   try {
     execSync('git commit -m "Deploy latest source code and production build to main branch"', { stdio: 'inherit' });
