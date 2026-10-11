@@ -410,7 +410,6 @@ function App() {
   if (isMiftaahJourneyView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <MiftaahLearningJourney />
       </Suspense>
     );
