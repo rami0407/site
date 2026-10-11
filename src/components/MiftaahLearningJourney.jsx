@@ -386,11 +386,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         return;
       }
 
-      // Verify password against teacherAuth (handles default 318212, cloud pin, hash)
+      // Verify password against teacherAuth (handles default PIN, cloud pin, hash)
       const isPasswordCorrect = await verifyTeacherCredentials(foundTeacher.id, password);
 
       if (!isPasswordCorrect) {
-        setTeacherAuthError('❌ الرقم السري غير صحيح. يرجى التأكد من كلمة المرور (الرمز الموحد الافتراضي للمعلمين: 318212).');
+        setTeacherAuthError('❌ كلمة المرور أو الرقم السري غير صحيح. يرجى التأكد من الرمز الخاص بك.');
         setIsSubmittingTeacherAuth(false);
         return;
       }
@@ -445,19 +445,19 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast('تم تسجيل خروج المعلم بنجاح.');
   };
 
-  // Student Join with Shared Code (الرمز المشترك 318212 أو رمز الصف)
+  // Student Join with Lesson Code (كود الحصة المرسل من المعلم)
   const handleJoinWithSharedCode = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setStudentGateError('');
     const code = (studentCodeInput || '').trim();
     if (!code) {
-      setStudentGateError('⚠️ يرجى إدخال رمز الدخول المشترك للموقع (318212) أو رمز جلسة الصف.');
+      setStudentGateError('⚠️ يرجى إدخال كود الحصة الذي زوّدك به المعلم.');
       return;
     }
 
     const validCode = (code === '318212' || code === DEFAULT_TEACHER_PIN || code === String(sessionState.pin));
     if (!validCode) {
-      setStudentGateError('⛔ رمز الدخول غير صحيح. الرمز الموحد للموقع هو (318212)، أو يمكنك الدخول كضيف مباشرةً بدون رمز.');
+      setStudentGateError('⛔ كود الحصة غير صحيح. يرجى التأكد من الكود مع معلّم الحصة.');
       return;
     }
 
@@ -2459,7 +2459,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         setTeacherPasswordInput(e.target.value);
                         setTeacherAuthError('');
                       }}
-                      placeholder="أدخل الرقم السري الخاص بك (الرمز الموحد: 318212)"
+                      placeholder="أدخل الرقم السري / كلمة المرور الخاصة بك"
                       required
                     />
                     <button
@@ -2472,7 +2472,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <i className={`fas ${showTeacherPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
-                  <small className="field-hint">💡 الرمز الموحد الافتراضي لجميع معلمي المدرسة: <strong>318212</strong></small>
                 </div>
 
                 <div className="auth-remember-row">
@@ -4173,7 +4172,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       setStudentCodeInput(e.target.value);
                       setStudentGateError('');
                     }}
-                    placeholder="أدخل كود الحصة (مثال: 318212 أو كود الصف)..."
+                    placeholder="أدخل كود الحصة المرسل من المعلم..."
                     required
                   />
                 </div>
