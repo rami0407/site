@@ -34,6 +34,7 @@ import FamilyChallengeAdminTab from './FamilyChallengeAdminTab';
 import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import StudentDismissalAdminTab from './StudentDismissalAdminTab';
 import ScientificResearchAdminTab from './ScientificResearchAdminTab';
+import MiftaahSupervisionAdminTab from './MiftaahSupervisionAdminTab';
 import MafatihAdminTab from './MafatihAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
@@ -5431,6 +5432,27 @@ const AdminDashboard = () => {
               🗝️ موديل مِفْتَاح (تخطيط الحصص والأرشيف)
             </button>
 
+            {/* 🗝️ تبويب: منظومة مِفتاح التفاعلية — الرقابة العامة وحصص ومواد المعلمين */}
+            <button 
+              onClick={() => setActiveTab('miftaah-admin')} 
+              className={`filter-chip ${activeTab === 'miftaah-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'miftaah-admin' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#e0f2fe',
+                color: activeTab === 'miftaah-admin' ? 'white' : '#0369a1',
+                fontWeight: 900,
+                border: '2px solid #38bdf8',
+                boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
+              }}
+            >
+              <i className="fas fa-chalkboard-teacher" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'miftaah-admin' ? '#fef08a' : '#0284c7' }}></i>
+              🗝️ منصة مِفتاح — رقابة حصص ومواد المعلمين
+            </button>
+
           </div>
         </aside>
 
@@ -9449,6 +9471,13 @@ const AdminDashboard = () => {
               {activeTab === 'mafatih-admin' && (
                 <div>
                   <MafatihAdminTab />
+                </div>
+              )}
+
+              {/* 🗝️ تبويب: الرقابة العامة لمنظومة مِفتاح وكافة حصص ومواد المعلمين */}
+              {activeTab === 'miftaah-admin' && (
+                <div>
+                  <MiftaahSupervisionAdminTab />
                 </div>
               )}
 
