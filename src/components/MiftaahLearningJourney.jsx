@@ -4155,7 +4155,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       setStudentGateError('');
                     }}
                     placeholder="اكتب اسمك الثلاثي أو اسم مجموعتك..."
-                    autoFocus
                     required
                   />
                 </div>

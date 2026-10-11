@@ -3,6 +3,32 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+// Defensive DOM safeguard for React 18 / 19 reconciliation against external DOM mutations
+// (e.g., Google Chrome auto-translate wrapping text in <font> or browser autofill extensions)
+if (typeof window !== 'undefined' && typeof Node !== 'undefined') {
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function (child) {
+    if (child && child.parentNode !== this) {
+      if (console && console.warn) {
+        console.warn('Blocked removeChild on non-child node (external DOM mutation intercepted):', child);
+      }
+      return child;
+    }
+    return originalRemoveChild.apply(this, arguments);
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function (newNode, referenceNode) {
+    if (referenceNode && referenceNode.parentNode !== this) {
+      if (console && console.warn) {
+        console.warn('Blocked insertBefore with invalid reference node parent (external DOM mutation intercepted):', referenceNode);
+      }
+      return originalInsertBefore.call(this, newNode, null);
+    }
+    return originalInsertBefore.apply(this, arguments);
+  };
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />

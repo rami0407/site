@@ -9,9 +9,10 @@ const devHtmlPath = path.join(rootDir, 'index.html');
 try {
   console.log("0. Ensuring root index.html points to /src/main.jsx...");
   const devHtmlTemplate = `<!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="notranslate" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/pw/AP1GczOmuSnGS9OmfsVRo3-FedvNpsjYbgAZCMWlFYtMsFf4wX3F9upApscvMLiVa6MS2DQe7mNGNQO6zUyfSSMD4pmPpTOG5TFEZiZcE2jXzNrJjv7-4D9xh-H9HBsHtVYIU6nEesjXL_QvHFgZSVcvkU7jzA=w500-h500-s-no-gm?authuser=0" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="البوابة الرسمية لمدرسة مشيرفة الابتدائية - تميز، إبداع، وقيادة تربوية." />
@@ -23,8 +24,8 @@ try {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="notranslate" translate="no">
+    <div id="root" class="notranslate" translate="no"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>`;
@@ -58,10 +59,24 @@ try {
 
   const versionTag = `v_${cacheBuster}`;
   const forceReloadScript = `<script>(function(){if(!window.location.search.includes('${versionTag}')){window.location.replace(window.location.pathname+'?ver=${versionTag}'+window.location.hash);}})();</script>`;
+  const domGuardScript = `<script>
+    if (typeof Node !== 'undefined') {
+      const origRC = Node.prototype.removeChild;
+      Node.prototype.removeChild = function(c) {
+        if (c && c.parentNode !== this) { return c; }
+        return origRC.apply(this, arguments);
+      };
+      const origIB = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function(n, r) {
+        if (r && r.parentNode !== this) { return origIB.call(this, n, null); }
+        return origIB.apply(this, arguments);
+      };
+    }
+  </script>`;
 
   compiledHtml = compiledHtml.replace(
     '<head>',
-    `<head>\n    ${forceReloadScript}\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
+    `<head>\n    ${forceReloadScript}\n    ${domGuardScript}\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />\n    <meta http-equiv="Pragma" content="no-cache" />\n    <meta http-equiv="Expires" content="0" />`
   );
   
   fs.writeFileSync(devHtmlPath, compiledHtml, 'utf-8');

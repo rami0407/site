@@ -124,7 +124,6 @@ function App() {
   if (isAdminView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <AdminDashboard />
       </Suspense>
     );
@@ -186,7 +185,6 @@ function App() {
   if (isPadletView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <SchoolPadletPage />
       </Suspense>
     );
@@ -195,7 +193,6 @@ function App() {
   if (isStudentDismissalView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <StudentDismissalPage />
       </Suspense>
     );
@@ -204,7 +201,6 @@ function App() {
   if (isVirtualMuseumView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <VirtualMuseumPage />
       </Suspense>
     );
@@ -213,7 +209,6 @@ function App() {
   if (isLostFoundView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <LostAndFoundPage />
       </Suspense>
     );
@@ -222,7 +217,6 @@ function App() {
   if (isFamilyChallengeView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <FamilyChallengePage />
       </Suspense>
     );
@@ -231,7 +225,6 @@ function App() {
   if (isDebateView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <DebateArenaPage />
       </Suspense>
     );
@@ -240,7 +233,6 @@ function App() {
   if (isGratitudeSkyView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <GratitudeSkyPage />
       </Suspense>
     );
@@ -249,7 +241,6 @@ function App() {
   if (isReadersClubView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <ReadersClubPage />
       </Suspense>
     );
@@ -258,7 +249,6 @@ function App() {
   if (isTasbihView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <div style={{ minHeight: '100vh', background: '#022c22', padding: '1rem' }}>
           <SchoolTasbihPortal />
         </div>
@@ -271,7 +261,6 @@ function App() {
   if (isServicesPortalView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <div style={{ minHeight: '100vh', background: '#0f172a' }}>
           <EduStaffingPortal isAdminMode={false} initialTab="landing" />
         </div>
@@ -399,7 +388,6 @@ function App() {
 
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <ScientificResearchQuest />
       </Suspense>
     );
@@ -426,7 +414,6 @@ function App() {
   if (isMathView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <MathChampionshipArena />
       </Suspense>
     );
@@ -435,7 +422,6 @@ function App() {
   if (isMafatihView) {
     return (
       <Suspense fallback={<Loader />}>
-        <Loader />
         <MafatihPedagogyPage />
       </Suspense>
     );
