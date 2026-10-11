@@ -29,11 +29,15 @@ if (typeof window !== 'undefined' && typeof Node !== 'undefined') {
   };
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const rootElement = document.getElementById('root');
+if (rootElement && !window.__MUSHEIRIFA_REACT_ROOT__) {
+  window.__MUSHEIRIFA_REACT_ROOT__ = createRoot(rootElement);
+  window.__MUSHEIRIFA_REACT_ROOT__.render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
 
 // Auto-recovery for Vite dynamic chunks & preloads when new deployments occur
 window.addEventListener('vite:preloadError', (event) => {

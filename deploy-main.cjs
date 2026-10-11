@@ -48,11 +48,14 @@ try {
     fs.cpSync(assetsDistDir, assetsRootDir, { recursive: true });
   }
 
-  console.log("3. Copying built production index.html and adding cache-busting query params...");
+  console.log("3. Preparing built production index.html with version redirect and DOM guards...");
   let compiledHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
   const cacheBuster = Date.now();
-  compiledHtml = compiledHtml.replace(/\.js"/g, `.js?v=${cacheBuster}"`);
-  compiledHtml = compiledHtml.replace(/\.css"/g, `.css?v=${cacheBuster}"`);
+  // DO NOT append query parameters to .js or .css files here!
+  // Vite assets are already uniquely content-hashed (e.g. index-rMr60mA1.js).
+  // Appending ?v= to module script tags causes the browser to treat index.js?v=... as a separate
+  // ES module from internal chunks that import ./index.js without query params, resulting in
+  // two concurrent React root instances and duplicated DOM rendering.
   
   // Remove existing auto-redirect scripts if present in source index.html
   compiledHtml = compiledHtml.replace(/<script>\(function\(\)\{if\(!window\.location\.search\.includes[\s\S]*?<\/script>\s*/g, '');
