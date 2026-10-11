@@ -12,14 +12,17 @@ const formatAudioTime = (secs) => {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 };
 
-// Pleasant subtle chime using Web Audio API
+// Pleasant subtle chime using Web Audio API (only plays after user gesture to comply with browser autoplay policy)
 const playGentleNotificationChime = () => {
   try {
+    if (typeof navigator !== 'undefined' && 'userActivation' in navigator && !navigator.userActivation?.hasBeenActive) {
+      return;
+    }
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      ctx.resume().catch(() => {});
     }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -43,7 +46,7 @@ const playGentleNotificationChime = () => {
       ctx.close().catch(() => {});
     };
   } catch (e) {
-    // Audio autoplay restrictions handled
+    // Audio autoplay restrictions handled cleanly
   }
 };
 
@@ -78,7 +81,11 @@ const CentralNotificationModal = () => {
           setTimeout(() => {
             playGentleNotificationChime();
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
-              try { navigator.vibrate([80, 40, 80]); } catch (e) {}
+              try {
+                if (!('userActivation' in navigator) || navigator.userActivation?.hasBeenActive) {
+                  navigator.vibrate([80, 40, 80]);
+                }
+              } catch (e) {}
             }
           }, 400);
         }

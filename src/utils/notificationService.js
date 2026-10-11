@@ -419,7 +419,9 @@ export const logNotificationView = async (notifId) => {
     localStorage.setItem(seenStorageKey, 'logged');
     return true;
   } catch (err) {
-    console.warn('Failed to log notification view:', err);
+    if (err?.code !== 'permission-denied') {
+      console.warn('Failed to log notification view:', err);
+    }
     // Even if firestore write fails offline, mark locally to avoid repeated attempts
     localStorage.setItem(seenStorageKey, 'logged');
     return false;

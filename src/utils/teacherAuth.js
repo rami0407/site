@@ -133,7 +133,7 @@ export const listenToTeacherAccounts = (callback) => {
       cloudAccountsCache = { ...cloudAccountsCache, ...accounts };
       if (callback) callback(cloudAccountsCache);
     }, (err) => {
-      console.warn('Realtime teacher accounts listener note:', err);
+      if (err?.code !== 'permission-denied') console.warn('Realtime teacher accounts listener note:', err);
     });
   } catch (e) {
     console.warn('Listener setup error:', e);
@@ -218,7 +218,7 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
         cloudAccountsCache[teacherId] = account;
       }
     } catch (e) {
-      console.warn('Teacher cloud account direct fetch notice:', e);
+      if (e?.code !== 'permission-denied') console.warn('Teacher cloud account direct fetch notice:', e);
     }
   }
 

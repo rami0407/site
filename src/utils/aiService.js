@@ -28,7 +28,9 @@ export const getActiveAiKeys = async () => {
         });
       }
     } catch (e) {
-      console.warn('Failed fetching AI keys from Firestore:', e);
+      if (e?.code !== 'permission-denied') {
+        console.warn('Failed fetching AI keys from Firestore:', e);
+      }
     }
     lastKeyFetchTime = now;
   }
