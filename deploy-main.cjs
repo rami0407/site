@@ -38,21 +38,14 @@ try {
   const assetsRootDir = path.join(rootDir, 'assets');
 
   if (fs.existsSync(assetsRootDir)) {
-    const oldFiles = fs.readdirSync(assetsRootDir);
-    oldFiles.forEach(file => {
-      try {
-        fs.unlinkSync(path.join(assetsRootDir, file));
-      } catch (e) {}
-    });
-  } else {
-    fs.mkdirSync(assetsRootDir);
+    fs.rmSync(assetsRootDir, { recursive: true, force: true });
   }
+  fs.mkdirSync(assetsRootDir, { recursive: true });
 
-  // Copy files from dist/assets to root/assets
-  const files = fs.readdirSync(assetsDistDir);
-  files.forEach(file => {
-    fs.copyFileSync(path.join(assetsDistDir, file), path.join(assetsRootDir, file));
-  });
+  // Copy everything from dist/assets to root/assets recursively
+  if (fs.existsSync(assetsDistDir)) {
+    fs.cpSync(assetsDistDir, assetsRootDir, { recursive: true });
+  }
 
   console.log("3. Copying built production index.html and adding cache-busting query params...");
   let compiledHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');

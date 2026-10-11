@@ -2301,14 +2301,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   <span className="teacher-email-chip">{authenticatedTeacher.email}</span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn-teacher-signout"
-                onClick={handleTeacherLogout}
-                title="تسجيل الخروج من حساب المعلم"
-              >
-                <i className="fas fa-sign-out-alt"></i> تسجيل خروج المعلم
-              </button>
+              <div className="teacher-header-actions-group">
+                <button
+                  type="button"
+                  className="btn-return-student-gate"
+                  onClick={() => setActiveInterface('student')}
+                  title="العودة لشاشة الدخول والطلاب"
+                >
+                  <i className="fas fa-arrow-right"></i> شاشة الطلاب
+                </button>
+                <button
+                  type="button"
+                  className="btn-teacher-signout"
+                  onClick={handleTeacherLogout}
+                  title="تسجيل الخروج من حساب المعلم"
+                >
+                  <i className="fas fa-sign-out-alt"></i> تسجيل خروج المعلم
+                </button>
+              </div>
             </div>
             <div className="interface-hero-card">
             <div className="hero-content">
@@ -3245,11 +3255,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         !studentAuth ? (
           /* STUDENT PARTICIPATION GATEWAY (رمز دخول مشترك لكل الموقع أو كضيف) */
           <section className="interface-canvas student-gate-canvas animate-fade-in">
-            <div className="student-gate-card">
+            <div className="student-gate-card unified-single-gate">
+              {/* Top-left small house logo for Teacher Dashboard */}
+              <div className="gate-top-bar">
+                <button
+                  type="button"
+                  className="gate-teacher-home-btn"
+                  onClick={() => setActiveInterface('creator')}
+                  title="لوحة تحكم المعلم (بناء وإعداد الحصة)"
+                >
+                  <i className="fas fa-home"></i>
+                  <span className="tooltip-text">لوحة تحكم المعلم</span>
+                </button>
+              </div>
+
               <div className="gate-header">
                 <div className="gate-hero-icon">🗝️✨</div>
-                <h2>انضمام الطلاب إلى رحلة التعلّم — مِفتاح</h2>
-                <p>مدرسة مشيرفة الابتدائية • شارك في محطات التعلم التفاعلية واكتشف المفاتيح المعرفية</p>
+                <h2>منصة مِفتاح — رحلة التعلّم</h2>
+                <p>مدرسة مشيرفة الابتدائية • أدخل اسمك ورمز الحصة للانطلاق في محطات التعلّم الفاعلة</p>
               </div>
 
               {studentGateError && (
@@ -3259,80 +3282,51 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               )}
 
-              <div className="student-participation-options-grid">
-                {/* Option 1: Shared School / Site Code */}
-                <div className="participation-option-box code-option">
-                  <div className="opt-ribbon">🔑 المسار الأول</div>
-                  <div className="opt-icon-circle">🏫</div>
-                  <h3>رمز الدخول المشترك للموقع</h3>
-                  <p>أدخل رمز المدرسة المشترك أو رمز الصف للمشاركة باسمك وتوثيق أدلتك:</p>
-
-                  <div className="gate-input-group">
-                    <label>رمز الدخول المشترك للموقع / الصف:</label>
-                    <input
-                      type="text"
-                      value={studentCodeInput}
-                      onChange={(e) => {
-                        setStudentCodeInput(e.target.value);
-                        setStudentGateError('');
-                      }}
-                      placeholder="أدخل الرمز الموحد (318212) أو رمز الصف"
-                    />
-                  </div>
-
-                  <div className="gate-input-group">
-                    <label>اسمك أو اسم مجموعتك:</label>
-                    <input
-                      type="text"
-                      value={studentNameInput}
-                      onChange={(e) => setStudentNameInput(e.target.value)}
-                      placeholder="مثال: ريان، جنى، فريق العلماء الصغار..."
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    className="btn-join-with-code"
-                    onClick={handleJoinWithSharedCode}
-                  >
-                    <i className="fas fa-key"></i> دخول برمز المدرسة المشترك 🚀
-                  </button>
-                  <span className="code-hint-text">💡 الرمز الموحد لجميع طلاب المدرسة: <strong>318212</strong></span>
+              <form onSubmit={handleJoinWithSharedCode} className="student-single-gate-form">
+                {/* Field 1: Student Name */}
+                <div className="gate-unified-input-group">
+                  <label>
+                    <i className="fas fa-user-graduate"></i> اسم الطالب:
+                  </label>
+                  <input
+                    type="text"
+                    value={studentNameInput}
+                    onChange={(e) => {
+                      setStudentNameInput(e.target.value);
+                      setStudentGateError('');
+                    }}
+                    placeholder="اكتب اسمك الثلاثي أو اسم مجموعتك..."
+                    autoFocus
+                    required
+                  />
                 </div>
 
-                {/* Option 2: Guest Instant Access */}
-                <div className="participation-option-box guest-option">
-                  <div className="opt-ribbon guest-ribbon">👋 المسار الثاني (فوري ومباشر)</div>
-                  <div className="opt-icon-circle guest-icon">🌟</div>
-                  <h3>المشاركة السريعة كضيف</h3>
-                  <p>لا تملك رمزاً؟ ادخل فوراً كضيف، وتصفح المحطات الخمس وتفاعل مع الأنشطة بحرية كاملة:</p>
+                {/* Field 2: Code sent by teacher */}
+                <div className="gate-unified-input-group">
+                  <label>
+                    <i className="fas fa-key"></i> كود الحصة (المرسل من المعلم):
+                  </label>
+                  <input
+                    type="text"
+                    value={studentCodeInput}
+                    onChange={(e) => {
+                      setStudentCodeInput(e.target.value);
+                      setStudentGateError('');
+                    }}
+                    placeholder="أدخل كود الحصة (مثال: 318212 أو كود الصف)..."
+                    required
+                  />
+                </div>
 
-                  <div className="gate-input-group">
-                    <label>اسمك كضيف (اختياري):</label>
-                    <input
-                      type="text"
-                      value={guestNameInput}
-                      onChange={(e) => setGuestNameInput(e.target.value)}
-                      placeholder="مثال: طالب زائر، أو اسمك الشخصي"
-                    />
-                  </div>
-
-                  <div className="guest-feature-checklist">
-                    <div className="feature-item">✓ لا يتطلب أي رمز دخول</div>
-                    <div className="feature-item">✓ تصفح كامل محطات مِفتاح (م ف ت ا ح)</div>
-                    <div className="feature-item">✓ حل الأحاجي والبازل ومشاهدة الأفلام</div>
-                    <div className="feature-item">✓ إرسال المحاولات لمعلم الصف مباشرةً</div>
-                  </div>
-
+                <div className="gate-action-buttons-row">
                   <button
-                    type="button"
-                    className="btn-join-as-guest"
-                    onClick={handleJoinAsGuest}
+                    type="submit"
+                    className="btn-unified-join-student"
                   >
-                    <i className="fas fa-rocket"></i> الدخول المباشر كضيف 🌟
+                    <i className="fas fa-rocket"></i> انطلاق إلى رحلة التعلّم 🚀
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </section>
         ) : (
