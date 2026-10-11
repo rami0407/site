@@ -286,11 +286,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [rememberTeacher, setRememberTeacher] = useState(true);
 
   // -------------------------------------------------------------------------
-  // STUDENT PARTICIPATION (مشاركة الطالب بالرمز المشترك 318212 أو كضيف)
+  // STUDENT PARTICIPATION (دخول الطالب بالاسم ورمز الحصة عبر شاشة الهبوط)
   // -------------------------------------------------------------------------
   const [studentAuth, setStudentAuth] = useState(() => {
+    // If entered explicitly via session storage during current live session keep it, otherwise show gate
     try {
-      const saved = localStorage.getItem('miftaah_student_participant');
+      const saved = sessionStorage.getItem('miftaah_student_participant');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return null;
@@ -403,7 +404,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setStudentAuth(newPart);
     setCurrentStudentId(newPart.id);
     try {
-      localStorage.setItem('miftaah_student_participant', JSON.stringify(newPart));
+      sessionStorage.setItem('miftaah_student_participant', JSON.stringify(newPart));
+      localStorage.removeItem('miftaah_student_participant');
     } catch (e) {}
 
     // Add to session participants list
@@ -415,7 +417,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       return next;
     });
 
-    showToast(`أهلاً بك يا ${sName}! تم تسجيل دخولك برمز المدرسة المشترك بنجاح 🚀`);
+    showToast(`أهلاً بك يا ${sName}! تم تسجيل دخولك بنجاح 🚀`);
   };
 
   // Student Join as Guest (المشاركة كضيف فوراً)
@@ -435,7 +437,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setStudentAuth(guestPart);
     setCurrentStudentId(guestPart.id);
     try {
-      localStorage.setItem('miftaah_student_participant', JSON.stringify(guestPart));
+      sessionStorage.setItem('miftaah_student_participant', JSON.stringify(guestPart));
+      localStorage.removeItem('miftaah_student_participant');
     } catch (e) {}
 
     setSessionState(prev => {
@@ -453,9 +456,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const handleStudentLogout = () => {
     setStudentAuth(null);
     try {
+      sessionStorage.removeItem('miftaah_student_participant');
       localStorage.removeItem('miftaah_student_participant');
     } catch (e) {}
-    showToast('تم الخروج من حساب الطالب. يمكنك إعادة الانضمام بالرمز أو كضيف.');
+    showToast('تم الخروج من حساب الطالب والعودة لشاشة الدخول.');
   };
 
   const toggleFullscreen = () => {
