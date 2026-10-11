@@ -2390,6 +2390,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           /* TEACHER LOGIN GATE SCREEN */
           <section className="interface-canvas teacher-auth-canvas animate-fade-in">
             <div className="teacher-auth-card">
+              <div className="teacher-card-top-action-bar">
+                <button
+                  type="button"
+                  className="btn-return-gate-top"
+                  onClick={() => setActiveInterface('student')}
+                  title="العودة لشاشة الدخول الرئيسية للطلاب"
+                >
+                  <i className="fas fa-arrow-right"></i> العودة لشاشة الطلاب
+                </button>
+              </div>
+
               <div className="auth-card-badge">
                 <i className="fas fa-lock"></i> منطقة خاصة ومحمية بكادر المعلمين
               </div>
@@ -2501,14 +2512,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     className="btn-link-student"
                     onClick={() => setActiveInterface('student')}
                   >
-                    🎒 أنا طالب — الانتقال إلى واجهة الطالب
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-link-projector"
-                    onClick={() => setActiveInterface('projector')}
-                  >
-                    📺 عرض شاشة الصف (البروجكتور)
+                    <i className="fas fa-arrow-right"></i> العودة لشاشة دخول الطلاب
                   </button>
                 </div>
               </form>
