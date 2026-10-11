@@ -7,6 +7,7 @@ import {
 } from '../utils/aiService';
 import {
   getAllTeachers,
+  getTeacherById,
   findTeacherByEmail,
   verifyTeacherCredentials,
   getActiveTeacherSession,
@@ -14,6 +15,17 @@ import {
   logoutTeacherSession,
   DEFAULT_TEACHER_PIN
 } from '../utils/teacherAuth';
+import {
+  isPrincipalAdmin,
+  getDefaultPermission,
+  getCachedPermissions,
+  saveMiftaahPermissions,
+  listenToMiftaahPermissions,
+  checkTeacherAuthorization,
+  saveLessonToFirestore,
+  deleteLessonFromFirestore,
+  listenToMiftaahLessons
+} from '../utils/miftaahCloudService';
 
 // =========================================================================
 // 1. DEFAULT EXEMPLARY LESSON (حصة نموذجية متكاملة لـ «مِفتاح — رحلة التعلّم»)
@@ -22,6 +34,12 @@ const DEFAULT_EXEMPLAR_LESSON = {
   id: 'exemplar_matter_states',
   title: 'حالات المادة وخصائصها وتغيراتها (صلب، سائل، غاز)',
   grade: 'الصف الرابع',
+  authorId: 'tch_exemplar',
+  authorName: 'إدارة المدرسة (نموذج استرشادي جاهز)',
+  authorEmail: 'admin@musherfe.com',
+  isTemplate: true,
+  createdAt: '2026-10-01T08:00:00.000Z',
+  updatedAt: '2026-10-01T08:00:00.000Z',
   specialRequests: 'التركيز على التجريب العملي والاستكشاف الموجّه مع تمايز التحديات',
   objective: 'يصنّف الطالب مواد مألوفة إلى صلبة وسائلة وغازية ويبرر التصنيف بخاصية مناسبة.',
   successCriteria: 'تصنيف ثلاثة أمثلة جديدة تصنيفاً صحيحاً مع تبرير مناسب يرتكز على الشكل أو الحجم.',
@@ -285,6 +303,46 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [isSubmittingTeacherAuth, setIsSubmittingTeacherAuth] = useState(false);
   const [rememberTeacher, setRememberTeacher] = useState(true);
 
+  // Teacher Workspace Sub-Views:
+  // 'my_lessons'         ➔ مكتبة الدروس السابقة الخاصة بالمعلم
+  // 'creator'            ➔ تحضير وبناء حصة جديدة وتعديل المحطات
+  // 'all_school_lessons' ➔ جميع دروس معلمي المدرسة (خاص بالأستاذ رامي — مدير الموقع)
+  // 'permissions'        ➔ إدارة التصاريح والأذونات لمعلمي المدرسة (خاص بالأستاذ رامي — مدير الموقع)
+  const [teacherSubView, setTeacherSubView] = useState('my_lessons');
+
+  // Teacher Permissions and Filters
+  const [permissionsMap, setPermissionsMap] = useState(() => getCachedPermissions());
+  const [permSearchQuery, setPermSearchQuery] = useState('');
+  const [lessonSearchQuery, setLessonSearchQuery] = useState('');
+  const [lessonGradeFilter, setLessonGradeFilter] = useState('all');
+  const [lessonTeacherFilter, setLessonTeacherFilter] = useState('all');
+
+  // Real-time listener for lessons and permissions in Firestore
+  useEffect(() => {
+    const unsubLessons = listenToMiftaahLessons((cloudLessons) => {
+      if (Array.isArray(cloudLessons) && cloudLessons.length > 0) {
+        setLessonsList(prev => {
+          const map = new Map();
+          map.set(DEFAULT_EXEMPLAR_LESSON.id, normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON));
+          prev.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
+          cloudLessons.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    const unsubPerms = listenToMiftaahPermissions((newPerms) => {
+      if (newPerms && typeof newPerms === 'object') {
+        setPermissionsMap(newPerms);
+      }
+    });
+
+    return () => {
+      if (unsubLessons) unsubLessons();
+      if (unsubPerms) unsubPerms();
+    };
+  }, []);
+
   // -------------------------------------------------------------------------
   // STUDENT PARTICIPATION (دخول الطالب بالاسم ورمز الحصة عبر شاشة الهبوط)
   // -------------------------------------------------------------------------
@@ -337,6 +395,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         return;
       }
 
+      // Check authorization (Admin is always authorized, teachers check permission)
+      const authStatus = checkTeacherAuthorization(foundTeacher, permissionsMap);
+      if (!authStatus.allowed) {
+        setTeacherAuthError(`⛔ المعلم/ة ${foundTeacher.nameAr}: صلاحية إعداد الحصص على منصة مِفتاح معلّقة حالياً لحسابك. يرجى التواصل مع إدارة المدرسة (الأستاذ رامي غرة) لمنحك التصريح.`);
+        setIsSubmittingTeacherAuth(false);
+        return;
+      }
+
       const teacherSession = {
         id: foundTeacher.id,
         nameAr: foundTeacher.nameAr,
@@ -355,7 +421,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       setActiveTeacherSession(teacherSession);
       setTeacherPasswordInput('');
       setTeacherAuthError('');
-      showToast(`أهلاً بك المعلم/ة ${teacherSession.nameAr}! تم فتح شاشة التحضير بنجاح 👨‍🏫✨`);
+      setTeacherSubView('my_lessons');
+      if (isPrincipalAdmin(teacherSession)) {
+        showToast(`مرحباً بسيادة المدير الأستاذ رامي غرة! تم فتح لوحة التحكم الشاملة لمنصة مِفتاح 👑✨`);
+      } else {
+        showToast(`أهلاً بك المعلم/ة ${teacherSession.nameAr}! تم فتح مكتبة دروسك وشاشة التحضير بنجاح 👨‍🏫✨`);
+      }
     } catch (err) {
       console.warn('Teacher login error:', err);
       setTeacherAuthError('حدث خطأ أثناء التحقق من الاعتماد، يرجى المحاولة مرة أخرى.');
@@ -752,7 +823,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           id: 'lesson_' + Date.now(),
           title: res.title || creatorTitle,
           grade: res.grade || creatorGrade,
-          specialRequests: creatorSpecialRequests
+          specialRequests: creatorSpecialRequests,
+          authorId: authenticatedTeacher?.id || 'admin',
+          authorName: authenticatedTeacher?.nameAr || 'المعلم',
+          authorEmail: authenticatedTeacher?.email || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         });
         setActiveLesson(newLesson);
         setSessionState(prev => {
@@ -766,6 +842,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         setLessonsList(updated);
         try {
           localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
+        } catch (e) {}
+        try {
+          saveLessonToFirestore(newLesson);
         } catch (e) {}
         showToast('تم توليد الحصة ومحطاتها الخمس بنجاح! تفضل بمراجعتها وتعديلها ✨');
       }
@@ -869,11 +948,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   };
 
   // Duplicate active lesson
-  const handleDuplicateLesson = () => {
+  const handleDuplicateLesson = async (lessonToDuplicate = null) => {
+    const target = lessonToDuplicate || activeLesson;
     const copy = {
-      ...JSON.parse(JSON.stringify(activeLesson)),
+      ...JSON.parse(JSON.stringify(target)),
       id: 'lesson_copy_' + Date.now(),
-      title: activeLesson.title + ' (نسخة مكررة)'
+      title: (target.title || 'حصة جديدة') + ' (نسخة مكررة)',
+      authorId: authenticatedTeacher?.id || target.authorId || 'admin',
+      authorName: authenticatedTeacher?.nameAr || target.authorName || 'المعلم',
+      authorEmail: authenticatedTeacher?.email || target.authorEmail || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     const updated = [copy, ...lessonsList];
     setLessonsList(updated);
@@ -881,7 +966,144 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     try {
       localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
     } catch (e) {}
+    try {
+      await saveLessonToFirestore(copy);
+    } catch (e) {}
     showToast('تم نسخ الحصة بنجاح! 📋 يمكنك تعديل نسختك الجديدة.');
+  };
+
+  // Save current active lesson (Local Cache + Cloud Firestore)
+  const handleSaveCurrentLesson = async (lessonToSave = null) => {
+    const target = lessonToSave || activeLesson;
+    if (!target) return;
+
+    const teacher = authenticatedTeacher;
+    const authorId = target.authorId || teacher?.id || 'admin';
+    const authorName = target.authorName || teacher?.nameAr || 'المعلم';
+    const authorEmail = target.authorEmail || teacher?.email || '';
+
+    const lessonWithMeta = normalizeMiftaahLesson({
+      ...target,
+      title: creatorTitle || target.title,
+      grade: creatorGrade || target.grade,
+      specialRequests: creatorSpecialRequests || target.specialRequests,
+      authorId,
+      authorName,
+      authorEmail,
+      updatedAt: new Date().toISOString(),
+      createdAt: target.createdAt || new Date().toISOString()
+    });
+
+    setActiveLesson(lessonWithMeta);
+    const updated = [
+      lessonWithMeta,
+      ...lessonsList.filter(l => l.id !== lessonWithMeta.id)
+    ];
+    setLessonsList(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
+    } catch (e) {}
+
+    // Firestore Sync
+    try {
+      await saveLessonToFirestore(lessonWithMeta);
+    } catch (err) {
+      console.warn('Cloud save error note:', err);
+    }
+
+    showToast(`تم حفظ الحصة [${lessonWithMeta.title}] في مكتبتك ومزامنتها بنجاح! 💾✨`);
+  };
+
+  // Delete lesson (Local + Firestore)
+  const handleDeleteLesson = async (lessonId) => {
+    if (!lessonId) return;
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذه الحصة نهائياً؟')) return;
+
+    const updated = lessonsList.filter(l => l.id !== lessonId);
+    setLessonsList(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
+    } catch (e) {}
+
+    try {
+      await deleteLessonFromFirestore(lessonId);
+    } catch (e) {}
+
+    if (activeLesson?.id === lessonId) {
+      setActiveLesson(updated[0] || normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON));
+    }
+    showToast('تم حذف الحصة بنجاح 🗑️');
+  };
+
+  // Open lesson in Creator for editing
+  const handleOpenLessonForEditing = (lesson) => {
+    const chosen = normalizeMiftaahLesson(lesson);
+    setActiveLesson(chosen);
+    setCreatorTitle(chosen.title || '');
+    setCreatorGrade(chosen.grade || '');
+    setCreatorSpecialRequests(chosen.specialRequests || '');
+    setTeacherSubView('creator');
+    showToast(`تم فتح درس [${chosen.title}] في شاشة التعديل والتحضير ✏️`);
+  };
+
+  // Start Classroom Session from a specific lesson
+  const handleStartSessionWithLesson = (lesson) => {
+    const chosen = normalizeMiftaahLesson(lesson);
+    setActiveLesson(chosen);
+    setCreatorTitle(chosen.title || '');
+    setCreatorGrade(chosen.grade || '');
+    setCreatorSpecialRequests(chosen.specialRequests || '');
+
+    const newSession = {
+      ...sessionState,
+      pin: 'MFT-' + Math.floor(100 + Math.random() * 900),
+      isActive: true,
+      activeStationIndex: 1,
+      elapsedSeconds: 0,
+      isTimerRunning: true
+    };
+    broadcastSession(newSession);
+    setActiveInterface('teacher');
+    showToast(`بدأت جلسة الصف لدرس [${chosen.title}] بنجاح! 🚀 تم فتح كواليس المعلم.`);
+  };
+
+  // Toggle single permission for a teacher (Admin only)
+  const handleTogglePermission = async (teacherId, field) => {
+    const teacher = getTeacherById(teacherId);
+    const existing = permissionsMap[teacherId] || getDefaultPermission(teacherId, teacher?.nameAr);
+    const updatedPerm = {
+      ...existing,
+      [field]: existing[field] === false ? true : false,
+      updatedAt: new Date().toISOString(),
+      updatedBy: authenticatedTeacher?.nameAr || 'مدير المدرسة'
+    };
+    const nextMap = {
+      ...permissionsMap,
+      [teacherId]: updatedPerm
+    };
+    setPermissionsMap(nextMap);
+    await saveMiftaahPermissions(nextMap, authenticatedTeacher?.nameAr || 'مدير المدرسة');
+    showToast(`تم تحديث تصريح المعلم/ة [${teacher?.nameAr || teacherId}] بنجاح ✅`);
+  };
+
+  // Bulk toggle permissions (Admin only)
+  const handleBulkTogglePermissions = async (allow) => {
+    const all = getAllTeachers();
+    const nextMap = { ...permissionsMap };
+    all.forEach(t => {
+      const existing = nextMap[t.id] || getDefaultPermission(t.id, t.nameAr);
+      nextMap[t.id] = {
+        ...existing,
+        canAccessMiftaah: allow,
+        canUseAI: allow,
+        canLaunchLive: allow,
+        updatedAt: new Date().toISOString(),
+        updatedBy: authenticatedTeacher?.nameAr || 'مدير المدرسة'
+      };
+    });
+    setPermissionsMap(nextMap);
+    await saveMiftaahPermissions(nextMap, authenticatedTeacher?.nameAr || 'مدير المدرسة');
+    showToast(allow ? 'تم تفعيل تصاريح مِفتاح لكافة المعلمين بنجاح! ✅' : 'تم تعليق التصاريح لكافة المعلمين (باستثناء إدارة المدرسة)! ⛔');
   };
 
   // Start Classroom Session from Creator
@@ -2296,11 +2518,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         ) : (
           <section className="interface-canvas creator-canvas animate-fade-in">
             {/* Teacher Logged-In Identity Banner */}
-            <div className="teacher-logged-header-banner">
+            <div className={`teacher-logged-header-banner ${isPrincipalAdmin(authenticatedTeacher) ? 'is-admin-banner' : ''}`}>
               <div className="teacher-info-group">
-                <span className="teacher-avatar-icon">👨‍🏫</span>
+                <span className="teacher-avatar-icon">
+                  {isPrincipalAdmin(authenticatedTeacher) ? '👑' : '👨‍🏫'}
+                </span>
                 <div>
-                  <span className="teacher-status-label">حساب المعلم المعتمد لغرفة التحضير:</span>
+                  <div className="teacher-status-line">
+                    <span className="teacher-status-label">
+                      {isPrincipalAdmin(authenticatedTeacher) ? 'حساب الإدارة العامة لمنصة مِفتاح وموقع المدرسة:' : 'حساب المعلم المعتمد لغرفة التحضير:'}
+                    </span>
+                    {isPrincipalAdmin(authenticatedTeacher) && (
+                      <span className="admin-status-pill">👑 مدير المدرسة والموقع</span>
+                    )}
+                  </div>
                   <strong className="teacher-name-title">{authenticatedTeacher.nameAr}</strong>
                   <span className="teacher-email-chip">{authenticatedTeacher.email}</span>
                 </div>
@@ -2324,29 +2555,652 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </button>
               </div>
             </div>
-            <div className="interface-hero-card">
-            <div className="hero-content">
-              <h2><i className="fas fa-wand-magic-sparkles"></i> إنشاء الحصة وتعديلها بالذكاء الاصطناعي</h2>
-              <p>ابدأ بثلاث خانات أساسية فقط، وسيولّد الذكاء الاصطناعي مسودة متكاملة لمسار مِفتاح بالمحطات الخمس مع أهداف واضحة ومهام متمايزة.</p>
-            </div>
-            <div className="hero-actions">
+
+            {/* Teacher Workspace Sub-Navigation Tabs */}
+            <div className="teacher-workspace-subnav">
               <button
                 type="button"
-                className="btn-duplicate-action"
-                onClick={handleDuplicateLesson}
-                title="نسخ هذه الحصة لإنشاء حصة موازية"
+                className={`subnav-pill-btn ${teacherSubView === 'my_lessons' ? 'active' : ''}`}
+                onClick={() => setTeacherSubView('my_lessons')}
               >
-                <i className="fas fa-copy"></i> نسخ الحصة
+                <i className="fas fa-book-reader"></i>
+                <span>مكتبة دروسي السابقة</span>
+                <span className="subnav-count-badge">
+                  {lessonsList.filter(l => l.authorId === authenticatedTeacher.id || (l.authorEmail && l.authorEmail.toLowerCase() === authenticatedTeacher.email.toLowerCase())).length || 1}
+                </span>
               </button>
+
               <button
                 type="button"
-                className="btn-launch-live-session"
-                onClick={handleStartSession}
+                className={`subnav-pill-btn ${teacherSubView === 'creator' ? 'active' : ''}`}
+                onClick={() => setTeacherSubView('creator')}
               >
-                <i className="fas fa-play-circle"></i> اعتماد وبدء جلسة الصف 🚀
+                <i className="fas fa-plus-circle"></i>
+                <span>تحضير وبناء حصة جديدة</span>
               </button>
+
+              {isPrincipalAdmin(authenticatedTeacher) && (
+                <>
+                  <button
+                    type="button"
+                    className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'all_school_lessons' ? 'active' : ''}`}
+                    onClick={() => setTeacherSubView('all_school_lessons')}
+                  >
+                    <i className="fas fa-school"></i>
+                    <span>جميع دروس معلمي المدرسة 👑</span>
+                    <span className="subnav-count-badge gold">
+                      {lessonsList.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'permissions' ? 'active' : ''}`}
+                    onClick={() => setTeacherSubView('permissions')}
+                  >
+                    <i className="fas fa-user-shield"></i>
+                    <span>إدارة التصاريح والأذونات 🛡️</span>
+                    <span className="subnav-count-badge gold">
+                      {getAllTeachers().length}
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
-          </div>
+
+            {/* ================================================================= */}
+            {/* SUBVIEW 1: MY PREVIOUS LESSONS (مكتبة الدروس السابقة للمعلم)       */}
+            {/* ================================================================= */}
+            {teacherSubView === 'my_lessons' && (() => {
+              const myLessons = lessonsList.filter(l => {
+                const isMe = l.authorId === authenticatedTeacher.id || 
+                  (l.authorEmail && l.authorEmail.toLowerCase() === authenticatedTeacher.email.toLowerCase());
+                return isMe;
+              });
+
+              const displayed = myLessons.length > 0 ? myLessons : [DEFAULT_EXEMPLAR_LESSON];
+
+              const filtered = displayed.filter(l => {
+                const matchSearch = !lessonSearchQuery || 
+                  (l.title && l.title.toLowerCase().includes(lessonSearchQuery.toLowerCase())) ||
+                  (l.grade && l.grade.toLowerCase().includes(lessonSearchQuery.toLowerCase()));
+                const matchGrade = lessonGradeFilter === 'all' || l.grade === lessonGradeFilter;
+                return matchSearch && matchGrade;
+              });
+
+              return (
+                <div className="teacher-library-view animate-fade-in">
+                  <div className="library-hero-card">
+                    <div className="hero-content">
+                      <h2><i className="fas fa-book-reader"></i> مكتبة دروسي السابقة — مِفتاح</h2>
+                      <p>
+                        هنا تجد كافة الحصص والمسارات التي قمت بإعدادها مسبقاً. يمكنك تعديلها، استكمال أهدافها، أو إطلاقها مباشرةً في الصف للطلاب.
+                      </p>
+                    </div>
+                    <div className="hero-actions">
+                      <button
+                        type="button"
+                        className="btn-create-new-lesson-cta"
+                        onClick={() => {
+                          setCreatorTitle('');
+                          setCreatorGrade('الصف الرابع');
+                          setCreatorSpecialRequests('');
+                          setTeacherSubView('creator');
+                        }}
+                      >
+                        <i className="fas fa-plus-circle"></i> تحضير وبناء حصة جديدة ✍️
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filter and Search Bar */}
+                  <div className="library-filter-bar">
+                    <div className="filter-search-box">
+                      <i className="fas fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="ابحث في عنوان الحصة أو المفهوم..."
+                        value={lessonSearchQuery}
+                        onChange={e => setLessonSearchQuery(e.target.value)}
+                      />
+                      {lessonSearchQuery && (
+                        <button type="button" className="btn-clear-search" onClick={() => setLessonSearchQuery('')}>
+                          <i className="fas fa-times"></i>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="filter-dropdown-box">
+                      <label><i className="fas fa-layer-group"></i> تصفية حسب الصف:</label>
+                      <select value={lessonGradeFilter} onChange={e => setLessonGradeFilter(e.target.value)}>
+                        <option value="all">جميع الصفوف الدراسية</option>
+                        <option value="الصف الأول">الصف الأول</option>
+                        <option value="الصف الثاني">الصف الثاني</option>
+                        <option value="الصف الثالث">الصف الثالث</option>
+                        <option value="الصف الرابع">الصف الرابع</option>
+                        <option value="الصف الخامس">الصف الخامس</option>
+                        <option value="الصف السادس">الصف السادس</option>
+                      </select>
+                    </div>
+
+                    <div className="library-count-badge">
+                      <span>إجمالي الدروس: <strong>{filtered.length}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Lessons Grid */}
+                  {filtered.length === 0 ? (
+                    <div className="library-empty-state">
+                      <div className="empty-icon">📂</div>
+                      <h3>لا توجد حصص مطابقة لمعايير البحث</h3>
+                      <p>جرّب تعديل كلمات البحث، أو انقر على تحضير حصة جديدة للبدء فوراً.</p>
+                      <button
+                        type="button"
+                        className="btn-create-new-lesson-cta"
+                        onClick={() => setTeacherSubView('creator')}
+                      >
+                        <i className="fas fa-plus"></i> إعداد حصة جديدة الآن
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="library-cards-grid">
+                      {filtered.map(lesson => {
+                        const isTemplate = lesson.isTemplate || lesson.id === 'exemplar_matter_states';
+                        const createdDateFormatted = lesson.createdAt 
+                          ? new Date(lesson.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
+                          : 'محفوظ';
+
+                        return (
+                          <div key={lesson.id} className={`lesson-library-card ${isTemplate ? 'is-exemplar-card' : ''}`}>
+                            <div className="lesson-card-top">
+                              <span className="card-grade-badge">
+                                <i className="fas fa-graduation-cap"></i> {lesson.grade || 'عام'}
+                              </span>
+                              {isTemplate ? (
+                                <span className="card-template-badge">
+                                  <i className="fas fa-star"></i> نموذج استرشادي جاهز
+                                </span>
+                              ) : (
+                                <span className="card-date-badge">
+                                  <i className="fas fa-calendar-alt"></i> {createdDateFormatted}
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="lesson-card-title">{lesson.title}</h3>
+
+                            {lesson.objective && (
+                              <p className="lesson-card-objective">
+                                <strong>الهدف:</strong> {lesson.objective}
+                              </p>
+                            )}
+
+                            {/* 5 Stations Pills */}
+                            <div className="lesson-stations-chips-row">
+                              <span className="station-mini-chip" title="المحطة الأولى: مشوّق ومحفّز">🔥 المشوّق</span>
+                              <span className="station-mini-chip" title="المحطة الثانية: فهم وبناء المعنى">🧩 المعنى</span>
+                              <span className="station-mini-chip" title="المحطة الثالثة: تطبيق وتدريب متمايز">🛠️ التطبيق</span>
+                              <span className="station-mini-chip" title="المحطة الرابعة: دليل وتحقق فردي">✍️ الدليل</span>
+                              <span className="station-mini-chip" title="المحطة الخامسة: حصاد ونقل الأثر">🎒 الحصاد</span>
+                            </div>
+
+                            {/* Card Actions */}
+                            <div className="lesson-card-actions">
+                              <button
+                                type="button"
+                                className="btn-action-edit"
+                                onClick={() => handleOpenLessonForEditing(lesson)}
+                                title="فتح الحصة وتعديل المحطات في شاشة التحضير"
+                              >
+                                <i className="fas fa-pen-to-square"></i> تعديل واستكمال
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-launch"
+                                onClick={() => handleStartSessionWithLesson(lesson)}
+                                title="بدء جلسة الصف المباشرة بهذه الحصة"
+                              >
+                                <i className="fas fa-play-circle"></i> بدء الحصة 🚀
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-copy"
+                                onClick={() => handleDuplicateLesson(lesson)}
+                                title="نسخ الحصة"
+                              >
+                                <i className="fas fa-copy"></i>
+                              </button>
+                              {!isTemplate && (
+                                <button
+                                  type="button"
+                                  className="btn-action-delete"
+                                  onClick={() => handleDeleteLesson(lesson.id)}
+                                  title="حذف الحصة"
+                                >
+                                  <i className="fas fa-trash-alt"></i>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ================================================================= */}
+            {/* SUBVIEW 2: ALL SCHOOL LESSONS (جميع دروس معلمي المدرسة — خاص بالمدير)*/}
+            {/* ================================================================= */}
+            {teacherSubView === 'all_school_lessons' && isPrincipalAdmin(authenticatedTeacher) && (() => {
+              const teachersList = getAllTeachers();
+
+              const filtered = lessonsList.filter(l => {
+                const matchSearch = !lessonSearchQuery ||
+                  (l.title && l.title.toLowerCase().includes(lessonSearchQuery.toLowerCase())) ||
+                  (l.authorName && l.authorName.toLowerCase().includes(lessonSearchQuery.toLowerCase())) ||
+                  (l.grade && l.grade.toLowerCase().includes(lessonSearchQuery.toLowerCase()));
+                const matchGrade = lessonGradeFilter === 'all' || l.grade === lessonGradeFilter;
+                const matchTeacher = lessonTeacherFilter === 'all' || l.authorId === lessonTeacherFilter;
+                return matchSearch && matchGrade && matchTeacher;
+              });
+
+              const distinctAuthors = new Set(lessonsList.map(l => l.authorId).filter(Boolean));
+
+              return (
+                <div className="teacher-library-view admin-all-lessons-view animate-fade-in">
+                  <div className="library-hero-card admin-hero-theme">
+                    <div className="hero-content">
+                      <div className="admin-crown-badge">👑 لوحة إشراف المدير العام — الأستاذ رامي غرة</div>
+                      <h2><i className="fas fa-school"></i> مكتبة كافة دروس معلمي مدرسة مشيرفة الابتدائية</h2>
+                      <p>
+                        بصفتك مدير الموقع والمدرسة، تتيح لك هذه اللوحة استعراض جميع الحصص المحضرة من قِبل كافة المعلمين، الاطلاع على أهدافها ومحطاتها، ومتابعة التحضير وتعديلها أو إطلاقها بالصف.
+                      </p>
+                    </div>
+                    <div className="hero-actions">
+                      <button
+                        type="button"
+                        className="btn-create-new-lesson-cta"
+                        onClick={() => {
+                          setCreatorTitle('');
+                          setCreatorGrade('الصف الرابع');
+                          setCreatorSpecialRequests('');
+                          setTeacherSubView('creator');
+                        }}
+                      >
+                        <i className="fas fa-plus"></i> تحضير درس جديد باسمك
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Stats Overview */}
+                  <div className="admin-stats-overview-row">
+                    <div className="stat-overview-card">
+                      <div className="stat-icon">📚</div>
+                      <div className="stat-info">
+                        <span className="stat-num">{lessonsList.length}</span>
+                        <span className="stat-title">إجمالي الحصص المسجلة</span>
+                      </div>
+                    </div>
+                    <div className="stat-overview-card">
+                      <div className="stat-icon">👨‍🏫</div>
+                      <div className="stat-info">
+                        <span className="stat-num">{distinctAuthors.size}</span>
+                        <span className="stat-title">معلمون أعدوا حصصاً</span>
+                      </div>
+                    </div>
+                    <div className="stat-overview-card">
+                      <div className="stat-icon">🏫</div>
+                      <div className="stat-info">
+                        <span className="stat-num">{teachersList.length}</span>
+                        <span className="stat-title">كادر الهيئة التدريسية</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter and Search Bar */}
+                  <div className="library-filter-bar">
+                    <div className="filter-search-box">
+                      <i className="fas fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="بحث بالعنوان، المفهوم، أو اسم المعلم/ة..."
+                        value={lessonSearchQuery}
+                        onChange={e => setLessonSearchQuery(e.target.value)}
+                      />
+                      {lessonSearchQuery && (
+                        <button type="button" className="btn-clear-search" onClick={() => setLessonSearchQuery('')}>
+                          <i className="fas fa-times"></i>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="filter-dropdown-box">
+                      <label><i className="fas fa-user"></i> تصفية حسب المعلم:</label>
+                      <select value={lessonTeacherFilter} onChange={e => setLessonTeacherFilter(e.target.value)}>
+                        <option value="all">كافة معلّمي المدرسة ({teachersList.length})</option>
+                        {teachersList.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.nameAr}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="filter-dropdown-box">
+                      <label><i className="fas fa-layer-group"></i> الصف:</label>
+                      <select value={lessonGradeFilter} onChange={e => setLessonGradeFilter(e.target.value)}>
+                        <option value="all">جميع الصفوف</option>
+                        <option value="الصف الأول">الصف الأول</option>
+                        <option value="الصف الثاني">الصف الثاني</option>
+                        <option value="الصف الثالث">الصف الثالث</option>
+                        <option value="الصف الرابع">الصف الرابع</option>
+                        <option value="الصف الخامس">الصف الخامس</option>
+                        <option value="الصف السادس">الصف السادس</option>
+                      </select>
+                    </div>
+
+                    <div className="library-count-badge">
+                      <span>المعروض: <strong>{filtered.length}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Grid */}
+                  {filtered.length === 0 ? (
+                    <div className="library-empty-state">
+                      <div className="empty-icon">🔍</div>
+                      <h3>لا توجد حصص مطابقة لمعايير البحث الحالية</h3>
+                      <p>جرّب اختيار معلّم آخر أو إلغاء تصفية الصفوف.</p>
+                    </div>
+                  ) : (
+                    <div className="library-cards-grid admin-cards-grid">
+                      {filtered.map(lesson => {
+                        const isTemplate = lesson.isTemplate || lesson.id === 'exemplar_matter_states';
+                        const createdDateFormatted = lesson.createdAt 
+                          ? new Date(lesson.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
+                          : 'محفوظ';
+
+                        return (
+                          <div key={lesson.id} className="lesson-library-card admin-lesson-card">
+                            <div className="lesson-card-top">
+                              <span className="card-grade-badge">
+                                <i className="fas fa-graduation-cap"></i> {lesson.grade || 'عام'}
+                              </span>
+                              <span className="card-author-chip">
+                                <i className="fas fa-user-circle"></i> {lesson.authorName || 'معلم غير محدد'}
+                              </span>
+                              <span className="card-date-badge">
+                                <i className="fas fa-calendar-alt"></i> {createdDateFormatted}
+                              </span>
+                            </div>
+
+                            <h3 className="lesson-card-title">{lesson.title}</h3>
+
+                            {lesson.objective && (
+                              <p className="lesson-card-objective">
+                                <strong>الهدف المركزي:</strong> {lesson.objective}
+                              </p>
+                            )}
+
+                            <div className="lesson-stations-chips-row">
+                              <span className="station-mini-chip">🔥 المشوّق</span>
+                              <span className="station-mini-chip">🧩 المعنى</span>
+                              <span className="station-mini-chip">🛠️ التطبيق</span>
+                              <span className="station-mini-chip">✍️ الدليل</span>
+                              <span className="station-mini-chip">🎒 الحصاد</span>
+                            </div>
+
+                            <div className="lesson-card-actions">
+                              <button
+                                type="button"
+                                className="btn-action-edit"
+                                onClick={() => handleOpenLessonForEditing(lesson)}
+                                title="استعراض وتعديل الحصة"
+                              >
+                                <i className="fas fa-eye"></i> استعراض وتعديل
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-launch"
+                                onClick={() => handleStartSessionWithLesson(lesson)}
+                                title="بدء جلسة الصف المباشرة بهذه الحصة"
+                              >
+                                <i className="fas fa-play"></i> إطلاق بالصف 🚀
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-copy"
+                                onClick={() => handleDuplicateLesson(lesson)}
+                                title="نسخ الحصة"
+                              >
+                                <i className="fas fa-copy"></i>
+                              </button>
+                              {!isTemplate && (
+                                <button
+                                  type="button"
+                                  className="btn-action-delete"
+                                  onClick={() => handleDeleteLesson(lesson.id)}
+                                  title="حذف الحصة"
+                                >
+                                  <i className="fas fa-trash-alt"></i>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ================================================================= */}
+            {/* SUBVIEW 3: TEACHER PERMISSIONS (إدارة التصاريح والأذونات — خاص بالمدير)*/}
+            {/* ================================================================= */}
+            {teacherSubView === 'permissions' && isPrincipalAdmin(authenticatedTeacher) && (() => {
+              const allTeachers = getAllTeachers();
+              const filteredTeachers = allTeachers.filter(t => {
+                if (!permSearchQuery) return true;
+                const q = permSearchQuery.toLowerCase();
+                return (
+                  (t.nameAr && t.nameAr.toLowerCase().includes(q)) ||
+                  (t.nameHe && t.nameHe.toLowerCase().includes(q)) ||
+                  (t.email && t.email.toLowerCase().includes(q)) ||
+                  (t.role && t.role.toLowerCase().includes(q))
+                );
+              });
+
+              return (
+                <div className="teacher-permissions-control-view animate-fade-in">
+                  <div className="library-hero-card admin-hero-theme">
+                    <div className="hero-content">
+                      <div className="admin-crown-badge">🛡️ لوحة الأذونات والتحكم بالصلاحيات — إدارة المدرسة</div>
+                      <h2>إدارة تصاريح وأذونات المعلمين لمنصة مِفتاح</h2>
+                      <p>
+                        تمنح هذه اللوحة مدير الموقع (الأستاذ رامي غرة) الصلاحية الكاملة لمنح أو حجب الأذونات عن كادر المعلمين.
+                        يمكنك تفعيل أو تعليق الدخول لتحضير الدروس، استخدام الذكاء الاصطناعي، أو إطلاق الحصص الحية.
+                      </p>
+                    </div>
+                    <div className="hero-actions">
+                      <button
+                        type="button"
+                        className="btn-bulk-perm-allow"
+                        onClick={() => handleBulkTogglePermissions(true)}
+                        title="منح الصلاحيات الكاملة لجميع المعلمين في المدرسة"
+                      >
+                        <i className="fas fa-check-double"></i> تفعيل التصريح للجميع ✅
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-bulk-perm-deny"
+                        onClick={() => handleBulkTogglePermissions(false)}
+                        title="تعليق الصلاحيات عن جميع المعلمين"
+                      >
+                        <i className="fas fa-ban"></i> تعليق التصريح للجميع ⛔
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Permissions Search Bar */}
+                  <div className="permissions-search-bar">
+                    <div className="filter-search-box">
+                      <i className="fas fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="ابحث عن اسم المعلم/ة، البريد، أو التخصص..."
+                        value={permSearchQuery}
+                        onChange={e => setPermSearchQuery(e.target.value)}
+                      />
+                      {permSearchQuery && (
+                        <button type="button" className="btn-clear-search" onClick={() => setPermSearchQuery('')}>
+                          <i className="fas fa-times"></i>
+                        </button>
+                      )}
+                    </div>
+                    <div className="permissions-count-pill">
+                      إجمالي معلمي المدرسة: <strong>{filteredTeachers.length}</strong> معلماً ومربية
+                    </div>
+                  </div>
+
+                  {/* Teachers Permissions Grid */}
+                  <div className="teachers-permissions-grid">
+                    {filteredTeachers.map(teacher => {
+                      const isRami = isPrincipalAdmin(teacher);
+                      const perm = permissionsMap[teacher.id] || getDefaultPermission(teacher.id, teacher.nameAr);
+                      const hasAccess = isRami ? true : (perm.canAccessMiftaah !== false);
+                      const hasAI = isRami ? true : (perm.canUseAI !== false);
+                      const hasLive = isRami ? true : (perm.canLaunchLive !== false);
+
+                      return (
+                        <div key={teacher.id} className={`teacher-perm-card ${hasAccess ? 'is-allowed' : 'is-revoked'} ${isRami ? 'is-admin-card' : ''}`}>
+                          <div className="teacher-perm-card-header">
+                            <div className="teacher-avatar-circle">
+                              {isRami ? '👑' : '👨‍🏫'}
+                            </div>
+                            <div className="teacher-perm-meta">
+                              <h4 className="teacher-perm-name">
+                                {teacher.nameAr}
+                                {isRami && <span className="admin-pill-tag">المدير العام</span>}
+                              </h4>
+                              <span className="teacher-perm-hebrew">{teacher.nameHe}</span>
+                              <span className="teacher-perm-role">{teacher.role || 'معلم ومربي'}</span>
+                              <span className="teacher-perm-email">{teacher.email}</span>
+                            </div>
+                            <div className="teacher-perm-status-badge">
+                              {hasAccess ? (
+                                <span className="badge-allowed"><i className="fas fa-check-circle"></i> مفعّل ومصرح له</span>
+                              ) : (
+                                <span className="badge-revoked"><i className="fas fa-times-circle"></i> معلّق / محجوب</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="teacher-perm-switches-box">
+                            {/* Switch 1: Access to Miftaah Preparation */}
+                            <div className="perm-switch-row">
+                              <div className="perm-label-info">
+                                <strong><i className="fas fa-key"></i> إعداد وتحضير الحصص:</strong>
+                                <small>السماح بالدخول إلى شاشة التحضير وبناء الدروس</small>
+                              </div>
+                              <label className="switch-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={hasAccess}
+                                  disabled={isRami}
+                                  onChange={() => handleTogglePermission(teacher.id, 'canAccessMiftaah')}
+                                />
+                                <span className="slider round"></span>
+                              </label>
+                            </div>
+
+                            {/* Switch 2: AI Assistance */}
+                            <div className="perm-switch-row">
+                              <div className="perm-label-info">
+                                <strong><i className="fas fa-wand-magic-sparkles"></i> توليد الذكاء الاصطناعي:</strong>
+                                <small>استدعاء الذكاء الاصطناعي لتوليد المحطات والأنشطة</small>
+                              </div>
+                              <label className="switch-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={hasAI}
+                                  disabled={isRami || !hasAccess}
+                                  onChange={() => handleTogglePermission(teacher.id, 'canUseAI')}
+                                />
+                                <span className="slider round"></span>
+                              </label>
+                            </div>
+
+                            {/* Switch 3: Live Broadcasting to Students */}
+                            <div className="perm-switch-row">
+                              <div className="perm-label-info">
+                                <strong><i className="fas fa-satellite-dish"></i> إطلاق البث والربط الصفي:</strong>
+                                <small>تفعيل رمز الصف ومشاركة المحطات مع شاشة البروجكتور والطلاب</small>
+                              </div>
+                              <label className="switch-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={hasLive}
+                                  disabled={isRami || !hasAccess}
+                                  onChange={() => handleTogglePermission(teacher.id, 'canLaunchLive')}
+                                />
+                                <span className="slider round"></span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {perm.updatedAt && (
+                            <div className="teacher-perm-footer-note">
+                              <small>
+                                آخر تحديث: {new Date(perm.updatedAt).toLocaleDateString('ar-EG')} ({perm.updatedBy || 'الإدارة'})
+                              </small>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ================================================================= */}
+            {/* SUBVIEW 4: LESSON CREATOR & AI EDITOR (تحضير وبناء حصة جديدة)       */}
+            {/* ================================================================= */}
+            {teacherSubView === 'creator' && (
+              <>
+                <div className="interface-hero-card">
+                  <div className="hero-content">
+                    <h2><i className="fas fa-wand-magic-sparkles"></i> إنشاء الحصة وتعديلها بالذكاء الاصطناعي</h2>
+                    <p>ابدأ بثلاث خانات أساسية فقط، وسيولّد الذكاء الاصطناعي مسودة متكاملة لمسار مِفتاح بالمحطات الخمس مع أهداف واضحة ومهام متمايزة.</p>
+                  </div>
+                  <div className="hero-actions">
+                    <button
+                      type="button"
+                      className="btn-save-current-lesson"
+                      onClick={() => handleSaveCurrentLesson()}
+                      title="حفظ الحصة الحالية في مكتبتك ومزامنتها سحابياً"
+                    >
+                      <i className="fas fa-save"></i> حفظ في مكتبتي 💾
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-duplicate-action"
+                      onClick={() => handleDuplicateLesson()}
+                      title="نسخ هذه الحصة لإنشاء حصة موازية"
+                    >
+                      <i className="fas fa-copy"></i> نسخ الحصة
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-launch-live-session"
+                      onClick={handleStartSession}
+                    >
+                      <i className="fas fa-play-circle"></i> اعتماد وبدء جلسة الصف 🚀
+                    </button>
+                  </div>
+                </div>
 
           {/* 3 INITIAL INPUTS ONLY */}
           <div className="creator-initial-inputs-card">
@@ -2752,6 +3606,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               );
             })()}
           </div>
+          </>
+          )}
         </section>
         )
       )}

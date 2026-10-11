@@ -62,7 +62,7 @@ export const findTeacherByEmail = (email) => {
   if (found) return found;
 
   // 2. Principal / admin email aliases
-  if (clean === 'admin@musherfe.com' || clean === 'rami@musherfe.com' || clean === 'principal@musherfe.com' || clean === 'rami@musheirifa.edu.hl') {
+  if (clean === 'admin@musherfe.com' || clean === 'rami@musherfe.com' || clean === 'principal@musherfe.com' || clean === 'rami@musheirifa.edu.hl' || clean === 'rami0407@gmail.com') {
     const principal = teachers.find(t => t.id === 'tch_36' || (t.nameAr && t.nameAr.includes('رامي')));
     if (principal) return principal;
   }
