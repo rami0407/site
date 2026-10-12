@@ -4886,6 +4886,34 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <h2>المحطة {sessionState.activeStationIndex}: {getStationByIndex(sessionState.activeStationIndex).name}</h2>
               </div>
               <div className="projector-top-actions">
+                <div className="projector-station-fast-nav">
+                  {[
+                    { idx: 1, letter: 'م', name: 'مشوّق' },
+                    { idx: 2, letter: 'ف', name: 'فهم' },
+                    { idx: 3, letter: 'ت', name: 'تطبيق' },
+                    { idx: 4, letter: 'ا', name: 'أدلة' },
+                    { idx: 5, letter: 'ح', name: 'حصاد' }
+                  ].map(st => {
+                    const isActive = sessionState.activeStationIndex === st.idx;
+                    const subsCount = (sessionState.submissions || []).filter(s => Number(s.stationNumber) === st.idx).length;
+                    return (
+                      <button
+                        key={st.idx}
+                        type="button"
+                        className={`btn-proj-station-pill ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          const next = { ...sessionState, activeStationIndex: st.idx };
+                          broadcastSession(next);
+                        }}
+                        title={`المحطة ${st.idx}: ${st.name} (${subsCount} إجابات)`}
+                      >
+                        <span className="proj-pill-letter">{st.letter}</span>
+                        <span className="proj-pill-name">{st.idx}. {st.name}</span>
+                        {subsCount > 0 && <span className="proj-pill-count">{subsCount}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
                 <button
                   type="button"
                   className="btn-proj-fullscreen-toggle"
@@ -4905,7 +4933,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             <div className="projector-main-stage-grid">
               {/* Left Side: Sleek Miftaah Letters Key Spine (م ف ت ا ح) */}
               <div className="projector-key-map-column">
-                {renderPhysicalKeyMap(sessionState.activeStationIndex, null, false)}
+                {renderPhysicalKeyMap(sessionState.activeStationIndex, (idx) => {
+                  const next = { ...sessionState, activeStationIndex: idx };
+                  broadcastSession(next);
+                }, false)}
               </div>
 
               {/* Center: Large Content Display / Showcase */}
@@ -4978,6 +5009,65 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             </div>
                           </div>
                         )}
+
+                        {/* Live Student Responses for Current Station on Classroom Display */}
+                        {(() => {
+                          const stationSubs = (sessionState.submissions || []).filter(
+                            s => Number(s.stationNumber) === Number(sessionState.activeStationIndex)
+                          );
+                          return (
+                            <div className="projector-station-live-answers-box animate-fade-in">
+                              <div className="proj-answers-box-header">
+                                <div className="pabh-title">
+                                  <span className="pabh-icon">💬</span>
+                                  <strong>إجابات ومشاركات الطلاب الحية في المحطة ({sessionState.activeStationIndex}):</strong>
+                                  <span className="pabh-badge">{stationSubs.length} إجابة مرسلة</span>
+                                </div>
+                                <span className="pabh-live-tag"><i className="fas fa-bolt"></i> تحديث فوري مباشر</span>
+                              </div>
+
+                              {stationSubs.length === 0 ? (
+                                <div className="proj-no-answers-hint">
+                                  <i className="fas fa-satellite-dish"></i>
+                                  <span>في انتظار إرسال الطلاب لإجاباتهم من أجهزتهم... ستظهر هنا فور إرسالها لمناقشتها صفياً! 📡</span>
+                                </div>
+                              ) : (
+                                <div className="proj-answers-cards-grid">
+                                  {stationSubs.map((sub, sIdx) => {
+                                    const isHighlighted = sessionState.showcasedItem?.id === sub.id;
+                                    return (
+                                      <div
+                                        key={sub.id || sIdx}
+                                        className={`proj-student-answer-card ${isHighlighted ? 'highlighted-showcase' : ''}`}
+                                      >
+                                        <div className="psac-head">
+                                          <div className="psac-author">
+                                            <span className="psac-avatar">👤</span>
+                                            <strong>{sessionState.showcaseShowNames !== false ? sub.participantName : `طالب متميز #${sIdx + 1}`}</strong>
+                                            {sub.groupName && <span className="psac-group">({sub.groupName})</span>}
+                                          </div>
+                                          <div className="psac-meta">
+                                            {sub.tier && <span className={`psac-tier tier-${sub.tier}`}>{sub.tier === 'advanced' ? '🚀 رواد' : sub.tier === 'support' ? '🌱 انطلاق' : '⭐ ممارسة'}</span>}
+                                            <span className="psac-time">{sub.timestamp}</span>
+                                          </div>
+                                        </div>
+                                        <div className="psac-body">
+                                          <p>{sub.text}</p>
+                                        </div>
+                                        {sub.teacherFeedback && (
+                                          <div className="psac-teacher-feedback">
+                                            <i className="fas fa-comment-dots"></i>
+                                            <span><strong>ملاحظة المعلم:</strong> {sub.teacherFeedback}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                   </div>
                 )}
               </div>

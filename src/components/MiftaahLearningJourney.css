@@ -2090,6 +2090,254 @@
   font-weight: 700;
 }
 
+/* Fast Navigation Station Pills in Projector Header */
+.projector-station-fast-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-proj-station-pill {
+  background: transparent;
+  color: #cbd5e1;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-proj-station-pill:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-proj-station-pill.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+}
+
+.proj-pill-letter {
+  font-weight: 900;
+  color: #fbbf24;
+}
+
+.btn-proj-station-pill.active .proj-pill-letter {
+  color: #fef08a;
+}
+
+.proj-pill-count {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 999px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* Live Student Responses Box on Projector Display */
+.projector-station-live-answers-box {
+  margin-top: 24px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.proj-answers-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #e2e8f0;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pabh-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.pabh-icon {
+  font-size: 1.4rem;
+}
+
+.pabh-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #bae6fd;
+}
+
+.pabh-live-tag {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #bbf7d0;
+}
+
+.proj-no-answers-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1.5px dashed #cbd5e1;
+}
+
+.proj-no-answers-hint i {
+  color: #0284c7;
+  font-size: 1.3rem;
+}
+
+.proj-answers-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.proj-student-answer-card {
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.proj-student-answer-card:hover {
+  border-color: #0284c7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(2, 132, 199, 0.12);
+}
+
+.proj-student-answer-card.highlighted-showcase {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+}
+
+.psac-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.psac-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.psac-avatar {
+  font-size: 1.05rem;
+}
+
+.psac-group {
+  color: #0284c7;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.psac-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.psac-tier {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.psac-tier.tier-advanced {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.psac-tier.tier-core {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.psac-tier.tier-support {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.psac-time {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.psac-body p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #1e293b;
+  font-weight: 600;
+  white-space: pre-line;
+}
+
+.psac-teacher-feedback {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #1e40af;
+  border-right: 3px solid #3b82f6;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 /* ========================================================================= */
 /* 4. INTERFACE 4: STUDENT / PAIR / GROUP DEVICE                             */
 /* ========================================================================= */
