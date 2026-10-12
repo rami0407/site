@@ -4848,22 +4848,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 ) : (
                   /* Standard Station Content */
                   <div className="projector-task-prompt-card animate-fade-in">
-                    {/* Station 1: The Interactive Hook Hero matching the plan */}
-                    {sessionState.activeStationIndex === 1 ? (
-                      renderStationMedia(getStationByIndex(1), true)
-                    ) : (
-                      <>
-                        {/* Stations 2-5: Show media ONLY if explicitly defined in lesson plan */}
-                        {getStationByIndex(sessionState.activeStationIndex)?.interactiveActivity && 
-                         renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
+                    {/* Station Prompt Text - Always visible in all stations */}
+                    {getStationByIndex(sessionState.activeStationIndex)?.studentPrompt && (
+                      <div className="prompt-content-text animate-fade-in">
+                        {getStationByIndex(sessionState.activeStationIndex).studentPrompt.split('\n').map((line, lIdx) => (
+                          <p key={lIdx}>{line}</p>
+                        ))}
+                      </div>
+                    )}
 
-                        <div className="prompt-content-text">
-                          {getStationByIndex(sessionState.activeStationIndex).studentPrompt.split('\n').map((line, lIdx) => (
-                            <p key={lIdx}>{line}</p>
-                          ))}
-                        </div>
+                    {/* Interactive Media / Activity (Video, Riddle, Puzzle) */}
+                    {getStationByIndex(sessionState.activeStationIndex)?.interactiveActivity && 
+                     renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
 
-                        {/* In Station 3: Show Group Tiers Showcase */}
+                    {/* In Station 3: Show Group Tiers Showcase */}
                         {sessionState.activeStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
                           <div className="projector-tiered-tasks-row">
                             {activeLesson.stations['3_practice'].tasks.map((task, idx) => (
@@ -4889,8 +4887,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             </div>
                           </div>
                         )}
-                      </>
-                    )}
                   </div>
                 )}
               </div>
@@ -5091,20 +5087,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
                   </div>
 
-              {/* Station 1: The Interactive Hook matching the plan */}
-              {studentCurrentStationIndex === 1 ? (
-                renderStationMedia(studentCurrentStationData, false)
-              ) : (
-                <>
-                  {studentCurrentStationData.interactiveActivity && renderStationMedia(studentCurrentStationData, false)}
-
-                  <div className="task-prompt-body">
-                    {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
-                      <p key={i}>{l}</p>
-                    ))}
-                  </div>
-                </>
+              {/* Station Prompt - Always visible to the student */}
+              {studentCurrentStationData.studentPrompt && (
+                <div className="task-prompt-body animate-fade-in">
+                  {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
+                    <p key={i}>{l}</p>
+                  ))}
+                </div>
               )}
+
+              {/* Station Interactive Media (Video, Riddle, Puzzle) */}
+              {studentCurrentStationData.interactiveActivity && renderStationMedia(studentCurrentStationData, false)}
 
               {/* Station 3 Specific: Tier Selector */}
               {studentCurrentStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
@@ -5828,19 +5821,18 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <h3>مهمتك في المحطة [{getStationByIndex(studentPreviewStationIndex).name}]:</h3>
                   </div>
 
-                  {studentPreviewStationIndex === 1 ? (
-                    renderStationMedia(getStationByIndex(1), false)
-                  ) : (
-                    <>
-                      {getStationByIndex(studentPreviewStationIndex).interactiveActivity && 
-                       renderStationMedia(getStationByIndex(studentPreviewStationIndex), false)}
-                      <div className="task-prompt-body">
-                        {(getStationByIndex(studentPreviewStationIndex).studentPrompt || '').split('\n').map((l, i) => (
-                          <p key={i}>{l}</p>
-                        ))}
-                      </div>
-                    </>
+                  {/* Station Prompt */}
+                  {getStationByIndex(studentPreviewStationIndex).studentPrompt && (
+                    <div className="task-prompt-body">
+                      {(getStationByIndex(studentPreviewStationIndex).studentPrompt || '').split('\n').map((l, i) => (
+                        <p key={i}>{l}</p>
+                      ))}
+                    </div>
                   )}
+
+                  {/* Station Interactive Media */}
+                  {getStationByIndex(studentPreviewStationIndex).interactiveActivity && 
+                   renderStationMedia(getStationByIndex(studentPreviewStationIndex), false)}
 
                   {getStationByIndex(studentPreviewStationIndex).scaffold && (
                     <div className="preview-scaffold-box">
