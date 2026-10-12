@@ -2804,6 +2804,71 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     }
   };
 
+  const getCuratedTopicVideo = (text) => {
+    const t = (text || '').toLowerCase();
+    if (t.includes('انتخاب') || t.includes('ديمقراط') || t.includes('تصويت') || t.includes('اقتراع') || t.includes('مواطن')) {
+      return {
+        title: 'الانتخابات والديمقراطية للأطفال: كيف نختار ممثلينا ولماذا صوتك أمانة ومهم؟',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/S4328Yx6W20?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=S4328Yx6W20',
+        searchQuery: 'الانتخابات والديمقراطية للاطفال كرتون تعليمي',
+        reflectionQuestion: 'ما أهمية أن يشارك كل فرد بصوته في الانتخابات؟ وما المعايير التي تجعلك تختار مرشحاً معيناً؟'
+      };
+    }
+    if (t.includes('تميز') || t.includes('التميز') || t.includes('نجاح') || t.includes('تفوق') || t.includes('طموح') || t.includes('إتقان') || t.includes('اتقان')) {
+      return {
+        title: 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+        searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
+        reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز؟'
+      };
+    }
+    if (t.includes('مادة') || t.includes('حالات المادة') || t.includes('صلب') || t.includes('سائل') || t.includes('غاز') || t.includes('كيمياء') || t.includes('علوم') || t.includes('فيزياء') || t.includes('طاقة') || t.includes('ماء') || t.includes('دورة الماء')) {
+      return {
+        title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=bMnmJjL3hF8',
+        searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
+        reflectionQuestion: 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
+      };
+    }
+    if (t.includes('حساب') || t.includes('رياضيات') || t.includes('كسور') || t.includes('ضرب') || t.includes('قسمة') || t.includes('جمع') || t.includes('طرح') || t.includes('أعداد') || t.includes('هندسة') || t.includes('مساحة')) {
+      return {
+        title: 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/4b2b-y4hPoc?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=4b2b-y4hPoc',
+        searchQuery: `فيديو تعليمي للأطفال في الرياضيات`,
+        reflectionQuestion: 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟ وكيف نطبقها اليوم؟'
+      };
+    }
+    if (t.includes('لغة') || t.includes('عربي') || t.includes('قراءة') || t.includes('إملاء') || t.includes('قواعد') || t.includes('همزة') || t.includes('فعل') || t.includes('اسم') || t.includes('نحو') || t.includes('قصة')) {
+      return {
+        title: 'مغامرة لغوية ممتعة في رحاب لغتنا العربية الجميلة',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/Pj15MjhZfEU?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=Pj15MjhZfEU',
+        searchQuery: 'فيديو تعليمي لغة عربية للاطفال',
+        reflectionQuestion: 'ما القاعدة أو المهارة اللغوية التي أوضحها هذا المقطع؟ وكيف نتجنب الخطأ فيها؟'
+      };
+    }
+    if (t.includes('بيئة') || t.includes('نبات') || t.includes('شجر') || t.includes('حيوان') || t.includes('طبيعة') || t.includes('تلوث') || t.includes('أرض') || t.includes('فضاء') || t.includes('كواكب') || t.includes('شمس')) {
+      return {
+        title: 'عجائب الطبيعة والكون للأطفال: استكشاف البيئة وسحر الاكتشاف',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/n3W5J_j1Rk4?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=n3W5J_j1Rk4',
+        searchQuery: 'فيديو تعليمي عن البيئة والطبيعة للاطفال',
+        reflectionQuestion: 'ما الذي لفت انتباهكم في هذا المشهد البيئي؟ وكيف نحافظ على توازن الطبيعة؟'
+      };
+    }
+    return {
+      title: `فيلم استكشافي قصير: ${safeTitle}`,
+      embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+      youtubeUrl: 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+      searchQuery: `فيلم تعليمي للاطفال عن ${safeTitle}`,
+      reflectionQuestion: 'بعد مشاهدة هذا المقطع: ما الفكرة الجوهرية التي أثارت فضولكم وترتبط بدرسنا اليوم؟'
+    };
+  };
+
   const postProcessLesson = (lesson) => {
     if (!lesson || !lesson.stations) return lesson;
     const reqAndTitle = (safeRequests + ' ' + safeTitle).toLowerCase();
@@ -2814,19 +2879,15 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     const hook = lesson.stations['1_hook'];
     if (hook) {
       const isExcellence = reqAndTitle.includes('تميز') || reqAndTitle.includes('التميز') || reqAndTitle.includes('نجاح') || reqAndTitle.includes('تفوق');
+      const curatedVid = getCuratedTopicVideo(safeTitle + ' ' + safeRequests);
 
       // 1. Build rich video data
       const defaultVideo = {
-        title: isExcellence 
-          ? 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين الشخص العادي والمتميز؟' 
-          : `فيلم تعليمي قصير: ${safeTitle}`,
-        searchQuery: isExcellence 
-          ? 'فيلم كرتوني عن التميز والنجاح للاطفال رسوم متحركة' 
-          : `فيديو تعليمي للاطفال عن ${safeTitle}`,
-        youtubeUrl: isExcellence
-          ? 'https://www.youtube.com/watch?v=EUm-vAOmWV1'
-          : '',
-        reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري الذي استنتجتموه؟ وكيف نطبق ذلك في درسنا اليوم؟'
+        title: curatedVid.title,
+        embedUrl: curatedVid.embedUrl,
+        youtubeUrl: curatedVid.youtubeUrl,
+        searchQuery: curatedVid.searchQuery,
+        reflectionQuestion: curatedVid.reflectionQuestion
       };
 
       // 2. Build rich riddle data
@@ -2897,7 +2958,8 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
         video: {
           ...defaultVideo,
           ...(hook.interactiveActivity?.video || {}),
-          ...(hook.media || {})
+          embedUrl: (hook.interactiveActivity?.video?.embedUrl) || defaultVideo.embedUrl,
+          youtubeUrl: (hook.interactiveActivity?.video?.youtubeUrl) || defaultVideo.youtubeUrl
         }
       };
 
@@ -2907,6 +2969,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
         title: hook.interactiveActivity.video.title,
         searchQuery: hook.interactiveActivity.video.searchQuery,
         youtubeUrl: hook.interactiveActivity.video.youtubeUrl,
+        embedUrl: hook.interactiveActivity.video.embedUrl,
         reflectionQuestion: hook.interactiveActivity.video.reflectionQuestion
       };
     }
@@ -2925,7 +2988,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       }
     }
 
-    // Guarantee Station 3 (التطبيق والتدريب) has rich studentPrompt, teacherGuidance, scaffold
+    // Guarantee Station 3 (التطبيق والتدريب) has rich studentPrompt, teacherGuidance, scaffold, and normalized tiered tasks
     const st3 = lesson.stations['3_practice'];
     if (st3) {
       if (!st3.studentPrompt || !st3.studentPrompt.trim()) {
@@ -2936,6 +2999,12 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       }
       if (!st3.scaffold || !st3.scaffold.trim()) {
         st3.scaffold = 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
+      }
+      if (Array.isArray(st3.tasks)) {
+        st3.tasks = st3.tasks.map(t => ({
+          ...t,
+          title: t.title || (t.tier === 'support' ? 'مهمة الانطلاق والتمكن' : t.tier === 'core' ? 'مهمة الممارسة والإتقان' : 'مهمة الرواد والتحدي')
+        }));
       }
     }
 
@@ -2970,9 +3039,15 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     return lesson;
   };
 
-  // 1. Try Groq AI
+  // 1. Try Groq AI (Llama 3.3 70B, Qwen, ALLaM)
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    const models = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'qwen/qwen3.8-27b',
+      'allam-2-7b',
+      'mixtral-8x7b-32768'
+    ];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -3003,9 +3078,9 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     }
   }
 
-  // 2. Try Gemini
+  // 2. Try Gemini (Gemini 1.5 Flash, 2.0 Flash, 1.5 Pro)
   if (geminiKey) {
-    const models = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-flash-latest'];
     for (const gm of models) {
       try {
         const res = await fetchWithTimeout(
@@ -3073,18 +3148,21 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
           {
             tier: "support",
             badge: "🌱 فريق الانطلاق والتمكن",
+            title: "مهمة الانطلاق والتمكن",
             task: `حل تمرين مباشر حول (${safeTitle}): اختر الإجابة المناسبة من بين الخيارات مع توضيح بسيط للسبب.`,
             scaffold: `تلميح: راجع المثال الأول في بطاقة الشرح واستبعد الخيار غير المنطقي.`
           },
           {
             tier: "core",
             badge: "⭐ فريق الممارسة والإتقان",
+            title: "مهمة الممارسة والإتقان",
             task: `طبق القاعدة الأساسية لـ (${safeTitle}) على ثلاث فقرات جديدة في دفترك، مع كتابة تعليل موجز لكل خطوة.`,
             scaffold: `تلميح: تأكد من مطابقة جميع معايير النجاح وتدوين خطواتك بوضوح.`
           },
           {
             tier: "advanced",
             badge: "🚀 فريق الرواد والتحدي",
+            title: "مهمة الرواد والتحدي",
             task: `اكتشف الخطأ الخفي في نموذج الحل المعروض وفسر سببه، ثم صغ مسألة جديدة لتحدي زملائك في باقي الفرق.`,
             scaffold: `تلميح: ركز على الحالات الاستثنائية التي نوقشت أثناء الدرس.`
           }

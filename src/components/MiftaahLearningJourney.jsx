@@ -609,6 +609,51 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast(`تم حفظ وتطبيق فيديو YouTube لمحطة [${currentSt.name}] وبثه للطلاب بنجاح 🎬📡✨`);
   };
 
+  // AI Suggest Video for Station
+  const handleAiSuggestVideoForStation = (stationKey) => {
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const resolved = (typeof resolveStationVideo === 'function')
+      ? resolveStationVideo(activeLesson, currentSt)
+      : null;
+
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
+
+    const updatedVid = {
+      ...existingVid,
+      title: resolved?.title || existingVid.title || `فيديو تعليمي: ${currentSt.name}`,
+      embedUrl: resolved?.embedUrl || existingVid.embedUrl || 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+      youtubeUrl: resolved?.youtubeUrl || existingVid.youtubeUrl || 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+      searchQuery: resolved?.searchQuery || activeLesson.title,
+      reflectionQuestion: resolved?.reflectionQuestion || existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
+    };
+
+    const updatedAct = {
+      ...existingAct,
+      type: 'video',
+      video: updatedVid
+    };
+
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          interactiveActivity: updatedAct
+        }
+      }
+    };
+
+    setStationVideoInputs(prev => ({
+      ...prev,
+      [stationKey]: updatedVid.youtubeUrl || updatedVid.embedUrl || ''
+    }));
+
+    syncLessonLive(updatedLesson, true);
+    showToast(`تم اقتراح وربط فيديو يوتيوب ملائم لمحطة [${currentSt.name}] بنجاح 🎬✨`);
+  };
+
   // Student Join with Lesson Code (كود الحصة المرسل من المعلم)
   const handleJoinWithSharedCode = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
