@@ -24,7 +24,11 @@ import {
   checkTeacherAuthorization,
   saveLessonToFirestore,
   deleteLessonFromFirestore,
-  listenToMiftaahLessons
+  listenToMiftaahLessons,
+  saveMiftaahLiveSession,
+  fetchMiftaahLiveSession,
+  fetchMiftaahSessionByPin,
+  listenToMiftaahLiveSession
 } from '../utils/miftaahCloudService';
 
 // =========================================================================
@@ -343,6 +347,27 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     };
   }, []);
 
+  // Real-time listener for live classroom session from cloud (Firestore)
+  useEffect(() => {
+    const unsubLive = listenToMiftaahLiveSession((liveSession) => {
+      if (liveSession && liveSession.lesson) {
+        setSessionState(prev => ({
+          ...prev,
+          ...liveSession,
+          participants: prev.participants?.length > liveSession.participants?.length
+            ? prev.participants
+            : (liveSession.participants || prev.participants)
+        }));
+        if (studentAuth || activeInterface === 'student' || activeInterface === 'projector') {
+          setActiveLesson(normalizeMiftaahLesson(liveSession.lesson));
+        }
+      }
+    });
+    return () => {
+      if (unsubLive) unsubLive();
+    };
+  }, [studentAuth, activeInterface]);
+
   // -------------------------------------------------------------------------
   // STUDENT PARTICIPATION (دخول الطالب بالاسم ورمز الحصة عبر شاشة الهبوط)
   // -------------------------------------------------------------------------
@@ -446,7 +471,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   };
 
   // Student Join with Lesson Code (كود الحصة المرسل من المعلم)
-  const handleJoinWithSharedCode = (e) => {
+  const handleJoinWithSharedCode = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setStudentGateError('');
     const code = (studentCodeInput || '').trim();
@@ -455,10 +480,37 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       return;
     }
 
-    const validCode = (code === '318212' || code === DEFAULT_TEACHER_PIN || code === String(sessionState.pin));
+    let matchedSession = null;
+    try {
+      matchedSession = await fetchMiftaahSessionByPin(code);
+    } catch (err) {}
+
+    const currentPin = String(sessionState.pin || '').trim();
+    const cleanEntered = code.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanCurrent = currentPin.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanNumOnly = cleanEntered.replace(/[^0-9]/g, '');
+    const currentNumOnly = cleanCurrent.replace(/[^0-9]/g, '');
+
+    const validCode = (
+      code === '318212' ||
+      code === DEFAULT_TEACHER_PIN ||
+      cleanEntered === cleanCurrent ||
+      (cleanNumOnly && cleanNumOnly.length >= 3 && currentNumOnly.includes(cleanNumOnly)) ||
+      (matchedSession && (matchedSession.isActive || matchedSession.lesson))
+    );
+
     if (!validCode) {
       setStudentGateError('⛔ كود الحصة غير صحيح. يرجى التأكد من الكود مع معلّم الحصة.');
       return;
+    }
+
+    const targetSession = matchedSession || sessionState;
+    if (targetSession && targetSession.lesson) {
+      const lessonToLoad = normalizeMiftaahLesson(targetSession.lesson);
+      setActiveLesson(lessonToLoad);
+      try {
+        localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify([lessonToLoad, ...lessonsList.filter(l => l.id !== lessonToLoad.id)]));
+      } catch (err) {}
     }
 
     const sName = (studentNameInput || '').trim() || 'طالب متميز';
@@ -469,7 +521,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       avatar: '🎓',
       type: 'individual',
       mode: 'code',
-      currentStation: 1
+      currentStation: targetSession?.activeStationIndex || 1
     };
 
     setStudentAuth(newPart);
@@ -477,23 +529,36 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     try {
       sessionStorage.setItem('miftaah_student_participant', JSON.stringify(newPart));
       localStorage.removeItem('miftaah_student_participant');
-    } catch (e) {}
+    } catch (err) {}
 
     // Add to session participants list
     setSessionState(prev => {
       const exists = prev.participants.some(p => p.id === newPart.id);
       const nextParts = exists ? prev.participants : [newPart, ...prev.participants];
-      const next = { ...prev, participants: nextParts };
-      try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next)); } catch (e) {}
+      const next = { ...prev, ...targetSession, participants: nextParts };
+      try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next)); } catch (err) {}
+      saveMiftaahLiveSession(next);
       return next;
     });
 
-    showToast(`أهلاً بك يا ${sName}! تم تسجيل دخولك بنجاح 🚀`);
+    const lessonName = (targetSession?.lesson?.title || activeLesson?.title || 'الحصة');
+    showToast(`أهلاً بك يا ${sName}! تم تسجيل دخولك لدرس [${lessonName}] بنجاح 🚀`);
   };
 
   // Student Join as Guest (المشاركة كضيف فوراً)
-  const handleJoinAsGuest = () => {
+  const handleJoinAsGuest = async () => {
     setStudentGateError('');
+    let liveSession = null;
+    try {
+      liveSession = await fetchMiftaahLiveSession();
+    } catch (e) {}
+
+    const targetSession = liveSession || sessionState;
+    if (targetSession && targetSession.lesson) {
+      const lessonToLoad = normalizeMiftaahLesson(targetSession.lesson);
+      setActiveLesson(lessonToLoad);
+    }
+
     const gName = (guestNameInput || '').trim() || 'طالب زائر (ضيف)';
     const guestPart = {
       id: 'guest_' + Date.now(),
@@ -502,7 +567,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       avatar: '🌟',
       type: 'individual',
       mode: 'guest',
-      currentStation: 1
+      currentStation: targetSession?.activeStationIndex || 1
     };
 
     setStudentAuth(guestPart);
@@ -515,12 +580,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setSessionState(prev => {
       const exists = prev.participants.some(p => p.id === guestPart.id);
       const nextParts = exists ? prev.participants : [guestPart, ...prev.participants];
-      const next = { ...prev, participants: nextParts };
+      const next = { ...prev, ...targetSession, participants: nextParts };
       try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(next)); } catch (e) {}
+      saveMiftaahLiveSession(next);
       return next;
     });
 
-    showToast(`مرحباً بك يا ${gName}! تم دخولك كضيف بنجاح، استمتع بالرحلة 🌟`);
+    const lessonName = (targetSession?.lesson?.title || activeLesson?.title || 'الحصة');
+    showToast(`مرحباً بك يا ${gName}! تم دخولك كضيف لدرس [${lessonName}] بنجاح 🌟`);
   };
 
   // Student Logout / Switch Identity Handler
@@ -612,6 +679,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   });
 
   const [activeLesson, setActiveLesson] = useState(() => {
+    try {
+      const activeSessionRaw = localStorage.getItem(STORAGE_KEY_SESSION_DATA);
+      if (activeSessionRaw) {
+        const activeSession = JSON.parse(activeSessionRaw);
+        if (activeSession && activeSession.lesson) {
+          return normalizeMiftaahLesson(activeSession.lesson);
+        }
+      }
+    } catch (e) {}
+
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SAVED_LESSONS);
       if (saved) {
@@ -724,7 +801,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       channelRef.current = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
       channelRef.current.onmessage = (e) => {
         if (e.data && e.data.type === 'SYNC_SESSION') {
-          setSessionState(e.data.payload);
+          const s = e.data.payload;
+          setSessionState(s);
+          if (s && s.lesson) {
+            setActiveLesson(normalizeMiftaahLesson(s.lesson));
+          }
         } else if (e.data && e.data.type === 'TOAST') {
           showToast(e.data.payload);
         }
@@ -738,15 +819,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   }, []);
 
   const broadcastSession = (newSession) => {
-    setSessionState(newSession);
+    const sessionWithLesson = {
+      ...newSession,
+      lesson: newSession.lesson || activeLesson,
+      lessonId: (newSession.lesson || activeLesson)?.id,
+      lessonTitle: (newSession.lesson || activeLesson)?.title
+    };
+    setSessionState(sessionWithLesson);
     try {
-      localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(newSession));
+      localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(sessionWithLesson));
       if (channelRef.current) {
-        channelRef.current.postMessage({ type: 'SYNC_SESSION', payload: newSession });
+        channelRef.current.postMessage({ type: 'SYNC_SESSION', payload: sessionWithLesson });
       }
     } catch (e) {
       console.warn('Sync error:', e);
     }
+    try {
+      saveMiftaahLiveSession(sessionWithLesson);
+    } catch (e) {}
   };
 
   const showToast = (msg) => {
@@ -1042,8 +1132,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setCreatorTitle(chosen.title || '');
     setCreatorGrade(chosen.grade || '');
     setCreatorSpecialRequests(chosen.specialRequests || '');
+    const nextSession = {
+      ...sessionState,
+      lesson: chosen,
+      lessonId: chosen.id,
+      lessonTitle: chosen.title,
+      activeStationIndex: 1
+    };
+    broadcastSession(nextSession);
     setTeacherSubView('creator');
-    showToast(`تم فتح درس [${chosen.title}] في شاشة التعديل والتحضير ✏️`);
+    showToast(`تم فتح درس [${chosen.title}] في شاشة التعديل والتحضير ومزامنته للطلاب ✏️`);
   };
 
   // Start Classroom Session from a specific lesson
@@ -1060,11 +1158,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       isActive: true,
       activeStationIndex: 1,
       elapsedSeconds: 0,
-      isTimerRunning: true
+      isTimerRunning: true,
+      lesson: chosen,
+      lessonId: chosen.id,
+      lessonTitle: chosen.title
     };
     broadcastSession(newSession);
     setActiveInterface('teacher');
-    showToast(`بدأت جلسة الصف لدرس [${chosen.title}] بنجاح! 🚀 تم فتح كواليس المعلم.`);
+    showToast(`بدأت جلسة الصف لدرس [${chosen.title}] بنجاح! 🚀 كود الحصة للطلاب: ${newSession.pin}`);
   };
 
   // Toggle single permission for a teacher (Admin only)
@@ -1114,11 +1215,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       isActive: true,
       activeStationIndex: 1,
       elapsedSeconds: 0,
-      isTimerRunning: true
+      isTimerRunning: true,
+      lesson: activeLesson,
+      lessonId: activeLesson.id,
+      lessonTitle: activeLesson.title
     };
     broadcastSession(newSession);
     setActiveInterface('teacher');
-    showToast('بدأت جلسة الصف المباشرة بنجاح! 🚀 تم فتح لوحة المعلم.');
+    showToast(`بدأت جلسة الصف لدرس [${activeLesson.title}] بنجاح! 🚀 كود الحصة: ${newSession.pin}`);
   };
 
   // =========================================================================
@@ -3201,6 +3305,46 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       onClick={handleStartSession}
                     >
                       <i className="fas fa-play-circle"></i> اعتماد وبدء جلسة الصف 🚀
+                    </button>
+                  </div>
+                </div>
+
+                {/* 📡 Live Broadcast Status Bar in Creator */}
+                <div className="live-broadcast-banner-bar">
+                  <div className="live-broadcast-info">
+                    <span className="live-pill-badge">
+                      <i className="fas fa-circle animate-pulse"></i> بث الحصة الصفي: {sessionState.isActive ? 'مفعّل ونشط 🟢' : 'جاهز للبث'}
+                    </span>
+                    <span className="live-pin-display">
+                      كود الحصة للطلاب: <strong className="pin-code-highlight">{sessionState.pin}</strong>
+                    </span>
+                    <span className="live-lesson-name">
+                      الحصة المعروضة للطلاب: <strong>{activeLesson.title}</strong>
+                    </span>
+                  </div>
+                  <div className="live-broadcast-actions">
+                    <button
+                      type="button"
+                      className="btn-live-broadcast-now"
+                      onClick={() => {
+                        handleStartSession();
+                        if (navigator.clipboard) navigator.clipboard.writeText(sessionState.pin).catch(() => {});
+                        showToast(`تم بث حصة [${activeLesson.title}] للطلاب بنجاح! كود الحصة: ${sessionState.pin} 🚀`);
+                      }}
+                      title="بث هذه الحصة فوراً لجميع الطلاب وشاشة البروجكتور"
+                    >
+                      <i className="fas fa-broadcast-tower"></i> بث هذه الحصة للطلاب الآن ({sessionState.pin}) 🚀
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-copy-code-quick"
+                      onClick={() => {
+                        if (navigator.clipboard) navigator.clipboard.writeText(sessionState.pin).catch(() => {});
+                        showToast(`تم نسخ كود الحصة للطلاب: ${sessionState.pin} 📋`);
+                      }}
+                      title="نسخ كود الحصة لمشاركته مع الطلاب"
+                    >
+                      <i className="fas fa-copy"></i> نسخ كود الطلاب
                     </button>
                   </div>
                 </div>
