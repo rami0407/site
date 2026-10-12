@@ -268,7 +268,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       const search = (window.location.search || '').toLowerCase();
       const combined = hash + search;
       if (combined.includes('prep') || combined.includes('creator') || combined.includes('tahdir')) return 'creator';
-      if (combined.includes('view=teacher') || combined.includes('kawaliss')) return 'teacher';
       if (combined.includes('view=projector') || combined.includes('view=screen') || combined.includes('screen') || combined.includes('projector')) return 'projector';
       if (combined.includes('view=sandbox') || combined.includes('view=sim') || combined.includes('sandbox')) return 'sandbox';
       if (combined.includes('view=summary') || combined.includes('summary')) return 'summary';
@@ -280,10 +279,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
   // Primary active interface:
   // 'creator'   ➔ 1. إنشاء الحصة وتعديلها (محمي بحساب المعلم الخاص)
-  // 'teacher'   ➔ 2. لوحة المعلم أثناء التدريس
-  // 'projector' ➔ 3. الشاشة الرئيسية للصف (البروجكتور)
-  // 'student'   ➔ 4. واجهة الطالب أو المجموعة (دخول بالرمز المشترك أو كضيف)
-  // 'summary'   ➔ 5. ملخص الحصة والإنهاء
+  // 'projector' ➔ 2. الشاشة الرئيسية للصف (البروجكتور)
+  // 'student'   ➔ 3. واجهة الطالب أو المجموعة (دخول بالرمز المشترك أو كضيف)
+  // 'summary'   ➔ 4. ملخص الحصة والإنهاء
   const [activeInterface, setActiveInterface] = useState(initialView);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -2864,24 +2862,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </button>
           <button
             type="button"
-            className={`nav-tab-btn ${activeInterface === 'teacher' ? 'active' : ''}`}
-            onClick={() => setActiveInterface('teacher')}
-          >
-            <i className="fas fa-chalkboard-teacher"></i> ٢. كواليس المعلم
-          </button>
-          <button
-            type="button"
             className={`nav-tab-btn ${activeInterface === 'projector' ? 'active' : ''}`}
             onClick={() => setActiveInterface('projector')}
           >
-            <i className="fas fa-desktop"></i> ٣. شاشة الصف (البروجكتور)
+            <i className="fas fa-desktop"></i> ٢. شاشة الصف (البروجكتور)
           </button>
           <button
             type="button"
             className={`nav-tab-btn ${activeInterface === 'student' ? 'active' : ''}`}
             onClick={() => setActiveInterface('student')}
           >
-            <i className="fas fa-mobile-alt"></i> ٤. واجهة الطالب / المجموعة
+            <i className="fas fa-mobile-alt"></i> ٣. واجهة الطالب / المجموعة
             {studentAuth && (
               <span className="tab-pill-badge student-badge">
                 {studentAuth.mode === 'guest' ? 'ضيف' : 'بالرمز'}
@@ -2901,7 +2892,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             className={`nav-tab-btn ${activeInterface === 'summary' ? 'active' : ''}`}
             onClick={() => setActiveInterface('summary')}
           >
-            <i className="fas fa-chart-pie"></i> ٥. ملخص الحصة والإنهاء
+            <i className="fas fa-chart-pie"></i> ٤. ملخص الحصة والإنهاء
           </button>
         </nav>
 
@@ -4079,7 +4070,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         className="btn-ai-generate-guidance"
                         onClick={() => handleQuickAiGenerateStationContent(selectedStationToEdit)}
                         disabled={isGeneratingStationContent}
-                        title="توليد شرح المادة للطلاب وإعداد كواليس المعلم بالذكاء الاصطناعي"
+                        title="توليد شرح المادة للطلاب وإعداد إرشادات المعلم بالذكاء الاصطناعي"
                       >
                         <i className={`fas ${isGeneratingStationContent ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
                         <span>{isGeneratingStationContent ? 'جاري التوليد...' : '✨ توليد الشرح وإرشادات المعلم (AI)'}</span>
@@ -4297,7 +4288,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
                     <div className="col-teacher-planning">
                       <div className="col-header teacher">
-                        <i className="fas fa-user-secret"></i> التخطيط وإرشادات المعلم (كواليس خاصة لا تظهر للطلاب):
+                        <i className="fas fa-chalkboard-teacher"></i> التخطيط وإرشادات المعلم التدريسية (خاصة بالمعلم):
                       </div>
                       <textarea
                         rows={6}
@@ -4453,9 +4444,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       )}
 
       {/* ===================================================================== */}
-      {/* 2. INTERFACE 2: TEACHER LIVE BACKSTAGE DASHBOARD                      */}
+      {/* 2. INTERFACE 2: TEACHER LIVE BACKSTAGE DASHBOARD (DISABLED/REMOVED)   */}
       {/* ===================================================================== */}
-      {activeInterface === 'teacher' && (
+      {false && activeInterface === 'teacher' && (
         <section className="interface-canvas teacher-canvas animate-fade-in">
           {/* Top Session Status Ribbon */}
           <div className="teacher-top-control-ribbon">
@@ -5222,7 +5213,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
                           color: '#ffffff',
                           border: 'none',
-                          padding: '6px 12px',
+                          padding: '6px 14px',
                           borderRadius: '8px',
                           fontWeight: 'bold',
                           fontSize: '0.85rem',
@@ -5236,28 +5227,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         title="العودة لشاشة إعداد وتعديل الحصة"
                       >
                         <i className="fas fa-edit"></i> تعديل الحصة ✏️
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-return-to-teacher-backstage"
-                        style={{
-                          background: 'linear-gradient(135deg, #059669, #10b981)',
-                          color: '#ffffff',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)'
-                        }}
-                        onClick={() => setActiveInterface('teacher')}
-                        title="الانتقال إلى كواليس المعلم ولوحة المتابعة الصفيّة"
-                      >
-                        <i className="fas fa-chalkboard-teacher"></i> كواليس المعلم 👨‍🏫
                       </button>
                     </>
                   )}
