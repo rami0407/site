@@ -429,7 +429,7 @@ export const fetchMiftaahSessionByPin = async (rawPin) => {
   return null;
 };
 
-export const listenToMiftaahLiveSession = (callback) => {
+export const listenToMiftaahLiveSession = (callback, rawPin = null) => {
   const getCached = () => {
     try {
       const cached = localStorage.getItem(STORAGE_KEY_LIVE_SESSION);
@@ -438,9 +438,12 @@ export const listenToMiftaahLiveSession = (callback) => {
     return null;
   };
 
+  const clean = rawPin ? String(rawPin).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') : null;
+  const targetDocName = clean ? `miftaah_session_${clean}` : 'miftaah_live_session';
+
   try {
-    const liveDocRef = doc(db, 'school_padlet_cards', 'miftaah_live_session');
-    return onSnapshot(liveDocRef, (snap) => {
+    const sessionDocRef = doc(db, 'school_padlet_cards', targetDocName);
+    const unsubTarget = onSnapshot(sessionDocRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         try {
@@ -450,9 +453,30 @@ export const listenToMiftaahLiveSession = (callback) => {
       } else {
         if (callback) callback(getCached());
       }
-    }, (err) => {
+    }, () => {
       if (callback) callback(getCached());
     });
+
+    let unsubLive = null;
+    if (clean && targetDocName !== 'miftaah_live_session') {
+      try {
+        const liveDocRef = doc(db, 'school_padlet_cards', 'miftaah_live_session');
+        unsubLive = onSnapshot(liveDocRef, (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            const livePin = String(data?.pin || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+            if (livePin === clean) {
+              if (callback) callback(data);
+            }
+          }
+        }, () => {});
+      } catch (e) {}
+    }
+
+    return () => {
+      if (unsubTarget) unsubTarget();
+      if (unsubLive) unsubLive();
+    };
   } catch (e) {
     if (callback) callback(getCached());
     return () => {};

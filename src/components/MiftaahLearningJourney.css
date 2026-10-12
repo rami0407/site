@@ -7494,3 +7494,62 @@
   }
 }
 
+/* =========================================================================
+   LIVE BROADCAST & SYNC CONTROLS (الحتلنة الفورية والبث المباشر)
+   ========================================================================= */
+.btn-live-sync-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.2px;
+}
+
+.btn-live-sync-now:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.55);
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+}
+
+.btn-live-sync-now:active {
+  transform: translateY(0);
+}
+
+.btn-student-refresh-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  color: #16a34a !important;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.1);
+}
+
+.btn-student-refresh-sync:hover {
+  background: #dcfce7;
+  color: #15803d !important;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.btn-student-refresh-sync:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+

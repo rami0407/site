@@ -605,16 +605,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       }
     };
 
-    setActiveLesson(updatedLesson);
-    const nextSession = {
-      ...sessionState,
-      lesson: updatedLesson
-    };
-    broadcastSession(nextSession);
-    try {
-      saveLessonToFirestore(updatedLesson);
-    } catch (e) {}
-    showToast(`تم حفظ وتطبيق فيديو YouTube لمحطة [${currentSt.name}] بنجاح 🎬✨`);
+    syncLessonLive(updatedLesson, true);
+    showToast(`تم حفظ وتطبيق فيديو YouTube لمحطة [${currentSt.name}] وبثه للطلاب بنجاح 🎬📡✨`);
   };
 
   // Student Join with Lesson Code (كود الحصة المرسل من المعلم)
@@ -1055,6 +1047,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
   // Real-time listener for live classroom session from cloud (Firestore)
   useEffect(() => {
+    const activePin = sessionState.pin || activeLesson?.code || activeLesson?.pin || studentCodeInput || null;
     const unsubLive = listenToMiftaahLiveSession((liveSession) => {
       if (liveSession && liveSession.lesson) {
         setSessionState(prev => ({
@@ -1068,13 +1061,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           setActiveLesson(normalizeMiftaahLesson(liveSession.lesson));
         }
       }
-    });
+    }, activePin);
     return () => {
       if (unsubLive) unsubLive();
     };
-  }, [studentAuth, activeInterface]);
+  }, [studentAuth, activeInterface, sessionState.pin, activeLesson?.code, activeLesson?.pin, studentCodeInput]);
 
-  // Broadcast channel for live multi-tab & multi-window sync
+  // Broadcast channel & Storage listener for live multi-tab & multi-window sync
   const channelRef = useRef(null);
 
   useEffect(() => {
@@ -1094,8 +1087,23 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     } catch (err) {
       console.warn('BroadcastChannel error:', err);
     }
+
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEY_SESSION_DATA && e.newValue) {
+        try {
+          const s = JSON.parse(e.newValue);
+          setSessionState(s);
+          if (s && s.lesson) {
+            setActiveLesson(normalizeMiftaahLesson(s.lesson));
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       if (channelRef.current) channelRef.current.close();
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -1118,6 +1126,91 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     try {
       saveMiftaahLiveSession(sessionWithLesson);
     } catch (e) {}
+  };
+
+  // Real-time Debounced Cloud Sync for Teacher Live Edits
+  const debounceSyncTimerRef = useRef(null);
+
+  const syncLessonLive = (updatedLesson, immediateCloud = false) => {
+    const normLesson = normalizeMiftaahLesson(updatedLesson);
+    setActiveLesson(normLesson);
+
+    const targetPin = normLesson.pin || normLesson.code || sessionState.pin || 'MFT-924';
+    const nextSession = {
+      ...sessionState,
+      pin: targetPin,
+      lesson: normLesson,
+      lessonId: normLesson.id,
+      lessonTitle: normLesson.title
+    };
+
+    // 1. Multi-tab broadcast via BroadcastChannel and LocalStorage
+    broadcastSession(nextSession);
+
+    // 2. Keep lessonsList updated in memory & local storage
+    setLessonsList(prev => {
+      const exists = prev.some(l => l.id === normLesson.id);
+      const nextList = exists
+        ? prev.map(l => l.id === normLesson.id ? normLesson : l)
+        : [normLesson, ...prev];
+      try {
+        localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(nextList));
+      } catch (e) {}
+      return nextList;
+    });
+
+    // 3. Cloud Firestore Sync (Immediate or Debounced)
+    if (debounceSyncTimerRef.current) {
+      clearTimeout(debounceSyncTimerRef.current);
+    }
+
+    if (immediateCloud) {
+      try {
+        saveLessonToFirestore(normLesson);
+        saveMiftaahLiveSession(nextSession);
+      } catch (e) {}
+    } else {
+      debounceSyncTimerRef.current = setTimeout(() => {
+        try {
+          saveLessonToFirestore(normLesson);
+          saveMiftaahLiveSession(nextSession);
+        } catch (e) {}
+      }, 700);
+    }
+  };
+
+  const handlePushLiveSyncNow = () => {
+    syncLessonLive(activeLesson, true);
+    showToast(`تمت حتلنة وبث محتويات الحصة [${activeLesson.title}] للطلاب فوراً! 📡✨`);
+  };
+
+  const [isSyncingStudent, setIsSyncingStudent] = useState(false);
+  const handleManualStudentSyncRefresh = async () => {
+    setIsSyncingStudent(true);
+    try {
+      const code = sessionState.pin || activeLesson?.code || activeLesson?.pin || studentCodeInput || 'MFT-924';
+      let foundSession = null;
+      try {
+        foundSession = await fetchMiftaahSessionByPin(code);
+      } catch (e) {}
+      if (!foundSession) {
+        try {
+          foundSession = await fetchMiftaahLiveSession();
+        } catch (e) {}
+      }
+      if (foundSession && foundSession.lesson) {
+        const norm = normalizeMiftaahLesson(foundSession.lesson);
+        setActiveLesson(norm);
+        setSessionState(prev => ({ ...prev, ...foundSession, lesson: norm }));
+        showToast(`تمت حتلنة الدرس بنجاح مع آخر تحديثات المعلم! [${norm.title}] 🔄✨`);
+      } else {
+        showToast('أنت متصل بالفعل بآخر نسخة من الدرس! 🟢');
+      }
+    } catch (err) {
+      showToast('أنت متصل بالنسخة الحالية للدرس.');
+    } finally {
+      setIsSyncingStudent(false);
+    }
   };
 
   const showToast = (msg) => {
@@ -1262,9 +1355,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           }
         };
         const updatedLesson = normalizeMiftaahLesson({ ...activeLesson, stations: updatedStations });
-        setActiveLesson(updatedLesson);
+        syncLessonLive(updatedLesson, true);
         setStationPromptModal(prev => ({ ...prev, isOpen: false, loading: false }));
-        showToast(`تم تعديل محطة [${currentSt.name}] بالذكاء الاصطناعي بنجاح! 🎯`);
+        showToast(`تم تعديل محطة [${currentSt.name}] بالذكاء الاصطناعي وبث التحديثات للطلاب! 🎯📡`);
       }
     } catch (e) {
       console.warn('Modify error:', e);
@@ -1305,23 +1398,18 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           }
         };
         const updatedLesson = normalizeMiftaahLesson({ ...activeLesson, stations: updatedStations });
-        setActiveLesson(updatedLesson);
-        const updatedList = lessonsList.map(l => l.id === updatedLesson.id ? updatedLesson : l);
-        setLessonsList(updatedList);
-        try {
-          localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updatedList));
-        } catch (e) {}
-        showToast(`تم توليد وتحديث شرح الطلاب وإرشادات المعلم لمحطة [${currentSt.name}] بنجاح! ✨`);
+        syncLessonLive(updatedLesson, true);
+        showToast(`تم توليد وتحديث شرح الطلاب وإرشادات المعلم لمحطة [${currentSt.name}] وبثها فوراً! 📡✨`);
       } else {
         const norm = normalizeMiftaahLesson(activeLesson);
-        setActiveLesson(norm);
-        showToast(`تم إدراج الشرح النموذجي وإرشادات المعلم للمحطة بنجاح! 🎯`);
+        syncLessonLive(norm, true);
+        showToast(`تم إدراج الشرح النموذجي وإرشادات المعلم للمحطة وبثها بنجاح! 🎯`);
       }
     } catch (e) {
       console.warn('Quick AI generate failed:', e);
       const norm = normalizeMiftaahLesson(activeLesson);
-      setActiveLesson(norm);
-      showToast(`تم إدراج الشرح النموذجي وإرشادات المعلم للمحطة بنجاح! 🎯`);
+      syncLessonLive(norm, true);
+      showToast(`تم إدراج الشرح النموذجي وإرشادات المعلم للمحطة وبثها بنجاح! 🎯`);
     } finally {
       setIsGeneratingStationContent(false);
     }
@@ -1374,24 +1462,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       createdAt: target.createdAt || new Date().toISOString()
     });
 
-    setActiveLesson(lessonWithMeta);
-    const updated = [
-      lessonWithMeta,
-      ...lessonsList.filter(l => l.id !== lessonWithMeta.id)
-    ];
-    setLessonsList(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updated));
-    } catch (e) {}
-
-    // Firestore Sync
-    try {
-      await saveLessonToFirestore(lessonWithMeta);
-    } catch (err) {
-      console.warn('Cloud save error note:', err);
-    }
-
-    showToast(`تم حفظ الحصة [${lessonWithMeta.title}] في مكتبتك ومزامنتها بنجاح! 💾✨`);
+    syncLessonLive(lessonWithMeta, true);
+    showToast(`تم حفظ الحصة [${lessonWithMeta.title}] وبث التحديثات للطلاب سحابياً بنجاح! 💾📡✨`);
   };
 
   // Delete lesson (Local + Firestore)
@@ -3725,6 +3797,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   <div className="hero-actions">
                     <button
                       type="button"
+                      className="btn-live-sync-now"
+                      onClick={handlePushLiveSyncNow}
+                      title="بث وتحديث كافة محتويات وتعديلات الحصة لشاشات الطلاب فوراً"
+                    >
+                      <i className="fas fa-satellite-dish"></i> حتلنة وبث التعديلات للطلاب فوراً 📡
+                    </button>
+                    <button
+                      type="button"
                       className="btn-save-current-lesson"
                       onClick={() => handleSaveCurrentLesson()}
                       title="حفظ الحصة الحالية في مكتبتك ومزامنتها سحابياً"
@@ -4065,7 +4145,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                   }
                                 }
                               };
-                              setActiveLesson(updatedLesson);
+                              syncLessonLive(updatedLesson);
                             }}
                             placeholder="اكتب سؤال المناقشة والتأمل هنا..."
                           />
@@ -4094,7 +4174,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               }
                             }
                           };
-                          setActiveLesson(updated);
+                          syncLessonLive(updated);
                         }}
                         placeholder="النص الصريح للطلاب..."
                       />
@@ -4114,7 +4194,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 }
                               }
                             };
-                            setActiveLesson(updated);
+                            syncLessonLive(updated);
                           }}
                           placeholder="تلميح مساند دون حرق الحل..."
                         />
@@ -4139,7 +4219,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               }
                             }
                           };
-                          setActiveLesson(updated);
+                          syncLessonLive(updated);
                         }}
                         placeholder="إرشاداتك لإدارة الحوار والملاحظة..."
                       />
@@ -4170,7 +4250,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                     '3_practice': { ...currentSt, tasks: newTasks }
                                   }
                                 };
-                                setActiveLesson(updated);
+                                syncLessonLive(updated);
                               }}
                             />
                             <div className="tiered-scaffold-row">
@@ -4188,7 +4268,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                       '3_practice': { ...currentSt, tasks: newTasks }
                                     }
                                   };
-                                  setActiveLesson(updated);
+                                  syncLessonLive(updated);
                                 }}
                               />
                             </div>
@@ -4214,7 +4294,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 '4_evidence': { ...currentSt, criterion: e.target.value }
                               }
                             };
-                            setActiveLesson(updated);
+                            syncLessonLive(updated);
                           }}
                         />
                       </div>
@@ -4901,6 +4981,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   >
                     <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
                     <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-student-refresh-sync"
+                    onClick={handleManualStudentSyncRefresh}
+                    disabled={isSyncingStudent}
+                    title="التحقق من وجود حتلنة وتعديلات جديدة للدرس من المعلم فوراً"
+                  >
+                    <i className={`fas fa-sync-alt ${isSyncingStudent ? 'fa-spin' : ''}`}></i>
+                    <span>حتلنة 🔄</span>
                   </button>
                   <div className="student-station-badge">
                     محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
