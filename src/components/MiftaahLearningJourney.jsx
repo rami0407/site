@@ -338,6 +338,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [studentNameInput, setStudentNameInput] = useState('');
   const [guestNameInput, setGuestNameInput] = useState('');
   const [studentGateError, setStudentGateError] = useState('');
+  // Student Self-Paced Active Station (تنقل الطالب بين المحطات بحسب قدراته ووتيرته)
+  const [studentSelfPacedStation, setStudentSelfPacedStation] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('miftaah_student_participant');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.currentStation) return parsed.currentStation;
+      }
+    } catch (e) {}
+    return 1;
+  });
 
   // Teacher Login Handler
   const handleTeacherLoginSubmit = async (e) => {
@@ -676,6 +687,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
     setStudentAuth(newPart);
     setCurrentStudentId(newPart.id);
+    setStudentSelfPacedStation(targetSession?.activeStationIndex || 1);
     try {
       sessionStorage.setItem('miftaah_student_participant', JSON.stringify(newPart));
       localStorage.removeItem('miftaah_student_participant');
@@ -722,6 +734,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
     setStudentAuth(guestPart);
     setCurrentStudentId(guestPart.id);
+    setStudentSelfPacedStation(targetSession?.activeStationIndex || 1);
     try {
       sessionStorage.setItem('miftaah_student_participant', JSON.stringify(guestPart));
       localStorage.removeItem('miftaah_student_participant');
@@ -1512,11 +1525,37 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // =========================================================================
   const currentParticipant = (studentAuth ? (sessionState.participants.find(p => p.id === studentAuth.id) || studentAuth) : null) || sessionState.participants.find(p => p.id === currentStudentId) || sessionState.participants[0];
 
-  const studentCurrentStationIndex = sessionState.pacingMode === 'whole_class'
-    ? sessionState.activeStationIndex
-    : (currentParticipant.currentStation || 1);
+  // Individualized Student Pacing: The student navigates freely across all stations according to their capabilities and pace
+  const studentCurrentStationIndex = studentSelfPacedStation || (currentParticipant?.currentStation || 1);
 
   const studentCurrentStationData = getStationByIndex(studentCurrentStationIndex);
+
+  // Student Station Navigation Handler (التنقل بين المحطات بحسب وتيرة وقدرات الطالب)
+  const handleStudentSelectStation = (newIdx) => {
+    const validIdx = Math.max(1, Math.min(5, Number(newIdx) || 1));
+    setStudentSelfPacedStation(validIdx);
+
+    if (studentAuth) {
+      const updatedAuth = { ...studentAuth, currentStation: validIdx };
+      setStudentAuth(updatedAuth);
+      try {
+        sessionStorage.setItem('miftaah_student_participant', JSON.stringify(updatedAuth));
+      } catch (e) {}
+    }
+
+    setSessionState(prev => {
+      const partId = studentAuth?.id || currentStudentId;
+      const nextParts = (prev.participants || []).map(p =>
+        p.id === partId ? { ...p, currentStation: validIdx } : p
+      );
+      const nextSession = { ...prev, participants: nextParts };
+      try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(nextSession)); } catch (e) {}
+      saveMiftaahLiveSession(nextSession);
+      return nextSession;
+    });
+
+    showToast(`انتقلت إلى المحطة [${validIdx}]: ${getStationByIndex(validIdx).name} 🎯`);
+  };
 
   const handleStudentSubmitAnswer = (stationNum, text, tier = 'core') => {
     if (!text.trim()) {
@@ -2517,25 +2556,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         {stations.map(st => {
           const isActive = st.idx === activeIdx;
           const isCompleted = st.idx < activeIdx;
-          const isLocked = sessionState.pacingMode === 'whole_class'
+          // In student mode, stations are never locked; the student navigates according to their abilities
+          const isLocked = isStudentDevice ? false : (sessionState.pacingMode === 'whole_class'
             ? st.idx > activeIdx
-            : st.idx > (sessionState.stationUnlockedMax || activeIdx);
+            : st.idx > (sessionState.stationUnlockedMax || activeIdx));
 
           return (
             <button
               key={st.idx}
               type="button"
-              className={`key-letter-token ${isActive ? 'is-active-glowing' : ''} ${isCompleted ? 'is-completed' : ''} ${isLocked ? 'is-locked' : ''}`}
+              className={`key-letter-token ${isActive ? 'is-active-glowing' : ''} ${isCompleted ? 'is-completed' : ''} ${isLocked ? 'is-locked' : ''} ${isStudentDevice ? 'is-student-interactive' : ''}`}
               onClick={() => {
                 if (onSelectStation) {
-                  if (isLocked && sessionState.pacingMode === 'whole_class') {
-                    showToast(`المحطة [${st.letter}] مغلقة الآن، يفتحها المعلم عند انتقال الصف 🔒`);
+                  if (isLocked && !isStudentDevice) {
+                    showToast(`المحطة [${st.letter}] مغلقة الآن 🔒`);
                   } else {
                     onSelectStation(st.idx);
                   }
                 }
               }}
-              title={`المحطة ${st.idx}: ${st.name} [${st.letter}] - ${isActive ? 'المحطة الحالية (أنت هنا الآن)' : isCompleted ? 'منجزة ✓' : isLocked ? 'مغلقة' : 'متاحة'}`}
+              title={`المحطة ${st.idx}: ${st.name} [${st.letter}] - ${isActive ? 'المحطة الحالية (أنت هنا الآن 🎯)' : isCompleted ? 'منجزة ✓ (اضغط للمراجعة)' : 'اضغط للانتقال إليها 🚀'}`}
             >
               <span className="token-letter-glyph">{st.letter}</span>
               <span className="token-num-tiny">{st.idx}</span>
@@ -4795,11 +4835,45 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               </div>
 
+              {/* Student Horizontal Station Navigator Bar (التنقل بين المحطات بحسب قدرات ووتيرة كل طالب) */}
+              <div className="student-stations-pacing-navbar">
+                <div className="pacing-navbar-title">
+                  <i className="fas fa-layer-group"></i>
+                  <span>محطات رحلة التعلّم (تعلّم وفق قدراتك):</span>
+                </div>
+                <div className="pacing-navbar-steps">
+                  {[
+                    { idx: 1, letter: 'م', name: 'مشوّق ومحفّز', icon: '🔥' },
+                    { idx: 2, letter: 'ف', name: 'فهم وبناء المعنى', icon: '🧩' },
+                    { idx: 3, letter: 'ت', name: 'التطبيق والتدريب', icon: '🛠️' },
+                    { idx: 4, letter: 'ا', name: 'أدلة الفهم', icon: '🔎' },
+                    { idx: 5, letter: 'ح', name: 'حصاد ونقل الأثر', icon: '🎒' }
+                  ].map(st => {
+                    const isActive = st.idx === studentCurrentStationIndex;
+                    const isDone = st.idx < studentCurrentStationIndex;
+                    return (
+                      <button
+                        key={st.idx}
+                        type="button"
+                        className={`student-nav-step-pill ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
+                        onClick={() => handleStudentSelectStation(st.idx)}
+                        title={`الانتقال إلى المحطة ${st.idx}: ${st.name} [${st.letter}]`}
+                      >
+                        <span className="pill-letter">{st.letter}</span>
+                        <span className="pill-icon">{st.icon}</span>
+                        <span className="pill-name">{st.idx}. {st.name}</span>
+                        {isDone && <span className="pill-check">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Main Student Stage with Vertical Slim Key Spine on the side */}
               <div className="student-main-stage-flex">
                 {/* Vertical Spine (م ف ت ا ح) - Slim & Compact */}
                 <div className="student-device-key-bar">
-                  {renderPhysicalKeyMap(studentCurrentStationIndex, null, true)}
+                  {renderPhysicalKeyMap(studentCurrentStationIndex, handleStudentSelectStation, true)}
                 </div>
 
                 {/* Active Station Task Card */}
@@ -4998,6 +5072,36 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
                 );
               })()}
+
+              {/* Student Station Navigation Footer (التنقل الذاتي بين المحطات حسب وتيرة الطالب) */}
+              <div className="student-station-navigation-footer">
+                <button
+                  type="button"
+                  className="btn-station-nav-step prev"
+                  disabled={studentCurrentStationIndex <= 1}
+                  onClick={() => handleStudentSelectStation(studentCurrentStationIndex - 1)}
+                  title={studentCurrentStationIndex > 1 ? `العودة إلى ${getStationByIndex(studentCurrentStationIndex - 1).name}` : ''}
+                >
+                  <i className="fas fa-arrow-right"></i> المحطة السابقة {studentCurrentStationIndex > 1 ? `(${getStationByIndex(studentCurrentStationIndex - 1).name})` : ''}
+                </button>
+
+                <div className="station-nav-pacing-indicator">
+                  <span className="pacing-badge">
+                    🎯 المحطة <strong>{studentCurrentStationIndex} من 5</strong>: {studentCurrentStationData.name}
+                  </span>
+                  <small className="pacing-hint">التنقل حر ومفتوح بالكامل — تعلّم بحسب قدراتك ووتيرتك الخاصة</small>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-station-nav-step next"
+                  disabled={studentCurrentStationIndex >= 5}
+                  onClick={() => handleStudentSelectStation(studentCurrentStationIndex + 1)}
+                  title={studentCurrentStationIndex < 5 ? `الانتقال إلى ${getStationByIndex(studentCurrentStationIndex + 1).name}` : ''}
+                >
+                  المحطة التالية {studentCurrentStationIndex < 5 ? `(${getStationByIndex(studentCurrentStationIndex + 1).name})` : ''} <i className="fas fa-arrow-left"></i>
+                </button>
+              </div>
             </div>
           </div>
 
