@@ -347,6 +347,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     };
   }, []);
 
+  // Auto-detect code parameter in URL (e.g. #/miftaah?code=MFT-924)
+  useEffect(() => {
+    try {
+      const fullUrl = window.location.href;
+      const codeMatch = fullUrl.match(/[?&]code=([^&#]+)/i);
+      if (codeMatch && codeMatch[1]) {
+        const decoded = decodeURIComponent(codeMatch[1]).trim();
+        if (decoded) {
+          setStudentCodeInput(decoded);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   // Real-time listener for live classroom session from cloud (Firestore)
   useEffect(() => {
     const unsubLive = listenToMiftaahLiveSession((liveSession) => {
@@ -468,6 +482,202 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     } catch (e) {}
     logoutTeacherSession();
     showToast('تم تسجيل خروج المعلم بنجاح.');
+  };
+
+  // Google Teacher Sign-In
+  const handleGoogleTeacherLogin = async () => {
+    setIsSubmittingTeacherAuth(true);
+    setTeacherAuthError('');
+    try {
+      const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+      const { auth } = await import('../firebase');
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user && user.email) {
+        const found = findTeacherByEmail(user.email);
+        const teacherSession = {
+          id: found ? found.id : ('tch_' + user.uid.slice(0, 8)),
+          nameAr: found ? found.nameAr : (user.displayName || 'المعلم'),
+          nameHe: found ? found.nameHe : '',
+          email: user.email,
+          role: found ? found.role : 'معلم ومربي صف',
+          photoURL: user.photoURL || null,
+          loginAt: new Date().toISOString()
+        };
+        setAuthenticatedTeacher(teacherSession);
+        try { localStorage.setItem('miftaah_teacher_auth', JSON.stringify(teacherSession)); } catch (e) {}
+        setActiveTeacherSession(teacherSession);
+        showToast(`أهلاً بك المعلم/ة ${teacherSession.nameAr}! تم الدخول بنجاح عبر حساب Google 🟢`);
+      }
+    } catch (err) {
+      console.warn('Google sign-in notice:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setTeacherAuthError('تم إغلاق نافذة تسجيل الدخول من قبل المستخدم.');
+      } else {
+        setTeacherAuthError('تعذر الدخول بحساب Google. يمكنك إدخال البريد الإلكتروني والرمز السري مباشرة.');
+      }
+    } finally {
+      setIsSubmittingTeacherAuth(false);
+    }
+  };
+
+  // Facebook Teacher Sign-In
+  const handleFacebookTeacherLogin = async () => {
+    setIsSubmittingTeacherAuth(true);
+    setTeacherAuthError('');
+    try {
+      const { FacebookAuthProvider, signInWithPopup } = await import('firebase/auth');
+      const { auth } = await import('../firebase');
+      const provider = new FacebookAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user && user.email) {
+        const found = findTeacherByEmail(user.email);
+        const teacherSession = {
+          id: found ? found.id : ('tch_' + user.uid.slice(0, 8)),
+          nameAr: found ? found.nameAr : (user.displayName || 'المعلم'),
+          nameHe: found ? found.nameHe : '',
+          email: user.email,
+          role: found ? found.role : 'معلم ومربي صف',
+          photoURL: user.photoURL || null,
+          loginAt: new Date().toISOString()
+        };
+        setAuthenticatedTeacher(teacherSession);
+        try { localStorage.setItem('miftaah_teacher_auth', JSON.stringify(teacherSession)); } catch (e) {}
+        setActiveTeacherSession(teacherSession);
+        showToast(`أهلاً بك المعلم/ة ${teacherSession.nameAr}! تم الدخول بنجاح عبر حساب Facebook 🟢`);
+      }
+    } catch (err) {
+      console.warn('Facebook sign-in notice:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setTeacherAuthError('تم إغلاق نافذة تسجيل الدخول من قبل المستخدم.');
+      } else {
+        setTeacherAuthError('تعذر الدخول بحساب Facebook. يمكنك إدخال البريد الإلكتروني والرمز السري مباشرة.');
+      }
+    } finally {
+      setIsSubmittingTeacherAuth(false);
+    }
+  };
+
+  // Edit Lesson PIN/Code Modal Handlers
+  const handleOpenEditCodeModal = (lesson) => {
+    const currentCode = lesson.code || lesson.pin || sessionState.pin || 'MFT-924';
+    setEditCodeModal({
+      isOpen: true,
+      lesson,
+      newCode: currentCode
+    });
+  };
+
+  const handleConfirmSaveLessonCode = async () => {
+    if (!editCodeModal.lesson) return;
+    const cleanNewCode = (editCodeModal.newCode || '').trim();
+    if (!cleanNewCode) {
+      showToast('يرجى إدخال كود صحيح للحصة');
+      return;
+    }
+
+    const targetLessonId = editCodeModal.lesson.id;
+    const updatedLessons = lessonsList.map(l => {
+      if (l.id === targetLessonId) {
+        return {
+          ...l,
+          pin: cleanNewCode,
+          code: cleanNewCode,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return l;
+    });
+
+    setLessonsList(updatedLessons);
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updatedLessons));
+    } catch (e) {}
+
+    const updatedLesson = updatedLessons.find(l => l.id === targetLessonId);
+    if (updatedLesson) {
+      try {
+        await saveLessonToFirestore(updatedLesson);
+      } catch (e) {}
+    }
+
+    if (activeLesson?.id === targetLessonId || sessionState.lessonId === targetLessonId) {
+      const nextSession = {
+        ...sessionState,
+        pin: cleanNewCode,
+        lesson: updatedLesson || activeLesson
+      };
+      broadcastSession(nextSession);
+    }
+
+    setEditCodeModal({ isOpen: false, lesson: null, newCode: '' });
+    showToast(`تم تحديث كود الحصة بنجاح إلى: ${cleanNewCode} 🔑`);
+  };
+
+  // Copy Direct Activity Link for Students
+  const handleCopyActivityLink = (lesson) => {
+    const code = lesson.code || lesson.pin || sessionState.pin || 'MFT-924';
+    const baseUrl = window.location.origin + window.location.pathname;
+    const directUrl = `${baseUrl}#/miftaah?code=${encodeURIComponent(code)}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(directUrl).catch(() => {});
+    }
+    showToast(`تم نسخ رابط الفعالية المباشر للطلاب: ${directUrl} 📋✨`);
+  };
+
+  // Station YouTube Video Handlers
+  const handleSaveStationVideoUrl = (stationKey) => {
+    const rawUrl = (stationVideoInputs[stationKey] ?? '').trim();
+    if (!rawUrl) {
+      showToast('يرجى إدخال رابط يوتيوب صالح 🎬');
+      return;
+    }
+    const embed = getYouTubeEmbedUrl(rawUrl);
+    if (!embed) {
+      showToast('⚠️ تعذر استخراج كود التضمين. يرجى التأكد من صحة رابط يوتيوب');
+      return;
+    }
+
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
+
+    const updatedAct = {
+      ...existingAct,
+      type: 'video',
+      video: {
+        ...existingVid,
+        title: existingVid.title || `فيديو محطة: ${currentSt.name}`,
+        embedUrl: embed,
+        youtubeUrl: rawUrl,
+        searchQuery: existingVid.searchQuery || activeLesson.title,
+        reflectionQuestion: existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
+      }
+    };
+
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          interactiveActivity: updatedAct
+        }
+      }
+    };
+
+    setActiveLesson(updatedLesson);
+    const nextSession = {
+      ...sessionState,
+      lesson: updatedLesson
+    };
+    broadcastSession(nextSession);
+    try {
+      saveLessonToFirestore(updatedLesson);
+    } catch (e) {}
+    showToast(`تم حفظ وتطبيق فيديو YouTube لمحطة [${currentSt.name}] بنجاح 🎬✨`);
   };
 
   // Student Join with Lesson Code (كود الحصة المرسل من المعلم)
@@ -720,6 +930,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     } catch (e) {}
     return normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON);
   });
+
+  // Modal & Preview States
+  const [editCodeModal, setEditCodeModal] = useState({ isOpen: false, lesson: null, newCode: '' });
+  const [isStudentPreviewModalOpen, setIsStudentPreviewModalOpen] = useState(false);
+  const [studentPreviewStationIndex, setStudentPreviewStationIndex] = useState(1);
+  const [stationVideoInputs, setStationVideoInputs] = useState({});
 
   // 3 Initial Inputs for Creator
   const [creatorTitle, setCreatorTitle] = useState(DEFAULT_EXEMPLAR_LESSON.title);
@@ -2605,10 +2821,37 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <span>جاري التحقق من الحساب... ⏳</span>
                   ) : (
                     <>
-                      <i className="fas fa-sign-in-alt"></i> تسجيل الدخول إلى شاشة التحضير 🔐
+                      <i className="fas fa-sign-in-alt"></i> تسجيل الدخول بالبريد والرمز السري 🔐
                     </>
                   )}
                 </button>
+
+                {/* Social Login Separator & Buttons */}
+                <div className="auth-social-separator">
+                  <span>أو الدخول السريع عبر الحسابات الرسمية</span>
+                </div>
+
+                <div className="auth-social-buttons-grid">
+                  <button
+                    type="button"
+                    className="btn-social-auth btn-google-auth"
+                    onClick={handleGoogleTeacherLogin}
+                    disabled={isSubmittingTeacherAuth}
+                  >
+                    <i className="fab fa-google text-red-500"></i>
+                    <span>الدخول من خلال حساب Google</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-social-auth btn-facebook-auth"
+                    onClick={handleFacebookTeacherLogin}
+                    disabled={isSubmittingTeacherAuth}
+                  >
+                    <i className="fab fa-facebook-f text-blue-600"></i>
+                    <span>الدخول من خلال Facebook</span>
+                  </button>
+                </div>
 
                 <div className="auth-alternative-actions">
                   <button
@@ -2660,6 +2903,78 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 >
                   <i className="fas fa-sign-out-alt"></i> تسجيل خروج المعلم
                 </button>
+              </div>
+            </div>
+
+            {/* ================================================================= */}
+            {/* MASTER TWO HUB BOXES: 1. أرشيف المواد والدروس  |  2. إنشاء حصة جديدة */}
+            {/* ================================================================= */}
+            <div className="teacher-two-hub-boxes-grid animate-fade-in">
+              {/* Box 1: Archive of Materials & Lessons */}
+              <div 
+                className={`hub-master-card hub-archive-card ${teacherSubView === 'my_lessons' ? 'active-hub-border' : ''}`}
+                onClick={() => setTeacherSubView('my_lessons')}
+              >
+                <div className="hub-card-header-badge">
+                  <span className="badge-step-pill"><i className="fas fa-folder-open"></i> المربع الأول</span>
+                  <span className="badge-count-chip">
+                    {lessonsList.filter(l => l.authorId === authenticatedTeacher?.id || (l.authorEmail && l.authorEmail.toLowerCase() === authenticatedTeacher?.email.toLowerCase())).length || 1} حصص محفوظة
+                  </span>
+                </div>
+                <div className="hub-card-body">
+                  <div className="hub-card-icon-wrap">📚</div>
+                  <div className="hub-card-info">
+                    <h3>أرشيف المواد والدروس المحضّرة</h3>
+                    <p>استعراض كافة الحصص السابقة: تعديل المحطات، تغيير كود الحصة، نسخ رابط الفعالية، بدء البث الصفي، أو حذف الحصة.</p>
+                  </div>
+                </div>
+                <div className="hub-card-footer-action">
+                  <button 
+                    type="button" 
+                    className="btn-hub-action-trigger primary"
+                    onClick={(e) => { e.stopPropagation(); setTeacherSubView('my_lessons'); }}
+                  >
+                    <i className="fas fa-layer-group"></i> استعراض أرشيف الحصص والتحكم بها 📂
+                  </button>
+                </div>
+              </div>
+
+              {/* Box 2: Create New Lesson with AI */}
+              <div 
+                className={`hub-master-card hub-create-card ${teacherSubView === 'creator' ? 'active-hub-border' : ''}`}
+                onClick={() => {
+                  setCreatorTitle('');
+                  setCreatorGrade('الصف الرابع الابتدائي');
+                  setCreatorSpecialRequests('');
+                  setTeacherSubView('creator');
+                }}
+              >
+                <div className="hub-card-header-badge">
+                  <span className="badge-step-pill gold"><i className="fas fa-wand-magic-sparkles"></i> المربع الثاني</span>
+                  <span className="badge-count-chip gold">نموذج مِفتاح (5 محطات)</span>
+                </div>
+                <div className="hub-card-body">
+                  <div className="hub-card-icon-wrap gold">✨</div>
+                  <div className="hub-card-info">
+                    <h3>إنشاء وبناء حصة جديدة بالذكاء</h3>
+                    <p>أجب عن ٣ أسئلة أساسية (الموضوع، الصف، والتعليمات الخاصة) ليولّد الذكاء الاصطناعي مسار الحصة كاملاً بمحطاته الخمس.</p>
+                  </div>
+                </div>
+                <div className="hub-card-footer-action">
+                  <button 
+                    type="button" 
+                    className="btn-hub-action-trigger gold"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCreatorTitle('');
+                      setCreatorGrade('الصف الرابع الابتدائي');
+                      setCreatorSpecialRequests('');
+                      setTeacherSubView('creator');
+                    }}
+                  >
+                    <i className="fas fa-plus-circle"></i> بدء إنشاء حصة جديدة الآن ✍️
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2851,7 +3166,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               <span className="station-mini-chip" title="المحطة الخامسة: حصاد ونقل الأثر">🎒 الحصاد</span>
                             </div>
 
-                            {/* Card Actions */}
+                            {/* Lesson Code Display Badge */}
+                            <div className="lesson-card-code-strip">
+                              <span className="code-label"><i className="fas fa-key"></i> كود الحصة للطلاب:</span>
+                              <strong className="code-value">{lesson.code || lesson.pin || 'MFT-924'}</strong>
+                            </div>
+
+                            {/* Card Actions (Edit, Change Code, Copy Link, Launch, Delete) */}
                             <div className="lesson-card-actions">
                               <button
                                 type="button"
@@ -2861,6 +3182,25 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               >
                                 <i className="fas fa-pen-to-square"></i> تعديل واستكمال
                               </button>
+
+                              <button
+                                type="button"
+                                className="btn-action-change-code"
+                                onClick={() => handleOpenEditCodeModal(lesson)}
+                                title="تغيير كود الحصة ورمز الانضمام للطلاب"
+                              >
+                                <i className="fas fa-key"></i> تغيير الكود
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn-action-copy-link"
+                                onClick={() => handleCopyActivityLink(lesson)}
+                                title="نسخ رابط الفعالية المباشر لمشاركته مع الطلاب"
+                              >
+                                <i className="fas fa-link"></i> نسخ رابط الفعالية 🔗
+                              </button>
+
                               <button
                                 type="button"
                                 className="btn-action-launch"
@@ -2869,20 +3209,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               >
                                 <i className="fas fa-play-circle"></i> بدء الحصة 🚀
                               </button>
-                              <button
-                                type="button"
-                                className="btn-action-copy"
-                                onClick={() => handleDuplicateLesson(lesson)}
-                                title="نسخ الحصة"
-                              >
-                                <i className="fas fa-copy"></i>
-                              </button>
+
                               {!isTemplate && (
                                 <button
                                   type="button"
                                   className="btn-action-delete"
                                   onClick={() => handleDeleteLesson(lesson.id)}
-                                  title="حذف الحصة"
+                                  title="حذف الحصة نهائياً"
                                 >
                                   <i className="fas fa-trash-alt"></i>
                                 </button>
@@ -3488,9 +3821,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <button
                         type="button"
                         className="btn-preview-student-screen"
-                        onClick={() => setActiveInterface('projector')}
+                        onClick={() => {
+                          setStudentPreviewStationIndex(currentSt.number || 1);
+                          setIsStudentPreviewModalOpen(true);
+                        }}
+                        title="معاينة حية لشاشة الطالب كما يراها التلميذ على جهازه"
                       >
-                        <i className="fas fa-eye"></i> معاينة ما سيشاهده الطلاب 🎦
+                        <i className="fas fa-mobile-alt"></i> معاينة صفحة الطالب 📱✨
                       </button>
                     </div>
                   </div>
@@ -3554,6 +3891,81 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </button>
                     </div>
                   )}
+
+                  {/* YouTube Video & Film Integration Section */}
+                  <div className="station-video-manager-card">
+                    <div className="video-manager-header">
+                      <div className="vm-title-wrap">
+                        <i className="fab fa-youtube text-red-500"></i>
+                        <h4>فيديو وفيلم المحطة (YouTube) — إدخال وتعديل الرابط:</h4>
+                      </div>
+                      <span className="video-status-tag">
+                        {currentSt.interactiveActivity?.video?.embedUrl ? 'فيديو مفعّل 🎬' : 'جاهز لإضافة فيديو'}
+                      </span>
+                    </div>
+
+                    <div className="video-url-input-group">
+                      <input
+                        type="text"
+                        placeholder="ألصق رابط يوتيوب هنا (مثال: https://www.youtube.com/watch?v=...)"
+                        value={stationVideoInputs[selectedStationToEdit] ?? (currentSt.interactiveActivity?.video?.youtubeUrl || currentSt.interactiveActivity?.video?.embedUrl || '')}
+                        onChange={e => setStationVideoInputs(prev => ({ ...prev, [selectedStationToEdit]: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        className="btn-apply-station-video"
+                        onClick={() => handleSaveStationVideoUrl(selectedStationToEdit)}
+                      >
+                        <i className="fas fa-check"></i> حفظ وتطبيق الفيديو 🎬
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-ai-suggest-video"
+                        onClick={() => handleAiSuggestVideoForStation(selectedStationToEdit)}
+                      >
+                        <i className="fas fa-magic"></i> اقتراح فيديو بالـ AI ✨
+                      </button>
+                    </div>
+
+                    {currentSt.interactiveActivity?.video?.embedUrl && (
+                      <div className="station-video-preview-box">
+                        <iframe
+                          src={currentSt.interactiveActivity.video.embedUrl}
+                          title="معاينة فيديو المحطة"
+                          frameBorder="0"
+                          allowFullScreen
+                          className="station-video-iframe"
+                        ></iframe>
+                        <div className="video-reflection-input-row">
+                          <label>💡 سؤال التأمل والمناقشة الصفية الموجه للطلاب بعد المشاهدة:</label>
+                          <input
+                            type="text"
+                            value={currentSt.interactiveActivity?.video?.reflectionQuestion || ''}
+                            onChange={e => {
+                              const updatedLesson = {
+                                ...activeLesson,
+                                stations: {
+                                  ...activeLesson.stations,
+                                  [selectedStationToEdit]: {
+                                    ...currentSt,
+                                    interactiveActivity: {
+                                      ...(currentSt.interactiveActivity || {}),
+                                      video: {
+                                        ...(currentSt.interactiveActivity?.video || {}),
+                                        reflectionQuestion: e.target.value
+                                      }
+                                    }
+                                  }
+                                }
+                              };
+                              setActiveLesson(updatedLesson);
+                            }}
+                            placeholder="اكتب سؤال المناقشة والتأمل هنا..."
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Student-facing content vs Teacher planning */}
                   <div className="editor-two-columns-grid">
@@ -5011,6 +5423,132 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 disabled={stationPromptModal.loading || !stationPromptModal.promptText.trim()}
               >
                 {stationPromptModal.loading ? 'جاري التطبيق...' : 'تطبيق التعديل الآن ✨'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ===================================================================== */}
+      {/* MODAL 1: CHANGE LESSON CODE MODAL                                     */}
+      {/* ===================================================================== */}
+      {editCodeModal.isOpen && (
+        <div className="miftaah-modal-overlay animate-fade-in" onClick={() => setEditCodeModal({ isOpen: false, lesson: null, newCode: '' })}>
+          <div className="miftaah-modal-card animate-pop" onClick={e => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3><i className="fas fa-key"></i> تغيير كود الحصة (رمز الانضمام)</h3>
+              <button type="button" className="btn-close-modal" onClick={() => setEditCodeModal({ isOpen: false, lesson: null, newCode: '' })}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>الحصة: <strong>{editCodeModal.lesson?.title}</strong></p>
+              <div className="input-group">
+                <label>أدخل الكود الجديد الذي سيستخدمه الطلاب للدخول (مثال: MFT-105 أو 1234 أو MATH-4):</label>
+                <input
+                  type="text"
+                  value={editCodeModal.newCode}
+                  onChange={e => setEditCodeModal(prev => ({ ...prev, newCode: e.target.value }))}
+                  placeholder="أدخل كود الحصة الجديد..."
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-modal-cancel" onClick={() => setEditCodeModal({ isOpen: false, lesson: null, newCode: '' })}>
+                إلغاء
+              </button>
+              <button type="button" className="btn-modal-confirm" onClick={handleConfirmSaveLessonCode}>
+                <i className="fas fa-save"></i> حفظ الكود الجديد 🔑
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 2: STUDENT LIVE PREVIEW MODAL (معاينة حية لشاشة الطالب)        */}
+      {/* ===================================================================== */}
+      {isStudentPreviewModalOpen && (
+        <div className="miftaah-modal-overlay student-preview-overlay animate-fade-in" onClick={() => setIsStudentPreviewModalOpen(false)}>
+          <div className="student-preview-modal-dialog animate-pop" onClick={e => e.stopPropagation()}>
+            <div className="student-preview-modal-header">
+              <div className="preview-header-title">
+                <span className="preview-badge"><i className="fas fa-eye"></i> معاينة حية لشاشة الطالب</span>
+                <h3>{activeLesson.title} — {activeLesson.grade}</h3>
+              </div>
+              <div className="preview-header-actions">
+                <div className="preview-stations-pill-row">
+                  {STATION_KEYS_ORDER.map((k, idx) => {
+                    const st = activeLesson.stations[k];
+                    const stNum = idx + 1;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        className={`preview-st-pill ${studentPreviewStationIndex === stNum ? 'active' : ''}`}
+                        onClick={() => setStudentPreviewStationIndex(stNum)}
+                      >
+                        <span>{stNum}. {st.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="btn-close-preview"
+                  onClick={() => setIsStudentPreviewModalOpen(false)}
+                  title="إغلاق المعاينة والعودة لشاشة التعديل"
+                >
+                  &times; إغلاق المعاينة
+                </button>
+              </div>
+            </div>
+
+            <div className="student-preview-modal-body">
+              <div className="student-device-sim-frame">
+                <div className="device-sim-notch">
+                  <span>📱 محاكاة حية لجهاز التلميذ</span>
+                  <small>المحطة {studentPreviewStationIndex}: {getStationByIndex(studentPreviewStationIndex).name}</small>
+                </div>
+
+                <div className="student-station-task-card preview-mode-card">
+                  <div className="task-header-title">
+                    <span className="st-icon">{getStationByIndex(studentPreviewStationIndex).icon}</span>
+                    <h3>مهمتك في المحطة [{getStationByIndex(studentPreviewStationIndex).name}]:</h3>
+                  </div>
+
+                  {studentPreviewStationIndex === 1 ? (
+                    renderStationMedia(getStationByIndex(1), false)
+                  ) : (
+                    <>
+                      {getStationByIndex(studentPreviewStationIndex).interactiveActivity && 
+                       renderStationMedia(getStationByIndex(studentPreviewStationIndex), false)}
+                      <div className="task-prompt-body">
+                        {(getStationByIndex(studentPreviewStationIndex).studentPrompt || '').split('\n').map((l, i) => (
+                          <p key={i}>{l}</p>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {getStationByIndex(studentPreviewStationIndex).scaffold && (
+                    <div className="preview-scaffold-box">
+                      <span className="scaffold-tag">🗝️ مفتاح مساندة للطالب:</span>
+                      <p>{getStationByIndex(studentPreviewStationIndex).scaffold}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="student-preview-modal-footer">
+              <span className="preview-hint-text">
+                <i className="fas fa-info-circle"></i> يمكنك إغلاق المعاينة وتعديل أي نص أو فيديو في المحطة ليظهر للطالب فوراً.
+              </span>
+              <button
+                type="button"
+                className="btn-done-preview"
+                onClick={() => setIsStudentPreviewModalOpen(false)}
+              >
+                <i className="fas fa-check"></i> العودة لشاشة تعديل الحصة ✏️
               </button>
             </div>
           </div>
