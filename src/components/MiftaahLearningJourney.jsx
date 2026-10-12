@@ -660,6 +660,157 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast(`تم اقتراح وربط فيديو يوتيوب ملائم لمحطة [${currentSt.name}] بنجاح 🎬✨`);
   };
 
+  // Station Attachment Handlers: Image Upload / URL, File Upload, External Web Link
+  const handleToggleStationMediaDisplay = (stationKey, isChecked) => {
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingMedia = currentSt.stationMedia || {};
+    const updatedSt = {
+      ...currentSt,
+      stationMedia: {
+        ...existingMedia,
+        showToStudents: isChecked
+      }
+    };
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: updatedSt
+      }
+    };
+    syncLessonLive(updatedLesson, true);
+    showToast(isChecked ? '✅ تم تفعيل عرض المادة المرفقة للطلاب في هذه المحطة!' : 'تم إخفاء المادة المرفقة عن شاشة الطلاب');
+  };
+
+  const handleSaveStationImageUrl = (stationKey, url) => {
+    const cleanUrl = (url || '').trim();
+    if (!cleanUrl) {
+      showToast('يرجى إدخال رابط صورة صالح 🖼️');
+      return;
+    }
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingMedia = currentSt.stationMedia || {};
+    const updatedMedia = {
+      ...existingMedia,
+      type: 'image',
+      imageUrl: cleanUrl,
+      showToStudents: true,
+      caption: existingMedia.caption || `صورة توضيحية: ${currentSt.name}`
+    };
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          stationMedia: updatedMedia
+        }
+      }
+    };
+    syncLessonLive(updatedLesson, true);
+    showToast(`تم ربط وعرض الصورة لمحطة [${currentSt.name}] وبثها للطلاب بنجاح 🖼️✨`);
+  };
+
+  const handleUploadStationImageFile = (stationKey, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('⚠️ حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميغابايت');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (loadEvt) => {
+      const dataUrl = loadEvt.target.result;
+      handleSaveStationImageUrl(stationKey, dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveStationExternalLink = (stationKey, linkUrl, linkTitle) => {
+    const cleanLink = (linkUrl || '').trim();
+    if (!cleanLink) {
+      showToast('يرجى إدخال رابط الموقع أو الكتاب الإلكتروني 🔗');
+      return;
+    }
+    const formattedLink = cleanLink.startsWith('http://') || cleanLink.startsWith('https://')
+      ? cleanLink
+      : `https://${cleanLink}`;
+    
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingMedia = currentSt.stationMedia || {};
+    const updatedMedia = {
+      ...existingMedia,
+      type: 'link',
+      linkUrl: formattedLink,
+      linkTitle: (linkTitle || '').trim() || 'كتاب إلكتروني / موقع خارجي مساند',
+      showToStudents: true
+    };
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          stationMedia: updatedMedia
+        }
+      }
+    };
+    syncLessonLive(updatedLesson, true);
+    showToast(`تم ربط الموقع/الكتاب الإلكتروني لمحطة [${currentSt.name}] وتفعيله للطلاب 🔗✨`);
+  };
+
+  const handleUploadStationDocFile = (stationKey, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('⚠️ حجم الملف كبير، الحد الأقصى المسموح هو 10 ميغابايت');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (loadEvt) => {
+      const dataUrl = loadEvt.target.result;
+      const currentSt = activeLesson.stations[stationKey] || {};
+      const existingMedia = currentSt.stationMedia || {};
+      const updatedMedia = {
+        ...existingMedia,
+        type: 'file',
+        fileData: dataUrl,
+        fileName: file.name,
+        fileSize: (file.size / 1024).toFixed(1) + ' KB',
+        showToStudents: true
+      };
+      const updatedLesson = {
+        ...activeLesson,
+        stations: {
+          ...activeLesson.stations,
+          [stationKey]: {
+            ...currentSt,
+            stationMedia: updatedMedia
+          }
+        }
+      };
+      syncLessonLive(updatedLesson, true);
+      showToast(`تم رفع الملف [${file.name}] وإتاحته لتنزيل الطلاب في محطة [${currentSt.name}] بنجاح 📁✨`);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearStationMedia = (stationKey) => {
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          stationMedia: null
+        }
+      }
+    };
+    syncLessonLive(updatedLesson, true);
+    showToast('تمت إزالة المرفق من المحطة');
+  };
+
   // Student Join with Lesson Code (كود الحصة المرسل من المعلم)
   const handleJoinWithSharedCode = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -971,6 +1122,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [isStudentPreviewModalOpen, setIsStudentPreviewModalOpen] = useState(false);
   const [studentPreviewStationIndex, setStudentPreviewStationIndex] = useState(1);
   const [stationVideoInputs, setStationVideoInputs] = useState({});
+  const [stationMediaInputs, setStationMediaInputs] = useState({
+    activeType: 'video', // 'video', 'image', 'file', 'link'
+    imageUrl: '',
+    linkUrl: '',
+    linkTitle: '',
+    fileUrl: '',
+    fileName: '',
+    fileSize: ''
+  });
 
   // 3 Initial Inputs for Creator
   const [creatorTitle, setCreatorTitle] = useState(DEFAULT_EXEMPLAR_LESSON.title);
@@ -2774,9 +2934,184 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     );
   };
 
-  // Backwards compatibility alias for renderStationMedia
+  // =========================================================================
+  // SUB-RENDERER: STATION ATTACHED MEDIA (Image, File Download, Book/Link, Video)
+  // =========================================================================
+  const renderAttachedStationMedia = (stationData, isProjector = true) => {
+    if (!stationData || !stationData.stationMedia) return null;
+    const media = stationData.stationMedia;
+    // When rendering for student device (not projector), check showToStudents flag
+    if (!isProjector && media.showToStudents === false) return null;
+    if (!media.type && !media.imageUrl && !media.fileData && !media.linkUrl) return null;
+
+    return (
+      <div
+        className={`station-attached-media-container ${isProjector ? 'proj-attached-media' : 'student-attached-media'} animate-fade-in`}
+        style={{
+          margin: '16px 0',
+          padding: '14px 18px',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          borderRadius: '14px',
+          border: '1.5px solid #cbd5e1',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.05)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <i className="fas fa-paperclip" style={{ color: '#4f46e5' }}></i>
+            المادة التعليمية المرفقة بالمحطة:
+          </span>
+          {media.showToStudents !== false ? (
+            <span style={{ fontSize: '0.78rem', background: '#ecfdf5', color: '#059669', padding: '3px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
+              ✓ معروض للطلاب
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.78rem', background: '#fef2f2', color: '#dc2626', padding: '3px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
+              🔒 غير معروض للطلاب
+            </span>
+          )}
+        </div>
+
+        {/* 1. Image View */}
+        {media.type === 'image' && media.imageUrl && (
+          <div className="attached-media-image-view" style={{ textAlign: 'center' }}>
+            <img 
+              src={media.imageUrl} 
+              alt="صورة مرفقة بالمحطة" 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: isProjector ? '440px' : '360px', 
+                borderRadius: '10px', 
+                objectFit: 'contain', 
+                boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1'
+              }} 
+            />
+            {media.caption && (
+              <p style={{ marginTop: '8px', fontSize: '0.92rem', color: '#475569', fontWeight: 600 }}>
+                {media.caption}
+              </p>
+            )}
+            <div style={{ marginTop: '8px' }}>
+              <a 
+                href={media.imageUrl} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{ fontSize: '0.84rem', color: '#2563eb', textDecoration: 'none', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                <i className="fas fa-external-link-alt"></i> فتح الصورة بالحجم الكامل في نافذة جديدة 🔍
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* 2. File Download */}
+        {media.type === 'file' && media.fileData && (
+          <div className="attached-media-file-view" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            flexWrap: 'wrap',
+            gap: '12px',
+            padding: '14px 18px', 
+            background: '#ffffff', 
+            borderRadius: '10px', 
+            border: '1.5px solid #10b981',
+            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                <i className="fas fa-file-download"></i>
+              </div>
+              <div>
+                <strong style={{ display: 'block', fontSize: '1.05rem', color: '#0f172a' }}>{media.fileName || 'ملف ورقة عمل / مادة إثرائية'}</strong>
+                <small style={{ color: '#64748b', fontSize: '0.84rem' }}>
+                  ملف مخصص للمحطة {media.fileSize ? `(${media.fileSize})` : ''} — جاهز للتنزيل
+                </small>
+              </div>
+            </div>
+            <a 
+              href={media.fileData} 
+              download={media.fileName || 'مرفق_المحطة.dat'} 
+              className="btn-download-attached-file"
+              style={{ 
+                background: 'linear-gradient(135deg, #10b981, #059669)', 
+                color: '#ffffff', 
+                padding: '10px 22px', 
+                borderRadius: '8px', 
+                textDecoration: 'none', 
+                fontWeight: 800, 
+                fontSize: '0.95rem',
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                boxShadow: '0 4px 10px rgba(16, 185, 129, 0.25)'
+              }}
+            >
+              <i className="fas fa-download"></i> تنزيل ورقة العمل / الملف 📥
+            </a>
+          </div>
+        )}
+
+        {/* 3. External Web Link / Digital Book */}
+        {media.type === 'link' && media.linkUrl && (
+          <div className="attached-media-link-view" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            flexWrap: 'wrap',
+            gap: '12px',
+            padding: '14px 18px', 
+            background: '#ffffff', 
+            borderRadius: '10px', 
+            border: '1.5px solid #8b5cf6',
+            boxShadow: '0 2px 8px rgba(139, 92, 246, 0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                <i className="fas fa-book-open"></i>
+              </div>
+              <div>
+                <strong style={{ display: 'block', fontSize: '1.05rem', color: '#0f172a' }}>{media.linkTitle || 'كتاب إلكتروني / موقع خارجي'}</strong>
+                <small style={{ color: '#64748b', fontSize: '0.84rem' }}>رابط كتاب مدرسي أو موقع تعليمي إثرائي</small>
+              </div>
+            </div>
+            <a 
+              href={media.linkUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn-open-attached-link"
+              style={{ 
+                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
+                color: '#ffffff', 
+                padding: '10px 22px', 
+                borderRadius: '8px', 
+                textDecoration: 'none', 
+                fontWeight: 800, 
+                fontSize: '0.95rem',
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                boxShadow: '0 4px 10px rgba(139, 92, 246, 0.25)'
+              }}
+            >
+              <i className="fas fa-external-link-alt"></i> تصفح الكتاب / الموقع 📖
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Unified renderStationMedia (Interactive Activity + Attached Media)
   const renderStationMedia = (stationData, isProjector = true) => {
-    return renderStationInteractiveActivity(stationData, isProjector);
+    return (
+      <div className="station-media-composite-wrapper">
+        {renderStationInteractiveActivity(stationData, isProjector)}
+        {renderAttachedStationMedia(stationData, isProjector)}
+      </div>
+    );
   };
 
   // =========================================================================
@@ -4170,77 +4505,331 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </div>
                   )}
 
-                  {/* YouTube Video & Film Integration Section */}
-                  <div className="station-video-manager-card">
+                  {/* Multi-Format Station Attachment Manager Card (Video, Image, File, External Link) */}
+                  <div className="station-video-manager-card station-multi-media-card">
                     <div className="video-manager-header">
                       <div className="vm-title-wrap">
-                        <i className="fab fa-youtube text-red-500"></i>
-                        <h4>فيديو وفيلم المحطة (YouTube) — إدخال وتعديل الرابط:</h4>
+                        <i className="fas fa-paperclip text-indigo-600"></i>
+                        <h4>مرفقات ومصادر المحطة (فيديو YouTube، صور، ملفات للتنزيل، أو روابط كتب ومواقع):</h4>
                       </div>
-                      <span className="video-status-tag">
-                        {currentSt.interactiveActivity?.video?.embedUrl ? 'فيديو مفعّل 🎬' : 'جاهز لإضافة فيديو'}
-                      </span>
+                      
+                      {/* Teacher Selection Checkbox: What to show to student's screen */}
+                      <div className="media-display-checkbox-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: currentSt.stationMedia?.showToStudents !== false && (!!currentSt.stationMedia?.type || !!currentSt.interactiveActivity?.video?.embedUrl) ? '#ecfdf5' : '#f8fafc', padding: '7px 16px', borderRadius: '10px', border: `1.5px solid ${currentSt.stationMedia?.showToStudents !== false && (!!currentSt.stationMedia?.type || !!currentSt.interactiveActivity?.video?.embedUrl) ? '#10b981' : '#cbd5e1'}`, transition: 'all 0.2s' }}>
+                        <input
+                          type="checkbox"
+                          id={`chk-show-media-${selectedStationToEdit}`}
+                          style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#10b981' }}
+                          checked={currentSt.stationMedia?.showToStudents !== false && (!!currentSt.stationMedia?.type || !!currentSt.interactiveActivity?.video?.embedUrl)}
+                          onChange={e => handleToggleStationMediaDisplay(selectedStationToEdit, e.target.checked)}
+                        />
+                        <label htmlFor={`chk-show-media-${selectedStationToEdit}`} style={{ fontWeight: 'bold', fontSize: '0.92rem', color: currentSt.stationMedia?.showToStudents !== false && (!!currentSt.stationMedia?.type || !!currentSt.interactiveActivity?.video?.embedUrl) ? '#065f46' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {currentSt.stationMedia?.showToStudents !== false && (!!currentSt.stationMedia?.type || !!currentSt.interactiveActivity?.video?.embedUrl) ? '☑️ عرض هذه المادة المرفقة على شاشة الطالب' : '⬜ اضغط هنا لتحديد وعرض المادة على شاشة الطالب'}
+                        </label>
+                      </div>
                     </div>
 
-                    <div className="video-url-input-group">
-                      <input
-                        type="text"
-                        placeholder="ألصق رابط يوتيوب هنا (مثال: https://www.youtube.com/watch?v=...)"
-                        value={stationVideoInputs[selectedStationToEdit] ?? (currentSt.interactiveActivity?.video?.youtubeUrl || currentSt.interactiveActivity?.video?.embedUrl || '')}
-                        onChange={e => setStationVideoInputs(prev => ({ ...prev, [selectedStationToEdit]: e.target.value }))}
-                      />
+                    {/* Media Type Switcher Tabs */}
+                    <div className="media-type-tabs-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '12px 0' }}>
                       <button
                         type="button"
-                        className="btn-apply-station-video"
-                        onClick={() => handleSaveStationVideoUrl(selectedStationToEdit)}
+                        className={`btn-media-tab ${stationMediaInputs.activeType === 'video' ? 'active' : ''}`}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: stationMediaInputs.activeType === 'video' ? '#ef4444' : '#f1f5f9',
+                          color: stationMediaInputs.activeType === 'video' ? '#fff' : '#334155'
+                        }}
+                        onClick={() => setStationMediaInputs(prev => ({ ...prev, activeType: 'video' }))}
                       >
-                        <i className="fas fa-check"></i> حفظ وتطبيق الفيديو 🎬
+                        <i className="fab fa-youtube"></i> 🎬 فيديو YouTube
                       </button>
+
                       <button
                         type="button"
-                        className="btn-ai-suggest-video"
-                        onClick={() => handleAiSuggestVideoForStation(selectedStationToEdit)}
+                        className={`btn-media-tab ${stationMediaInputs.activeType === 'image' ? 'active' : ''}`}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: stationMediaInputs.activeType === 'image' ? '#3b82f6' : '#f1f5f9',
+                          color: stationMediaInputs.activeType === 'image' ? '#fff' : '#334155'
+                        }}
+                        onClick={() => setStationMediaInputs(prev => ({ ...prev, activeType: 'image' }))}
                       >
-                        <i className="fas fa-magic"></i> اقتراح فيديو بالـ AI ✨
+                        <i className="fas fa-image"></i> 🖼️ صورة (رفع أو رابط)
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`btn-media-tab ${stationMediaInputs.activeType === 'file' ? 'active' : ''}`}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: stationMediaInputs.activeType === 'file' ? '#10b981' : '#f1f5f9',
+                          color: stationMediaInputs.activeType === 'file' ? '#fff' : '#334155'
+                        }}
+                        onClick={() => setStationMediaInputs(prev => ({ ...prev, activeType: 'file' }))}
+                      >
+                        <i className="fas fa-file-download"></i> 📁 ملف ورقة عمل للتنزيل
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`btn-media-tab ${stationMediaInputs.activeType === 'link' ? 'active' : ''}`}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: stationMediaInputs.activeType === 'link' ? '#8b5cf6' : '#f1f5f9',
+                          color: stationMediaInputs.activeType === 'link' ? '#fff' : '#334155'
+                        }}
+                        onClick={() => setStationMediaInputs(prev => ({ ...prev, activeType: 'link' }))}
+                      >
+                        <i className="fas fa-book-open"></i> 📖 كتاب إلكتروني / موقع خارجي
                       </button>
                     </div>
 
-                    {currentSt.interactiveActivity?.video?.embedUrl && (
-                      <div className="station-video-preview-box">
-                        <iframe
-                          src={currentSt.interactiveActivity.video.embedUrl}
-                          title="معاينة فيديو المحطة"
-                          frameBorder="0"
-                          allowFullScreen
-                          className="station-video-iframe"
-                        ></iframe>
-                        <div className="video-reflection-input-row">
-                          <label>💡 سؤال التأمل والمناقشة الصفية الموجه للطلاب بعد المشاهدة:</label>
+                    {/* 1. Tab: YouTube Video */}
+                    {stationMediaInputs.activeType === 'video' && (
+                      <div className="tab-pane-video animate-fade-in">
+                        <div className="video-url-input-group">
                           <input
                             type="text"
-                            value={currentSt.interactiveActivity?.video?.reflectionQuestion || ''}
-                            onChange={e => {
-                              const updatedLesson = {
-                                ...activeLesson,
-                                stations: {
-                                  ...activeLesson.stations,
-                                  [selectedStationToEdit]: {
-                                    ...currentSt,
-                                    interactiveActivity: {
-                                      ...(currentSt.interactiveActivity || {}),
-                                      video: {
-                                        ...(currentSt.interactiveActivity?.video || {}),
-                                        reflectionQuestion: e.target.value
+                            placeholder="ألصق رابط يوتيوب هنا (مثال: https://www.youtube.com/watch?v=...)"
+                            value={stationVideoInputs[selectedStationToEdit] ?? (currentSt.interactiveActivity?.video?.youtubeUrl || currentSt.interactiveActivity?.video?.embedUrl || '')}
+                            onChange={e => setStationVideoInputs(prev => ({ ...prev, [selectedStationToEdit]: e.target.value }))}
+                          />
+                          <button
+                            type="button"
+                            className="btn-apply-station-video"
+                            onClick={() => handleSaveStationVideoUrl(selectedStationToEdit)}
+                          >
+                            <i className="fas fa-check"></i> حفظ وتطبيق الفيديو 🎬
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-ai-suggest-video"
+                            onClick={() => handleAiSuggestVideoForStation(selectedStationToEdit)}
+                          >
+                            <i className="fas fa-magic"></i> اقتراح فيديو بالـ AI ✨
+                          </button>
+                        </div>
+
+                        {currentSt.interactiveActivity?.video?.embedUrl && (
+                          <div className="station-video-preview-box">
+                            <iframe
+                              src={currentSt.interactiveActivity.video.embedUrl}
+                              title="معاينة فيديو المحطة"
+                              frameBorder="0"
+                              allowFullScreen
+                              className="station-video-iframe"
+                            ></iframe>
+                            <div className="video-reflection-input-row">
+                              <label>💡 سؤال التأمل والمناقشة الصفية الموجه للطلاب بعد المشاهدة:</label>
+                              <input
+                                type="text"
+                                value={currentSt.interactiveActivity?.video?.reflectionQuestion || ''}
+                                onChange={e => {
+                                  const updatedLesson = {
+                                    ...activeLesson,
+                                    stations: {
+                                      ...activeLesson.stations,
+                                      [selectedStationToEdit]: {
+                                        ...currentSt,
+                                        interactiveActivity: {
+                                          ...(currentSt.interactiveActivity || {}),
+                                          video: {
+                                            ...(currentSt.interactiveActivity?.video || {}),
+                                            reflectionQuestion: e.target.value
+                                          }
+                                        }
                                       }
                                     }
-                                  }
-                                }
-                              };
-                              syncLessonLive(updatedLesson);
-                            }}
-                            placeholder="اكتب سؤال المناقشة والتأمل هنا..."
+                                  };
+                                  syncLessonLive(updatedLesson);
+                                }}
+                                placeholder="اكتب سؤال المناقشة والتأمل هنا..."
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 2. Tab: Image (Upload from Computer or URL from Web) */}
+                    {stationMediaInputs.activeType === 'image' && (
+                      <div className="tab-pane-image animate-fade-in" style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#3b82f6', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                            <i className="fas fa-upload"></i> رفع صورة من الحاسوب
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={e => handleUploadStationImageFile(selectedStationToEdit, e)}
+                            />
+                          </label>
+                          <span style={{ color: '#64748b' }}>أو ألصق رابط صورة من الإنترنت:</span>
+                          <input
+                            type="text"
+                            placeholder="https://example.com/image.png"
+                            style={{ flex: 1, minWidth: '220px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                            value={stationMediaInputs.imageUrl}
+                            onChange={e => setStationMediaInputs(prev => ({ ...prev, imageUrl: e.target.value }))}
                           />
+                          <button
+                            type="button"
+                            style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                            onClick={() => {
+                              handleSaveStationImageUrl(selectedStationToEdit, stationMediaInputs.imageUrl);
+                              setStationMediaInputs(prev => ({ ...prev, imageUrl: '' }));
+                            }}
+                          >
+                            تطبيق الصورة 🖼️
+                          </button>
                         </div>
+
+                        {currentSt.stationMedia?.type === 'image' && currentSt.stationMedia?.imageUrl && (
+                          <div style={{ marginTop: '12px', textAlign: 'center', background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <img
+                              src={currentSt.stationMedia.imageUrl}
+                              alt="معاينة الصورة"
+                              style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px' }}
+                            />
+                            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 'bold' }}>✓ الصورة معتمدة ونشطة في المحطة</span>
+                              <button
+                                type="button"
+                                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                onClick={() => handleClearStationMedia(selectedStationToEdit)}
+                              >
+                                حذف الصورة 🗑️
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 3. Tab: File Upload & Download (PDF, DOCX, Worksheets) */}
+                    {stationMediaInputs.activeType === 'file' && (
+                      <div className="tab-pane-file animate-fade-in" style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#10b981', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                            <i className="fas fa-file-upload"></i> اختر ملفاً لرفعه من جهازك (PDF، Word، صور)
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*"
+                              style={{ display: 'none' }}
+                              onChange={e => handleUploadStationDocFile(selectedStationToEdit, e)}
+                            />
+                          </label>
+                          <small style={{ color: '#64748b' }}>سيتمكن الطلاب من تنزيل هذا الملف بنقرة واحدة من شاشتهم 📥</small>
+                        </div>
+
+                        {currentSt.stationMedia?.type === 'file' && currentSt.stationMedia?.fileName && (
+                          <div style={{ marginTop: '12px', background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #10b981', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <i className="fas fa-file-alt" style={{ fontSize: '1.5rem', color: '#10b981' }}></i>
+                              <div>
+                                <strong>{currentSt.stationMedia.fileName}</strong>
+                                <small style={{ display: 'block', color: '#64748b' }}>الحجم: {currentSt.stationMedia.fileSize || 'ملف جاهز'}</small>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <a
+                                href={currentSt.stationMedia.fileData}
+                                download={currentSt.stationMedia.fileName}
+                                style={{ background: '#10b981', color: '#fff', padding: '6px 12px', borderRadius: '6px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold' }}
+                              >
+                                تجربة التنزيل 📥
+                              </a>
+                              <button
+                                type="button"
+                                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
+                                onClick={() => handleClearStationMedia(selectedStationToEdit)}
+                              >
+                                حذف الملف 🗑️
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 4. Tab: External Web / Digital Book Link */}
+                    {stationMediaInputs.activeType === 'link' && (
+                      <div className="tab-pane-link animate-fade-in" style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          <input
+                            type="text"
+                            placeholder="عنوان الكتاب أو الموقع (مثال: كتاب العلوم الرقمي — درس الانتخابات)"
+                            style={{ flex: 1, minWidth: '220px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                            value={stationMediaInputs.linkTitle}
+                            onChange={e => setStationMediaInputs(prev => ({ ...prev, linkTitle: e.target.value }))}
+                          />
+                          <input
+                            type="text"
+                            placeholder="رابط الموقع الكامل (مثال: https://kotobna.net/...)"
+                            style={{ flex: 1.5, minWidth: '260px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                            value={stationMediaInputs.linkUrl}
+                            onChange={e => setStationMediaInputs(prev => ({ ...prev, linkUrl: e.target.value }))}
+                          />
+                          <button
+                            type="button"
+                            style={{ background: '#8b5cf6', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                            onClick={() => {
+                              handleSaveStationExternalLink(selectedStationToEdit, stationMediaInputs.linkUrl, stationMediaInputs.linkTitle);
+                              setStationMediaInputs(prev => ({ ...prev, linkUrl: '', linkTitle: '' }));
+                            }}
+                          >
+                            تطبيق الرابط 🔗
+                          </button>
+                        </div>
+
+                        {currentSt.stationMedia?.type === 'link' && currentSt.stationMedia?.linkUrl && (
+                          <div style={{ marginTop: '10px', background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #8b5cf6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <strong>📖 {currentSt.stationMedia.linkTitle || 'كتاب إلكتروني / موقع خارجي'}</strong>
+                              <a href={currentSt.stationMedia.linkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', color: '#6366f1', fontSize: '0.85rem' }}>
+                                {currentSt.stationMedia.linkUrl}
+                              </a>
+                            </div>
+                            <button
+                              type="button"
+                              style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
+                              onClick={() => handleClearStationMedia(selectedStationToEdit)}
+                            >
+                              حذف الرابط 🗑️
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -5016,8 +5605,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
                     )}
 
-                    {/* Interactive Media / Activity (Video, Riddle, Puzzle) */}
-                    {getStationByIndex(sessionState.activeStationIndex)?.interactiveActivity && 
+                    {/* Interactive Media / Activity (Video, Riddle, Puzzle) & Attached Media */}
+                    {(getStationByIndex(sessionState.activeStationIndex)?.interactiveActivity || 
+                      getStationByIndex(sessionState.activeStationIndex)?.stationMedia) && 
                      renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
 
                     {/* In Station 3: Show Group Tiers Showcase */}
@@ -5341,8 +5931,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               )}
 
-              {/* Station Interactive Media (Video, Riddle, Puzzle) */}
+              {/* Station Interactive Media (Video, Riddle, Puzzle) & Attached Media */}
               {(studentCurrentStationData.interactiveActivity || 
+                studentCurrentStationData.stationMedia ||
                 (studentCurrentStationData.studentPrompt && studentCurrentStationData.studentPrompt.match(/فيلم|فيديو|مقطع|لغز|أحجية|احجية|بازل|puzzle/i))) && 
                 renderStationMedia(studentCurrentStationData, false)}
 
@@ -6077,8 +6668,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </div>
                   )}
 
-                  {/* Station Interactive Media */}
-                  {getStationByIndex(studentPreviewStationIndex).interactiveActivity && 
+                  {/* Station Interactive Media & Attached Media */}
+                  {(getStationByIndex(studentPreviewStationIndex).interactiveActivity || 
+                    getStationByIndex(studentPreviewStationIndex).stationMedia) && 
                    renderStationMedia(getStationByIndex(studentPreviewStationIndex), false)}
 
                   {getStationByIndex(studentPreviewStationIndex).scaffold && (
