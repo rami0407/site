@@ -1590,8 +1590,27 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     };
     broadcastSession(newSession);
     try { saveMiftaahLiveSession(newSession); } catch (e) {}
-    setActiveInterface('teacher');
-    showToast(`بدأت جلسة الصف لدرس [${chosen.title}] بنجاح! 🚀 كود الحصة للطلاب: ${newSession.pin}`);
+
+    // Automatically set up teacher preview as participant in the student view
+    const teacherName = authenticatedTeacher?.nameAr || 'المعلم';
+    const teacherParticipant = {
+      id: 'tch_part_' + (authenticatedTeacher?.id || 'live_preview'),
+      name: `${teacherName} (المعلم)`,
+      groupName: 'شاشة المعلم / العرض المباشر',
+      avatar: '👨‍🏫',
+      type: 'teacher_preview',
+      mode: 'teacher_preview',
+      currentStation: 1
+    };
+    setStudentAuth(teacherParticipant);
+    setCurrentStudentId(teacherParticipant.id);
+    setStudentSelfPacedStation(1);
+    try {
+      sessionStorage.setItem('miftaah_student_participant', JSON.stringify(teacherParticipant));
+    } catch (e) {}
+
+    setActiveInterface('student');
+    showToast(`بدأت جلسة الصف لدرس [${chosen.title}] بنجاح! 🚀 تم فتح واجهة الطالب لك مباشرة (كود الحصة: ${newSession.pin})`);
   };
 
   // Toggle single permission for a teacher (Admin only)
@@ -1635,9 +1654,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
   // Start Classroom Session from Creator
   const handleStartSession = () => {
+    const lessonPin = (activeLesson.code || activeLesson.pin || sessionState.pin || ('MFT-' + Math.floor(100 + Math.random() * 900))).trim();
     const newSession = {
       ...sessionState,
-      pin: 'MFT-' + Math.floor(100 + Math.random() * 900),
+      pin: lessonPin,
       isActive: true,
       activeStationIndex: 1,
       elapsedSeconds: 0,
@@ -1647,8 +1667,28 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       lessonTitle: activeLesson.title
     };
     broadcastSession(newSession);
-    setActiveInterface('teacher');
-    showToast(`بدأت جلسة الصف لدرس [${activeLesson.title}] بنجاح! 🚀 كود الحصة: ${newSession.pin}`);
+    try { saveMiftaahLiveSession(newSession); } catch (e) {}
+
+    // Automatically set up teacher preview as participant in the student view
+    const teacherName = authenticatedTeacher?.nameAr || 'المعلم';
+    const teacherParticipant = {
+      id: 'tch_part_' + (authenticatedTeacher?.id || 'live_preview'),
+      name: `${teacherName} (المعلم)`,
+      groupName: 'شاشة المعلم / العرض المباشر',
+      avatar: '👨‍🏫',
+      type: 'teacher_preview',
+      mode: 'teacher_preview',
+      currentStation: 1
+    };
+    setStudentAuth(teacherParticipant);
+    setCurrentStudentId(teacherParticipant.id);
+    setStudentSelfPacedStation(1);
+    try {
+      sessionStorage.setItem('miftaah_student_participant', JSON.stringify(teacherParticipant));
+    } catch (e) {}
+
+    setActiveInterface('student');
+    showToast(`بدأت جلسة الصف لدرس [${activeLesson.title}] بنجاح! 🚀 تم فتح واجهة الطالب لك مباشرة (كود الحصة: ${newSession.pin})`);
   };
 
   // =========================================================================
@@ -5172,6 +5212,55 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
 
                 <div className="student-header-right-tools">
+                  {/* Quick Teacher Controls if authenticated teacher or teacher preview mode */}
+                  {(authenticatedTeacher || currentParticipant?.mode === 'teacher_preview') && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-return-to-teacher-creator"
+                        style={{
+                          background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)'
+                        }}
+                        onClick={() => setActiveInterface('creator')}
+                        title="العودة لشاشة إعداد وتعديل الحصة"
+                      >
+                        <i className="fas fa-edit"></i> تعديل الحصة ✏️
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-return-to-teacher-backstage"
+                        style={{
+                          background: 'linear-gradient(135deg, #059669, #10b981)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)'
+                        }}
+                        onClick={() => setActiveInterface('teacher')}
+                        title="الانتقال إلى كواليس المعلم ولوحة المتابعة الصفيّة"
+                      >
+                        <i className="fas fa-chalkboard-teacher"></i> كواليس المعلم 👨‍🏫
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     className="btn-exit-to-portal-student"
