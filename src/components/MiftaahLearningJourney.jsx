@@ -321,66 +321,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [lessonGradeFilter, setLessonGradeFilter] = useState('all');
   const [lessonTeacherFilter, setLessonTeacherFilter] = useState('all');
 
-  // Real-time listener for lessons and permissions in Firestore
-  useEffect(() => {
-    const unsubLessons = listenToMiftaahLessons((cloudLessons) => {
-      if (Array.isArray(cloudLessons) && cloudLessons.length > 0) {
-        setLessonsList(prev => {
-          const map = new Map();
-          map.set(DEFAULT_EXEMPLAR_LESSON.id, normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON));
-          prev.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
-          cloudLessons.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
-          return Array.from(map.values());
-        });
-      }
-    });
-
-    const unsubPerms = listenToMiftaahPermissions((newPerms) => {
-      if (newPerms && typeof newPerms === 'object') {
-        setPermissionsMap(newPerms);
-      }
-    });
-
-    return () => {
-      if (unsubLessons) unsubLessons();
-      if (unsubPerms) unsubPerms();
-    };
-  }, []);
-
-  // Auto-detect code parameter in URL (e.g. #/miftaah?code=MFT-924)
-  useEffect(() => {
-    try {
-      const fullUrl = window.location.href;
-      const codeMatch = fullUrl.match(/[?&]code=([^&#]+)/i);
-      if (codeMatch && codeMatch[1]) {
-        const decoded = decodeURIComponent(codeMatch[1]).trim();
-        if (decoded) {
-          setStudentCodeInput(decoded);
-        }
-      }
-    } catch (e) {}
-  }, []);
-
-  // Real-time listener for live classroom session from cloud (Firestore)
-  useEffect(() => {
-    const unsubLive = listenToMiftaahLiveSession((liveSession) => {
-      if (liveSession && liveSession.lesson) {
-        setSessionState(prev => ({
-          ...prev,
-          ...liveSession,
-          participants: prev.participants?.length > liveSession.participants?.length
-            ? prev.participants
-            : (liveSession.participants || prev.participants)
-        }));
-        if (studentAuth || activeInterface === 'student' || activeInterface === 'projector') {
-          setActiveLesson(normalizeMiftaahLesson(liveSession.lesson));
-        }
-      }
-    });
-    return () => {
-      if (unsubLive) unsubLive();
-    };
-  }, [studentAuth, activeInterface]);
 
   // -------------------------------------------------------------------------
   // STUDENT PARTICIPATION (دخول الطالب بالاسم ورمز الحصة عبر شاشة الهبوط)
@@ -1008,6 +948,67 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [puzzlePiecesState, setPuzzlePiecesState] = useState({});
   const [puzzleStatusMap, setPuzzleStatusMap] = useState({});
   const [puzzleSelectedPieceIndex, setPuzzleSelectedPieceIndex] = useState(null);
+
+  // Real-time listener for lessons and permissions in Firestore
+  useEffect(() => {
+    const unsubLessons = listenToMiftaahLessons((cloudLessons) => {
+      if (Array.isArray(cloudLessons) && cloudLessons.length > 0) {
+        setLessonsList(prev => {
+          const map = new Map();
+          map.set(DEFAULT_EXEMPLAR_LESSON.id, normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON));
+          prev.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
+          cloudLessons.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    const unsubPerms = listenToMiftaahPermissions((newPerms) => {
+      if (newPerms && typeof newPerms === 'object') {
+        setPermissionsMap(newPerms);
+      }
+    });
+
+    return () => {
+      if (unsubLessons) unsubLessons();
+      if (unsubPerms) unsubPerms();
+    };
+  }, []);
+
+  // Auto-detect code parameter in URL (e.g. #/miftaah?code=MFT-924)
+  useEffect(() => {
+    try {
+      const fullUrl = window.location.href;
+      const codeMatch = fullUrl.match(/[?&]code=([^&#]+)/i);
+      if (codeMatch && codeMatch[1]) {
+        const decoded = decodeURIComponent(codeMatch[1]).trim();
+        if (decoded) {
+          setStudentCodeInput(decoded);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  // Real-time listener for live classroom session from cloud (Firestore)
+  useEffect(() => {
+    const unsubLive = listenToMiftaahLiveSession((liveSession) => {
+      if (liveSession && liveSession.lesson) {
+        setSessionState(prev => ({
+          ...prev,
+          ...liveSession,
+          participants: prev.participants?.length > liveSession.participants?.length
+            ? prev.participants
+            : (liveSession.participants || prev.participants)
+        }));
+        if (studentAuth || activeInterface === 'student' || activeInterface === 'projector') {
+          setActiveLesson(normalizeMiftaahLesson(liveSession.lesson));
+        }
+      }
+    });
+    return () => {
+      if (unsubLive) unsubLive();
+    };
+  }, [studentAuth, activeInterface]);
 
   // Broadcast channel for live multi-tab & multi-window sync
   const channelRef = useRef(null);
