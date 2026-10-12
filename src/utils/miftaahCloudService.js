@@ -206,15 +206,36 @@ export const saveLessonToFirestore = async (lesson) => {
     localStorage.setItem(STORAGE_KEY_CLOUD_LESSONS, JSON.stringify(next));
   } catch (e) {}
 
-  // 2. Cloud Firestore Persistence
+  // 2. Cloud Firestore Persistence (miftaah_lessons)
   try {
     const docRef = doc(db, 'miftaah_lessons', cleanLesson.id);
     await setDoc(docRef, cleanLesson, { merge: true });
-    return true;
-  } catch (err) {
-    // If permission-denied (unauthenticated visitor or rules restriction), local persistence is already guaranteed!
-    return true;
-  }
+  } catch (err) {}
+
+  // 3. Mirror in public school_padlet_cards collection so unauthenticated students can access by pin/id
+  try {
+    const publicDocRef = doc(db, 'school_padlet_cards', `miftaah_lesson_${cleanLesson.id}`);
+    await setDoc(publicDocRef, cleanLesson, { merge: true });
+
+    const pin = (cleanLesson.code || cleanLesson.pin || '').trim();
+    if (pin) {
+      const pinKey = pin.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      if (pinKey) {
+        const pinDocRef = doc(db, 'school_padlet_cards', `miftaah_session_${pinKey}`);
+        await setDoc(pinDocRef, {
+          pin,
+          lesson: cleanLesson,
+          lessonId: cleanLesson.id,
+          lessonTitle: cleanLesson.title,
+          isActive: true,
+          activeStationIndex: 1,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+    }
+  } catch (err) {}
+
+  return true;
 };
 
 /**
@@ -379,21 +400,33 @@ export const fetchMiftaahSessionByPin = async (rawPin) => {
     const snap = await getDoc(pinDocRef);
     if (snap.exists()) {
       const data = snap.data();
-      return data;
+      if (data && (data.lesson || data.isActive)) return data;
     }
   } catch (e) {}
 
-  // 2. Try live session doc
+  // 1b. Try numeric-only pin doc
+  if (cleanNumOnly && cleanNumOnly !== clean) {
+    try {
+      const numDocRef = doc(db, 'school_padlet_cards', `miftaah_session_${cleanNumOnly}`);
+      const snap = await getDoc(numDocRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data && (data.lesson || data.isActive)) return data;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Try live session doc ONLY if the pin matches or master pin
   const liveSession = await fetchMiftaahLiveSession();
-  if (liveSession && liveSession.pin) {
-    const livePin = String(liveSession.pin).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  if (liveSession && liveSession.lesson) {
+    const livePin = String(liveSession.pin || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
     const livePinNum = livePin.replace(/[^0-9]/g, '');
     if (livePin === clean || (cleanNumOnly && livePinNum === cleanNumOnly) || clean === '318212') {
       return liveSession;
     }
   }
 
-  return liveSession;
+  return null;
 };
 
 export const listenToMiftaahLiveSession = (callback) => {
