@@ -223,8 +223,14 @@ const normalizeMiftaahLesson = (lesson) => {
   // Station 4
   if (l.stations['4_evidence']) {
     const st4 = { ...l.stations['4_evidence'] };
-    if (!st4.studentPrompt || !st4.studentPrompt.trim()) {
-      st4.studentPrompt = st4.individualTask || `مهمة التحقق الفردي المستقل (حل بمفردك) ✍️\nأثبت فهمك وإتقانك لـ (${safeTitle}) بحل التمرين المخصص لك في بطاقتك دون مساعدة خارجية، وقدّم تبريراً واضحاً لإجابتك.`;
+    const promptLower = (st4.studentPrompt || '').toLowerCase();
+    const hasSpecificQuestions = (st4.studentPrompt && (st4.studentPrompt.includes('سؤال') || st4.studentPrompt.includes('١.') || st4.studentPrompt.includes('1.') || st4.studentPrompt.includes('؟')));
+
+    if (!st4.studentPrompt || !st4.studentPrompt.trim() || (!hasSpecificQuestions && (promptLower.includes('ورقة الدليل') || promptLower.includes('ارفعوا أوراقكم') || promptLower.includes('ورقة عمل')))) {
+      st4.studentPrompt = `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
+    }
+    if (!st4.individualTask || !st4.individualTask.trim()) {
+      st4.individualTask = st4.studentPrompt;
     }
     if (!st4.teacherGuidance || !st4.teacherGuidance.trim()) {
       st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي:\n١. تأكد من استقلالية كل طالب أثناء الحل لقياس الأثر الحقيقي للتعلم.\n٢. راقب المفاهيم البديلة وصنّف الإجابات فورياً وفق مستويات الإتقان الأربعة.\n٣. حدد الفجوات الشائعة لتناولها في بداية الحصة القادمة أو ضمن الدعم المركز.`;
@@ -5336,7 +5342,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               )}
 
               {/* Station Interactive Media (Video, Riddle, Puzzle) */}
-              {studentCurrentStationData.interactiveActivity && renderStationMedia(studentCurrentStationData, false)}
+              {(studentCurrentStationData.interactiveActivity || 
+                (studentCurrentStationData.studentPrompt && studentCurrentStationData.studentPrompt.match(/فيلم|فيديو|مقطع|لغز|أحجية|احجية|بازل|puzzle/i))) && 
+                renderStationMedia(studentCurrentStationData, false)}
 
               {/* Station 3 Specific: Tier Selector */}
               {studentCurrentStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
