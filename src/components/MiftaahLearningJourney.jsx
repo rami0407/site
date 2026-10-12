@@ -325,30 +325,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // -------------------------------------------------------------------------
   // STUDENT PARTICIPATION (دخول الطالب بالاسم ورمز الحصة عبر شاشة الهبوط)
   // -------------------------------------------------------------------------
-  const [studentAuth, setStudentAuth] = useState(() => {
-    // If entered explicitly via session storage during current live session keep it, otherwise show gate
-    try {
-      const saved = sessionStorage.getItem('miftaah_student_participant');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return null;
-  });
+  // Always initialize to null so entering the platform lands on the official Landing Page (حقلين: الاسم والكود)
+  const [studentAuth, setStudentAuth] = useState(null);
 
   const [studentCodeInput, setStudentCodeInput] = useState('');
   const [studentNameInput, setStudentNameInput] = useState('');
   const [guestNameInput, setGuestNameInput] = useState('');
   const [studentGateError, setStudentGateError] = useState('');
   // Student Self-Paced Active Station (تنقل الطالب بين المحطات بحسب قدراته ووتيرته)
-  const [studentSelfPacedStation, setStudentSelfPacedStation] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('miftaah_student_participant');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.currentStation) return parsed.currentStation;
-      }
-    } catch (e) {}
-    return 1;
-  });
+  const [studentSelfPacedStation, setStudentSelfPacedStation] = useState(1);
 
   // Teacher Login Handler
   const handleTeacherLoginSubmit = async (e) => {
@@ -988,7 +973,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     };
   }, []);
 
-  // Auto-detect code parameter in URL (e.g. #/miftaah?code=MFT-924)
+  // Auto-detect code parameter in URL (e.g. #/miftaah?code=MFT-924) and ensure official landing page
   useEffect(() => {
     try {
       const fullUrl = window.location.href;
@@ -998,6 +983,18 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         if (decoded) {
           setStudentCodeInput(decoded);
         }
+      }
+
+      const hash = (window.location.hash || '').toLowerCase();
+      // Unless explicitly requesting creator/prep/teacher in hash, always start cleanly on the official landing page
+      if (!hash.includes('creator') && !hash.includes('prep') && !hash.includes('teacher') && !hash.includes('projector')) {
+        setActiveInterface('student');
+        setStudentAuth(null);
+        setStudentSelfPacedStation(1);
+        try {
+          sessionStorage.removeItem('miftaah_student_participant');
+          localStorage.removeItem('miftaah_student_participant');
+        } catch (e) {}
       }
     } catch (e) {}
   }, []);
@@ -4807,7 +4804,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   <button
                     type="button"
                     className="btn-exit-to-portal-student"
-                    onClick={() => { window.location.hash = ''; }}
+                    onClick={() => {
+                      setStudentAuth(null);
+                      try {
+                        sessionStorage.removeItem('miftaah_student_participant');
+                        localStorage.removeItem('miftaah_student_participant');
+                      } catch (e) {}
+                      window.location.hash = '';
+                    }}
                     title="العودة للصفحة الرئيسية لموقع المدرسة"
                   >
                     <i className="fas fa-home"></i> الرئيسية 🏫
