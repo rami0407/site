@@ -1302,6 +1302,119 @@
   color: #94a3b8;
 }
 
+/* Fast Navigation Station Pills in Teacher Ribbon */
+.teacher-stations-fast-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fast-nav-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-fast-station-pill {
+  background: transparent;
+  color: #cbd5e1;
+  border: 1px solid transparent;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-fast-station-pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-fast-station-pill.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.st-pill-glyph {
+  font-weight: 900;
+  color: #fbbf24;
+}
+
+.btn-fast-station-pill.active .st-pill-glyph {
+  color: #fef08a;
+}
+
+/* Submissions Station Filter Tabs in Center Feed */
+.feed-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-sync-indicator-tag {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #bbf7d0;
+}
+
+.feed-station-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.btn-sub-filter-tab {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-sub-filter-tab:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-sub-filter-tab.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
 /* Three-Column Live Dashboard Layout */
 .teacher-dashboard-layout {
   display: grid;

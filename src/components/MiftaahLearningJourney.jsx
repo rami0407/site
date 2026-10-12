@@ -320,6 +320,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [lessonSearchQuery, setLessonSearchQuery] = useState('');
   const [lessonGradeFilter, setLessonGradeFilter] = useState('all');
   const [lessonTeacherFilter, setLessonTeacherFilter] = useState('all');
+  // Backstage Submissions Filter: 'all' or station index (1 to 5)
+  const [backstageSubmissionsStationFilter, setBackstageSubmissionsStationFilter] = useState('all');
 
 
   // -------------------------------------------------------------------------
@@ -1095,13 +1097,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const activePin = sessionState.pin || activeLesson?.code || activeLesson?.pin || studentCodeInput || null;
     const unsubLive = listenToMiftaahLiveSession((liveSession) => {
       if (liveSession && liveSession.lesson) {
-        setSessionState(prev => ({
-          ...prev,
-          ...liveSession,
-          participants: prev.participants?.length > liveSession.participants?.length
-            ? prev.participants
-            : (liveSession.participants || prev.participants)
-        }));
+        setSessionState(prev => {
+          // Merge submissions so no student submission is lost
+          const existingSubIds = new Set((prev.submissions || []).map(s => s.id));
+          const incomingSubs = (liveSession.submissions || []).filter(s => !existingSubIds.has(s.id));
+          const mergedSubs = [...incomingSubs, ...(prev.submissions || [])];
+
+          // Merge participants
+          const existingPartIds = new Set((prev.participants || []).map(p => p.id));
+          const incomingParts = (liveSession.participants || []).filter(p => !existingPartIds.has(p.id));
+          const mergedParts = [...(prev.participants || []), ...incomingParts];
+
+          return {
+            ...prev,
+            ...liveSession,
+            submissions: mergedSubs,
+            participants: mergedParts.length > 0 ? mergedParts : (liveSession.participants || prev.participants)
+          };
+        });
         if (studentAuth || activeInterface === 'student' || activeInterface === 'projector') {
           setActiveLesson(normalizeMiftaahLesson(liveSession.lesson));
         }
@@ -2739,10 +2752,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         {stations.map(st => {
           const isActive = st.idx === activeIdx;
           const isCompleted = st.idx < activeIdx;
-          // In student mode, stations are never locked; the student navigates according to their abilities
-          const isLocked = isStudentDevice ? false : (sessionState.pacingMode === 'whole_class'
+          // Teachers can always navigate to any station freely; students have open self-paced navigation
+          const isLocked = (!onSelectStation && !isStudentDevice) ? (sessionState.pacingMode === 'whole_class'
             ? st.idx > activeIdx
-            : st.idx > (sessionState.stationUnlockedMax || activeIdx));
+            : st.idx > (sessionState.stationUnlockedMax || activeIdx)) : false;
 
           return (
             <button
@@ -2751,11 +2764,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               className={`key-letter-token ${isActive ? 'is-active-glowing' : ''} ${isCompleted ? 'is-completed' : ''} ${isLocked ? 'is-locked' : ''} ${isStudentDevice ? 'is-student-interactive' : ''}`}
               onClick={() => {
                 if (onSelectStation) {
-                  if (isLocked && !isStudentDevice) {
-                    showToast(`المحطة [${st.letter}] مغلقة الآن 🔒`);
-                  } else {
-                    onSelectStation(st.idx);
-                  }
+                  onSelectStation(st.idx);
                 }
               }}
               title={`المحطة ${st.idx}: ${st.name} [${st.letter}] - ${isActive ? 'المحطة الحالية (أنت هنا الآن 🎯)' : isCompleted ? 'منجزة ✓ (اضغط للمراجعة)' : 'اضغط للانتقال إليها 🚀'}`}
@@ -4458,22 +4467,52 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               </button>
             </div>
 
-            {/* Quick Station Navigation */}
-            <div className="quick-step-nav">
+            {/* Station Direct Navigation Ribbon (أزرار التنقل السريع بين المحطات الـ ٥) */}
+            <div className="teacher-stations-fast-nav">
               <button
                 type="button"
                 className="btn-nav-prev"
                 onClick={handlePrevStation}
                 disabled={sessionState.activeStationIndex <= 1}
+                title="المحطة السابقة"
               >
                 <i className="fas fa-chevron-right"></i> السابق
               </button>
-              <span className="current-station-num">المحطة {sessionState.activeStationIndex} من ٥</span>
+
+              <div className="fast-nav-pills">
+                {[
+                  { idx: 1, letter: 'م', name: 'مشوّق' },
+                  { idx: 2, letter: 'ف', name: 'فهم' },
+                  { idx: 3, letter: 'ت', name: 'تطبيق' },
+                  { idx: 4, letter: 'ا', name: 'أدلة' },
+                  { idx: 5, letter: 'ح', name: 'حصاد' }
+                ].map(st => {
+                  const isActive = sessionState.activeStationIndex === st.idx;
+                  return (
+                    <button
+                      key={st.idx}
+                      type="button"
+                      className={`btn-fast-station-pill ${isActive ? 'active' : ''}`}
+                      onClick={() => {
+                        const next = { ...sessionState, activeStationIndex: st.idx };
+                        broadcastSession(next);
+                        showToast(`تم الانتقال إلى المحطة ${st.idx}: [${getStationByIndex(st.idx).name}] 🚀`);
+                      }}
+                      title={`انتقال مباشر إلى المحطة ${st.idx}: ${st.name}`}
+                    >
+                      <span className="st-pill-glyph">{st.letter}</span>
+                      <span className="st-pill-label">{st.idx}. {st.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <button
                 type="button"
                 className="btn-nav-next"
                 onClick={handleNextStation}
                 disabled={sessionState.activeStationIndex >= 5}
+                title="المحطة التالية"
               >
                 التالي <i className="fas fa-chevron-left"></i>
               </button>
@@ -4503,7 +4542,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   onClick={() => {
                     const stIdx = sessionState.activeStationIndex;
                     const stKey = STATION_KEYS_ORDER[stIdx - 1];
-                    const newText = sessionState.backstageDraftUpdate || getStationByIndex(stIdx).studentPrompt;
+                    const newText = (sessionState.backstageDraftUpdate !== undefined)
+                      ? sessionState.backstageDraftUpdate
+                      : getStationByIndex(stIdx).studentPrompt;
                     const updatedLesson = {
                       ...activeLesson,
                       stations: {
@@ -4514,9 +4555,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         }
                       }
                     };
+                    const nextSession = {
+                      ...sessionState,
+                      lesson: updatedLesson,
+                      lessonTitle: updatedLesson.title,
+                      backstageDraftUpdate: undefined
+                    };
                     setActiveLesson(updatedLesson);
-                    setSessionState(prev => ({ ...prev, backstageDraftUpdate: undefined }));
-                    broadcastSession(sessionState);
+                    setSessionState(nextSession);
+                    broadcastSession(nextSession);
+                    syncLessonLive(updatedLesson, true);
                     showToast('تم اعتماد التعديل وعرضه فوراً للطلاب على الشاشات! 📤✨');
                   }}
                 >
@@ -4623,7 +4671,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             {/* Center Column: Live Submissions & Formative Assessment */}
             <main className="dashboard-center-feed">
               <div className="center-feed-header">
-                <h3><i className="fas fa-inbox"></i> إجابات وأدلة الطلاب المباشرة ({sessionState.submissions.length})</h3>
+                <div className="feed-header-left">
+                  <h3><i className="fas fa-inbox"></i> إجابات وأدلة الطلاب المباشرة ({sessionState.submissions.length})</h3>
+                  <span className="live-sync-indicator-tag"><i className="fas fa-bolt"></i> حتلنة لحظية</span>
+                </div>
                 <div className="feed-toggles">
                   <label className="toggle-names-chip">
                     <input
@@ -4639,15 +4690,54 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               </div>
 
-              {sessionState.submissions.length === 0 ? (
-                <div className="empty-submissions-placeholder">
-                  <div className="placeholder-icon">📬</div>
-                  <h4>في انتظار إرسال الطلاب لمحاولاتهم...</h4>
-                  <p>عندما يرسل الطلاب أو المجموعات حلولهم في محطة التطريب أو أدلة الفهم، ستظهر هنا فوراً مع خيارات التقييم وعرضها على الشاشة.</p>
-                </div>
-              ) : (
-                <div className="submissions-cards-list">
-                  {sessionState.submissions.map(sub => {
+              {/* Station Filter Tabs for Submissions (عرض إجابات الطلاب بحسب المحطة) */}
+              <div className="feed-station-filter-tabs">
+                <button
+                  type="button"
+                  className={`btn-sub-filter-tab ${backstageSubmissionsStationFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setBackstageSubmissionsStationFilter('all')}
+                >
+                  جميع المحطات ({sessionState.submissions.length})
+                </button>
+                {[
+                  { idx: 1, letter: 'م', name: 'المشوق' },
+                  { idx: 2, letter: 'ف', name: 'الفهم' },
+                  { idx: 3, letter: 'ت', name: 'التطبيق' },
+                  { idx: 4, letter: 'ا', name: 'أدلة الفهم' },
+                  { idx: 5, letter: 'ح', name: 'الحصاد' }
+                ].map(st => {
+                  const count = sessionState.submissions.filter(s => Number(s.stationNumber) === st.idx).length;
+                  return (
+                    <button
+                      key={st.idx}
+                      type="button"
+                      className={`btn-sub-filter-tab ${backstageSubmissionsStationFilter === st.idx ? 'active' : ''}`}
+                      onClick={() => setBackstageSubmissionsStationFilter(st.idx)}
+                    >
+                      [{st.letter}] محطة {st.idx}: {st.name} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const filteredSubs = backstageSubmissionsStationFilter === 'all'
+                  ? sessionState.submissions
+                  : sessionState.submissions.filter(s => Number(s.stationNumber) === Number(backstageSubmissionsStationFilter));
+
+                if (filteredSubs.length === 0) {
+                  return (
+                    <div className="empty-submissions-placeholder">
+                      <div className="placeholder-icon">📬</div>
+                      <h4>{backstageSubmissionsStationFilter === 'all' ? 'في انتظار إرسال الطلاب لمحاولاتهم...' : `لا توجد إجابات مرسلة في المحطة ${backstageSubmissionsStationFilter} حتى الآن`}</h4>
+                      <p>عندما يرسل الطلاب حلولهم في هذه المحطة، ستظهر هنا فوراً مع خيارات التقييم المباشر وعرضها على الشاشة.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="submissions-cards-list">
+                    {filteredSubs.map(sub => {
                     const isShowcased = sessionState.showcasedItem?.id === sub.id;
                     return (
                       <div key={sub.id} className={`submission-card ${isShowcased ? 'showcased' : ''}`}>
@@ -4718,7 +4808,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     );
                   })}
                 </div>
-              )}
+              );
+            })()}
             </main>
 
             {/* Right Column: Live Roster & Help Requests */}
