@@ -6,7 +6,8 @@ import {
   saveMiftaahPermissions,
   deleteLessonFromFirestore,
   saveLessonToFirestore,
-  getDefaultPermission
+  getDefaultPermission,
+  generateUniqueLessonPin
 } from '../utils/miftaahCloudService';
 import { generateMiftaahFullJourneyLessonAI } from '../utils/aiService';
 
@@ -159,6 +160,7 @@ const MiftaahSupervisionAdminTab = () => {
       });
 
       if (res && res.stations) {
+        const uniquePin = generateUniqueLessonPin(lessons);
         const newLesson = {
           ...res,
           id: 'admin_lesson_' + Date.now(),
@@ -166,6 +168,8 @@ const MiftaahSupervisionAdminTab = () => {
           subject: res.subject || aiSubject,
           grade: res.grade || aiGrade,
           language: res.language || aiLanguage,
+          code: uniquePin,
+          pin: uniquePin,
           specialRequests: aiPrompt,
           authorId: 'tch_36',
           authorName: 'الأستاذ رامي غرة (مدير المدرسة)',
@@ -175,7 +179,7 @@ const MiftaahSupervisionAdminTab = () => {
         };
 
         await saveLessonToFirestore(newLesson);
-        showToast(`✨ تم توليد وحفظ الحصة "${newLesson.title}" بنجاح في قاعدة بيانات المدرسة!`);
+        showToast(`✨ تم توليد وحفظ الحصة "${newLesson.title}" برمز الدخول المخصص [${uniquePin}] بنجاح!`);
         setAiTitle('');
         setAiPrompt('');
         setActiveSubTab('all_lessons');

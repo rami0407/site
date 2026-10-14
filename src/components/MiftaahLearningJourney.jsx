@@ -28,7 +28,9 @@ import {
   saveMiftaahLiveSession,
   fetchMiftaahLiveSession,
   fetchMiftaahSessionByPin,
-  listenToMiftaahLiveSession
+  listenToMiftaahLiveSession,
+  generateUniqueLessonPin,
+  deduplicateLessonCodes
 } from '../utils/miftaahCloudService';
 
 // =========================================================================
@@ -851,62 +853,58 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const cleanEntered = code.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanNumOnly = cleanEntered.replace(/[^0-9]/g, '');
 
-    // 1. Search lessonsList for a lesson whose pin/code matches the entered code
-    let matchedLesson = lessonsList.find(l => {
-      const lCode = String(l.code || l.pin || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const lNum = lCode.replace(/[^0-9]/g, '');
-      return (
-        (lCode && (lCode === cleanEntered || cleanEntered.includes(lCode))) ||
-        (cleanNumOnly && lNum && (lNum === cleanNumOnly || cleanNumOnly.includes(lNum))) ||
-        (l.id && String(l.id).toLowerCase() === cleanEntered)
-      );
-    });
+    // 1. Search Cloud session by PIN in Firestore (live broadcast from teacher)
+    let matchedSession = null;
+    try {
+      matchedSession = await fetchMiftaahSessionByPin(code);
+    } catch (err) {}
 
-    // 2. Also check if activeLesson matches this code
+    let matchedLesson = null;
+    if (matchedSession && matchedSession.lesson) {
+      matchedLesson = matchedSession.lesson;
+    }
+
+    // 2. Search lessonsList for an exact lesson whose pin/code matches the entered code
+    if (!matchedLesson) {
+      matchedLesson = lessonsList.find(l => {
+        const lCode = String(l.code || l.pin || '').trim().toLowerCase();
+        const lNum = lCode.replace(/[^0-9]/g, '');
+        return (
+          (lCode && (lCode === cleanEntered || cleanEntered === lCode)) ||
+          (cleanNumOnly && lNum && (lNum === cleanNumOnly || cleanNumOnly === lNum)) ||
+          (l.id && String(l.id).toLowerCase() === cleanEntered)
+        );
+      });
+    }
+
+    // 3. Also check if activeLesson in memory matches this code
     if (!matchedLesson && activeLesson) {
-      const aCode = String(activeLesson.code || activeLesson.pin || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const aCode = String(activeLesson.code || activeLesson.pin || '').trim().toLowerCase();
       const aNum = aCode.replace(/[^0-9]/g, '');
       if (aCode === cleanEntered || (cleanNumOnly && aNum && aNum === cleanNumOnly)) {
         matchedLesson = activeLesson;
       }
     }
 
-    // 3. Search Cloud session by PIN in Firestore
-    let matchedSession = null;
-    try {
-      matchedSession = await fetchMiftaahSessionByPin(code);
-    } catch (err) {}
-
-    if (matchedSession && matchedSession.lesson) {
-      matchedLesson = matchedSession.lesson;
-    }
-
     // 4. If current session matches this pin
     const currentPin = String(sessionState.pin || '').trim();
     const cleanCurrent = currentPin.toLowerCase().replace(/[^a-z0-9]/g, '');
     const currentNumOnly = cleanCurrent.replace(/[^0-9]/g, '');
-    if (!matchedLesson && (cleanEntered === cleanCurrent || (cleanNumOnly && cleanNumOnly.length >= 3 && currentNumOnly.includes(cleanNumOnly)))) {
-      if (sessionState.lesson && sessionState.lesson.id !== DEFAULT_EXEMPLAR_LESSON.id) {
+    if (!matchedLesson && (cleanEntered === cleanCurrent || (cleanNumOnly && cleanNumOnly.length >= 3 && currentNumOnly === cleanNumOnly))) {
+      if (sessionState.lesson) {
         matchedLesson = sessionState.lesson;
       }
     }
 
-    // 5. If master PIN or admin code entered, select the latest teacher prepared lesson
+    // 5. If master PIN or admin code entered, select active lesson
     if (!matchedLesson && (code === '318212' || code === DEFAULT_TEACHER_PIN)) {
       matchedLesson = lessonsList.find(l => l.id !== DEFAULT_EXEMPLAR_LESSON.id) || activeLesson || DEFAULT_EXEMPLAR_LESSON;
     }
 
-    // 6. If teacher has a custom prepared lesson in the library (e.g. الانتخابات), use it!
+    // 6. Strict validation: If code is not found, do NOT load a random lesson! Alert student.
     if (!matchedLesson) {
-      const customTeacherLesson = lessonsList.find(l => l.id !== DEFAULT_EXEMPLAR_LESSON.id);
-      if (customTeacherLesson) {
-        matchedLesson = customTeacherLesson;
-      }
-    }
-
-    // Fallback if nothing else found
-    if (!matchedLesson) {
-      matchedLesson = DEFAULT_EXEMPLAR_LESSON;
+      setStudentGateError(`⚠️ لم يتم العثور على حصة مرتبطة بكود الطلاب [${code}]. يرجى التأكد من إدخال الكود الصحيح.`);
+      return;
     }
 
     const lessonToLoad = normalizeMiftaahLesson(matchedLesson);
@@ -1073,7 +1071,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(l => {
+          const normalized = parsed.map(l => {
             const hook = l.stations?.['1_hook'];
             let lessonObj = l;
             if (hook && (hook.studentPrompt || '').includes('لغز') && hook.interactiveActivity?.type === 'video') {
@@ -1095,6 +1093,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             }
             return normalizeMiftaahLesson(lessonObj);
           });
+          const { deduplicated, hasChanges } = deduplicateLessonCodes(normalized);
+          if (hasChanges) {
+            try {
+              localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(deduplicated));
+            } catch (e) {}
+          }
+          return deduplicated;
         }
       }
     } catch (e) {}
@@ -1255,7 +1260,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           map.set(DEFAULT_EXEMPLAR_LESSON.id, normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON));
           prev.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
           cloudLessons.forEach(l => map.set(l.id, normalizeMiftaahLesson(l)));
-          return Array.from(map.values());
+          const combined = Array.from(map.values());
+          const { deduplicated, hasChanges } = deduplicateLessonCodes(combined);
+          if (hasChanges) {
+            try {
+              localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(deduplicated));
+            } catch (e) {}
+            // Sync deduplicated unique codes back to Firestore
+            deduplicated.forEach(l => {
+              if (l.id !== DEFAULT_EXEMPLAR_LESSON.id) {
+                saveLessonToFirestore(l).catch(() => {});
+              }
+            });
+          }
+          return deduplicated;
         });
       }
     });
@@ -1557,6 +1575,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           hook.interactiveActivity.type = derivedType || 'riddle';
         }
 
+        const autoCode = generateUniqueLessonPin(lessonsList);
         const newLesson = normalizeMiftaahLesson({
           ...res,
           id: 'lesson_' + Date.now(),
@@ -1568,15 +1587,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           authorId: authenticatedTeacher?.id || 'admin',
           authorName: authenticatedTeacher?.nameAr || 'المعلم',
           authorEmail: authenticatedTeacher?.email || '',
-          code: res.code || res.pin || sessionState.pin || 'MFT-' + Math.floor(100 + Math.random() * 900),
-          pin: res.code || res.pin || sessionState.pin || 'MFT-' + Math.floor(100 + Math.random() * 900),
+          code: autoCode,
+          pin: autoCode,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         });
         setActiveLesson(newLesson);
         const nextSession = {
           ...sessionState,
-          pin: newLesson.pin,
+          pin: autoCode,
           lesson: newLesson,
           lessonId: newLesson.id,
           lessonTitle: newLesson.title,
@@ -1597,10 +1616,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           saveMiftaahLiveSession(nextSession);
         } catch (e) {}
         const successMsg = detectedLang === 'hebrew'
-          ? 'השיעור נוצר בהצלחה בעברית! تم توليد حصة العبري باللغة العبرية بنجاح ✨🇮🇱'
+          ? `השיעור נוצר בהצלחה בעברית! קוד השיעור לתלמידים: [${autoCode}] 🇮🇱🔑`
           : detectedLang === 'english'
-          ? 'English lesson generated successfully! تم توليد حصة الإنجليزي بنجاح ✨🇬🇧'
-          : 'تم توليد الحصة ومحطاتها الخمس بنجاح! تفضل بمراجعتها وتعديلها ✨';
+          ? `English lesson generated successfully! Student join code: [${autoCode}] 🇬🇧🔑`
+          : `تم توليد الحصة ومحطاتها بنجاح! كود الحصة للطلاب: [${autoCode}] 🔑🚀`;
         showToast(successMsg);
       }
     } catch (err) {
@@ -1700,10 +1719,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // Duplicate active lesson
   const handleDuplicateLesson = async (lessonToDuplicate = null) => {
     const target = lessonToDuplicate || activeLesson;
+    const copyPin = generateUniqueLessonPin(lessonsList);
     const copy = {
       ...JSON.parse(JSON.stringify(target)),
       id: 'lesson_copy_' + Date.now(),
       title: (target.title || 'حصة جديدة') + ' (نسخة مكررة)',
+      code: copyPin,
+      pin: copyPin,
       authorId: authenticatedTeacher?.id || target.authorId || 'admin',
       authorName: authenticatedTeacher?.nameAr || target.authorName || 'المعلم',
       authorEmail: authenticatedTeacher?.email || target.authorEmail || '',

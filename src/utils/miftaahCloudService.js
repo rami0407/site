@@ -482,3 +482,84 @@ export const listenToMiftaahLiveSession = (callback, rawPin = null) => {
     return () => {};
   }
 };
+
+/**
+ * =========================================================================
+ * AUTOMATIC UNIQUE LESSON PIN GENERATOR & DEDUPLICATION
+ * =========================================================================
+ */
+
+/**
+ * Generate a unique 4-digit numeric PIN for a lesson that does not collide with existing lessons.
+ */
+export const generateUniqueLessonPin = (existingLessons = []) => {
+  const usedCodes = new Set();
+  if (Array.isArray(existingLessons)) {
+    existingLessons.forEach(l => {
+      if (l?.pin) usedCodes.add(String(l.pin).trim().toLowerCase());
+      if (l?.code) usedCodes.add(String(l.code).trim().toLowerCase());
+    });
+  }
+  try {
+    const cached = localStorage.getItem('miftaah_saved_lessons_v3');
+    if (cached) {
+      const list = JSON.parse(cached);
+      if (Array.isArray(list)) {
+        list.forEach(l => {
+          if (l?.pin) usedCodes.add(String(l.pin).trim().toLowerCase());
+          if (l?.code) usedCodes.add(String(l.code).trim().toLowerCase());
+        });
+      }
+    }
+  } catch (e) {}
+
+  // Generate 4-digit code (1000 - 9999) avoiding repetitive or reserved patterns (e.g. 1111, 5555, 1234, 318212)
+  for (let i = 0; i < 500; i++) {
+    const num = Math.floor(1000 + Math.random() * 9000);
+    const candidate = String(num);
+    const isRepetitive = /^(\d)\1{3}$/.test(candidate);
+    if (!usedCodes.has(candidate) && !isRepetitive && candidate !== '1234') {
+      return candidate;
+    }
+  }
+
+  // Fallback to 5-digit number
+  return String(Math.floor(10000 + Math.random() * 90000));
+};
+
+/**
+ * Automatically ensure every lesson in the list has a unique code/pin.
+ * If two lessons share the exact same code, a new unique code is assigned to the duplicate.
+ */
+export const deduplicateLessonCodes = (lessons = []) => {
+  if (!Array.isArray(lessons)) return { deduplicated: lessons, hasChanges: false };
+  const seenCodes = new Set();
+  let hasChanges = false;
+
+  const deduplicated = lessons.map((lesson) => {
+    if (!lesson) return lesson;
+    const currentCode = String(lesson.code || lesson.pin || '').trim();
+    const codeKey = currentCode.toLowerCase();
+
+    // Check if code is missing or duplicate (exempt the exemplar template if only 1 instance)
+    const isDuplicate = !currentCode || seenCodes.has(codeKey);
+    if (isDuplicate && lesson.id !== 'exemplar_matter_states') {
+      const newPin = generateUniqueLessonPin(lessons);
+      seenCodes.add(newPin.toLowerCase());
+      hasChanges = true;
+      return {
+        ...lesson,
+        code: newPin,
+        pin: newPin
+      };
+    }
+
+    if (currentCode) {
+      seenCodes.add(codeKey);
+    }
+    return lesson;
+  });
+
+  return { deduplicated, hasChanges };
+};
+
