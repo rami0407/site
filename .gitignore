@@ -19,8 +19,7 @@ dist-ssr
 *.key
 *.pem
 
-# Root build artifacts and scratch scripts
-/assets
+# Scratch scripts
 /scratch
 
 # Editor directories and files
