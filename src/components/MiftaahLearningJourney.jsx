@@ -1173,6 +1173,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   const [selectedStationToEdit, setSelectedStationToEdit] = useState('1_hook');
 
+  // Pedagogical Questions State for Custom Lesson Engineering (أسئلة التخصيص البيداغوجي للمعلم)
+  const [creatorIncludePassage, setCreatorIncludePassage] = useState('ai_passage'); // 'ai_passage' | 'custom_passage' | 'none'
+  const [creatorPassageLength, setCreatorPassageLength] = useState('long'); // 'long' (3-4 فقرات) | 'medium' (فقرتان) | 'short' (فقرة واحدة)
+  const [creatorCustomPassage, setCreatorCustomPassage] = useState(''); // Teacher's own custom text
+  const [creatorQuestionsDensity, setCreatorQuestionsDensity] = useState('tiered_full'); // 'tiered_full' | 'intensive' | 'concise'
+  const [creatorHookType, setCreatorHookType] = useState('riddle'); // 'riddle' | 'puzzle' | 'video'
+  const [creatorPrimarySkill, setCreatorPrimarySkill] = useState('reading_comprehension'); // 'reading_comprehension' | 'grammar' | 'science' | 'math' | 'values'
+  const [studentReadingFontSize, setStudentReadingFontSize] = useState('normal'); // 'normal' | 'large' | 'xlarge'
+  const [isReadingReferenceOpenInPractice, setIsReadingReferenceOpenInPractice] = useState(false);
+
   // Smart Language Detection Helper
   const detectLanguage = (subj, title, explicitLang = 'auto') => {
     if (explicitLang && explicitLang !== 'auto') return explicitLang;
@@ -1570,23 +1580,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         subject: creatorSubject,
         grade: creatorGrade,
         language: detectedLang,
-        specialRequests: creatorSpecialRequests
+        specialRequests: creatorSpecialRequests,
+        includePassage: creatorIncludePassage,
+        passageLength: creatorPassageLength,
+        customPassageText: creatorCustomPassage,
+        questionsDensity: creatorQuestionsDensity,
+        hookActivityType: creatorHookType,
+        primarySkill: creatorPrimarySkill
       });
 
       if (res && res.stations && res.stations['1_hook']) {
         const hook = res.stations['1_hook'];
-        const reqs = (creatorSpecialRequests || '').toLowerCase();
-        const pText = (hook.studentPrompt || '').toLowerCase();
-        let derivedType = hook.interactiveActivity?.type;
-        if (reqs.match(/أحجية|احجية|لغز|فزورة|غموض|חידה|riddle/) || pText.match(/لغز|أحجية|احجية|فزورة|غموض|חידה|mystery/)) {
-          derivedType = 'riddle';
-        } else if (reqs.match(/بازل|puzzle|ترتيب|تركيب|פאזל|רצף/) || pText.match(/بازل|puzzle|ترتيب|تركيب|רצף|פאזל/)) {
-          derivedType = 'puzzle';
-        } else if (reqs.match(/فيلم|فيديو|مقطع|video|סרטון/) || pText.match(/فيلم|فيديو|شاهد|סרטון|watch/)) {
-          derivedType = 'video';
-        }
+        let derivedType = creatorHookType || hook.interactiveActivity?.type || 'riddle';
         if (hook.interactiveActivity) {
-          hook.interactiveActivity.type = derivedType || 'riddle';
+          hook.interactiveActivity.type = derivedType;
         }
 
         const autoCode = generateUniqueLessonPin(lessonsList);
@@ -1839,6 +1846,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setCreatorGrade(prefillGrade);
     setCreatorLanguage(prefillLang);
     setCreatorSpecialRequests('');
+    setCreatorIncludePassage('ai_passage');
+    setCreatorPassageLength('long');
+    setCreatorCustomPassage('');
+    setCreatorQuestionsDensity('tiered_full');
+    setCreatorHookType('riddle');
+    setCreatorPrimarySkill('reading_comprehension');
 
     // Fresh draft lesson instance with its own unique PIN
     const draftLesson = {
@@ -4734,6 +4747,392 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
                 </div>
 
+                {/* 🎯 INTERACTIVE PEDAGOGICAL QUESTIONS (أسئلة هندسة وتخصيص محتوى الحصة) */}
+                <div className="pedagogical-customizer-card animate-fade-in" style={{
+                  marginTop: '18px',
+                  padding: '18px 20px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                  border: '2px solid #e2e8f0',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '1.4rem' }}>🎯</span>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
+                        أسئلة هندسة وتخصيص محتوى الحصة (إجابات المعلم لبناء الدرس المتكامل):
+                      </h4>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                        حدد خياراتك التربوية بدقة ليصمم الذكاء الاصطناعي الحصة بمواصفاتك الكاملة وفق نموذج مِفتاح.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Question 1: Reading Passage */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '8px' }}>
+                        <i className="fas fa-file-alt" style={{ color: '#0284c7' }}></i> السؤال الأول: هل تريد إرفاق قطعة / نص قرائي في المحطة الثانية؟
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorIncludePassage('ai_passage')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorIncludePassage === 'ai_passage' ? '2px solid #0284c7' : '1.5px solid #cbd5e1',
+                            background: creatorIncludePassage === 'ai_passage' ? '#e0f2fe' : '#ffffff',
+                            color: creatorIncludePassage === 'ai_passage' ? '#0369a1' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <i className="fas fa-wand-magic-sparkles"></i> نعم، توليد قطعة قرائية متكاملة بالذكاء الاصطناعي ✨
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorIncludePassage('custom_passage')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorIncludePassage === 'custom_passage' ? '2px solid #0284c7' : '1.5px solid #cbd5e1',
+                            background: creatorIncludePassage === 'custom_passage' ? '#e0f2fe' : '#ffffff',
+                            color: creatorIncludePassage === 'custom_passage' ? '#0369a1' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <i className="fas fa-pen-nib"></i> نعم، سأكتب أو ألصق نصي الخاص هنا ✍️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorIncludePassage('none')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorIncludePassage === 'none' ? '2px solid #0284c7' : '1.5px solid #cbd5e1',
+                            background: creatorIncludePassage === 'none' ? '#e0f2fe' : '#ffffff',
+                            color: creatorIncludePassage === 'none' ? '#0369a1' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <i className="fas fa-flask"></i> لا (استكشاف مفاهيم / مسائل / قواعد دون نص طويل)
+                        </button>
+                      </div>
+
+                      {/* Custom Passage Text Area */}
+                      {creatorIncludePassage === 'custom_passage' && (
+                        <div className="animate-fade-in" style={{ marginTop: '10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '0.83rem', fontWeight: 800, color: '#0369a1' }}>
+                              <i className="fas fa-paste"></i> الصق أو اكتب النص القرائي الكامل (سيُعرض للطالب كاملاً وستُبنى عليه أسئلة الفهم في المحطات):
+                            </span>
+                            <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                              {creatorCustomPassage.trim() ? `${creatorCustomPassage.trim().split(/\s+/).length} كلمة` : 'الحقل فارغ'}
+                            </span>
+                          </div>
+                          <textarea
+                            rows={5}
+                            value={creatorCustomPassage}
+                            onChange={e => setCreatorCustomPassage(e.target.value)}
+                            placeholder="اكتب أو الصق هنا النص القرائي أو القصة أو القطعة العلمية التي تود اعتمادها في الحصة..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              border: '2px solid #38bdf8',
+                              fontSize: '0.95rem',
+                              lineHeight: 1.7,
+                              background: '#ffffff',
+                              color: '#0f172a',
+                              fontFamily: 'inherit'
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Question 2: Passage Length (if passage enabled) */}
+                    {creatorIncludePassage !== 'none' && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '8px' }}>
+                          <i className="fas fa-ruler-horizontal" style={{ color: '#059669' }}></i> السؤال الثاني: ما هو طول ومستوى تفصيل القطعة القرائية؟
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setCreatorPassageLength('long')}
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              border: creatorPassageLength === 'long' ? '2px solid #059669' : '1.5px solid #cbd5e1',
+                              background: creatorPassageLength === 'long' ? '#dcfce7' : '#ffffff',
+                              color: creatorPassageLength === 'long' ? '#15803d' : '#475569',
+                              fontWeight: 700,
+                              fontSize: '0.86rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            📜 قطعة طويلة وغنية (3 - 4 فقرات كاملة مع معجم ثروة لغوية ومفردات)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreatorPassageLength('medium')}
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              border: creatorPassageLength === 'medium' ? '2px solid #059669' : '1.5px solid #cbd5e1',
+                              background: creatorPassageLength === 'medium' ? '#dcfce7' : '#ffffff',
+                              color: creatorPassageLength === 'medium' ? '#15803d' : '#475569',
+                              fontWeight: 700,
+                              fontSize: '0.86rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            📄 قطعة متوسطة (فقرتان واضحتان متسلسلتان)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreatorPassageLength('short')}
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              border: creatorPassageLength === 'short' ? '2px solid #059669' : '1.5px solid #cbd5e1',
+                              background: creatorPassageLength === 'short' ? '#dcfce7' : '#ffffff',
+                              color: creatorPassageLength === 'short' ? '#15803d' : '#475569',
+                              fontWeight: 700,
+                              fontSize: '0.86rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            📑 فقرة قصيرة مركزة وموجزة (فقرة واحدة)
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Question 3: Questions Density & Dimensions */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '8px' }}>
+                        <i className="fas fa-list-ol" style={{ color: '#d97706' }}></i> السؤال الثالث: عدد وتدرج أسئلة التدريب والتقييم (المحطة 3 و 4):
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorQuestionsDensity('tiered_full')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorQuestionsDensity === 'tiered_full' ? '2px solid #d97706' : '1.5px solid #cbd5e1',
+                            background: creatorQuestionsDensity === 'tiered_full' ? '#fef3c7' : '#ffffff',
+                            color: creatorQuestionsDensity === 'tiered_full' ? '#b45309' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🎯 تدرج ثلاثي متكامل (3 مستويات: انطلاق، تمكن، وتحدي - 6 أسئلة متنوعة)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorQuestionsDensity('intensive')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorQuestionsDensity === 'intensive' ? '2px solid #d97706' : '1.5px solid #cbd5e1',
+                            background: creatorQuestionsDensity === 'intensive' ? '#fef3c7' : '#ffffff',
+                            color: creatorQuestionsDensity === 'intensive' ? '#b45309' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🚀 أسئلة مكثفة ومعمقة (أبعاد الفهم الأربعة: صريح، استنتاجي، تقييمي، ولغوي)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorQuestionsDensity('concise')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorQuestionsDensity === 'concise' ? '2px solid #d97706' : '1.5px solid #cbd5e1',
+                            background: creatorQuestionsDensity === 'concise' ? '#fef3c7' : '#ffffff',
+                            color: creatorQuestionsDensity === 'concise' ? '#b45309' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ⚡ أسئلة سريعة وموجزة (سؤال مباشر وسؤال استنتاجي)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Question 4: Hook Activity Type */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '8px' }}>
+                        <i className="fas fa-fire" style={{ color: '#ea580c' }}></i> السؤال الرابع: نوع النشاط والمحفّز في المحطة الأولى (مشوّق ومحفز):
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorHookType('riddle')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorHookType === 'riddle' ? '2px solid #ea580c' : '1.5px solid #cbd5e1',
+                            background: creatorHookType === 'riddle' ? '#ffedd5' : '#ffffff',
+                            color: creatorHookType === 'riddle' ? '#c2410c' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🧩 أحجية ولغز تفاعلي (مع خيارات وتلميحات وحل فوري)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorHookType('puzzle')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorHookType === 'puzzle' ? '2px solid #ea580c' : '1.5px solid #cbd5e1',
+                            background: creatorHookType === 'puzzle' ? '#ffedd5' : '#ffffff',
+                            color: creatorHookType === 'puzzle' ? '#c2410c' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🔀 بازل وترتيب منطقي للأفكار
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorHookType('video')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            border: creatorHookType === 'video' ? '2px solid #ea580c' : '1.5px solid #cbd5e1',
+                            background: creatorHookType === 'video' ? '#ffedd5' : '#ffffff',
+                            color: creatorHookType === 'video' ? '#c2410c' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🎬 فيلم أو فيديو تعليمي قصير مع سؤال تأمل
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Question 5: Primary Focus Skill */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '8px' }}>
+                        <i className="fas fa-bullseye" style={{ color: '#7c3aed' }}></i> السؤال الخامس: المهارة التعليمية المركزية المستهدفة:
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatorPrimarySkill('reading_comprehension');
+                            if (creatorIncludePassage === 'none') setCreatorIncludePassage('ai_passage');
+                          }}
+                          style={{
+                            padding: '7px 13px',
+                            borderRadius: '20px',
+                            border: creatorPrimarySkill === 'reading_comprehension' ? '2px solid #7c3aed' : '1.5px solid #cbd5e1',
+                            background: creatorPrimarySkill === 'reading_comprehension' ? '#ede9fe' : '#ffffff',
+                            color: creatorPrimarySkill === 'reading_comprehension' ? '#6d28d9' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📖 فهم المقروء والتحليل
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorPrimarySkill('grammar')}
+                          style={{
+                            padding: '7px 13px',
+                            borderRadius: '20px',
+                            border: creatorPrimarySkill === 'grammar' ? '2px solid #7c3aed' : '1.5px solid #cbd5e1',
+                            background: creatorPrimarySkill === 'grammar' ? '#ede9fe' : '#ffffff',
+                            color: creatorPrimarySkill === 'grammar' ? '#6d28d9' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📝 القواعد والتراكيب اللغوية
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorPrimarySkill('science')}
+                          style={{
+                            padding: '7px 13px',
+                            borderRadius: '20px',
+                            border: creatorPrimarySkill === 'science' ? '2px solid #7c3aed' : '1.5px solid #cbd5e1',
+                            background: creatorPrimarySkill === 'science' ? '#ede9fe' : '#ffffff',
+                            color: creatorPrimarySkill === 'science' ? '#6d28d9' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🔬 الاستكشاف والمنهج العلمي
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorPrimarySkill('math')}
+                          style={{
+                            padding: '7px 13px',
+                            borderRadius: '20px',
+                            border: creatorPrimarySkill === 'math' ? '2px solid #7c3aed' : '1.5px solid #cbd5e1',
+                            background: creatorPrimarySkill === 'math' ? '#ede9fe' : '#ffffff',
+                            color: creatorPrimarySkill === 'math' ? '#6d28d9' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📐 حل المسائل والتفكير الرياضي
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreatorPrimarySkill('values')}
+                          style={{
+                            padding: '7px 13px',
+                            borderRadius: '20px',
+                            border: creatorPrimarySkill === 'values' ? '2px solid #7c3aed' : '1.5px solid #cbd5e1',
+                            background: creatorPrimarySkill === 'values' ? '#ede9fe' : '#ffffff',
+                            color: creatorPrimarySkill === 'values' ? '#6d28d9' : '#475569',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ❤️ التربية على القيم ونقل الأثر
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="generate-cta-row" style={{ marginTop: '20px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ fontSize: '0.88rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <i className="fas fa-magic" style={{ color: '#8b5cf6' }}></i>
@@ -6347,10 +6746,279 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
               {/* Station Prompt - Always visible to the student */}
               {studentCurrentStationData.studentPrompt && (
-                <div className="task-prompt-body animate-fade-in">
-                  {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
-                    <p key={i}>{l}</p>
-                  ))}
+                (() => {
+                  const isReadingStation2 = studentCurrentStationIndex === 2 && (
+                    activeLesson?.readingPassage?.hasPassage ||
+                    studentCurrentStationData.studentPrompt.includes('קטע קריאה') ||
+                    studentCurrentStationData.studentPrompt.includes('نص القراءة') ||
+                    studentCurrentStationData.studentPrompt.includes('قطعة') ||
+                    studentCurrentStationData.studentPrompt.includes('Reading') ||
+                    studentCurrentStationData.studentPrompt.length > 200
+                  );
+
+                  if (isReadingStation2) {
+                    const fontSizeStyle = studentReadingFontSize === 'xlarge' 
+                      ? { fontSize: '1.45rem', lineHeight: 2.1 } 
+                      : studentReadingFontSize === 'large' 
+                      ? { fontSize: '1.28rem', lineHeight: 2.0 } 
+                      : { fontSize: '1.14rem', lineHeight: 1.9 };
+
+                    return (
+                      <div className="student-reading-theater animate-fade-in" style={{
+                        background: '#ffffff',
+                        border: '2px solid #bae6fd',
+                        borderRadius: '16px',
+                        padding: '20px 24px',
+                        marginBottom: '18px',
+                        boxShadow: '0 4px 20px rgba(2, 132, 199, 0.08)'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '12px',
+                          borderBottom: '2px solid #e0f2fe',
+                          paddingBottom: '12px',
+                          marginBottom: '16px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '1.6rem' }}>📖</span>
+                            <div>
+                              <span style={{
+                                display: 'inline-block',
+                                background: '#e0f2fe',
+                                color: '#0369a1',
+                                fontWeight: 800,
+                                fontSize: '0.78rem',
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                marginBottom: '2px'
+                              }}>
+                                نص القراءة والمطالعة الموجهة — مِفتاح الفهم
+                              </span>
+                              <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#0f172a' }}>
+                                {activeLesson.title}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                              <i className="fas fa-clock"></i> وقت القراءة المقترح: ٤ - ٦ دقائق
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', borderRadius: '10px', padding: '3px', gap: '2px' }}>
+                              <button
+                                type="button"
+                                onClick={() => setStudentReadingFontSize('normal')}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '7px',
+                                  border: 'none',
+                                  background: studentReadingFontSize === 'normal' ? '#0284c7' : 'transparent',
+                                  color: studentReadingFontSize === 'normal' ? '#ffffff' : '#475569',
+                                  fontWeight: 800,
+                                  fontSize: '0.82rem',
+                                  cursor: 'pointer'
+                                }}
+                                title="حجم خط عادي"
+                              >
+                                A
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setStudentReadingFontSize('large')}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '7px',
+                                  border: 'none',
+                                  background: studentReadingFontSize === 'large' ? '#0284c7' : 'transparent',
+                                  color: studentReadingFontSize === 'large' ? '#ffffff' : '#475569',
+                                  fontWeight: 800,
+                                  fontSize: '0.92rem',
+                                  cursor: 'pointer'
+                                }}
+                                title="حجم خط كبير"
+                              >
+                                A+
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setStudentReadingFontSize('xlarge')}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '7px',
+                                  border: 'none',
+                                  background: studentReadingFontSize === 'xlarge' ? '#0284c7' : 'transparent',
+                                  color: studentReadingFontSize === 'xlarge' ? '#ffffff' : '#475569',
+                                  fontWeight: 800,
+                                  fontSize: '1.05rem',
+                                  cursor: 'pointer'
+                                }}
+                                title="حجم خط كبير جداً"
+                              >
+                                A++
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if ('speechSynthesis' in window) {
+                                  window.speechSynthesis.cancel();
+                                  const textToRead = studentCurrentStationData.studentPrompt.replace(/📌.*$/s, '');
+                                  const utter = new SpeechSynthesisUtterance(textToRead);
+                                  utter.lang = activeLesson.language === 'hebrew' ? 'he-IL' : activeLesson.language === 'english' ? 'en-US' : 'ar-SA';
+                                  window.speechSynthesis.speak(utter);
+                                  showToast('جاري قراءة النص صوتياً للطالب... 🔊');
+                                } else {
+                                  showToast('ميزة القراءة الصوتية غير مدعومة في هذا المتصفح.');
+                                }
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '10px',
+                                border: '1.5px solid #0284c7',
+                                background: '#f0f9ff',
+                                color: '#0284c7',
+                                fontWeight: 700,
+                                fontSize: '0.82rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                              title="استمع إلى قراءة النص بصوت واضح"
+                            >
+                              <i className="fas fa-volume-up"></i> استمع للنص 🔊
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Passage Paragraphs */}
+                        <div style={{ ...fontSizeStyle, color: '#1e293b' }}>
+                          {studentCurrentStationData.studentPrompt.split('\n\n').map((paragraph, pIdx) => {
+                            const trimmed = paragraph.trim();
+                            if (!trimmed) return null;
+                            if (trimmed.startsWith('📌') || trimmed.includes('معجم المفردات') || trimmed.includes('מילון מושגים') || trimmed.includes('Vocabulary:')) {
+                              return (
+                                <div key={pIdx} style={{
+                                  marginTop: '18px',
+                                  padding: '14px 18px',
+                                  borderRadius: '12px',
+                                  background: '#fffbeb',
+                                  border: '1.5px solid #fde68a',
+                                  color: '#78350f',
+                                  fontSize: '0.98rem',
+                                  lineHeight: 1.7
+                                }}>
+                                  <div style={{ fontWeight: 800, fontSize: '1rem', color: '#92400e', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <i className="fas fa-spell-check"></i>
+                                    <span>المعجم والثروة اللغوية والمفاهيم الجديدة:</span>
+                                  </div>
+                                  {trimmed.split('\n').map((l, li) => (
+                                    <div key={li} style={{ marginBottom: '4px' }}>{l}</div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <p key={pIdx} style={{
+                                marginBottom: '14px',
+                                textAlign: 'justify',
+                                textJustify: 'inter-word',
+                                padding: '4px 0'
+                              }}>
+                                {trimmed.split('\n').map((line, lIdx) => (
+                                  <span key={lIdx}>{line}<br /></span>
+                                ))}
+                              </p>
+                            );
+                          })}
+                        </div>
+
+                        <div style={{
+                          marginTop: '16px',
+                          padding: '10px 14px',
+                          borderRadius: '10px',
+                          background: '#f8fafc',
+                          border: '1px dashed #cbd5e1',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '0.85rem',
+                          color: '#475569'
+                        }}>
+                          <i className="fas fa-lightbulb" style={{ color: '#eab308', fontSize: '1.1rem' }}></i>
+                          <span>تلميح بيداغوجي: اقرأ النص بتأنٍ وركّز على التفاصيل؛ ستعتمد عليه كلياً في الإجابة عن مهمات المحطة الثالثة والرابعة! 🎯</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Default Station Prompt Rendering
+                  return (
+                    <div className="task-prompt-body animate-fade-in">
+                      {studentCurrentStationData.studentPrompt.split('\n').map((l, i) => (
+                        <p key={i}>{l}</p>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
+
+              {/* Collapsible Reading Reference Drawer for Stations 3 & 4 */}
+              {(studentCurrentStationIndex === 3 || studentCurrentStationIndex === 4) && activeLesson.stations?.['2_understanding']?.studentPrompt && (
+                <div style={{ marginBottom: '16px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsReadingReferenceOpenInPractice(prev => !prev)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      border: '1.5px solid #0284c7',
+                      background: isReadingReferenceOpenInPractice ? '#0284c7' : '#f0f9ff',
+                      color: isReadingReferenceOpenInPractice ? '#ffffff' : '#0369a1',
+                      fontWeight: 800,
+                      fontSize: '0.92rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.1)'
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-book-reader"></i>
+                      <span>{isReadingReferenceOpenInPractice ? 'إغلاق نافذة النص القرائي ✕' : '📖 اضغط هنا لقراءة النص القرائي والرجوع إليه أثناء الإجابة 🔍'}</span>
+                    </span>
+                    <i className={`fas ${isReadingReferenceOpenInPractice ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                  </button>
+
+                  {isReadingReferenceOpenInPractice && (
+                    <div className="animate-fade-in" style={{
+                      marginTop: '8px',
+                      padding: '16px 20px',
+                      borderRadius: '12px',
+                      background: '#ffffff',
+                      border: '2px solid #38bdf8',
+                      maxHeight: '380px',
+                      overflowY: 'auto',
+                      fontSize: '1.02rem',
+                      lineHeight: 1.8,
+                      color: '#1e293b',
+                      boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.05)'
+                    }}>
+                      <div style={{ fontWeight: 800, fontSize: '1.08rem', color: '#0369a1', marginBottom: '10px', borderBottom: '1px solid #e0f2fe', paddingBottom: '6px' }}>
+                        📖 النص القرائي المعتمد: {activeLesson.title}
+                      </div>
+                      {activeLesson.stations['2_understanding'].studentPrompt.split('\n').map((l, i) => (
+                        <p key={i} style={{ margin: '0 0 8px 0' }}>{l}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

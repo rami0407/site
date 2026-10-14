@@ -2642,7 +2642,13 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   subject = '',
   grade = '',
   language = 'auto',
-  specialRequests = ''
+  specialRequests = '',
+  includePassage = 'auto', // 'ai_passage' | 'custom_passage' | 'none' | 'auto'
+  passageLength = 'long',   // 'long' | 'medium' | 'short'
+  customPassageText = '',   // Custom text provided by the teacher
+  questionsDensity = 'tiered_full', // 'tiered_full' | 'intensive' | 'concise'
+  hookActivityType = 'riddle',      // 'riddle' | 'puzzle' | 'video'
+  primarySkill = 'auto'             // 'reading_comprehension' | 'grammar' | 'science' | 'math' | 'values' | 'general' | 'auto'
 }) => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
   const safeTitle = title.trim() || 'مهارة مركزية تفاعلية';
@@ -2652,7 +2658,7 @@ export const generateMiftaahFullJourneyLessonAI = async ({
 
   // Smart Language Detection: Auto-detect Hebrew, English, or Arabic from Subject, Title, Requests, or explicit Language
   let targetLang = language;
-  const combinedContext = `${safeSubject} ${safeTitle} ${safeRequests}`.toLowerCase();
+  const combinedContext = `${safeSubject} ${safeTitle} ${safeRequests} ${customPassageText || ''}`.toLowerCase();
   if (!targetLang || targetLang === 'auto') {
     if (combinedContext.includes('عبر') || combinedContext.includes('עברית') || combinedContext.includes('hebrew') || /[\u0590-\u05FF]/.test(combinedContext)) {
       targetLang = 'hebrew';
@@ -2666,8 +2672,11 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   // Detect Specific Requested Topics (e.g. Train / רכבת / قطار)
   const isTrainTopic = /قطار|القطار|قطارات|قطارا|سكة حديد|רכבת|רכבות|train/i.test(combinedContext);
 
-  // Detect Pedagogical Genre / Discipline Type
-  const isReadingComprehension = isTrainTopic ||
+  // Detect Pedagogical Genre / Discipline Type (honoring explicit teacher selection)
+  let isReadingComprehension = includePassage === 'ai_passage' || 
+    includePassage === 'custom_passage' || 
+    primarySkill === 'reading_comprehension' ||
+    isTrainTopic ||
     combinedContext.includes('הבנת הנקרא') ||
     combinedContext.includes('فهم المقروء') ||
     combinedContext.includes('reading comprehension') ||
@@ -2679,7 +2688,12 @@ export const generateMiftaahFullJourneyLessonAI = async ({
     combinedContext.includes('סיפור') ||
     combinedContext.includes('قصة');
 
-  const isValuesEducation = combinedContext.includes('ערך') ||
+  if (includePassage === 'none' && !customPassageText.trim()) {
+    isReadingComprehension = false;
+  }
+
+  const isValuesEducation = primarySkill === 'values' ||
+    combinedContext.includes('ערך') ||
     combinedContext.includes('ערכים') ||
     combinedContext.includes('נתינה') ||
     combinedContext.includes('סובלנות') ||
@@ -2694,7 +2708,8 @@ export const generateMiftaahFullJourneyLessonAI = async ({
     combinedContext.includes('مواطنة') ||
     combinedContext.includes('values');
 
-  const isGrammarOrLanguage = combinedContext.includes('לשון') ||
+  const isGrammarOrLanguage = primarySkill === 'grammar' ||
+    combinedContext.includes('לשון') ||
     combinedContext.includes('דקדוק') ||
     combinedContext.includes('פעלים') ||
     combinedContext.includes('פועל') ||
@@ -2707,7 +2722,8 @@ export const generateMiftaahFullJourneyLessonAI = async ({
     combinedContext.includes('أفعال') ||
     combinedContext.includes('grammar');
 
-  const isMath = combinedContext.includes('חשבון') ||
+  const isMath = primarySkill === 'math' ||
+    combinedContext.includes('חשבון') ||
     combinedContext.includes('מתמטיקה') ||
     combinedContext.includes('שברים') ||
     combinedContext.includes('כפל') ||
@@ -2717,7 +2733,8 @@ export const generateMiftaahFullJourneyLessonAI = async ({
     combinedContext.includes('كسور') ||
     combinedContext.includes('math');
 
-  const isScience = combinedContext.includes('מדע') ||
+  const isScience = primarySkill === 'science' ||
+    combinedContext.includes('מדע') ||
     combinedContext.includes('טבע') ||
     combinedContext.includes('ניסוי') ||
     combinedContext.includes('חומר') ||
@@ -2726,6 +2743,55 @@ export const generateMiftaahFullJourneyLessonAI = async ({
     combinedContext.includes('تجربة') ||
     combinedContext.includes('science');
 
+  // Teacher Custom Questions Directives
+  let teacherCustomDirectives = '';
+  if (includePassage === 'custom_passage' && customPassageText.trim()) {
+    teacherCustomDirectives = `
+⚠️⚠️ توجيه إلزامي حاسم (نص قراءة معتمد من المعلم):
+المعلم قام بإدخال النص القرائي التالي لاعتماده كاملاً في الحصة:
+"""
+${customPassageText.trim()}
+"""
+1. يجب وضع هذا النص كاملاً كما هو دون أي اختصار أو تبديل في المحطة 2 (studentPrompt)!
+2. يجب أن تصاغ جميع أسئلة المحطة 3 (التطبيق والتدريب) وأسئلة المحطة 4 (أدلة الفهم) بناءً على هذا النص تحديداً!
+`;
+  } else if (includePassage === 'ai_passage' || isReadingComprehension) {
+    const lengthDetail = passageLength === 'short'
+      ? (targetLang === 'hebrew' ? 'פסקה ממוקדת אחת (כ-60-80 מילים)' : 'فقرة واحدة مركزة وموجزة (٦٠-٨٠ كلمة)')
+      : passageLength === 'medium'
+      ? (targetLang === 'hebrew' ? 'שתי פסקאות ברורות ומובנות (כ-120-160 מילים)' : 'فقرتان واضحتان متكاملتان (١٢٠-١٦٠ كلمة)')
+      : (targetLang === 'hebrew' ? 'קטע קריאה עשיר ומלא של 3-4 פסקאות (כ-200-280 מילים) עם כותרת ומילון מילים' : 'نص قرائي متكامل وغني من ٣ إلى ٤ فقرات وافية (٢٠٠-٢٨٠ كلمة) مع عنوان بارز ومعجم للمفردات');
+
+    teacherCustomDirectives = `
+📖 توجيه إلزامي لقطعة القراءة في المحطة 2:
+- المطلوب إرفاق قطعة قرائية كاملة (${lengthDetail}) حول موضوع (${safeTitle})!
+- لغة النص: سليمة وفصيحة تماماً (${targetLang === 'hebrew' ? 'עברית תקנית ועשירה בלבד' : targetLang === 'english' ? 'Clear, natural English' : 'لغة عربية فصيحة ومشكولة وسليمة'}).
+- يتم وضع النص كاملاً داخل studentPrompt مع عنوانه وفقراته المرتبة ومعجم للمفردات الجديدة.
+`;
+  } else if (includePassage === 'none') {
+    teacherCustomDirectives = `
+🧪 تنبيه: هذه الحصة لا تتضمن نصاً قرائياً؛ بل ترتكز المحطة 2 على النمذجة والاستكشاف والتجارب أو القواعد والمفاهيم العلمية/الرياضية المباشرة.
+`;
+  }
+
+  if (questionsDensity === 'intensive') {
+    teacherCustomDirectives += `
+🎯 متطلب كثافة الأسئلة: توفير أسئلة مكثفة ومتنوعة في المحطة 3 والمحطة 4 تشمل كافة أبعاد الفهم (استخراج صريح، استنتاج وعلاقات سببية، أسلوب ولغة وتراكيب، ونقد وإبداء رأي وتقييم).
+`;
+  } else if (questionsDensity === 'concise') {
+    teacherCustomDirectives += `
+⚡ متطلب كثافة الأسئلة: أسئلة سريعة وموجزة ومركزة تختبر الهدف الأساسي للحصة دون إطالة.
+`;
+  } else {
+    teacherCustomDirectives += `
+🎯 متطلب تدرج الأسئلة: الالتزام الصارم بنموذج مِفتاح المتمايز (٣ مستويات: الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي) بأسئلة ومهمات محددة وصريحة.
+`;
+  }
+
+  teacherCustomDirectives += `
+🔥 النشاط التفاعلي الإلزامي للمحطة الأولى (مشوّق ومحفز): ${hookActivityType === 'puzzle' ? 'بازل وترتيب منطقي للأفكار (puzzle)' : hookActivityType === 'video' ? 'فيلم / فيديو تعليمي قصير مع سؤال تأمل (video)' : 'أحجية أو لغز تفاعلي مع خيارات وتلميحات وحل (riddle)'}.
+`;
+
   // Pedagogical Directives for AI Model based on Genre & Language
   let genreDirective = '';
   if (isReadingComprehension) {
@@ -2733,12 +2799,13 @@ export const generateMiftaahFullJourneyLessonAI = async ({
       genreDirective = `
 📖 הנחיות פדגוגיות קריטיות לשיעור הבנת הנקרא בעברית (טקסט קריאה מלא ושאלות הבנה רב-ממדיות):
 - נושא השיעור הוא הבנת הנקרא (${safeTitle}).
+${customPassageText.trim() ? `📄 טקסט קריאה ספציפי של המורה מצורף בהוראות לעיל וחובה להשתמש בו במלואו בתחנה 2!` : ''}
 ${isTrainTopic ? `🚂 נושא ממוקד ומפורש: רכבות / הרכבת המהירה (TRAIN)! כל טקסט הקריאה והשאלות חייבים לעסוק ברכבות בלבד!` : ''}
 - בתחנה 2 (הבנת המשמעות):
-  * חובה לחבר קטע קריאה שלם, מרתק, עשיר ועמוק (3-4 פסקאות לפחות עם כותרת) המתאים לשכבת הגיל (${safeGrade}) העוסק בדיוק בנושא המבוקש (${isTrainTopic ? 'רכבות, התפתחות הרכבת מקיטור לרכבת מגנטית' : safeTitle})!
+  * ${customPassageText.trim() ? 'שלב את הטקסט המלא של המורה ללא קיצור' : `חובה לחבר קטע קריאה שלם, מרתק, עשיר ועמוק (${passageLength === 'short' ? 'פסקה אחת' : passageLength === 'medium' ? 'שתי פסקאות' : '3-4 פסקאות'}) המתאים לשכבת הגיל (${safeGrade}) העוסק בדיוק בנושא המבוקש (${isTrainTopic ? 'רכבות, התפתחות הרכבת מקיטור לרכבת מגנטית' : safeTitle})!`}
   * כל קטע הקריאה המלא חייב להיות כתוב כולו במפורש בתוך studentPrompt, ולאחריו "מילון מושגים וביאור מילים קשות".
 - בתחנה 3 (יישום ותרגול):
-  * חובה לנסח שאלות הבנה מעמיקות על קטע הקריאה שחיברת בתחנה 2 לפי שלוש רמות חשיבה:
+  * חובה לנסח שאלות הבנה מעמיקות על קטע הקריאה שבתחנה 2 לפי שלוש רמות חשיבה:
     1. קבוצת זינוק (support): שאלות איתור מידע מפורש וגלוי מתוך הטקסט עם הפניה לפסקה המתאימה.
     2. קבוצת שליטה (core): שאלות הסקה, משמעויות נסתרות, קשרי סיבה ותוצאה, והבנת רגשות הדמויות.
     3. קבוצת אתגר (advanced): שאלות ביקורת והערכה, הבעת עמדה מנומקת מתוך הטקסט והצעת סיום חלופי.
@@ -2749,23 +2816,22 @@ ${isTrainTopic ? `🚂 נושא ממוקד ומפורש: רכבות / הרכבת
     } else if (targetLang === 'english') {
       genreDirective = `
 📖 PEDAGOGICAL DIRECTIVES FOR READING COMPREHENSION (Full Reading Passage & Questions):
+${customPassageText.trim() ? `📄 The teacher provided a specific text above — you MUST include it in full in Station 2!` : ''}
 ${isTrainTopic ? `🚂 SPECIFIC FOCUS: THE TRAIN / HIGH-SPEED TRAINS! The entire reading text and questions must be strictly about trains!` : ''}
-- Station 2 (Meaning): You MUST compose a complete, rich, engaging reading passage (3-4 paragraphs) directly inside studentPrompt on (${isTrainTopic ? 'Trains & their technological evolution' : safeTitle}), followed by vocabulary words in context.
-- Station 3 (Practice): You MUST provide tiered reading comprehension questions based on the text:
-  * Support tier: Explicit factual retrieval with paragraph clues.
-  * Core tier: Inferential reasoning, cause & effect, and character intentions.
-  * Advanced tier: Critical evaluation, author's perspective, and personal response citing textual evidence.
-- Station 4 (Evidence): Independent worksheet with 4 text-dependent comprehension questions requiring text citations.`;
+- Station 2 (Meaning): You MUST compose a complete, rich, engaging reading passage directly inside studentPrompt on (${isTrainTopic ? 'Trains & their technological evolution' : safeTitle}), followed by vocabulary words in context.
+- Station 3 (Practice): You MUST provide tiered reading comprehension questions based on the text.
+- Station 4 (Evidence): Independent worksheet with text-dependent comprehension questions requiring text citations.`;
     } else {
       genreDirective = `
 📖 توجيهات بيداغوجية إلزامية لدرس فهم المقروء (نص قرائي كامل وأسئلة فهم متعددة الأبعاد):
 - موضوع الدرس هو فهم المقروء (${safeTitle}).
+${customPassageText.trim() ? `📄 ملاحظة هامة: قام المعلم بإرفاق نص قرائي محدد في التوجيهات أعلاه، ويجب وضعه كاملاً في المحطة 2 وصياغة الأسئلة منه!` : ''}
 ${isTrainTopic ? `🚂 توجيه إلزامي حاسم: موضوع الدرس المطلوب صراحة هو "القطار" (القطار السريع، تاريخ وتطور القطارات، رحلة عبر السكة الحديدية)!
 - يجب أن يكون النص القرائي كاملاً في المحطة 2 عن "القطار" وتطوره من البخار إلى القطار المغناطيسي السريع!
 - يجب أن تكون جميع الأسئلة والمهام المتمايزة في المحطة 3 عن نص القطار حصراً!
 - يجب أن تكون ورقة أدلة الفهم في المحطة 4 مستخرجة من نص القطار وتتطلب إثبات الفهم منه!` : ''}
 - في المحطة الثانية (فهم وبناء المعنى):
-  * يجب كتابة نص قرائي كامل، شائق وماتع (٣-٤ فقرات كاملة) ملائم تماماً لصف (${safeGrade}) حول موضوع (${isTrainTopic ? 'القطار وتاريخه وتقنياته الحديثة' : safeTitle})!
+  * ${customPassageText.trim() ? 'إدراج النص الكامل للمعلم دون تعديل أو اختصار' : `يجب كتابة نص قرائي كامل، شائق وماتع (${passageLength === 'short' ? 'فقرة واحدة مركزة' : passageLength === 'medium' ? 'فقرتان واضحتان' : '٣-٤ فقرات كاملة'}) ملائم تماماً لصف (${safeGrade}) حول موضوع (${isTrainTopic ? 'القطار وتاريخه وتقنياته الحديثة' : safeTitle})!`}
   * يُكتب النص القرائي كاملاً بحروفه وعنوانه داخل studentPrompt مع جدول لشرح المفردات والتراكيب اللغوية الجديدة.
 - في المحطة الثالثة (التطبيق والتدريب):
   * صياغة أسئلة فهم وتحليل مبنية تماماً على النص القرائي وفق أبعاد الفهم الثلاثة:
@@ -2833,6 +2899,8 @@ ${isTrainTopic ? `🚂 توجيه إلزامي حاسم: موضوع الدرس �
 - الصف والمستوى الدراسي: ${safeGrade}
 - لغة تدريس ومحتوى الحصة المطلوبة: ${targetLang === 'hebrew' ? 'العبرية (עברית בלבד)' : targetLang === 'english' ? 'الإنجليزية (English 100%)' : 'العربية'}
 ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
+
+${teacherCustomDirectives}
 
 ${languageDirective}
 
@@ -3362,16 +3430,34 @@ ${genreDirective}
     const isTrainMissed = isTrainTopic && (!st2?.studentPrompt || !/قطار|القطار|רכבת|train/i.test(st2.studentPrompt));
 
     if (st2) {
-      const isMissingOrForeign = !st2.studentPrompt || !st2.studentPrompt.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st2.studentPrompt));
-      if (isMissingOrForeign || isTrainMissed) {
-        if (isReadingComprehension && readingData) {
-          st2.studentPrompt = readingData.station2Prompt;
-        } else {
-          st2.studentPrompt = targetLang === 'hebrew'
-            ? `מושגי יסוד והסבר מעמיק לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל המרכזי במחברת ושתפו את חבריכם.`
-            : targetLang === 'english'
-            ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
-            : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
+      if (customPassageText && customPassageText.trim()) {
+        st2.studentPrompt = customPassageText.trim();
+        lesson.readingPassage = {
+          hasPassage: true,
+          fullText: customPassageText.trim(),
+          title: safeTitle,
+          isCustom: true
+        };
+      } else {
+        const isMissingOrForeign = !st2.studentPrompt || !st2.studentPrompt.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st2.studentPrompt));
+        if (isMissingOrForeign || isTrainMissed) {
+          if (isReadingComprehension && readingData) {
+            st2.studentPrompt = readingData.station2Prompt;
+          } else {
+            st2.studentPrompt = targetLang === 'hebrew'
+              ? `מושגי יסוד והסבר מעמיק לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל המרכזי במחברת ושתפו את חבריכם.`
+              : targetLang === 'english'
+              ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
+              : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
+          }
+        }
+        if (isReadingComprehension || includePassage === 'ai_passage') {
+          lesson.readingPassage = {
+            hasPassage: true,
+            fullText: st2.studentPrompt,
+            title: safeTitle,
+            isCustom: false
+          };
         }
       }
       if (!st2.teacherGuidance || !st2.teacherGuidance.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st2.teacherGuidance))) {
