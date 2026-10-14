@@ -501,16 +501,18 @@ export const generateUniqueLessonPin = (existingLessons = []) => {
     });
   }
   try {
-    const cached = localStorage.getItem('miftaah_saved_lessons_v3');
-    if (cached) {
-      const list = JSON.parse(cached);
-      if (Array.isArray(list)) {
-        list.forEach(l => {
-          if (l?.pin) usedCodes.add(String(l.pin).trim().toLowerCase());
-          if (l?.code) usedCodes.add(String(l.code).trim().toLowerCase());
-        });
+    ['miftaah_journey_lessons_v3', 'miftaah_saved_lessons_v3'].forEach(storageKey => {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          list.forEach(l => {
+            if (l?.pin) usedCodes.add(String(l.pin).trim().toLowerCase());
+            if (l?.code) usedCodes.add(String(l.code).trim().toLowerCase());
+          });
+        }
       }
-    }
+    });
   } catch (e) {}
 
   // Generate 4-digit code (1000 - 9999) avoiding repetitive or reserved patterns (e.g. 1111, 5555, 1234, 318212)
@@ -518,7 +520,7 @@ export const generateUniqueLessonPin = (existingLessons = []) => {
     const num = Math.floor(1000 + Math.random() * 9000);
     const candidate = String(num);
     const isRepetitive = /^(\d)\1{3}$/.test(candidate);
-    if (!usedCodes.has(candidate) && !isRepetitive && candidate !== '1234') {
+    if (!usedCodes.has(candidate) && !isRepetitive && candidate !== '1234' && candidate !== '5555') {
       return candidate;
     }
   }
@@ -529,7 +531,7 @@ export const generateUniqueLessonPin = (existingLessons = []) => {
 
 /**
  * Automatically ensure every lesson in the list has a unique code/pin.
- * If two lessons share the exact same code, a new unique code is assigned to the duplicate.
+ * If two lessons share the exact same code or have legacy test codes like 5555, a new unique code is assigned.
  */
 export const deduplicateLessonCodes = (lessons = []) => {
   if (!Array.isArray(lessons)) return { deduplicated: lessons, hasChanges: false };
@@ -540,9 +542,11 @@ export const deduplicateLessonCodes = (lessons = []) => {
     if (!lesson) return lesson;
     const currentCode = String(lesson.code || lesson.pin || '').trim();
     const codeKey = currentCode.toLowerCase();
+    const isRepetitive = /^(\d)\1{3}$/.test(currentCode);
 
-    // Check if code is missing or duplicate (exempt the exemplar template if only 1 instance)
-    const isDuplicate = !currentCode || seenCodes.has(codeKey);
+    // Check if code is missing, duplicate, or an old test code like 5555/MFT-924
+    const isStuckOrInvalid = !currentCode || currentCode === '5555' || currentCode === 'MFT-924' || isRepetitive;
+    const isDuplicate = isStuckOrInvalid || seenCodes.has(codeKey);
     if (isDuplicate && lesson.id !== 'exemplar_matter_states') {
       const newPin = generateUniqueLessonPin(lessons);
       seenCodes.add(newPin.toLowerCase());

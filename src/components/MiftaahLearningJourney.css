@@ -6897,6 +6897,27 @@
   color: #ffffff;
 }
 
+.btn-refresh-code-quick {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-refresh-code-quick:hover {
+  background: rgba(245, 158, 11, 0.28);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 
 /* ========================================================================= */
 /* SOCIAL AUTH BUTTONS (Teacher Login Gate)                                  */

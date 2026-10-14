@@ -1203,11 +1203,25 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       const saved = localStorage.getItem(STORAGE_KEY_SESSION_DATA);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.pin) return parsed;
+        if (parsed && parsed.pin) {
+          const pinStr = String(parsed.pin).trim();
+          // Purge stuck test codes like 5555, MFT-924, or repetitive numbers
+          if (pinStr === '5555' || pinStr === 'MFT-924' || /^(\d)\1{3}$/.test(pinStr)) {
+            const fresh = generateUniqueLessonPin([]);
+            parsed.pin = fresh;
+            if (parsed.lesson) {
+              parsed.lesson.code = fresh;
+              parsed.lesson.pin = fresh;
+            }
+            try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(parsed)); } catch (e) {}
+          }
+          return parsed;
+        }
       }
     } catch (e) {}
+    const initialPin = generateUniqueLessonPin([]);
     return {
-      pin: 'MFT-924',
+      pin: initialPin,
       isActive: true,
       pacingMode: 'whole_class', // 'whole_class' | 'group_paced' | 'self_paced'
       workMode: 'groups', // 'individual' | 'pairs' | 'groups'
@@ -1815,6 +1829,49 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     try { saveMiftaahLiveSession(nextSession); } catch (e) {}
     setTeacherSubView('creator');
     showToast(`تم فتح درس [${chosen.title}] في شاشة التعديل والتحضير ومزامنته للطلاب ✏️`);
+  };
+
+  // Prepare a fresh new lesson draft with an automatic unique PIN
+  const handleStartNewLessonPrep = (prefillSubject = '', prefillTitle = '', prefillGrade = 'الصف الرابع الابتدائي', prefillLang = 'auto') => {
+    const newPin = generateUniqueLessonPin(lessonsList);
+    setCreatorTitle(prefillTitle);
+    setCreatorSubject(prefillSubject || 'علوم وتكنولوجيا');
+    setCreatorGrade(prefillGrade);
+    setCreatorLanguage(prefillLang);
+    setCreatorSpecialRequests('');
+
+    // Fresh draft lesson instance with its own unique PIN
+    const draftLesson = {
+      ...DEFAULT_EXEMPLAR_LESSON,
+      id: 'lesson_draft_' + Date.now(),
+      title: prefillTitle || 'حصة تعليمية تفاعلية جديدة',
+      subject: prefillSubject || 'علوم وتكنولوجيا',
+      grade: prefillGrade,
+      language: prefillLang,
+      specialRequests: '',
+      code: newPin,
+      pin: newPin,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setActiveLesson(draftLesson);
+
+    const nextSession = {
+      ...sessionState,
+      pin: newPin,
+      lesson: draftLesson,
+      lessonId: draftLesson.id,
+      lessonTitle: draftLesson.title,
+      activeStationIndex: 1
+    };
+    setSessionState(nextSession);
+    try {
+      localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(nextSession));
+      saveMiftaahLiveSession(nextSession);
+    } catch (e) {}
+
+    setTeacherSubView('creator');
+    showToast(`تم تجهيز مسودة الحصة وتوليد كود دخول فريد للطلاب: [${newPin}] 🔑✨`);
   };
 
   // Start Classroom Session from a specific lesson
@@ -3635,12 +3692,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               {/* Box 2: Create New Lesson with AI */}
               <div 
                 className={`hub-master-card hub-create-card ${teacherSubView === 'creator' ? 'active-hub-border' : ''}`}
-                onClick={() => {
-                  setCreatorTitle('');
-                  setCreatorGrade('الصف الرابع الابتدائي');
-                  setCreatorSpecialRequests('');
-                  setTeacherSubView('creator');
-                }}
+                onClick={() => handleStartNewLessonPrep()}
               >
                 <div className="hub-card-header-badge">
                   <span className="badge-step-pill gold"><i className="fas fa-wand-magic-sparkles"></i> المربع الثاني</span>
@@ -3659,10 +3711,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     className="btn-hub-action-trigger gold"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCreatorTitle('');
-                      setCreatorGrade('الصف الرابع الابتدائي');
-                      setCreatorSpecialRequests('');
-                      setTeacherSubView('creator');
+                      handleStartNewLessonPrep();
                     }}
                   >
                     <i className="fas fa-plus-circle"></i> بدء إنشاء حصة جديدة الآن ✍️
@@ -3756,12 +3805,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <button
                         type="button"
                         className="btn-create-new-lesson-cta"
-                        onClick={() => {
-                          setCreatorTitle('');
-                          setCreatorGrade('الصف الرابع');
-                          setCreatorSpecialRequests('');
-                          setTeacherSubView('creator');
-                        }}
+                        onClick={() => handleStartNewLessonPrep()}
                       >
                         <i className="fas fa-plus-circle"></i> تحضير وبناء حصة جديدة ✍️
                       </button>
@@ -3812,7 +3856,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <button
                         type="button"
                         className="btn-create-new-lesson-cta"
-                        onClick={() => setTeacherSubView('creator')}
+                        onClick={() => handleStartNewLessonPrep()}
                       >
                         <i className="fas fa-plus"></i> إعداد حصة جديدة الآن
                       </button>
@@ -3955,12 +3999,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <button
                         type="button"
                         className="btn-create-new-lesson-cta"
-                        onClick={() => {
-                          setCreatorTitle('');
-                          setCreatorGrade('الصف الرابع');
-                          setCreatorSpecialRequests('');
-                          setTeacherSubView('creator');
-                        }}
+                        onClick={() => handleStartNewLessonPrep()}
                       >
                         <i className="fas fa-plus"></i> تحضير درس جديد باسمك
                       </button>
@@ -4357,6 +4396,39 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </span>
                   </div>
                   <div className="live-broadcast-actions">
+                    <button
+                      type="button"
+                      className="btn-refresh-code-quick"
+                      onClick={() => {
+                        const freshPin = generateUniqueLessonPin(lessonsList);
+                        const updatedLesson = {
+                          ...activeLesson,
+                          code: freshPin,
+                          pin: freshPin,
+                          updatedAt: new Date().toISOString()
+                        };
+                        setActiveLesson(updatedLesson);
+                        const nextSession = {
+                          ...sessionState,
+                          pin: freshPin,
+                          lesson: updatedLesson,
+                          lessonId: updatedLesson.id
+                        };
+                        setSessionState(nextSession);
+                        try {
+                          localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(nextSession));
+                          saveMiftaahLiveSession(nextSession);
+                          const updatedList = lessonsList.map(l => l.id === updatedLesson.id ? updatedLesson : l);
+                          setLessonsList(updatedList);
+                          localStorage.setItem(STORAGE_KEY_SAVED_LESSONS, JSON.stringify(updatedList));
+                          saveLessonToFirestore(updatedLesson);
+                        } catch (e) {}
+                        showToast(`تم توليد كود دخول فريد جديد فوراً: [${freshPin}] 🔄✨`);
+                      }}
+                      title="توليد كود دخول فريد وجديد فوراً لهذه الحصة"
+                    >
+                      <i className="fas fa-sync-alt"></i> كود جديد 🔄
+                    </button>
                     <button
                       type="button"
                       className="btn-live-broadcast-now"
