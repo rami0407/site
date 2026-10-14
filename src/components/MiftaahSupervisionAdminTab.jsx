@@ -25,8 +25,10 @@ const MiftaahSupervisionAdminTab = () => {
   const [previewLesson, setPreviewLesson] = useState(null);
 
   // Quick AI Builder State
+  const [aiSubject, setAiSubject] = useState('علوم وتكنولوجيا');
   const [aiTitle, setAiTitle] = useState('');
   const [aiGrade, setAiGrade] = useState('الصف الرابع');
+  const [aiLanguage, setAiLanguage] = useState('auto');
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -150,7 +152,9 @@ const MiftaahSupervisionAdminTab = () => {
     try {
       const res = await generateMiftaahFullJourneyLessonAI({
         title: aiTitle,
+        subject: aiSubject,
         grade: aiGrade,
+        language: aiLanguage,
         specialRequests: aiPrompt
       });
 
@@ -159,7 +163,9 @@ const MiftaahSupervisionAdminTab = () => {
           ...res,
           id: 'admin_lesson_' + Date.now(),
           title: res.title || aiTitle,
+          subject: res.subject || aiSubject,
           grade: res.grade || aiGrade,
+          language: res.language || aiLanguage,
           specialRequests: aiPrompt,
           authorId: 'tch_36',
           authorName: 'الأستاذ رامي غرة (مدير المدرسة)',
@@ -947,15 +953,161 @@ const MiftaahSupervisionAdminTab = () => {
             </div>
 
             <form onSubmit={handleGenerateAiLesson} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Quick Subject Selection */}
               <div>
                 <label style={{ display: 'block', fontWeight: 800, marginBottom: '6px', color: '#1e293b' }}>
-                  ١. موضوع وعنوان الدرس:
+                  ١. موضوع الدرس / المادة التعليمية:
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSubject('لغة عبرية (עברית)'); setAiLanguage('hebrew'); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #cbd5e1',
+                      background: (aiSubject.includes('عبر') || aiSubject.includes('עבר')) ? '#dbeafe' : '#f8fafc',
+                      color: (aiSubject.includes('عبر') || aiSubject.includes('עבר')) ? '#1d4ed8' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🇮🇱 عبري (עברית)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSubject('لغة إنجليزية (English)'); setAiLanguage('english'); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #cbd5e1',
+                      background: (aiSubject.toLowerCase().includes('english') || aiSubject.includes('انجل') || aiSubject.includes('انكل')) ? '#f3e8ff' : '#f8fafc',
+                      color: (aiSubject.toLowerCase().includes('english') || aiSubject.includes('انجل') || aiSubject.includes('انكل')) ? '#7e22ce' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🇬🇧 إنجليزي (English)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSubject('لغة عربية'); setAiLanguage('arabic'); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #cbd5e1',
+                      background: aiSubject === 'لغة عربية' ? '#dcfce7' : '#f8fafc',
+                      color: aiSubject === 'لغة عربية' ? '#15803d' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📖 لغة عربية
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSubject('علوم وتكنولوجيا'); if (aiLanguage === 'hebrew' || aiLanguage === 'english') setAiLanguage('arabic'); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #cbd5e1',
+                      background: aiSubject.includes('علوم') ? '#e0f2fe' : '#f8fafc',
+                      color: aiSubject.includes('علوم') ? '#0369a1' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔬 علوم وتكنولوجيا
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSubject('رياضيات وتفكير حسابي'); if (aiLanguage === 'hebrew' || aiLanguage === 'english') setAiLanguage('arabic'); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #cbd5e1',
+                      background: aiSubject.includes('رياضيات') ? '#fef3c7' : '#f8fafc',
+                      color: aiSubject.includes('رياضيات') ? '#b45309' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📐 رياضيات
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSubject('موطن ومجتمع'); if (aiLanguage === 'hebrew' || aiLanguage === 'english') setAiLanguage('arabic'); }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #cbd5e1',
+                      background: aiSubject.includes('موطن') ? '#ffedd5' : '#f8fafc',
+                      color: aiSubject.includes('موطن') ? '#c2410c' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🌍 موطن ومجتمع
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  list="admin-miftaah-subjects"
+                  value={aiSubject}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAiSubject(val);
+                    const valL = val.toLowerCase();
+                    if (valL.includes('عبر') || valL.includes('עברית') || /[\u0590-\u05FF]/.test(valL)) {
+                      setAiLanguage('hebrew');
+                    } else if (valL.includes('انجل') || valL.includes('انكل') || valL.includes('english')) {
+                      setAiLanguage('english');
+                    }
+                  }}
+                  placeholder="مثال: لغة عبرية، English، لغة عربية، علوم..."
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <datalist id="admin-miftaah-subjects">
+                  <option value="لغة عبرية (עברית)" />
+                  <option value="لغة إنجليزية (English)" />
+                  <option value="لغة عربية" />
+                  <option value="علوم وتكنولوجيا" />
+                  <option value="رياضيات وتفكير حسابي" />
+                  <option value="موطن ومجتمع" />
+                  <option value="تربية إسلامية" />
+                </datalist>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: '6px', color: '#1e293b' }}>
+                  ٢. عنوان ومحور الدرس المحدد:
                 </label>
                 <input
                   type="text"
                   value={aiTitle}
                   onChange={(e) => setAiTitle(e.target.value)}
-                  placeholder="مثال: دورة الماء في الطبيعة، جمع المؤنث السالم، الدائرة ومحيطها..."
+                  placeholder={
+                    aiLanguage === 'hebrew' || aiSubject.includes('عبر')
+                      ? 'לדוגמה: פעלים בזמן עבר, שמות עצם, חלקי הדיבר...'
+                      : aiLanguage === 'english' || aiSubject.toLowerCase().includes('english')
+                      ? 'e.g. Present Simple, Animals and Habitats, Adjectives...'
+                      : 'مثال: دورة الماء في الطبيعة، جمع المؤنث السالم، الدائرة ومحيطها...'
+                  }
                   required
                   style={{
                     width: '100%',
@@ -970,37 +1122,66 @@ const MiftaahSupervisionAdminTab = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontWeight: 800, marginBottom: '6px', color: '#1e293b' }}>
-                  ٢. الصف والمستوى الدراسي:
-                </label>
-                <select
-                  value={aiGrade}
-                  onChange={(e) => setAiGrade(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '10px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '1rem',
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    background: '#f8fafc',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  <option value="الصف الأول">الصف الأول الابتدائي</option>
-                  <option value="الصف الثاني">الصف الثاني الابتدائي</option>
-                  <option value="الصف الثالث">الصف الثالث الابتدائي</option>
-                  <option value="الصف الرابع">الصف الرابع الابتدائي</option>
-                  <option value="الصف الخامس">الصف الخامس الابتدائي</option>
-                  <option value="الصف السادس">الصف السادس الابتدائي</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '6px', color: '#1e293b' }}>
+                    ٣. الصف والمستوى الدراسي:
+                  </label>
+                  <select
+                    value={aiGrade}
+                    onChange={(e) => setAiGrade(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      background: '#f8fafc',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="الصف الأول">الصف الأول الابتدائي</option>
+                    <option value="الصف الثاني">الصف الثاني الابتدائي</option>
+                    <option value="الصف الثالث">الصف الثالث الابتدائي</option>
+                    <option value="الصف الرابع">الصف الرابع الابتدائي</option>
+                    <option value="الصف الخامس">الصف الخامس الابتدائي</option>
+                    <option value="الصف السادس">الصف السادس الابتدائي</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '6px', color: '#1e293b' }}>
+                    ٤. لغة تدريس ومحتوى الحصة:
+                  </label>
+                  <select
+                    value={aiLanguage}
+                    onChange={(e) => setAiLanguage(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      background: aiLanguage === 'hebrew' ? '#eff6ff' : aiLanguage === 'english' ? '#faf5ff' : '#f8fafc',
+                      fontWeight: 700,
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="auto">⚡ تلقائي (حسب المادة والعنوان)</option>
+                    <option value="hebrew">🇮🇱 اللغة العبرية (עברית תקינה)</option>
+                    <option value="english">🇬🇧 اللغة الإنجليزية (English 100%)</option>
+                    <option value="arabic">📖 اللغة العربية</option>
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontWeight: 800, marginBottom: '6px', color: '#1e293b' }}>
-                  ٣. توجيهات وطلبات بيداغوجية خاصة (اختيارية):
+                  ٥. توجيهات وطلبات بيداغوجية خاصة (اختيارية):
                 </label>
                 <textarea
                   rows={3}
@@ -1024,7 +1205,13 @@ const MiftaahSupervisionAdminTab = () => {
                 type="submit"
                 disabled={isGenerating}
                 style={{
-                  background: isGenerating ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  background: isGenerating
+                    ? '#94a3b8'
+                    : aiLanguage === 'hebrew' || aiSubject.includes('عبر')
+                    ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+                    : aiLanguage === 'english' || aiSubject.toLowerCase().includes('english')
+                    ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
+                    : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                   color: '#ffffff',
                   border: 'none',
                   padding: '14px 24px',
@@ -1042,13 +1229,17 @@ const MiftaahSupervisionAdminTab = () => {
               >
                 {isGenerating ? (
                   <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    <span>جاري هندسة محطات الحصة بالذكاء الاصطناعي... ⏳</span>
+                    <i className="fas fa-spinner fa-spin"></i> جاري استدعاء الذكاء الاصطناعي وبناء محطات الحصة...
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-robot"></i>
-                    <span>توليد وحفظ الحصة السحابية الآن ✨</span>
+                    <i className="fas fa-robot"></i> {
+                      aiLanguage === 'hebrew' || aiSubject.includes('عبر')
+                        ? 'בנה שיעור מפתח שלם (AI) בעברית 🇮🇱 ✨'
+                        : aiLanguage === 'english' || aiSubject.toLowerCase().includes('english')
+                        ? 'Generate Miftaah 5-Station Lesson (AI) in English 🇬🇧 ✨'
+                        : 'ولّد الحصة بمحطات مِفتاح الخمس (AI) وحفظها فوراً 🚀'
+                    }
                   </>
                 )}
               </button>

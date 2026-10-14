@@ -37,6 +37,8 @@ import {
 const DEFAULT_EXEMPLAR_LESSON = {
   id: 'exemplar_matter_states',
   title: 'حالات المادة وخصائصها وتغيراتها (صلب، سائل، غاز)',
+  subject: 'علوم وتكنولوجيا',
+  language: 'arabic',
   grade: 'الصف الرابع',
   authorId: 'tch_exemplar',
   authorName: 'إدارة المدرسة (نموذج استرشادي جاهز)',
@@ -189,18 +191,35 @@ const normalizeMiftaahLesson = (lesson) => {
   if (!lesson || !lesson.stations) return lesson;
   const l = { ...lesson, stations: { ...lesson.stations } };
   const safeTitle = l.title || 'الدرس';
+  const combinedInfo = `${l.subject || ''} ${l.title || ''}`.toLowerCase();
+  const lang = l.language || (
+    combinedInfo.includes('عبر') || combinedInfo.includes('עברית') || combinedInfo.includes('hebrew') || /[\u0590-\u05FF]/.test(combinedInfo) ? 'hebrew' :
+    combinedInfo.includes('انجل') || combinedInfo.includes('انكل') || combinedInfo.includes('english') ? 'english' : 'arabic'
+  );
+  l.language = lang;
+  if (!l.subject) {
+    l.subject = lang === 'hebrew' ? 'לשון עברית' : lang === 'english' ? 'English Language' : 'عام';
+  }
 
   // Station 2
   if (l.stations['2_understanding']) {
     const st2 = { ...l.stations['2_understanding'] };
     if (!st2.studentPrompt || !st2.studentPrompt.trim()) {
-      st2.studentPrompt = `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
+      st2.studentPrompt = lang === 'hebrew'
+        ? `מושגי יסוד והסבר לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל במחברת.`
+        : lang === 'english'
+        ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
+        : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
     }
     if (!st2.teacherGuidance || !st2.teacherGuidance.trim()) {
-      st2.teacherGuidance = `إرشادات المعلم لمحطة بناء المعنى:\n١. وجّه الطلاب نحو النمذجة والاستكشاف الصفي النشط.\n٢. اطرح أسئلة توجيهية تساعد الطلاب على صياغة الاستنتاج بأنفسهم.\n٣. ركّز على تثبيت المفهوم المركزي ومعايير التمييز بدقة.`;
+      st2.teacherGuidance = lang === 'hebrew'
+        ? `הנחיות למורה לתחנת הבנת המשמעות:\n1. הנחו את התלמידים לחקר פעיל של המשפטים והמושגים.\n2. שאלו שאלות מנחות לניסוח הכלל בעצמם.`
+        : lang === 'english'
+        ? `Teacher Guidance for Station 2:\n1. Guide students through active exploration of language structures.\n2. Ask guiding questions to help students deduce the rule.`
+        : `إرشادات المعلم لمحطة بناء المعنى:\n١. وجّه الطلاب نحو النمذجة والاستكشاف الصفي النشط.\n٢. اطرح أسئلة توجيهية تساعد الطلاب على صياغة الاستنتاج بأنفسهم.\n٣. ركّز على تثبيت المفهوم المركزي ومعايير التمييز بدقة.`;
     }
     if (!st2.scaffold || !st2.scaffold.trim()) {
-      st2.scaffold = 'منظم بصري أو خطوة استرشادية مساندة.';
+      st2.scaffold = lang === 'hebrew' ? 'רמז מסייע: היעזרו במארגן הגרפי.' : lang === 'english' ? 'Helpful hint: Refer to the visual graphic organizer.' : 'منظم بصري أو خطوة استرشادية مساندة.';
     }
     l.stations['2_understanding'] = st2;
   }
@@ -209,13 +228,17 @@ const normalizeMiftaahLesson = (lesson) => {
   if (l.stations['3_practice']) {
     const st3 = { ...l.stations['3_practice'] };
     if (!st3.studentPrompt || !st3.studentPrompt.trim()) {
-      st3.studentPrompt = `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
+      st3.studentPrompt = lang === 'hebrew'
+        ? `ברוכים הבאים לתחנת היישום והתרגול! 🛠️\nבמשימה זו ניישם את מה שלמדנו בנושא (${safeTitle}).\n• עבדו בקבוצות לפי שלוש רמות אתגר.\n• שתפו פעולה ונמקו את תשובותיכם בעברית ברורה!`
+        : lang === 'english'
+        ? `Welcome to the Practice & Application Station! 🛠️\nIn this station, we will apply what we learned about (${safeTitle}).\n• Work collaboratively in your assigned tiered group.\n• Discuss challenges and justify every answer in English!`
+        : `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
     }
     if (!st3.teacherGuidance || !st3.teacherGuidance.trim()) {
-      st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب:\n١. وجّه الطلاب إلى فرقهم المتمايزة بحسب مستويات الجاهزية والاستعداد.\n٢. أكّد على تطبيق المعايير العلمية المستهدفة والتعاون الإيجابي.\n٣. تجوّل بين المجموعات: وجّه فريق الانطلاق بالسقالات المساندة، وادفع فريق الإتقان لدقة الصياغة والتبرير، وتحدَّ فريق الرواد بأسئلة تفكير عليا.\n٤. راقب التفاعل وحفّز الطلاب على تصحيح أخطائهم ذاتياً عبر الحوار.`;
+      st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب ومتابعة الفرق المتمايزة والسقالات.`;
     }
     if (!st3.scaffold || !st3.scaffold.trim()) {
-      st3.scaffold = 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
+      st3.scaffold = lang === 'hebrew' ? 'רמז מסייע: חזרו לכלל מהתחנה הקודמת.' : lang === 'english' ? 'Scaffold hint: Check the rule from Station 2.' : 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
     }
     l.stations['3_practice'] = st3;
   }
@@ -224,10 +247,14 @@ const normalizeMiftaahLesson = (lesson) => {
   if (l.stations['4_evidence']) {
     const st4 = { ...l.stations['4_evidence'] };
     const promptLower = (st4.studentPrompt || '').toLowerCase();
-    const hasSpecificQuestions = (st4.studentPrompt && (st4.studentPrompt.includes('سؤال') || st4.studentPrompt.includes('١.') || st4.studentPrompt.includes('1.') || st4.studentPrompt.includes('؟')));
+    const hasSpecificQuestions = (st4.studentPrompt && (st4.studentPrompt.includes('שאלה') || st4.studentPrompt.includes('question') || st4.studentPrompt.includes('سؤال') || st4.studentPrompt.includes('١.') || st4.studentPrompt.includes('1.') || st4.studentPrompt.includes('؟') || st4.studentPrompt.includes('?')));
 
-    if (!st4.studentPrompt || !st4.studentPrompt.trim() || (!hasSpecificQuestions && (promptLower.includes('ورقة الدليل') || promptLower.includes('ارفعوا أوراقكم') || promptLower.includes('ورقة عمل')))) {
-      st4.studentPrompt = `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
+    if (!st4.studentPrompt || !st4.studentPrompt.trim() || (!hasSpecificQuestions && (promptLower.includes('דף משימה') || promptLower.includes('worksheet') || promptLower.includes('ورقة الدليل') || promptLower.includes('ارفعوا أوراقكم') || promptLower.includes('ورقة عمل')))) {
+      st4.studentPrompt = lang === 'hebrew'
+        ? `דף משימה עצמי וראיות להבנה — [ ${safeTitle} ] ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח הבנה מדויקת:\n\n1. שאלה ראשונה (יישום ישיר): כתבו את המושג או הכלל במילים שלכם עם דוגמה.\n2. שאלה שנייה (הסבר ונימוק): נמקו מדוע תשובתכם נכונה בעזרת כלל שלמדנו.\n3. שאלת חשיבה והעברה: תנו משפט או דוגמה משלכם המיישמת את הכלל.\n\nכתבו את תשובתכם בבירור בשטח המענה למטה ולחצו "שלח תשובה למורה" 📤`
+        : lang === 'english'
+        ? `Individual Evidence of Understanding Worksheet — [ ${safeTitle} ] ✍️\nAnswer the following questions independently to demonstrate your mastery:\n\n1. Question 1 (Direct Application): State the main concept or rule in your own words with an example.\n2. Question 2 (Reasoning & Evidence): Explain why your answer is correct using the lesson rule.\n3. Question 3 (Transfer & Extension): Write your own sentence or real-world example applying this concept.\n\nType your answers clearly below and click "Submit to Teacher" 📤`
+        : `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
     }
     if (!st4.individualTask || !st4.individualTask.trim()) {
       st4.individualTask = st4.studentPrompt;
@@ -1132,12 +1159,27 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     fileSize: ''
   });
 
-  // 3 Initial Inputs for Creator
+  // Initial Inputs for Creator (موضوع الدرس والمادة، العنوان، الصف، لغة الحصة، والتعليمات)
+  const [creatorSubject, setCreatorSubject] = useState(DEFAULT_EXEMPLAR_LESSON.subject || 'علوم وتكنولوجيا');
   const [creatorTitle, setCreatorTitle] = useState(DEFAULT_EXEMPLAR_LESSON.title);
   const [creatorGrade, setCreatorGrade] = useState(DEFAULT_EXEMPLAR_LESSON.grade);
+  const [creatorLanguage, setCreatorLanguage] = useState(DEFAULT_EXEMPLAR_LESSON.language || 'auto');
   const [creatorSpecialRequests, setCreatorSpecialRequests] = useState(DEFAULT_EXEMPLAR_LESSON.specialRequests);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   const [selectedStationToEdit, setSelectedStationToEdit] = useState('1_hook');
+
+  // Smart Language Detection Helper
+  const detectLanguage = (subj, title, explicitLang = 'auto') => {
+    if (explicitLang && explicitLang !== 'auto') return explicitLang;
+    const combined = `${subj || ''} ${title || ''}`.toLowerCase();
+    if (combined.includes('عبر') || combined.includes('עברית') || combined.includes('hebrew') || /[\u0590-\u05FF]/.test(combined)) {
+      return 'hebrew';
+    }
+    if (combined.includes('انجل') || combined.includes('انكل') || combined.includes('english') || (subj || '').toLowerCase() === 'english' || (/^[a-zA-Z\s0-9.,!?'"()-]+$/.test((title || '').trim()) && (title || '').trim().length > 3)) {
+      return 'english';
+    }
+    return 'arabic';
+  };
 
   // Single station prompt AI modal
   const [stationPromptModal, setStationPromptModal] = useState({
@@ -1476,15 +1518,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // =========================================================================
   const handleGenerateFullLesson = async () => {
     if (!creatorTitle.trim()) {
-      showToast('يرجى إدخال عنوان الدرس أولاً ✍️');
+      showToast('يرجى إدخال عنوان وموضوع الدرس أولاً ✍️');
       return;
     }
+    const detectedLang = detectLanguage(creatorSubject, creatorTitle, creatorLanguage);
     setIsGeneratingLesson(true);
-    showToast('جاري توليد الحصة بمحطات مِفتاح الخمس بالذكاء الاصطناعي... ⏳');
+
+    if (detectedLang === 'hebrew') {
+      showToast('جاري توليد حصة اللغة العبرية بمحطات مِفتاح الخمس (עברית) بالذكاء الاصطناعي... ⏳🇮🇱');
+    } else if (detectedLang === 'english') {
+      showToast('جاري توليد حصة اللغة الإنجليزية بمحطات مِفتاح الخمس (English) بالذكاء الاصطناعي... ⏳🇬🇧');
+    } else {
+      showToast('جاري توليد الحصة بمحطات مِفتاح الخمس بالذكاء الاصطناعي... ⏳');
+    }
+
     try {
       const res = await generateMiftaahFullJourneyLessonAI({
         title: creatorTitle,
+        subject: creatorSubject,
         grade: creatorGrade,
+        language: detectedLang,
         specialRequests: creatorSpecialRequests
       });
 
@@ -1493,11 +1546,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         const reqs = (creatorSpecialRequests || '').toLowerCase();
         const pText = (hook.studentPrompt || '').toLowerCase();
         let derivedType = hook.interactiveActivity?.type;
-        if (reqs.match(/أحجية|احجية|لغز|فزورة|غموض/) || pText.match(/لغز|أحجية|احجية|فزورة|غموض|مشهد محير/)) {
+        if (reqs.match(/أحجية|احجية|لغز|فزورة|غموض|חידה|riddle/) || pText.match(/لغز|أحجية|احجية|فزورة|غموض|חידה|mystery/)) {
           derivedType = 'riddle';
-        } else if (reqs.match(/بازل|puzzle|ترتيب|تركيب/) || pText.match(/بازل|puzzle|ترتيب|تركيب|رتب/)) {
+        } else if (reqs.match(/بازل|puzzle|ترتيب|تركيب|פאזל|רצף/) || pText.match(/بازل|puzzle|ترتيب|تركيب|רצף|פאזל/)) {
           derivedType = 'puzzle';
-        } else if (reqs.match(/فيلم|فيديو|مقطع|video/) || pText.match(/فيلم|فيديو|شاهد|مقطع/)) {
+        } else if (reqs.match(/فيلم|فيديو|مقطع|video|סרטון/) || pText.match(/فيلم|فيديو|شاهد|סרטון|watch/)) {
           derivedType = 'video';
         }
         if (hook.interactiveActivity) {
@@ -1508,6 +1561,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           ...res,
           id: 'lesson_' + Date.now(),
           title: res.title || creatorTitle,
+          subject: res.subject || creatorSubject,
+          language: res.language || detectedLang,
           grade: res.grade || creatorGrade,
           specialRequests: creatorSpecialRequests,
           authorId: authenticatedTeacher?.id || 'admin',
@@ -1541,7 +1596,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           saveLessonToFirestore(newLesson);
           saveMiftaahLiveSession(nextSession);
         } catch (e) {}
-        showToast('تم توليد الحصة ومحطاتها الخمس بنجاح! تفضل بمراجعتها وتعديلها ✨');
+        const successMsg = detectedLang === 'hebrew'
+          ? 'השיעור נוצר בהצלחה בעברית! تم توليد حصة العبري باللغة العبرية بنجاح ✨🇮🇱'
+          : detectedLang === 'english'
+          ? 'English lesson generated successfully! تم توليد حصة الإنجليزي بنجاح ✨🇬🇧'
+          : 'تم توليد الحصة ومحطاتها الخمس بنجاح! تفضل بمراجعتها وتعديلها ✨';
+        showToast(successMsg);
       }
     } catch (err) {
       console.warn('AI full generation failed:', err);
@@ -1675,6 +1735,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const lessonWithMeta = normalizeMiftaahLesson({
       ...target,
       title: creatorTitle || target.title,
+      subject: creatorSubject || target.subject || 'عام',
+      language: creatorLanguage || target.language || 'auto',
       grade: creatorGrade || target.grade,
       specialRequests: creatorSpecialRequests || target.specialRequests,
       authorId,
@@ -1714,7 +1776,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const chosen = normalizeMiftaahLesson(lesson);
     setActiveLesson(chosen);
     setCreatorTitle(chosen.title || '');
+    setCreatorSubject(chosen.subject || 'عام');
     setCreatorGrade(chosen.grade || '');
+    setCreatorLanguage(chosen.language || 'auto');
     setCreatorSpecialRequests(chosen.specialRequests || '');
     const lessonPin = (chosen.code || chosen.pin || sessionState.pin || 'MFT-924').trim();
     const nextSession = {
@@ -1736,7 +1800,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const chosen = normalizeMiftaahLesson(lesson);
     setActiveLesson(chosen);
     setCreatorTitle(chosen.title || '');
+    setCreatorSubject(chosen.subject || 'عام');
     setCreatorGrade(chosen.grade || '');
+    setCreatorLanguage(chosen.language || 'auto');
     setCreatorSpecialRequests(chosen.specialRequests || '');
 
     const lessonPin = (chosen.code || chosen.pin || sessionState.pin || 'MFT-924').trim();
@@ -4295,63 +4361,326 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
                 </div>
 
-          {/* 3 INITIAL INPUTS ONLY */}
-          <div className="creator-initial-inputs-card">
-            <h3 className="section-title"><i className="fas fa-sliders-h"></i> معطيات الحصة الأساسية (٣ خانات):</h3>
-            <div className="inputs-three-grid">
-              <div className="input-group">
-                <label>١. عنوان وموضوع الدرس:</label>
-                <input
-                  type="text"
-                  value={creatorTitle}
-                  onChange={e => setCreatorTitle(e.target.value)}
-                  placeholder="مثال: حالات المادة وتغيراتها، الهمزة المتطرفة..."
-                />
-              </div>
+          {/* INITIAL INPUTS CARD: SUBJECT, TITLE, GRADE, LANGUAGE, SPECIAL REQUESTS */}
+          {(() => {
+            const currentDetectedLang = detectLanguage(creatorSubject, creatorTitle, creatorLanguage);
+            const isHebrew = currentDetectedLang === 'hebrew';
+            const isEnglish = currentDetectedLang === 'english';
+            const isArabic = currentDetectedLang === 'arabic';
 
-              <div className="input-group">
-                <label>٢. الصف والمستوى الدراسي:</label>
-                <select value={creatorGrade} onChange={e => setCreatorGrade(e.target.value)}>
-                  <option value="الصف الأول">الصف الأول الابتدائي</option>
-                  <option value="الصف الثاني">الصف الثاني الابتدائي</option>
-                  <option value="الصف الثالث">الصف الثالث الابتدائي</option>
-                  <option value="الصف الرابع">الصف الرابع الابتدائي</option>
-                  <option value="الصف الخامس">الصف الخامس الابتدائي</option>
-                  <option value="الصف السادس">الصف السادس الابتدائي</option>
-                  <option value="شريحة مخصصة">شريحة أو مستوى مخصص...</option>
-                </select>
-              </div>
+            const dynamicTitlePlaceholder = isHebrew
+              ? 'לדוגמה: פעלים בזמן עבר, שמות עצם, חלקי הדיבר, קריאה מודרכת...'
+              : isEnglish
+              ? 'e.g. Present Simple, Regular & Irregular Verbs, Animal Habitats...'
+              : 'مثال: حالات المادة وتغيراتها، الهمزة المتطرفة، الكسور العادية...';
 
-              <div className="input-group">
-                <label>٣. طلبات وتوجيهات خاصة (اختيارية):</label>
-                <input
-                  type="text"
-                  value={creatorSpecialRequests}
-                  onChange={e => setCreatorSpecialRequests(e.target.value)}
-                  placeholder="مثال: نشاط عملي حركي، عمل في مجموعات، تركيز على المفاهيم..."
-                />
-              </div>
-            </div>
+            const dynamicRequestsPlaceholder = isHebrew
+              ? 'לדוגמה: חידה מילולית בתחנה 1, משימות כתיבה מודרכות בתחנה 3, טקסט קצר להבנת הנקרא...'
+              : isEnglish
+              ? 'e.g. Include a grammar riddle in station 1, tiered reading task, collaborative speaking...'
+              : 'مثال: نشاط عملي حركي، عمل في مجموعات متمايزة، تركيز على المفاهيم، ورقة عمل متدرجة...';
 
-            <div className="generate-cta-row">
-              <button
-                type="button"
-                className={`btn-generate-full-lesson ${isGeneratingLesson ? 'loading' : ''}`}
-                onClick={handleGenerateFullLesson}
-                disabled={isGeneratingLesson}
-              >
-                {isGeneratingLesson ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i> جاري استدعاء الذكاء الاصطناعي وهندسة محطات الحصة...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-robot"></i> ولّد الحصة بمحطات مِفتاح الخمس (AI) ✨
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+            return (
+              <div className="creator-initial-inputs-card">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+                  <h3 className="section-title" style={{ margin: 0 }}>
+                    <i className="fas fa-sliders-h"></i> معطيات الحصة الأساسية واللغة المستهدفة:
+                  </h3>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      background: isHebrew ? '#eff6ff' : isEnglish ? '#fdf4ff' : '#f0fdf4',
+                      color: isHebrew ? '#1d4ed8' : isEnglish ? '#7e22ce' : '#15803d',
+                      border: `1.5px solid ${isHebrew ? '#93c5fd' : isEnglish ? '#e9d5ff' : '#86efac'}`
+                    }}
+                  >
+                    <span>{isHebrew ? '🇮🇱 لغة التوليد: عبرية (עברית)' : isEnglish ? '🇬🇧 لغة التوليد: إنجليزية (English)' : '📖 لغة التوليد: عربية'}</span>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>({creatorLanguage === 'auto' ? 'كشف تلقائي ذكي' : 'محدد يدوياً'})</span>
+                  </div>
+                </div>
+
+                {/* Quick Subject Selectors */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    اختر الموضوع سريعاً أو اكتبه بالأسفل:
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className={`pill-quick-sub ${creatorSubject.includes('عبر') || creatorSubject.includes('עבר') ? 'active' : ''}`}
+                      onClick={() => {
+                        setCreatorSubject('لغة عبرية (עברית)');
+                        setCreatorLanguage('hebrew');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: (creatorSubject.includes('عبر') || creatorSubject.includes('עבר')) ? '#dbeafe' : '#f8fafc',
+                        color: (creatorSubject.includes('عبر') || creatorSubject.includes('עבר')) ? '#1d4ed8' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🇮🇱 عبري (עברית)
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-quick-sub ${creatorSubject.toLowerCase().includes('english') || creatorSubject.includes('انجل') || creatorSubject.includes('انكل') ? 'active' : ''}`}
+                      onClick={() => {
+                        setCreatorSubject('لغة إنجليزية (English)');
+                        setCreatorLanguage('english');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: (creatorSubject.toLowerCase().includes('english') || creatorSubject.includes('انجل') || creatorSubject.includes('انكل')) ? '#f3e8ff' : '#f8fafc',
+                        color: (creatorSubject.toLowerCase().includes('english') || creatorSubject.includes('انجل') || creatorSubject.includes('انكل')) ? '#7e22ce' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🇬🇧 إنجليزي (English)
+                    </button>
+                    <button
+                      type="button"
+                      className="pill-quick-sub"
+                      onClick={() => {
+                        setCreatorSubject('لغة عربية');
+                        setCreatorLanguage('arabic');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: creatorSubject === 'لغة عربية' ? '#dcfce7' : '#f8fafc',
+                        color: creatorSubject === 'لغة عربية' ? '#15803d' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📖 لغة عربية
+                    </button>
+                    <button
+                      type="button"
+                      className="pill-quick-sub"
+                      onClick={() => {
+                        setCreatorSubject('علوم وتكنولوجيا');
+                        if (creatorLanguage === 'hebrew' || creatorLanguage === 'english') setCreatorLanguage('arabic');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: creatorSubject.includes('علوم') ? '#e0f2fe' : '#f8fafc',
+                        color: creatorSubject.includes('علوم') ? '#0369a1' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔬 علوم وتكنولوجيا
+                    </button>
+                    <button
+                      type="button"
+                      className="pill-quick-sub"
+                      onClick={() => {
+                        setCreatorSubject('رياضيات وتفكير حسابي');
+                        if (creatorLanguage === 'hebrew' || creatorLanguage === 'english') setCreatorLanguage('arabic');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: creatorSubject.includes('رياضيات') ? '#fef3c7' : '#f8fafc',
+                        color: creatorSubject.includes('رياضيات') ? '#b45309' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📐 رياضيات
+                    </button>
+                    <button
+                      type="button"
+                      className="pill-quick-sub"
+                      onClick={() => {
+                        setCreatorSubject('موطن ومجتمع وجغرافيا');
+                        if (creatorLanguage === 'hebrew' || creatorLanguage === 'english') setCreatorLanguage('arabic');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: creatorSubject.includes('موطن') ? '#ffedd5' : '#f8fafc',
+                        color: creatorSubject.includes('موطن') ? '#c2410c' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🌍 موطن ومجتمع
+                    </button>
+                    <button
+                      type="button"
+                      className="pill-quick-sub"
+                      onClick={() => {
+                        setCreatorSubject('تربية إسلامية');
+                        if (creatorLanguage === 'hebrew' || creatorLanguage === 'english') setCreatorLanguage('arabic');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: '1.5px solid #cbd5e1',
+                        background: creatorSubject.includes('إسلامية') ? '#ecfdf5' : '#f8fafc',
+                        color: creatorSubject.includes('إسلامية') ? '#047857' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🕌 تربية إسلامية
+                    </button>
+                  </div>
+                </div>
+
+                <div className="inputs-three-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+                  <div className="input-group">
+                    <label>١. موضوع الدرس / المادة التعليمية:</label>
+                    <input
+                      type="text"
+                      list="miftaah-creator-subjects-list"
+                      value={creatorSubject}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setCreatorSubject(val);
+                        // Auto switch language if user types Hebrew or English subject
+                        const detected = detectLanguage(val, creatorTitle, 'auto');
+                        if (creatorLanguage === 'auto' || creatorLanguage === 'arabic') {
+                          if (detected === 'hebrew' || detected === 'english') {
+                            setCreatorLanguage(detected);
+                          }
+                        }
+                      }}
+                      placeholder="مثال: لغة عبرية، English، لغة عربية، علوم..."
+                    />
+                    <datalist id="miftaah-creator-subjects-list">
+                      <option value="لغة عبرية (עברית)" />
+                      <option value="لغة إنجليزية (English)" />
+                      <option value="لغة عربية" />
+                      <option value="علوم وتكنولوجيا" />
+                      <option value="رياضيات وتفكير حسابي" />
+                      <option value="موطن ومجتمع" />
+                      <option value="تربية إسلامية" />
+                      <option value="مهارات حياتية وفنون" />
+                    </datalist>
+                  </div>
+
+                  <div className="input-group">
+                    <label>٢. عنوان ومحور الدرس المحدد:</label>
+                    <input
+                      type="text"
+                      value={creatorTitle}
+                      onChange={e => setCreatorTitle(e.target.value)}
+                      placeholder={dynamicTitlePlaceholder}
+                      dir={isHebrew || isEnglish ? 'auto' : 'rtl'}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>٣. الصف والمستوى الدراسي:</label>
+                    <select value={creatorGrade} onChange={e => setCreatorGrade(e.target.value)}>
+                      <option value="الصف الأول">الصف الأول الابتدائي</option>
+                      <option value="الصف الثاني">الصف الثاني الابتدائي</option>
+                      <option value="الصف الثالث">الصف الثالث الابتدائي</option>
+                      <option value="الصف الرابع">الصف الرابع الابتدائي</option>
+                      <option value="الصف الخامس">الصف الخامس الابتدائي</option>
+                      <option value="الصف السادس">الصف السادس الابتدائي</option>
+                      <option value="شريحة مخصصة">شريحة أو مستوى مخصص...</option>
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <label>٤. لغة تدريس ومحتوى الحصة:</label>
+                    <select
+                      value={creatorLanguage}
+                      onChange={e => setCreatorLanguage(e.target.value)}
+                      style={{
+                        borderColor: isHebrew ? '#3b82f6' : isEnglish ? '#a855f7' : '#cbd5e1',
+                        background: isHebrew ? '#f0f7ff' : isEnglish ? '#faf5ff' : '#ffffff',
+                        fontWeight: 700
+                      }}
+                    >
+                      <option value="auto">⚡ تلقائي (كشف تلقائي من المادة والعنوان)</option>
+                      <option value="hebrew">🇮🇱 اللغة العبرية (עברית תקינה בלבד)</option>
+                      <option value="english">🇬🇧 اللغة الإنجليزية (English 100%)</option>
+                      <option value="arabic">📖 اللغة العربية</option>
+                    </select>
+                  </div>
+
+                  <div className="input-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>٥. طلبات وتوجيهات بيداغوجية خاصة (اختيارية):</label>
+                    <input
+                      type="text"
+                      value={creatorSpecialRequests}
+                      onChange={e => setCreatorSpecialRequests(e.target.value)}
+                      placeholder={dynamicRequestsPlaceholder}
+                      dir={isHebrew || isEnglish ? 'auto' : 'rtl'}
+                    />
+                  </div>
+                </div>
+
+                <div className="generate-cta-row" style={{ marginTop: '20px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ fontSize: '0.88rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <i className="fas fa-magic" style={{ color: '#8b5cf6' }}></i>
+                    {isHebrew && <span>השיעור וכל חמש התחנות ייווצרו בעברית תקנית מלאה (הנחיות, חידות, דפי עבודה).</span>}
+                    {isEnglish && <span>All 5 stations will be generated in proper English (student prompts, tiered tasks, evidence worksheet).</span>}
+                    {isArabic && <span>سيتم بناء محطات مِفتاح الخمس متكاملة باللغة العربية مع مراعاة التمايز والمحفزات.</span>}
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`btn-generate-full-lesson ${isGeneratingLesson ? 'loading' : ''}`}
+                    onClick={handleGenerateFullLesson}
+                    disabled={isGeneratingLesson}
+                    style={{
+                      background: isHebrew
+                        ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+                        : isEnglish
+                        ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
+                        : 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                    }}
+                  >
+                    {isGeneratingLesson ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i> جاري استدعاء الذكاء الاصطناعي وهندسة محطات الحصة...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-robot"></i> {
+                          isHebrew
+                            ? 'ולّد الحصة بمحطات مِفتاح الخمس (AI) بالعبرية 🇮🇱 ✨'
+                            : isEnglish
+                            ? 'Generate Miftaah 5-Station Lesson (AI) in English 🇬🇧 ✨'
+                            : 'ولّد الحصة بمحطات مِفتاح الخمس (AI) بالعربية 📖 ✨'
+                        }
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* PEDAGOGICAL PILLARS & GOALS BAR */}
           <div className="creator-goals-summary-strip">

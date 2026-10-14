@@ -2299,7 +2299,8 @@ export const modifyMiftaahStationWithPromptAI = async ({
   instruction = '',
   title = '',
   subject = '',
-  grade = ''
+  grade = '',
+  language = 'auto'
 }) => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
   const safeTitle = title.trim() || 'الدرس';
@@ -2307,11 +2308,30 @@ export const modifyMiftaahStationWithPromptAI = async ({
   const safeGrade = grade.trim() || 'المرحلة الابتدائية';
   const safeInstruction = instruction.trim() || 'تحسين وإثراء المحطة لتكون أكثر تفاعلية وتشويقاً ومناسبة للطلاب';
 
+  let targetLang = language;
+  const ctx = `${safeSubject} ${safeTitle} ${safeInstruction} ${currentPrompt}`.toLowerCase();
+  if (!targetLang || targetLang === 'auto') {
+    if (ctx.includes('عبر') || ctx.includes('עברית') || ctx.includes('hebrew') || /[\u0590-\u05FF]/.test(ctx)) {
+      targetLang = 'hebrew';
+    } else if (ctx.includes('انجل') || ctx.includes('انكل') || ctx.includes('english') || safeSubject.toLowerCase() === 'english') {
+      targetLang = 'english';
+    } else {
+      targetLang = 'arabic';
+    }
+  }
+
+  const langNote = targetLang === 'hebrew'
+    ? '⚠️⚠️ لغة المحتوى الإلزامية: يجب كتابة محتوى شاشة الطلاب (studentDisplayPrompt) باللغة العبرية السليمة تماماً (עברית תקינה) وبشكل مباشر للطلاب!'
+    : targetLang === 'english'
+    ? '⚠️⚠️ STRICT LANGUAGE REQUIREMENT: Write studentDisplayPrompt in proper, natural ENGLISH!'
+    : 'لغة المحتوى: باللغة العربية الفصيحة السليمة والواضحة.';
+
   const prompt = `أنت المعلم الخبير ومصمم المناهج لنظام «مِفتاح المعلّم» بمدرسة مشيرفة الابتدائية.
 المعلم يريد تعديلاً وتخصيصاً فورياً لمحتوى إحدى محطات الدرس بناءً على طلبه وتوجيهه الخاص:
 - موضوع الحصة: ${safeTitle}
 - المادة الدراسية: ${safeSubject}
 - الصف: ${safeGrade}
+- لغة الحصة: ${targetLang === 'hebrew' ? 'العبرية (עברית)' : targetLang === 'english' ? 'الإنجليزية (English)' : 'العربية'}
 - المحطة المستهدفة: [ ${stationKey} ] ${stationTitle}
 - المحتوى الحالي لشاشة الطلاب:
 """
@@ -2322,8 +2342,10 @@ ${currentPrompt}
 ${safeInstruction}
 """
 
+${langNote}
+
 قواعد صارمة:
-1. في حقل (studentDisplayPrompt): اكتب النص الحقيقي الكامل المخصص لشاشة الطلاب (الأسئلة الكاملة، ورقة العمل الصريحة، الألغاز، النصوص، أو التمارين الحقيقية الصريحة الجاهزة للحل مباشرة)، وليس نصائح أو إحالات شفوية. إذا كان النشاط ورقة عمل أو ورقة دليل، اكتب أسئلتها بالتفصيل (س١، س٢، س٣) ومساحات الإجابة.
+1. في حقل (studentDisplayPrompt): اكتب النص الحقيقي الكامل المخصص لشاشة الطلاب بلغة الحصة المستهدفة (الأسئلة الكاملة، ورقة العمل الصريحة، الألغاز، النصوص، أو التمارين الحقيقية الصريحة الجاهزة للحل مباشرة)، وليس نصائح أو إحالات شفوية. إذا كان النشاط ورقة عمل أو ورقة دليل، اكتب أسئلتها بالتفصيل (س١، س٢، س٣) ومساحات الإجابة.
 2. التزم تماماً برغبة وتوجيه المعلم أعلاه وطبقها بإبداع وإتقان تربوي.
 3. وفر ملاحظات معلم واضحة، وسقالة مساندة (تلميح دون حرق الحل)، ومهمة تحدٍّ للمتفوقين.
 
@@ -2617,26 +2639,85 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
  */
 export const generateMiftaahFullJourneyLessonAI = async ({
   title = '',
+  subject = '',
   grade = '',
+  language = 'auto',
   specialRequests = ''
 }) => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
   const safeTitle = title.trim() || 'مهارة مركزية تفاعلية';
+  const safeSubject = subject.trim() || 'عام';
   const safeGrade = grade.trim() || 'المرحلة الابتدائية';
   const safeRequests = specialRequests.trim();
 
+  // Smart Language Detection: Auto-detect Hebrew, English, or Arabic from Subject, Title, Requests, or explicit Language
+  let targetLang = language;
+  const combinedContext = `${safeSubject} ${safeTitle} ${safeRequests}`.toLowerCase();
+  if (!targetLang || targetLang === 'auto') {
+    if (combinedContext.includes('عبر') || combinedContext.includes('עברית') || combinedContext.includes('hebrew') || /[\u0590-\u05FF]/.test(combinedContext)) {
+      targetLang = 'hebrew';
+    } else if (combinedContext.includes('انجل') || combinedContext.includes('انكل') || combinedContext.includes('english') || safeSubject.toLowerCase() === 'english' || (/^[a-zA-Z\s0-9.,!?'"()-]+$/.test(safeTitle) && safeTitle.length > 3)) {
+      targetLang = 'english';
+    } else {
+      targetLang = 'arabic';
+    }
+  }
+
+  // Language Directives for AI Model
+  let languageDirective = '';
+  if (targetLang === 'hebrew') {
+    languageDirective = `
+⚠️⚠️ تعليمات لغة المحتوى الإلزامية والصارمة جداً (STRICT HEBREW LANGUAGE REQUIREMENT - שפת השיעור: עברית):
+- موضوع الدرس هو اللغة العبرية (עברית) أو طُلب توليد الحصة باللغة العبرية.
+- يجب توليد جميع نصوص ومحتويات محطات الحصة بالكامل باللغة العبرية السليمة والقوية (עברית תקנית ועשירה המותאמת לגיל בית ספר יסודי)!
+- الحقول العامة:
+  * "title": عنوان الدرس باللغة العبرية (למשל: "עברית: פעלים בזמן הווה ושימושם במשפט").
+  * "objective": هدف التعلّم بالعبرية (מטרת השיעור בעברית ברורה ומדויקת).
+  * "successCriteria": معيار النجاح القابل للقياس بالعبرية (קריטריון הצלחה מדיד בעברית).
+- في جميع المحطات الخمس:
+  1. المحطة 1 (مشوّق ומחפّז): الموقف المحفز للفضول، ونصوص الأحجية (riddleText, clues, options, solution, explanation) أو البازل (puzzle pieces, targetConcept) يجب أن تكون كلها باللغة العبرية (עברית)!
+  2. المحطة 2 (فهم وبناء المعنى): الشرح اللغوي/العلمي والقواعد والمفاهيم والنماذج والأمثلة بالعبرية (עברית).
+  3. المحطة 3 (التطبيق والتدريب): شرح المهمة وقواعد الحل والعمل الجماعي وجميع المهمات المتمايزة الثلاث (tasks: support, core, advanced) مع أسئلتها وسقالاتها بالعبرية (עברית).
+  4. المحطة 4 (أدلة الفهم): نص ورقة الدليل الفردي وأسئلتها المباشرة الصريحة (דף משימה עצמי וראיות להבנה, שאלות 1, 2, 3) بالعبرية (עברית).
+  5. المحطة 5 (حصاد ونقل الأثر): توجيهات الختام وأسئلة بطاقة الخروج الأربعة (כרטיס יציאה: q1, q2, q3, q4_transfer) بالعبرية (עברית).
+- حقل "teacherGuidance": إرشادات المعلم لإدارة الحصة يمكن أن تكون بالعبرية أو العربية التوجيهية لمساعدة المعلم.`;
+  } else if (targetLang === 'english') {
+    languageDirective = `
+⚠️⚠️ STRICT ENGLISH LANGUAGE REQUIREMENT (The entire lesson content must be in ENGLISH):
+- The subject of the lesson is English Language or the requested teaching language is English.
+- You MUST generate ALL student-facing content, station prompts, activities, worksheets, and questions in proper, natural, grade-appropriate ENGLISH!
+- Top-level fields:
+  * "title": English title (e.g. "English: Present Simple & Daily Habits").
+  * "objective": Learning objective in English.
+  * "successCriteria": Measurable success criteria in English.
+- In ALL 5 stations:
+  1. Station 1 (Hook): Curiosity prompt, riddle (riddleText, clues, options, solution, explanation) or puzzle (pieces, targetConcept) in ENGLISH!
+  2. Station 2 (Meaning): Core rules, vocabulary, concepts, and examples explained in ENGLISH!
+  3. Station 3 (Practice): Group practice instructions, and all 3 tiered tasks (support, core, advanced) with their questions and scaffolds in ENGLISH!
+  4. Station 4 (Evidence): Independent evidence worksheet and its direct questions 1, 2, 3 in ENGLISH!
+  5. Station 5 (Harvest): Summary directions and all exit ticket questions (q1, q2, q3, q4_transfer) in ENGLISH!
+- "teacherGuidance": Pedagogical guidance in English or Arabic to assist the teacher.`;
+  } else {
+    languageDirective = `
+- لغة الحصة ومحطاتها: اللغة العربية الفصيحة السليمة والواضحة والمحفزة المناسبة لطلاب المرحلة الابتدائية.`;
+  }
+
   const prompt = `أنت مصمم التعليم والمناهج لنظام «مِفتاح — رحلة التعلّم» بمدرسة مشيرفة الابتدائية.
-المعلم أدخل ٣ مدخلات فقط لإنشاء الحصة:
-- عنوان الدرس: ${safeTitle}
-- الصف: ${safeGrade}
+المعلم أدخل مدخلات إنشاء الحصة التالية:
+- موضوع الدرس / المادة التعليمية: ${safeSubject}
+- عنوان الدرس ومحوره: ${safeTitle}
+- الصف والمستوى الدراسي: ${safeGrade}
+- لغة تدريس ومحتوى الحصة المطلوبة: ${targetLang === 'hebrew' ? 'العبرية (עברית)' : targetLang === 'english' ? 'الإنجليزية (English)' : 'العربية'}
 ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
 
+${languageDirective}
+
 المطلوب: توليد مسودة متكاملة ومترابطة للحصة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
-1. مشوّق ومحفّز
-2. فهم وبناء المعنى
-3. التطبيق والتدريب
-4. أدلة الفهم
-5. حصاد ونقل الأثر
+1. مشوّق ومحفّز (م)
+2. فهم وبناء المعنى (ف)
+3. التطبيق والتدريب (ت)
+4. أدلة الفهم (ا)
+5. حصاد ونقل الأثر (ح)
 
 - المعايير البيداغوجية الصارمة وتوفير المادة الكاملة للطلاب:
 - ⚠️ قاعدة ذهبية إلزامية (توفير المادة كاملة دون إحالة لمصدر خارجي أو ورقي غائب):
@@ -2647,7 +2728,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
   * إذا طُلب منه ترتيب أو تركيب: وفّر البازل مع قطعه المرقمة.
 
 - في كل محطة من المحطات الخمس (دون استثناء): يجب كتابة الحقول الثلاثة الإلزامية:
-  1. "studentPrompt": المحتوى الصريح الكامل الموجّه للطلاب (الشرح، نص ورقة العمل، الأسئلة الكاملة، والتعليمات) بلغة واضحة ومشجعة فورية العرض والحل على شاشاتهم.
+  1. "studentPrompt": المحتوى الصريح الكامل الموجّه للطلاب (الشرح، نص ورقة العمل، الأسئلة الكاملة، والتعليمات) بلغة الحصة المطلوبة فورية العرض والحل على شاشاتهم.
   2. "teacherGuidance": التخطيط وإرشادات المعلم لإدارة الحوار الصفي، وتوجيه الطلاب، والملاحظة، ومعالجة المفاهيم البديلة.
   3. "scaffold": تلميح ومفتاح المساعدة الجاهز للمحطة لمساندة الطلاب دون حرق الحلول.
 - الأنشطة التفاعلية في المحطات:
@@ -2671,12 +2752,14 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
   * "scaffold": سؤال مساند للتأمل.
   * ضع أسئلة بطاقة الخروج الأربعة (q1, q2, q3, q4_transfer).
 
-أخرج JSON صالحاً فقط:
+أخرج JSON صالحاً فقط بالهيكل التالي:
 {
   "title": "${safeTitle}",
+  "subject": "${safeSubject}",
+  "language": "${targetLang}",
   "grade": "${safeGrade}",
-  "objective": "الهدف الصريح والمحدد للدرس...",
-  "successCriteria": "معيار النجاح الصريح القابل للقياس...",
+  "objective": "היעד / الهدف الصريح والمحدد للدرس...",
+  "successCriteria": "קריטריון הצלחה / معيار النجاح الصريح القابل للقياس...",
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
@@ -2684,7 +2767,7 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       "number": 1,
       "icon": "🔥",
       "studentPrompt": "اللغز أو الموقف المثير الصريح المعروض للطلاب...",
-      "teacherGuidance": "إرشادات المعلم السرية لإدارة المدخل المحفز وكتابة الهدف على اللوح...",
+      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المحفز وكتابة الهدف على اللوح...",
       "suggestedDuration": 6,
       "scaffold": "تلميح للبدء...",
       "interactiveActivity": {
@@ -2693,23 +2776,23 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
         "riddle": {
           "riddleText": "نص الأحجية أو اللغز الذكي والمحفز لفضول الطلاب...",
           "clues": [
-            "التلميح الأول (سقالة مساعدة 1)",
-            "التلميح الثاني (سقالة مساعدة 2)"
+            "التلميح الأول (סולם רמז 1)",
+            "التلميح الثاني (סולם רמז 2)"
           ],
           "options": ["خيار أ", "خيار ب", "خيار ج", "خيار د"],
           "solution": "حل الأحجية الصريح",
           "explanation": "ربط الحل بهدف الدرس ومفهومه الأساسي"
         },
         "puzzle": {
-          "instruction": "رتب قطع أو خطوات البازل بالتسلسل المنطقي الصحيح",
+          "instruction": "הוראות הבאזל / رتب قطع أو خطوات البازل بالتسلسل المنطقي الصحيح",
           "pieces": [
-            { "id": "p1", "text": "القطعة أو الخطوة الأولى", "order": 1 },
-            { "id": "p2", "text": "القطعة أو الخطوة الثانية", "order": 2 },
-            { "id": "p3", "text": "القطعة أو الخطوة الثالثة", "order": 3 },
-            { "id": "p4", "text": "القطعة أو الخطوة الرابعة", "order": 4 }
+            { "id": "p1", "text": "חלק 1 / القطعة الأولى", "order": 1 },
+            { "id": "p2", "text": "חלק 2 / القطعة الثانية", "order": 2 },
+            { "id": "p3", "text": "חלק 3 / القطعة الثالثة", "order": 3 },
+            { "id": "p4", "text": "חלק 4 / القطعة الرابعة", "order": 4 }
           ],
-          "targetConcept": "المفهوم النهائي الذي يكشفه اكتمال البازل",
-          "successMessage": "أحسنت! اكتمل البازل وتكشف المفتاح المعرفي"
+          "targetConcept": "מושג המפתח / المفهوم النهائي الذي يكشفه اكتمال البازل",
+          "successMessage": "أحسنت! اكتمل البازל وتكشف المفتاح المعرفي"
         },
         "video": {
           "title": "عنوان الفيلم أو المقطع المشوق",
@@ -2731,8 +2814,8 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       "number": 2,
       "icon": "🧩",
       "pedagogicalMode": "guided_exploration",
-      "pedagogicalModeName": "الاستكشاف الموجّه",
-      "studentPrompt": "المفاهيم والأمثلة والشرح الصريح للطلاب...",
+      "pedagogicalModeName": "הבנה ובניית משמעות / بناء المعنى",
+      "studentPrompt": "הסבר ומושגים / المفاهيم والأمثلة والشرح الصريح للطلاب بلغة الحصة...",
       "teacherGuidance": "إرشادات النمذجة أو قيادة الاستكشاف الصفي...",
       "suggestedDuration": 12,
       "scaffold": "منظم بصري أو خطوة مساعدة..."
@@ -2741,48 +2824,45 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       "name": "التطبيق والتدريب",
       "number": 3,
       "icon": "🛠️",
-      "studentPrompt": "شرح توجيهي وتطبيقي شامل للطلاب: كيف نطبق المفاهيم، خطوات العمل الجماعي، وما المطلوب من الفرق...",
-      "teacherGuidance": "إرشادات التخطيط وكواليس المعلم لإدارة المحطة الثالثة ومتابعة المجموعات ومعالجة الصعوبات...",
-      "scaffold": "تلميح ومفتاح المساعدة الجاهز للمحطة...",
+      "studentPrompt": "הוראות יישום ותרגול / شرح توجيهي وتطبيقي شامل للطلاب...",
+      "teacherGuidance": "إرشادات المعلم لإدارة المحطة ومتابعة المجموعات...",
       "suggestedDuration": 15,
       "workMode": "groups",
       "tasks": [
-        { "tier": "support", "badge": "🌱 فريق الانطلاق والتمكن", "title": "مهمة الانطلاق", "task": "تمرين مباشر مع خيارات وسقالة...", "scaffold": "سقالة مساندة..." },
-        { "tier": "core", "badge": "⭐ فريق الممارسة والإتقان", "title": "مهمة الإتقان", "task": "تطبيق المعيار الأساسي للدرس مع التعليل...", "scaffold": "سقالة مساندة..." },
-        { "tier": "advanced", "badge": "🚀 فريق الرواد والتحدي", "title": "مهمة التحدي", "task": "مهمة تفكير عليا وتطبيق مركب أو اكتشاف أخطاء...", "scaffold": "تلميح للتفكير..." }
+        { "tier": "support", "badge": "🌱 קבוצת זינוק / فريق الانطلاق", "title": "משימת זינוק", "task": "תרגיל מונחה עם רמז / تمرين مباشر...", "scaffold": "רמז מסייע..." },
+        { "tier": "core", "badge": "⭐ קבוצת שליטה / فريق الإتقان", "title": "משימת תרגול ושליטה", "task": "יישום הכלל עם נימוק / تطبيق المعيار الأساسي...", "scaffold": "רמז מסייע..." },
+        { "tier": "advanced", "badge": "🚀 קבוצת אתגר / فريق التحدي", "title": "משימת אתגר", "task": "שאלת חשיבה גבוהה / مهمة تفكير عليا...", "scaffold": "רמז לחשיבה..." }
       ]
     },
     "4_evidence": {
       "name": "أدلة الفهم",
       "number": 4,
       "icon": "🔎",
-      "studentPrompt": "ورقة الدليل الفردي المستقل:\nالسؤال الأول: (اكتب السؤال الأول للتحقق الفردي هنا صراحة)...\nالسؤال الثاني: (اكتب السؤال الثاني مع خيارات أو مسألة تفكير)...\nالسؤال الثالث: فسر وبرر إجابتك علمياً بدقة.",
+      "studentPrompt": "דף משימה עצמי / ورقة الدليل الفردي المستقل مع الأسئلة الصريحة...",
       "teacherGuidance": "إرشادات المعلم لتقييم الدليل الفردي وملاحظة مستويات الإتقان...",
-      "scaffold": "تلميح مساند مسموح به دون حرق الحل...",
       "suggestedDuration": 7,
-      "criterion": "معيار التحقق: ما الذي يثبت تحقق هدف التعلم لدى كل طالب...",
-      "individualTask": "ورقة الدليل الفردي المستقل:\n١. السؤال الأول الصريح...\n٢. السؤال الثاني الصريح...\n٣. سؤال التبرير والتعليل...",
-      "allowedHelp": ["تلميح بسيط", "توضيح التعليمات"],
+      "criterion": "קריטריון אימות / معيار التحقق الصريح...",
+      "individualTask": "שאלות דף המשימה / أسئلة ورقة الدليل الفردي المستقل...",
+      "allowedHelp": ["רמז קל", "הבהרת ההוראות"],
       "evalLevels": {
-        "mastered": "حقق الهدف",
-        "partial": "حققه جزئياً",
-        "needs_support": "يحتاج دعماً",
-        "insufficient_data": "الدليل غير كافٍ للحكم"
+        "mastered": "השיג את היעד / حقق الهدف",
+        "partial": "השיג חלקית / حققه جزئياً",
+        "needs_support": "זקוק לתמיכה / يحتاج دعماً",
+        "insufficient_data": "אין מספיק ראיות / الدليل غير كافٍ"
       }
     },
     "5_harvest": {
       "name": "حصاد ونقل الأثر",
       "number": 5,
       "icon": "🎒",
-      "studentPrompt": "توجيهات الحصاد الصريحة للطلاب لتلخيص التعلم والإجابة عن بطاقة الخروج والتأمل في نقل الأثر...",
-      "teacherGuidance": "إرشادات المعلم لإغلاق الحصة وجمع بطاقات الخروج ومراجعة المخرجات...",
-      "scaffold": "تأمل: كيف تغير فهمك للموضوع اليوم؟",
+      "studentPrompt": "סיכום והעברה לחיים / توجيهات الحصاد الصريحة للطلاب بلغة الحصة...",
+      "teacherGuidance": "إرشادات المعلم لإغلاق الحصة وجمع بطاقات الخروج...",
       "suggestedDuration": 5,
       "exitTicket": {
-        "q1": "ما أهم فكرة تعلّمتها اليوم؟",
-        "q2": "ما الذي ساعدني على الفهم؟",
-        "q3": "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
-        "q4_transfer": "أين أستطيع استخدام ما تعلّمته؟"
+        "q1": "מה הרעיון המרכזי שלמדתי היום? / ما أهم فكرة تعلمتها؟",
+        "q2": "מה עזר לי להבין? / ما الذي ساعدني على الفهم؟",
+        "q3": "מה עדיין דורש הסבר? / ما الذي ما زلت أحتاج إلى توضيحه؟",
+        "q4_transfer": "איפה אוכל להשתמש במה שלמדתי? / أين أستطيع استخدام ما تعلمته؟"
       }
     }
   }
@@ -2980,17 +3060,29 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
       };
     }
 
+    // Set Subject and Language on lesson object
+    lesson.subject = lesson.subject || safeSubject;
+    lesson.language = targetLang;
+
     // Guarantee Station 2 has studentPrompt & teacherGuidance
     const st2 = lesson.stations['2_understanding'];
     if (st2) {
       if (!st2.studentPrompt || !st2.studentPrompt.trim()) {
-        st2.studentPrompt = `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
+        st2.studentPrompt = targetLang === 'hebrew'
+          ? `מושגי יסود והסבר לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל במחברת.`
+          : targetLang === 'english'
+          ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
+          : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
       }
       if (!st2.teacherGuidance || !st2.teacherGuidance.trim()) {
-        st2.teacherGuidance = `إرشادات المعلم لمحطة بناء المعنى:\n١. وجّه الطلاب نحو النمذجة والاستكشاف الصفي النشط.\n٢. اطرح أسئلة توجيهية تساعد الطلاب على صياغة الاستنتاج بأنفسهم.\n٣. ركّز على تثبيت المفهوم المركزي ومعايير التمييز بدقة.`;
+        st2.teacherGuidance = targetLang === 'hebrew'
+          ? `הנחיות למורה לתחנת הבנת המשמעות:\n1. הנחו את התלמידים לחקר פעיל של המשפטים והמושגים.\n2. שאלו שאלות מנחות לניסוח הכלל בעצמם.\n3. ודאו שהמושג המרכזי ברור לכולם.`
+          : targetLang === 'english'
+          ? `Teacher guidance for Station 2:\n1. Guide students through active exploration of language structures.\n2. Ask guiding questions to help students deduce the rule.\n3. Reinforce the core objective and criteria.`
+          : `إرشادات المعلم لمحطة بناء المعنى:\n١. وجّه الطلاب نحو النمذجة والاستكشاف الصفي النشط.\n٢. اطرح أسئلة توجيهية تساعد الطلاب على صياغة الاستنتاج بأنفسهم.\n٣. ركّز على تثبيت المفهوم المركزي ومعايير التمييز بدقة.`;
       }
       if (!st2.scaffold || !st2.scaffold.trim()) {
-        st2.scaffold = 'منظم بصري أو خطوة استرشادية مساندة.';
+        st2.scaffold = targetLang === 'hebrew' ? 'רמז מסייע: היעזרו במארגן הגרפי.' : targetLang === 'english' ? 'Helpful hint: Refer to the visual graphic organizer.' : 'منظم بصري أو خطوة استرشادية مساندة.';
       }
     }
 
@@ -2998,18 +3090,28 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     const st3 = lesson.stations['3_practice'];
     if (st3) {
       if (!st3.studentPrompt || !st3.studentPrompt.trim()) {
-        st3.studentPrompt = `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
+        st3.studentPrompt = targetLang === 'hebrew'
+          ? `ברוכים הבאים לתחנת היישום והתרגול! 🛠️\nבמשימה זו ניישם את מה שלמדנו בנושא (${safeTitle}).\n• עבדו בקבוצות לפי שלוש רמות אתגר.\n• שתפו פעולה ונמקו את תשובותיכם בעברית ברורה!`
+          : targetLang === 'english'
+          ? `Welcome to the Practice & Application Station! 🛠️\nIn this station, we will apply what we learned about (${safeTitle}).\n• Work collaboratively in your assigned tiered group.\n• Discuss challenges and justify every answer in English!`
+          : `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
       }
       if (!st3.teacherGuidance || !st3.teacherGuidance.trim()) {
-        st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب:\n١. وجّه الطلاب إلى فرقهم المتمايزة بحسب مستويات الجاهزية والاستعداد.\n٢. أكّد على تطبيق المعايير العلمية المستهدفة والتعاون الإيجابي.\n٣. تجوّل بين المجموعات: وجّه فريق الانطلاق بالسقالات المساندة، وادفع فريق الإتقان لدقة الصياغة والتبرير، وتحدَّ فريق الرواد بأسئلة تفكير عليا.\n٤. راقب التفاعل وحفّز الطلاب على تصحيح أخطائهم ذاتياً عبر الحوار.`;
+        st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب ومتابعة الفرق المتمايزة والسقالات.`;
       }
       if (!st3.scaffold || !st3.scaffold.trim()) {
-        st3.scaffold = 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
+        st3.scaffold = targetLang === 'hebrew' ? 'רמז מסייע: חזרו לכלל מהתחנה הקודמת.' : targetLang === 'english' ? 'Scaffold hint: Check the rule from Station 2.' : 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
       }
       if (Array.isArray(st3.tasks)) {
         st3.tasks = st3.tasks.map(t => ({
           ...t,
-          title: t.title || (t.tier === 'support' ? 'مهمة الانطلاق والتمكن' : t.tier === 'core' ? 'مهمة الممارسة والإتقان' : 'مهمة الرواد والتحدي')
+          title: t.title || (
+            targetLang === 'hebrew'
+              ? (t.tier === 'support' ? 'משימת זינוק והבנה' : t.tier === 'core' ? 'משימת שליטה ותרגול' : 'משימת אתגר וחשיבה')
+              : targetLang === 'english'
+              ? (t.tier === 'support' ? 'Launch & Support Task' : t.tier === 'core' ? 'Core Practice Task' : 'Advanced Challenge Task')
+              : (t.tier === 'support' ? 'مهمة الانطلاق والتمكن' : t.tier === 'core' ? 'مهمة الممارسة والإتقان' : 'مهمة الرواد والتحدي')
+          )
         }));
       }
     }
@@ -3018,20 +3120,23 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     const st4 = lesson.stations['4_evidence'];
     if (st4) {
       const promptLower = (st4.studentPrompt || '').toLowerCase();
-      const hasSpecificQuestions = (st4.studentPrompt && (st4.studentPrompt.includes('سؤال') || st4.studentPrompt.includes('١.') || st4.studentPrompt.includes('1.') || st4.studentPrompt.includes('؟')));
+      const hasSpecificQuestions = (st4.studentPrompt && (st4.studentPrompt.includes('שאלה') || st4.studentPrompt.includes('question') || st4.studentPrompt.includes('سؤال') || st4.studentPrompt.includes('١.') || st4.studentPrompt.includes('1.') || st4.studentPrompt.includes('؟') || st4.studentPrompt.includes('?')));
       
-      if (!st4.studentPrompt || !st4.studentPrompt.trim() || (!hasSpecificQuestions && (promptLower.includes('ورقة الدليل') || promptLower.includes('ارفعوا أوراقكم') || promptLower.includes('ورقة عمل')))) {
-        const customTask = st4.individualTask && st4.individualTask.length > 20 ? st4.individualTask : '';
-        st4.studentPrompt = `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
+      if (!st4.studentPrompt || !st4.studentPrompt.trim() || (!hasSpecificQuestions && (promptLower.includes('דף משימה') || promptLower.includes('worksheet') || promptLower.includes('ورقة الدليل') || promptLower.includes('ارفعوا أوراقكم')))) {
+        st4.studentPrompt = targetLang === 'hebrew'
+          ? `דף משימה עצמי וראיות להבנה — [ ${safeTitle} ] ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח הבנה מדויקת:\n\n1. שאלה ראשונה (יישום ישיר): כתבו את המושג או הכלל במילים שלכם עם דוגמה.\n2. שאלה שנייה (הסבר ונימוק): נמקו מדוע תשובתכם נכונה בעזרת כלל שלמדנו.\n3. שאלת חשיבה והעברה: תנו משפט או דוגמה משלכם המיישמת את הכלל.\n\nכתבו את תשובתכם בבירור בשטח המענה למטה ולחצו "שלח תשובה למורה" 📤`
+          : targetLang === 'english'
+          ? `Individual Evidence of Understanding Worksheet — [ ${safeTitle} ] ✍️\nAnswer the following questions independently to demonstrate your mastery:\n\n1. Question 1 (Direct Application): State the main concept or rule in your own words with an example.\n2. Question 2 (Reasoning & Evidence): Explain why your answer is correct using the lesson rule.\n3. Question 3 (Transfer & Extension): Write your own sentence or real-world example applying this concept.\n\nType your answers clearly below and click "Submit to Teacher" 📤`
+          : `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
       }
       if (!st4.individualTask || !st4.individualTask.trim()) {
         st4.individualTask = st4.studentPrompt;
       }
       if (!st4.teacherGuidance || !st4.teacherGuidance.trim()) {
-        st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي:\n١. تأكد من استقلالية كل طالب أثناء الحل لقياس الأثر الحقيقي للتعلم.\n٢. راقب المفاهيم البديلة وصنّف الإجابات فورياً وفق مستويات الإتقان الأربعة.\n٣. حدد الفجوات الشائعة لتناولها في بداية الحصة القادمة أو ضمن الدعم المركز.`;
+        st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي والتأكد من استقلالية كل طالب أثناء الحل.`;
       }
       if (!st4.scaffold || !st4.scaffold.trim()) {
-        st4.scaffold = 'تذكّر: اقرأ السؤال بدقة، وركّز على تقديم دليل علمي مقنع.';
+        st4.scaffold = targetLang === 'hebrew' ? 'זכרו: קראו את השאלה בעיון ונמקו בבירור.' : targetLang === 'english' ? 'Remember: Read each question carefully and justify your answer.' : 'تذكّر: اقرأ السؤال بدقة، وركّز على تقديم دليل مقنع.';
       }
     }
 
@@ -3039,13 +3144,35 @@ ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRe
     const st5 = lesson.stations['5_harvest'];
     if (st5) {
       if (!st5.studentPrompt || !st5.studentPrompt.trim()) {
-        st5.studentPrompt = `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`;
+        st5.studentPrompt = targetLang === 'hebrew'
+          ? `תחנת הקציר וסיכום הלמידה 🎒✨\nהגענו לסיום השיעור! זה הזמן לאסוף את פירות הלמידה שלכם היום:\n1. מה הרעיון המרכזי שלמדתם על (${safeTitle})?\n2. ענו בכנות ובעצמאות על שאלות כרטיס היציאה.\n3. חשבו: כיצד תוכלו להשתמש במה שלמדתם בחייכם?`
+          : targetLang === 'english'
+          ? `Lesson Harvest & Transfer Station 🎒✨\nWe have reached the conclusion of our lesson! Let's reflect on your learning today:\n1. What is the core idea you learned about (${safeTitle})?\n2. Complete your exit ticket questions honestly.\n3. Think: Where and how can you use this knowledge in daily life?`
+          : `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`;
       }
       if (!st5.teacherGuidance || !st5.teacherGuidance.trim()) {
-        st5.teacherGuidance = `إرشادات المعلم لإغلاق الحصة:\n١. امنح الطلاب ٤-٥ دقائق لإتمام بطاقة الخروج بهدوء وتأمل ذاتي.\n٢. استمع لـ ٢-٣ مشاركات ملهمة حول نقل الأثر إلى الحياة اليومية.\n٣. اجمع بطاقات الخروج أو تفقد النتائج إلكترونياً لتقييم نسبة تحقق الهدف العام.\n٤. وجّه كلمة شكر وتشجيع للطلاب على شغفهم وتفكيرهم الاستنتاجي.`;
+        st5.teacherGuidance = `إرشادات المعلم لإغلاق الحصة ومراجعة مخرجات بطاقات الخروج ونقل الأثر.`;
       }
       if (!st5.scaffold || !st5.scaffold.trim()) {
-        st5.scaffold = 'تأمل: كيف تطوّر فهمك وثقتك بالمفهوم منذ بداية الدرس حتى الآن؟';
+        st5.scaffold = targetLang === 'hebrew' ? 'חשבו: מה הפתיע אתכם או חידש לכם היום?' : targetLang === 'english' ? 'Reflect: What was the most interesting thing you discovered today?' : 'تأمل: كيف تطوّر فهمك وثقتك بالمفهوم منذ بداية الدرس حتى الآن؟';
+      }
+      if (!st5.exitTicket) {
+        st5.exitTicket = targetLang === 'hebrew' ? {
+          q1: 'מה הרעיון המרכזי שלמדתי היום?',
+          q2: 'מה עזר לי להבין?',
+          q3: 'מה עדיין דורש הסבר נוסף מבחינתי?',
+          q4_transfer: 'איפה אוכל להשתמש במה שלמדתי?'
+        } : targetLang === 'english' ? {
+          q1: 'What is the main idea I learned today?',
+          q2: 'What helped me understand best?',
+          q3: 'What do I still need more help with?',
+          q4_transfer: 'Where can I apply what I learned?'
+        } : {
+          q1: 'ما أهم فكرة تعلّمتها اليوم؟',
+          q2: 'ما الذي ساعدني على الفهم؟',
+          q3: 'ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)',
+          q4_transfer: 'أين أستطيع استخدام ما تعلّمته؟'
+        };
       }
     }
 
