@@ -2663,206 +2663,287 @@ export const generateMiftaahFullJourneyLessonAI = async ({
     }
   }
 
+  // Detect Pedagogical Genre / Discipline Type
+  const isReadingComprehension = combinedContext.includes('הבנת הנקרא') ||
+    combinedContext.includes('فهم المقروء') ||
+    combinedContext.includes('reading comprehension') ||
+    combinedContext.includes('טקסט') ||
+    combinedContext.includes('קריאה') ||
+    combinedContext.includes('نص قرائي') ||
+    combinedContext.includes('قطعة فهم') ||
+    combinedContext.includes('סיפור') ||
+    combinedContext.includes('قصة');
+
+  const isValuesEducation = combinedContext.includes('ערך') ||
+    combinedContext.includes('ערכים') ||
+    combinedContext.includes('נתינה') ||
+    combinedContext.includes('סובלנות') ||
+    combinedContext.includes('כבוד') ||
+    combinedContext.includes('אחריות') ||
+    combinedContext.includes('חברות') ||
+    combinedContext.includes('עזרה') ||
+    combinedContext.includes('قيم') ||
+    combinedContext.includes('أخلاق') ||
+    combinedContext.includes('تسامح') ||
+    combinedContext.includes('عطاء') ||
+    combinedContext.includes('مواطنة') ||
+    combinedContext.includes('values');
+
+  const isGrammarOrLanguage = combinedContext.includes('לשון') ||
+    combinedContext.includes('דקדוק') ||
+    combinedContext.includes('פעלים') ||
+    combinedContext.includes('פועל') ||
+    combinedContext.includes('שם עצם') ||
+    combinedContext.includes('בניין') ||
+    combinedContext.includes('قواعد') ||
+    combinedContext.includes('نحو') ||
+    combinedContext.includes('إملاء') ||
+    combinedContext.includes('همزة') ||
+    combinedContext.includes('أفعال') ||
+    combinedContext.includes('grammar');
+
+  const isMath = combinedContext.includes('חשבון') ||
+    combinedContext.includes('מתמטיקה') ||
+    combinedContext.includes('שברים') ||
+    combinedContext.includes('כפל') ||
+    combinedContext.includes('חילוק') ||
+    combinedContext.includes('رياضيات') ||
+    combinedContext.includes('حساب') ||
+    combinedContext.includes('كسور') ||
+    combinedContext.includes('math');
+
+  const isScience = combinedContext.includes('מדע') ||
+    combinedContext.includes('טבע') ||
+    combinedContext.includes('ניסוי') ||
+    combinedContext.includes('חומר') ||
+    combinedContext.includes('علوم') ||
+    combinedContext.includes('طبيعة') ||
+    combinedContext.includes('تجربة') ||
+    combinedContext.includes('science');
+
+  // Pedagogical Directives for AI Model based on Genre & Language
+  let genreDirective = '';
+  if (isReadingComprehension) {
+    if (targetLang === 'hebrew') {
+      genreDirective = `
+📖 הנחיות פדגוגיות קריטיות לשיעור הבנת הנקרא בעברית (טקסט קריאה מלא ושאלות הבנה רב-ממדיות):
+- נושא השיעור הוא הבנת הנקרא (${safeTitle}).
+- בתחנה 2 (הבנת המשמעות):
+  * חובה לחבר קטע קריאה שלם, מרתק, עשיר ועמוק (3-4 פסקאות לפחות עם כותרת) המתאים לשכבת הגיל (${safeGrade})!
+  * כל קטע הקריאה המלא חייב להיות כתוב כולו במפורש בתוך studentPrompt, ולאחריו "מילון מושגים וביאור מילים קשות".
+- בתחנה 3 (יישום ותרגול):
+  * חובה לנסח שאלות הבנה מעמיקות על קטע הקריאה שחיברת בתחנה 2 לפי שלוש רמות חשיבה:
+    1. קבוצת זינוק (support): שאלות איתור מידע מפורש וגלוי מתוך הטקסט עם הפניה לפסקה המתאימה.
+    2. קבוצת שליטה (core): שאלות הסקה, משמעויות נסתרות, קשרי סיבה ותוצאה, והבנת רגשות הדמויות.
+    3. קבוצת אתגר (advanced): שאלות ביקורת והערכה, הבעת עמדה מנומקת מתוך הטקסט והצעת סיום חלופי.
+- בתחנה 4 (דף ראיות הבנה):
+  * חובה לנסח דף משימה עצמאי עם 4 שאלות הבנה מעמיקות הדורשות ציטוט וראיה מהטקסט (הוכחה מתוך הטקסט)!
+- בתחנה 5 (קציר והעברה לחיים):
+  * לחבר את המסר של קטע הקריאה לחיים האישיים ולקהילה.`;
+    } else if (targetLang === 'english') {
+      genreDirective = `
+📖 PEDAGOGICAL DIRECTIVES FOR READING COMPREHENSION (Full Reading Passage & Questions):
+- Station 2 (Meaning): You MUST compose a complete, rich, engaging reading passage (3-4 paragraphs) directly inside studentPrompt, followed by vocabulary words in context.
+- Station 3 (Practice): You MUST provide tiered reading comprehension questions based on the text:
+  * Support tier: Explicit factual retrieval with paragraph clues.
+  * Core tier: Inferential reasoning, cause & effect, and character intentions.
+  * Advanced tier: Critical evaluation, author's perspective, and personal response citing textual evidence.
+- Station 4 (Evidence): Independent worksheet with 4 text-dependent comprehension questions requiring text citations.`;
+    } else {
+      genreDirective = `
+📖 توجيهات بيداغوجية إلزامية لدرس فهم المقروء (نص قرائي كامل وأسئلة فهم متعددة الأبعاد):
+- موضوع الدرس هو فهم المقروء (${safeTitle}).
+- في المحطة الثانية (فهم وبناء المعنى):
+  * يجب كتابة نص قرائي كامل، شائق وماتع (٣-٤ فقرات كاملة) ملائم تماماً لصف (${safeGrade})!
+  * يُكتب النص القرائي كاملاً بحروفه وعنوانه داخل studentPrompt مع جدول لشرح المفردات والتراكيب اللغوية الجديدة.
+- في المحطة الثالثة (التطبيق والتدريب):
+  * صياغة أسئلة فهم وتحليل مبنية تماماً على النص القرائي وفق أبعاد الفهم الثلاثة:
+    ١. فريق الانطلاق: استخراج معلومات صريحة وواضحة من النص.
+    ٢. فريق الإتقان: الاستنتاج، العلاقات السببية، ودلالات تصرفات الشخصيات ومغازيها.
+    ٣. فريق الرواد: التفكير الناقد والتقييم وإبداء الرأي الشخصي مع التعليل واقتراح عنوان أو نهاية بديلة.
+- في المحطة الرابعة (أدلة الفهم):
+  * ورقة دليل فردي مستقل تحتوي على ٤ أسئلة صريحة تتطلب الاستشهاد المباشر بدليل من النص القرائي!`;
+    }
+  } else if (isValuesEducation) {
+    if (targetLang === 'hebrew') {
+      genreDirective = `
+❤️ הנחיות פדגוגיות לשיעור חינוך לערכים ומנהיגות (${safeTitle}):
+- בתחנה 1: דילמה חברתית מעוררת מחשבה או מקרה בוחן מרגש מחיי בית הספר.
+- בתחנה 2: בירור עמוק של המושג הערכי, סיפור קצר ממחיש (כגון מעשה של חסד ונתינה), ומשמעותו לקהילה.
+- בתחנה 3: משימות קבוצתיות לניתוח 3 תרחישים חברתיים מגוונים וגיבוש פתרון ערכי משותף.
+- בתחנה 4: דף ראיות אישי: דילמה מוסרית שבה התלמיד מקבל החלטה עצמאית ומנמק אותה.
+- בתחנה 5: התחייבות אישית למעשה טוב (קבלת החלטה ומעשה יישומי בשבוע הקרוב).`;
+    } else {
+      genreDirective = `
+❤️ توجيهات بيداغوجية لدروس القيم والأخلاق والمواطنة (${safeTitle}):
+- المحطة 1: معضلة أخلاقية واقعية أو قصة قصيرة مشوقة تمس حياة الطلاب.
+- المحطة 2: تفكيك القيمة ونماذج حية ملهمة من واقع المدرسة والأسرة والمجتمع.
+- المحطة 3: مهمات جماعية متمايزة لتحليل ٣ مواقف اجتماعية واقتراح مبادرات إيجابية.
+- المحطة 4: ورقة دليل فردي تتضمن موقفاً يتخذ فيه الطالب قراراً سلوكياً مستقلاً مع التعليل.
+- المحطة 5: التزام وعهد شخصي بتطبيق القيمة عملياً في المدرسة والبيت.`;
+    }
+  } else if (isGrammarOrLanguage) {
+    if (targetLang === 'hebrew') {
+      genreDirective = `
+📝 הנחיות פדגוגיות לשיעור לשון ודקדוק (${safeTitle}):
+- בתחנה 1: חידה לשונית או משחק מילים מפעיל.
+- בתחנה 2: משפטים לניתוח פעיל, ניסוח הכלל הלשוני בבירור עם טבלת דוגמאות.
+- בתחנה 3: שלוש רמות תרגול מדורגות (זיהוי, המרה, כתיבת משפטים מקוריים).
+- בתחנה 4: דף משימה עצמאי לתיקון שגיאות, ניתוח משפטים ונימוק הכלל.`;
+    }
+  }
+
   // Language Directives for AI Model
   let languageDirective = '';
   if (targetLang === 'hebrew') {
     languageDirective = `
-⚠️⚠️ تعليمات لغة المحتوى الإلزامية والصارمة جداً (STRICT HEBREW LANGUAGE REQUIREMENT - שפת השיעור: עברית):
-- موضوع الدرس هو اللغة العبرية (עברית) أو طُلب توليد الحصة باللغة العبرية.
-- يجب توليد جميع نصوص ومحتويات محطات الحصة بالكامل باللغة العبرية السليمة والقوية (עברית תקנית ועשירה המותאמת לגיל בית ספר יסודי)!
-- الحقول العامة:
-  * "title": عنوان الدرس باللغة العبرية (למשל: "עברית: פעלים בזמן הווה ושימושם במשפט").
-  * "objective": هدف التعلّم بالعبرية (מטרת השיעור בעברית ברורה ומדויקת).
-  * "successCriteria": معيار النجاح القابل للقياس بالعبرية (קריטריון הצלחה מדיד בעברית).
-- في جميع المحطات الخمس:
-  1. المحطة 1 (مشوّق ומחפّז): الموقف المحفز للفضول، ونصوص الأحجية (riddleText, clues, options, solution, explanation) أو البازل (puzzle pieces, targetConcept) يجب أن تكون كلها باللغة العبرية (עברית)!
-  2. المحطة 2 (فهم وبناء المعنى): الشرح اللغوي/العلمي والقواعد والمفاهيم والنماذج والأمثلة بالعبرية (עברית).
-  3. المحطة 3 (التطبيق والتدريب): شرح المهمة وقواعد الحل والعمل الجماعي وجميع المهمات المتمايزة الثلاث (tasks: support, core, advanced) مع أسئلتها وسقالاتها بالعبرية (עברית).
-  4. المحطة 4 (أدلة الفهم): نص ورقة الدليل الفردي وأسئلتها المباشرة الصريحة (דף משימה עצמי וראיות להבנה, שאלות 1, 2, 3) بالعبرية (עברית).
-  5. المحطة 5 (حصاد ونقل الأثر): توجيهات الختام وأسئلة بطاقة الخروج الأربعة (כרטיס יציאה: q1, q2, q3, q4_transfer) بالعبرية (עברית).
-- حقل "teacherGuidance": إرشادات المعلم لإدارة الحصة يمكن أن تكون بالعبرية أو العربية التوجيهية لمساعدة المعلم.`;
+⚠️⚠️ تعليمات لغة المحتوى الإלزامية الصارمة (STRICT HEBREW LANGUAGE REQUIREMENT - שפת השיעור: עברית):
+- שפת ההוראה והתוכן של השיעור היא עברית תקנית ועשירה בלבד!
+- אסור בהחלט לשלב טקסטים בערבית בתוך שדות התלמידים (title, objective, successCriteria, studentPrompt, tasks, individualTask, exitTicket)!
+- כל הטקסטים, ההסברים, קטעי הקריאה, החידות, דפי המשימה והשאלות חייבים להיות בעברית מלאה ואיכותית המותאמת לגיל בית ספר יסודי!
+- כותרת השיעור (title): בעברית מלאה (לדוגמה: "הבנת הנקרא: סוד שיתוף הפעולה" או "ערך הנתינה והמעשה הטוב").
+- מטרת השיעור (objective): בעברית מלאה.
+- קריטריון הצלחה (successCriteria): בעברית מלאה.`;
   } else if (targetLang === 'english') {
     languageDirective = `
 ⚠️⚠️ STRICT ENGLISH LANGUAGE REQUIREMENT (The entire lesson content must be in ENGLISH):
-- The subject of the lesson is English Language or the requested teaching language is English.
-- You MUST generate ALL student-facing content, station prompts, activities, worksheets, and questions in proper, natural, grade-appropriate ENGLISH!
-- Top-level fields:
-  * "title": English title (e.g. "English: Present Simple & Daily Habits").
-  * "objective": Learning objective in English.
-  * "successCriteria": Measurable success criteria in English.
-- In ALL 5 stations:
-  1. Station 1 (Hook): Curiosity prompt, riddle (riddleText, clues, options, solution, explanation) or puzzle (pieces, targetConcept) in ENGLISH!
-  2. Station 2 (Meaning): Core rules, vocabulary, concepts, and examples explained in ENGLISH!
-  3. Station 3 (Practice): Group practice instructions, and all 3 tiered tasks (support, core, advanced) with their questions and scaffolds in ENGLISH!
-  4. Station 4 (Evidence): Independent evidence worksheet and its direct questions 1, 2, 3 in ENGLISH!
-  5. Station 5 (Harvest): Summary directions and all exit ticket questions (q1, q2, q3, q4_transfer) in ENGLISH!
-- "teacherGuidance": Pedagogical guidance in English or Arabic to assist the teacher.`;
+- The teaching language is 100% ENGLISH.
+- ALL fields (title, objective, successCriteria, studentPrompt, tasks, individualTask, exitTicket) MUST be written in natural, age-appropriate ENGLISH!
+- Do not include any Arabic or Hebrew text in the student-facing fields.`;
   } else {
     languageDirective = `
 - لغة الحصة ومحطاتها: اللغة العربية الفصيحة السليمة والواضحة والمحفزة المناسبة لطلاب المرحلة الابتدائية.`;
   }
 
-  const prompt = `أنت مصمم التعليم والمناهج لنظام «مِفتاح — رحلة التعلّم» بمدرسة مشيرفة الابتدائية.
-المعلم أدخل مدخلات إنشاء الحصة التالية:
+  const prompt = `أنت الخبير التربوي ومصمم المناهج لنظام «مِفتاح — رحلة التعلّم» بمدرسة مشيرفة الابتدائية.
+المعطيات المدخلة لإنشاء الحصة:
 - موضوع الدرس / المادة التعليمية: ${safeSubject}
 - عنوان الدرس ومحوره: ${safeTitle}
 - الصف والمستوى الدراسي: ${safeGrade}
-- لغة تدريس ومحتوى الحصة المطلوبة: ${targetLang === 'hebrew' ? 'العبرية (עברית)' : targetLang === 'english' ? 'الإنجليزية (English)' : 'العربية'}
+- لغة تدريس ومحتوى الحصة المطلوبة: ${targetLang === 'hebrew' ? 'العبرية (עברית בלבד)' : targetLang === 'english' ? 'الإنجليزية (English 100%)' : 'العربية'}
 ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
 
 ${languageDirective}
 
+${genreDirective}
+
 المطلوب: توليد مسودة متكاملة ومترابطة للحصة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
-1. مشوّق ومحفّز (م)
+1. مشוّق ومحفّز (م)
 2. فهم وبناء المعنى (ف)
 3. التطبيق والتدريب (ت)
 4. أدلة الفهم (ا)
 5. حصاد ونقل الأثر (ح)
 
-- المعايير البيداغوجية الصارمة وتوفير المادة الكاملة للطلاب:
-- ⚠️ قاعدة ذهبية إلزامية (توفير المادة كاملة دون إحالة لمصدر خارجي أو ورقي غائب):
-  * ممنوع منعاً باتاً أن يطلب النص من الطالب أن يحل ورقة عمل، أو يجيب على ورقة دليل، أو يشاهد مقطعاً، أو يحل أحجية، دون أن تكون المادة نفسها مكتوبة وموفرة بالكامل أمامه على الشاشة!
-  * إذا طلبت من الطالب في أي محطة حل ورقة عمل أو ورقة دليل فردي: يجب عليك كتابة نص ورقة العمل بالكامل داخل "studentPrompt" أو "individualTask" مع كافة الأسئلة (سؤال ١، سؤال ٢، سؤال ٣) والخيارات ومساحات الحل الصريحة! لا تقل له أبداً "املأ ورقة الدليل بمفردك" دون أن تكتب له أسئلة الورقة حرفياً!
-  * إذا طُلب منه مشاهدة فيلم أو مقطع: وفّر كائن interactiveActivity من نوع "video" مع رابط مقترح وسؤال تفكير ونقاط الملاحظة.
-  * إذا طُلب منه حل أحجية أو لغز: اكتب نص الأحجية كاملاً مع خياراتها وحلها وسقالاتها.
-  * إذا طُلب منه ترتيب أو تركيب: وفّر البازل مع قطعه المرقمة.
+القواعد البيداغוגية الصارمة:
+1. توفير المادة التعليمية كاملة على الشاشة دون إحالة لورق خارجي:
+   - في دروس فهم المقروء: اكتب النص القرائي كاملاً (٣-٤ فقرات) في المحطة الثانية، وصغ أسئلة فهم حقيقية ومفصلة في المحطتين الثالثة والرابعة!
+   - إذا طُلب حل ورقة عمل: اكتب أسئلة الورقة بالكامل (سؤال ١، ٢، ٣، ٤) مع مساحات الإجابة الصريحة داخل studentPrompt و individualTask!
+   - إذا طُلب حل لغز: اكتب نص اللغز وخياراته وحله كاملاً داخل interactiveActivity.riddle.
+2. التمايز الحقيقي في المحطة الثالثة: وفّر ٣ مهمات متمايزة حقيقية كاملة بنصوصها وأسئلتها (support, core, advanced).
+3. المحطة الرابعة (أدلة الفهم): أسئلة فردية مستقلة ومباشرة تقيس معيار النجاح صراحة.
+4. المحطة الخامسة (حصاد ونقل الأثر): أسئلة بطاقة الخروج الأربعة كاملة (q1, q2, q3, q4_transfer).
 
-- في كل محطة من المحطات الخمس (دون استثناء): يجب كتابة الحقول الثلاثة الإلزامية:
-  1. "studentPrompt": المحتوى الصريح الكامل الموجّه للطلاب (الشرح، نص ورقة العمل، الأسئلة الكاملة، والتعليمات) بلغة الحصة المطلوبة فورية العرض والحل على شاشاتهم.
-  2. "teacherGuidance": التخطيط وإرشادات المعلم لإدارة الحوار الصفي، وتوجيه الطلاب، والملاحظة، ومعالجة المفاهيم البديلة.
-  3. "scaffold": تلميح ومفتاح المساعدة الجاهز للمحطة لمساندة الطلاب دون حرق الحلول.
-- الأنشطة التفاعلية في المحطات:
-  * إذا طلب المعلم أو اقتضت المحطة "أحجية" أو "لغز" (riddle): جهّز كائن "interactiveActivity" بنوع "riddle" يتضمن نص الأحجية، تلميحات كسقالات مساندة، خيارات تفاعلية، والحل الصريح مع ربطه بهدف الدرس.
-  * إذا طلب المعلم أو اقتضت المحطة "بازل" أو "puzzle" أو "ترتيب" أو "تركيب": جهّز كائن "interactiveActivity" بنوع "puzzle" يتضمن تعليمات الترتيب، قطع البازل المرقمة المنطقية، المفهوم المستهدف، ورسالة النجاح.
-  * إذا طلب المعلم أو اقتضت المحطة "فيديو" أو "فيلم": جهّز كائن "interactiveActivity" بنوع "video" مع عنوان الفيلم وكلمات بحث يوتيوب الدقيقة ورابط مقترح وسؤال التأمل.
-  * قاعدة تطابق العرض مع التخطيط: يجب أن يتطابق حقل "type" في interactiveActivity تماماً مع فحوى ما كتبته في studentPrompt؛ فإذا كتبت لغزاً يجب أن يكون type = "riddle"، وإذا فيلم type = "video"، وإذا بازل type = "puzzle".
-- في المحطة الثانية (فهم وبناء المعنى): اختر الطريقة الأنسب ("guided_exploration" أو "direct_instruction" أو "blended") واكتب مادتها وشرحها ومفاهيمها الصريحة بتفصيل وافٍ.
-- في المحطة الثالثة (التطبيق والتدريب) على وجه الخصوص:
-  * "studentPrompt": شرح توجيهي وتطبيقي شامل للطلاب يوضح المهمة وقواعد الحل والعمل الجماعي.
-  * "tasks": وفر ٣ مهمات وتحديات متمايزة حقيقية كاملة بنصوصها وأسئلتها (support, core, advanced) مع سقالة لكل منها.
-- في المحطة الرابعة (أدلة الفهم):
-  * "studentPrompt": ورقة ومهمة التحقق الفردي المستقل الصريحة متضمنة الأسئلة المباشرة (مثل: السؤال الأول، السؤال الثاني، مسألة التبرير والتعليل) ليحلها كل طالب بمفرده على الشاشة.
-  * "individualTask": النص الكامل لورقة ومهمة الدليل الفردي مع أسئلتها الصريحة.
-  * "teacherGuidance": إرشادات المعلم لتقييم الدليل الفردي واستخدام سلم المعايير.
-  * "scaffold": تلميح مساند مسموح به.
-  * "criterion": معيار التحقق الصريح القابل للقياس.
-- في المحطة الخامسة (حصاد ونقل الأثر):
-  * "studentPrompt": توجيهات الحصاد الصريحة للطلاب للإجابة على بطاقة الخروج والتفكير في نقل الأثر للحياة اليومية.
-  * "teacherGuidance": إرشادات المعلم لختام الحصة ومراجعة المخرجات.
-  * "scaffold": سؤال مساند للتأمل.
-  * ضع أسئلة بطاقة الخروج الأربعة (q1, q2, q3, q4_transfer).
-
-أخرج JSON صالحاً فقط بالهيكل التالي:
+أخرج JSON صالحاً فقط بالهيكل التالي (بدون أي نصوص خارج الـ JSON):
 {
-  "title": "${safeTitle}",
+  "title": "${targetLang === 'hebrew' ? safeTitle : targetLang === 'english' ? safeTitle : safeTitle}",
   "subject": "${safeSubject}",
   "language": "${targetLang}",
   "grade": "${safeGrade}",
-  "objective": "היעד / الهدف الصريح والمحدد للدرس...",
-  "successCriteria": "קריטריון הצלחה / معيار النجاح الصريح القابل للقياس...",
+  "objective": "${targetLang === 'hebrew' ? 'מטרת השיעור בעברית מדויקת...' : targetLang === 'english' ? 'Learning objective in English...' : 'هدف التعلّم الصريح المحدد...'}",
+  "successCriteria": "${targetLang === 'hebrew' ? 'קריטריון הצלחה מדיד בעברית...' : targetLang === 'english' ? 'Measurable success criteria in English...' : 'معيار النجاح القابل للقياس...'}",
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
-      "name": "مشوّق ومحفّز",
+      "name": "${targetLang === 'hebrew' ? 'אתגר וסקרנות' : 'مشوّق ومحفّز'}",
       "number": 1,
       "icon": "🔥",
-      "studentPrompt": "اللغز أو الموقف المثير الصريح المعروض للطلاب...",
-      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المحفز وكتابة الهدف على اللوح...",
+      "studentPrompt": "نص الموقف المحفז المعروض للطلاب...",
+      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المحفז...",
       "suggestedDuration": 6,
       "scaffold": "تلميح للبدء...",
       "interactiveActivity": {
         "type": "riddle",
-        "title": "عنوان النشاط المشوق",
+        "title": "عنوان النشاط",
         "riddle": {
-          "riddleText": "نص الأحجية أو اللغز الذكي والمحفز لفضول الطلاب...",
-          "clues": [
-            "التلميح الأول (סולם רמז 1)",
-            "التلميح الثاني (סולם רמז 2)"
-          ],
-          "options": ["خيار أ", "خيار ب", "خيار ج", "خيار د"],
-          "solution": "حل الأحجية الصريح",
-          "explanation": "ربط الحل بهدف الدرس ومفهومه الأساسي"
+          "riddleText": "نص الأحجية أو اللغז...",
+          "clues": ["רמז 1 / تلميح 1", "רמז 2 / تلميح 2"],
+          "options": ["אופציה 1", "אופציה 2", "אופציה 3", "אופציה 4"],
+          "solution": "פתרון החידה / حل الأحجية",
+          "explanation": "הסבר וקישור לשיעור / ربط الحل بالدرس"
         },
         "puzzle": {
-          "instruction": "הוראות הבאזל / رتب قطع أو خطوات البازل بالتسلسل المنطقي الصحيح",
+          "instruction": "הוראות / تعليمات الترتيب",
           "pieces": [
-            { "id": "p1", "text": "חלק 1 / القطعة الأولى", "order": 1 },
-            { "id": "p2", "text": "חלק 2 / القطعة الثانية", "order": 2 },
-            { "id": "p3", "text": "חלק 3 / القطعة الثالثة", "order": 3 },
-            { "id": "p4", "text": "חלק 4 / القطعة الرابعة", "order": 4 }
+            { "id": "p1", "text": "חלק 1", "order": 1 },
+            { "id": "p2", "text": "חלק 2", "order": 2 },
+            { "id": "p3", "text": "חלק 3", "order": 3 },
+            { "id": "p4", "text": "חלק 4", "order": 4 }
           ],
-          "targetConcept": "מושג המפתח / المفهوم النهائي الذي يكشفه اكتمال البازل",
-          "successMessage": "أحسنت! اكتمل البازל وتكشف المفتاح المعرفي"
+          "targetConcept": "מושג המפתח / المفهوم النهائي",
+          "successMessage": "כל הכבוד! / أحسنت!"
         },
         "video": {
-          "title": "عنوان الفيلم أو المقطع المشوق",
-          "searchQuery": "كلمات بحث يوتيوب الدقيقة للفيلم",
-          "youtubeUrl": "رابط مقترح إن وجد",
-          "reflectionQuestion": "سؤال التأمل والمناقشة بعد المشاهدة"
+          "title": "عنوان المقطع",
+          "searchQuery": "كلمات بحث يوتيوب",
+          "youtubeUrl": "https://www.youtube.com/watch?v=EUm-vAOmWV1",
+          "reflectionQuestion": "سؤال التأمل"
         }
-      },
-      "media": {
-        "type": "video",
-        "title": "عنوان الفيلم أو المقطع المشوق",
-        "searchQuery": "كلمات بحث يوتيوب الدقيقة للفيلم",
-        "youtubeUrl": "رابط مقترح إن وجد",
-        "reflectionQuestion": "سؤال التأمل والمناقشة بعد المشاهدة"
       }
     },
     "2_understanding": {
-      "name": "فهم وبناء المعنى",
+      "name": "${targetLang === 'hebrew' ? 'הבנת המשמעות' : 'فهم وبناء المعنى'}",
       "number": 2,
       "icon": "🧩",
       "pedagogicalMode": "guided_exploration",
-      "pedagogicalModeName": "הבנה ובניית משמעות / بناء المعنى",
-      "studentPrompt": "הסבר ומושגים / المفاهيم والأمثلة والشرح الصريح للطلاب بلغة الحصة...",
-      "teacherGuidance": "إرشادات النمذجة أو قيادة الاستكشاف الصفي...",
+      "pedagogicalModeName": "${targetLang === 'hebrew' ? 'הבנה ובניית משמעות' : 'بناء المعنى والاستكشاف'}",
+      "studentPrompt": "المحتوى الصريح: نص القراءة الكامل إن كان فهم المقروء، أو الشرح والقواعد والمفاهيم...",
+      "teacherGuidance": "إرشادات النمذجة أو قيادة الاستكشاف...",
       "suggestedDuration": 12,
       "scaffold": "منظم بصري أو خطوة مساعدة..."
     },
     "3_practice": {
-      "name": "التطبيق والتدريب",
+      "name": "${targetLang === 'hebrew' ? 'יישום ותרגול' : 'التطبيق والتدريب'}",
       "number": 3,
       "icon": "🛠️",
-      "studentPrompt": "הוראות יישום ותרגול / شرح توجيهي وتطبيقي شامل للطلاب...",
-      "teacherGuidance": "إرشادات المعلم لإدارة المحطة ومتابعة المجموعات...",
+      "studentPrompt": "شرح توجيهي للمهمة وقواعد العمل الجماعي...",
+      "teacherGuidance": "إرشادات المعلم لإدارة المحطة...",
       "suggestedDuration": 15,
       "workMode": "groups",
       "tasks": [
-        { "tier": "support", "badge": "🌱 קבוצת זינוק / فريق الانطلاق", "title": "משימת זינוק", "task": "תרגיל מונחה עם רמז / تمرين مباشر...", "scaffold": "רמז מסייע..." },
-        { "tier": "core", "badge": "⭐ קבוצת שליטה / فريق الإتقان", "title": "משימת תרגול ושליטה", "task": "יישום הכלל עם נימוק / تطبيق المعيار الأساسي...", "scaffold": "רמז מסייע..." },
-        { "tier": "advanced", "badge": "🚀 קבוצת אתגר / فريق التحدي", "title": "משימת אתגר", "task": "שאלת חשיבה גבוהה / مهمة تفكير عليا...", "scaffold": "רמז לחשיבה..." }
+        { "tier": "support", "badge": "${targetLang === 'hebrew' ? '🌱 קבוצת זינוק' : '🌱 فريق الانطلاق والتمكن'}", "title": "مهمة الانطلاق", "task": "المهمة وأسئلتها...", "scaffold": "تلميح..." },
+        { "tier": "core", "badge": "${targetLang === 'hebrew' ? '⭐ קבוצת שליטה' : '⭐ فريق الممارسة والإتقان'}", "title": "مهمة الإتقان", "task": "المهمة وأسئلتها...", "scaffold": "تلميح..." },
+        { "tier": "advanced", "badge": "${targetLang === 'hebrew' ? '🚀 קבוצת אתגר' : '🚀 فريق الرواد والتحدي'}", "title": "مهمة التحدي", "task": "المهمة وأسئلتها...", "scaffold": "تلميح..." }
       ]
     },
     "4_evidence": {
-      "name": "أدلة الفهم",
+      "name": "${targetLang === 'hebrew' ? 'ראיות הבנה' : 'أدلة الفهم'}",
       "number": 4,
       "icon": "🔎",
-      "studentPrompt": "דף משימה עצמי / ورقة الدليل الفردي المستقل مع الأسئلة الصريحة...",
-      "teacherGuidance": "إرشادات المعلم لتقييم الدليل الفردي وملاحظة مستويات الإتقان...",
+      "studentPrompt": "ورقة الدليل الفردي المستقل مع الأسئلة الصريحة (سؤال 1، 2، 3، 4)...",
+      "teacherGuidance": "إرشادات تقييم الدليل الفردي...",
       "suggestedDuration": 7,
-      "criterion": "קריטריון אימות / معيار التحقق الصريح...",
-      "individualTask": "שאלות דף המשימה / أسئلة ورقة الدليل الفردي المستقل...",
-      "allowedHelp": ["רמז קל", "הבהרת ההוראות"],
+      "criterion": "معيار التحقق الصريح...",
+      "individualTask": "نص أسئلة ورقة الدليل الفردي...",
+      "allowedHelp": ["تلميح خفيف", "توضيح التعليمات"],
       "evalLevels": {
-        "mastered": "השיג את היעד / حقق الهدف",
-        "partial": "השיג חלקית / حققه جزئياً",
-        "needs_support": "זקוק לתמיכה / يحتاج دعماً",
-        "insufficient_data": "אין מספיק ראיות / الدليل غير كافٍ"
+        "mastered": "${targetLang === 'hebrew' ? 'השיג את היעד' : 'حقق الهدف'}",
+        "partial": "${targetLang === 'hebrew' ? 'השיג חלקית' : 'حققه جزئياً'}",
+        "needs_support": "${targetLang === 'hebrew' ? 'זקוק לתמיכה' : 'يحتاج دعماً'}",
+        "insufficient_data": "${targetLang === 'hebrew' ? 'אין מספיק ראיות' : 'الدليل غير كافٍ'}"
       }
     },
     "5_harvest": {
-      "name": "حصاد ونقل الأثر",
+      "name": "${targetLang === 'hebrew' ? 'סיכום וקציר' : 'حصاد ونقل الأثر'}",
       "number": 5,
       "icon": "🎒",
-      "studentPrompt": "סיכום והעברה לחיים / توجيهات الحصاد الصريحة للطلاب بلغة الحصة...",
-      "teacherGuidance": "إرشادات المعلم لإغلاق الحصة وجمع بطاقات الخروج...",
+      "studentPrompt": "توجيهات الحصاد الصريحة للطلاب...",
+      "teacherGuidance": "إرشادات المعلم لختام الحصة...",
       "suggestedDuration": 5,
       "exitTicket": {
-        "q1": "מה הרעיון המרכזי שלמדתי היום? / ما أهم فكرة تعلمتها؟",
-        "q2": "מה עזר לי להבין? / ما الذي ساعدني على الفهم؟",
-        "q3": "מה עדיין דורש הסבר? / ما الذي ما زلت أحتاج إلى توضيحه؟",
-        "q4_transfer": "איפה אוכל להשתמש במה שלמדתי? / أين أستطيع استخدام ما تعلمته؟"
+        "q1": "${targetLang === 'hebrew' ? 'מה הרעיון המרכזי שלמדתי היום?' : 'ما أهم فكرة تعلمتها اليوم؟'}",
+        "q2": "${targetLang === 'hebrew' ? 'מה עזר לי להבין?' : 'ما الذي ساعدني على الفهم؟'}",
+        "q3": "${targetLang === 'hebrew' ? 'מה עדיין דורש הסבר?' : 'ما الذي ما زلت أحتاج إلى توضيحه؟'}",
+        "q4_transfer": "${targetLang === 'hebrew' ? 'איפה אוכל להשתמש במה שלמדתי?' : 'أين أستطيع استخدام ما تعلمته؟'}"
       }
     }
   }
@@ -2870,18 +2951,23 @@ ${languageDirective}
 
   const parseSafeJson = (raw) => {
     if (!raw) return null;
+    let clean = raw.trim();
+    if (clean.startsWith('```json')) clean = clean.slice(7);
+    else if (clean.startsWith('```')) clean = clean.slice(3);
+    if (clean.endsWith('```')) clean = clean.slice(0, -3);
+    clean = clean.trim();
     try {
-      return JSON.parse(raw);
+      return JSON.parse(clean);
     } catch (e) {
-      const first = raw.indexOf('{');
-      const last = raw.lastIndexOf('}');
+      const first = clean.indexOf('{');
+      const last = clean.lastIndexOf('}');
       if (first !== -1 && last > first) {
         try {
-          const cleaned = raw.substring(first, last + 1)
+          const sub = clean.substring(first, last + 1)
             .replace(/[“”؟‘’]/g, '"')
             .replace(/,\s*}/g, '}')
             .replace(/,\s*]/g, ']');
-          return JSON.parse(cleaned);
+          return JSON.parse(sub);
         } catch (err2) {
           return null;
         }
@@ -2937,30 +3023,49 @@ ${languageDirective}
         reflectionQuestion: 'ما القاعدة أو المهارة اللغوية التي أوضحها هذا المقطع؟ وكيف نتجنب الخطأ فيها؟'
       };
     }
-    if (t.includes('بيئة') || t.includes('نبات') || t.includes('شجر') || t.includes('حيوان') || t.includes('طبيعة') || t.includes('تلوث') || t.includes('أرض') || t.includes('فضاء') || t.includes('كواكب') || t.includes('شمس')) {
-      return {
-        title: 'عجائب الطبيعة والكون للأطفال: استكشاف البيئة وسحر الاكتشاف',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/n3W5J_j1Rk4?rel=0',
-        youtubeUrl: 'https://www.youtube.com/watch?v=n3W5J_j1Rk4',
-        searchQuery: 'فيديو تعليمي عن البيئة والطبيعة للاطفال',
-        reflectionQuestion: 'ما الذي لفت انتباهكم في هذا المشهد البيئي؟ وكيف نحافظ على توازن الطبيعة؟'
-      };
-    }
     return {
-      title: `فيلم استكشافي قصير: ${safeTitle}`,
+      title: targetLang === 'hebrew' ? `סרטון חקר והשראה: ${safeTitle}` : targetLang === 'english' ? `Inquiry Video: ${safeTitle}` : `فيلم استكشافي قصير: ${safeTitle}`,
       embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
       youtubeUrl: 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
-      searchQuery: `فيلم تعليمي للاطفال عن ${safeTitle}`,
-      reflectionQuestion: 'بعد مشاهدة هذا المقطع: ما الفكرة الجوهرية التي أثارت فضولكم وترتبط بدرسنا اليوم؟'
+      searchQuery: `${safeTitle} kids educational video`,
+      reflectionQuestion: targetLang === 'hebrew' ? 'מהו הרעיון המרכזי שעורר את סקרנותכם בסרטון?' : targetLang === 'english' ? 'What key idea sparked your curiosity in this clip?' : 'بعد مشاهدة هذا المقطع: ما الفكرة الجوهرية التي أثارت فضولكم وترتبط بدرسنا اليوم؟'
     };
   };
 
   const postProcessLesson = (lesson) => {
     if (!lesson || !lesson.stations) return lesson;
     const reqAndTitle = (safeRequests + ' ' + safeTitle).toLowerCase();
-    const isVideoRequested = reqAndTitle.match(/فيلم|فيديو|مقطع|video|film|movie/i);
-    const isRiddleRequested = reqAndTitle.match(/أحجية|احجية|لغز|فزورة|غموض|riddle|mystery/i);
-    const isPuzzleRequested = reqAndTitle.match(/بازل|puzzle|ترتيب|تركيب|jigsaw/i);
+    const isVideoRequested = reqAndTitle.match(/فيلم|فيديو|مقطع|video|film|movie|סרטון/i);
+    const isRiddleRequested = reqAndTitle.match(/أحجية|احجية|لغز|فزورة|غموض|riddle|mystery|חידה/i);
+    const isPuzzleRequested = reqAndTitle.match(/بازل|puzzle|ترتيب|تركيب|jigsaw|פאזל/i);
+
+    // 1. Language Sanitization on Lesson-Level Fields
+    lesson.subject = lesson.subject || safeSubject;
+    lesson.language = targetLang;
+
+    if (targetLang === 'hebrew') {
+      if (!lesson.objective || /[\u0600-\u06FF]/.test(lesson.objective)) {
+        lesson.objective = isReadingComprehension
+          ? `התלמיד יקרא ויבין קטע קריאה בעברית בנושא (${safeTitle}), ויענה על שאלות הבנה ברמות חשיבה מגוונות תוך ביסוס מתוך הטקסט.`
+          : isValuesEducation
+          ? `התלמיד יבין את המשמעות הערכית של (${safeTitle}), ינתח דילמות מוסריות, ויתחייב למעשה חיובי.`
+          : `התלמיד ירכוש ויישם את מיומנויות השיעור (${safeTitle}) וינמק את שלביו בעברית תקינה.`;
+      }
+      if (!lesson.successCriteria || /[\u0600-\u06FF]/.test(lesson.successCriteria)) {
+        lesson.successCriteria = isReadingComprehension
+          ? `מענה עצמאי על שאלות איתור מידע, הסקה והערכה תוך הבאת הוכחה וציטוט מקטע הקריאה.`
+          : `ביצוע נכון של שלוש משימות מתמיינות, הצגת דף ראיות אישי, וניסוח תובנה יישומית.`;
+      }
+    } else if (targetLang === 'english') {
+      if (!lesson.objective || /[\u0600-\u06FF]/.test(lesson.objective)) {
+        lesson.objective = isReadingComprehension
+          ? `Students will read and comprehend a grade-level English passage on (${safeTitle}), answering multi-tiered questions.`
+          : `Students will understand and apply the core concepts and skills of (${safeTitle}) with precise reasoning.`;
+      }
+      if (!lesson.successCriteria || /[\u0600-\u06FF]/.test(lesson.successCriteria)) {
+        lesson.successCriteria = `Successful completion of tiered practice tasks, text evidence demonstration, and reflective exit ticket response.`;
+      }
+    }
 
     const hook = lesson.stations['1_hook'];
     if (hook) {
@@ -2976,8 +3081,26 @@ ${languageDirective}
         reflectionQuestion: curatedVid.reflectionQuestion
       };
 
-      // 2. Build rich riddle data
-      const defaultRiddle = isExcellence ? {
+      // 2. Build rich riddle data in proper language
+      const defaultRiddle = targetLang === 'hebrew' ? {
+        riddleText: `אני סוד הקשור לנושא (${safeTitle}). בהתחלה אני נראה כחידה מסתורית, אך כאשר תחקרו את מאפייניי ותגלו את הרמזים, אהפוך למפתח שלכם להצלחה! מהו ההסבר ההגיוני שמאחוריי?`,
+        clues: [
+          '🔑 רמז 1: חשבו על הקשר הישיר בין המילים והרעיונות שראינו.',
+          '🔑 רמז 2: התבוננו במאפיין המרכזי שאינו משתנה.'
+        ],
+        options: ['הסבר אקראי ללא ראיות', `המושג המרכזי והמדויק של ${safeTitle} 🎯`, 'התעלמות מהרמזים', 'ניחוש בלבד'],
+        solution: `המושג המרכזי והמדויק של (${safeTitle}) 🎯`,
+        explanation: 'הפתרון טמון בחשיבה מדויקת, קישור בין רמזים לראיות והבנת מטרת השיעור!'
+      } : targetLang === 'english' ? {
+        riddleText: `I am a hidden concept related to (${safeTitle}). Explore my clues to reveal how I connect our lesson today! What is the logical explanation behind me?`,
+        clues: [
+          '🔑 Clue 1: Think about the core patterns of our topic.',
+          '🔑 Clue 2: Eliminate random guesses and look for solid evidence.'
+        ],
+        options: ['Random guess', `The core rule of ${safeTitle} 🎯`, 'No evidence', 'Giving up'],
+        solution: `The core rule of (${safeTitle}) 🎯`,
+        explanation: 'Applying logical reasoning and evidence unlocks our learning goal!'
+      } : (isExcellence ? {
         riddleText: 'لستُ شيئاً تشتريه بالمال، ولا حجراً تجده في الرمال. إن بدأتَ عملاً أتقنته، وإن واجهك فشلٌ تحديته وتجاوزته! لا أرضى بالعادي بل أطمح للأفضل دائماً... فمن أكون؟',
         clues: [
           '🔑 تلميح 1: كلمة تبدأ بحرف التاء، وترتبط بالإتقان والشغف والاجتهاد.',
@@ -2995,19 +3118,29 @@ ${languageDirective}
         options: ['تفسير عشوائي بدون دليل', `المفهوم العلمي المنطقي لـ ${safeTitle} 🎯`, 'تجاهل الموقف', 'الاعتماد على الحظ'],
         solution: `المفهوم العلمي المنطقي لـ (${safeTitle}) 🎯`,
         explanation: `الحل يكمن في تطبيق التفكير المنطقي وربط الملاحظة بالدليل للوصول للهدف التعليمي للحصة.`
-      };
+      });
 
-      // 3. Build rich puzzle data
-      const defaultPuzzle = isExcellence ? {
-        instruction: 'رتب مراحل صعود قمة التميز بالترتيب الذهبي الصحيح لاكتمال البازل:',
+      // 3. Build rich puzzle data in proper language
+      const defaultPuzzle = targetLang === 'hebrew' ? {
+        instruction: `סדרו את שלבי החקר והיישום של (${safeTitle}) ברצף הנכון להשלמת הפאזל:`,
         pieces: [
-          { id: 'p1', text: '١. تحديد الهدف والشغف 🎯', order: 1 },
-          { id: 'p2', text: '٢. البدء بالمحاولة الأولى والتدريب المستمر 🏃‍♂️', order: 2 },
-          { id: 'p3', text: '٣. التعلم من الأخطاء وتجاوز العثرات 💡', order: 3 },
-          { id: 'p4', text: '٤. الوصول إلى الإتقان والتميز وخدمة المجتمع 🌟', order: 4 }
+          { id: 'p1', text: '1. התבוננות, חקר המצב וזיהוי המושג 🔍', order: 1 },
+          { id: 'p2', text: '2. ניתוח הנתונים וקישור הרמזים 🧩', order: 2 },
+          { id: 'p3', text: '3. ניסוח המסקנה ויישום הכלל הלשוני/המדעי ⚙️', order: 3 },
+          { id: 'p4', text: '4. אימות התשובה והצגת ראיות הבנה עצמאיות ✅', order: 4 }
         ],
-        targetConcept: 'معادلة التميز الحقيقي في مدرسة مشيرفة الابتدائية',
-        successMessage: '🎉 رائع جداً! لقد ركّبتم بازل التميز واكتشفتم أن التميز رحلة إصرار وعمل مستمر!'
+        targetConcept: `המסלול השלם להבנת ויישום (${safeTitle})`,
+        successMessage: '🎉 מצוין! פאזל הלמידה הושלם בהצלחה וזכיתם במפתח הזהב!'
+      } : targetLang === 'english' ? {
+        instruction: `Arrange the steps of exploring and applying (${safeTitle}) in proper order:`,
+        pieces: [
+          { id: 'p1', text: '1. Observe the problem and identify key concepts 🔍', order: 1 },
+          { id: 'p2', text: '2. Analyze evidence and patterns 🧩', order: 2 },
+          { id: 'p3', text: '3. Deduce the main rule and formula ⚙️', order: 3 },
+          { id: 'p4', text: '4. Verify results with independent evidence ✅', order: 4 }
+        ],
+        targetConcept: `Mastering (${safeTitle})`,
+        successMessage: '🎉 Well done! The puzzle is completed and the key concept is unlocked!'
       } : {
         instruction: `رتب خطوات استكشاف وتطبيق (${safeTitle}) بالترتيب الصحيح لاكتمال البازل المعرفي:`,
         pieces: [
@@ -3021,7 +3154,7 @@ ${languageDirective}
       };
 
       // Determine active activity type
-      let activeType = 'video';
+      let activeType = 'riddle';
       if (isRiddleRequested) activeType = 'riddle';
       else if (isPuzzleRequested) activeType = 'puzzle';
       else if (isVideoRequested) activeType = 'video';
@@ -3030,8 +3163,8 @@ ${languageDirective}
       // Merge into interactiveActivity
       hook.interactiveActivity = {
         type: activeType,
-        title: activeType === 'riddle' ? (hook.interactiveActivity?.riddle?.riddleText ? 'أحجية المحطة' : `أحجية ولغز: ${safeTitle}`)
-             : activeType === 'puzzle' ? `بازل التحدي: ${safeTitle}`
+        title: activeType === 'riddle' ? (targetLang === 'hebrew' ? `חידת הפתיחה: ${safeTitle}` : targetLang === 'english' ? `Opening Riddle: ${safeTitle}` : `أحجية ولغز: ${safeTitle}`)
+             : activeType === 'puzzle' ? (targetLang === 'hebrew' ? `פאזל האתגר: ${safeTitle}` : targetLang === 'english' ? `Challenge Puzzle: ${safeTitle}` : `بازل التحدي: ${safeTitle}`)
              : defaultVideo.title,
         riddle: {
           ...defaultRiddle,
@@ -3049,7 +3182,6 @@ ${languageDirective}
         }
       };
 
-      // Also keep hook.media synchronized for backwards compatibility
       hook.media = {
         type: 'video',
         title: hook.interactiveActivity.video.title,
@@ -3060,47 +3192,49 @@ ${languageDirective}
       };
     }
 
-    // Set Subject and Language on lesson object
-    lesson.subject = lesson.subject || safeSubject;
-    lesson.language = targetLang;
-
     // Guarantee Station 2 has studentPrompt & teacherGuidance
     const st2 = lesson.stations['2_understanding'];
     if (st2) {
-      if (!st2.studentPrompt || !st2.studentPrompt.trim()) {
+      if (!st2.studentPrompt || !st2.studentPrompt.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st2.studentPrompt))) {
         st2.studentPrompt = targetLang === 'hebrew'
-          ? `מושגי יסود והסבר לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל במחברת.`
+          ? (isReadingComprehension
+            ? `קטע קריאה מרכזי: סוד ההצלחה והמעשה המשותף 📖\n\nבבוקר יום סתווי נעים, התכנסו ילדי כיתה ד' בחצר בית הספר. המורה הודיעה כי בית הספר יוצא לפרויקט מיוחד: הקמת גינה קהילתית שתספק ירקות ופרחים לקשישי היישוב. בתחילה, היו תלמידים שחששו מן העבודה הקשה וטענו כי הקרקע יבשה וקשה לעיבוד.\n\nאך יונתן, תלמיד שקט הידוע בחריצותו, ניגש אל הפינה המוזנחת, לקח מעדר קטן והחל לסקל אבנים. אט-אט הצטרפו אליו שאר התלמידים. כל אחד ואחת תרמו את חלקם: מי בעודפי זרעים שהביאו מהבית, ומי בהשקיה סבלנית ועידוד. בתוך מספר שבועות הפכה החלקה המוזנחת לנווה מדבר ירוק ומרהיב.\n\nבטקס חנוכת הגינה אמרה המנהלת: "הגינה הזו איננה רק ערוגות של צמחים; היא הוכחה חיה לכך שכאשר כוונות טובות פוגשות התמדה ועבודה משותפת, גם אדמה קשה מצמיחה פירות מתוקים."\n\n📌 מילון מונחים וביאור מילים:\n• לסקל: להרים ולהרחיק אבנים מן האדמה כדי להכשירה לנטיעה.\n• נווה מדבר: מקום ירוק ופורח בתוך סביבה צחיחה.\n• התמדה: המשך עשייה ללא ויתור למרות הקשיים.`
+            : `מושגי יסוד והסבר מעמיק לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל המרכזי במחברת ושתפו את חבריכם.`)
           : targetLang === 'english'
           ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
-          : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
+          : (isReadingComprehension
+            ? `نص القراءة المركزي: سرّ النجاح والعمل المشترك 📖\n\nفي صباح يوم خريفي مشرق، اجتمع طلاب الصف في فناء المدرسة، حيث أعلنت المعلمة عن انطلاق مبادرة نوعية: زراعة حديقة مدرسية بيئية تخدم المجتمع. في البداية، تردد بعض الطلاب ظانين أن التربة جافة وأن العمل شاق ويحتاج جهداً كبيراً.\n\nلكن سامر، وهو طالب عُرف بهدوئه ومثابرته، بادر فوراً وتقدم نحو الزاوية المهملة وبدأ يزيل الأحجار بروح العزيمة. وسرعان ما ألهم زملاءه فانضموا إليه واحداً تلو الآخر؛ هذا يحمل الشتلات، وتلك تسقي الماء بانتظام، والآخر ينظم الممرات. وخلال أسابيع قليلة، تحولت البقعة القاحلة إلى واحة خضراء مبهجة تبث الأمل.\n\nوفي يوم افتتاح الحديقة، قالت المديرة بابتسامة فخر: "إن هذه الحديقة ليست مجرد نباتات وأزهار، بل هي برهان حي على أن الإرادة الصادقة والتعاون المثمر يحولان أصعب التحديات إلى نجاحات باهرة."\n\n📌 معجم المفردات والتراكيب الجديدة:\n• يزيل الأحجار: ينظف الأرض ويهيئها للغرس.\n• واحة خضراء: مكان مفعم بالحياة والجمال.\n• مثابرة: الاستمرار في العمل دون كلل أو تراجع.`
+            : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`);
       }
-      if (!st2.teacherGuidance || !st2.teacherGuidance.trim()) {
+      if (!st2.teacherGuidance || !st2.teacherGuidance.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st2.teacherGuidance))) {
         st2.teacherGuidance = targetLang === 'hebrew'
-          ? `הנחיות למורה לתחנת הבנת המשמעות:\n1. הנחו את התלמידים לחקר פעיל של המשפטים והמושגים.\n2. שאלו שאלות מנחות לניסוח הכלל בעצמם.\n3. ודאו שהמושג המרכזי ברור לכולם.`
+          ? `הנחיות למורה לתחנת הבנת המשמעות:\n1. הנחו קריאה מודרכת פעילה ובררו את מילות המפתח.\n2. שאלו שאלות מנחות לניסוח התובנה המרכזית על ידי התלמידים.\n3. ודאו שהמושג ברור לכולם לפני המעבר לתרגול.`
           : targetLang === 'english'
-          ? `Teacher guidance for Station 2:\n1. Guide students through active exploration of language structures.\n2. Ask guiding questions to help students deduce the rule.\n3. Reinforce the core objective and criteria.`
+          ? `Teacher guidance for Station 2:\n1. Guide students through active exploration.\n2. Ask guiding questions to help students deduce the rule.\n3. Reinforce the core objective.`
           : `إرشادات المعلم لمحطة بناء المعنى:\n١. وجّه الطلاب نحو النمذجة والاستكشاف الصفي النشط.\n٢. اطرح أسئلة توجيهية تساعد الطلاب على صياغة الاستنتاج بأنفسهم.\n٣. ركّز على تثبيت المفهوم المركزي ومعايير التمييز بدقة.`;
       }
       if (!st2.scaffold || !st2.scaffold.trim()) {
-        st2.scaffold = targetLang === 'hebrew' ? 'רמז מסייע: היעזרו במארגן הגרפי.' : targetLang === 'english' ? 'Helpful hint: Refer to the visual graphic organizer.' : 'منظم بصري أو خطوة استرشادية مساندة.';
+        st2.scaffold = targetLang === 'hebrew' ? 'רמז מסייע: היעזרו בביאור המילים בצד.' : targetLang === 'english' ? 'Helpful hint: Refer to the visual graphic organizer.' : 'منظم بصري أو خطوة استرشادية مساندة.';
       }
     }
 
-    // Guarantee Station 3 (التطبيق والتدريب) has rich studentPrompt, teacherGuidance, scaffold, and normalized tiered tasks
+    // Guarantee Station 3 (التطبيق والتدريب)
     const st3 = lesson.stations['3_practice'];
     if (st3) {
-      if (!st3.studentPrompt || !st3.studentPrompt.trim()) {
+      if (!st3.studentPrompt || !st3.studentPrompt.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st3.studentPrompt))) {
         st3.studentPrompt = targetLang === 'hebrew'
           ? `ברוכים הבאים לתחנת היישום והתרגול! 🛠️\nבמשימה זו ניישם את מה שלמדנו בנושא (${safeTitle}).\n• עבדו בקבוצות לפי שלוש רמות אתגר.\n• שתפו פעולה ונמקו את תשובותיכם בעברית ברורה!`
           : targetLang === 'english'
           ? `Welcome to the Practice & Application Station! 🛠️\nIn this station, we will apply what we learned about (${safeTitle}).\n• Work collaboratively in your assigned tiered group.\n• Discuss challenges and justify every answer in English!`
-          : `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
+          : `مرحباً بكم يا أبطال في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً سليماً!`;
       }
       if (!st3.teacherGuidance || !st3.teacherGuidance.trim()) {
-        st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب ومتابعة الفرق المتمايزة والسقالات.`;
+        st3.teacherGuidance = targetLang === 'hebrew'
+          ? `הנחיות למורה להנחיית הקבוצות ומעקב אחר הרמות השונות.`
+          : `إرشادات المعلم لإدارة محطة التطبيق والتدريب ومتابعة الفرق المتمايزة والسقالات.`;
       }
       if (!st3.scaffold || !st3.scaffold.trim()) {
-        st3.scaffold = targetLang === 'hebrew' ? 'רמז מסייע: חזרו לכלל מהתחנה הקודמת.' : targetLang === 'english' ? 'Scaffold hint: Check the rule from Station 2.' : 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
+        st3.scaffold = targetLang === 'hebrew' ? 'רמז מסייע: חזרו לטקסט ולכלל מהתחנה הקודמת.' : targetLang === 'english' ? 'Scaffold hint: Check the rule from Station 2.' : 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
       }
       if (Array.isArray(st3.tasks)) {
         st3.tasks = st3.tasks.map(t => ({
@@ -3124,16 +3258,22 @@ ${languageDirective}
       
       if (!st4.studentPrompt || !st4.studentPrompt.trim() || (!hasSpecificQuestions && (promptLower.includes('דף משימה') || promptLower.includes('worksheet') || promptLower.includes('ورقة الدليل') || promptLower.includes('ارفعوا أوراقكم')))) {
         st4.studentPrompt = targetLang === 'hebrew'
-          ? `דף משימה עצמי וראיות להבנה — [ ${safeTitle} ] ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח הבנה מדויקת:\n\n1. שאלה ראשונה (יישום ישיר): כתבו את המושג או הכלל במילים שלכם עם דוגמה.\n2. שאלה שנייה (הסבר ונימוק): נמקו מדוע תשובתכם נכונה בעזרת כלל שלמדנו.\n3. שאלת חשיבה והעברה: תנו משפט או דוגמה משלכם המיישמת את הכלל.\n\nכתבו את תשובתכם בבירור בשטח המענה למטה ולחצו "שלח תשובה למורה" 📤`
+          ? (isReadingComprehension
+            ? `דף משימה עצמי — ראיות להבנת הנקרא ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח את הבנתכם:\n\n1. (איתור מידע מפורש): מה היה הרעיון או המעשה המרכזי שמתואר בטקסט?\n2. (הסקה): מה גרם לשינוי בעמדת הדמויות לאורך ההתרחשות?\n3. (הוכחה מתוך הטקסט): הביאו משפט אחד או ראיה מתוך הטקסט המבססת את תשובתכם.\n4. (הבעת עמדה וביקורת): מה דעתכם על המעשה? כיצד הייתם פועלים במצב דומה? נמקו בעברית ברורה.\n\nכתבו את תשובתכם המלאה בתיבת המענה למטה ולחצו "שלח תשובה למורה" 📤`
+            : `דף משימה עצמי וראיות להבנה — [ ${safeTitle} ] ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח הבנה מדויקת:\n\n1. שאלה ראשונה (יישום ישיר): כתבו את המושג או הכלל במילים שלכם עם דוגמה.\n2. שאלה שנייה (הסבר ונימוק): נמקו מדוע תשובתכם נכונה בעזרת כלל שלמדנו.\n3. שאלת חשיבה והעברה: תנו משפט או דוגמה משלכם המיישמת את הכלל.\n\nכתבו את תשובתכם בבירור בשטח המענה למטה ולחצו "שלח תשובה למורה" 📤`)
           : targetLang === 'english'
           ? `Individual Evidence of Understanding Worksheet — [ ${safeTitle} ] ✍️\nAnswer the following questions independently to demonstrate your mastery:\n\n1. Question 1 (Direct Application): State the main concept or rule in your own words with an example.\n2. Question 2 (Reasoning & Evidence): Explain why your answer is correct using the lesson rule.\n3. Question 3 (Transfer & Extension): Write your own sentence or real-world example applying this concept.\n\nType your answers clearly below and click "Submit to Teacher" 📤`
-          : `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
+          : (isReadingComprehension
+            ? `ورقة الدليل الفردي المستقل — أدلة فهم المقروء [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل للنص القرائي. أجب عن الأسئلة الآتية:\n\n١. (استخراج صريح): ما الموقف أو الفكرة المحورية التي انطلق منها النص؟\n٢. (استنتاج وتحليل): ما الدافع الحقيقي وراء تصرف الشخصية الرئيسية في القصة؟\n٣. (الاستشهاد بالدليل): استخرج من النص جملة تدل بوضوح على أثر التعاون والمثابرة.\n٤. (إبداء الرأي والتقييم): ما رأيك في النهاية التي اختتم بها الكاتب نصه؟ برر رأيك بدليل مقنع.\n\nدوّن إجاباتك بتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`
+            : `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`);
       }
       if (!st4.individualTask || !st4.individualTask.trim()) {
         st4.individualTask = st4.studentPrompt;
       }
       if (!st4.teacherGuidance || !st4.teacherGuidance.trim()) {
-        st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي والتأكد من استقلالية كل طالب أثناء الحل.`;
+        st4.teacherGuidance = targetLang === 'hebrew'
+          ? `הנחיות למורה להערכת דף הראיות האישי.`
+          : `إرشادات المعلم لتقييم الدليل الفردي والتأكد من استقلالية كل طالب أثناء الحل.`;
       }
       if (!st4.scaffold || !st4.scaffold.trim()) {
         st4.scaffold = targetLang === 'hebrew' ? 'זכרו: קראו את השאלה בעיון ונמקו בבירור.' : targetLang === 'english' ? 'Remember: Read each question carefully and justify your answer.' : 'تذكّر: اقرأ السؤال بدقة، وركّز على تقديم دليل مقنع.';
@@ -3143,7 +3283,7 @@ ${languageDirective}
     // Guarantee Station 5 (حصاد ونقل الأثر)
     const st5 = lesson.stations['5_harvest'];
     if (st5) {
-      if (!st5.studentPrompt || !st5.studentPrompt.trim()) {
+      if (!st5.studentPrompt || !st5.studentPrompt.trim() || (targetLang === 'hebrew' && /[\u0600-\u06FF]/.test(st5.studentPrompt))) {
         st5.studentPrompt = targetLang === 'hebrew'
           ? `תחנת הקציר וסיכום הלמידה 🎒✨\nהגענו לסיום השיעור! זה הזמן לאסוף את פירות הלמידה שלכם היום:\n1. מה הרעיון המרכזי שלמדתם על (${safeTitle})?\n2. ענו בכנות ובעצמאות על שאלות כרטיס היציאה.\n3. חשבו: כיצד תוכלו להשתמש במה שלמדתם בחייכם?`
           : targetLang === 'english'
@@ -3151,7 +3291,9 @@ ${languageDirective}
           : `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`;
       }
       if (!st5.teacherGuidance || !st5.teacherGuidance.trim()) {
-        st5.teacherGuidance = `إرشادات المعلم لإغلاق الحصة ومراجعة مخرجات بطاقات الخروج ونقل الأثر.`;
+        st5.teacherGuidance = targetLang === 'hebrew'
+          ? `הנחיות למורה לאיסוף כרטיסי היציאה וסיכום המהלך.`
+          : `إرشادات المعلم لإغلاق الحصة ومراجعة مخرجات بطاقات الخروج ونقل الأثر.`;
       }
       if (!st5.scaffold || !st5.scaffold.trim()) {
         st5.scaffold = targetLang === 'hebrew' ? 'חשבו: מה הפתיע אתכם או חידש לכם היום?' : targetLang === 'english' ? 'Reflect: What was the most interesting thing you discovered today?' : 'تأمل: كيف تطوّر فهمك وثقتك بالمفهوم منذ بداية الدرس حتى الآن؟';
@@ -3179,49 +3321,10 @@ ${languageDirective}
     return lesson;
   };
 
-  // 1. Try Groq AI (Llama 3.3 70B, Qwen, ALLaM)
-  if (groqKey) {
-    const models = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'qwen/qwen3.8-27b',
-      'allam-2-7b',
-      'mixtral-8x7b-32768'
-    ];
-    for (const m of models) {
-      try {
-        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${groqKey}`
-          },
-          body: JSON.stringify({
-            model: m,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.45,
-            max_tokens: 3200
-          })
-        }, 16000);
-
-        if (res.ok) {
-          const data = await res.json();
-          const raw = data.choices?.[0]?.message?.content;
-          const parsed = parseSafeJson(raw);
-          if (parsed && parsed.stations && parsed.stations['1_hook']) {
-            return postProcessLesson(parsed);
-          }
-        }
-      } catch (e) {
-        console.warn(`Groq full journey (${m}) failed:`, e);
-      }
-    }
-  }
-
-  // 2. Try Gemini (Gemini 1.5 Flash, 2.0 Flash, 1.5 Pro)
+  // 1. Try Gemini (Gemini 2.0 Flash is ultra-fast, superior multilingual output)
   if (geminiKey) {
-    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-flash-latest'];
-    for (const gm of models) {
+    const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    for (const gm of geminiModels) {
       try {
         const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
@@ -3229,11 +3332,15 @@ ${languageDirective}
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only:` }] }],
-              generationConfig: { temperature: 0.4, maxOutputTokens: 3200, responseMimeType: 'application/json' }
+              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only matching schema:` }] }],
+              generationConfig: {
+                temperature: 0.35,
+                maxOutputTokens: 4200,
+                responseMimeType: 'application/json'
+              }
             })
           },
-          16000
+          28000
         );
 
         if (res.ok) {
@@ -3245,98 +3352,504 @@ ${languageDirective}
           }
         }
       } catch (e) {
-        console.warn(`Gemini full journey (${gm}) failed:`, e);
+        console.warn(`Gemini full journey (${gm}) notice:`, e);
       }
     }
   }
 
-  // High quality rich fallback
-  return postProcessLesson({
-    title: safeTitle,
-    grade: safeGrade,
-    objective: `أن يتمكن الطالب من استيعاب وتطبيق المهارات والمفاهيم الأساسية لدرس (${safeTitle}) وتبرير خطواته بدقة.`,
-    successCriteria: `حل وتطبيق ثلاثة تمارين متنوعة بنجاح، وتقديم دليل فردي يثبت الفهم المستقل، ونقل الأثر لموقف حياتي.`,
-    suggestedDuration: 45,
-    stations: {
-      "1_hook": {
-        name: "مشوّق ومحفّز",
-        number: 1,
-        icon: "🔥",
-        studentPrompt: `لغز وتحدي المدخل لدرس (${safeTitle}):\nتأمل هذا الموقف المثير: حدثت مفارقة تجعلنا نتساءل: كيف يمكننا التفسير بدقة ودون غموض؟ ما الذي يثير فضولك وما أول فكرة تخطر ببالك؟`,
-        teacherGuidance: `اعرض الموقف وناقش فضول الطلاب دون إعلان الحل فوراً. اكتب الهدف ومعيار النجاح بخط بارز على اللوح.`,
-        suggestedDuration: 6,
-        scaffold: `فكر في العلاقة بين المعطيات وما درسته في الحصة السابقة.`
-      },
-      "2_understanding": {
-        name: "فهم وبناء المعنى",
-        number: 2,
-        icon: "🧩",
-        pedagogicalMode: "guided_exploration",
-        pedagogicalModeName: "الاستكشاف الموجّه",
-        studentPrompt: `بناء المفاهيم والقاعدة الذهبية لـ (${safeTitle}):\n١. المفهوم الأساسي: التعريف والخصائص المركزية.\n٢. القاعدة التطبيقية: الخطوات الثلاث للوصول للحل الصحيح.\n٣. مثال محلول توضيحي خطوة بخطوة.`,
-        teacherGuidance: `وجّه الطلاب لملاحظة النمط واستخراج القاعدة بأنفسهم قبل التلخيص الجماعي.`,
-        suggestedDuration: 12,
-        scaffold: `مخطط بصري ملخص للقاعدة وللكلمات المفتاحية.`
-      },
-      "3_practice": {
-        name: "التطبيق والتدريب",
-        number: 3,
-        icon: "🛠️",
-        suggestedDuration: 15,
-        workMode: "groups",
-        tasks: [
-          {
-            tier: "support",
-            badge: "🌱 فريق الانطلاق والتمكن",
-            title: "مهمة الانطلاق والتمكن",
-            task: `حل تمرين مباشر حول (${safeTitle}): اختر الإجابة المناسبة من بين الخيارات مع توضيح بسيط للسبب.`,
-            scaffold: `تلميح: راجع المثال الأول في بطاقة الشرح واستبعد الخيار غير المنطقي.`
+  // 2. Try Groq AI (Llama 3.3 70B & 3.1 8B with JSON Object format)
+  if (groqKey) {
+    const groqModels = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant'
+    ];
+    for (const m of groqModels) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
           },
-          {
-            tier: "core",
-            badge: "⭐ فريق الممارسة والإتقان",
-            title: "مهمة الممارسة والإتقان",
-            task: `طبق القاعدة الأساسية لـ (${safeTitle}) على ثلاث فقرات جديدة في دفترك، مع كتابة تعليل موجز لكل خطوة.`,
-            scaffold: `تلميح: تأكد من مطابقة جميع معايير النجاح وتدوين خطواتك بوضوح.`
-          },
-          {
-            tier: "advanced",
-            badge: "🚀 فريق الرواد والتحدي",
-            title: "مهمة الرواد والتحدي",
-            task: `اكتشف الخطأ الخفي في نموذج الحل المعروض وفسر سببه، ثم صغ مسألة جديدة لتحدي زملائك في باقي الفرق.`,
-            scaffold: `تلميح: ركز على الحالات الاستثنائية التي نوقشت أثناء الدرس.`
+          body: JSON.stringify({
+            model: m,
+            messages: [
+              {
+                role: 'system',
+                content: `You are an elite bilingual curriculum and educational design expert for elementary schools. Output 100% valid JSON only adhering strictly to the requested language (${targetLang}).`
+              },
+              { role: 'user', content: prompt }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.35,
+            max_tokens: 3800
+          })
+        }, 28000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const raw = data.choices?.[0]?.message?.content;
+          const parsed = parseSafeJson(raw);
+          if (parsed && parsed.stations && parsed.stations['1_hook']) {
+            return postProcessLesson(parsed);
           }
-        ]
-      },
-      "4_evidence": {
-        name: "أدلة الفهم",
-        number: 4,
-        icon: "🔎",
-        suggestedDuration: 7,
-        criterion: `تقديم إجابة فردية مستقلة ومبررة تثبت امتلاك مهارة (${safeTitle}) دون مساعدة.`,
-        individualTask: `مهمة التحقق الفردي:\nأجب عن السؤالين التاليين في بطاقتك الخاصة بمفردك:\n١. تطبيق مباشر على المفهوم المركزي.\n٢. تعليل علمي أو لغوي موجز لسبب اختيارك.`,
-        allowedHelp: ["تلميح بسيط", "توضيح التعليمات"],
-        evalLevels: {
-          mastered: "حقق الهدف",
-          partial: "حققه جزئياً",
-          needs_support: "يحتاج دعماً",
-          insufficient_data: "الدليل غير كافٍ للحكم"
         }
-      },
-      "5_harvest": {
-        name: "حصاد ونقل الأثر",
-        number: 5,
-        icon: "🎒",
-        suggestedDuration: 5,
-        exitTicket: {
-          q1: "ما أهم فكرة تعلّمتها اليوم؟",
-          q2: "ما الذي ساعدني على الفهم؟",
-          q3: "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
-          q4_transfer: "أين أستطيع استخدام ما تعلّمته في حياتي خارج المدرسة؟"
-        }
+      } catch (e) {
+        console.warn(`Groq full journey (${m}) notice:`, e);
       }
     }
-  });
+  }
+
+  // 3. High quality genre & language-aware rich fallback
+  const createHighQualityLessonFallback = () => {
+    if (targetLang === 'hebrew') {
+      if (isReadingComprehension) {
+        return {
+          title: safeTitle,
+          subject: safeSubject || 'עברית - הבנת הנקרא',
+          language: 'hebrew',
+          grade: safeGrade,
+          objective: `התלמיד יקרא קטע קריאה בעברית (${safeTitle}), יבין את תוכנו המרכזי והמשתמע, ויענה על שאלות הבנה ברמות חשיבה מגוונות תוך ביסוס תשובותיו מתוך הטקסט.`,
+          successCriteria: `מענה מדויק על שאלות איתור מידע, הסקת מסקנה אחת לפחות, והבעת עמדה אישית מנומקת המגובה בראיה מקטע הקריאה.`,
+          suggestedDuration: 45,
+          stations: {
+            "1_hook": {
+              name: "אתגר וסקרנות",
+              number: 1,
+              icon: "🔥",
+              studentPrompt: `ברוכים הבאים לשיעור הבנת הנקרא בנושא (${safeTitle})! 📖✨\nתארו לעצמכם שאתם מוצאים יומן מסתורי שבו כתוב משפט קצר ומעורר מחשבה: "מי שאינו מוכן להקשיב לפרטים הקטנים, מפספס את הסוד הגדול ביותר."\nאיזה סוד לדעתכם עשוי להתגלות בקטע שנקרא היום? שתפו את ההשערה שלכם!`,
+              teacherGuidance: `עוררו את סקרנות התלמידים לקראת הקריאה, הזמינו השערות על פי הכותרת והנושא, ורשמו את מטרת השיעור על הלוח.`,
+              suggestedDuration: 6,
+              scaffold: `רמז: התבוננו במילים המרכזיות בכותרת וחשבו מה הנושא הראשי.`
+            },
+            "2_understanding": {
+              name: "הבנת המשמעות",
+              number: 2,
+              icon: "🧩",
+              pedagogicalMode: "guided_exploration",
+              pedagogicalModeName: "הבנה ובניית משמעות",
+              studentPrompt: `קטע קריאה מרכזי: סוד ההצלחה והמעשה המשותף 📖\n\nבבוקר יום סתווי נעים, התכנסו ילדי כיתה ד' בחצר בית הספר. המורה הודיעה כי בית הספר יוצא לפרויקט מיוחד: הקמת גינה קהילתית שתספק ירקות ופרחים לקשישי היישוב. בתחילה, היו תלמידים שחששו מן העבודה הקשה וטענו כי הקרקע יבשה וקשה לעיבוד.\n\nאך יונתן, תלמיד שקט הידוע בחריצותו, ניגש אל הפינה המוזנחת, לקח מעדר קטן והחל לסקל אבנים. אט-אט הצטרפו אליו שאר התלמידים. כל אחד ואחת תרמו את חלקם: מי בעודפי זרעים שהביאו מהבית, ומי בהשקיה סבלנית ועידוד. בתוך מספר שבועות הפכה החלקה המוזנחת לנווה מדבר ירוק ומרהיב.\n\nבטקס חנוכת הגינה אמרה המנהלת: "הגינה הזו איננה רק ערוגות של צמחים; היא הוכחה חיה לכך שכאשר כוונות טובות פוגשות התמדה ועבודה משותפת, גם אדמה קשה מצמיחה פירות מתוקים."\n\n📌 מילון מונחים וביאור מילים:\n• לסקל: להרים ולהרחיק אבנים מן האדמה כדי להכשירה לנטיעה.\n• נווה מדבר: מקום ירוק ופורח בתוך סביבה צחיחה.\n• התמדה: המשך עשייה ללא ויתור למרות הקשיים.`,
+              teacherGuidance: `הנחו קריאה מודרכת (קריאה קולית או שקטה), הסבירו מילים קשות ובדקו הבנה ראשונית של מהלך האירועים בטקסט.`,
+              suggestedDuration: 12,
+              scaffold: `היעזרו בביאור המילים בצד לקריאה רציפה.`
+            },
+            "3_practice": {
+              name: "יישום ותרגול",
+              number: 3,
+              icon: "🛠️",
+              suggestedDuration: 15,
+              workMode: "groups",
+              studentPrompt: `משימות הבנה מדורגות בקבוצות על קטע הקריאה 🛠️\nעבדו יחד בקבוצות, דונו בשאלות ונמקו כל תשובה מתוך הטקסט שקראנו!`,
+              teacherGuidance: `עברו בין הקבוצות, ודאו שתלמידי הזינוק מוצאים את המידע הגלוי, ותלמידי השליטה והאתגר מנמקים מתוך הטקסט.`,
+              tasks: [
+                {
+                  tier: "support",
+                  badge: "🌱 קבוצת זינוק והבנה",
+                  title: "משימת איתור מידע מפורש בטקסט",
+                  task: `ענו על השאלות על פי הכתוב בקטע:\n1. לשם מה החליטו להקים את הגינה הקהילתית?\n2. מה עשה יונתן שגרם לשאר הילדים להצטרף אליו?`,
+                  scaffold: `רמז: חפשו בפסקה הראשונה והשנייה של הטקסט.`
+                },
+                {
+                  tier: "core",
+                  badge: "⭐ קבוצת שליטה ותרגול",
+                  title: "משימת הסקה והבנת קשרים",
+                  task: `1. מה היה השינוי שחל בעמדת התלמידים לאורך הסיפור, ומדוע חל שינוי זה?\n2. הסבירו במילים שלכם את כוונת המנהלת באומרה: "הגינה איננה רק ערוגות של צמחים".`,
+                  scaffold: `רמז: השוו בין תחילת הסיפור לסופו והתבוננו במשמעות הפנימית של הפרויקט.`
+                },
+                {
+                  tier: "advanced",
+                  badge: "🚀 קבוצת אתגר וחשיבה ביקורתית",
+                  title: "משימת הערכה, ביקורת ויצירתיות",
+                  task: `1. הביעו דעתכם: האם מעשהו של יונתן מעיד על מנהיגות? נמקו את עמדתכם בעזרת ראיה מהסיפור.\n2. הציעו כותרת מקורית אחרת לקטע הקריאה ונמקו מדוע היא מתאימה למסר המרכזי.`,
+                  scaffold: `רמז: חשבו מה מאפיין מנהיג שאינו רק מדבר אלא פועל ראשון.`
+                }
+              ]
+            },
+            "4_evidence": {
+              name: "ראיות הבנה",
+              number: 4,
+              icon: "🔎",
+              suggestedDuration: 7,
+              criterion: `מענה עצמאי על שאלות ההבנה תוך הבאת הוכחה וציטוט מהטקסט.`,
+              studentPrompt: `דף משימה עצמאי — ראיות להבנת הנקרא ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח את הבנתכם:\n\n1. (איתור מידע): מה היה החשש הראשוני של הילדים לפני שהחלו בעבודה?\n2. (הסקה): מדוע לדעתכם זכה יונתן להערכה רבה, אף על פי שלא דיבר הרבה?\n3. (הוכחה מהטקסט): העתיקו משפט אחד מתוך הטקסט המעיד על הצלחת הפרויקט.\n4. (הבעת עמדה): איזה פרויקט התנדבותי הייתם מציעים להקים בבית ספרנו? נמקו את בחירתכם.\n\nכתבו את תשובתכם המלאה בתיבת המענה למטה ולחצו על "שלח תשובה למורה" 📤`,
+              individualTask: `דף משימה עצמאי להבנת הנקרא עם 4 שאלות ישירות.`,
+              allowedHelp: ["הבהרת שאלות", "הפניה לפסקה המתאימה"],
+              evalLevels: {
+                mastered: "הוכיח הבנה מעמיקה וביסס מתוך הטקסט",
+                partial: "ענה על חלק מהשאלות ללא ביסוס מספק",
+                needs_support: "זקוק לתיווך באיתור מידע",
+                insufficient_data: "אין מספיק ראיות"
+              }
+            },
+            "5_harvest": {
+              name: "סיכום וקציר",
+              number: 5,
+              icon: "🎒",
+              suggestedDuration: 5,
+              studentPrompt: `תחנת הקציר וסיכום הלמידה 🎒✨\nהגענו לסיום שיעור הבנת הנקרא!\n1. איזה לקח או תובנה מרכזית לקחתם מתוך קטע הקריאה היום?\n2. ענו על שאלות כרטיס היציאה בכנות ובעצמאות.\n3. שתפו פעולה והביאו את ערך העשייה וההתמדה אל הכיתה שלכם!`,
+              teacherGuidance: `אספו את כרטיסי היציאה, סכמו את המסר המרכזי של הסיפור וקשרו להישגי התלמידים.`,
+              exitTicket: {
+                q1: "מהו הרעיון או המסר המרכזי שלמדתי מקטע הקריאה היום?",
+                q2: "איזו שאלה או משימה עזרה לי להבין את הטקסט בצורה הטובה ביותר?",
+                q3: "האם יש מילה או רעיון בטקסט שעדיין דורשים הסבר נוסף מבחינתי?",
+                q4_transfer: "כיצד אוכל ליישם את מסר ההתמדה והעשייה המשותפת בחיי היומיום שלי?"
+              }
+            }
+          }
+        };
+      } else if (isValuesEducation) {
+        return {
+          title: safeTitle,
+          subject: safeSubject || 'חינוך לערכים ומנהיגות',
+          language: 'hebrew',
+          grade: safeGrade,
+          objective: `התלמיד יבין את המשמעות העמוקה של (${safeTitle}), ינתח דילמות מוסריות וחברתיות, ויתחייב ליישום הערך במעשים יומיומיים.`,
+          successCriteria: `השתתפות בניתוח דילמה מוסרית, ניסוח שני נימוקים ערכיים, וקבלת התחייבות אישית למעשה חיובי בסביבתו.`,
+          suggestedDuration: 45,
+          stations: {
+            "1_hook": {
+              name: "אתגר וסקרנות",
+              number: 1,
+              icon: "🔥",
+              studentPrompt: `פתיחה מעוררת מחשבה לשיעור (${safeTitle}):\nתארו לעצמכם מצב: נשאר לכם חטיף אחד אחרון שאתם מאוד אוהבים, וחבר שלכם שכח את ארוחת העשר ומביט בכם בעצב. מה עובר לכם בראש ברגע הראשון? האם קל או קשה לחלוק? שתפו בכנות!`,
+              teacherGuidance: `הציגו את הדילמה ללא שיפוטיות, אפשרו מגוון קולות, וחברו את הדיון לערך המרכזי של השיעור.`,
+              suggestedDuration: 6,
+              scaffold: `חשבו: מה גורם לנו להרגיש טוב באמת לאורך זמן?`
+            },
+            "2_understanding": {
+              name: "הבנת המשמעות",
+              number: 2,
+              icon: "🧩",
+              pedagogicalMode: "guided_exploration",
+              pedagogicalModeName: "בירור המושג הערכי",
+              studentPrompt: `בירור המושג: מהי נתינה אמיתית וכיצד היא משנה אותנו? 🌟\n\nנתינה איננה רק מסירת חפץ או כסף. נתינה אמיתית היא להקדיש זמן, להעניק חיוך מעודד, להקשיב לחבר בשעת קושי, או לוותר על נוחות אישית כדי לעזור למישהו אחר.\n\nחוקרים גילו שכאשר אדם עושה מעשה טוב עבור הזולת, המוח שלו מפריש חומרים שגורמים לתחושת שמחה וסיפוק עמוקה. כלומר: "הנותן מקבל כפליים".\n\nשלושת עמודי התווך של (${safeTitle}):\n1. רגישות והבחנה: לראות מי סביבנו זקוק לעזרה עוד לפני שהוא מבקש.\n2. עשייה מכל הלב: לתת מתוך אכפתיות אמיתית ולא כדי לקבל פרס או תמורה.\n3. התמדה: להפוך את הנתינה להרגל יומיומי ולא למאורע חד-פעמי.`,
+              teacherGuidance: `הנחו שיח ערכי מעמיק, בקשו דוגמאות מוחשיות מחיי בית הספר, וסכמו את עמודי התווך.`,
+              suggestedDuration: 12,
+              scaffold: `חשבו על פעם אחת שבה עזרתם למישהו ואיך הרגשתם לאחר מכן.`
+            },
+            "3_practice": {
+              name: "יישום ותרגול",
+              number: 3,
+              icon: "🛠️",
+              suggestedDuration: 15,
+              workMode: "groups",
+              studentPrompt: `משימת חקר ופתרון מצבים ערכיים בקבוצות 🛠️\nלפניכם משימות מדורגות לתרגום ערך הנתינה למעשים קונקרטיים בחיי היום-יום. שתפו פעולה ונמקו כל החלטה!`,
+              teacherGuidance: `עברו בין הקבוצות ועודדו דיון פתוח ומנומק המתרגם עקרונות תיאורטיים להתנהגות מעשית.`,
+              tasks: [
+                {
+                  tier: "support",
+                  badge: "🌱 קבוצת זינוק",
+                  title: "זיהוי מעשי נתינה יומיומיים",
+                  task: `כתבו 3 דרכים שונות שבהן תלמיד יכול לגלות נתינה בכיתה מבלי להוציא אגורה אחת (למשל: עזרה בלימודים, שיתוף במשחק, מילה טובה).`,
+                  scaffold: `רמז: חשבו על מעשים של חברות והקשבה.`
+                },
+                {
+                  tier: "core",
+                  badge: "⭐ קבוצת שליטה",
+                  title: "ניתוח דילמה חברתית",
+                  task: `תלמיד חדש הגיע לכיתה והוא עומד לבדו בהפסקה. חבריכם רוצים להמשיך במשחק כדורגל סוער.\nמה הייתם עושים? הציעו פתרון שמגשים את ערך הנתינה וההכללה תוך שמירה על כבוד כולם.`,
+                  scaffold: `רמז: איך אפשר לשלב אותו במשחק או למצוא פתרון יצירתי?`
+                },
+                {
+                  tier: "advanced",
+                  badge: "🚀 קבוצת אתגר ומנהיגות",
+                  title: "יוזמה חברתית בבית הספר",
+                  task: `תכננו "מיזם נתינה שבועי" עבור בית הספר שלנו:\n1. מה מטרת המיזם?\n2. מי קהל היעד?\n3. מהם הצעדים המעשיים ליישומו?\nהציגו את היוזמה בקצרה.`,
+                  scaffold: `רמז: חשבו על יוזמה פשוטה אך משפיעה (כגון: פינת חברות, סיוע בהפסקות).`
+                }
+              ]
+            },
+            "4_evidence": {
+              name: "ראיות הבנה",
+              number: 4,
+              icon: "🔎",
+              suggestedDuration: 7,
+              criterion: `הצגת שיקול דעת מוסרי עצמאי ונימוק החלטה ערכית בדף הראיות.`,
+              studentPrompt: `דף משימה עצמאי — הכרעה בדילמה מוסרית אישית ✍️\nענו על השאלות הבאות באופן עצמאי ומנומק:\n\n1. הסבירו במילים שלכם: מדוע אומרים ש"הנתינה מעשירה את הנותן יותר מאשר את המקבל"?\n2. תארו מקרה שבו ויתרתם על משהו אישי למען חבר או בן משפחה. מה הרגשתם?\n3. דילמה אישית: אם אתם ממהרים מאוד לשיעור ורואים תלמיד צעיר שבכה כי נפל לו הקלמר, כיצד תפעלו ומדוע?\n\nכתבו את תשובתכם בבירור בתיבת המענה למטה ולחצו "שלח תשובה למורה" 📤`,
+              individualTask: `דף משימה עצמאי לבירור ערכי והכרעה בדילמה.`,
+              allowedHelp: ["הבהרת ההוראות"],
+              evalLevels: {
+                mastered: "הביע עמדה מוסרית בוגרת ומנומקת היטב",
+                partial: "ענה באופן חלקי ללא נימוק מעמיק",
+                needs_support: "זקוק להכוונה בהבנת הדילמה",
+                insufficient_data: "אין מספיק ראיות"
+              }
+            },
+            "5_harvest": {
+              name: "סיכום וקציר",
+              number: 5,
+              icon: "🎒",
+              suggestedDuration: 5,
+              studentPrompt: `תחנת הקציר — התחייבות אישית למעשה טוב 🎒✨\nהגענו לסיום השיעור!\nערכים אינם נשארים במחברת — הם חיים במעשים שלנו.\nענו על שאלות כרטיס היציאה וקחו על עצמכם התחייבות אישית אחת להשבוע!`,
+              teacherGuidance: `אספו את ההתחייבויות האישיות של התלמידים ועודדו אותם ליישמן במהלך השבוע.`,
+              exitTicket: {
+                q1: "מהו הדבר המשמעותי ביותר שהבנתי היום על ערך הנתינה?",
+                q2: "איזה חלק בשיעור גרם לי לחשוב מחדש על ההתנהגות שלי?",
+                q3: "האם יש מצב שבו קשה לי לתת או לחלוק, וכיצד אוכל להתגבר על כך?",
+                q4_transfer: "מעשה הנתינה הקונקרטי שאבצע עוד היום או מחר הוא:"
+              }
+            }
+          }
+        };
+      }
+      return {
+        title: safeTitle,
+        subject: safeSubject || 'לשון עברית',
+        language: 'hebrew',
+        grade: safeGrade,
+        objective: `התלמיד ירכוש ויישם את המיומנויות והמושגים המרכזיים של השיעור (${safeTitle}) וינמק את שלביו בעברית תקינה.`,
+        successCriteria: `פתרון עצמאי של שלוש משימות מתמיינות, הצגת דף ראיות אישי מנומק, והעברת הידע למצב חיים מעשי.`,
+        suggestedDuration: 45,
+        stations: {
+          "1_hook": {
+            name: "אתגר וסקרנות",
+            number: 1,
+            icon: "🔥",
+            studentPrompt: `פתיחה מאתגרת לשיעור (${safeTitle}):\nלפניכם תופעה מרתקת ומעוררת מחשבה: כיצד נוכל להסביר אותה במדויק וללא ספקות? מה הרעיון הראשון שעולה בדעתכם? שתפו והציעו השערה!`,
+            teacherGuidance: `הציגו את המצב ועודדו השערות שונות מן התלמידים.`,
+            suggestedDuration: 6,
+            scaffold: `רמז: חשבו על הקשר למה שלמדנו בשיעור הקודם.`
+          },
+          "2_understanding": {
+            name: "הבנת המשמעות",
+            number: 2,
+            icon: "🧩",
+            pedagogicalMode: "guided_exploration",
+            pedagogicalModeName: "הבנה ובניית משמעות",
+            studentPrompt: `בניית המושגים והכלל המרכזי לשיעור (${safeTitle}):\n1. המושג המרכזי: הגדרה ומאפיינים מובהקים.\n2. הכלל היישומי: שלושת השלבים להגעה לתוצאה מדויקת.\n3. דוגמה מודגמת ומנומקת שלב אחר שלב.\n\nהעתיקו את הכלל למחברת והתבוננו בדוגמה.`,
+            teacherGuidance: `הנחו את התלמידים לגילוי הכלל באופן פעיל.`,
+            suggestedDuration: 12,
+            scaffold: `היעזרו בטבלת המושגים.`
+          },
+          "3_practice": {
+            name: "יישום ותרגול",
+            number: 3,
+            icon: "🛠️",
+            suggestedDuration: 15,
+            workMode: "groups",
+            studentPrompt: `משימות תרגול מדורגות בקבוצות סביב (${safeTitle}) 🛠️\nפעלו יחד, דונו באתגרים ונמקו כל צעד בעברית בהירה!`,
+            teacherGuidance: `עקבו אחר הקבוצות ותמכו באמצעות סולמות הרמז.`,
+            tasks: [
+              { tier: "support", badge: "🌱 קבוצת זינוק", title: "משימת זינוק מונחית", task: `פתרו תרגיל ישיר בנושא (${safeTitle}) ובחרו את התשובה הנכונה עם נימוק קצר.`, scaffold: `רמז: חזרו לדוגמה הראשונה בתחנה 2.` },
+              { tier: "core", badge: "⭐ קבוצת שליטה", title: "משימת שליטה ותרגול", task: `יישמו את הכלל המרכזי של (${safeTitle}) על 3 מקרים חדשים במחברת ונמקו כל שלב.`, scaffold: `רמז: ודאו שכל תנאי הכלל מתקיימים.` },
+              { tier: "advanced", badge: "🚀 קבוצת אתגר", title: "משימת אתגר וחשיבה", task: `זהו את הטעות המוסתרת בדוגמה המוצגת, הסבירו אותה, וחברו תרגיל אתגר לחבריכם.`, scaffold: `רמז: התמקדו במקרי קצה ומורכבות.` }
+            ]
+          },
+          "4_evidence": {
+            name: "ראיות הבנה",
+            number: 4,
+            icon: "🔎",
+            suggestedDuration: 7,
+            criterion: `הצגת תשובה עצמאית ומנומקת המוכיחה שליטה ב-(${safeTitle}).`,
+            studentPrompt: `דף משימה עצמאי וראיות הבנה — (${safeTitle}) ✍️\nענו על השאלות בעצמכם:\n1. יישום ישיר: כתבו את המושג או הכלל במילים שלכם עם דוגמה מקורית.\n2. נימוק: מדוע תשובתכם נכונה על פי הכלל שלמדנו?\n3. העברה: תנו דוגמה ממצב אמיתי שבו הכלל בא לידי ביטוי.\n\nכתבו בבירור בתיבה למטה ולחצו "שלח תשובה למורה" 📤`,
+            individualTask: `משימת ראיות הבנה עצמאית.`,
+            allowedHelp: ["רמז קל", "הבהרת הוראות"],
+            evalLevels: { mastered: "השיג את היעד", partial: "השיג חלקית", needs_support: "זקוק לתמיכה", insufficient_data: "אין מספיק ראיות" }
+          },
+          "5_harvest": {
+            name: "סיכום וקציר",
+            number: 5,
+            icon: "🎒",
+            suggestedDuration: 5,
+            studentPrompt: `תחנת הקציר וסיכום הלמידה 🎒✨\nאספו את פירות הלמידה שלכם היום וענו על שאלות כרטיס היציאה!`,
+            teacherGuidance: `אספו את כרטיסי היציאה וסכמו את השיעור.`,
+            exitTicket: {
+              q1: "מה הרעיון המרכזי שלמדתי היום?",
+              q2: "מה עזר לי להבין בצורה הטובה ביותר?",
+              q3: "מה עדיין דורש הסבר נוסף מבחינתי?",
+              q4_transfer: "איפה אוכל להשתמש במה שלמדתי בחיי היומיום?"
+            }
+          }
+        }
+      };
+    }
+
+    if (targetLang === 'english') {
+      return {
+        title: safeTitle,
+        subject: safeSubject || 'English Language',
+        language: 'english',
+        grade: safeGrade,
+        objective: `Students will understand and apply the core concepts and skills of (${safeTitle}) with precise reasoning in English.`,
+        successCriteria: `Successfully complete tiered practice tasks, provide textual evidence on the independent worksheet, and reflect in the exit ticket.`,
+        suggestedDuration: 45,
+        stations: {
+          "1_hook": {
+            name: "Inquiry & Curiosity",
+            number: 1,
+            icon: "🔥",
+            studentPrompt: `Welcome to our lesson on (${safeTitle})! 🌟\nObserve this exciting riddle: What hidden pattern connects our topic to our everyday communication? Share your prediction!`,
+            teacherGuidance: `Spark curiosity and invite initial student thoughts. Write the goal on the board.`,
+            suggestedDuration: 6,
+            scaffold: `Hint: Think about keywords in the title.`
+          },
+          "2_understanding": {
+            name: "Meaning & Concept Building",
+            number: 2,
+            icon: "🧩",
+            pedagogicalMode: "guided_exploration",
+            pedagogicalModeName: "Direct & Guided Inquiry",
+            studentPrompt: `Core Concepts for (${safeTitle}):\n1. Main Definition: Key features and vocabulary.\n2. Guided Steps: The 3 steps to successful application.\n3. Model Example: Step-by-step demonstration.\n\nReview the examples and write the main rule in your notebook.`,
+            teacherGuidance: `Lead structured modeling and check for understanding before practice.`,
+            suggestedDuration: 12,
+            scaffold: `Use the visual organizer and keywords.`
+          },
+          "3_practice": {
+            name: "Tiered Practice & Collaboration",
+            number: 3,
+            icon: "🛠️",
+            suggestedDuration: 15,
+            workMode: "groups",
+            studentPrompt: `Welcome to the Practice Station! 🛠️\nWork in your assigned tiered group, discuss solutions, and justify every step in English!`,
+            teacherGuidance: `Facilitate group discussions and provide prompt scaffolds.`,
+            tasks: [
+              { tier: "support", badge: "🌱 Launch Team", title: "Direct Guided Practice", task: `Complete direct exercises on (${safeTitle}) with clues provided.`, scaffold: `Hint: Check the first model in Station 2.` },
+              { tier: "core", badge: "⭐ Mastery Team", title: "Core Application Task", task: `Apply the main rule of (${safeTitle}) to 3 new cases and explain your reasoning.`, scaffold: `Hint: Verify against our success criteria.` },
+              { tier: "advanced", badge: "🚀 Challenge Team", title: "Advanced Extension Task", task: `Analyze a complex error in a given model, correct it, and formulate an original challenge.`, scaffold: `Hint: Focus on subtle edge cases.` }
+            ]
+          },
+          "4_evidence": {
+            name: "Evidence of Mastery",
+            number: 4,
+            icon: "🔎",
+            suggestedDuration: 7,
+            criterion: `Independent and justified solution demonstrating mastery of (${safeTitle}).`,
+            studentPrompt: `Independent Evidence Worksheet — [ ${safeTitle} ] ✍️\nAnswer the questions independently:\n1. State the core concept in your own words with an example.\n2. Explain why your answer is correct using the rule.\n3. Give a real-world transfer example.\n\nType your answer below and click "Submit to Teacher" 📤`,
+            individualTask: `Independent evidence worksheet.`,
+            allowedHelp: ["Minor clarification"],
+            evalLevels: { mastered: "Mastered the goal", partial: "Partially achieved", needs_support: "Needs support", insufficient_data: "Insufficient evidence" }
+          },
+          "5_harvest": {
+            name: "Harvest & Transfer",
+            number: 5,
+            icon: "🎒",
+            suggestedDuration: 5,
+            studentPrompt: `Harvest Station 🎒✨\nReflect on today's learning journey and complete your exit ticket honestly!`,
+            teacherGuidance: `Review student exit tickets and close the lesson.`,
+            exitTicket: {
+              q1: "What is the main idea I learned today?",
+              q2: "What helped me understand best?",
+              q3: "What do I still need more clarification on?",
+              q4_transfer: "Where can I apply what I learned outside of school?"
+            }
+          }
+        }
+      };
+    }
+
+    // Default Arabic High-Quality Fallback
+    return {
+      title: safeTitle,
+      subject: safeSubject || 'عام',
+      language: 'arabic',
+      grade: safeGrade,
+      objective: isReadingComprehension
+        ? `أن يقرأ الطالب النص القرائي لـ (${safeTitle}) قراءة واعية، ويستوعب مضامينه الصريحة والضمنية، ويجيب عن أسئلة الفهم بمستوياتها المتعددة بدقة.`
+        : isValuesEducation
+        ? `أن يستوعب الطالب القيمة التربوية لـ (${safeTitle})، ويحلل مواقف اجتماعية واقعية، ويتعهد بممارسة سلوك إيجابي في محيطه.`
+        : `أن يتمكن الطالب من استيعاب وتطبيق المهارات والمفاهيم الأساسية لدرس (${safeTitle}) وتبرير خطواته بدقة.`,
+      successCriteria: isReadingComprehension
+        ? `حل أسئلة الفهم الثلاثة (استخراج، استنتاج، وتقييم)، وتقديم دليل فردي موثق من النص القرائي.`
+        : `حل وتطبيق ثلاثة تمارين متنوعة بنجاح، وتقديم دليل فردي يثبت الفهم المستقل، ونقل الأثر لموقف حياتي.`,
+      suggestedDuration: 45,
+      stations: {
+        "1_hook": {
+          name: "مشوّق ومحفّز",
+          number: 1,
+          icon: "🔥",
+          studentPrompt: `لغز وتحدي المدخل لدرس (${safeTitle}):\nتأمل هذا الموقف المثير: حدثت مفارقة تجعلنا نتساءل: كيف يمكننا التفسير بدقة ودون غموض؟ ما الذي يثير فضولك وما أول فكرة تخطر ببالك؟`,
+          teacherGuidance: `اعرض الموقف وناقش فضول الطلاب دون إعلان الحل فوراً. اكتب الهدف ومعيار النجاح بخط بارز على اللوح.`,
+          suggestedDuration: 6,
+          scaffold: `فكر في العلاقة بين المعطيات وما درسته في الحصة السابقة.`
+        },
+        "2_understanding": {
+          name: "فهم وبناء المعنى",
+          number: 2,
+          icon: "🧩",
+          pedagogicalMode: "guided_exploration",
+          pedagogicalModeName: "الاستكشاف الموجّه وبناء المعنى",
+          studentPrompt: isReadingComprehension
+            ? `نص القراءة المركزي: سرّ النجاح والعمل المشترك 📖\n\nفي صباح يوم خريفي مشرق، اجتمع طلاب الصف في فناء المدرسة، حيث أعلنت المعلمة عن انطلاق مبادرة نوعية: زراعة حديقة مدرسية بيئية تخدم المجتمع. في البداية، تردد بعض الطلاب ظانين أن التربة جافة وأن العمل شاق ويحتاج جهداً كبيراً.\n\nلكن سامر، وهو طالب عُرف بهدوئه ومثابرته، بادر فوراً وتقدم نحو الزاوية المهملة وبدأ يزيل الأحجار بروح العزيمة. وسرعان ما ألهم زملاءه فانضموا إليه واحداً تلو الآخر؛ هذا يحمل الشتلات، وتلك تسقي الماء بانتظام، والآخر ينظم الممرات. وخلال أسابيع قليلة، تحولت البقعة القاحلة إلى واحة خضراء مبهجة تبث الأمل.\n\nوفي يوم افتتاح الحديقة، قالت المديرة بابتسامة فخر: "إن هذه الحديقة ليست مجرد نباتات وأزهار، بل هي برهان حي على أن الإرادة الصادقة والتعاون المثمر يحولان أصعب التحديات إلى نجاحات باهرة."\n\n📌 معجم المفردات والتراكيب الجديدة:\n• يزيل الأحجار: ينظف الأرض ويهيئها للغرس.\n• واحة خضراء: مكان مفعم بالحياة والجمال.\n• مثابرة: الاستمرار في العمل دون كلل أو تراجع.`
+            : `بناء المفاهيم والقاعدة الذهبية لـ (${safeTitle}):\n١. المفهوم الأساسي: التعريف والخصائص المركزية.\n٢. القاعدة التطبيقية: الخطوات الثلاث للوصول للحل الصحيح.\n٣. مثال محلول توضيحي خطوة بخطوة.`,
+          teacherGuidance: `وجّه الطلاب لملاحظة النمط واستخراج القاعدة بأنفسهم قبل التلخيص الجماعي.`,
+          suggestedDuration: 12,
+          scaffold: `مخطط بصري ملخص للقاعدة وللكلمات المفتاحية.`
+        },
+        "3_practice": {
+          name: "التطبيق والتدريب",
+          number: 3,
+          icon: "🛠️",
+          suggestedDuration: 15,
+          workMode: "groups",
+          studentPrompt: `مهمات التدريب المتمايزة داخل الفرق لدرس (${safeTitle}) 🛠️\nتعاونوا معاً، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`,
+          teacherGuidance: `تابع الفرق وقدّم السقالات المساندة للفئات المستهدفة.`,
+          tasks: [
+            {
+              tier: "support",
+              badge: "🌱 فريق الانطلاق والتمكن",
+              title: isReadingComprehension ? "مهمة استخراج المعلومات الصريحة" : "مهمة الانطلاق والتمكن",
+              task: isReadingComprehension
+                ? `أجب من واقع النص القرائي:\n١. ما المبادرة التي أعلنت عنها المعلمة في فناء المدرسة؟\n٢. ماذا فعل سامر في البداية حتى تشجع باقي الزملاء؟`
+                : `حل تمرين مباشر حول (${safeTitle}): اختر الإجابة المناسبة من بين الخيارات مع توضيح بسيط للسبب.`,
+              scaffold: `تلميح: راجع الفقرة الأولى والثانية من النص.`
+            },
+            {
+              tier: "core",
+              badge: "⭐ فريق الممارسة والإتقان",
+              title: isReadingComprehension ? "مهمة الاستنتاج وتفسير العلاقات" : "مهمة الممارسة والإتقان",
+              task: isReadingComprehension
+                ? `١. كيف تغير موقف الطلاب من بداية القصة إلى نهايتها؟ وما سبب هذا التحول؟\n٢. فسر بأسلوبك قول المديرة: "إن هذه الحديقة ليست مجرد نباتات وأزهار".`
+                : `طبق القاعدة الأساسية لـ (${safeTitle}) على ثلاث فقرات جديدة في دفترك، مع كتابة تعليل موجز لكل خطوة.`,
+              scaffold: `تلميح: تأمل الأثر المعنوي والتربوي للمبادرة.`
+            },
+            {
+              tier: "advanced",
+              badge: "🚀 فريق الرواد والتحدي",
+              title: isReadingComprehension ? "مهمة النقد والتقييم والإبداع" : "مهمة الرواد والتحدي",
+              task: isReadingComprehension
+                ? `١. ما رأيك في تصرف سامر؟ وهل يعد تصرفه قدوة للمبادرة الذاتية؟ علل رأيك بدليل من النص.\n٢. اقترح عنواناً إبداعياً جديداً للنص القرائي مع بيان سبب اختيارك.`
+                : `اكتشف الخطأ الخفي في نموذج الحل المعروض وفسر سببه، ثم صغ مسألة جديدة لتحدي زملائك في باقي الفرق.`,
+              scaffold: `تلميح: ركز على سمات المبادرة والمثابرة.`
+            }
+          ]
+        },
+        "4_evidence": {
+          name: "أدلة الفهم",
+          number: 4,
+          icon: "🔎",
+          suggestedDuration: 7,
+          criterion: `تقديم إجابة فردية مستقلة ومبررة تثبت امتلاك مهارة (${safeTitle}) دون مساعدة.`,
+          studentPrompt: isReadingComprehension
+            ? `ورقة الدليل الفردي المستقل — أدلة فهم المقروء [ ${safeTitle} ] ✍️\nأجب عن الأسئلة الآتية بمفردك لإثبات فهمك المستقل:\n\n١. (استخراج صريح): ما التحدي الذي كان يخشاه بعض الطلاب في بداية المبادرة؟\n٢. (استنتاج): ما الصفة الأبرز التي تميزت بها شخصية سامر؟\n٣. (الاستشهاد بدليل): استخرج جملة صريحة من النص تثبت نجاح المشروع في النهاية.\n٤. (إبداء الرأي): لو كنت مكان الطلاب، ما الإضافة التي ستقترحها لتطوير الحديقة؟ ولماذا؟\n\nاكتب إجابتك بوضوح في صندوق الحل ثم اضغط "إرسال إجابتي للمعلم" 📤`
+            : `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`,
+          individualTask: `مهمة التحقق الفردي المستقل مع الأسئلة الصريحة.`,
+          allowedHelp: ["تلميح بسيط", "توضيح التعليمات"],
+          evalLevels: {
+            mastered: "حقق الهدف بدقة وقدم دليلاً مكتملاً",
+            partial: "حققه جزئياً ويحتاج تعزيزاً في التبرير",
+            needs_support: "يحتاج دعماً وتوجيهاً إضافياً",
+            insufficient_data: "الدليل غير كافٍ للحكم"
+          }
+        },
+        "5_harvest": {
+          name: "حصاد ونقل الأثر",
+          number: 5,
+          icon: "🎒",
+          suggestedDuration: 5,
+          studentPrompt: `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`,
+          teacherGuidance: `اجمع بطاقات الخروج وراجع مستويات الفهم والتأمل لدى الطلاب.`,
+          exitTicket: {
+            q1: "ما أهم فكرة تعلّمتها اليوم؟",
+            q2: "ما الذي ساعدني على الفهم؟",
+            q3: "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
+            q4_transfer: "أين أستطيع استخدام ما تعلّمته في حياتي خارج المدرسة؟"
+          }
+        }
+      }
+    };
+  };
+
+  return postProcessLesson(createHighQualityLessonFallback());
 };
 
 export const generateScientificGenieAI = async (question, chatHistory = [], studentName = 'مستكشفنا البطل') => {
