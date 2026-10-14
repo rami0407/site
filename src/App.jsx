@@ -62,6 +62,7 @@ const StudentDismissalPage = lazyWithRetry(() => import('./components/StudentDis
 const EduStaffingPortal = lazyWithRetry(() => import('./components/EduStaffingPortal'));
 const ScientificResearchQuest = lazyWithRetry(() => import('./components/ScientificResearchQuest'));
 const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPedagogyPage'));
+const MafatihWhiteboardPage = lazyWithRetry(() => import('./components/MafatihWhiteboardPage'));
 const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
@@ -399,6 +400,20 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <MiftaahLearningJourney />
+      </Suspense>
+    );
+  }
+
+  const isMafatihWhiteboardView = currentHash.includes('mafatih-whiteboard') || 
+                                  currentHash.includes('whiteboard') || 
+                                  currentHash.includes('mafatih/whiteboard') || 
+                                  currentHash.includes('mafatih-video') ||
+                                  currentHash.includes('miftaah-video');
+
+  if (isMafatihWhiteboardView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <MafatihWhiteboardPage />
       </Suspense>
     );
   }

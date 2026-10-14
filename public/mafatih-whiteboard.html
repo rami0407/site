@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מפתחח – סרטון לוח לבן | מודל מפתיح מدرسة مشيرفة</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{--bg:#fbfaf6;--ink:#1d2a44;--muted:#5b6578;--line:#d9d6cc;--c1:#e8590c;--c2:#1c7ed6;--c3:#2b9348;--c4:#e0a100;--c5:#1b4fa8;--tray:#eeece4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f2430;--ink:#f2f0e8;--muted:#a9b0bf;--line:#3a4152;--tray:#2a3040;--c1:#ff8a4c;--c2:#5aa9ff;--c3:#5fd17d;--c4:#ffc83d;--c5:#7ba7ff}}
+:root[data-theme="dark"]{--bg:#1f2430;--ink:#f2f0e8;--muted:#a9b0bf;--line:#3a4152;--tray:#2a3040;--c1:#ff8a4c;--c2:#5aa9ff;--c3:#5fd17d;--c4:#ffc83d;--c5:#7ba7ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:Rubik,"Segoe UI",Arial,sans-serif;display:flex;flex-direction:column;position:relative}
+
+/* Top Back Navigation Bar */
+.top-nav{position:absolute;top:12px;right:16px;left:16px;display:flex;justify-content:space-between;align-items:center;z-index:50;pointer-events:none}
+.back-btn{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;background:var(--tray);color:var(--ink);text-decoration:none;font-weight:700;font-size:0.88rem;padding:7px 14px;border-radius:12px;border:1.5px solid var(--line);box-shadow:0 3px 10px rgba(0,0,0,0.06);transition:all .2s ease}
+.back-btn:hover{transform:translateY(-1px);background:var(--ink);color:var(--bg)}
+.theme-btn{pointer-events:auto;background:var(--tray);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:0.88rem}
+
+.board{flex:1;display:flex;align-items:center;justify-content:center;gap:5vw;padding:6vh 5vw 3vh;min-height:0;flex-wrap:wrap;align-content:center}
+.art{width:min(34vw,300px);min-width:170px;aspect-ratio:1}
+.art svg{width:100%;height:100%;overflow:visible}
+.art path,.art circle,.art line,.art rect{fill:none;stroke:var(--col,var(--ink));stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.2s ease forwards}
+.art .f{fill:var(--col);stroke:none;stroke-dasharray:none;opacity:0;animation:pop .6s 1.6s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pop{to{opacity:.18}}
+.txt{flex:1;min-width:260px;max-width:560px}
+.tag{display:inline-block;font-weight:800;font-size:clamp(1.3rem,3.2vw,2rem);color:var(--col);margin:0 0 .4em;border-bottom:4px solid var(--col);padding-bottom:.1em}
+.ar{display:block;font-size:.55em;font-weight:600;color:var(--muted);border:0}
+.say{font-size:clamp(1.25rem,3.4vw,2rem);line-height:1.55;font-weight:600;margin:0}
+.say span{opacity:0;animation:w .35s forwards}
+@keyframes w{to{opacity:1}}
+.sub{margin:.8em 0 0;font-size:clamp(.95rem,2vw,1.15rem);color:var(--muted);min-height:1.4em}
+.here{display:inline-block;margin-top:.8em;padding:.15em .8em;border:3px solid var(--col);border-radius:2em;font-weight:800;color:var(--col);transform:rotate(-3deg)}
+.route{display:flex;align-items:center;justify-content:center;gap:0;padding:1.2vh 4vw 0}
+.stn{display:flex;flex-direction:column;align-items:center;font-size:.72rem;color:var(--muted);flex:0 0 auto;width:15vw;max-width:90px;text-align:center;cursor:pointer}
+.dot{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);display:grid;place-items:center;font-weight:800;margin-bottom:4px;transition:.4s}
+.stn.on .dot{background:var(--col);border-color:var(--col);color:#fff;transform:scale(1.2)}
+.stn.on{color:var(--ink);font-weight:600}
+.seg{flex:1;height:0;border-top:3px dashed var(--line);margin-bottom:22px}
+.bar{height:5px;background:var(--tray);margin:1vh 0 0}
+.bar i{display:block;height:100%;width:0;background:var(--c2);transition:width .4s}
+.ctl{display:flex;gap:10px;justify-content:center;align-items:center;padding:1.2vh 3vw 2vh;background:var(--tray);flex-wrap:wrap}
+button{font:inherit;font-weight:600;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.5em 1em;cursor:pointer;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:focus-visible{outline:3px solid var(--c2);outline-offset:2px}
+button.p{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.art path,.art circle,.art line,.art rect{animation-duration:.01s}.say span{animation-duration:.01s}}
+</style>
+</head>
+<body>
+<header class="top-nav">
+  <a href="/#/mafatih" class="back-btn" title="חזרה למודל מפתיח">
+    <i class="fa-solid fa-arrow-right"></i>
+    <span>חזרה למודל מפתיח | العودة للموديل</span>
+  </a>
+  <button id="themeToggle" class="theme-btn" title="שינוי ערכת נושא">🌓 מצב תצוגה</button>
+</header>
+
+<main class="board" id="board" aria-live="polite"></main>
+<nav class="route" id="route" aria-label="תחנות"></nav>
+<div class="bar"><i id="pg"></i></div>
+<div class="ctl">
+<button id="prev" aria-label="הקודם">▶ הקודם</button>
+<button id="play" class="p">▶ התחלה</button>
+<button id="next" aria-label="הבא">הבא ◀</button>
+<button id="voice" aria-pressed="false">🔇 קריינות</button>
+</div>
+
+<script>
+var C=['#1d2a44','#e8590c','#1c7ed6','#2b9348','#e0a100','#1b4fa8'];
+var CV=['--ink','--c1','--c2','--c3','--c4','--c5'];
+var ST=[null,['משיכה וסקרנות','مشوِّق ومحفِّز'],['פיתוח הבנה ובניית משמעות','فهم وبناء المعنى'],['תרגול והתנסות','تطبيق وتدريب'],['יישום עצמאי','أدلة الفهم'],['חתימה והעברת הלמידה','حصاد ونقل الأثر']];
+var P={
+key:'<circle cx="100" cy="70" r="46" pathLength="1"/><circle cx="100" cy="70" r="16" pathLength="1"/><path pathLength="1" d="M100 116V190M100 150h26M100 175h20"/><path pathLength="1" d="M82 52q18-14 36 0"/>',
+bulb:'<path pathLength="1" d="M100 24a46 46 0 0 0-26 84c6 6 8 12 8 22h36c0-10 2-16 8-22a46 46 0 0 0-26-84z"/><path pathLength="1" d="M82 146h36M88 162h24"/><path pathLength="1" d="M100 4v8M30 40l6 6M170 40l-6 6M14 90h8M178 90h8"/>',
+book:'<path pathLength="1" d="M100 50C80 36 50 36 22 44v118c28-8 58-8 78 6 20-14 50-14 78-6V44c-28-8-58-8-78 6zM100 50v118"/><path pathLength="1" d="M44 70q22-4 40 4M44 92q22-4 40 4M116 74q18-8 40-4M116 96q18-8 40-4"/>',
+tools:'<path pathLength="1" d="M30 30l140 140"/><path pathLength="1" d="M170 30L96 104"/><path pathLength="1" d="M60 120l-14 14a16 16 0 0 0 22 22l14-14"/><path pathLength="1" d="M150 40l16-16"/>',
+lens:'<circle cx="86" cy="86" r="52" pathLength="1"/><path pathLength="1" d="M124 124l50 50"/><path pathLength="1" d="M62 88l18 18 34-38"/>',
+road:'<path pathLength="1" d="M20 170c30-60 90 10 110-50s30-70 50-90"/><circle cx="20" cy="170" r="8" pathLength="1"/><path pathLength="1" d="M168 28l16 4-10 12z"/>',
+seat:'<circle cx="60" cy="70" r="20" pathLength="1"/><circle cx="140" cy="70" r="20" pathLength="1"/><path pathLength="1" d="M24 150q36-50 72 0M104 150q36-50 72 0"/>',
+timer:'<circle cx="100" cy="106" r="64" pathLength="1"/><path pathLength="1" d="M100 106V68M100 106l28 14M84 30h32"/>',
+phone:'<rect x="56" y="14" width="88" height="170" rx="16" pathLength="1"/><path pathLength="1" d="M76 56h48M76 84h48M76 112h30"/><circle cx="100" cy="162" r="6" pathLength="1"/>',
+heart:'<path pathLength="1" d="M100 170C20 112 40 36 100 78c60-42 80 34 0 92z"/>'
+};
+var S=[
+{s:0,a:'key',t:'שלום, תלמידות ותלמידים! אני מפתחח — המפתח שמלווה אתכם במסע הלמידה.',u:'مرحبًا! أنا «مفتاحح» — المفتاح الذي يرافقكم في رحلة التعلّم'},
+{s:0,a:'road',t:'אני כאן כדי לעזור לכם לדעת מה אנחנו לומדים, איפה אנחנו נמצאים, ומה תוכלו לעשות כדי להראות שהבנתם.'},
+{s:0,a:'key',t:'במסע שלנו יש חמש תחנות. מוכנים לצאת לדרך?'},
+{s:1,a:'bulb',t:'בתחנה הראשונה אפתח בשאלה מסקרנת, בסיפור, בחידה או בניסוי קצר. אתן לכם רגע לחשוב ולשער.'},
+{s:1,a:'bulb',t:'ואז נברר יחד: מה נלמד היום, ואיך נדע שהצלחנו?'},
+{s:2,a:'book',t:'בתחנה השנייה נבנה את הרעיון החדש ונחבר אותו למה שאתם כבר יודעים. אסביר, אדגים ואכוון אתכם לגלות.'},
+{s:2,a:'book',t:'ואתם תשאלו, תשוו ותסבירו: איך הגעתם למסקנה?'},
+{s:3,a:'tools',t:'בתחנה השלישית תשתמשו במה שלמדתם. לפעמים לבד, לפעמים בזוגות ולפעמים בקבוצה — לפי המשימה.'},
+{s:3,a:'seat',t:'מי שצריך עזרה יקבל תמיכה, ומי שמוכן יוכל להתקדם לאתגר נוסף.'},
+{s:4,a:'lens',t:'בתחנה הרביעית כל אחד ואחת מכם יראו מה הבינו במשימה קצרה. כך אדע מה הצעד הבא: להתקדם, לתרגל עוד או להסביר בדרך אחרת.'},
+{s:4,a:'lens',t:'אפשר לטעות, ללמוד מהטעות ולנסות שוב.'},
+{s:5,a:'book',t:'בתחנה החמישית נעצור ונחשוב: מה למדתי? מה עזר לי להבין? ואיפה אוכל להשתמש בזה בחיים?'},
+{s:5,a:'heart',t:'ומה מיוחד בי?'},
+{s:0,a:'road',t:'התחנות שלי מוצגות מולכם, והסימון «אנחנו כאן» מראה לאן הגענו. לכל אחד יש מקום להשתתף, והעזרה והאתגר משתנים לפי הצורך שלכם. אם צריך, נחזור לתחנה קודמת.'},
+{s:0,a:'timer',t:'ואם הריכוז נחלש? אגיד: «זמן להתרענן!» נקדיש דקה או שתיים לתנועה או למשחק קשב קצר, ואז נחזור למסע.'},
+{s:0,a:'phone',t:'מאחורי הקלעים, יישומון מסייע למורה לתכנן את המסע ולהתאים אותו לכיתה שלנו.'},
+{s:0,a:'key',t:'אני מפתחח. בואו נסתקרן, נבין, ננסה — וניקח את הלמידה איתנו אל החיים!'}
+];
+var i=0,playing=false,voice=false,timer=null,$=function(x){return document.getElementById(x)};
+var route=$('route');
+for(var k=1;k<=5;k++){
+  if(k>1){var g=document.createElement('div');g.className='seg';route.appendChild(g)}
+  var d=document.createElement('div');d.className='stn';d.id='st'+k;
+  d.style.setProperty('--col','var('+CV[k]+')');
+  d.innerHTML='<div class="dot">'+k+'</div>'+ST[k][0];
+  (function(targetStation){
+    d.onclick=function(){
+      var firstIdx = S.findIndex(function(item){return item.s === targetStation;});
+      if(firstIdx !== -1) show(firstIdx);
+    };
+  })(k);
+  route.appendChild(d);
+}
+
+function show(n){
+ i=Math.max(0,Math.min(S.length-1,n));var sc=S[i],st=ST[sc.s];
+ var col='var('+CV[sc.s]+')';
+ var words=sc.t.split(' ').map(function(w,j){return '<span style="animation-delay:'+(j*0.28+0.3)+'s">'+w+' </span>'}).join('');
+ $('board').innerHTML='<div class="art" style="--col:'+col+'"><svg viewBox="0 0 200 200" aria-hidden="true"><g class="f"><circle cx="100" cy="100" r="86"/></g>'+P[sc.a]+'</svg></div><div class="txt" style="--col:'+col+'">'+(st?'<h2 class="tag">'+st[0]+'<span class="ar">'+st[1]+'</span></h2>':'')+'<p class="say">'+words+'</p>'+(sc.u?'<p class="sub" lang="ar" dir="rtl">'+sc.u+'</p>':'')+(sc.s?'<span class="here">אנחנו כאן</span>':'')+'</div>';
+ for(var k=1;k<=5;k++)$('st'+k).classList.toggle('on',k===sc.s);
+ $('pg').style.width=((i+1)/S.length*100)+'%';
+ clearTimeout(timer);if('speechSynthesis' in window)speechSynthesis.cancel();
+ if(playing)schedule(sc);
+}
+function schedule(sc){
+ var ms=Math.max(4200,sc.t.length*95+1500),done=false;
+ function go(){if(done)return;done=true;clearTimeout(timer);if(playing){if(i<S.length-1)show(i+1);else stop()}}
+ if(voice&&'speechSynthesis' in window){
+  var u=new SpeechSynthesisUtterance(sc.t.replace(/[«»]/g,''));u.lang='he-IL';u.rate=.92;u.onend=function(){timer=setTimeout(go,900)};
+  speechSynthesis.speak(u);timer=setTimeout(go,ms+9000);
+ }else timer=setTimeout(go,ms);
+}
+function stop(){playing=false;$('play').textContent='▶ המשך';clearTimeout(timer);if('speechSynthesis' in window)speechSynthesis.cancel()}
+$('play').onclick=function(){if(playing){stop();return}playing=true;$('play').textContent='❚❚ השהיה';if(i>=S.length-1&&$('pg').style.width==='100%')i=0;show(i)};
+$('next').onclick=function(){show(i+1)};
+$('prev').onclick=function(){show(i-1)};
+$('voice').onclick=function(){voice=!voice;this.setAttribute('aria-pressed',voice);this.textContent=voice?'🔊 קריינות':'🔇 קריינות';if(playing)show(i)};
+document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')show(i+1);if(e.key==='ArrowRight')show(i-1);if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();$('play').click()}});
+
+// Dark/Light Theme Toggle
+var currentTheme = localStorage.getItem('theme_mafatih_whiteboard') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+document.documentElement.setAttribute('data-theme', currentTheme);
+$('themeToggle').onclick = function(){
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  localStorage.setItem('theme_mafatih_whiteboard', currentTheme);
+};
+
+show(0);
+</script>
+</body>
+</html>

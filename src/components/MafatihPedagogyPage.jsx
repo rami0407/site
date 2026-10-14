@@ -6,6 +6,7 @@ import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPl
 import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
 import MafatihTeacherCompanion from './MafatihTeacherCompanion';
 import MiftaahLearningJourney from './MiftaahLearningJourney';
+import MafatihWhiteboardPage from './MafatihWhiteboardPage';
 import './MafatihPedagogyPage.css';
 
 export const MIFTAAH_PRINCIPLES = [
@@ -401,11 +402,13 @@ const STANDARD_GRADE_OPTIONS = [
 const MafatihPedagogyPage = () => {
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash || '';
+    if (hash.includes('whiteboard') || hash.includes('video') || hash.includes('board')) return 'whiteboard';
     if (hash.includes('stations')) return 'stations';
     if (hash.includes('ruler')) return 'ruler';
     if (hash.includes('planner')) return 'planner';
     if (hash.includes('library')) return 'library';
     if (hash.includes('companion')) return 'teacher-companion';
+    if (hash.includes('hebrew')) return 'hebrew-document';
     return 'stations';
   });
   const [selectedStationIndex, setSelectedStationIndex] = useState(0);
@@ -1511,6 +1514,26 @@ ${p.stations?.h || ''}
             >
               <i className="fas fa-file-alt"></i> 🇮🇱 מודל מפתיח (המסמך בעברית)
             </button>
+            <button 
+              className="action-btn doc-hero-btn whiteboard-hero-btn"
+              onClick={() => {
+                setActiveTab('whiteboard');
+                setTimeout(() => {
+                  const el = document.getElementById('mafatih-whiteboard-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: '#f8fafc',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                boxShadow: '0 4px 15px rgba(2, 132, 199, 0.35)',
+                fontWeight: '700'
+              }}
+              title="סרטון לוח לבן מפתחח בעברית (הסבר מונפש אינטראקטיבי)"
+            >
+              <i className="fas fa-play-circle"></i> 🎬 סרטון לוח לבן (עברית)
+            </button>
           </div>
         </div>
       </header>
@@ -1599,6 +1622,23 @@ ${p.stations?.h || ''}
             }}
           >
             <i className="fas fa-language"></i> 🇮🇱 מודל מפתיח (עברית)
+          </button>
+          <button 
+            className={`tab-btn doc-nav-tab ${activeTab === 'whiteboard' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('whiteboard');
+              setTimeout(() => {
+                const el = document.getElementById('mafatih-whiteboard-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+            style={{
+              borderColor: activeTab === 'whiteboard' ? '#0ea5e9' : undefined,
+              fontWeight: activeTab === 'whiteboard' ? '800' : '600',
+              background: activeTab === 'whiteboard' ? 'rgba(14, 165, 233, 0.15)' : undefined
+            }}
+          >
+            <i className="fas fa-chalkboard"></i> 🎬 סרטון לוח לבן (עברית)
           </button>
         </div>
       </nav>
@@ -4944,7 +4984,50 @@ ${p.stations?.h || ''}
           </section>
         )}
 
-      </main>
+      
+        {activeTab === 'whiteboard' && (
+          <section className="whiteboard-section fade-in" id="mafatih-whiteboard-section" dir="rtl" style={{ margin: '1rem 0 3rem' }}>
+            <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '18px', padding: '1.25rem 1.75rem' }}>
+              <div>
+                <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1', fontWeight: 800, padding: '4px 12px', borderRadius: '8px', fontSize: '0.85rem' }}>
+                  🎬 סרטון לוח לבן אינטראקטיבי בעברית
+                </span>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '0.5rem 0 0.25rem 0' }}>
+                  מפתחח – סרטון לוח לבן (מסע הלמידה בחמש תחנות)
+                </h2>
+                <p style={{ color: '#64748b', margin: 0, fontSize: '0.95rem' }}>
+                  הסבר מונפש אינטראקטיבי בליווי קריינות בעברית הממחיש את שלבי מודל مفاتيح الخمسة.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <a
+                  href="/mafatih-whiteboard.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#fff',
+                    padding: '9px 18px',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    textDecoration: 'none',
+                    fontSize: '0.92rem',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)'
+                  }}
+                  title="פתיחת הסרטון בעמוד עצמאי מלא"
+                >
+                  <i className="fas fa-external-link-alt"></i> פתיחה כעמוד נפרד (Full Page)
+                </a>
+              </div>
+            </div>
+
+            <MafatihWhiteboardPage isEmbedded={true} onBack={() => setActiveTab('stations')} />
+          </section>
+        )}
+</main>
 
       {/* 4. FOOTER CALLOUT */}
       <footer className="mafatih-page-footer">

@@ -1,7 +1,8 @@
-const CACHE_NAME = 'musherfe-pwa-v20';
+const CACHE_NAME = 'musherfe-pwa-v21';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/mafatih-whiteboard.html',
   '/favicon.ico',
   '/manifest.webmanifest',
   '/icon-192.png',
