@@ -1,5 +1,6 @@
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { normalizeLessonStations, normalizeStationText } from './lessonPlansLibraryService';
 
 // In-memory key caches
 let cachedGeminiKey = '';
@@ -1447,7 +1448,7 @@ ${isSEL ? `
           const txt = data.choices?.[0]?.message?.content;
           if (txt) {
             const parsed = JSON.parse(txt);
-            if (parsed.stations && parsed.stations.m && parsed.stations.f) {
+            if (parsed.stations && (parsed.stations.m || parsed.stations.f || parsed.stations.t || parsed.stations.y || parsed.stations.h)) {
               return {
                 title: parsed.title || topic,
                 subject: parsed.subject || subject,
@@ -1455,14 +1456,7 @@ ${isSEL ? `
                 duration: parsed.duration || duration,
                 objective: parsed.objective || objective,
                 language: isHebrew ? 'he' : 'ar',
-                stations: {
-                  m: parsed.stations.m,
-                  f: parsed.stations.f,
-                  t: parsed.stations.t,
-                  a: parsed.stations.a || parsed.stations.y,
-                  y: parsed.stations.a || parsed.stations.y,
-                  h: parsed.stations.h
-                }
+                stations: normalizeLessonStations(parsed.stations)
               };
             }
           }
@@ -1498,7 +1492,7 @@ ${isSEL ? `
           const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (txt) {
             const parsed = JSON.parse(txt);
-            if (parsed.stations && parsed.stations.m && parsed.stations.f) {
+            if (parsed.stations && (parsed.stations.m || parsed.stations.f || parsed.stations.t || parsed.stations.y || parsed.stations.h)) {
               return {
                 title: parsed.title || topic,
                 subject: parsed.subject || subject,
@@ -1506,14 +1500,7 @@ ${isSEL ? `
                 duration: parsed.duration || duration,
                 objective: parsed.objective || objective,
                 language: isHebrew ? 'he' : 'ar',
-                stations: {
-                  m: parsed.stations.m,
-                  f: parsed.stations.f,
-                  t: parsed.stations.t,
-                  a: parsed.stations.a || parsed.stations.y,
-                  y: parsed.stations.a || parsed.stations.y,
-                  h: parsed.stations.h
-                }
+                stations: normalizeLessonStations(parsed.stations)
               };
             }
           }
@@ -4300,14 +4287,7 @@ export const parseUploadedLessonPlanAI = async ({
             duration: Number(parsed.duration) || 45,
             objective: parsed.objective || '',
             author: parsed.author || 'مستورد من الحاسوب',
-            stations: {
-              m: parsed.stations.m || '',
-              f: parsed.stations.f || '',
-              t: parsed.stations.t || '',
-              a: parsed.stations.a || parsed.stations.y || '',
-              y: parsed.stations.a || parsed.stations.y || '',
-              h: parsed.stations.h || ''
-            }
+            stations: normalizeLessonStations(parsed.stations)
           };
         }
       }
@@ -4407,13 +4387,7 @@ export const parseUploadedLessonPlanAI = async ({
           duration: Number(obj.duration) || 45,
           objective: obj.objective || '',
           author: 'مستورد من الحاسوب ومُعالج بموديل مِفْتَاح',
-          stations: {
-            m: obj.stations.m || '',
-            f: obj.stations.f || '',
-            t: obj.stations.t || '',
-            y: obj.stations.y || '',
-            h: obj.stations.h || ''
-          }
+          stations: normalizeLessonStations(obj.stations)
         };
       }
     } catch (e) {

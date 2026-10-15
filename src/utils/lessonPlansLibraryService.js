@@ -25,6 +25,57 @@ const markIdAsDeleted = (id) => {
   }
 };
 
+/**
+ * Safe normalizer for station content.
+ * Prevents React Error #31 when an AI or database returns a station object instead of a string.
+ */
+export const normalizeStationText = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'object') {
+    const parts = [];
+    if (val.station_name) parts.push(`📌 ${val.station_name}`);
+    if (val.student_question) parts.push(`❓ سؤال الطالب: ${val.student_question}`);
+    if (val.process_and_activity) parts.push(`⚙️ سيرورة الفعالية: ${val.process_and_activity}`);
+    if (val.inclusion_integration_example) parts.push(`🤝 دمج واحتواء: ${val.inclusion_integration_example}`);
+    if (val.differentiation_example) parts.push(`🎯 تمايز UDL: ${val.differentiation_example}`);
+    if (val.assessment_example) parts.push(`📊 تقييم وفحص فهم: ${val.assessment_example}`);
+    if (val.transition_phrase) parts.push(`🔄 عبارة الانتقال: ${val.transition_phrase}`);
+    
+    if (val.hebrew_station_name) parts.push(`📌 ${val.hebrew_station_name}`);
+    if (val.title && !parts.some(p => p.includes(val.title))) parts.push(`📌 ${val.title}`);
+    if (val.text && !parts.some(p => p.includes(val.text))) parts.push(val.text);
+    if (val.content && !parts.some(p => p.includes(val.content))) parts.push(val.content);
+    if (val.prompt && !parts.some(p => p.includes(val.prompt))) parts.push(val.prompt);
+    if (val.teacherNotes && !parts.some(p => p.includes(val.teacherNotes))) parts.push(`📝 إرشادات المعلم: ${val.teacherNotes}`);
+    if (val.studentDisplayPrompt && !parts.some(p => p.includes(val.studentDisplayPrompt))) parts.push(`🗣️ للطلاب: ${val.studentDisplayPrompt}`);
+    if (val.scaffolds && !parts.some(p => p.includes(val.scaffolds))) parts.push(`🪜 دعم وتمايز: ${val.scaffolds}`);
+    if (val.extension && !parts.some(p => p.includes(val.extension))) parts.push(`🚀 تعميق وتحدٍ: ${val.extension}`);
+
+    if (parts.length === 0) {
+      Object.entries(val).forEach(([k, v]) => {
+        if (typeof v === 'string' && v.trim()) parts.push(v.trim());
+      });
+    }
+    return parts.length > 0 ? parts.join('\n\n') : '';
+  }
+  return String(val);
+};
+
+export const normalizeLessonStations = (stations) => {
+  if (!stations || typeof stations !== 'object') {
+    return { m: '', f: '', t: '', y: '', h: '' };
+  }
+  return {
+    m: normalizeStationText(stations.m),
+    f: normalizeStationText(stations.f),
+    t: normalizeStationText(stations.t),
+    y: normalizeStationText(stations.y || stations.a),
+    h: normalizeStationText(stations.h)
+  };
+};
+
 // Initial pre-loaded seed plans to ensure the library is immediately rich on day 1
 export const SEED_PLANS = [
   {
@@ -145,7 +196,12 @@ export const fetchSharedLessonPlans = async () => {
     if (!snap.empty) {
       snap.forEach((docSnap) => {
         if (!deletedIds.includes(docSnap.id)) {
-          plans.push({ id: docSnap.id, ...docSnap.data() });
+          const raw = docSnap.data();
+          plans.push({
+            id: docSnap.id,
+            ...raw,
+            stations: normalizeLessonStations(raw.stations)
+          });
         }
       });
     }
@@ -161,7 +217,10 @@ export const fetchSharedLessonPlans = async () => {
       if (Array.isArray(parsed)) {
         parsed.forEach((lp) => {
           if (!deletedIds.includes(lp.id) && !plans.some((p) => p.id === lp.id)) {
-            plans.unshift(lp);
+            plans.unshift({
+              ...lp,
+              stations: normalizeLessonStations(lp.stations)
+            });
           }
         });
       }
@@ -173,7 +232,10 @@ export const fetchSharedLessonPlans = async () => {
   // 3. Ensure seed plans are included if not present and not deleted
   SEED_PLANS.forEach((seed) => {
     if (!deletedIds.includes(seed.id) && !plans.some((p) => p.title === seed.title || p.id === seed.id)) {
-      plans.push(seed);
+      plans.push({
+        ...seed,
+        stations: normalizeLessonStations(seed.stations)
+      });
     }
   });
 
@@ -191,13 +253,7 @@ export const saveLessonPlanToSharedLibrary = async (plan) => {
     duration: Number(plan.duration) || 45,
     objective: plan.objective || '',
     author: plan.author || 'معلم في مدرسة مشيرفة',
-    stations: {
-      m: plan.stations?.m || '',
-      f: plan.stations?.f || '',
-      t: plan.stations?.t || '',
-      y: plan.stations?.y || '',
-      h: plan.stations?.h || ''
-    },
+    stations: normalizeLessonStations(plan.stations),
     createdAt: new Date().toISOString()
   };
 
@@ -240,13 +296,7 @@ export const updateLessonPlanInLibrary = async (planId, updatedFields) => {
     duration: Number(updatedFields.duration) || 45,
     objective: updatedFields.objective || '',
     author: updatedFields.author || 'معلم في مدرسة مشيرفة',
-    stations: {
-      m: updatedFields.stations?.m || '',
-      f: updatedFields.stations?.f || '',
-      t: updatedFields.stations?.t || '',
-      y: updatedFields.stations?.y || '',
-      h: updatedFields.stations?.h || ''
-    },
+    stations: normalizeLessonStations(updatedFields.stations),
     updatedAt: new Date().toISOString()
   };
 

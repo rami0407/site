@@ -3,7 +3,7 @@ import mammoth from 'mammoth';
 import genieImg from '../assets/genie.png';
 import { generateMafatihLessonPlanAI, generateAiResponse, parseUploadedLessonPlanAI } from '../utils/aiService';
 import { exportLessonPlanToWord, exportLessonPlanToPdf } from '../utils/lessonPlanExport';
-import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary } from '../utils/lessonPlansLibraryService';
+import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlanInLibrary, deleteLessonPlanFromLibrary, normalizeStationText, normalizeLessonStations } from '../utils/lessonPlansLibraryService';
 import MafatihTeacherCompanion from './MafatihTeacherCompanion';
 import MiftaahLearningJourney from './MiftaahLearningJourney';
 import MafatihWhiteboardPage from './MafatihWhiteboardPage';
@@ -687,11 +687,11 @@ const MafatihPedagogyPage = () => {
     setPlannerTitle(plan.title || '');
     if (plan.stations) {
       setPlannerStations({
-        m: plan.stations.m || '',
-        f: plan.stations.f || '',
-        t: plan.stations.t || '',
-        y: plan.stations.y || '',
-        h: plan.stations.h || ''
+        m: normalizeStationText(plan.stations.m),
+        f: normalizeStationText(plan.stations.f),
+        t: normalizeStationText(plan.stations.t),
+        y: normalizeStationText(plan.stations.y || plan.stations.a),
+        h: normalizeStationText(plan.stations.h)
       });
     }
     setActiveTab('planner');
@@ -736,7 +736,10 @@ const MafatihPedagogyPage = () => {
       const inSubject = (plan.subject || '').toLowerCase().includes(q);
       const inAuthor = (plan.author || '').toLowerCase().includes(q);
       const inObjective = (plan.objective || '').toLowerCase().includes(q);
-      const inStations = Object.values(plan.stations || {}).some(txt => (txt || '').toLowerCase().includes(q));
+      const inStations = Object.values(plan.stations || {}).some(txt => {
+        const str = typeof txt === 'string' ? txt : normalizeStationText(txt);
+        return (str || '').toLowerCase().includes(q);
+      });
       if (!inTitle && !inSubject && !inAuthor && !inObjective && !inStations) return false;
     }
     return true;
@@ -2942,23 +2945,23 @@ ${p.stations?.h || ''}
                           <div className="plan-stations-details-dropdown slide-down">
                             <div className="mini-station-box yellow">
                               <div className="mini-badge">🧲 [ م ] مَدْخَل مُحَفِّز</div>
-                              <div className="mini-content">{plan.stations?.m || '—'}</div>
+                              <div className="mini-content" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(plan.stations?.m) || '—'}</div>
                             </div>
                             <div className="mini-station-box cyan">
                               <div className="mini-badge">💡 [ ف ] فَهْم وَبِنَاء المَعْنَى</div>
-                              <div className="mini-content">{plan.stations?.f || '—'}</div>
+                              <div className="mini-content" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(plan.stations?.f) || '—'}</div>
                             </div>
                             <div className="mini-station-box purple">
                               <div className="mini-badge">🧠 [ ت ] تَفْكِير وَتَبَصُّر</div>
-                              <div className="mini-content">{plan.stations?.t || '—'}</div>
+                              <div className="mini-content" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(plan.stations?.t) || '—'}</div>
                             </div>
                             <div className="mini-station-box green">
                               <div className="mini-badge">🛠️ [ ي ] إِنْجَاز وَتَطْبِيق متمايز UDL</div>
-                              <div className="mini-content">{plan.stations?.y || '—'}</div>
+                              <div className="mini-content" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(plan.stations?.y) || '—'}</div>
                             </div>
                             <div className="mini-station-box pink">
                               <div className="mini-badge">🎒 [ ح ] حَصَاد وَزَوَّادَة</div>
-                              <div className="mini-content">{plan.stations?.h || '—'}</div>
+                              <div className="mini-content" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(plan.stations?.h) || '—'}</div>
                             </div>
                           </div>
                         )}
@@ -5706,7 +5709,7 @@ ${p.stations?.h || ''}
                             <span className="st-pillar-badge diff"><i className="fas fa-layer-group"></i> דיפרנציאליות</span>
                             <span className="st-pillar-badge eval"><i className="fas fa-check-circle"></i> הערכה ומחוון</span>
                           </div>
-                          <div className="station-text">{generatedPlan.stations?.m}</div>
+                          <div className="station-text" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(generatedPlan.stations?.m)}</div>
                         </div>
 
                         <div className="gen-station-card cyan">
@@ -5720,7 +5723,7 @@ ${p.stations?.h || ''}
                             <span className="st-pillar-badge diff"><i className="fas fa-layer-group"></i> דיפרנציאליות</span>
                             <span className="st-pillar-badge eval"><i className="fas fa-check-circle"></i> הערכה ומחוון</span>
                           </div>
-                          <div className="station-text">{generatedPlan.stations?.f}</div>
+                          <div className="station-text" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(generatedPlan.stations?.f)}</div>
                         </div>
 
                         <div className="gen-station-card purple">
@@ -5734,7 +5737,7 @@ ${p.stations?.h || ''}
                             <span className="st-pillar-badge diff"><i className="fas fa-layer-group"></i> דיפרנציאליות</span>
                             <span className="st-pillar-badge eval"><i className="fas fa-check-circle"></i> הערכה ומחוון</span>
                           </div>
-                          <div className="station-text">{generatedPlan.stations?.t}</div>
+                          <div className="station-text" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(generatedPlan.stations?.t)}</div>
                         </div>
 
                         <div className="gen-station-card green">
@@ -5748,7 +5751,7 @@ ${p.stations?.h || ''}
                             <span className="st-pillar-badge diff"><i className="fas fa-layer-group"></i> דיפרנציאליות</span>
                             <span className="st-pillar-badge eval"><i className="fas fa-check-circle"></i> הערכה ומחוון</span>
                           </div>
-                          <div className="station-text">{generatedPlan.stations?.y}</div>
+                          <div className="station-text" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(generatedPlan.stations?.y)}</div>
                         </div>
 
                         <div className="gen-station-card pink">
@@ -5762,7 +5765,7 @@ ${p.stations?.h || ''}
                             <span className="st-pillar-badge diff"><i className="fas fa-layer-group"></i> דיפרנציאליות</span>
                             <span className="st-pillar-badge eval"><i className="fas fa-check-circle"></i> הערכה ومחוון</span>
                           </div>
-                          <div className="station-text">{generatedPlan.stations?.h}</div>
+                          <div className="station-text" style={{ whiteSpace: 'pre-line' }}>{normalizeStationText(generatedPlan.stations?.h)}</div>
                         </div>
                       </div>
                     </div>
