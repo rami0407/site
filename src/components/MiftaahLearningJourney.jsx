@@ -203,6 +203,28 @@ const normalizeMiftaahLesson = (lesson) => {
     l.subject = lang === 'hebrew' ? 'לשון עברית' : lang === 'english' ? 'English Language' : 'عام';
   }
 
+  // Auto-heal dead YouTube URLs across all stations
+  if (l.stations) {
+    const isTrain = combinedInfo.includes('قطار') || combinedInfo.includes('רכבת') || combinedInfo.includes('train');
+    Object.keys(l.stations).forEach(key => {
+      const st = l.stations[key];
+      if (st?.interactiveActivity?.video) {
+        const v = st.interactiveActivity.video;
+        if (!v.embedUrl || String(v.embedUrl).includes('EUm-vAOmWV1') || String(v.youtubeUrl).includes('EUm-vAOmWV1')) {
+          if (isTrain) {
+            v.title = lang === 'hebrew' ? 'סרטון חינוכי לילדים: איך פועלת הרכבת והמסילה' : 'فيلم وثائقي للأطفال: كيف تعمل القطارات وسر السكك الحديدية والقطارات السريعة';
+            v.embedUrl = lang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/FiqScyQysiA?rel=0' : 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0';
+            v.youtubeUrl = lang === 'hebrew' ? 'https://www.youtube.com/watch?v=FiqScyQysiA' : 'https://www.youtube.com/watch?v=9wqKGG4DASQ';
+          } else {
+            v.title = lang === 'hebrew' ? `סרטון חקר והשראה: ${safeTitle}` : `فيلم تعليمي للأطفال: ${safeTitle}`;
+            v.embedUrl = lang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0';
+            v.youtubeUrl = lang === 'hebrew' ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=dK0R5rN2gIc';
+          }
+        }
+      }
+    });
+  }
+
   // Station 2
   if (l.stations['2_understanding']) {
     const st2 = { ...l.stations['2_understanding'] };
@@ -655,8 +677,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     }
 
     const currentSt = activeLesson.stations[stationKey] || {};
-    const existingAct = currentSt.interactiveActivity || {};
-    const existingVid = existingAct.video || {};
+    const existingMedia = currentSt.stationMedia || {};
+    const updatedMedia = {
+      ...existingMedia,
+      type: 'video',
+      title: existingVid.title || `فيديو محطة: ${currentSt.name}`,
+      url: rawUrl,
+      embedUrl: embed,
+      showToStudents: true
+    };
 
     const updatedAct = {
       ...existingAct,
@@ -677,7 +706,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         ...activeLesson.stations,
         [stationKey]: {
           ...currentSt,
-          interactiveActivity: updatedAct
+          interactiveActivity: updatedAct,
+          stationMedia: updatedMedia
         }
       }
     };
@@ -699,8 +729,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const updatedVid = {
       ...existingVid,
       title: resolved?.title || existingVid.title || `فيديو تعليمي: ${currentSt.name}`,
-      embedUrl: resolved?.embedUrl || existingVid.embedUrl || 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
-      youtubeUrl: resolved?.youtubeUrl || existingVid.youtubeUrl || 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+      embedUrl: resolved?.embedUrl || 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0',
+      youtubeUrl: resolved?.youtubeUrl || 'https://www.youtube.com/watch?v=9wqKGG4DASQ',
       searchQuery: resolved?.searchQuery || activeLesson.title,
       reflectionQuestion: resolved?.reflectionQuestion || existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
     };
@@ -711,13 +741,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       video: updatedVid
     };
 
+    const existingMedia = currentSt.stationMedia || {};
+    const updatedMedia = {
+      ...existingMedia,
+      type: 'video',
+      title: updatedVid.title,
+      url: updatedVid.youtubeUrl,
+      embedUrl: updatedVid.embedUrl,
+      showToStudents: true
+    };
+
     const updatedLesson = {
       ...activeLesson,
       stations: {
         ...activeLesson.stations,
         [stationKey]: {
           ...currentSt,
-          interactiveActivity: updatedAct
+          interactiveActivity: updatedAct,
+          stationMedia: updatedMedia
         }
       }
     };
@@ -728,7 +769,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     }));
 
     syncLessonLive(updatedLesson, true);
-    showToast(`تم اقتراح وربط فيديو يوتيوب ملائم لمحطة [${currentSt.name}] بنجاح 🎬✨`);
+    showToast(`تم اقتراح وربط فيديو يوتيوب ملائم لمحطة [${currentSt.name}] وبثه للطلاب بنجاح 🎬✨`);
   };
 
   // Station Attachment Handlers: Image Upload / URL, File Upload, External Web Link
@@ -2250,11 +2291,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const EDUCATIONAL_VIDEOS_LIBRARY = [
     {
       topic: 'excellence',
-      title: 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
-      youtubeId: 'EUm-vAOmWV1', // Ormie the Pig / perseverance classic
-      embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+      title: 'فيلم قصير عن التميز والنجاح والمثابرة والعمل الجماعي',
+      youtubeId: 'dK0R5rN2gIc',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
       searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
-      caption: 'قصة كرتونية مشوقة وممتعة توضح أن التميز لا يتحقق إلا بالإصرار والبحث المستمر عن حلول غير تقليدية'
+      caption: 'قصة كرتونية مشوقة وممتعة توضح أن التميز والنجاح يتحقق بالتعاون والإصرار والبحث عن حلول إبداعية'
     },
     {
       topic: 'growth_mindset',
@@ -2293,7 +2334,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const getYouTubeEmbedUrl = (urlOrId) => {
     if (!urlOrId) return null;
     const str = String(urlOrId).trim();
-    if (!str || str === 'https://www.youtube.com' || str === 'https://www.youtube.com/' || str === 'http://www.youtube.com' || str === 'http://www.youtube.com/' || str === 'about:blank') {
+    if (!str || str.includes('EUm-vAOmWV1') || str === 'https://www.youtube.com' || str === 'https://www.youtube.com/' || str === 'http://www.youtube.com' || str === 'http://www.youtube.com/' || str === 'about:blank') {
       return null;
     }
     // If it's already an embed URL with 11-char ID
@@ -2315,51 +2356,85 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   };
 
   const resolveStationVideo = (lesson, station) => {
-    const rawUrl = station?.media?.embedUrl || station?.media?.youtubeUrl || station?.media?.url;
-    const validEmbed = getYouTubeEmbedUrl(rawUrl);
+    const rawUrl = station?.media?.embedUrl || station?.media?.youtubeUrl || station?.media?.url || station?.interactiveActivity?.video?.embedUrl || station?.interactiveActivity?.video?.youtubeUrl;
+    const isDeadUrl = rawUrl && String(rawUrl).includes('EUm-vAOmWV1');
+    const validEmbed = !isDeadUrl ? getYouTubeEmbedUrl(rawUrl) : null;
     if (validEmbed) {
       return {
-        title: station.media.title || 'فيلم تعليمي للمحطة',
+        title: station?.media?.title || station?.interactiveActivity?.video?.title || 'فيلم تعليمي للمحطة',
         embedUrl: validEmbed,
-        searchQuery: station.media.searchQuery || lesson.title,
-        reflectionQuestion: station.media.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
+        youtubeUrl: station?.media?.youtubeUrl || station?.interactiveActivity?.video?.youtubeUrl || validEmbed.replace('embed/', 'watch?v='),
+        searchQuery: station?.media?.searchQuery || lesson?.title || '',
+        reflectionQuestion: station?.media?.reflectionQuestion || station?.interactiveActivity?.video?.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
       };
     }
 
-    const combinedText = `${lesson?.title || ''} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
-    
-    if (combinedText.includes('تميز') || combinedText.includes('التميز') || combinedText.includes('نجاح') || combinedText.includes('تفوق') || combinedText.includes('طموح')) {
+    const combinedText = `${lesson?.title || ''} ${lesson?.subject || ''} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
+    const isHebrew = lesson?.language === 'hebrew' || combinedText.includes('עברית') || /[\u0590-\u05FF]/.test(combinedText);
+    const isEnglish = lesson?.language === 'english' || combinedText.includes('english');
+
+    // 1. Train Topic (القطار / רכבת / Trains)
+    if (combinedText.includes('قطار') || combinedText.includes('القطار') || combinedText.includes('قطارات') || combinedText.includes('سكة حديد') || combinedText.includes('רכבת') || combinedText.includes('רכבות') || combinedText.includes('train')) {
       return {
-        title: 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
+        title: isHebrew ? 'סרטון חינוכי לילדים: איך פועלת הרכבת והמסילה' : isEnglish ? 'How Trains Work for Kids & Fast Locomotives' : 'فيلم وثائقي تعليمي: كيف تعمل القطارات وسر السكك الحديدية والقطارات السريعة',
+        embedUrl: isHebrew ? 'https://www.youtube-nocookie.com/embed/FiqScyQysiA?rel=0' : isEnglish ? 'https://www.youtube-nocookie.com/embed/ejbnImEtLGY?rel=0' : 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0',
+        youtubeUrl: isHebrew ? 'https://www.youtube.com/watch?v=FiqScyQysiA' : isEnglish ? 'https://www.youtube.com/watch?v=ejbnImEtLGY' : 'https://www.youtube.com/watch?v=9wqKGG4DASQ',
+        searchQuery: isHebrew ? 'רכבת לילדים חינוכי' : 'كيف يعمل القطار للاطفال كرتون',
+        reflectionQuestion: isHebrew ? 'לאחר הצפייה: כיצד הרכבת עוזרת לנו בתחבורה יומיומית? ומה היתרון של רכבת מהירה?' : isEnglish ? 'What makes modern high-speed trains so efficient and safe?' : 'بعد مشاهدة الفيلم: كيف تسير القطارات على السكة الحديدية؟ وما الفائدة الكبرى التي يقدمها القطار السريع للنقل وحماية البيئة؟'
+      };
+    }
+
+    // 2. Reading Comprehension & Stories (فهم المقروء / קריאה / סיפורים)
+    if (combinedText.includes('فهم المقروء') || combinedText.includes('הבנת הנקרא') || combinedText.includes('قراءة') || combinedText.includes('טקסט') || combinedText.includes('قصة') || combinedText.includes('סיפור') || combinedText.includes('كتاب') || combinedText.includes('ספר')) {
+      return {
+        title: isHebrew ? 'סרטון קצר מעורר השראה: כוחם של ספרים ועולם הקריאה' : isEnglish ? 'The Joy of Reading and Discovery' : 'قصة كرتونية تعليمية: متعة القراءة وسحر الاستكشاف',
+        embedUrl: isHebrew ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/wKi7l_Gbx5w?rel=0',
+        youtubeUrl: isHebrew ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=wKi7l_Gbx5w',
+        searchQuery: isHebrew ? 'סרטון על קריאה לילדים' : 'قصة قصيرة معبرة للاطفال كرتون',
+        reflectionQuestion: isHebrew ? 'מהו המסר המרכזי שלמדנו? וכיצד הוא מתחבר לטקסט שקראנו?' : 'ما العبرة المستفادة من هذا المقطع؟ وكيف يساعدنا فهم التفاصيل على إدراك المعنى الخفي للدرس؟'
+      };
+    }
+
+    // 3. Excellence, Perseverance & Teamwork (التميز / הצלחה ומצוינות)
+    if (combinedText.includes('تميز') || combinedText.includes('التميز') || combinedText.includes('نجاح') || combinedText.includes('تفوق') || combinedText.includes('طموح') || combinedText.includes('התמדה') || combinedText.includes('מצוינות')) {
+      return {
+        title: isHebrew ? 'סרטון קצר מעורר השראה: כוחה של התמדה ומצוינות' : 'فيلم رسوم متحركة قصير: قوة التعاون والمثابرة لتحقيق الهدف',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=dK0R5rN2gIc',
         searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
-        reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز؟ ولماذا ينجح الثاني أكثر؟'
+        reflectionQuestion: isHebrew ? 'לאחר הצפייה בסרטון: מה ההבדל בין עבודה רגילה לחיפוש אחר מצוינות? וכיצד התמדה מובילה להצלחה?' : 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز والمثابرة؟'
       };
     }
 
-    if (combinedText.includes('مادة') || combinedText.includes('حالات المادة') || combinedText.includes('صلب') || combinedText.includes('سائل') || combinedText.includes('غاز') || combinedText.includes('علوم')) {
+    // 4. Science, Matter & Nature (علوم / حالات المادة / מדעים)
+    if (combinedText.includes('مادة') || combinedText.includes('حالات المادة') || combinedText.includes('صلب') || combinedText.includes('سائل') || combinedText.includes('غاز') || combinedText.includes('علوم') || combinedText.includes('מדע') || combinedText.includes('מצבי צבירה')) {
       return {
-        title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+        title: isHebrew ? 'סרטון אנימציה חינוכי: שלושת מצבי הצבירה ותכונותיהם' : 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
         embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=bMnmJjL3hF8',
         searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
-        reflectionQuestion: 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
+        reflectionQuestion: isHebrew ? 'כיצד תנועת החלקיקים משתנה בין מצבי הצבירה השונים כפי שראיתם בסרטון?' : 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
       };
     }
 
-    if (combinedText.includes('حساب') || combinedText.includes('رياضيات') || combinedText.includes('كسور') || combinedText.includes('ضرب')) {
+    // 5. Math & Logic (حساب / رياضيات / מתמטיקה)
+    if (combinedText.includes('حساب') || combinedText.includes('رياضيات') || combinedText.includes('كسور') || combinedText.includes('ضرب') || combinedText.includes('חשבון') || combinedText.includes('מתמטיקה') || combinedText.includes('כפל')) {
       return {
-        title: 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
+        title: isHebrew ? 'הרפתקה מתמטית: פתרון בעיות וחשיבה הגיונית' : 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
         embedUrl: 'https://www.youtube-nocookie.com/embed/4b2b-y4hPoc?rel=0',
-        searchQuery: `فيديو تعليمي للأطفال عن ${lesson.title}`,
-        reflectionQuestion: 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟'
+        youtubeUrl: 'https://www.youtube.com/watch?v=4b2b-y4hPoc',
+        searchQuery: `فيديو تعليمي للأطفال عن ${lesson?.title || 'الرياضيات'}`,
+        reflectionQuestion: isHebrew ? 'מהו הרעיון המתמטי המרכזי שראיתם בסיטואציה זו?' : 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟ وكيف نطبقها اليوم؟'
       };
     }
 
+    // Default Verified Educational Clip
     return {
-      title: `فيلم تعليمي قصير: ${lesson?.title || 'مدخل الحصة'}`,
-      embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
-      searchQuery: `فيلم قصير للاطفال عن ${lesson?.title || 'الدرس'}`,
-      reflectionQuestion: 'بعد مشاهدة الفيديو، ما التساؤل الأول الذي تبادر لذهنك وله علاقة بهدف درسنا اليوم؟'
+      title: isHebrew ? `סרטון חקר והשראה: ${lesson?.title || 'פתיחת השיעור'}` : `فيلم تعليمي هادف: ${lesson?.title || 'مدخل الحصة'}`,
+      embedUrl: isHebrew ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
+      youtubeUrl: isHebrew ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=dK0R5rN2gIc',
+      searchQuery: `${lesson?.title || 'الدرس'} فيديو تعليمي للاطفال`,
+      reflectionQuestion: isHebrew ? 'מהו הרעיון המרכזי שעורר את סקרנותכם בסרטון?' : 'بعد مشاهدة الفيديو: ما التساؤل الأول الذي تبادر لذهنك وله علاقة بهدف درسنا اليوم؟'
     };
   };
 
@@ -5568,6 +5643,28 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           >
                             <i className="fas fa-magic"></i> اقتراح فيديو بالـ AI ✨
                           </button>
+                          <a
+                            href={`https://www.youtube.com/results?search_query=${encodeURIComponent((activeLesson.language === 'hebrew' ? 'סרטון חינוכי לילדים ' : 'فيديو تعليمي للاطفال ') + (activeLesson.title || ''))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-search-youtube-direct"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              background: '#dc2626',
+                              color: '#fff',
+                              borderRadius: '8px',
+                              textDecoration: 'none',
+                              fontWeight: 'bold',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                            title="فتح بحث YouTube المباشر واختيار فيديو مناسب"
+                          >
+                            <i className="fab fa-youtube"></i> بحث في YouTube 🔍
+                          </a>
                         </div>
 
                         {currentSt.interactiveActivity?.video?.embedUrl && (

@@ -2954,7 +2954,7 @@ ${genreDirective}
         "video": {
           "title": "عنوان المقطع",
           "searchQuery": "كلمات بحث يوتيوب",
-          "youtubeUrl": "https://www.youtube.com/watch?v=EUm-vAOmWV1",
+          "youtubeUrl": "https://www.youtube.com/watch?v=9wqKGG4DASQ",
           "reflectionQuestion": "سؤال التأمل"
         }
       }
@@ -3058,53 +3058,53 @@ ${genreDirective}
     }
     if (t.includes('تميز') || t.includes('التميز') || t.includes('نجاح') || t.includes('تفوق') || t.includes('طموح') || t.includes('إتقان') || t.includes('اتقان')) {
       return {
-        title: 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
-        youtubeUrl: 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+        title: targetLang === 'hebrew' ? 'סרטון קצר מעורר השראה: כוחה של התמדה ומצוינות' : 'فيلم قصير عن التميز والنجاح: ما سر الفرق بين العادي والمتميز؟',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
+        youtubeUrl: 'https://www.youtube.com/watch?v=dK0R5rN2gIc',
         searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
-        reflectionQuestion: 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز؟'
+        reflectionQuestion: targetLang === 'hebrew' ? 'לאחר הצפייה בסרטון: מה ההבדל בין עבודה רגילה לחיפוש אחר מצוינות? וכיצד התמדה מובילה להצלחה?' : 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز؟'
       };
     }
-    if (t.includes('مادة') || t.includes('حالات المادة') || t.includes('صلب') || t.includes('سائل') || t.includes('غاز') || t.includes('كيمياء') || t.includes('علوم') || t.includes('فيزياء') || t.includes('طاقة') || t.includes('ماء') || t.includes('دورة الماء')) {
+    if (t.includes('مادة') || t.includes('حالات المادة') || t.includes('صلب') || t.includes('سائل') || t.includes('غاز') || t.includes('كيمياء') || t.includes('علوم') || t.includes('فيزياء') || t.includes('طاقة') || t.includes('ماء') || t.includes('دورة الماء') || t.includes('מדע') || t.includes('מצבי צבירה')) {
       return {
-        title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
+        title: targetLang === 'hebrew' ? 'סרטון אנימציה חינוכי: שלושת מצבי הצבירה ותכונותיהם' : 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
         embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
         youtubeUrl: 'https://www.youtube.com/watch?v=bMnmJjL3hF8',
         searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
-        reflectionQuestion: 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
+        reflectionQuestion: targetLang === 'hebrew' ? 'כיצד תנועת החלקיקים משתנה בין מצבי הצבירה השונים כפי שראיתם בסרטון?' : 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
       };
     }
-    if (t.includes('حساب') || t.includes('رياضيات') || t.includes('كسور') || t.includes('ضرب') || t.includes('قسمة') || t.includes('جمع') || t.includes('طرح') || t.includes('أعداد') || t.includes('هندسة') || t.includes('مساحة')) {
+    if (t.includes('حساب') || t.includes('رياضيات') || t.includes('كسور') || t.includes('ضرب') || t.includes('قسمة') || t.includes('جمع') || t.includes('طرح') || t.includes('أعداد') || t.includes('هندسة') || t.includes('مساحة') || t.includes('חשבון') || t.includes('מתמטיקה') || t.includes('כפל')) {
       return {
-        title: 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
+        title: targetLang === 'hebrew' ? 'הרפתקה מתמטית: פתרון בעיות וחשיבה הגיונית' : 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
         embedUrl: 'https://www.youtube-nocookie.com/embed/4b2b-y4hPoc?rel=0',
         youtubeUrl: 'https://www.youtube.com/watch?v=4b2b-y4hPoc',
         searchQuery: `فيديو تعليمي للأطفال في الرياضيات`,
-        reflectionQuestion: 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟ وكيف نطبقها اليوم؟'
+        reflectionQuestion: targetLang === 'hebrew' ? 'מהו הרעיון המתמטי המרכזי שראיתם בסיטואציה זו?' : 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟ وكيف نطبقها اليوم؟'
       };
     }
-    if (t.includes('لغة') || t.includes('عربي') || t.includes('قراءة') || t.includes('إملاء') || t.includes('قواعد') || t.includes('همزة') || t.includes('فعل') || t.includes('اسم') || t.includes('نحو') || t.includes('قصة')) {
+    if (t.includes('قطار') || t.includes('القطار') || t.includes('قطارات') || t.includes('سكة حديد') || t.includes('רכבת') || t.includes('רכבות') || t.includes('train')) {
       return {
-        title: 'مغامرة لغوية ممتعة في رحاب لغتنا العربية الجميلة',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/Pj15MjhZfEU?rel=0',
-        youtubeUrl: 'https://www.youtube.com/watch?v=Pj15MjhZfEU',
-        searchQuery: 'فيديو تعليمي لغة عربية للاطفال',
-        reflectionQuestion: 'ما القاعدة أو المهارة اللغوية التي أوضحها هذا المقطع؟ وكيف نتجنب الخطأ فيها؟'
-      };
-    }
-    if (t.includes('قطار') || t.includes('القطار') || t.includes('قطارات') || t.includes('רכבת') || t.includes('train')) {
-      return {
-        title: targetLang === 'hebrew' ? 'סרטון על התפתחות הרכבות והרכבת המהירה' : targetLang === 'english' ? 'Educational Video: High-Speed Trains' : 'فيلم وثائقي للأطفال: كيف تطورت القطارات من البخار إلى القطار المغناطيسي؟',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
-        youtubeUrl: 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+        title: targetLang === 'hebrew' ? 'סרטון חינוכי: איך פועלת הרכבת וההתפתחות של רכבות מהירות' : targetLang === 'english' ? 'Educational Video: How High-Speed Trains Work' : 'فيلم وثائقي للأطفال: كيف تعمل القطارات وسر السكك الحديدية والقطارات السريعة',
+        embedUrl: targetLang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/FiqScyQysiA?rel=0' : targetLang === 'english' ? 'https://www.youtube-nocookie.com/embed/ejbnImEtLGY?rel=0' : 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0',
+        youtubeUrl: targetLang === 'hebrew' ? 'https://www.youtube.com/watch?v=FiqScyQysiA' : targetLang === 'english' ? 'https://www.youtube.com/watch?v=ejbnImEtLGY' : 'https://www.youtube.com/watch?v=9wqKGG4DASQ',
         searchQuery: 'قطارات الاطفال كرتون فيلم تعليمي',
-        reflectionQuestion: targetLang === 'hebrew' ? 'מהו הדבר המרשים ביותר שראיתם בסרטון על הרכבות?' : targetLang === 'english' ? 'What impressed you most about the train in this video?' : 'ما الاختراع الهندسي الذي جعل القطارات الحديثة تسبح فوق السكة دون احتكاك كما شاهدتم في المقطع؟'
+        reflectionQuestion: targetLang === 'hebrew' ? 'מהו היתרון המרכזי של נסיעה ברכבת בהשוואה לכלי תחבורה אחרים?' : targetLang === 'english' ? 'What makes modern high-speed trains so efficient?' : 'ما الاختراع الهندسي الذي مكّن القطارات من نقل أعداد هائلة بسرعة وأمان على السكة الحديدية؟'
+      };
+    }
+    if (t.includes('لغة') || t.includes('عربي') || t.includes('قراءة') || t.includes('إملاء') || t.includes('قواعد') || t.includes('همزة') || t.includes('فعل') || t.includes('اسم') || t.includes('نحو') || t.includes('قصة') || t.includes('עברית') || t.includes('קריאה') || t.includes('סיפור')) {
+      return {
+        title: targetLang === 'hebrew' ? 'סרטון קצר: כוחם של ספרים וסוד הקריאה המהנה' : 'قصة كرتونية تعليمية: متعة القراءة وسحر الاستكشاف',
+        embedUrl: targetLang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/wKi7l_Gbx5w?rel=0',
+        youtubeUrl: targetLang === 'hebrew' ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=wKi7l_Gbx5w',
+        searchQuery: 'فيديو تعليمي لغة وقراءة للاطفال',
+        reflectionQuestion: targetLang === 'hebrew' ? 'מהו המסר המרכזי שלמדנו? וכיצד הוא מתחבר לטקסט שלנו?' : 'ما العبرة المستفادة من هذا المقطع؟ وكيف يساعدنا فهم التفاصيل على إدراك المعنى الخفي للدرس؟'
       };
     }
     return {
       title: targetLang === 'hebrew' ? `סרטון חקר והשראה: ${safeTitle}` : targetLang === 'english' ? `Inquiry Video: ${safeTitle}` : `فيلم استكشافي قصير: ${safeTitle}`,
-      embedUrl: 'https://www.youtube-nocookie.com/embed/EUm-vAOmWV1?rel=0',
-      youtubeUrl: 'https://www.youtube.com/watch?v=EUm-vAOmWV1',
+      embedUrl: targetLang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
+      youtubeUrl: targetLang === 'hebrew' ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=dK0R5rN2gIc',
       searchQuery: `${safeTitle} kids educational video`,
       reflectionQuestion: targetLang === 'hebrew' ? 'מהו הרעיון המרכזי שעורר את סקרנותכם בסרטון?' : targetLang === 'english' ? 'What key idea sparked your curiosity in this clip?' : 'بعد مشاهدة هذا المقطع: ما الفكرة الجوهرية التي أثارت فضولكم وترتبط بدرسنا اليوم؟'
     };
