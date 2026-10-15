@@ -3441,6 +3441,22 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             type="button"
             className="btn-exit-to-portal"
             onClick={() => {
+              window.location.hash = '#/whiteboard';
+            }}
+            title="مشاهدة سيموليشن اللوح الأبيض التفاعلي لمحطات مِفتاح الخمس"
+            style={{
+              background: 'linear-gradient(135deg, #e8590c 0%, #d9480f 100%)',
+              color: '#ffffff',
+              border: 'none',
+              fontWeight: 800
+            }}
+          >
+            <i className="fas fa-play-circle"></i> لوح مِفتاح 🎬
+          </button>
+          <button
+            type="button"
+            className="btn-exit-to-portal"
+            onClick={() => {
               if (onSwitchTab) {
                 onSwitchTab('stations');
               } else {

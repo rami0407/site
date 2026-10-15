@@ -394,17 +394,8 @@ function App() {
     );
   }
 
-  const isMiftaahJourneyView = currentHash.includes('miftaah') || currentHash.includes('miftah') || currentHash.includes('journey') || currentHash.includes('rihla');
-
-  if (isMiftaahJourneyView) {
-    return (
-      <Suspense fallback={<Loader />}>
-        <MiftaahLearningJourney />
-      </Suspense>
-    );
-  }
-
   const isMafatihWhiteboardView = currentHash.includes('mafatih-whiteboard') || 
+                                  currentHash.includes('miftaah-whiteboard') ||
                                   currentHash.includes('whiteboard') || 
                                   currentHash.includes('mafatih/whiteboard') || 
                                   currentHash.includes('mafatih-video') ||
@@ -414,6 +405,16 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <MafatihWhiteboardPage />
+      </Suspense>
+    );
+  }
+
+  const isMiftaahJourneyView = currentHash.includes('miftaah') || currentHash.includes('miftah') || currentHash.includes('journey') || currentHash.includes('rihla');
+
+  if (isMiftaahJourneyView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <MiftaahLearningJourney />
       </Suspense>
     );
   }

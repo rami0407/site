@@ -7934,4 +7934,86 @@
   cursor: not-allowed;
 }
 
+/* ========================================================================= */
+/* MOBILE SMARTPHONE OPTIMIZATIONS (شاشات الهواتف الذكية والأجهزة اللوحية)   */
+/* ========================================================================= */
+@media (max-width: 768px) {
+  .miftaah-journey-master-header {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .brand-logo-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.6rem;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-sub {
+    font-size: 0.72rem;
+  }
+
+  .header-interfaces-nav {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+  }
+
+  .nav-tab-btn {
+    white-space: nowrap;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .header-status-badge {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .btn-exit-to-portal {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+
+  .session-pin-chip {
+    font-size: 0.78rem;
+    padding: 4px 10px;
+  }
+
+  /* Physical key map responsive on mobile */
+  .physical-key-container {
+    padding: 10px 12px;
+  }
+
+  .key-segment-block {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Reading theater mobile view */
+  .theater-modal-content {
+    padding: 16px 12px !important;
+    width: 96vw !important;
+  }
+
+  .reading-theater-title {
+    font-size: 1.25rem !important;
+  }
+
+  .reading-theater-body {
+    padding: 12px !important;
+  }
+}
+
+
 
