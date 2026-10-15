@@ -285,6 +285,48 @@ const normalizeMiftaahLesson = (lesson) => {
     l.stations['5_harvest'] = st5;
   }
 
+  // -------------------------------------------------------------------------
+  // Smart School Game Linking (שילוב משחקי האתר בשיעור המוכן להעברה)
+  // -------------------------------------------------------------------------
+  const isMathTopic = combinedInfo.includes('חשבון') || combinedInfo.includes('מתמטיקה') || combinedInfo.includes('כפל') || combinedInfo.includes('שברים') || combinedInfo.includes('رياضيات') || combinedInfo.includes('حساب') || combinedInfo.includes('ضرب') || combinedInfo.includes('كسور') || combinedInfo.includes('הנדסה') || combinedInfo.includes('هندسة');
+  const isArabicTopic = (combinedInfo.includes('عربي') || combinedInfo.includes('لغة عربية') || combinedInfo.includes('نحو') || combinedInfo.includes('قواعد') || combinedInfo.includes('إملاء')) && !combinedInfo.includes('עברית');
+  const isStemTopic = combinedInfo.includes('מדע') || combinedInfo.includes('טבע') || combinedInfo.includes('علوم') || combinedInfo.includes('ניסוי') || combinedInfo.includes('stem');
+  const isValuesTopic = combinedInfo.includes('ערכ') || combinedInfo.includes('قيم') || combinedInfo.includes('אחריות') || combinedInfo.includes('דילמה');
+
+  if (l.stations['3_practice'] && !l.stations['3_practice'].stationMedia) {
+    if (isMathTopic) {
+      const isMult = combinedInfo.includes('כפל') || combinedInfo.includes('ضرب') || combinedInfo.includes('לוח הכפל');
+      const branchParam = isMult ? 'branch=multiplication' : combinedInfo.includes('שברים') || combinedInfo.includes('كسور') ? 'branch=fractions' : 'branch=detective';
+      l.stations['3_practice'].stationMedia = {
+        type: 'game',
+        gameTitle: lang === 'hebrew' ? '🎮 זירת אליפות המתמטיקה של מושיירפה' : '🎮 بطولة وساحة الرياضيات التفاعلية بمشيرفة',
+        gameUrl: `#/math-championship?${branchParam}`,
+        showToStudents: true
+      };
+    } else if (isArabicTopic) {
+      l.stations['3_practice'].stationMedia = {
+        type: 'game',
+        gameTitle: '🎮 حلبة مهارات اللغة العربية التفاعلية بمشيرفة',
+        gameUrl: '#/arabic-arena',
+        showToStudents: true
+      };
+    } else if (isStemTopic) {
+      l.stations['3_practice'].stationMedia = {
+        type: 'game',
+        gameTitle: lang === 'hebrew' ? '🔬 מעבדת STEM והחקר המדעי בבית הספר' : '🔬 ركن الـ STEM ومختبر العلوم التفاعلي',
+        gameUrl: '#/stem-corner',
+        showToStudents: true
+      };
+    } else if (isValuesTopic) {
+      l.stations['3_practice'].stationMedia = {
+        type: 'game',
+        gameTitle: lang === 'hebrew' ? '🎙️ זירת העימותים והדיונים הכיתתיים' : '🎙️ ساحة المناظرات والتفكير القيمي',
+        gameUrl: '#/debate-arena',
+        showToStudents: true
+      };
+    }
+  }
+
   return l;
 };
 
@@ -3255,6 +3297,55 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               }}
             >
               <i className="fas fa-external-link-alt"></i> تصفح الكتاب / الموقع 📖
+            </a>
+          </div>
+        )}
+
+        {/* 4. Interactive Educational Game (Musheirifa School Platform or Custom) */}
+        {media.type === 'game' && (media.gameUrl || media.linkUrl) && (
+          <div className="attached-media-game-view animate-fade-in" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            flexWrap: 'wrap',
+            gap: '12px',
+            padding: '14px 20px', 
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)', 
+            borderRadius: '14px', 
+            border: '2px solid #f59e0b',
+            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.16)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.7rem', boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)' }}>
+                🎮
+              </div>
+              <div>
+                <strong style={{ display: 'block', fontSize: '1.08rem', color: '#78350f' }}>{media.gameTitle || media.linkTitle || 'המשחק הלימודי של בית הספר | اللعبة التعليمية التفاعلية'}</strong>
+                <small style={{ color: '#92400e', fontSize: '0.85rem' }}>משחק תרגול והעמקה מובנה להעברת השיעור בכיתה ובמסך התלמיד 🕹️</small>
+              </div>
+            </div>
+            <a 
+              href={media.gameUrl || media.linkUrl} 
+              target={String(media.gameUrl || media.linkUrl).startsWith('http') ? '_blank' : '_self'} 
+              rel="noopener noreferrer" 
+              className="btn-open-attached-game"
+              style={{ 
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+                color: '#ffffff', 
+                padding: '10px 24px', 
+                borderRadius: '10px', 
+                textDecoration: 'none', 
+                fontWeight: 800, 
+                fontSize: '0.98rem',
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span>שחק עכשיו 🕹️ / العب الآن</span>
+              <i className="fas fa-gamepad"></i>
             </a>
           </div>
         )}
