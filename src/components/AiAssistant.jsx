@@ -209,7 +209,7 @@ const AiAssistant = () => {
             const trimmed = k.trim();
             if (trimmed.startsWith('gsk_')) setGroqKey(trimmed);
             else if (trimmed.startsWith('xai-')) setXaiKey(trimmed);
-            else if (trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) setApiKey(trimmed);
+            else if (trimmed.startsWith('AIza')) setApiKey(trimmed);
           });
         }
       } catch (e) {
@@ -237,6 +237,7 @@ const AiAssistant = () => {
   const fetchAiText = async (promptText) => {
     // Collect and auto-route all available keys
     let gKey = (apiKey && apiKey.trim()) || '';
+    if (gKey && !gKey.startsWith('AIza')) gKey = '';
     let grKey = (groqKey && groqKey.trim()) || '';
     let xKey = (xaiKey && xaiKey.trim()) || '';
 
@@ -250,17 +251,16 @@ const AiAssistant = () => {
       const trimmed = k.trim();
       if (trimmed.startsWith('gsk_') && !grKey) grKey = trimmed;
       else if (trimmed.startsWith('xai-') && !xKey) xKey = trimmed;
-      else if ((trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) && !gKey) gKey = trimmed;
+      else if (trimmed.startsWith('AIza') && !gKey) gKey = trimmed;
     });
 
-    // 1. Try Groq API (Qwen 3.8, GPT-OSS 120B, ALLaM - High-speed & natively supports browser CORS)
+    // 1. Try Groq API (GPT-OSS 120B, Qwen 3.8, ALLaM - High-speed & natively supports browser CORS)
     if (grKey) {
       const groqModels = [
-        'qwen/qwen3.8-27b',
         'openai/gpt-oss-120b',
+        'qwen/qwen3.8-27b',
         'allam-2-7b',
-        'openai/gpt-oss-20b',
-        'qwen/qwen3.6-27b'
+        'openai/gpt-oss-20b'
       ];
       for (const gm of groqModels) {
         try {

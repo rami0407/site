@@ -1791,7 +1791,7 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: 'openai/gpt-oss-120b',
           messages: [{ role: 'user', content: 'أجب بكلمة واحدة: مرحباً' }],
           max_tokens: 30
         })
@@ -1801,7 +1801,7 @@ const AdminDashboard = () => {
         const reply = data.choices?.[0]?.message?.content || '';
         setGroqTestResult({
           success: true,
-          message: `✅ تم الاتصال بنجاح بمحرك Groq LLaMA 3.3! استجابة الذكاء الاصطناعي: "${reply.trim()}"`
+          message: `✅ تم الاتصال بنجاح بمحرك Groq الذكي! استجابة الذكاء الاصطناعي: "${reply.trim()}"`
         });
       } else {
         const errJson = await res.json().catch(() => ({}));

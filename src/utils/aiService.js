@@ -25,7 +25,7 @@ export const getActiveAiKeys = async () => {
           const trimmed = k.trim();
           if (trimmed.startsWith('gsk_')) cachedGroqKey = trimmed;
           else if (trimmed.startsWith('xai-')) cachedXaiKey = trimmed;
-          else if (trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) cachedGeminiKey = trimmed;
+          else if (trimmed.startsWith('AIza')) cachedGeminiKey = trimmed;
         });
       }
     } catch (e) {
@@ -36,7 +36,11 @@ export const getActiveAiKeys = async () => {
     lastKeyFetchTime = now;
   }
 
-  let geminiKey = cachedGeminiKey || localStorage.getItem('db_gemini_key') || '';
+  let rawLocalGemini = (localStorage.getItem('db_gemini_key') || '').trim();
+  if (rawLocalGemini && !rawLocalGemini.startsWith('AIza')) {
+    rawLocalGemini = '';
+  }
+  let geminiKey = cachedGeminiKey || rawLocalGemini || '';
   let groqKey = cachedGroqKey || localStorage.getItem('db_groq_key') || '';
   let xaiKey = cachedXaiKey || localStorage.getItem('db_xai_key') || '';
 
@@ -46,8 +50,12 @@ export const getActiveAiKeys = async () => {
     const trimmed = k.trim();
     if (trimmed.startsWith('gsk_') && !groqKey) groqKey = trimmed;
     else if (trimmed.startsWith('xai-') && !xaiKey) xaiKey = trimmed;
-    else if ((trimmed.startsWith('AIza') || trimmed.startsWith('AQ.')) && !geminiKey) geminiKey = trimmed;
+    else if (trimmed.startsWith('AIza') && !geminiKey) geminiKey = trimmed;
   });
+
+  if (geminiKey && !geminiKey.trim().startsWith('AIza')) {
+    geminiKey = '';
+  }
 
   // Built-in school Groq key fallback if Firestore key reading is restricted by rules
   const DEFAULT_SCHOOL_GROQ_KEY = (function() {
@@ -164,11 +172,10 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
   // 1. Try Groq (Qwen 3.8, GPT-OSS 120B, ALLaM) - High speed, browser CORS
   if (groqKey) {
     const groqModels = [
-      'qwen/qwen3.8-27b',
       'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
       'allam-2-7b',
-      'openai/gpt-oss-20b',
-      'qwen/qwen3.6-27b'
+      'openai/gpt-oss-20b'
     ];
     for (const gm of groqModels) {
       try {
@@ -206,9 +213,9 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
     }
   }
 
-  // 2. Try Google Gemini
-  if (geminiKey) {
-    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+  // 2. Try Google Gemini (only if valid AIza key)
+  if (geminiKey && geminiKey.startsWith('AIza')) {
+    const models = ['gemini-2.5-flash'];
     const fullPrompt = `${systemContext ? systemContext + '\n\n' : ''}السؤال/الطلب: ${promptText}`;
 
     for (const model of models) {
@@ -3621,9 +3628,53 @@ ${genreDirective}
     return lesson;
   };
 
-  // 1. Try Gemini (Gemini 2.0 Flash is ultra-fast, superior multilingual output)
-  if (geminiKey) {
-    const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  // 1. Try Groq AI (Active high-speed models: GPT-OSS 120B, Qwen 3.8 27B, GPT-OSS 20B, ALLaM)
+  if (groqKey) {
+    const groqModels = [
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b',
+      'allam-2-7b'
+    ];
+    for (const m of groqModels) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: m,
+            messages: [
+              {
+                role: 'system',
+                content: `You are an elite bilingual curriculum and educational design expert for elementary schools. Output 100% valid JSON only adhering strictly to the requested language (${targetLang}). Do not output any markdown or text outside the JSON object.`
+              },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.35,
+            max_tokens: 3800
+          })
+        }, 28000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const raw = data.choices?.[0]?.message?.content;
+          const parsed = parseSafeJson(raw);
+          if (parsed && parsed.stations && parsed.stations['1_hook']) {
+            return postProcessLesson(parsed);
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq full journey (${m}) notice:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini (only if a valid AIza key is configured)
+  if (geminiKey && geminiKey.startsWith('AIza')) {
+    const geminiModels = ['gemini-2.5-flash'];
     for (const gm of geminiModels) {
       try {
         const res = await fetchWithTimeout(
@@ -3653,49 +3704,6 @@ ${genreDirective}
         }
       } catch (e) {
         console.warn(`Gemini full journey (${gm}) notice:`, e);
-      }
-    }
-  }
-
-  // 2. Try Groq AI (Llama 3.3 70B & 3.1 8B with JSON Object format)
-  if (groqKey) {
-    const groqModels = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant'
-    ];
-    for (const m of groqModels) {
-      try {
-        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${groqKey}`
-          },
-          body: JSON.stringify({
-            model: m,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an elite bilingual curriculum and educational design expert for elementary schools. Output 100% valid JSON only adhering strictly to the requested language (${targetLang}).`
-              },
-              { role: 'user', content: prompt }
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.35,
-            max_tokens: 3800
-          })
-        }, 28000);
-
-        if (res.ok) {
-          const data = await res.json();
-          const raw = data.choices?.[0]?.message?.content;
-          const parsed = parseSafeJson(raw);
-          if (parsed && parsed.stations && parsed.stations['1_hook']) {
-            return postProcessLesson(parsed);
-          }
-        }
-      } catch (e) {
-        console.warn(`Groq full journey (${m}) notice:`, e);
       }
     }
   }
