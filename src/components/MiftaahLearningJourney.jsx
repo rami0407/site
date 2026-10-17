@@ -203,21 +203,56 @@ const normalizeMiftaahLesson = (lesson) => {
     l.subject = lang === 'hebrew' ? 'לשון עברית' : lang === 'english' ? 'English Language' : 'عام';
   }
 
-  // Auto-heal dead YouTube URLs across all stations
+  // Auto-heal dead YouTube URLs and ensure youtubeSearchQuery, hookStoryOrScenario, and curiosityQuestion exist
   if (l.stations) {
     const isTrain = combinedInfo.includes('قطار') || combinedInfo.includes('רכבת') || combinedInfo.includes('train');
+    const safeGrade = l.grade || (lang === 'hebrew' ? 'כיתה ד' : 'الصف الرابع');
+    const defaultQuery = lang === 'hebrew'
+      ? `סרטון חינוכי לילדים ${safeTitle} ${safeGrade}`
+      : lang === 'english'
+      ? `${safeTitle} educational video for kids ${safeGrade}`
+      : `فيديو تعليمي للأطفال عن ${safeTitle} - ${safeGrade}`;
+    const defaultStory = lang === 'hebrew'
+      ? (isTrain
+         ? `בוקר אחד בתחנת הרכבת, הבחינו התלמידים ברכבת חדשה המחליקה על המסילה בשקט מופתי ובמהירות אדירה של מאות קילומטרים בשעה, מבלי לפלוט עשן כלל ומבלי שהגלגלים שלה כמעט נוגעים בפסים! 🚆✨`
+         : `דמיינו שאתם חוקרים צעירים הניצבים מול תופעה מפתיעה הקשורה ל-(${safeTitle}). במבט ראשון נראה שהכול פועל מעצמו, אך מתחת לפני השטח מסתתר סוד מרתק שמשנה את כל מה שחשבנו שאנחנו יודעים! 🌟🔍`)
+      : lang === 'english'
+      ? `Imagine standing before a fascinating real-world phenomenon connected to (${safeTitle}). At first glance it seems simple, yet beneath the surface lies an amazing scientific and logical secret waiting to be discovered! 🌟🔍`
+      : (isTrain
+         ? `في صباح يوم مشرق بمحطة القطارات الحديثة، وقف الطلاب بدهشة أمام قطار فائق السرعة ينطلق كالسهم فوق السكة الحديدية بهدوء تام ودون أي دخان، بل يكاد يطفو في الهواء بفضل قوة خفية مذهلة! 🚆✨`
+         : `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة وقصة واقعية ترتبط بـ (${safeTitle}). للوهلة الأولى يبدو الأمر مألوفاً وعادياً، لكن حين نقترب أكثر نكتشف سرّاً مذهلاً يربط بين ما نراه في حياتنا اليومية وبين القوانين والمعارف التي سنتعلمها اليوم! 🌟🔍`);
+    const defaultCuriosity = lang === 'hebrew'
+      ? (isTrain
+         ? `כיצד מצליחה הרכבת המהירה לנוע במהירות עצומה כזו בבטחה וללא זיהום אוויר? מהו הסוד המסתתר במסילה?`
+         : `מהו לדעתכם הסוד או הכלל המרכזי שמסביר את התופעה הזו בנושא (${safeTitle})?`)
+      : lang === 'english'
+      ? `What hidden rule or secret explains how (${safeTitle}) works in our daily lives?`
+      : (isTrain
+         ? `كيف يستطيع هذا القطار العملاق الانطلاق بهذه السرعة الهائلة بأمان تام ودون تلوث؟ وما السر الهندسي المختبئ في السكة الحديدية؟`
+         : `برأيكم، ما هو السر أو المبدأ الأساسي الذي يفسر هذه الظاهرة في موضوع (${safeTitle})؟ وكيف نكتشفه معاً؟`);
+
     Object.keys(l.stations).forEach(key => {
       const st = l.stations[key];
+      if (!st) return;
+      if (key === '1_hook') {
+        st.youtubeSearchQuery = st.youtubeSearchQuery || st?.interactiveActivity?.video?.youtubeSearchQuery || st?.interactiveActivity?.video?.searchQuery || defaultQuery;
+        st.hookStoryOrScenario = st.hookStoryOrScenario || st?.interactiveActivity?.video?.hookStoryOrScenario || defaultStory;
+        st.curiosityQuestion = st.curiosityQuestion || st?.interactiveActivity?.video?.curiosityQuestion || defaultCuriosity;
+      }
       if (st?.interactiveActivity?.video) {
         const v = st.interactiveActivity.video;
-        if (!v.embedUrl || String(v.embedUrl).includes('EUm-vAOmWV1') || String(v.youtubeUrl).includes('EUm-vAOmWV1')) {
+        v.youtubeSearchQuery = v.youtubeSearchQuery || st.youtubeSearchQuery || v.searchQuery || defaultQuery;
+        v.searchQuery = v.youtubeSearchQuery;
+        v.hookStoryOrScenario = v.hookStoryOrScenario || st.hookStoryOrScenario || defaultStory;
+        v.curiosityQuestion = v.curiosityQuestion || st.curiosityQuestion || defaultCuriosity;
+        if (!v.fallbackMode && (!v.embedUrl || String(v.embedUrl).includes('EUm-vAOmWV1') || String(v.youtubeUrl).includes('EUm-vAOmWV1'))) {
           if (isTrain) {
             v.title = lang === 'hebrew' ? 'סרטון חינוכי לילדים: איך פועלת הרכבת והמסילה' : 'فيلم وثائقي للأطفال: كيف تعمل القطارات وسر السكك الحديدية والقطارات السريعة';
-            v.embedUrl = lang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/FiqScyQysiA?rel=0' : 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0';
+            v.embedUrl = lang === 'hebrew' ? 'https://www.youtube.com/embed/FiqScyQysiA' : 'https://www.youtube.com/embed/9wqKGG4DASQ';
             v.youtubeUrl = lang === 'hebrew' ? 'https://www.youtube.com/watch?v=FiqScyQysiA' : 'https://www.youtube.com/watch?v=9wqKGG4DASQ';
           } else {
             v.title = lang === 'hebrew' ? `סרטון חקר והשראה: ${safeTitle}` : `فيلم تعليمي للأطفال: ${safeTitle}`;
-            v.embedUrl = lang === 'hebrew' ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0';
+            v.embedUrl = lang === 'hebrew' ? 'https://www.youtube.com/embed/a5MIHpgndVA' : 'https://www.youtube.com/embed/dK0R5rN2gIc';
             v.youtubeUrl = lang === 'hebrew' ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=dK0R5rN2gIc';
           }
         }
@@ -663,26 +698,150 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast(`تم نسخ رابط الفعالية المباشر للطلاب: ${directUrl} 📋✨`);
   };
 
-  // Station YouTube Video Handlers
-  const handleSaveStationVideoUrl = (stationKey) => {
-    const rawUrl = (stationVideoInputs[stationKey] ?? '').trim();
-    if (!rawUrl) {
-      showToast('يرجى إدخال رابط يوتيوب صالح 🎬');
-      return;
+  // Station YouTube Video States & 3-Path Smart Handlers
+  const [ytSearchCardsByStation, setYtSearchCardsByStation] = useState({});
+  const [isSearchingYoutubeApi, setIsSearchingYoutubeApi] = useState(false);
+
+  // Path 2: Smart URL Regex Parser (accepts watch?v=, youtu.be/, shorts/, embed/, live/ and auto-converts to https://www.youtube.com/embed/VIDEO_ID)
+  const extractYouTubeVideoId = (urlOrId) => {
+    if (!urlOrId) return null;
+    const str = String(urlOrId).trim();
+    if (!str || str.includes('EUm-vAOmWV1') || str === 'https://www.youtube.com' || str === 'https://www.youtube.com/' || str === 'http://www.youtube.com' || str === 'http://www.youtube.com/' || str === 'about:blank') {
+      return null;
     }
-    const embed = getYouTubeEmbedUrl(rawUrl);
-    if (!embed) {
-      showToast('⚠️ تعذر استخراج كود التضمين. يرجى التأكد من صحة رابط يوتيوب');
+    const regex = /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i;
+    const match = str.match(regex);
+    if (match && match[1]) {
+      return match[1];
+    }
+    if (/^[\w-]{11}$/.test(str)) {
+      return str;
+    }
+    return null;
+  };
+
+  // Instant Smart URL Input Handler (auto-parses pasted URL into embedded player immediately)
+  const handleSmartYoutubeUrlChange = (stationKey, rawValue) => {
+    setStationVideoInputs(prev => ({ ...prev, [stationKey]: rawValue }));
+    const trimmed = (rawValue || '').trim();
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
+    const existingMedia = currentSt.stationMedia || {};
+
+    // If cleared -> automatically switch to Safe Fallback Mode (hookStoryOrScenario + curiosityQuestion)
+    if (!trimmed) {
+      const updatedVid = {
+        ...existingVid,
+        embedUrl: '',
+        youtubeUrl: '',
+        fallbackMode: true
+      };
+      const updatedLesson = {
+        ...activeLesson,
+        stations: {
+          ...activeLesson.stations,
+          [stationKey]: {
+            ...currentSt,
+            interactiveActivity: {
+              ...existingAct,
+              video: updatedVid
+            },
+            stationMedia: {
+              ...existingMedia,
+              embedUrl: '',
+              url: '',
+              showToStudents: false
+            }
+          }
+        }
+      };
+      syncLessonLive(updatedLesson, true);
       return;
     }
 
+    // If a valid YouTube link or Video ID is pasted -> auto-convert to https://www.youtube.com/embed/VIDEO_ID immediately!
+    const videoId = extractYouTubeVideoId(trimmed);
+    if (videoId) {
+      const embed = `https://www.youtube.com/embed/${videoId}`;
+      const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const updatedVid = {
+        ...existingVid,
+        title: existingVid.title || `فيديو محطة: ${currentSt.name}`,
+        embedUrl: embed,
+        youtubeUrl: watchUrl,
+        videoId,
+        fallbackMode: false,
+        youtubeSearchQuery: existingVid.youtubeSearchQuery || currentSt.youtubeSearchQuery || existingVid.searchQuery || activeLesson.title,
+        searchQuery: existingVid.searchQuery || currentSt.youtubeSearchQuery || activeLesson.title,
+        reflectionQuestion: existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
+      };
+      const updatedAct = {
+        ...existingAct,
+        type: 'video',
+        video: updatedVid
+      };
+      const updatedMedia = {
+        ...existingMedia,
+        type: 'video',
+        title: updatedVid.title,
+        url: watchUrl,
+        embedUrl: embed,
+        showToStudents: true
+      };
+      const updatedLesson = {
+        ...activeLesson,
+        stations: {
+          ...activeLesson.stations,
+          [stationKey]: {
+            ...currentSt,
+            interactiveActivity: updatedAct,
+            stationMedia: updatedMedia,
+            media: updatedVid
+          }
+        }
+      };
+      syncLessonLive(updatedLesson, true);
+      showToast(`✅ تم استخراج معرف الفيديو (${videoId}) وتحويله تلقائياً إلى مشغل مدمج في شاشة المعلم والطالب! 🎬`);
+    }
+  };
+
+  const handleSaveStationVideoUrl = (stationKey) => {
+    const rawUrl = (stationVideoInputs[stationKey] ?? (activeLesson.stations[stationKey]?.interactiveActivity?.video?.youtubeUrl || activeLesson.stations[stationKey]?.interactiveActivity?.video?.embedUrl || '')).trim();
+    if (!rawUrl) {
+      handleActivateSafeFallbackMode(stationKey);
+      return;
+    }
+    const videoId = extractYouTubeVideoId(rawUrl);
+    if (!videoId) {
+      showToast('⚠️ تعذر استخراج معرف الفيديو (Video ID). يرجى لصق رابط يوتيوب صالح (watch?v= أو youtu.be أو shorts)');
+      return;
+    }
+    const embed = `https://www.youtube.com/embed/${videoId}`;
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
     const currentSt = activeLesson.stations[stationKey] || {};
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
     const existingMedia = currentSt.stationMedia || {};
+
+    const updatedVid = {
+      ...existingVid,
+      title: existingVid.title || `فيديو محطة: ${currentSt.name}`,
+      embedUrl: embed,
+      youtubeUrl: watchUrl,
+      videoId,
+      fallbackMode: false,
+      youtubeSearchQuery: existingVid.youtubeSearchQuery || currentSt.youtubeSearchQuery || existingVid.searchQuery || activeLesson.title,
+      searchQuery: existingVid.searchQuery || currentSt.youtubeSearchQuery || activeLesson.title,
+      reflectionQuestion: existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
+    };
+
     const updatedMedia = {
       ...existingMedia,
       type: 'video',
-      title: existingVid.title || `فيديو محطة: ${currentSt.name}`,
-      url: rawUrl,
+      title: updatedVid.title,
+      url: watchUrl,
       embedUrl: embed,
       showToStudents: true
     };
@@ -690,14 +849,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const updatedAct = {
       ...existingAct,
       type: 'video',
-      video: {
-        ...existingVid,
-        title: existingVid.title || `فيديو محطة: ${currentSt.name}`,
-        embedUrl: embed,
-        youtubeUrl: rawUrl,
-        searchQuery: existingVid.searchQuery || activeLesson.title,
-        reflectionQuestion: existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
-      }
+      video: updatedVid
     };
 
     const updatedLesson = {
@@ -707,17 +859,213 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         [stationKey]: {
           ...currentSt,
           interactiveActivity: updatedAct,
-          stationMedia: updatedMedia
+          stationMedia: updatedMedia,
+          media: updatedVid
         }
       }
     };
 
     syncLessonLive(updatedLesson, true);
-    showToast(`تم حفظ وتطبيق فيديو YouTube لمحطة [${currentSt.name}] وبثه للطلاب بنجاح 🎬📡✨`);
+    showToast(`تم تحويل وحفظ الفيديو (${videoId}) كمشغل مدمج وبثه لشاشة المعلم والطالب بنجاح 🎬📡✨`);
+  };
+
+  // Path 3: Safe Fallback Mode Handler (القصة المشوقة أو الظاهرة المدهشة + سؤال الفضول)
+  const handleActivateSafeFallbackMode = (stationKey) => {
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
+    const existingMedia = currentSt.stationMedia || {};
+
+    const updatedVid = {
+      ...existingVid,
+      embedUrl: '',
+      youtubeUrl: '',
+      fallbackMode: true,
+      hookStoryOrScenario: existingVid.hookStoryOrScenario || currentSt.hookStoryOrScenario || `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة ترتبط بـ (${activeLesson.title})...`,
+      curiosityQuestion: existingVid.curiosityQuestion || currentSt.curiosityQuestion || `ما هو السر أو المبدأ الأساسي الذي يفسر هذه الظاهرة في موضوع (${activeLesson.title})؟`
+    };
+
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          hookStoryOrScenario: updatedVid.hookStoryOrScenario,
+          curiosityQuestion: updatedVid.curiosityQuestion,
+          interactiveActivity: {
+            ...existingAct,
+            type: 'video',
+            video: updatedVid
+          },
+          stationMedia: {
+            ...existingMedia,
+            embedUrl: '',
+            url: '',
+            showToStudents: false
+          },
+          media: updatedVid
+        }
+      }
+    };
+
+    setStationVideoInputs(prev => ({ ...prev, [stationKey]: '' }));
+    syncLessonLive(updatedLesson, true);
+    showToast('🛡️ تم تفعيل الوضع البديل الآمن: ستعرض شاشة الطالب القصة المشوقة وسؤال الفضول تلقائياً بأناقة تامة!');
+  };
+
+  // Select one of the 3 suggested YouTube thumbnail cards
+  const handleSelectYoutubeCard = (stationKey, card) => {
+    if (!card || !card.videoId) return;
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
+    const existingMedia = currentSt.stationMedia || {};
+    const embed = `https://www.youtube.com/embed/${card.videoId}`;
+    const watchUrl = `https://www.youtube.com/watch?v=${card.videoId}`;
+
+    const updatedVid = {
+      ...existingVid,
+      title: card.title || existingVid.title || `فيديو تعليمي: ${currentSt.name}`,
+      embedUrl: embed,
+      youtubeUrl: watchUrl,
+      videoId: card.videoId,
+      fallbackMode: false,
+      youtubeSearchQuery: existingVid.youtubeSearchQuery || currentSt.youtubeSearchQuery || existingVid.searchQuery || activeLesson.title,
+      searchQuery: existingVid.searchQuery || currentSt.youtubeSearchQuery || activeLesson.title,
+      reflectionQuestion: existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
+    };
+
+    const updatedAct = {
+      ...existingAct,
+      type: 'video',
+      video: updatedVid
+    };
+
+    const updatedMedia = {
+      ...existingMedia,
+      type: 'video',
+      title: updatedVid.title,
+      url: watchUrl,
+      embedUrl: embed,
+      showToStudents: true
+    };
+
+    const updatedLesson = {
+      ...activeLesson,
+      stations: {
+        ...activeLesson.stations,
+        [stationKey]: {
+          ...currentSt,
+          interactiveActivity: updatedAct,
+          stationMedia: updatedMedia,
+          media: updatedVid
+        }
+      }
+    };
+
+    setStationVideoInputs(prev => ({
+      ...prev,
+      [stationKey]: watchUrl
+    }));
+
+    syncLessonLive(updatedLesson, true);
+    showToast(`🎬 تم اختيار وتضمين الفيديو "${card.title}" وبثه لشاشة المعلم والطالب فوراً!`);
+  };
+
+  // Path 1: Search YouTube for Suggested Video (YouTube Data API v3 top 3 cards OR Direct YouTube Search + 3 verified cards)
+  const handleSearchSuggestedYoutubeVideos = async (stationKey, openExternalWindowIfNoApi = true) => {
+    const currentSt = activeLesson.stations[stationKey] || {};
+    const existingVid = currentSt.interactiveActivity?.video || {};
+    const isHeb = activeLesson.language === 'hebrew' || /[\u0590-\u05FF]/.test(activeLesson.title || '');
+    const defaultQuery = isHeb
+      ? `סרטון חינוכי לילדים ${activeLesson.title || ''} ${activeLesson.grade || ''}`.trim()
+      : `فيديو تعليمي للأطفال عن ${activeLesson.title || ''} ${activeLesson.grade || ''}`.trim();
+    const query = (currentSt.youtubeSearchQuery || existingVid.youtubeSearchQuery || existingVid.searchQuery || defaultQuery).trim();
+
+    setIsSearchingYoutubeApi(true);
+    try {
+      const apiKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_YOUTUBE_API_KEY) ||
+                     localStorage.getItem('VITE_YOUTUBE_API_KEY') ||
+                     localStorage.getItem('youtube_api_key') || '';
+
+      if (apiKey) {
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoEmbeddable=true&safeSearch=strict&q=${encodeURIComponent(query)}&key=${encodeURIComponent(apiKey)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.items && data.items.length > 0) {
+            const apiCards = data.items.map(item => ({
+              videoId: item.id.videoId,
+              title: item.snippet.title,
+              channelTitle: item.snippet.channelTitle || 'YouTube Education',
+              thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || `https://i.ytimg.com/vi/${item.id.videoId}/hqdefault.jpg`,
+              embedUrl: `https://www.youtube.com/embed/${item.id.videoId}`,
+              youtubeUrl: `https://www.youtube.com/watch?v=${item.id.videoId}`
+            }));
+            setYtSearchCardsByStation(prev => ({ ...prev, [stationKey]: apiCards }));
+            showToast('✨ تم جلب أفضل 3 فيديوهات حقيقية عبر YouTube Data API v3! اختر أحدها بنقرة واحدة.');
+            setIsSearchingYoutubeApi(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback when API key is not configured: build 3 verified topic-matched cards + open YouTube search directly with the exact query
+      const combined = `${query} ${activeLesson.title || ''} ${activeLesson.subject || ''}`.toLowerCase();
+      let curatedPool = [];
+      if (combined.includes('قطار') || combined.includes('רכבת') || combined.includes('train')) {
+        curatedPool = [
+          { videoId: isHeb ? 'FiqScyQysiA' : '9wqKGG4DASQ', title: isHeb ? 'סרטון חינוכי: איך פועלת הרכבת והמסילה' : 'فيلم تعليمي: كيف تعمل القطارات وسر السكة الحديدية', channelTitle: 'علوم وتكنولوجيا للأطفال' },
+          { videoId: 'ejbnImEtLGY', title: 'How Trains Work & High-Speed Locomotives', channelTitle: 'Kids Educational Science' },
+          { videoId: isHeb ? 'a5MIHpgndVA' : 'wKi7l_Gbx5w', title: isHeb ? 'מסע הקריאה והחקר סביב הרכבת' : 'قصة استكشافية مشوقة عن رحلة القطار السريع', channelTitle: 'قصص ومطالعة' }
+        ];
+      } else if (combined.includes('مادة') || combined.includes('علوم') || combined.includes('מדע') || combined.includes('מצבי צבירה')) {
+        curatedPool = [
+          { videoId: 'bMnmJjL3hF8', title: 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها', channelTitle: 'العلوم المبسطة للأطفال' },
+          { videoId: 'dK0R5rN2gIc', title: 'تجارب واستكشاف الظواهر العلمية بطريقة مشوقة', channelTitle: 'مختبر العلوم' },
+          { videoId: '7V-eFmF9f2Q', title: 'كيف نفكر كالعلماء ونستنتج القوانين العلمية؟', channelTitle: 'عقلية الباحث' }
+        ];
+      } else if (combined.includes('حساب') || combined.includes('رياضيات') || combined.includes('מתמטיקה') || combined.includes('חשבון')) {
+        curatedPool = [
+          { videoId: '4b2b-y4hPoc', title: 'مغامرة الرياضيات والتفكير المنطقي للأطفال', channelTitle: 'تحديات الرياضيات' },
+          { videoId: '7V-eFmF9f2Q', title: 'تنمية الذكاء الرياضي وحل المشكلات', channelTitle: 'مهارات التفكير' },
+          { videoId: 'dK0R5rN2gIc', title: 'العمل الجماعي والمثابرة في حل الألغاز', channelTitle: 'واحة الإبداع' }
+        ];
+      } else {
+        curatedPool = [
+          { videoId: isHeb ? 'a5MIHpgndVA' : 'wKi7l_Gbx5w', title: isHeb ? `סרטון העשרה וסקרנות: ${activeLesson.title}` : `قصة وفيلم تعليمي مشوق: ${activeLesson.title}`, channelTitle: 'مكتبة مِفتاح التعليمية' },
+          { videoId: 'dK0R5rN2gIc', title: 'فيلم قصير محفز: قوة الفضول والمثابرة والنجاح', channelTitle: 'قصص ملهمة' },
+          { videoId: 'Z0o8Z6GqP2o', title: 'قصة النقطة: كيف نبدأ رحلة الاكتشاف والتميز؟', channelTitle: 'تربية وإبداع' }
+        ];
+      }
+
+      const fallbackCards = curatedPool.map(c => ({
+        ...c,
+        thumbnail: `https://i.ytimg.com/vi/${c.videoId}/hqdefault.jpg`,
+        embedUrl: `https://www.youtube.com/embed/${c.videoId}`,
+        youtubeUrl: `https://www.youtube.com/watch?v=${c.videoId}`
+      }));
+      setYtSearchCardsByStation(prev => ({ ...prev, [stationKey]: fallbackCards }));
+
+      if (openExternalWindowIfNoApi && typeof window !== 'undefined') {
+        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
+      }
+      showToast(`🔍 تم عرض 3 بطاقات فيديو مقترحة وفتح نافذة بحث يوتيوب بجملة: "${query}"`);
+    } catch (err) {
+      console.warn('YouTube search error:', err);
+      if (typeof window !== 'undefined') {
+        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
+      }
+    } finally {
+      setIsSearchingYoutubeApi(false);
+    }
   };
 
   // AI Suggest Video for Station
   const handleAiSuggestVideoForStation = (stationKey) => {
+    handleSearchSuggestedYoutubeVideos(stationKey, false);
     const currentSt = activeLesson.stations[stationKey] || {};
     const resolved = (typeof resolveStationVideo === 'function')
       ? resolveStationVideo(activeLesson, currentSt)
@@ -729,8 +1077,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const updatedVid = {
       ...existingVid,
       title: resolved?.title || existingVid.title || `فيديو تعليمي: ${currentSt.name}`,
-      embedUrl: resolved?.embedUrl || 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0',
+      embedUrl: resolved?.embedUrl || 'https://www.youtube.com/embed/9wqKGG4DASQ',
       youtubeUrl: resolved?.youtubeUrl || 'https://www.youtube.com/watch?v=9wqKGG4DASQ',
+      fallbackMode: false,
+      youtubeSearchQuery: resolved?.youtubeSearchQuery || resolved?.searchQuery || activeLesson.title,
       searchQuery: resolved?.searchQuery || activeLesson.title,
       reflectionQuestion: resolved?.reflectionQuestion || existingVid.reflectionQuestion || 'ما الفكرة الجوهرية التي لفتت انتباهكم في هذا المقطع؟ وكيف ترتبط بموضوع درسنا اليوم؟'
     };
@@ -2332,54 +2682,89 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   ];
 
   const getYouTubeEmbedUrl = (urlOrId) => {
-    if (!urlOrId) return null;
-    const str = String(urlOrId).trim();
-    if (!str || str.includes('EUm-vAOmWV1') || str === 'https://www.youtube.com' || str === 'https://www.youtube.com/' || str === 'http://www.youtube.com' || str === 'http://www.youtube.com/' || str === 'about:blank') {
-      return null;
-    }
-    // If it's already an embed URL with 11-char ID
-    const embedMatch = str.match(/youtube(?:-nocookie)?\.com\/embed\/([\w-]{11})/i);
-    if (embedMatch && embedMatch[1]) {
-      return `https://www.youtube-nocookie.com/embed/${embedMatch[1]}?rel=0&modestbranding=1`;
-    }
-    // Match standard youtu.be / watch?v= / shorts / live / v/
-    const match = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/i);
-    if (match && match[1]) {
-      return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0&modestbranding=1`;
-    }
-    // Direct 11-character video ID
-    if (/^[\w-]{11}$/.test(str)) {
-      return `https://www.youtube-nocookie.com/embed/${str}?rel=0&modestbranding=1`;
-    }
-    // Never return raw URL because YouTube blocks non-embed URLs via X-Frame-Options: SAMEORIGIN
-    return null;
+    const videoId = extractYouTubeVideoId(urlOrId);
+    if (!videoId) return null;
+    return `https://www.youtube.com/embed/${videoId}`;
   };
 
   const resolveStationVideo = (lesson, station) => {
-    const rawUrl = station?.media?.embedUrl || station?.media?.youtubeUrl || station?.media?.url || station?.interactiveActivity?.video?.embedUrl || station?.interactiveActivity?.video?.youtubeUrl;
+    const combinedText = `${lesson?.title || ''} ${lesson?.subject || ''} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
+    const isHebrew = lesson?.language === 'hebrew' || combinedText.includes('עברית') || /[\u0590-\u05FF]/.test(combinedText);
+    const isEnglish = lesson?.language === 'english' || combinedText.includes('english');
+    const safeTitle = lesson?.title || (isHebrew ? 'השיעור' : 'الدرس');
+    const safeGrade = lesson?.grade || (isHebrew ? 'כיתה ד' : 'الصف الرابع');
+    const isTrain = combinedText.includes('قطار') || combinedText.includes('القطار') || combinedText.includes('قطارات') || combinedText.includes('سكة حديد') || combinedText.includes('רכבת') || combinedText.includes('רכבות') || combinedText.includes('train');
+
+    const defaultSearchQuery = isHebrew
+      ? `סרטון חינוכי לילדים ${safeTitle} ${safeGrade}`
+      : isEnglish
+      ? `${safeTitle} educational video for kids ${safeGrade}`
+      : `فيديو تعليمي للأطفال عن ${safeTitle} - ${safeGrade}`;
+
+    const defaultStory = isHebrew
+      ? (isTrain
+         ? `בוקר אחד בתחנת הרכבת, הבחינו התלמידים ברכבת חדשה המחליקה על המסילה בשקט מופתי ובמהירות אדירה של מאות קילומטרים בשעה, מבלי לפלוט עשן כלל ומבלי שהגלגלים שלה כמעט נוגעים בפסים! 🚆✨`
+         : `דמיינו שאתם חוקרים צעירים הניצבים מול תופעה מפתיעה הקשורה ל-(${safeTitle}). במבט ראשון נראה שהכול פועל מעצמו, אך מתחת לפני השטח מסתתר סוד מרתק שמשנה את כל מה שחשבנו שאנחנו יודעים! 🌟🔍`)
+      : isEnglish
+      ? `Imagine standing before a fascinating real-world phenomenon connected to (${safeTitle}). At first glance it seems simple, yet beneath the surface lies an amazing scientific and logical secret waiting to be discovered! 🌟🔍`
+      : (isTrain
+         ? `في صباح يوم مشرق بمحطة القطارات الحديثة، وقف الطلاب بدهشة أمام قطار فائق السرعة ينطلق كالسهم فوق السكة الحديدية بهدوء تام ودون أي دخان، بل يكاد يطفو في الهواء بفضل قوة خفية مذهلة! 🚆✨`
+         : `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة وقصة واقعية ترتبط بـ (${safeTitle}). للوهلة الأولى يبدو الأمر مألوفاً وعادياً، لكن حين نقترب أكثر نكتشف سرّاً مذهلاً يربط بين ما نراه في حياتنا اليومية وبين القوانين والمعارف التي سنتعلمها اليوم! 🌟🔍`);
+
+    const defaultCuriosity = isHebrew
+      ? (isTrain
+         ? `כיצד מצליחה הרכבת המהירה לנוע במהירות עצומה כזו בבטחה וללא זיהום אוויר? מהו הסוד המסתתר במסילה?`
+         : `מהו לדעתכם הסוד או הכלל המרכזי שמסביר את התופעה הזו בנושא (${safeTitle})?`)
+      : isEnglish
+      ? `What hidden rule or secret explains how (${safeTitle}) works in our daily lives?`
+      : (isTrain
+         ? `كيف يستطيع هذا القطار العملاق الانطلاق بهذه السرعة الهائلة بأمان تام ودون تلوث؟ وما السر الهندسي المختبئ في السكة الحديدية؟`
+         : `برأيكم، ما هو السر أو المبدأ الأساسي الذي يفسر هذه الظاهرة في موضوع (${safeTitle})؟ وكيف نكتشفه معاً؟`);
+
+    const resolvedSearchQuery = station?.youtubeSearchQuery || station?.interactiveActivity?.video?.youtubeSearchQuery || station?.media?.youtubeSearchQuery || station?.interactiveActivity?.video?.searchQuery || station?.media?.searchQuery || defaultSearchQuery;
+    const resolvedStory = station?.hookStoryOrScenario || station?.interactiveActivity?.video?.hookStoryOrScenario || station?.media?.hookStoryOrScenario || defaultStory;
+    const resolvedCuriosity = station?.curiosityQuestion || station?.interactiveActivity?.video?.curiosityQuestion || station?.media?.curiosityQuestion || defaultCuriosity;
+
+    if (station?.interactiveActivity?.video?.fallbackMode) {
+      return {
+        title: station?.interactiveActivity?.video?.title || `القصة المشوقة: ${safeTitle}`,
+        embedUrl: '',
+        youtubeUrl: '',
+        fallbackMode: true,
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
+        reflectionQuestion: station?.interactiveActivity?.video?.reflectionQuestion || resolvedCuriosity
+      };
+    }
+
+    const rawUrl = station?.interactiveActivity?.video?.embedUrl || station?.interactiveActivity?.video?.youtubeUrl || station?.media?.embedUrl || station?.media?.youtubeUrl || station?.media?.url;
     const isDeadUrl = rawUrl && String(rawUrl).includes('EUm-vAOmWV1');
     const validEmbed = !isDeadUrl ? getYouTubeEmbedUrl(rawUrl) : null;
     if (validEmbed) {
       return {
-        title: station?.media?.title || station?.interactiveActivity?.video?.title || 'فيلم تعليمي للمحطة',
+        title: station?.interactiveActivity?.video?.title || station?.media?.title || 'فيلم تعليمي للمحطة',
         embedUrl: validEmbed,
-        youtubeUrl: station?.media?.youtubeUrl || station?.interactiveActivity?.video?.youtubeUrl || validEmbed.replace('embed/', 'watch?v='),
-        searchQuery: station?.media?.searchQuery || lesson?.title || '',
-        reflectionQuestion: station?.media?.reflectionQuestion || station?.interactiveActivity?.video?.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
+        youtubeUrl: station?.interactiveActivity?.video?.youtubeUrl || station?.media?.youtubeUrl || validEmbed.replace('embed/', 'watch?v='),
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
+        reflectionQuestion: station?.interactiveActivity?.video?.reflectionQuestion || station?.media?.reflectionQuestion || 'بعد مشاهدة الفيديو: ما النقطة الجوهرية التي لفتت انتباهك؟'
       };
     }
 
-    const combinedText = `${lesson?.title || ''} ${lesson?.subject || ''} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
-    const isHebrew = lesson?.language === 'hebrew' || combinedText.includes('עברית') || /[\u0590-\u05FF]/.test(combinedText);
-    const isEnglish = lesson?.language === 'english' || combinedText.includes('english');
-
     // 1. Train Topic (القطار / רכבת / Trains)
-    if (combinedText.includes('قطار') || combinedText.includes('القطار') || combinedText.includes('قطارات') || combinedText.includes('سكة حديد') || combinedText.includes('רכבת') || combinedText.includes('רכבות') || combinedText.includes('train')) {
+    if (isTrain) {
       return {
         title: isHebrew ? 'סרטון חינוכי לילדים: איך פועלת הרכבת והמסילה' : isEnglish ? 'How Trains Work for Kids & Fast Locomotives' : 'فيلم وثائقي تعليمي: كيف تعمل القطارات وسر السكك الحديدية والقطارات السريعة',
-        embedUrl: isHebrew ? 'https://www.youtube-nocookie.com/embed/FiqScyQysiA?rel=0' : isEnglish ? 'https://www.youtube-nocookie.com/embed/ejbnImEtLGY?rel=0' : 'https://www.youtube-nocookie.com/embed/9wqKGG4DASQ?rel=0',
+        embedUrl: isHebrew ? 'https://www.youtube.com/embed/FiqScyQysiA' : isEnglish ? 'https://www.youtube.com/embed/ejbnImEtLGY' : 'https://www.youtube.com/embed/9wqKGG4DASQ',
         youtubeUrl: isHebrew ? 'https://www.youtube.com/watch?v=FiqScyQysiA' : isEnglish ? 'https://www.youtube.com/watch?v=ejbnImEtLGY' : 'https://www.youtube.com/watch?v=9wqKGG4DASQ',
-        searchQuery: isHebrew ? 'רכבת לילדים חינוכי' : 'كيف يعمل القطار للاطفال كرتون',
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
         reflectionQuestion: isHebrew ? 'לאחר הצפייה: כיצד הרכבת עוזרת לנו בתחבורה יומיומית? ומה היתרון של רכבת מהירה?' : isEnglish ? 'What makes modern high-speed trains so efficient and safe?' : 'بعد مشاهدة الفيلم: كيف تسير القطارات على السكة الحديدية؟ وما الفائدة الكبرى التي يقدمها القطار السريع للنقل وحماية البيئة؟'
       };
     }
@@ -2388,9 +2773,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     if (combinedText.includes('فهم المقروء') || combinedText.includes('הבנת הנקרא') || combinedText.includes('قراءة') || combinedText.includes('טקסט') || combinedText.includes('قصة') || combinedText.includes('סיפור') || combinedText.includes('كتاب') || combinedText.includes('ספר')) {
       return {
         title: isHebrew ? 'סרטון קצר מעורר השראה: כוחם של ספרים ועולם הקריאה' : isEnglish ? 'The Joy of Reading and Discovery' : 'قصة كرتونية تعليمية: متعة القراءة وسحر الاستكشاف',
-        embedUrl: isHebrew ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/wKi7l_Gbx5w?rel=0',
+        embedUrl: isHebrew ? 'https://www.youtube.com/embed/a5MIHpgndVA' : 'https://www.youtube.com/embed/wKi7l_Gbx5w',
         youtubeUrl: isHebrew ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=wKi7l_Gbx5w',
-        searchQuery: isHebrew ? 'סרטון על קריאה לילדים' : 'قصة قصيرة معبرة للاطفال كرتون',
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
         reflectionQuestion: isHebrew ? 'מהו המסר המרכזי שלמדנו? וכיצד הוא מתחבר לטקסט שקראנו?' : 'ما العبرة المستفادة من هذا المقطع؟ وكيف يساعدنا فهم التفاصيل على إدراك المعنى الخفي للدرس؟'
       };
     }
@@ -2399,9 +2787,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     if (combinedText.includes('تميز') || combinedText.includes('التميز') || combinedText.includes('نجاح') || combinedText.includes('تفوق') || combinedText.includes('طموح') || combinedText.includes('התמדה') || combinedText.includes('מצוינות')) {
       return {
         title: isHebrew ? 'סרטון קצר מעורר השראה: כוחה של התמדה ומצוינות' : 'فيلم رسوم متحركة قصير: قوة التعاون والمثابرة لتحقيق الهدف',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
+        embedUrl: 'https://www.youtube.com/embed/dK0R5rN2gIc',
         youtubeUrl: 'https://www.youtube.com/watch?v=dK0R5rN2gIc',
-        searchQuery: 'فيلم قصير عن التميز والنجاح للاطفال رسوم متحركة',
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
         reflectionQuestion: isHebrew ? 'לאחר הצפייה בסרטון: מה ההבדל בין עבודה רגילה לחיפוש אחר מצוינות? וכיצד התמדה מובילה להצלחה?' : 'بعد مشاهدة هذا الفيلم: ما الفرق الجوهري بين من يقوم بعمله بشكل عادي ومن يبحث دائماً عن التميز والمثابرة؟'
       };
     }
@@ -2410,9 +2801,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     if (combinedText.includes('مادة') || combinedText.includes('حالات المادة') || combinedText.includes('صلب') || combinedText.includes('سائل') || combinedText.includes('غاز') || combinedText.includes('علوم') || combinedText.includes('מדע') || combinedText.includes('מצבי צבירה')) {
       return {
         title: isHebrew ? 'סרטון אנימציה חינוכי: שלושת מצבי הצבירה ותכונותיהם' : 'كرتون تعليمي: حالات المادة الثلاث وخصائصها وتغيراتها',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/bMnmJjL3hF8?rel=0',
+        embedUrl: 'https://www.youtube.com/embed/bMnmJjL3hF8',
         youtubeUrl: 'https://www.youtube.com/watch?v=bMnmJjL3hF8',
-        searchQuery: 'حالات المادة الثلاث للاطفال كرتون',
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
         reflectionQuestion: isHebrew ? 'כיצד תנועת החלקיקים משתנה בין מצבי הצבירה השונים כפי שראיתם בסרטון?' : 'ما الظاهرة التي شاهدتموها في المقطع؟ وكيف تختلف حركة الجزيئات بين الحالات الثلاث؟'
       };
     }
@@ -2421,9 +2815,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     if (combinedText.includes('حساب') || combinedText.includes('رياضيات') || combinedText.includes('كسور') || combinedText.includes('ضرب') || combinedText.includes('חשבון') || combinedText.includes('מתמטיקה') || combinedText.includes('כפל')) {
       return {
         title: isHebrew ? 'הרפתקה מתמטית: פתרון בעיות וחשיבה הגיונית' : 'مغامرة الرياضيات والتفكير المنطقي للأطفال',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/4b2b-y4hPoc?rel=0',
+        embedUrl: 'https://www.youtube.com/embed/4b2b-y4hPoc',
         youtubeUrl: 'https://www.youtube.com/watch?v=4b2b-y4hPoc',
-        searchQuery: `فيديو تعليمي للأطفال عن ${lesson?.title || 'الرياضيات'}`,
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedStory,
+        curiosityQuestion: resolvedCuriosity,
         reflectionQuestion: isHebrew ? 'מהו הרעיון המתמטי המרכזי שראיתם בסיטואציה זו?' : 'ما الفكرة الرياضية المفتاحية التي شاهدتموها في هذا الموقف؟ وكيف نطبقها اليوم؟'
       };
     }
@@ -2431,9 +2828,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     // Default Verified Educational Clip
     return {
       title: isHebrew ? `סרטון חקר והשראה: ${lesson?.title || 'פתיחת השיעור'}` : `فيلم تعليمي هادف: ${lesson?.title || 'مدخل الحصة'}`,
-      embedUrl: isHebrew ? 'https://www.youtube-nocookie.com/embed/a5MIHpgndVA?rel=0' : 'https://www.youtube-nocookie.com/embed/dK0R5rN2gIc?rel=0',
+      embedUrl: isHebrew ? 'https://www.youtube.com/embed/a5MIHpgndVA' : 'https://www.youtube.com/embed/dK0R5rN2gIc',
       youtubeUrl: isHebrew ? 'https://www.youtube.com/watch?v=a5MIHpgndVA' : 'https://www.youtube.com/watch?v=dK0R5rN2gIc',
-      searchQuery: `${lesson?.title || 'الدرس'} فيديو تعليمي للاطفال`,
+      youtubeSearchQuery: resolvedSearchQuery,
+      searchQuery: resolvedSearchQuery,
+      hookStoryOrScenario: resolvedStory,
+      curiosityQuestion: resolvedCuriosity,
       reflectionQuestion: isHebrew ? 'מהו הרעיון המרכזי שעורר את סקרנותכם בסרטון?' : 'بعد مشاهدة الفيديو: ما التساؤل الأول الذي تبادر لذهنك وله علاقة بهدف درسنا اليوم؟'
     };
   };
@@ -2441,23 +2841,31 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const handleUpdateStationVideo = (videoObj) => {
     const stIdx = sessionState.activeStationIndex;
     const stKey = STATION_KEYS_ORDER[stIdx - 1] || '1_hook';
+    const currentSt = activeLesson.stations[stKey] || {};
+    const existingAct = currentSt.interactiveActivity || {};
+    const existingVid = existingAct.video || {};
+    const updatedVid = {
+      ...existingVid,
+      ...videoObj,
+      fallbackMode: !!videoObj.fallbackMode
+    };
     const updatedLesson = {
       ...activeLesson,
       stations: {
         ...activeLesson.stations,
         [stKey]: {
-          ...activeLesson.stations[stKey],
-          media: videoObj
+          ...currentSt,
+          interactiveActivity: {
+            ...existingAct,
+            type: 'video',
+            video: updatedVid
+          },
+          media: updatedVid
         }
       }
     };
-    setActiveLesson(updatedLesson);
-    const nextSession = {
-      ...sessionState,
-      lastVideoUpdate: Date.now()
-    };
-    broadcastSession(nextSession);
-    showToast('تم تحديث وعرض الفيلم على شاشة الصف وأجهزة الطلاب فوراً! 🎬✨');
+    syncLessonLive(updatedLesson, true);
+    showToast(videoObj.fallbackMode ? '🛡️ تم التبديل إلى الوضع البديل الآمن (القصة المشوقة وسؤال الفضول)!' : 'تم تحديث وعرض الفيلم على شاشة الصف وأجهزة الطلاب فوراً! 🎬✨');
   };
 
   // =========================================================================
@@ -2469,19 +2877,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const combined = `${safeTitle} ${lesson?.specialRequests || ''} ${station?.studentPrompt || ''}`.toLowerCase();
     const isExcellence = combined.includes('تميز') || combined.includes('التميز') || combined.includes('نجاح') || combined.includes('تفوق');
 
-    // 1. Resolve Video (Ensure strictly valid embed URL to eliminate X-Frame-Options error)
+    // 1. Resolve Video (Ensure strictly valid embed URL or Safe Fallback Mode)
     const resolvedVid = resolveStationVideo(lesson, station);
-    const candidateEmbed = getYouTubeEmbedUrl(act.video?.embedUrl) ||
-                           getYouTubeEmbedUrl(station?.media?.embedUrl) ||
-                           getYouTubeEmbedUrl(act.video?.youtubeUrl) ||
-                           getYouTubeEmbedUrl(station?.media?.youtubeUrl) ||
-                           resolvedVid.embedUrl;
+    const isFallbackActive = !!act.video?.fallbackMode || (typeof navigator !== 'undefined' && navigator.onLine === false);
+    const candidateEmbed = isFallbackActive
+      ? ''
+      : (getYouTubeEmbedUrl(act.video?.embedUrl) ||
+         getYouTubeEmbedUrl(station?.media?.embedUrl) ||
+         getYouTubeEmbedUrl(act.video?.youtubeUrl) ||
+         getYouTubeEmbedUrl(station?.media?.youtubeUrl) ||
+         resolvedVid.embedUrl);
 
     const videoData = {
       title: act.video?.title || station?.media?.title || resolvedVid.title,
       embedUrl: candidateEmbed,
-      youtubeUrl: act.video?.youtubeUrl || station?.media?.youtubeUrl || '',
-      searchQuery: act.video?.searchQuery || station?.media?.searchQuery || resolvedVid.searchQuery,
+      youtubeUrl: isFallbackActive ? '' : (act.video?.youtubeUrl || station?.media?.youtubeUrl || resolvedVid.youtubeUrl || ''),
+      fallbackMode: isFallbackActive || !candidateEmbed,
+      youtubeSearchQuery: act.video?.youtubeSearchQuery || station?.youtubeSearchQuery || act.video?.searchQuery || station?.media?.searchQuery || resolvedVid.youtubeSearchQuery || resolvedVid.searchQuery,
+      searchQuery: act.video?.youtubeSearchQuery || station?.youtubeSearchQuery || act.video?.searchQuery || station?.media?.searchQuery || resolvedVid.searchQuery,
+      hookStoryOrScenario: act.video?.hookStoryOrScenario || station?.hookStoryOrScenario || resolvedVid.hookStoryOrScenario,
+      curiosityQuestion: act.video?.curiosityQuestion || station?.curiosityQuestion || resolvedVid.curiosityQuestion,
       reflectionQuestion: act.video?.reflectionQuestion || station?.media?.reflectionQuestion || resolvedVid.reflectionQuestion
     };
 
@@ -2809,113 +3224,231 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </div>
         )}
 
-        {/* 1. Video Player Mode */}
+        {/* 1. Video Player Mode & Safe Fallback Showcase (hookStoryOrScenario + curiosityQuestion) */}
         {activeType === 'video' && (
           <div className="activity-subview-video animate-fade-in">
             <div className="video-player-top-header">
               <div className="video-badge-title">
-                <span className="play-pulse-icon">▶</span>
+                <span className="play-pulse-icon">{resolvedActivity.video.embedUrl ? '▶' : '🌟'}</span>
                 <div>
-                  <span className="vid-tag-label">فيلم ومقطع المحطة:</span>
+                  <span className="vid-tag-label">
+                    {resolvedActivity.video.embedUrl
+                      ? (activeLesson.language === 'hebrew' ? 'סרטון הפתיחה לתחנה:' : 'فيلم ومقطع المحطة:')
+                      : (activeLesson.language === 'hebrew' ? 'סיפור הפתיחה והתופעה המרתקת:' : 'القصة المشوقة والظاهرة المدهشة:')}
+                  </span>
                   <strong className="vid-name-text">{resolvedActivity.video.title}</strong>
                 </div>
               </div>
 
-              <div className="video-header-actions">
-                <a
-                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(resolvedActivity.video.searchQuery)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-yt-direct-search"
-                  title="البحث المباشر على يوتيوب عن مقاطع أخرى لنفس موضوع الدرس"
-                >
-                  <i className="fab fa-youtube"></i> بحث في YouTube ↗
-                </a>
-                {isProjector && (
+              {isProjector && (
+                <div className="video-header-actions">
+                  <button
+                    type="button"
+                    className="btn-yt-direct-search"
+                    onClick={() => handleSearchSuggestedYoutubeVideos(STATION_KEYS_ORDER[stNum - 1] || '1_hook', true)}
+                    title="ابحث في يوتيوب عن الفيديو المقترح حسب جملة البحث الذكية"
+                    style={{ border: 'none', cursor: 'pointer' }}
+                  >
+                    <i className="fab fa-youtube"></i> 🔍 ابحث في يوتيوب عن الفيديو المقترح
+                  </button>
                   <button
                     type="button"
                     className="btn-toggle-video-picker"
                     onClick={() => setIsVideoPickerOpen(prev => !prev)}
-                    title="تغيير الفيلم أو لصق رابط يوتيوب آخر"
+                    title="تغيير الفيلم أو لصق رابط يوتيوب أو تفعيل الوضع البديل الآمن"
                   >
-                    <i className="fas fa-exchange-alt"></i> {isVideoPickerOpen ? 'إغلاق الخيارات' : 'تغيير الفيلم 🎬'}
+                    <i className="fas fa-exchange-alt"></i> {isVideoPickerOpen ? 'إغلاق الخيارات' : 'إدارة الفيديو / البديل الآمن 🎬'}
                   </button>
-                )}
-              </div>
-            </div>
-
-            <div className="video-iframe-wrapper">
-              {resolvedActivity.video.embedUrl ? (
-                <iframe
-                  src={resolvedActivity.video.embedUrl}
-                  title={resolvedActivity.video.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="video-main-iframe"
-                ></iframe>
-              ) : (
-                <div className="video-placeholder-frame">
-                  <i className="fab fa-youtube"></i>
-                  <p>يرجى اختيار مقطع فيديو تعليمي من قائمة الفيديوهات أو لصق رابط صالح</p>
                 </div>
               )}
             </div>
 
-            <div className="video-reflection-bar">
-              <div className="reflection-title-tag">
-                <i className="fas fa-lightbulb"></i> سؤال التأمل والمناقشة الصفية بعد المشاهدة:
+            {resolvedActivity.video.embedUrl && (typeof navigator === 'undefined' || navigator.onLine !== false) ? (
+              <>
+                <div className="video-iframe-wrapper">
+                  <iframe
+                    src={resolvedActivity.video.embedUrl}
+                    title={resolvedActivity.video.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="video-main-iframe"
+                  ></iframe>
+                </div>
+
+                <div className="video-reflection-bar">
+                  <div className="reflection-title-tag">
+                    <i className="fas fa-lightbulb"></i> {activeLesson.language === 'hebrew' ? 'שאלת רפלקציה ודיון כיתתי לאחר הצפייה:' : 'سؤال التأمل والمناقشة الصفية بعد المشاهدة:'}
+                  </div>
+                  <p className="reflection-question-content">{resolvedActivity.video.reflectionQuestion}</p>
+                </div>
+              </>
+            ) : (
+              /* Path 3: Safe Fallback Mode (الوضع البديل الآمن: القصة المشوقة أو الظاهرة المدهشة + سؤال الفضول) */
+              <div
+                className="safe-hook-fallback-showcase animate-fade-in"
+                style={{
+                  background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                  border: '2px solid #f59e0b',
+                  borderRadius: '18px',
+                  padding: '22px 24px',
+                  margin: '14px 0',
+                  boxShadow: '0 10px 25px rgba(245, 158, 11, 0.14)',
+                  color: '#1e293b'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '1.8rem' }}>🌟</span>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b45309', letterSpacing: '0.3px' }}>
+                      {activeLesson.language === 'hebrew' ? 'פתיחה מעוררת השראה וסקרנות' : 'مشهد الافتتاح المحفّز للتفكير'}
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 900, color: '#78350f' }}>
+                      {activeLesson.language === 'hebrew' ? '📖 הסיפור המרתק / התופעה המדהימה' : '📖 القصة المشوقة أو الظاهرة المدهشة'}
+                    </h4>
+                  </div>
+                </div>
+
+                <p
+                  style={{
+                    fontSize: '1.08rem',
+                    lineHeight: 1.85,
+                    color: '#1e293b',
+                    background: 'rgba(255, 255, 255, 0.88)',
+                    padding: '16px 18px',
+                    borderRadius: '12px',
+                    borderRight: '5px solid #f59e0b',
+                    margin: '0 0 16px 0',
+                    fontWeight: 600
+                  }}
+                >
+                  {resolvedActivity.video.hookStoryOrScenario}
+                </p>
+
+                <div
+                  style={{
+                    background: '#ffffff',
+                    border: '2px dashed #d97706',
+                    borderRadius: '12px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ fontWeight: 900, color: '#b45309', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🤔</span>
+                    <span>{activeLesson.language === 'hebrew' ? 'שאלת הסקרנות שלנו:' : 'سؤال الفضول والتفكير:'}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.65 }}>
+                    {resolvedActivity.video.curiosityQuestion}
+                  </p>
+                </div>
               </div>
-              <p className="reflection-question-content">{resolvedActivity.video.reflectionQuestion}</p>
-            </div>
+            )}
 
             {/* Video Picker Drawer (for teacher) */}
             {isProjector && isVideoPickerOpen && (
               <div className="video-picker-quick-drawer animate-pop">
                 <div className="drawer-head">
-                  <h4><i className="fas fa-film"></i> اختر من الفيديوهات المقترحة للدرس أو الصق رابطاً:</h4>
+                  <h4><i className="fas fa-film"></i> إدارة فيديو المحطة والوضع البديل الآمن:</h4>
                   <button type="button" onClick={() => setIsVideoPickerOpen(false)}>&times;</button>
                 </div>
 
-                <div className="curated-videos-grid">
-                  {EDUCATIONAL_VIDEOS_LIBRARY.map((v, i) => (
+                <div style={{ marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.88rem', color: '#334155' }}>
+                    <strong>🎯 جملة البحث المقترحة (`youtubeSearchQuery`):</strong>{' '}
+                    <span style={{ color: '#0369a1', fontWeight: 700 }}>{resolvedActivity.video.youtubeSearchQuery}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
-                      key={i}
                       type="button"
-                      className={`curated-vid-card ${resolvedActivity.video.embedUrl.includes(v.youtubeId) ? 'selected' : ''}`}
+                      onClick={() => handleSearchSuggestedYoutubeVideos(STATION_KEYS_ORDER[stNum - 1] || '1_hook', true)}
+                      style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      🔍 ابحث في يوتيوب عن الفيديو المقترح
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
-                        handleUpdateStationVideo({
-                          type: 'video',
-                          title: v.title,
-                          youtubeId: v.youtubeId,
-                          embedUrl: v.embedUrl,
-                          searchQuery: v.searchQuery,
-                          reflectionQuestion: resolvedActivity.video.reflectionQuestion
-                        });
+                        handleActivateSafeFallbackMode(STATION_KEYS_ORDER[stNum - 1] || '1_hook');
                         setIsVideoPickerOpen(false);
                       }}
+                      style={{ background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}
                     >
-                      <span className="cv-icon">🎬</span>
-                      <div className="cv-info">
-                        <strong>{v.title}</strong>
-                        <small>{v.caption}</small>
-                      </div>
+                      🛡️ تفعيل الوضع البديل الآمن (القصة وسؤال الفضول)
                     </button>
-                  ))}
+                  </div>
+                </div>
+
+                <div className="curated-videos-grid">
+                  {(ytSearchCardsByStation[STATION_KEYS_ORDER[stNum - 1] || '1_hook'] || EDUCATIONAL_VIDEOS_LIBRARY).map((v, i) => {
+                    const vidId = v.videoId || v.youtubeId;
+                    const isSelected = resolvedActivity.video.embedUrl && resolvedActivity.video.embedUrl.includes(vidId);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        className={`curated-vid-card ${isSelected ? 'selected' : ''}`}
+                        onClick={() => {
+                          handleUpdateStationVideo({
+                            type: 'video',
+                            title: v.title,
+                            youtubeId: vidId,
+                            embedUrl: `https://www.youtube.com/embed/${vidId}`,
+                            youtubeUrl: `https://www.youtube.com/watch?v=${vidId}`,
+                            fallbackMode: false,
+                            searchQuery: v.searchQuery || resolvedActivity.video.youtubeSearchQuery,
+                            reflectionQuestion: resolvedActivity.video.reflectionQuestion
+                          });
+                          setIsVideoPickerOpen(false);
+                        }}
+                      >
+                        <img
+                          src={v.thumbnail || `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`}
+                          alt={v.title}
+                          style={{ width: '78px', height: '48px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }}
+                        />
+                        <div className="cv-info">
+                          <strong>{v.title}</strong>
+                          <small>{v.channelTitle || v.caption}</small>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="custom-yt-input-row">
                   <input
                     type="text"
-                    placeholder="ألصق رابط يوتيوب هنا (مثل: https://www.youtube.com/watch?v=...)"
+                    placeholder="رابط فيديو يوتيوب (اختياري / للتعديل) - watch?v= أو youtu.be أو shorts"
                     value={customVideoUrl}
-                    onChange={e => setCustomVideoUrl(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setCustomVideoUrl(val);
+                      const vidId = extractYouTubeVideoId(val);
+                      if (vidId) {
+                        handleUpdateStationVideo({
+                          type: 'video',
+                          title: `فيديو الدرس: ${activeLesson.title}`,
+                          embedUrl: `https://www.youtube.com/embed/${vidId}`,
+                          youtubeUrl: `https://www.youtube.com/watch?v=${vidId}`,
+                          fallbackMode: false,
+                          searchQuery: resolvedActivity.video.youtubeSearchQuery,
+                          reflectionQuestion: resolvedActivity.video.reflectionQuestion
+                        });
+                      }
+                    }}
                   />
                   <button
                     type="button"
                     className="btn-apply-custom-video"
                     onClick={() => {
-                      if (!customVideoUrl.trim()) return;
+                      if (!customVideoUrl.trim()) {
+                        handleActivateSafeFallbackMode(STATION_KEYS_ORDER[stNum - 1] || '1_hook');
+                        setIsVideoPickerOpen(false);
+                        return;
+                      }
                       const embed = getYouTubeEmbedUrl(customVideoUrl);
                       if (!embed) {
                         showToast('يرجى التأكد من صحة رابط يوتيوب المدخل');
@@ -2923,10 +3456,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       }
                       handleUpdateStationVideo({
                         type: 'video',
-                        title: `فيديو مخصص: ${activeLesson.title}`,
+                        title: `فيديو الدرس: ${activeLesson.title}`,
                         embedUrl: embed,
                         youtubeUrl: customVideoUrl,
-                        searchQuery: activeLesson.title,
+                        fallbackMode: false,
+                        searchQuery: resolvedActivity.video.youtubeSearchQuery,
                         reflectionQuestion: resolvedActivity.video.reflectionQuestion
                       });
                       setCustomVideoUrl('');
@@ -5619,60 +6153,240 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </button>
                     </div>
 
-                    {/* 1. Tab: YouTube Video */}
+                    {/* 1. Tab: YouTube Video (3-Path Smart Mechanism: Auto-Search Query + Smart URL Parser + Safe Fallback Mode) */}
                     {stationMediaInputs.activeType === 'video' && (
-                      <div className="tab-pane-video animate-fade-in">
-                        <div className="video-url-input-group">
-                          <input
-                            type="text"
-                            placeholder="ألصق رابط يوتيوب هنا (مثال: https://www.youtube.com/watch?v=...)"
-                            value={stationVideoInputs[selectedStationToEdit] ?? (currentSt.interactiveActivity?.video?.youtubeUrl || currentSt.interactiveActivity?.video?.embedUrl || '')}
-                            onChange={e => setStationVideoInputs(prev => ({ ...prev, [selectedStationToEdit]: e.target.value }))}
-                          />
-                          <button
-                            type="button"
-                            className="btn-apply-station-video"
-                            onClick={() => handleSaveStationVideoUrl(selectedStationToEdit)}
-                          >
-                            <i className="fas fa-check"></i> حفظ وتطبيق الفيديو 🎬
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-ai-suggest-video"
-                            onClick={() => handleAiSuggestVideoForStation(selectedStationToEdit)}
-                          >
-                            <i className="fas fa-magic"></i> اقتراح فيديو بالـ AI ✨
-                          </button>
-                          <a
-                            href={`https://www.youtube.com/results?search_query=${encodeURIComponent((activeLesson.language === 'hebrew' ? 'סרטון חינוכי לילדים ' : 'فيديو تعليمي للاطفال ') + (activeLesson.title || ''))}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-search-youtube-direct"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 14px',
-                              background: '#dc2626',
-                              color: '#fff',
-                              borderRadius: '8px',
-                              textDecoration: 'none',
-                              fontWeight: 'bold',
-                              fontSize: '0.85rem',
-                              cursor: 'pointer'
-                            }}
-                            title="فتح بحث YouTube المباشر واختيار فيديو مناسب"
-                          >
-                            <i className="fab fa-youtube"></i> بحث في YouTube 🔍
-                          </a>
+                      <div className="tab-pane-video animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* المسار 1: التوليد الذكي لجملة البحث (Auto-Search Query) */}
+                        <div
+                          style={{
+                            background: '#f8fafc',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '14px',
+                            padding: '14px 16px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                            <label style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>🎯</span>
+                              <span>١. التوليد الذكي لجملة البحث (`youtubeSearchQuery`) المرتبطة بموضوع الدرس والصف:</span>
+                            </label>
+                            <span style={{ fontSize: '0.78rem', background: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '20px', fontWeight: 700 }}>
+                              مولّدة تلقائياً بالذكاء الاصطناعي ✨
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              value={
+                                currentSt.youtubeSearchQuery ??
+                                currentSt.interactiveActivity?.video?.youtubeSearchQuery ??
+                                currentSt.interactiveActivity?.video?.searchQuery ??
+                                ((activeLesson.language === 'hebrew' ? 'סרטון חינוכי לילדים ' : 'فيديو تعليمي للأطفال عن ') + (activeLesson.title || '') + ' ' + (activeLesson.grade || ''))
+                              }
+                              onChange={e => {
+                                const newQuery = e.target.value;
+                                const updatedLesson = {
+                                  ...activeLesson,
+                                  stations: {
+                                    ...activeLesson.stations,
+                                    [selectedStationToEdit]: {
+                                      ...currentSt,
+                                      youtubeSearchQuery: newQuery,
+                                      interactiveActivity: {
+                                        ...(currentSt.interactiveActivity || {}),
+                                        video: {
+                                          ...(currentSt.interactiveActivity?.video || {}),
+                                          youtubeSearchQuery: newQuery,
+                                          searchQuery: newQuery
+                                        }
+                                      }
+                                    }
+                                  }
+                                };
+                                syncLessonLive(updatedLesson);
+                              }}
+                              placeholder="جملة البحث الذكية المقترحة في يوتيوب..."
+                              style={{
+                                flex: '1 1 280px',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                border: '1.5px solid #cbd5e1',
+                                fontSize: '0.92rem',
+                                fontWeight: 700,
+                                color: '#1e293b',
+                                background: '#fff'
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => handleSearchSuggestedYoutubeVideos(selectedStationToEdit, true)}
+                              disabled={isSearchingYoutubeApi}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 18px',
+                                background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                fontWeight: 800,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)'
+                              }}
+                              title="يجلب أول 3 فيديوهات عبر YouTube Data API v3 كبطاقات مصغرة أو يفتح نافذة بحث يوتيوب بنفس الجملة"
+                            >
+                              <i className="fab fa-youtube"></i>
+                              <span>{isSearchingYoutubeApi ? 'جاري البحث...' : '🔍 ابحث في يوتيوب عن الفيديو المقترح'}</span>
+                            </button>
+                          </div>
+
+                          {/* عرض أول 3 فيديوهات كبطاقات مصغرة ليختار المعلم أحدها بنقرة واحدة */}
+                          {ytSearchCardsByStation[selectedStationToEdit] && ytSearchCardsByStation[selectedStationToEdit].length > 0 && (
+                            <div style={{ marginTop: '14px' }}>
+                              <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', marginBottom: '8px' }}>
+                                🎬 اختر أحد الفيديوهات الثلاثة المقترحة بنقرة واحدة لتضمينه فوراً:
+                              </div>
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                                  gap: '10px'
+                                }}
+                              >
+                                {ytSearchCardsByStation[selectedStationToEdit].slice(0, 3).map((card, idx) => {
+                                  const isSelected = (currentSt.interactiveActivity?.video?.embedUrl || '').includes(card.videoId);
+                                  return (
+                                    <button
+                                      key={card.videoId || idx}
+                                      type="button"
+                                      onClick={() => handleSelectYoutubeCard(selectedStationToEdit, card)}
+                                      style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        textAlign: 'right',
+                                        background: isSelected ? '#eff6ff' : '#ffffff',
+                                        border: isSelected ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                        padding: 0,
+                                        transition: 'all 0.2s',
+                                        boxShadow: isSelected ? '0 6px 16px rgba(37, 99, 235, 0.16)' : '0 2px 6px rgba(0,0,0,0.04)'
+                                      }}
+                                    >
+                                      <div style={{ position: 'relative', width: '100%', height: '115px', background: '#0f172a' }}>
+                                        <img
+                                          src={card.thumbnail || `https://i.ytimg.com/vi/${card.videoId}/hqdefault.jpg`}
+                                          alt={card.title}
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                        <span
+                                          style={{
+                                            position: 'absolute',
+                                            bottom: '6px',
+                                            left: '6px',
+                                            background: isSelected ? '#16a34a' : 'rgba(15, 23, 42, 0.85)',
+                                            color: '#fff',
+                                            fontSize: '0.74rem',
+                                            fontWeight: 800,
+                                            padding: '3px 8px',
+                                            borderRadius: '6px'
+                                          }}
+                                        >
+                                          {isSelected ? '✓ مضمّن حالياً' : '▶ اختر بنقرة واحدة'}
+                                        </span>
+                                      </div>
+                                      <div style={{ padding: '10px 12px' }}>
+                                        <div style={{ fontWeight: 800, fontSize: '0.86rem', color: '#0f172a', lineHeight: 1.4, marginBottom: '4px' }}>
+                                          {card.title}
+                                        </div>
+                                        <div style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                                          📺 {card.channelTitle || 'YouTube Education'}
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {currentSt.interactiveActivity?.video?.embedUrl && (
+                        {/* المسار 2: محول الروابط التلقائي الذكي (Smart URL Parser) */}
+                        <div
+                          style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #cbd5e1',
+                            borderRadius: '14px',
+                            padding: '14px 16px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                            <label style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>🔗</span>
+                              <span>٢. رابط فيديو يوتيوب (اختياري / للتعديل):</span>
+                            </label>
+                            <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>
+                              يقبل `watch?v=` أو `youtu.be` أو `shorts` ويحوّله تلقائياً إلى مشغل مدمج (`embed/VIDEO_ID`)
+                            </span>
+                          </div>
+
+                          <div className="video-url-input-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <input
+                              type="text"
+                              placeholder="رابط فيديو يوتيوب (اختياري / للتعديل) - ألصق أي رابط يوتيوب هنا..."
+                              value={stationVideoInputs[selectedStationToEdit] ?? (currentSt.interactiveActivity?.video?.youtubeUrl || currentSt.interactiveActivity?.video?.embedUrl || '')}
+                              onChange={e => handleSmartYoutubeUrlChange(selectedStationToEdit, e.target.value)}
+                              style={{ flex: '1 1 280px' }}
+                            />
+                            <button
+                              type="button"
+                              className="btn-apply-station-video"
+                              onClick={() => handleSaveStationVideoUrl(selectedStationToEdit)}
+                            >
+                              <i className="fas fa-check"></i> تحويل وتضمين الفيديو 🎬
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleActivateSafeFallbackMode(selectedStationToEdit)}
+                              style={{
+                                padding: '8px 14px',
+                                background: currentSt.interactiveActivity?.video?.fallbackMode || !currentSt.interactiveActivity?.video?.embedUrl ? '#d97706' : '#fef3c7',
+                                color: currentSt.interactiveActivity?.video?.fallbackMode || !currentSt.interactiveActivity?.video?.embedUrl ? '#fff' : '#92400e',
+                                border: '1.5px solid #f59e0b',
+                                borderRadius: '8px',
+                                fontWeight: 800,
+                                fontSize: '0.85rem',
+                                cursor: 'pointer'
+                              }}
+                              title="إلغاء الفيديو وعرض القصة المشوقة وسؤال الفضول كبديل آمن وأنيق على شاشة الطالب"
+                            >
+                              🛡️ الوضع البديل الآمن (بدون فيديو)
+                            </button>
+                          </div>
+
+                          {currentSt.interactiveActivity?.video?.embedUrl && !currentSt.interactiveActivity?.video?.fallbackMode && (
+                            <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>✅ المشغل المدمج النشط حالياً:</span>
+                              <code style={{ background: '#ecfdf5', padding: '2px 8px', borderRadius: '6px', direction: 'ltr' }}>
+                                {currentSt.interactiveActivity.video.embedUrl}
+                              </code>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* معاينة الفيديو المدمج أو معاينة الوضع البديل الآمن */}
+                        {currentSt.interactiveActivity?.video?.embedUrl && !currentSt.interactiveActivity?.video?.fallbackMode ? (
                           <div className="station-video-preview-box">
                             <iframe
                               src={currentSt.interactiveActivity.video.embedUrl}
                               title="معاينة فيديو المحطة"
                               frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                               allowFullScreen
                               className="station-video-iframe"
                             ></iframe>
@@ -5704,7 +6418,132 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               />
                             </div>
                           </div>
-                        )}
+                        ) : null}
+
+                        {/* المسار 3: الوضع البديل الآمن (Fallback Mode: القصة المشوقة أو الظاهرة المدهشة + سؤال الفضول) */}
+                        <div
+                          style={{
+                            background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                            border: '2px solid #f59e0b',
+                            borderRadius: '14px',
+                            padding: '16px 18px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                            <div style={{ fontWeight: 900, color: '#78350f', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>🛡️</span>
+                              <span>٣. الوضع البديل الآمن (Fallback Mode) — يظهر تلقائياً للطالب عند عدم اختيار فيديو أو انقطاع يوتيوب:</span>
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.78rem',
+                                fontWeight: 800,
+                                padding: '3px 10px',
+                                borderRadius: '20px',
+                                background: (!currentSt.interactiveActivity?.video?.embedUrl || currentSt.interactiveActivity?.video?.fallbackMode) ? '#16a34a' : '#fef9c3',
+                                color: (!currentSt.interactiveActivity?.video?.embedUrl || currentSt.interactiveActivity?.video?.fallbackMode) ? '#ffffff' : '#854d0e'
+                              }}
+                            >
+                              {(!currentSt.interactiveActivity?.video?.embedUrl || currentSt.interactiveActivity?.video?.fallbackMode)
+                                ? '✓ مفعل ومعروض الآن على شاشة الطالب'
+                                : 'جاهز كبديل تلقائي آمن'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.86rem', color: '#92400e', marginBottom: '4px' }}>
+                                📖 القصة المشوقة أو الظاهرة المدهشة (`hookStoryOrScenario`):
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={
+                                  currentSt.hookStoryOrScenario ??
+                                  currentSt.interactiveActivity?.video?.hookStoryOrScenario ??
+                                  resolveStationVideo(activeLesson, currentSt).hookStoryOrScenario
+                                }
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  const updatedLesson = {
+                                    ...activeLesson,
+                                    stations: {
+                                      ...activeLesson.stations,
+                                      [selectedStationToEdit]: {
+                                        ...currentSt,
+                                        hookStoryOrScenario: val,
+                                        interactiveActivity: {
+                                          ...(currentSt.interactiveActivity || {}),
+                                          video: {
+                                            ...(currentSt.interactiveActivity?.video || {}),
+                                            hookStoryOrScenario: val
+                                          }
+                                        }
+                                      }
+                                    }
+                                  };
+                                  syncLessonLive(updatedLesson);
+                                }}
+                                placeholder="اكتب القصة المشوقة أو الظاهرة المدهشة التي ستعرض للطالب..."
+                                style={{
+                                  width: '100%',
+                                  padding: '10px 12px',
+                                  borderRadius: '10px',
+                                  border: '1.5px solid #f59e0b',
+                                  background: '#ffffff',
+                                  fontSize: '0.92rem',
+                                  lineHeight: 1.6,
+                                  color: '#1e293b'
+                                }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.86rem', color: '#92400e', marginBottom: '4px' }}>
+                                🤔 سؤال الفضول (`curiosityQuestion`):
+                              </label>
+                              <input
+                                type="text"
+                                value={
+                                  currentSt.curiosityQuestion ??
+                                  currentSt.interactiveActivity?.video?.curiosityQuestion ??
+                                  resolveStationVideo(activeLesson, currentSt).curiosityQuestion
+                                }
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  const updatedLesson = {
+                                    ...activeLesson,
+                                    stations: {
+                                      ...activeLesson.stations,
+                                      [selectedStationToEdit]: {
+                                        ...currentSt,
+                                        curiosityQuestion: val,
+                                        interactiveActivity: {
+                                          ...(currentSt.interactiveActivity || {}),
+                                          video: {
+                                            ...(currentSt.interactiveActivity?.video || {}),
+                                            curiosityQuestion: val
+                                          }
+                                        }
+                                      }
+                                    }
+                                  };
+                                  syncLessonLive(updatedLesson);
+                                }}
+                                placeholder="اكتب سؤال الفضول المحفز للتفكير..."
+                                style={{
+                                  width: '100%',
+                                  padding: '10px 12px',
+                                  borderRadius: '10px',
+                                  border: '1.5px solid #f59e0b',
+                                  background: '#ffffff',
+                                  fontSize: '0.92rem',
+                                  fontWeight: 700,
+                                  color: '#1e293b'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 

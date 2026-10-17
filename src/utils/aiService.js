@@ -2905,8 +2905,8 @@ ${genreDirective}
    - אין לכתוב סיכומים קצרים או הפניות כלליות; יש לכתוב את כל התוכן במלואו על גבי המסך!
    - אם מתוכנן קטע קריאה: כתוב את הטקסט המלא (3-4 פסקאות עשירות) בתחנה 2 (studentPrompt), כולל כותרת ומילון מושגים!
    - אם יש חידה או סיפור: כתוב את הטקסט המלא, הרמזים והפתרון בתוך interactiveActivity.riddle.
-   - אם יש סרטון: כלול כותרת סרטון, מילות חיפוש ושאלת רפלקציה מעמיקה.
-   - אם מתוכנן משחק: ציין את המשחק המתאים מהאתר (אליפות לוח הכפל, אתגר בלשי, זירת הלשון, מעבדת STEM).
+    - אם יש סרטון: כלול כותרת סרטון, משפט חיפוש מדויק מאוד ב-youtubeSearchQuery המותאם לנושא השיעור ולכיתה, סיפור מרתק או תופעה מדהימה ב-hookStoryOrScenario, שאלת סקרנות ב-curiosityQuestion ושאלת רפלקציה מעמיקה (אל תמציא קישורי יוטיוב פיקטיביים - השאר youtubeUrl ריק "").
+    - אם מתוכנן משחק: ציין את המשחק המתאים מהאתר (אליפות לוח הכפל, אתגר בלשי, זירת הלשון, מעבדת STEM).
 2. דיפרנציאציה אמיתית בתחנה 3 (יישום ותרגול): חובה לכלול 3 משימות מלאות ומפורטות לשלוש רמות (זינוק, שליטה, אתגר) עם ניסוח השאלות במלואן.
 3. תחנה 4 (ראיות הבנה): שאלות בדיקה עצמאיות מפורשות (1, 2, 3) המודדות ישירות את קריטריון ההצלחה, ללא צורך בדפי צילום חיצוניים.
 4. תחנה 5 (סיכום, קציר והעברה לחיים): שאלות כרטיס יציאה מובנות המקשרות את הלמידה למציאות היומיומית.
@@ -2923,18 +2923,21 @@ ${genreDirective}
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
-      "name": "${targetLang === 'hebrew' ? 'אתגר וסקרנות' : 'مشوّق ومحفّز'}",
+      "name": "${targetLang === 'hebrew' ? 'משיכה וסקרנות' : 'مشوّق ومحفّز'}",
       "number": 1,
       "icon": "🔥",
-      "studentPrompt": "نص الموقف المحفז المعروض للطلاب...",
-      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المحفז...",
+      "studentPrompt": "نص الموقف المحفز المعروض للطلاب...",
+      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المحفز...",
       "suggestedDuration": 6,
       "scaffold": "تلميح للبدء...",
+      "youtubeSearchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف...",
+      "hookStoryOrScenario": "القصة المشوقة أو الظاهرة المدهشة المرتبطة بالدرس كبديل آمن ومتكامل...",
+      "curiosityQuestion": "سؤال الفضول المثير للتفكير حول القصة أو الظاهرة...",
       "interactiveActivity": {
         "type": "riddle",
         "title": "عنوان النشاط",
         "riddle": {
-          "riddleText": "نص الأحجية أو اللغז...",
+          "riddleText": "نص الأحجية أو اللغز...",
           "clues": ["רמז 1 / تلميح 1", "רמז 2 / تلميح 2"],
           "options": ["אופציה 1", "אופציה 2", "אופציה 3", "אופציה 4"],
           "solution": "פתרון החידה / حل الأحجية",
@@ -2952,9 +2955,12 @@ ${genreDirective}
           "successMessage": "כל הכבוד! / أحسنت!"
         },
         "video": {
-          "title": "عنوان المقطع",
-          "searchQuery": "كلمات بحث يوتيوب",
-          "youtubeUrl": "https://www.youtube.com/watch?v=9wqKGG4DASQ",
+          "title": "عنوان المقطع المقترح",
+          "youtubeSearchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف",
+          "searchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف",
+          "youtubeUrl": "",
+          "hookStoryOrScenario": "القصة المشوقة أو الظاهرة المدهشة المرتبطة بالدرس...",
+          "curiosityQuestion": "سؤال الفضول المثير للتفكير...",
           "reflectionQuestion": "سؤال التأمل"
         }
       }
@@ -3294,12 +3300,50 @@ ${genreDirective}
       const isExcellence = reqAndTitle.includes('تميز') || reqAndTitle.includes('التميز') || reqAndTitle.includes('نجاح') || reqAndTitle.includes('تفوق');
       const curatedVid = getCuratedTopicVideo(safeTitle + ' ' + safeRequests);
 
-      // 1. Build rich video data
+      const defaultSearchQuery = targetLang === 'hebrew'
+        ? `סרטון חינוכי לילדים ${safeTitle} ${safeGrade}`
+        : targetLang === 'english'
+        ? `${safeTitle} educational video for kids ${safeGrade}`
+        : `فيديو تعليمي للأطفال عن ${safeTitle} - ${safeGrade}`;
+
+      const defaultHookStory = targetLang === 'hebrew'
+        ? (isTrainTopic
+           ? `בוקר אחד בתחנת הרכבת, הבחינו התלמידים ברכבת חדשה המחליקה על המסילה בשקט מופתי ובמהירות אדירה של מאות קילומטרים בשעה, מבלי לפלוט עשן כלל ומבלי שהגלגלים שלה כמעט נוגעים בפסים! 🚆✨`
+           : `דמיינו שאתם חוקרים צעירים הניצבים מול תופעה מפתיעה הקשורה ל-(${safeTitle}). במבט ראשון נראה שהכול פועל מעצמו, אך מתחת לפני השטח מסתתר סוד מרתק שמשנה את כל מה שחשבנו שאנחנו יודעים! 🌟🔍`)
+        : targetLang === 'english'
+        ? `Imagine standing before a fascinating real-world phenomenon connected to (${safeTitle}). At first glance it seems simple, yet beneath the surface lies an amazing scientific and logical secret waiting to be discovered! 🌟🔍`
+        : (isTrainTopic
+           ? `في صباح يوم مشرق بمحطة القطارات الحديثة، وقف الطلاب بدهشة أمام قطار فائق السرعة ينطلق كالسهم فوق السكة الحديدية بهدوء تام ودون أي دخان، بل يكاد يطفو في الهواء بفضل قوة خفية مذهلة! 🚆✨`
+           : `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة وقصة واقعية ترتبط بـ (${safeTitle}). للوهلة الأولى يبدو الأمر مألوفاً وعادياً، لكن حين نقترب أكثر نكتشف سرّاً مذهلاً يربط بين ما نراه في حياتنا اليومية وبين القوانين والمعارف التي سنتعلمها اليوم! 🌟🔍`);
+
+      const defaultCuriosityQuestion = targetLang === 'hebrew'
+        ? (isTrainTopic
+           ? `כיצד מצליחה הרכבת המהירה לנוע במהירות עצומה כזו בבטחה וללא זיהום אוויר? מהו הסוד המסתתר במסילה?`
+           : `מהו לדעתכם הסוד או הכלל המרכזי שמסביר את התופעה הזו בנושא (${safeTitle})?`)
+        : targetLang === 'english'
+        ? `What hidden rule or secret explains how (${safeTitle}) works in our daily lives?`
+        : (isTrainTopic
+           ? `كيف يستطيع هذا القطار العملاق الانطلاق بهذه السرعة الهائلة بأمان تام ودون تلوث؟ وما السر الهندسي المختبئ في السكة الحديدية؟`
+           : `برأيكم، ما هو السر أو المبدأ الأساسي الذي يفسر هذه الظاهرة في موضوع (${safeTitle})؟ وكيف نكتشفه معاً؟`);
+
+      const resolvedSearchQuery = hook.youtubeSearchQuery || hook.interactiveActivity?.video?.youtubeSearchQuery || hook.interactiveActivity?.video?.searchQuery || defaultSearchQuery || curatedVid.searchQuery;
+      const resolvedHookStory = hook.hookStoryOrScenario || hook.interactiveActivity?.video?.hookStoryOrScenario || defaultHookStory;
+      const resolvedCuriosityQ = hook.curiosityQuestion || hook.interactiveActivity?.video?.curiosityQuestion || defaultCuriosityQuestion;
+
+      // Only allow verified known working IDs from AI output to prevent AI-hallucinated broken links
+      const VERIFIED_IDS = ['9wqKGG4DASQ', 'FiqScyQysiA', 'ejbnImEtLGY', 'wKi7l_Gbx5w', 'a5MIHpgndVA', 'bMnmJjL3hF8', '4b2b-y4hPoc', 'dK0R5rN2gIc', 'S4328Yx6W20', '7V-eFmF9f2Q', 'Z0o8Z6GqP2o'];
+      const aiVidUrl = hook.interactiveActivity?.video?.youtubeUrl || hook.interactiveActivity?.video?.embedUrl || '';
+      const isAiUrlVerified = VERIFIED_IDS.some(id => String(aiVidUrl).includes(id));
+
+      // 1. Build rich video data with safe fallback support
       const defaultVideo = {
         title: curatedVid.title,
-        embedUrl: curatedVid.embedUrl,
-        youtubeUrl: curatedVid.youtubeUrl,
-        searchQuery: curatedVid.searchQuery,
+        embedUrl: isAiUrlVerified ? hook.interactiveActivity.video.embedUrl : curatedVid.embedUrl,
+        youtubeUrl: isAiUrlVerified ? hook.interactiveActivity.video.youtubeUrl : curatedVid.youtubeUrl,
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
+        hookStoryOrScenario: resolvedHookStory,
+        curiosityQuestion: resolvedCuriosityQ,
         reflectionQuestion: curatedVid.reflectionQuestion
       };
 
@@ -3382,6 +3426,10 @@ ${genreDirective}
       else if (isVideoRequested) activeType = 'video';
       else if (hook.interactiveActivity?.type) activeType = hook.interactiveActivity.type;
 
+      hook.youtubeSearchQuery = resolvedSearchQuery;
+      hook.hookStoryOrScenario = resolvedHookStory;
+      hook.curiosityQuestion = resolvedCuriosityQ;
+
       // Merge into interactiveActivity
       hook.interactiveActivity = {
         type: activeType,
@@ -3399,17 +3447,24 @@ ${genreDirective}
         video: {
           ...defaultVideo,
           ...(hook.interactiveActivity?.video || {}),
-          embedUrl: (hook.interactiveActivity?.video?.embedUrl) || defaultVideo.embedUrl,
-          youtubeUrl: (hook.interactiveActivity?.video?.youtubeUrl) || defaultVideo.youtubeUrl
+          youtubeSearchQuery: resolvedSearchQuery,
+          searchQuery: resolvedSearchQuery,
+          hookStoryOrScenario: resolvedHookStory,
+          curiosityQuestion: resolvedCuriosityQ,
+          embedUrl: defaultVideo.embedUrl,
+          youtubeUrl: defaultVideo.youtubeUrl
         }
       };
 
       hook.media = {
         type: 'video',
         title: hook.interactiveActivity.video.title,
-        searchQuery: hook.interactiveActivity.video.searchQuery,
+        youtubeSearchQuery: resolvedSearchQuery,
+        searchQuery: resolvedSearchQuery,
         youtubeUrl: hook.interactiveActivity.video.youtubeUrl,
         embedUrl: hook.interactiveActivity.video.embedUrl,
+        hookStoryOrScenario: resolvedHookStory,
+        curiosityQuestion: resolvedCuriosityQ,
         reflectionQuestion: hook.interactiveActivity.video.reflectionQuestion
       };
     }
