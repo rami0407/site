@@ -3,7 +3,8 @@ import './MiftaahLearningJourney.css';
 import {
   generateMiftaahFullJourneyLessonAI,
   modifyMiftaahStationWithPromptAI,
-  generateMiftaahGroupTasksAI
+  generateMiftaahGroupTasksAI,
+  evaluateMiftaahExitTicketAI
 } from '../utils/aiService';
 import {
   getAllTeachers,
@@ -187,12 +188,60 @@ const DEFAULT_EXEMPLAR_LESSON = {
 };
 
 // =========================================================================
+// =========================================================================
+// 1.B MIFTAAH VISIBLE MAP MOTTOS (شعارات الطالب للمحطات الخمس)
+// =========================================================================
+const MIFTAAH_STATION_MOTTOS = {
+  1: {
+    key: '1_hook',
+    ar: 'أنا أسأل وأستعد',
+    he: 'אני שואל ומתכונן',
+    bilingual: 'أنا أسأل وأستعد / אני שואל ומתכונן',
+    nameAr: 'مشوّق ومحفز',
+    nameHe: 'משיכה וסקרנות'
+  },
+  2: {
+    key: '2_understanding',
+    ar: 'أنا أفهم وأربط',
+    he: 'אני מבין ומקשר',
+    bilingual: 'أنا أفهم وأربط / אני מבין ומקשר',
+    nameAr: 'فهم وبناء المعنى',
+    nameHe: 'הבנה ובניית משמעות'
+  },
+  3: {
+    key: '3_practice',
+    ar: 'أنا أجرب وأتدرب',
+    he: 'אני מתנסה ומתרגל',
+    bilingual: 'أنا أجرب وأتدرب / אני מתנסה ומתרגל',
+    nameAr: 'تطبيق وتدريب',
+    nameHe: 'יישום ותרגול'
+  },
+  4: {
+    key: '4_evidence',
+    ar: 'أنا أُظهر ما فهمته',
+    he: 'אני מראה מה הבנתי',
+    bilingual: 'أنا أُظهر ما فهمته / אני מראה מה הבנתי',
+    nameAr: 'أدلة للفهم',
+    nameHe: 'ראיות להבנה'
+  },
+  5: {
+    key: '5_harvest',
+    ar: 'أنا ألخص وأستخدم ما تعلمته في سياق جديد',
+    he: 'אני מסכם ומשתמש במה שלמדתי',
+    bilingual: 'أنا ألخص وأستخدم ما تعلمته في سياق جديد / אני מסכם ומשתמש במה שלמדתי',
+    nameAr: 'حصاد ونقل الأثر',
+    nameHe: 'קציר והעברה'
+  }
+};
+
 // NORMALIZATION: GUARANTEE EVERY STATION HAS RICH STUDENT PROMPT & GUIDANCE
 // =========================================================================
 const normalizeMiftaahLesson = (lesson) => {
   if (!lesson || !lesson.stations) return lesson;
   const l = { ...lesson, stations: { ...lesson.stations } };
-  const safeTitle = l.title || 'الدرس';
+  const safeTitle = l.title || l.lessonTitle || 'الدرس';
+  l.title = safeTitle;
+  l.lessonTitle = safeTitle;
   const combinedInfo = `${l.subject || ''} ${l.title || ''}`.toLowerCase();
   const lang = l.language || (
     combinedInfo.includes('عبر') || combinedInfo.includes('עברית') || combinedInfo.includes('hebrew') || /[\u0590-\u05FF]/.test(combinedInfo) ? 'hebrew' :
@@ -202,8 +251,19 @@ const normalizeMiftaahLesson = (lesson) => {
   if (!l.subject) {
     l.subject = lang === 'hebrew' ? 'לשון עברית' : lang === 'english' ? 'English Language' : 'عام';
   }
+  l.learningGoal = l.objective || l.learningGoal || (lang === 'hebrew' ? `הבנת ויישום מושגי השיעור (${safeTitle}) בצורה עצמאית.` : `أن يستوعب الطالب المفاهيم الأساسية لدرس (${safeTitle}) ويطبقها بدقة.`);
+  l.objective = l.learningGoal;
+  l.successCriteria = l.successCriteria || (lang === 'hebrew' ? `ביצוע משימות התרגול והצגת ראיות הבנה עצמאיות ומנומקות.` : `تطبيق القاعدة عملياً وتقديم دليل فهم مستقل ومبرر.`);
 
-  // Auto-heal dead YouTube URLs and ensure youtubeSearchQuery, hookStoryOrScenario, and curiosityQuestion exist
+  if (!l.refreshActivity || !String(l.refreshActivity).trim()) {
+    l.refreshActivity = lang === 'hebrew'
+      ? `⚡ זמן להתרענן (60 שניות)! עמדו ליד הכיסא, קחו נשימה עמוקה במשך 5 שניות, מתחו ידיים למעלה וציירו באוויר עם האצבע מילת מפתח אחת שלמדתם בשיעור (${safeTitle})! 🌟🧘‍♂️`
+      : lang === 'english'
+      ? `⚡ Refresh Time (60 Seconds)! Stand up, take a deep breath for 5 seconds, stretch your arms high, and draw the main concept of (${safeTitle}) in the air with your finger! 🌟🧘‍♂️`
+      : `⚡ وقت الانتعاش وتنشيط الدماغ (٦٠ ثانية)! قف مكانك بنشاط، خذ نفساً عميقاً لمدة ٥ ثوانٍ، مدّ ذراعيك للأعلى، ثم ارسم في الهواء بإصبعك رمزاً أو كلمة مفتاحية تعبّر عن درس (${safeTitle})! 🌟🧘‍♂️`;
+  }
+
+  // Auto-heal dead YouTube URLs and ensure youtubeSearchQuery, hookStoryOrScenario, curiosityQuestion, and helperWords exist
   if (l.stations) {
     const isTrain = combinedInfo.includes('قطار') || combinedInfo.includes('רכבת') || combinedInfo.includes('train');
     const safeGrade = l.grade || (lang === 'hebrew' ? 'כיתה ד' : 'الصف الرابع');
@@ -238,6 +298,13 @@ const normalizeMiftaahLesson = (lesson) => {
         st.youtubeSearchQuery = st.youtubeSearchQuery || st?.interactiveActivity?.video?.youtubeSearchQuery || st?.interactiveActivity?.video?.searchQuery || defaultQuery;
         st.hookStoryOrScenario = st.hookStoryOrScenario || st?.interactiveActivity?.video?.hookStoryOrScenario || defaultStory;
         st.curiosityQuestion = st.curiosityQuestion || st?.interactiveActivity?.video?.curiosityQuestion || defaultCuriosity;
+        if (!Array.isArray(st.helperWords) || st.helperWords.length === 0) {
+          st.helperWords = lang === 'hebrew'
+            ? ['לדעתי הסיבה היא...', 'אני משער ש...', 'הקשר לנושא הוא...', 'דוגמה מחיי היומיום']
+            : lang === 'english'
+            ? ['I think the reason is...', 'My hypothesis is...', 'It connects to...', 'For example...']
+            : ['أعتقد أن السبب هو...', 'أتوقع أن السر يكمن في...', 'العلاقة بينهما هي...', 'مثال من حياتنا اليومية...'];
+        }
       }
       if (st?.interactiveActivity?.video) {
         const v = st.interactiveActivity.video;
@@ -270,6 +337,40 @@ const normalizeMiftaahLesson = (lesson) => {
         ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
         : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
     }
+    if (!st2.selectedPath) {
+      st2.selectedPath = l.meaningPath || 'blended';
+    }
+    if (!Array.isArray(st2.explanationCards) || st2.explanationCards.length === 0) {
+      st2.explanationCards = lang === 'hebrew' ? [
+        { step: 1, content: `היכרות עם מושג המפתח: הבנת המשמעות והמאפיינים של (${safeTitle}).`, example: `דוגמה מוחשית מתוך הטקסט או מחיי היומיום.` },
+        { step: 2, content: `ניסוח הכלל והקשרים: כיצד נזהה וניישם את הכלל שלב אחר שלב?`, example: `השוואה בין מקרים שונים והסקת מסקנה ברורה.` }
+      ] : [
+        { step: 1, content: `المفهوم الجوهري: التعرف على خصائص ودلالات (${safeTitle}) بأسلوب مبسط وواضح.`, example: `مثال حي وتوضيحي يربط الفكرة بواقعنا اليومي.` },
+        { step: 2, content: `القاعدة والاستنتاج: كيف نطبق المفهوم خطوة بخطوة ونتحقق من صحة الحل؟`, example: `تطبيق نموذجي محلول يوضح طريقة التفكير السليمة.` }
+      ];
+    }
+    if (!Array.isArray(st2.conceptMapKeywords) || st2.conceptMapKeywords.length === 0) {
+      st2.conceptMapKeywords = lang === 'hebrew'
+        ? [safeTitle, 'מושג מרכזי', 'קשר סיבתי', 'יישום והוכחה']
+        : [safeTitle, 'المفهوم الأساسي', 'القاعدة والدليل', 'التطبيق العملي'];
+    }
+    if (!st2.checkForUnderstanding || !st2.checkForUnderstanding.question) {
+      const optCorrect = lang === 'hebrew'
+        ? `הבנת הכלל המרכזי של (${safeTitle}) ויישומו עם נימוק`
+        : `فهم القاعدة الأساسية لـ (${safeTitle}) وتطبيقها مع التعليل والدليل`;
+      st2.checkForUnderstanding = {
+        question: lang === 'hebrew'
+          ? `בדיקת הבנה מהירה: מהו העיקרון החשוב ביותר שלמדנו כעת על (${safeTitle})?`
+          : `فحص فهم سريع: ما المبدأ الأهم الذي استنتجناه الآن حول (${safeTitle})؟`,
+        options: lang === 'hebrew'
+          ? [optCorrect, 'ניחוש אקראי ללא בדיקת הנתונים', 'דילוג על שלבי ההסבר']
+          : [optCorrect, 'التخمين السريع دون فحص المعطيات', 'تجاهل خطوات التحليل'],
+        correctAnswer: optCorrect,
+        feedback: lang === 'hebrew'
+          ? 'מדויק מאוד! 🌟 הבנת הכלל והנימוק הם המפתח להצלחה בתחנת התרגול.'
+          : 'إجابة دقيقة وممتازة! 🌟 استيعاب القاعدة مع الدليل هو مفتاح تفوقك في محطة التطبيق.'
+      };
+    }
     if (!st2.teacherGuidance || !st2.teacherGuidance.trim()) {
       st2.teacherGuidance = lang === 'hebrew'
         ? `הנחיות למורה לתחנת הבנת המשמעות:\n1. הנחו את התלמידים לחקר פעיל של המשפטים והמושגים.\n2. שאלו שאלות מנחות לניסוח הכלל בעצמם.`
@@ -293,6 +394,51 @@ const normalizeMiftaahLesson = (lesson) => {
         ? `Welcome to the Practice & Application Station! 🛠️\nIn this station, we will apply what we learned about (${safeTitle}).\n• Work collaboratively in your assigned tiered group.\n• Discuss challenges and justify every answer in English!`
         : `مرحباً بكم يا علماء المستقبل في محطة التطبيق والتدريب! 🛠️\nفي هذه المحطة سنقوم بتطبيق ما تعلمناه حول (${safeTitle}) وتعميق فهمنا العملي.\n• تذكّروا المعايير والمفاهيم الأساسية التي استنتجناها في المحطة السابقة.\n• ستعمل الفرق وفق ٣ مستويات متمايزة (الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي).\n• تعاونوا داخل مجموعتكم، ناقشوا التحديات، وبرروا كل خطوة تبريراً علمياً سليماً!`;
     }
+    if (!st3.coreTaskDescription || !String(st3.coreTaskDescription).trim()) {
+      st3.coreTaskDescription = lang === 'hebrew'
+        ? `משימת הליבה המשותפת: יישמו את הכללים שלמדנו בנושא (${safeTitle}), בחרו את מסלול העבודה שלכם או פתרו את התרגילים האינטראקטיביים עם נימוק מלא!`
+        : `المهمة الأساسية الموحدة: طبّق ما تعلمته اليوم حول (${safeTitle})، وحل التمارين التفاعلية مع كتابة التعليل والسبب بكلماتك الخاصة!`;
+    }
+    if (!Array.isArray(st3.interactiveExercises) || st3.interactiveExercises.length === 0) {
+      const exOptCorrect = lang === 'hebrew'
+        ? `יישום מדויק של כלל (${safeTitle}) על פי הנתונים`
+        : `تطبيق القاعدة الصحيحة لـ (${safeTitle}) بالاستناد إلى المعطيات والدليل`;
+      st3.interactiveExercises = [
+        {
+          question: lang === 'hebrew'
+            ? `תרגיל יישום 1: כיצד נפתור משימה בנושא (${safeTitle}) בצורה המדויקת ביותר?`
+            : `تمرين تطبيقي ١: عند التعامل مع مسألة أو سؤال في (${safeTitle})، ما الخطوة الصحيحة التي تضمن دقة الحل؟`,
+          type: 'mcq',
+          options: lang === 'hebrew'
+            ? [exOptCorrect, 'כתיבת תשובה ללא בדיקת הקשר', 'התעלמות מנתוני השאלה']
+            : [exOptCorrect, 'كتابة النتيجة النهائية بدون خطوات أو دليل', 'تجاهل الكلمات المفتاحية في السؤال'],
+          correctAnswer: exOptCorrect,
+          reasoningPrompt: lang === 'hebrew'
+            ? 'הסבירו במילים שלכם מדוע בחרתם בתשובה זו:'
+            : 'اشرح بكلماتك لماذا اخترت هذه الإجابة وكيف تتأكد من صحتها:'
+        }
+      ];
+    }
+    if (!st3.scaffoldingCard || !Array.isArray(st3.scaffoldingCard.hints)) {
+      st3.scaffoldingCard = {
+        hints: lang === 'hebrew'
+          ? ['רמז 1: סמנו תחילה את מילות המפתח בשאלה.', 'רמז 2: היזכרו בדוגמה הפתורה מתחנה 2 והשוו אותה לשאלה זו.']
+          : ['تلميح ١: حدّد أولاً الكلمات المفتاحية والمعطيات الأساسية في السؤال.', 'تلميح ٢: تذكّر القاعدة والمثال المحلول في المحطة الثانية وطبق نفس الخطوات بالتدريج.'],
+        sentenceStarter: lang === 'hebrew'
+          ? 'אני חושב שהפתרון מתחיל ב... מפני ש...'
+          : 'أعتقد أن الحل يبدأ بـ... لأن القاعدة تنص على...'
+      };
+    }
+    if (!st3.deepChallenge || !st3.deepChallenge.errorScenario) {
+      st3.deepChallenge = {
+        errorScenario: lang === 'hebrew'
+          ? `אתגר "גלו את הטעות": תלמיד טען כי בנושא (${safeTitle}) אפשר לדלג על שלב הבדיקה והנימוק ולהסתפק בניחוש מהיר. איזו טעות חשיבתית יש כאן?`
+          : `تحدي التعمق "اكتشف الخطأ": ادّعى أحد الطلاب أنه في موضوع (${safeTitle}) يمكننا القفز للنتيجة فوراً دون فحص المعطيات أو تعليل السبب! ما الخطأ العلمي في هذا الادعاء؟`,
+        correctionPrompt: lang === 'hebrew'
+          ? 'תקנו את הטעות והסבירו את הדרך הנכונה:'
+          : 'صوّب الخطأ واكتب القاعدة الصحيحة مع مثال يدعم كلامك:'
+      };
+    }
     if (!st3.teacherGuidance || !st3.teacherGuidance.trim()) {
       st3.teacherGuidance = `إرشادات المعلم لإدارة محطة التطبيق والتدريب ومتابعة الفرق المتمايزة والسقالات.`;
     }
@@ -315,11 +461,31 @@ const normalizeMiftaahLesson = (lesson) => {
         ? `Individual Evidence of Understanding Worksheet — [ ${safeTitle} ] ✍️\nAnswer the following questions independently to demonstrate your mastery:\n\n1. Question 1 (Direct Application): State the main concept or rule in your own words with an example.\n2. Question 2 (Reasoning & Evidence): Explain why your answer is correct using the lesson rule.\n3. Question 3 (Transfer & Extension): Write your own sentence or real-world example applying this concept.\n\nType your answers clearly below and click "Submit to Teacher" 📤`
         : `ورقة الدليل الفردي المستقل — [ ${safeTitle} ] ✍️\nالآن حان وقت إثبات فهمك المستقل. أجب عن أسئلة ورقة الدليل التالية:\n\n• السؤال الأول (تطبيق مباشر): اكتب المفهوم أو النتيجة الأساسية لـ (${safeTitle}) بأسلوبك.\n• السؤال الثاني (تحليل وتعليل): كيف تثبت صحة إجابتك بالدليل العلمي والمنطقي؟\n• السؤال الثالث (مسألة واستنتاج): إذا طُلب منك توضيح ذلك لزميلك، ما المثال الواقعي الذي ستضربه له؟\n\nتذكّر: اكتب إجابتك بوضوح وتفصيل في مساحة الحل أدناه ثم اضغط "إرسال إجابتي للمعلم" 📤`;
     }
+    if (!st4.exitTicketQuestion || !String(st4.exitTicketQuestion).trim()) {
+      st4.exitTicketQuestion = lang === 'hebrew'
+        ? `משימת ראיית הבנה אישית: הסבירו במילים שלכם את הרעיון המרכזי של (${safeTitle}) והביאו דוגמה אחת או ראיה שמוכיחה את תשובתכם.`
+        : `مهمة دليل الفهم الفردي: اشرح بكلماتك الفكرة الأساسية لدرس (${safeTitle}) وقدّم مثالاً واحداً أو دليلاً يثبت صحة إجابتك.`;
+    }
+    if (!Array.isArray(st4.sentenceStartersForUDL) || st4.sentenceStartersForUDL.length === 0) {
+      st4.sentenceStartersForUDL = lang === 'hebrew'
+        ? ['הרעיון המרכזי שלמדתי הוא... והראיה לכך היא...', 'אני מסיק ש... מפני ש...', 'דוגמה שממחישה את הכלל היא...']
+        : ['الفكرة الأساسية هي... والدليل على ذلك...', 'أستنتج أن... لأن القاعدة توضح أن...', 'مثال تطبيقي يثبت صحة إجابتي هو...'];
+    }
+    if (!st4.supportGroupKitForTeacher || !st4.supportGroupKitForTeacher.alternativeExplanation) {
+      st4.supportGroupKitForTeacher = {
+        alternativeExplanation: lang === 'hebrew'
+          ? `הסבר חלופי מופשט לקבוצת התמיכה הגמישה: נפרק את (${safeTitle}) לשני שלבים פשוטים ונמחיש באמצעות דוגמה מוחשית וקרובה לעולמם של התלמידים.`
+          : `شرح بديل مبسط لمجموعة الدعم المؤقتة والمرنة: نبسط مفهوم (${safeTitle}) من خلال تقسيمه إلى خطوتين بصريتين قصيرتين مع مثال محسوس من بيئة الطالب المباشرة.`,
+        parallelFollowUpQuestion: lang === 'hebrew'
+          ? `שאלה מקבילה קצרה לבדיקה חוזרת: תנו דוגמה פשוטה אחת ל-(${safeTitle}) והסבירו במשפט קצר מדוע היא נכונה.`
+          : `سؤال موازٍ قصير لإعادة الفحص: أعطِ مثالاً واحداً بسيطاً حول (${safeTitle}) واذكر بجملة قصيرة سبب صحته.`
+      };
+    }
     if (!st4.individualTask || !st4.individualTask.trim()) {
       st4.individualTask = st4.studentPrompt;
     }
     if (!st4.teacherGuidance || !st4.teacherGuidance.trim()) {
-      st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي:\n١. تأكد من استقلالية كل طالب أثناء الحل لقياس الأثر الحقيقي للتعلم.\n٢. راقب المفاهيم البديلة وصنّف الإجابات فورياً وفق مستويات الإتقان الأربعة.\n٣. حدد الفجوات الشائعة لتناولها في بداية الحصة القادمة أو ضمن الدعم المركز.`;
+      st4.teacherGuidance = `إرشادات المعلم لتقييم الدليل الفردي:\n١. تأكد من استقلالية كل طالب أثناء الحل لقياس الأثر الحقيقي للتعلم.\n٢. راقب المفاهيم البديلة وصنّف الإجابات فورياً وفق مستويات الإتقان.\n٣. استخدم حقيبة مجموعة الدعم المؤقتة والمرنة مع الطلاب الذين لم يحققوا المعيار بعد.`;
     }
     if (!st4.scaffold || !st4.scaffold.trim()) {
       st4.scaffold = 'تذكّر: اقرأ السؤال بدقة، وركّز على تقديم دليل علمي مقنع.';
@@ -332,6 +498,26 @@ const normalizeMiftaahLesson = (lesson) => {
     const st5 = { ...l.stations['5_harvest'] };
     if (!st5.studentPrompt || !st5.studentPrompt.trim()) {
       st5.studentPrompt = `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`;
+    }
+    if (!st5.summaryTask || !String(st5.summaryTask).trim()) {
+      st5.summaryTask = lang === 'hebrew'
+        ? `סכמו את הרעיון החשוב ביותר שלמדתם היום בשיעור (${safeTitle}) במשפט אחד או בשלוש מילות מפתח:`
+        : `لخّص أهم فكرة تعلمتها اليوم في درس (${safeTitle}) في جملة واحدة أو ثلاث كلمات مفتاحية:`;
+    }
+    if (!st5.metacognitionReflection || !st5.metacognitionReflection.question) {
+      st5.metacognitionReflection = {
+        question: lang === 'hebrew'
+          ? 'רפלקציה (חשיבה על חשיבה): מה עזר לך להבין את השיעור בצורה הטובה ביותר היום?'
+          : 'تأمل ما وراء المعرفة: ما أكثر شيء ساعدك على الفهم وإتقان المهارة اليوم؟',
+        choices: lang === 'hebrew'
+          ? ['ההסבר המודרג והדוגמאות', 'התרגול והמשימות בתחנה 3', 'הרמזים וכרטיסי הסיוע (פיגומים)', 'הדיון והקישור לחיי היומיום']
+          : ['الشرح المتدرج والأمثلة التوضيحية', 'التدريب العملي وحل التمارين', 'السقالات والتلميحات المساعدة', 'النقاش وربط الدرس بالحياة اليومية']
+      };
+    }
+    if (!st5.transferTask || !String(st5.transferTask).trim()) {
+      st5.transferTask = lang === 'hebrew'
+        ? `משימת העברה לחיים: כיצד והיכן תוכלו להשתמש במה שלמדתם היום על (${safeTitle}) מחוץ לבית הספר?`
+        : `مهمة نقل الأثر: كيف وأين يمكنك استخدام ما تعلمته اليوم عن (${safeTitle}) في موقف حقيقي خارج المدرسة؟`;
     }
     if (!st5.teacherGuidance || !st5.teacherGuidance.trim()) {
       st5.teacherGuidance = `إرشادات المعلم لإغلاق الحصة:\n١. امنح الطلاب ٤-٥ دقائق لإتمام بطاقة الخروج بهدوء وتأمل ذاتي.\n٢. استمع لـ ٢-٣ مشاركات ملهمة حول نقل الأثر إلى الحياة اليومية.\n٣. اجمع بطاقات الخروج أو تفقد النتائج إلكترونياً لتقييم نسبة تحقق الهدف العام.\n٤. وجّه كلمة شكر وتشجيع للطلاب على شغفهم وتفكيرهم الاستنتاجي.`;
@@ -1603,8 +1789,25 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [creatorGrade, setCreatorGrade] = useState(DEFAULT_EXEMPLAR_LESSON.grade);
   const [creatorLanguage, setCreatorLanguage] = useState(DEFAULT_EXEMPLAR_LESSON.language || 'auto');
   const [creatorSpecialRequests, setCreatorSpecialRequests] = useState(DEFAULT_EXEMPLAR_LESSON.specialRequests);
+  const [creatorLearningGoal, setCreatorLearningGoal] = useState(''); // Optional: AI auto-generates if empty
+  const [creatorSuccessCriteria, setCreatorSuccessCriteria] = useState(''); // Optional: AI auto-generates if empty
+  const [creatorMeaningPath, setCreatorMeaningPath] = useState('blended'); // 'explicit' | 'discovery' | 'blended'
+  const [creatorUdlOptions, setCreatorUdlOptions] = useState(['دعم قراءة', 'تبسيط لغوي', 'أمثلة بصرية']);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   const [selectedStationToEdit, setSelectedStationToEdit] = useState('1_hook');
+
+  // 60-Second Refresh Time Modal State ("⚡ وقت الانتعاش! / זמן להתרענן!")
+  const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
+  const [refreshTimeLeft, setRefreshTimeLeft] = useState(60);
+
+  // Interactive Student Station Widget States
+  const [st2CfuSelected, setSt2CfuSelected] = useState(null);
+  const [st3ExerciseAnswers, setSt3ExerciseAnswers] = useState({});
+  const [isSt3ScaffoldOpen, setIsSt3ScaffoldOpen] = useState(false);
+  const [isSt3DeepChallengeOpen, setIsSt3DeepChallengeOpen] = useState(false);
+  const [st3DeepChallengeAnswer, setSt3DeepChallengeAnswer] = useState('');
+  const [isEvaluatingExitTicket, setIsEvaluatingExitTicket] = useState(false);
+  const [lastStation4AiEvaluation, setLastStation4AiEvaluation] = useState(null);
 
   // Pedagogical Questions State for Custom Lesson Engineering (أسئلة التخصيص البيداغوجي للمعلم)
   const [creatorIncludePassage, setCreatorIncludePassage] = useState('ai_passage'); // 'ai_passage' | 'custom_passage' | 'none'
@@ -1957,6 +2160,21 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // 60-Second Refresh Time Modal Countdown Effect
+  useEffect(() => {
+    if (!isRefreshModalOpen) return;
+    if (refreshTimeLeft <= 0) return;
+    const t = setInterval(() => {
+      setRefreshTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [isRefreshModalOpen, refreshTimeLeft]);
+
+  const handleOpenRefreshModal = () => {
+    setRefreshTimeLeft(60);
+    setIsRefreshModalOpen(true);
+  };
+
   // Timer Tick
   useEffect(() => {
     let interval = null;
@@ -2014,6 +2232,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         grade: creatorGrade,
         language: detectedLang,
         specialRequests: creatorSpecialRequests,
+        customObjective: creatorLearningGoal,
+        customSuccessCriteria: creatorSuccessCriteria,
+        meaningPath: creatorMeaningPath,
+        udlOptions: creatorUdlOptions,
         includePassage: creatorIncludePassage,
         passageLength: creatorPassageLength,
         customPassageText: creatorCustomPassage,
@@ -2548,13 +2770,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast(`انتقلت إلى المحطة [${validIdx}]: ${getStationByIndex(validIdx).name} 🎯`);
   };
 
-  const handleStudentSubmitAnswer = (stationNum, text, tier = 'core') => {
+  const handleStudentSubmitAnswer = async (stationNum, text, tier = 'core') => {
     if (!text.trim()) {
       showToast('يرجى كتابة إجابتك أو تدوين محاولتك أولاً ✍️');
       return;
     }
+    const subId = 'sub_' + Date.now();
     const newSub = {
-      id: 'sub_' + Date.now(),
+      id: subId,
       participantId: currentParticipant.id,
       participantName: currentParticipant.name,
       groupName: currentParticipant.groupName,
@@ -2564,13 +2787,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       tier,
       scaffoldsUsed: studentActiveHelpResponse ? [studentActiveHelpResponse.type] : [],
       formativeScore: null,
+      aiEvalStatus: null,
       teacherFeedback: '',
       timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
     };
 
     // In self/group paced mode, advance student station
     let nextParts = sessionState.participants;
-    if (sessionState.pacingMode !== 'whole_class' && studentCurrentStationIndex < 5) {
+    if (sessionState.pacingMode !== 'whole_class' && studentCurrentStationIndex < 5 && stationNum !== 4) {
       nextParts = sessionState.participants.map(p =>
         p.id === currentParticipant.id ? { ...p, currentStation: p.currentStation + 1 } : p
       );
@@ -2585,6 +2809,44 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setStudentInputText('');
     setStudentActiveHelpResponse(null);
     showToast('تم إرسال إجابتك بنجاح لمعلم الصف! 🚀 ستظهر له فوراً.');
+
+    // Station 4: Automatic AI Formative Evaluation & Sorting into 3 Categories
+    if (Number(stationNum) === 4) {
+      setIsEvaluatingExitTicket(true);
+      try {
+        const st4 = activeLesson.stations?.['4_evidence'] || {};
+        const evalRes = await evaluateMiftaahExitTicketAI({
+          question: st4.exitTicketQuestion || st4.studentPrompt || '',
+          studentAnswer: text.trim(),
+          successCriteria: activeLesson.successCriteria || st4.criterion || '',
+          lessonTitle: activeLesson.title || '',
+          language: activeLesson.language || 'arabic'
+        });
+        if (evalRes) {
+          setLastStation4AiEvaluation(evalRes);
+          setSessionState(prev => {
+            const updatedSubs = (prev.submissions || []).map(s =>
+              s.id === subId
+                ? {
+                    ...s,
+                    formativeScore: evalRes.evalTag || (evalRes.status === 'achieved' ? 'mastered' : evalRes.status === 'partial' ? 'partial' : 'needs_support'),
+                    aiEvalStatus: evalRes.status,
+                    teacherFeedback: evalRes.studentFeedback
+                  }
+                : s
+            );
+            const nextSessionWithEval = { ...prev, submissions: updatedSubs };
+            try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(nextSessionWithEval)); } catch (e) {}
+            try { saveMiftaahLiveSession(nextSessionWithEval); } catch (e) {}
+            return nextSessionWithEval;
+          });
+        }
+      } catch (err) {
+        console.warn('Station 4 AI evaluation error:', err);
+      } finally {
+        setIsEvaluatingExitTicket(false);
+      }
+    }
   };
 
   // Student Help Key Request
@@ -4061,6 +4323,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </button>
           <button
             type="button"
+            className={`nav-tab-btn ${activeInterface === 'teacher' ? 'active' : ''}`}
+            onClick={() => setActiveInterface('teacher')}
+            title="لوحة متابعة تقدم الطلاب الحية وفرز المحطة الرابعة ومجموعة الدعم المؤقتة والمرنة"
+          >
+            <i className="fas fa-chalkboard-teacher"></i> 📊 لوحة المتابعة ومجموعة الدعم
+            <span className="tab-pill-badge active" style={{ background: '#10b981', color: '#fff' }}>حي 🔴</span>
+          </button>
+          <button
+            type="button"
             className={`nav-tab-btn ${activeInterface === 'projector' ? 'active' : ''}`}
             onClick={() => setActiveInterface('projector')}
           >
@@ -4092,6 +4363,27 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             onClick={() => setActiveInterface('summary')}
           >
             <i className="fas fa-chart-pie"></i> ٤. ملخص الحصة والإنهاء
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenRefreshModal}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 14px',
+              borderRadius: '20px',
+              fontWeight: 800,
+              fontSize: '0.84rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)'
+            }}
+            title="نشاط تنشيط الدماغ والحركة لمدة 60 ثانية"
+          >
+            <span>⚡ وقت الانتعاش! (זמן להתרענן!)</span>
           </button>
         </nav>
 
@@ -5451,8 +5743,75 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </select>
                   </div>
 
+                  <div className="input-group">
+                    <label>٥. هدف التعلم (اختياري — يولده AI تلقائياً إن تُرك فارغاً):</label>
+                    <input
+                      type="text"
+                      value={creatorLearningGoal}
+                      onChange={e => setCreatorLearningGoal(e.target.value)}
+                      placeholder="مثال: أن يميز الطالب... (اتركه فارغاً للتوليد التلقائي ✨)"
+                      dir={isHebrew || isEnglish ? 'auto' : 'rtl'}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>٦. معيار النجاح (اختياري — يولده AI تلقائياً إن تُرك فارغاً):</label>
+                    <input
+                      type="text"
+                      value={creatorSuccessCriteria}
+                      onChange={e => setCreatorSuccessCriteria(e.target.value)}
+                      placeholder="مثال: حل ٣ مسائل مع التعليل... (اتركه فارغاً للتوليد التلقائي ✨)"
+                      dir={isHebrew || isEnglish ? 'auto' : 'rtl'}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>٧. مسار بناء المعنى للمحطة الثانية (فهم وبناء المعنى):</label>
+                    <select
+                      value={creatorMeaningPath}
+                      onChange={e => setCreatorMeaningPath(e.target.value)}
+                      style={{ fontWeight: 700 }}
+                    >
+                      <option value="blended">🔀 مسار مدمج (استكشاف + شرح صريح)</option>
+                      <option value="explicit">👨‍🏫 تعليم صريح ومباشر (Explicit)</option>
+                      <option value="discovery">🔍 اكتشاف وبحث موجه (Discovery)</option>
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <label>٨. ملاحظات الاحتواء والتصميم الشامل (UDL):</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+                      {['دعم قراءة', 'تبسيط لغوي', 'أمثلة بصرية'].map(udlItem => {
+                        const isChecked = creatorUdlOptions.includes(udlItem);
+                        return (
+                          <button
+                            key={udlItem}
+                            type="button"
+                            onClick={() => {
+                              setCreatorUdlOptions(prev =>
+                                prev.includes(udlItem) ? prev.filter(x => x !== udlItem) : [...prev, udlItem]
+                              );
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '18px',
+                              border: isChecked ? '2px solid #059669' : '1.5px solid #cbd5e1',
+                              background: isChecked ? '#ecfdf5' : '#ffffff',
+                              color: isChecked ? '#047857' : '#475569',
+                              fontWeight: 800,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {isChecked ? '✓ ' : '+ '} {udlItem}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="input-group" style={{ gridColumn: '1 / -1' }}>
-                    <label>٥. طلبات وتوجيهات بيداغوجية خاصة (اختيارية):</label>
+                    <label>٩. طلبات وتوجيهات بيداغوجية خاصة (اختيارية):</label>
                     <input
                       type="text"
                       value={creatorSpecialRequests}
@@ -5891,20 +6250,101 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             );
           })()}
 
-          {/* PEDAGOGICAL PILLARS & GOALS BAR */}
-          <div className="creator-goals-summary-strip">
-            <div className="goal-box">
-              <span className="goal-label">🎯 هدف التعلّم المركزي:</span>
-              <p className="goal-text">{activeLesson.objective}</p>
+          {/* PEDAGOGICAL PILLARS & GOALS BAR (FULL EDIT MODE + APPROVE & SAVE PIN) */}
+          <div className="creator-goals-summary-strip" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', width: '100%' }}>
+              <div className="goal-box" style={{ flex: 1 }}>
+                <span className="goal-label">🎯 هدف التعلّم المركزي (قابل للتعديل المباشر):</span>
+                <input
+                  type="text"
+                  value={activeLesson.objective || ''}
+                  onChange={e => syncLessonLive({ ...activeLesson, objective: e.target.value, learningGoal: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontWeight: 700, fontSize: '0.92rem', marginTop: '4px' }}
+                />
+              </div>
+              <div className="goal-box" style={{ flex: 1 }}>
+                <span className="goal-label">✅ معيار النجاح الصريح (قابل للتعديل المباشر):</span>
+                <input
+                  type="text"
+                  value={activeLesson.successCriteria || ''}
+                  onChange={e => syncLessonLive({ ...activeLesson, successCriteria: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontWeight: 700, fontSize: '0.92rem', marginTop: '4px' }}
+                />
+              </div>
+              <div className="goal-box" style={{ flex: 1 }}>
+                <span className="goal-label">⚡ نشاط وقت الانتعاش (60 ثانية - זמן להתרענן!):</span>
+                <input
+                  type="text"
+                  value={activeLesson.refreshActivity || ''}
+                  onChange={e => syncLessonLive({ ...activeLesson, refreshActivity: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #fcd34d', background: '#fffbeb', fontWeight: 700, fontSize: '0.9rem', marginTop: '4px' }}
+                />
+              </div>
             </div>
-            <div className="goal-box">
-              <span className="goal-label">📏 معيار النجاح الصريح:</span>
-              <p className="goal-text">{activeLesson.successCriteria}</p>
-            </div>
-            <div className="pillars-badges">
-              <span className="pillar-badge">🤝 الاحتواء والمشاركة</span>
-              <span className="pillar-badge">⚖️ التمايز والتكيف</span>
-              <span className="pillar-badge">🔄 التقويم التكويني</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', width: '100%', paddingTop: '6px', borderTop: '1px dashed #cbd5e1' }}>
+              <div className="pillars-badges">
+                <span className="pillar-badge">🤝 الاحتواء والمشاركة (UDL)</span>
+                <span className="pillar-badge">⚖️ التمايز والتكيف</span>
+                <span className="pillar-badge">🔄 التقويم التكويني الفوري</span>
+                <span className="pillar-badge" style={{ background: '#fef3c7', color: '#b45309', border: '1.5px solid #f59e0b' }}>
+                  🔑 رمز PIN للطلاب (4 أرقام): <strong>{activeLesson.code || activeLesson.pin || sessionState.pin}</strong>
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentPin = String(activeLesson.code || activeLesson.pin || sessionState.pin || '').trim();
+                    const valid4DigitPin = /^\d{4}$/.test(currentPin) ? currentPin : generateUniqueLessonPin(lessonsList);
+                    const approvedLesson = normalizeMiftaahLesson({
+                      ...activeLesson,
+                      code: valid4DigitPin,
+                      pin: valid4DigitPin,
+                      updatedAt: new Date().toISOString()
+                    });
+                    syncLessonLive(approvedLesson, true);
+                    showToast(`✅ تم اعتماد وحفظ الدرس في أرشيفك بنجاح! رمز دخول الطلاب (PIN): [${valid4DigitPin}] 🔑`);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '9px 18px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
+                  }}
+                >
+                  <i className="fas fa-check-circle"></i> ✅ اعتماد وحفظ الدرس (توليد/تثبيت رمز PIN: {activeLesson.code || activeLesson.pin || sessionState.pin})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveInterface('teacher')}
+                  style={{
+                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '9px 16px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <i className="fas fa-chalkboard-teacher"></i> 📊 لوحة المتابعة الحية ومجموعة الدعم
+                </button>
+              </div>
             </div>
           </div>
 
@@ -5914,12 +6354,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             <div className="creator-stations-nav-pills">
               {STATION_KEYS_ORDER.map((k, idx) => {
                 const st = activeLesson.stations[k];
+                const mottoObj = MIFTAAH_STATION_MOTTOS[idx + 1];
                 return (
                   <button
                     key={k}
                     type="button"
                     className={`station-pill-btn ${selectedStationToEdit === k ? 'active' : ''}`}
                     onClick={() => setSelectedStationToEdit(k)}
+                    title={mottoObj ? mottoObj.bilingual : st.name}
                   >
                     <span className="pill-number">{idx + 1}</span>
                     <span className="pill-icon">{st.icon}</span>
@@ -5932,6 +6374,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             {/* Selected Station Detailed Editor */}
             {(() => {
               const currentSt = activeLesson.stations[selectedStationToEdit] || activeLesson.stations['1_hook'];
+              const mottoObj = MIFTAAH_STATION_MOTTOS[currentSt.number || 1];
               return (
                 <div className="station-editor-card animate-fade-in">
                   <div className="editor-card-header">
@@ -5939,7 +6382,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <span className="station-icon-lg">{currentSt.icon}</span>
                       <div>
                         <h3>المحطة {currentSt.number}: {currentSt.name}</h3>
-                        <small>الوقت المقترح: {currentSt.suggestedDuration} دقائق</small>
+                        <small style={{ display: 'block', color: '#0284c7', fontWeight: 700 }}>
+                          🗣️ شعار الطالب: {mottoObj?.bilingual} • ⏱️ الوقت المقترح: {currentSt.suggestedDuration} دقائق
+                        </small>
                       </div>
                     </div>
 
@@ -5949,10 +6394,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         className="btn-ai-generate-guidance"
                         onClick={() => handleQuickAiGenerateStationContent(selectedStationToEdit)}
                         disabled={isGeneratingStationContent}
-                        title="توليد شرح المادة للطلاب وإعداد إرشادات المعلم بالذكاء الاصطناعي"
+                        title="إعادة توليد محتوى هذه المحطة فقط بالذكاء الاصطناعي دون المساس بباقي الدرس"
+                        style={{
+                          background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                          color: '#fff',
+                          fontWeight: 800
+                        }}
                       >
-                        <i className={`fas ${isGeneratingStationContent ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
-                        <span>{isGeneratingStationContent ? 'جاري التوليد...' : '✨ توليد الشرح وإرشادات المعلم (AI)'}</span>
+                        <i className={`fas ${isGeneratingStationContent ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
+                        <span>{isGeneratingStationContent ? 'جاري إعادة التوليد...' : '🔄 أعد توليد هذه المحطة فقط'}</span>
                       </button>
                       <button
                         type="button"
@@ -6823,10 +7273,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </div>
                   )}
 
-                  {/* Station 4 Specific: Formative Rubric & Evidence Criterion */}
+                  {/* Station 4 Specific: Formative Rubric, Exit Ticket & Support Group Kit */}
                   {selectedStationToEdit === '4_evidence' && (
                     <div className="station4-evidence-editor">
-                      <div className="criterion-box">
+                      <div className="criterion-box" style={{ marginBottom: '12px' }}>
                         <label>🎯 معيار التحقق: ما الدليل على أن كل طالب حقق هدف التعلّم؟</label>
                         <input
                           type="text"
@@ -6843,13 +7293,91 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           }}
                         />
                       </div>
+
+                      <div className="criterion-box" style={{ marginBottom: '12px' }}>
+                        <label>🔎 سؤال بطاقة الخروج التكوينية الفردية (Exit Ticket Question):</label>
+                        <input
+                          type="text"
+                          value={currentSt.exitTicketQuestion || ''}
+                          onChange={e => {
+                            const updated = {
+                              ...activeLesson,
+                              stations: {
+                                ...activeLesson.stations,
+                                '4_evidence': { ...currentSt, exitTicketQuestion: e.target.value, studentPrompt: e.target.value }
+                              }
+                            };
+                            syncLessonLive(updated);
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#991b1b', fontSize: '0.95rem' }}>
+                          🛠️ حقيبة مجموعة الدعم المؤقتة والمرنة (للمعلم فقط - لا تظهر للطالب):
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#7f1d1d', marginBottom: '4px' }}>
+                              💡 شرح بديل مبسط وملموس للمعلم (Alternative Explanation):
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={currentSt.supportGroupKitForTeacher?.alternativeExplanation || ''}
+                              onChange={e => {
+                                const updated = {
+                                  ...activeLesson,
+                                  stations: {
+                                    ...activeLesson.stations,
+                                    '4_evidence': {
+                                      ...currentSt,
+                                      supportGroupKitForTeacher: {
+                                        ...(currentSt.supportGroupKitForTeacher || {}),
+                                        alternativeExplanation: e.target.value
+                                      }
+                                    }
+                                  }
+                                };
+                                syncLessonLive(updated);
+                              }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#7f1d1d', marginBottom: '4px' }}>
+                              ❓ سؤال تحقق موازٍ سريع للمعلم (Parallel Follow-up Question):
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={currentSt.supportGroupKitForTeacher?.parallelFollowUpQuestion || ''}
+                              onChange={e => {
+                                const updated = {
+                                  ...activeLesson,
+                                  stations: {
+                                    ...activeLesson.stations,
+                                    '4_evidence': {
+                                      ...currentSt,
+                                      supportGroupKitForTeacher: {
+                                        ...(currentSt.supportGroupKitForTeacher || {}),
+                                        parallelFollowUpQuestion: e.target.value
+                                      }
+                                    }
+                                  }
+                                };
+                                syncLessonLive(updated);
+                              }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="eval-levels-preview">
-                        <strong>مستويات التقييم الأربعة المعتمدة:</strong>
+                        <strong>مستويات الفرز التكويني الفوري في لوحة المعلم:</strong>
                         <div className="levels-chips">
-                          <span className="level-chip mastered">✓ حقق الهدف</span>
-                          <span className="level-chip partial">◐ حققه جزئياً</span>
-                          <span className="level-chip needs_support">! يحتاج دعماً</span>
-                          <span className="level-chip insufficient_data">? الدليل غير كافٍ للحكم</span>
+                          <span className="level-chip mastered">🟢 حقق المعيار كاملاً</span>
+                          <span className="level-chip partial">🟡 حقق المعيار جزئياً</span>
+                          <span className="level-chip needs_support">🔴 لم يحقق المعيار بعد (مجموعة الدعم المؤقتة والمرنة)</span>
                         </div>
                       </div>
                     </div>
@@ -6904,16 +7432,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       )}
 
       {/* ===================================================================== */}
-      {/* 2. INTERFACE 2: TEACHER LIVE BACKSTAGE DASHBOARD (DISABLED/REMOVED)   */}
+      {/* 2. INTERFACE 2: TEACHER LIVE DASHBOARD & FORMATIVE SORTING            */}
       {/* ===================================================================== */}
-      {false && activeInterface === 'teacher' && (
+      {activeInterface === 'teacher' && (
         <section className="interface-canvas teacher-canvas animate-fade-in">
           {/* Top Session Status Ribbon */}
           <div className="teacher-top-control-ribbon">
             <div className="session-meta">
               <span className="live-pulse-led"></span>
-              <strong>جلسة صفية حية</strong>
-              <span className="session-pin-tag">رمز الانضمام: {sessionState.pin}</span>
+              <strong>لوحة المتابعة الحية والفرز التكويني</strong>
+              <span className="session-pin-tag">رمز الحصة (PIN): {sessionState.pin}</span>
               <span className="lesson-name-chip">{activeLesson.title}</span>
             </div>
 
@@ -7161,6 +7689,111 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
             {/* Center Column: Live Submissions & Formative Assessment */}
             <main className="dashboard-center-feed">
+              {/* Station 4 Automated & Manual 3-Group Sorting Board + Support Group Kit */}
+              {(() => {
+                const st4Data = activeLesson?.stations?.['4_evidence'] || {};
+                const supportKit = st4Data.supportGroupKitForTeacher || {
+                  alternativeExplanation: 'استخدم مثالاً محسوساً خطوة بخطوة لتوضيح الفكرة الأساسية للطلاب في مجموعة الدعم.',
+                  parallelFollowUpQuestion: 'أعطِ مثالاً واحداً بكلماتك الخاصة يثبت فهمك للقاعدة.'
+                };
+                const st4Subs = (sessionState.submissions || []).filter(s => Number(s.stationNumber) === 4);
+                const achievedGroup = st4Subs.filter(s => s.formativeScore === 'mastered' || s.aiEvalStatus === 'achieved');
+                const partialGroup = st4Subs.filter(s => s.formativeScore === 'partial' || (!s.formativeScore && s.aiEvalStatus === 'partial'));
+                const supportGroup = st4Subs.filter(s => s.formativeScore === 'needs_support' || (!s.formativeScore && s.aiEvalStatus === 'not_yet'));
+
+                return (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
+                    border: '2px solid #bfdbfe',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    marginBottom: '18px',
+                    boxShadow: '0 4px 14px rgba(30, 64, 175, 0.06)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                      <h4 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔎 الفرز التكويني الذكي للمحطة الرابعة (أدلة الفهم — הוכחות הבנה)</span>
+                      </h4>
+                      <span style={{ fontSize: '0.78rem', background: '#dbeafe', color: '#1d4ed8', padding: '4px 10px', borderRadius: '999px', fontWeight: 700 }}>
+                        🤖 تقييم الذكاء الاصطناعي الفوري + تحكم المعلم
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                      {/* Green Group */}
+                      <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '12px', padding: '12px' }}>
+                        <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.88rem', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>🟢 حقق المعيار كاملاً</span>
+                          <span>({achievedGroup.length})</span>
+                        </div>
+                        {achievedGroup.length === 0 ? (
+                          <small style={{ color: '#64748b', fontSize: '0.78rem' }}>بانتظار إجابات الطلاب...</small>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {achievedGroup.map(s => (
+                              <span key={s.id} style={{ background: '#dcfce7', color: '#14532d', padding: '3px 9px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                {s.participantName}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Yellow Group */}
+                      <div style={{ background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '12px', padding: '12px' }}>
+                        <div style={{ fontWeight: 800, color: '#854d0e', fontSize: '0.88rem', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>🟡 حقق المعيار جزئياً</span>
+                          <span>({partialGroup.length})</span>
+                        </div>
+                        {partialGroup.length === 0 ? (
+                          <small style={{ color: '#64748b', fontSize: '0.78rem' }}>لا يوجد طلاب حالياً</small>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {partialGroup.map(s => (
+                              <span key={s.id} style={{ background: '#fef08a', color: '#713f12', padding: '3px 9px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                {s.participantName}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Red Support Group */}
+                      <div style={{ background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '12px', padding: '12px' }}>
+                        <div style={{ fontWeight: 800, color: '#991b1b', fontSize: '0.88rem', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>🔴 مجموعة الدعم المؤقتة والمرنة</span>
+                          <span>({supportGroup.length})</span>
+                        </div>
+                        {supportGroup.length === 0 ? (
+                          <small style={{ color: '#64748b', fontSize: '0.78rem' }}>لا يوجد طلاب في مجموعة الدعم حالياً</small>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {supportGroup.map(s => (
+                              <span key={s.id} style={{ background: '#fee2e2', color: '#7f1d1d', padding: '3px 9px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                {s.participantName}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Support Group Kit for Teacher */}
+                    <div style={{ background: '#fff1f2', border: '1.5px dashed #f43f5e', borderRadius: '12px', padding: '12px 14px' }}>
+                      <div style={{ fontWeight: 800, color: '#be123c', fontSize: '0.9rem', marginBottom: '6px' }}>
+                        🛠️ حقيبة مجموعة الدعم المؤقتة والمرنة (للمعلم لتنفيذ تدخل سريع مدته ٣-٤ دقائق):
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#881337', marginBottom: '4px' }}>
+                        <strong>💡 شرح بديل مبسط وملموس:</strong> {supportKit.alternativeExplanation}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#881337' }}>
+                        <strong>❓ سؤال تحقق موازٍ سريع:</strong> {supportKit.parallelFollowUpQuestion}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="center-feed-header">
                 <div className="feed-header-left">
                   <h3><i className="fas fa-inbox"></i> إجابات وأدلة الطلاب المباشرة ({sessionState.submissions.length})</h3>
@@ -7739,13 +8372,54 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               </div>
 
-              {/* Student Horizontal Station Navigator Bar (التنقل بين المحطات بحسب قدرات ووتيرة كل طالب) */}
-              <div className="student-stations-pacing-navbar">
-                <div className="pacing-navbar-title">
-                  <i className="fas fa-layer-group"></i>
-                  <span>محطات رحلة التعلّم (تعلّم وفق قدراتك):</span>
+              {/* ===================================================================== */}
+              {/* PERSISTENT TOP BAR FOR STUDENT:                                       */}
+              {/* 1. الخريطة المكشوفة (המפה הגלויה) + شعار المحطة الحالية للطالب         */}
+              {/* 2. صندوق الهدف ومعيار النجاح (🎯 هدف التعلم + ✅ معيار النجاح)          */}
+              {/* 3. زر "⚡ وقت الانتعاش! (זמן להתרענן!)"                                */}
+              {/* ===================================================================== */}
+              <div className="student-stations-pacing-navbar" style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                border: '2px solid #cbd5e1',
+                borderRadius: '18px',
+                padding: '14px 18px',
+                marginBottom: '16px',
+                boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)'
+              }}>
+                {/* Row 1: Visible Map Header + Refresh Button */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                  <div className="pacing-navbar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fas fa-map-signs" style={{ color: '#4f46e5', fontSize: '1.1rem' }}></i>
+                    <strong style={{ color: '#0f172a', fontSize: '0.98rem' }}>
+                      الخريطة المكشوفة (המפה הגלויה) — محطات رحلة التعلّم:
+                    </strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenRefreshModal}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '7px 16px',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)'
+                    }}
+                    title="استراحة قصيرة لمدة ٦٠ ثانية لتجديد التركيز والنشاط"
+                  >
+                    <span>⚡ وقت الانتعاش! (זמן להתרענן!)</span>
+                  </button>
                 </div>
-                <div className="pacing-navbar-steps">
+
+                {/* Row 2: 5 Stations Steps */}
+                <div className="pacing-navbar-steps" style={{ marginBottom: '12px' }}>
                   {[
                     { idx: 1, letter: 'م', name: 'مشوّق ومحفّز', icon: '🔥' },
                     { idx: 2, letter: 'ف', name: 'فهم وبناء المعنى', icon: '🧩' },
@@ -7770,6 +8444,70 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Row 3: Active Station Student Motto Banner */}
+                {(() => {
+                  const mottoObj = MIFTAAH_STATION_MOTTOS[studentCurrentStationIndex] || MIFTAAH_STATION_MOTTOS[1];
+                  return (
+                    <div style={{
+                      background: 'linear-gradient(90deg, #eff6ff 0%, #e0e7ff 100%)',
+                      border: '1.5px solid #93c5fd',
+                      borderRadius: '12px',
+                      padding: '8px 14px',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e3a8a', fontWeight: 800, fontSize: '0.92rem' }}>
+                        <span>{mottoObj.icon}</span>
+                        <span>شعار المحطة {studentCurrentStationIndex} ({mottoObj.nameAr} / {mottoObj.nameHe}):</span>
+                        <span style={{ color: '#4338ca', background: '#ffffff', padding: '2px 10px', borderRadius: '999px', border: '1px solid #c7d2fe' }}>
+                          "{activeLesson?.language === 'hebrew' ? mottoObj.mottoHe : mottoObj.mottoAr}"
+                        </span>
+                      </div>
+                      <small style={{ color: '#475569', fontWeight: 700, fontSize: '0.8rem' }}>
+                        {activeLesson?.language === 'hebrew' ? mottoObj.mottoAr : mottoObj.mottoHe}
+                      </small>
+                    </div>
+                  );
+                })()}
+
+                {/* Row 4: Persistent Learning Goal & Success Criteria Box */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '10px'
+                }}>
+                  <div style={{
+                    background: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    borderRadius: '12px',
+                    padding: '8px 12px',
+                    fontSize: '0.88rem',
+                    color: '#14532d'
+                  }}>
+                    <strong style={{ color: '#15803d', display: 'block', marginBottom: '2px' }}>
+                      🎯 هدف التعلم (מטרת הלמידה):
+                    </strong>
+                    <span>{activeLesson?.objective || `إتقان المفاهيم والمهارات الأساسية في درس "${activeLesson?.title || ''}"`}</span>
+                  </div>
+                  <div style={{
+                    background: '#fefce8',
+                    border: '1.5px solid #fde047',
+                    borderRadius: '12px',
+                    padding: '8px 12px',
+                    fontSize: '0.88rem',
+                    color: '#713f12'
+                  }}>
+                    <strong style={{ color: '#a16207', display: 'block', marginBottom: '2px' }}>
+                      ✅ معيار النجاح (קריטריון הצלחה):
+                    </strong>
+                    <span>{activeLesson?.successCriteria || activeLesson?.stations?.['4_evidence']?.criterion || 'أستطيع تطبيق الفكرة بنجاح وتبرير إجابتي بدليل واضح.'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -8071,31 +8809,434 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 (studentCurrentStationData.studentPrompt && studentCurrentStationData.studentPrompt.match(/فيلم|فيديو|مقطع|لغز|أحجية|احجية|بازل|puzzle/i))) && 
                 renderStationMedia(studentCurrentStationData, false)}
 
-              {/* Station 3 Specific: Tier Selector */}
-              {studentCurrentStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
-                <div className="student-tier-choice-section">
-                  <span className="choice-label">اختر مستوى التحدي الذي ستبدأ به:</span>
-                  <div className="tier-buttons-trio">
-                    {activeLesson.stations['3_practice'].tasks.map((t, i) => (
+              {/* ===================================================================== */}
+              {/* INTERACTIVE STUDENT LMS WIDGETS BY STATION (Stations 1 - 5)          */}
+              {/* ===================================================================== */}
+
+              {/* STATION 1 INTERACTIVE WIDGETS: Helper Words Chips */}
+              {studentCurrentStationIndex === 1 && Array.isArray(studentCurrentStationData.helperWords) && studentCurrentStationData.helperWords.length > 0 && (
+                <div style={{
+                  background: '#fff7ed',
+                  border: '1.5px solid #fed7aa',
+                  borderRadius: '14px',
+                  padding: '12px 16px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ fontWeight: 800, color: '#9a3412', fontSize: '0.9rem', marginBottom: '8px' }}>
+                    💡 كلمات ومفاهيم مفتاحية تساعدك في صياغة توقعاتك (اضغط لإضافتها لإجابتك):
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {studentCurrentStationData.helperWords.map((word, wIdx) => (
                       <button
-                        key={i}
+                        key={wIdx}
                         type="button"
-                        className={`btn-tier-select ${studentChosenTier === t.tier ? 'active' : ''}`}
-                        onClick={() => setStudentChosenTier(t.tier)}
+                        onClick={() => setStudentInputText(prev => (prev ? `${prev} ${word}` : word))}
+                        style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #fb923c',
+                          color: '#c2410c',
+                          borderRadius: '999px',
+                          padding: '5px 14px',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer'
+                        }}
                       >
-                        <span>{t.badge}</span>
+                        + {word}
                       </button>
                     ))}
                   </div>
-                  {(() => {
-                    const sel = activeLesson.stations['3_practice'].tasks.find(t => t.tier === studentChosenTier) || activeLesson.stations['3_practice'].tasks[0];
-                    return (
-                      <div className="chosen-tier-task-box animate-fade-in">
-                        <strong>المهمة المحددة:</strong>
-                        <p>{sel.task}</p>
+                </div>
+              )}
+
+              {/* STATION 2 INTERACTIVE WIDGETS: Explanation Cards, Concept Map Keywords, Check for Understanding */}
+              {studentCurrentStationIndex === 2 && (
+                <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Explanation Cards */}
+                  {Array.isArray(studentCurrentStationData.explanationCards) && studentCurrentStationData.explanationCards.length > 0 && (
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '16px'
+                    }}>
+                      <h4 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🧩 بطاقات بناء المعنى المتدرجة ({studentCurrentStationData.selectedPath === 'discovery' ? 'مسار الاكتشاف الموجه' : studentCurrentStationData.selectedPath === 'explicit' ? 'مسار التعليم الصريح' : 'المسار المدمج'}):</span>
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px' }}>
+                        {studentCurrentStationData.explanationCards.map((card, cIdx) => (
+                          <div key={cIdx} style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #bfdbfe',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            boxShadow: '0 2px 8px rgba(30, 64, 175, 0.05)'
+                          }}>
+                            <div style={{ fontWeight: 800, color: '#1d4ed8', fontSize: '0.92rem', marginBottom: '6px' }}>
+                              {cIdx + 1}. {card.title}
+                            </div>
+                            <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: '#334155', lineHeight: 1.6 }}>
+                              {card.content}
+                            </p>
+                            {card.example && (
+                              <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '6px 10px', fontSize: '0.82rem', color: '#1e40af' }}>
+                                <strong>📌 مثال:</strong> {card.example}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })()}
+                    </div>
+                  )}
+
+                  {/* Concept Map Keywords */}
+                  {Array.isArray(studentCurrentStationData.conceptMapKeywords) && studentCurrentStationData.conceptMapKeywords.length > 0 && (
+                    <div style={{
+                      background: '#f0fdf4',
+                      border: '1.5px solid #86efac',
+                      borderRadius: '14px',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      <strong style={{ color: '#166534', fontSize: '0.88rem' }}>🗺️ خارطة المفاهيم الأساسية:</strong>
+                      {studentCurrentStationData.conceptMapKeywords.map((kw, kIdx) => (
+                        <React.Fragment key={kIdx}>
+                          <span style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #22c55e',
+                            color: '#15803d',
+                            padding: '4px 12px',
+                            borderRadius: '999px',
+                            fontWeight: 800,
+                            fontSize: '0.84rem'
+                          }}>
+                            {kw}
+                          </span>
+                          {kIdx < studentCurrentStationData.conceptMapKeywords.length - 1 && (
+                            <span style={{ color: '#16a34a', fontWeight: 800 }}>⟷</span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Interactive Check For Understanding (CFU) */}
+                  {studentCurrentStationData.checkForUnderstanding && studentCurrentStationData.checkForUnderstanding.question && (
+                    <div style={{
+                      background: '#eef2ff',
+                      border: '2px solid #a5b4fc',
+                      borderRadius: '16px',
+                      padding: '16px'
+                    }}>
+                      <div style={{ fontWeight: 800, color: '#312e81', fontSize: '0.96rem', marginBottom: '10px' }}>
+                        ⚡ فحص فهم سريع وتفاعلي: {studentCurrentStationData.checkForUnderstanding.question}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                        {(studentCurrentStationData.checkForUnderstanding.options || []).map((opt, oIdx) => {
+                          const isSelected = st2CfuSelected === opt;
+                          const isCorrect = opt === studentCurrentStationData.checkForUnderstanding.correctAnswer || oIdx === 0;
+                          return (
+                            <button
+                              key={oIdx}
+                              type="button"
+                              onClick={() => setSt2CfuSelected(opt)}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                border: isSelected ? `2px solid ${isCorrect ? '#16a34a' : '#dc2626'}` : '1.5px solid #c7d2fe',
+                                background: isSelected ? (isCorrect ? '#dcfce7' : '#fee2e2') : '#ffffff',
+                                color: '#1e293b',
+                                fontWeight: 700,
+                                fontSize: '0.88rem',
+                                cursor: 'pointer',
+                                textAlign: 'right'
+                              }}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {st2CfuSelected && (
+                        <div className="animate-fade-in" style={{
+                          marginTop: '10px',
+                          padding: '10px 14px',
+                          borderRadius: '10px',
+                          background: '#ffffff',
+                          border: '1px solid #818cf8',
+                          fontSize: '0.88rem',
+                          color: '#1e1b4b',
+                          fontWeight: 700
+                        }}>
+                          💡 {studentCurrentStationData.checkForUnderstanding.feedback || 'أحسنت المحاولة! ربطك بين الفكرة والدليل يعزز فهمك العميق.'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STATION 3 Specific: Tier Selector + Interactive Exercises + Collapsible Scaffolding & Deep Challenge */}
+              {studentCurrentStationIndex === 3 && (
+                <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {activeLesson.stations['3_practice']?.tasks && (
+                    <div className="student-tier-choice-section">
+                      <span className="choice-label">اختر مستوى التحدي الذي ستبدأ به:</span>
+                      <div className="tier-buttons-trio">
+                        {activeLesson.stations['3_practice'].tasks.map((t, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className={`btn-tier-select ${studentChosenTier === t.tier ? 'active' : ''}`}
+                            onClick={() => setStudentChosenTier(t.tier)}
+                          >
+                            <span>{t.badge}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {(() => {
+                        const sel = activeLesson.stations['3_practice'].tasks.find(t => t.tier === studentChosenTier) || activeLesson.stations['3_practice'].tasks[0];
+                        return (
+                          <div className="chosen-tier-task-box animate-fade-in">
+                            <strong>المهمة المحددة:</strong>
+                            <p>{sel.task}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Collapsible Scaffolding Button & Card ("🗝️ أحتاج إلى مساعدة / سقالة (פיגום)") */}
+                  <div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsSt3ScaffoldOpen(prev => !prev)}
+                        style={{
+                          flex: '1 1 240px',
+                          padding: '11px 16px',
+                          borderRadius: '12px',
+                          border: '2px solid #0284c7',
+                          background: isSt3ScaffoldOpen ? '#0284c7' : '#f0f9ff',
+                          color: isSt3ScaffoldOpen ? '#ffffff' : '#0369a1',
+                          fontWeight: 800,
+                          fontSize: '0.92rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}
+                      >
+                        <span>🗝️ أحتاج إلى مساعدة / سقالة (פיגום)</span>
+                        <i className={`fas ${isSt3ScaffoldOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsSt3DeepChallengeOpen(prev => !prev)}
+                        style={{
+                          flex: '1 1 240px',
+                          padding: '11px 16px',
+                          borderRadius: '12px',
+                          border: '2px solid #7c3aed',
+                          background: isSt3DeepChallengeOpen ? '#7c3aed' : '#f5f3ff',
+                          color: isSt3DeepChallengeOpen ? '#ffffff' : '#6d28d9',
+                          fontWeight: 800,
+                          fontSize: '0.92rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}
+                      >
+                        <span>🚀 تحدي التعمق: اكتشف الخطأ (אתגר העמקה)</span>
+                        <i className={`fas ${isSt3DeepChallengeOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                      </button>
+                    </div>
+
+                    {/* Scaffolding Content */}
+                    {isSt3ScaffoldOpen && (
+                      <div className="animate-fade-in" style={{
+                        marginTop: '10px',
+                        background: '#f0f9ff',
+                        border: '2px solid #7dd3fc',
+                        borderRadius: '14px',
+                        padding: '14px 16px'
+                      }}>
+                        <h4 style={{ margin: '0 0 8px 0', color: '#0369a1', fontSize: '0.95rem' }}>
+                          {studentCurrentStationData.scaffoldingCard?.title || '🗝️ سقالة مساندة خطوة بخطوة (פיגום):'}
+                        </h4>
+                        <ul style={{ margin: '0 0 10px 0', paddingRight: '20px', color: '#0f172a', fontSize: '0.88rem', lineHeight: 1.7 }}>
+                          {(studentCurrentStationData.scaffoldingCard?.hints || [studentCurrentStationData.scaffold]).filter(Boolean).map((h, hIdx) => (
+                            <li key={hIdx}>{h}</li>
+                          ))}
+                        </ul>
+                        {studentCurrentStationData.scaffoldingCard?.sentenceStarter && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', background: '#ffffff', padding: '8px 12px', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#0369a1', fontWeight: 700 }}>
+                              ✍️ بداية جملة مقترحة: "{studentCurrentStationData.scaffoldingCard.sentenceStarter}"
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setStudentInputText(prev => prev ? `${prev}\n${studentCurrentStationData.scaffoldingCard.sentenceStarter} ` : `${studentCurrentStationData.scaffoldingCard.sentenceStarter} `)}
+                              style={{
+                                background: '#0284c7',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '5px 12px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              استخدم البداية في إجابتي +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Deep Challenge Content */}
+                    {isSt3DeepChallengeOpen && studentCurrentStationData.deepChallenge && (
+                      <div className="animate-fade-in" style={{
+                        marginTop: '10px',
+                        background: '#f5f3ff',
+                        border: '2px solid #c4b5fd',
+                        borderRadius: '14px',
+                        padding: '14px 16px'
+                      }}>
+                        <h4 style={{ margin: '0 0 6px 0', color: '#5b21b6', fontSize: '0.95rem' }}>
+                          {studentCurrentStationData.deepChallenge.title || '🚀 تحدي التعمق: اكتشف الخطأ وصوّبه'}
+                        </h4>
+                        <p style={{ margin: '0 0 10px 0', color: '#2e1065', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                          {studentCurrentStationData.deepChallenge.scenario}
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <input
+                            type="text"
+                            value={st3DeepChallengeAnswer}
+                            onChange={e => setSt3DeepChallengeAnswer(e.target.value)}
+                            placeholder="اكتب اكتشافك للخطأ وتصويبه هنا..."
+                            style={{ flex: 1, minWidth: '200px', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #a78bfa', fontSize: '0.88rem' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!st3DeepChallengeAnswer.trim()) return;
+                              setStudentInputText(prev => `${prev ? prev + '\n' : ''}[حل تحدي التعمق 🚀]: ${st3DeepChallengeAnswer}`);
+                              showToast('تمت إضافة حل تحدي التعمق إلى مساحة إجابتك! 🚀');
+                            }}
+                            style={{
+                              background: '#7c3aed',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '8px',
+                              padding: '8px 14px',
+                              fontWeight: 700,
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            أضف لحلّي ✓
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STATION 4 INTERACTIVE WIDGETS: Exit Ticket Question + Sentence Starters for UDL + AI Evaluation Banner */}
+              {studentCurrentStationIndex === 4 && (
+                <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {studentCurrentStationData.exitTicketQuestion && (
+                    <div style={{
+                      background: '#eff6ff',
+                      border: '2px solid #93c5fd',
+                      borderRadius: '14px',
+                      padding: '14px 16px'
+                    }}>
+                      <strong style={{ color: '#1e3a8a', display: 'block', marginBottom: '4px', fontSize: '0.95rem' }}>
+                        🔎 سؤال بطاقة الخروج التكوينية الفردية (כרטיס יציאה):
+                      </strong>
+                      <p style={{ margin: 0, color: '#0f172a', fontSize: '0.96rem', fontWeight: 700 }}>
+                        {studentCurrentStationData.exitTicketQuestion}
+                      </p>
+                    </div>
+                  )}
+
+                  {Array.isArray(studentCurrentStationData.sentenceStartersForUDL) && studentCurrentStationData.sentenceStartersForUDL.length > 0 && (
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1.5px dashed #94a3b8',
+                      borderRadius: '12px',
+                      padding: '10px 14px'
+                    }}>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
+                        ✍️ بدايات جمل مساعدة للشمولية (UDL) — اضغط لإدراجها في إجابتك:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {studentCurrentStationData.sentenceStartersForUDL.map((starter, sIdx) => (
+                          <button
+                            key={sIdx}
+                            type="button"
+                            onClick={() => setStudentInputText(prev => prev ? `${prev} ${starter} ` : `${starter} `)}
+                            style={{
+                              background: '#ffffff',
+                              border: '1.5px solid #64748b',
+                              color: '#0f172a',
+                              borderRadius: '999px',
+                              padding: '5px 12px',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + {starter}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isEvaluatingExitTicket && (
+                    <div style={{
+                      background: '#fefce8',
+                      border: '1.5px solid #fde047',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      color: '#854d0e',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      <span>جاري تقييم إجابتك التكوينية فورياً بواسطة الذكاء الاصطناعي وفق معيار النجاح... 🤖✨</span>
+                    </div>
+                  )}
+
+                  {lastStation4AiEvaluation && !isEvaluatingExitTicket && (
+                    <div className="animate-fade-in" style={{
+                      background: lastStation4AiEvaluation.status === 'achieved' ? '#f0fdf4' : lastStation4AiEvaluation.status === 'partial' ? '#fefce8' : '#fef2f2',
+                      border: `2px solid ${lastStation4AiEvaluation.status === 'achieved' ? '#86efac' : lastStation4AiEvaluation.status === 'partial' ? '#fde047' : '#fca5a5'}`,
+                      borderRadius: '14px',
+                      padding: '14px 16px'
+                    }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '4px', color: '#0f172a' }}>
+                        {lastStation4AiEvaluation.status === 'achieved' && '🟢 حققت معيار النجاح كاملاً! أحسنت!'}
+                        {lastStation4AiEvaluation.status === 'partial' && '🟡 حققت المعيار جزئياً — خطوة رائعة وبإمكانك تعزيز دليلك!'}
+                        {lastStation4AiEvaluation.status === 'not_yet' && '🔴 نحتاج لتعزيز الفكرة معاً — المعلم معك في مجموعة الدعم المرنة!'}
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.6 }}>
+                        💬 {lastStation4AiEvaluation.studentFeedback}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -8110,11 +9251,46 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               )}
 
-              {/* Station 5 Specific: Exit Ticket Form */}
+              {/* Station 5 Specific: Exit Ticket Form + Interactive Metacognition Choices */}
               {studentCurrentStationIndex === 5 ? (
                 <div className="student-exit-ticket-form">
+                  {studentCurrentStationData.metacognitionReflection?.options && (
+                    <div style={{
+                      background: '#f5f3ff',
+                      border: '1.5px solid #ddd6fe',
+                      borderRadius: '14px',
+                      padding: '12px 16px',
+                      marginBottom: '12px'
+                    }}>
+                      <label style={{ display: 'block', fontWeight: 800, color: '#5b21b6', marginBottom: '8px', fontSize: '0.9rem' }}>
+                        🧠 {studentCurrentStationData.metacognitionReflection.question || 'تأمل فوق معرفي سريع — اختر ما يعبّر عن رحلتك اليوم:'}
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {studentCurrentStationData.metacognitionReflection.options.map((opt, oIdx) => (
+                          <button
+                            key={oIdx}
+                            type="button"
+                            onClick={() => setStudentExitTicket(prev => ({ ...prev, q2: opt }))}
+                            style={{
+                              background: studentExitTicket.q2 === opt ? '#7c3aed' : '#ffffff',
+                              color: studentExitTicket.q2 === opt ? '#ffffff' : '#4c1d95',
+                              border: '1.5px solid #a78bfa',
+                              borderRadius: '999px',
+                              padding: '6px 14px',
+                              fontSize: '0.84rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="ticket-q-field">
-                    <label>١. ما أهم فكرة تعلّمتها اليوم؟</label>
+                    <label>١. {studentCurrentStationData.summaryTask || 'ما أهم فكرة تعلّمتها اليوم؟'}</label>
                     <textarea
                       rows={2}
                       value={studentExitTicket.q1}
@@ -8151,7 +9327,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
                   {sessionState.station5IncludeQ4 && (
                     <div className="ticket-q-field transfer">
-                      <label>٤. أين وكيف تستطيع استخدام ما تعلّمته؟</label>
+                      <label>٤. {studentCurrentStationData.transferTask || 'أين وكيف تستطيع استخدام ما تعلّمته في موقف جديد؟'}</label>
                       <textarea
                         rows={2}
                         value={studentExitTicket.q4}
@@ -8185,9 +9361,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <button
                       type="button"
                       className="btn-submit-student-answer"
+                      disabled={isEvaluatingExitTicket}
                       onClick={() => handleStudentSubmitAnswer(studentCurrentStationIndex, studentInputText, studentChosenTier)}
                     >
-                      <i className="fas fa-paper-plane"></i> إرسال إجابتي للمعلم 📤
+                      <i className="fas fa-paper-plane"></i> {studentCurrentStationIndex === 4 ? 'إرسال بطاقة الخروج للتقييم الفوري 🔎📤' : 'إرسال إجابتي للمعلم 📤'}
                     </button>
                   </div>
                 </div>
@@ -8827,6 +10004,124 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 onClick={() => setIsStudentPreviewModalOpen(false)}
               >
                 <i className="fas fa-check"></i> العودة لشاشة تعديل الحصة ✏️
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 3: 60-SECOND REFRESH TIME MODAL (⚡ وقت الانتعاش - זמן להתרענן) */}
+      {/* ===================================================================== */}
+      {isRefreshModalOpen && (
+        <div
+          className="miftaah-modal-overlay animate-fade-in"
+          onClick={() => setIsRefreshModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div
+            className="animate-pop"
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+              border: '3px solid #f59e0b',
+              borderRadius: '24px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '28px 24px',
+              textAlign: 'center',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            <div style={{ fontSize: '3.2rem', marginBottom: '8px' }}>⚡🧘‍♂️✨</div>
+            <h3 style={{ margin: '0 0 6px 0', color: '#9a3412', fontSize: '1.4rem', fontWeight: 900 }}>
+              وقت الانتعاش! (זמן להתרענן!)
+            </h3>
+            <p style={{ margin: '0 0 18px 0', color: '#b45309', fontSize: '0.92rem', fontWeight: 700 }}>
+              استراحة قصيرة لمدة ٦٠ ثانية لتجديد الطاقة والتركيز
+            </p>
+
+            {/* Countdown Timer Circle */}
+            <div style={{
+              width: '110px',
+              height: '110px',
+              borderRadius: '50%',
+              margin: '0 auto 18px auto',
+              background: refreshTimeLeft > 0 ? 'linear-gradient(135deg, #fef3c7, #fde68a)' : 'linear-gradient(135deg, #dcfce7, #86efac)',
+              border: `4px solid ${refreshTimeLeft > 0 ? '#f59e0b' : '#16a34a'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 18px rgba(245, 158, 11, 0.25)'
+            }}>
+              <span style={{ fontSize: '2rem', fontWeight: 900, color: refreshTimeLeft > 0 ? '#92400e' : '#14532d', lineHeight: 1 }}>
+                {refreshTimeLeft > 0 ? refreshTimeLeft : '✓'}
+              </span>
+              <small style={{ fontSize: '0.75rem', fontWeight: 800, color: refreshTimeLeft > 0 ? '#b45309' : '#15803d', marginTop: '4px' }}>
+                {refreshTimeLeft > 0 ? 'ثانية' : 'انتهى الوقت!'}
+              </small>
+            </div>
+
+            {/* Activity Text */}
+            <div style={{
+              background: '#ffffff',
+              border: '2px solid #fcd34d',
+              borderRadius: '16px',
+              padding: '16px 18px',
+              marginBottom: '20px',
+              color: '#1e293b',
+              fontSize: '1.05rem',
+              fontWeight: 700,
+              lineHeight: 1.7,
+              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.08)'
+            }}>
+              {activeLesson?.refreshActivity || 'قف مكانك، خذ ٣ أنفاس عميقة، حرّك كتفيك ويديك لمدة ٣٠ ثانية، ثم ابتسم واستعد للعودة إلى رحلة التعلّم بنشاط! 🌟'}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setRefreshTimeLeft(60)}
+                style={{
+                  background: '#fef3c7',
+                  color: '#92400e',
+                  border: '1.5px solid #f59e0b',
+                  borderRadius: '999px',
+                  padding: '10px 18px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                🔄 إعادة المؤقت (٦٠ ثانية)
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsRefreshModalOpen(false)}
+                style={{
+                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 24px',
+                  fontWeight: 900,
+                  fontSize: '0.96rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)'
+                }}
+              >
+                🚀 نعود لرحلتنا! (חוזרים למסע שלנו!)
               </button>
             </div>
           </div>

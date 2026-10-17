@@ -2626,6 +2626,142 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
 };
 
 /**
+ * 15.F.2 Miftaah Formative Exit Ticket / Station 4 Evaluator AI:
+ * Compares student's answer in Station 4 against the lesson's successCriteria and exitTicketQuestion.
+ * Classifies into: "achieved" | "partial" | "not_yet" and provides encouraging, guiding feedback without giving away the direct answer.
+ */
+export const evaluateMiftaahExitTicketAI = async ({
+  question = '',
+  studentAnswer = '',
+  successCriteria = '',
+  lessonTitle = '',
+  language = 'arabic'
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const cleanAnswer = String(studentAnswer || '').trim();
+  const isHe = language === 'hebrew' || /[\u0590-\u05FF]/.test(cleanAnswer + ' ' + question);
+
+  if (!cleanAnswer || cleanAnswer.length < 3) {
+    return {
+      status: 'not_yet',
+      evalTag: 'needs_support',
+      studentFeedback: isHe
+        ? 'נראה שהתשובה קצרה מדי. נסה להיעזר בפתיחי המשפטים שלמעלה ולכתוב הסבר או דוגמה קצרה משלך! 💡'
+        : 'تبدو إجابتك قصيرة جداً يا بطل! استعن ببدايات الجمل المساعدة أعلاه واكتب الفكرة مع سبب قصير أو مثال من الدرس 💡'
+    };
+  }
+
+  const systemPrompt = `أنت معلم خبير ومقيّم تكويني داعم في نموذج مفتاح (מפתי"ח). قارن إجابة الطالب بمعيار النجاح للسؤال الموضوع. صنف الإجابة إلى: (achieved / partial / not_yet). اكتب تغذية راجعة مباشرة للطالب تشجعه، وإذا كان جزئياً أو لم يحقق، أعطه تلميحاً ذكياً ليكمل الفكرة دون إعطائه الجواب المباشر. أخرج النتيجة بصيغة JSON فقط:
+{ "status": "achieved | partial | not_yet", "studentFeedback": "..." }`;
+
+  const userPrompt = `عنوان الدرس: ${lessonTitle || 'درس تفاعلي'}
+معيار النجاح: ${successCriteria || 'تطبيق مفهوم الدرس بدقة مع التبرير أو الدليل'}
+سؤال المحطة الرابعة (أدلة الفهم): ${question}
+إجابة الطالب: "${cleanAnswer}"
+لغة الرد المطلوبة للطالب: ${isHe ? 'العبرية (עברית)' : language === 'english' ? 'English' : 'العربية'}`;
+
+  const parseEvalJson = (raw) => {
+    if (!raw) return null;
+    try {
+      const m = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(m ? m[0] : raw);
+      if (parsed && ['achieved', 'partial', 'not_yet'].includes(parsed.status) && parsed.studentFeedback) {
+        return {
+          status: parsed.status,
+          evalTag: parsed.status === 'achieved' ? 'mastered' : parsed.status === 'partial' ? 'partial' : 'needs_support',
+          studentFeedback: parsed.studentFeedback
+        };
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  };
+
+  if (groqKey) {
+    const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+          body: JSON.stringify({
+            model: m,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.3,
+            max_tokens: 500
+          })
+        }, 9000);
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = parseEvalJson(data.choices?.[0]?.message?.content);
+          if (parsed) return parsed;
+        }
+      } catch (e) {
+        console.warn('Groq exit ticket eval error:', e);
+      }
+    }
+  }
+
+  if (geminiKey) {
+    try {
+      const res = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 500, responseMimeType: 'application/json' }
+          })
+        },
+        9000
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const parsed = parseEvalJson(data.candidates?.[0]?.content?.parts?.[0]?.text);
+        if (parsed) return parsed;
+      }
+    } catch (e) {
+      console.warn('Gemini exit ticket eval error:', e);
+    }
+  }
+
+  // Deterministic smart fallback based on length and reasoning connectors
+  const wordCount = cleanAnswer.split(/\s+/).filter(Boolean).length;
+  const hasReasoning = /لأن|بسبب|دليل|ذلك|لذلك|مثال|نستنتج|كما|כי|מפני|לכן|דוגמה|משום|because|since|example|evidence/i.test(cleanAnswer);
+
+  if (wordCount >= 10 && hasReasoning) {
+    return {
+      status: 'achieved',
+      evalTag: 'mastered',
+      studentFeedback: isHe
+        ? 'כל הכבוד! 🌟 תשובתך מנומקת ומדויקת ועומדת בקריטריון ההצלחה של השיעור. אתה מוכן להתקדם לתחנת הקציר!'
+        : 'أحسنت يا بطل! 🌟 إجابتك وافية ومعللة بدقة وتحقق معيار النجاح بامتياز. يمكنك الآن الانطلاق بثقة إلى محطة الحصاد!'
+    };
+  }
+  if (wordCount >= 5) {
+    return {
+      status: 'partial',
+      evalTag: 'partial',
+      studentFeedback: isHe
+        ? 'התחלה מצוינת! 🌱 זיהית את הכיוון הנכון. כדי להגיע לשליטה מלאה, הוסף נימוק קצר ("מפני ש...") או דוגמה מתוך השיעור.'
+        : 'بداية رائعة وفكرة جميلة! 🌱 لقد اقتربت كثيراً من تحقيق المعيار كاملاً؛ حاول إضافة تعليل بسيط ("لأن...") أو مثال يدعم إجابتك.'
+    };
+  }
+  return {
+    status: 'not_yet',
+    evalTag: 'needs_support',
+    studentFeedback: isHe
+      ? 'תודה על הניסיון! 💡 כדאי להיעזר בפתיחי המשפטים שלמעלה ולהסביר את הכלל שלמדנו בתחנה השנייה במשפט שלם.'
+      : 'شكراً لمحاولتك يا بطل! 💡 فكّر مرة أخرى في القاعدة التي اكتشفناها في المحطة الثانية، واستعن ببدايات الجمل أعلاه لصياغة إجابة كاملة.'
+  };
+};
+
+/**
  * 15.G Miftaah Full Learning Journey Lesson Planner:
  * Generates an end-to-end 5-station cohesive lesson from only 3 inputs:
  * (title, grade, specialRequests)
@@ -2637,6 +2773,10 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   grade = '',
   language = 'auto',
   specialRequests = '',
+  customObjective = '',
+  customSuccessCriteria = '',
+  meaningPath = 'blended', // 'explicit' | 'discovery' | 'blended'
+  udlOptions = [],         // ['دعم قراءة', 'تبسيط لغوي', 'أمثلة بصرية']
   includePassage = 'auto', // 'ai_passage' | 'custom_passage' | 'none' | 'auto'
   passageLength = 'long',   // 'long' | 'medium' | 'short'
   customPassageText = '',   // Custom text provided by the teacher
@@ -2649,6 +2789,10 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   const safeSubject = subject.trim() || 'عام';
   const safeGrade = grade.trim() || 'المرحلة الابتدائية';
   const safeRequests = specialRequests.trim();
+  const safeCustomObjective = (customObjective || '').trim();
+  const safeCustomCriteria = (customSuccessCriteria || '').trim();
+  const safeMeaningPath = ['explicit', 'discovery', 'blended'].includes(meaningPath) ? meaningPath : 'blended';
+  const safeUdlList = Array.isArray(udlOptions) ? udlOptions : [];
 
   // Smart Language Detection: Auto-detect Hebrew, English, or Arabic from Subject, Title, Requests, or explicit Language
   let targetLang = language;
@@ -2886,12 +3030,18 @@ ${isTrainTopic ? `🚂 توجيه إلزامي حاسم: موضوع الدرس �
 - لغة الحصة ومحطاتها: اللغة العربية الفصيحة السليمة والواضحة والمحفزة المناسبة لطلاب المرحلة الابتدائية.`;
   }
 
-  const prompt = `أنت الخبير التربوي ومصمم المناهج لنظام «مِفتاح — رحلة التعلّم» بمدرسة مشيرفة الابتدائية.
+  const prompt = `أنت المحرك التعليمي الذكي لمنصة "مفتاح" (מפתי"ח) التفاعلية في مدرسة مشيرفة الابتدائية. مهمتك ليست كتابة خطة نظرية للمعلم، بل بناء محتوى حصة تفاعلية كاملة موجهة للطالب مباشرة بضمير المخاطب ("أنت يا بطل / يا مبدع")، مع أدوات دعم للمعلم.
+التزم باللغتين العربية أو العبرية أو الإنجليزية حسب مدخلات المعلم، وطبق مبادئ التصميم الشامل للتعلم (UDL) والتقويم التكويني المستمر.
+
 المعطيات المدخلة لإنشاء الحصة:
 - موضوع الدرس / المادة التعليمية: ${safeSubject}
 - عنوان الدرس ومحوره: ${safeTitle}
 - الصف والمستوى الدراسي: ${safeGrade}
 - لغة تدريس ومحتوى الحصة المطلوبة: ${targetLang === 'hebrew' ? 'العبرية (עברית בלבד)' : targetLang === 'english' ? 'الإنجليزية (English 100%)' : 'العربية'}
+${safeCustomObjective ? `- هدف التعلم المعتمد من المعلم: "${safeCustomObjective}"` : '- هدف التعلم: ولّده تلقائياً بدقة ووضوح.'}
+${safeCustomCriteria ? `- معيار النجاح المعتمد من المعلم: "${safeCustomCriteria}"` : '- معيار النجاح: ولّده تلقائياً بحيث يكون قابلاً للقياس.'}
+- مسار بناء المعنى المفضل للمحطة الثانية: ${safeMeaningPath === 'explicit' ? 'تعليم صريح ومباشر (explicit)' : safeMeaningPath === 'discovery' ? 'اكتشاف وبحث موجه (discovery)' : 'مدمج (blended)'}
+${safeUdlList.length > 0 ? `- ملاحظات الاحتواء والتصميم الشامل (UDL): ${safeUdlList.join('، ')}` : ''}
 ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
 
 ${teacherCustomDirectives}
@@ -2900,33 +3050,35 @@ ${languageDirective}
 
 ${genreDirective}
 
-المطلوب: توليد مسودة متكاملة ومترابطة للحصة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
-1. مشוّق ومحفّز (م)
-2. فهم وبناء المعنى (ف)
-3. التطبيق والتدريب (ت)
-4. أدلة الفهم (ا)
-5. حصاد ونقل الأثر (ح)
+المطلوب: توليد حصة تفاعلية متكاملة ومترابطة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
+1. مشوّق ومحفّز (م) — شعار الطالب: "أنا أسأل وأستعد / אני שואל ומתכונן"
+2. فهم وبناء المعنى (ف) — شعار الطالب: "أنا أفهم وأربط / אני מבין ומקשר"
+3. التطبيق والتدريب (ت) — شعار الطالب: "أنا أجرب وأتدرب / אני מתנסה ומתרגל"
+4. أدلة الفهم (ا) — شعار الطالب: "أنا أُظهر ما فهمته / אני מראה מה הבנתי"
+5. حصاد ونقل الأثر (ح) — شعار الطالب: "أنا ألخص وأستخدم ما تعلمته في سياق جديد / אני מסכם ומשתמש במה שלמדתי"
 
 القواعد البيداغوجية الصارمة (כללי הברזל של מודל מִפתח):
 1. שיעור עשיר, מוכן להעברה מיידית בכיתה ומותאם ישירות למסך התלמיד (Turnkey Classroom Ready):
    - אין לכתוב סיכומים קצרים או הפניות כלליות; יש לכתוב את כל התוכן במלואו על גבי המסך!
    - אם מתוכנן קטע קריאה: כתוב את הטקסט המלא (3-4 פסקאות עשירות) בתחנה 2 (studentPrompt), כולל כותרת ומילון מושגים!
    - אם יש חידה או סיפור: כתוב את הטקסט המלא, הרמזים והפתרון בתוך interactiveActivity.riddle.
-    - אם יש סרטון: כלול כותרת סרטון, משפט חיפוש מדויק מאוד ב-youtubeSearchQuery המותאם לנושא השיעור ולכיתה, סיפור מרתק או תופעה מדהימה ב-hookStoryOrScenario, שאלת סקרנות ב-curiosityQuestion ושאלת רפלקציה מעמיקה (אל תמציא קישורי יוטיוב פיקטיביים - השאר youtubeUrl ריק "").
-    - אם מתוכנן משחק: ציין את המשחק המתאים מהאתר (אליפות לוח הכפל, אתגר בלשי, זירת הלשון, מעבדת STEM).
-2. דיפרנציאציה אמיתית בתחנה 3 (יישום ותרגול): חובה לכלול 3 משימות מלאות ומפורטות לשלוש רמות (זינוק, שליטה, אתגר) עם ניסוח השאלות במלואן.
-3. תחנה 4 (ראיות הבנה): שאלות בדיקה עצמאיות מפורשות (1, 2, 3) המודדות ישירות את קריטריון ההצלחה, ללא צורך בדפי צילום חיצוניים.
-4. תחנה 5 (סיכום, קציר והעברה לחיים): שאלות כרטיס יציאה מובנות המקשרות את הלמידה למציאות היומיומית.
+   - אם יש סרטון: כלול כותרת סרטון, משפט חיפוש מדויק מאוד ב-youtubeSearchQuery המותאם לנושא השיעור ולכיתה, סיפור מרתק או תופעה מדהימה ב-hookStoryOrScenario, שאלת סקרנות ב-curiosityQuestion ושאלת רפלקציה מעמיקה (אל תמציא קישורי יוטיוב פיקטיביים - השאר youtubeUrl ריק "").
+2. דיפרנציאציה אמיתית בתחנה 3 (יישום ותרגול): חובה לכלול משימת ליבה אחידה (coreTaskDescription), תרגילים אינטראקטיביים (interactiveExercises), כרטיס פיגום וסיוע (scaffoldingCard), אתגר העמקה וגילוי טעות (deepChallenge), וכן 3 משימות מלאות לשלוש רמות (tasks).
+3. תחנה 4 (ראיות הבנה): שאלות בדיקה עצמאיות מפורשות + exitTicketQuestion + sentenceStartersForUDL + ערכת קבוצת תמיכה גמישה למורה (supportGroupKitForTeacher).
+4. תחנה 5 (סיכום, קציר והעברה לחיים): summaryTask + metacognitionReflection + transferTask.
 5. שפת השיעור: ${targetLang === 'hebrew' ? 'עברית תקנית, עשירה ומדויקת בלבד (ללא ערבית)' : targetLang === 'english' ? '100% natural, polished English' : 'لغة عربية فصيحة وسليمة ومشكولة'}.
 
 أخرج JSON صالحاً فقط بالهيكل التالي (بدون أي نصوص خارج الـ JSON):
 {
-  "title": "${targetLang === 'hebrew' ? safeTitle : targetLang === 'english' ? safeTitle : safeTitle}",
+  "title": "${safeTitle}",
+  "lessonTitle": "${safeTitle}",
   "subject": "${safeSubject}",
   "language": "${targetLang}",
   "grade": "${safeGrade}",
-  "objective": "${targetLang === 'hebrew' ? 'מטרת השיעור בעברית מדויקת...' : targetLang === 'english' ? 'Learning objective in English...' : 'هدف التعلّم الصريح المحدد...'}",
-  "successCriteria": "${targetLang === 'hebrew' ? 'קריטריון הצלחה מדיד בעברית...' : targetLang === 'english' ? 'Measurable success criteria in English...' : 'معيار النجاح القابل للقياس...'}",
+  "objective": "${safeCustomObjective || (targetLang === 'hebrew' ? 'מטרת השיעור בעברית מדויקת...' : targetLang === 'english' ? 'Learning objective in English...' : 'هدف التعلّم الصريح المحدد...')}",
+  "learningGoal": "${safeCustomObjective || (targetLang === 'hebrew' ? 'מטרת השיעור בעברית מדויקת...' : targetLang === 'english' ? 'Learning objective in English...' : 'هدف التعلّم الصريح المحدد...')}",
+  "successCriteria": "${safeCustomCriteria || (targetLang === 'hebrew' ? 'קריטריון הצלחה מדיד בעברית...' : targetLang === 'english' ? 'Measurable success criteria in English...' : 'معيار النجاح القابل للقياس...')}",
+  "refreshActivity": "نشاط حركي أو تركيزي ممتع لمدة 60 ثانية مرتبط بموضوع الدرس لكسر الجمود وتنشيط الدماغ...",
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
@@ -2940,6 +3092,7 @@ ${genreDirective}
       "youtubeSearchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف...",
       "hookStoryOrScenario": "القصة المشوقة أو الظاهرة المدهشة المرتبطة بالدرس كبديل آمن ومتكامل...",
       "curiosityQuestion": "سؤال الفضول المثير للتفكير حول القصة أو الظاهرة...",
+      "helperWords": ["كلمة مساعدة 1", "كلمة مساعدة 2", "كلمة مساعدة 3"],
       "interactiveActivity": {
         "type": "riddle",
         "title": "عنوان النشاط",
@@ -2976,9 +3129,21 @@ ${genreDirective}
       "name": "${targetLang === 'hebrew' ? 'הבנת המשמעות' : 'فهم وبناء المعنى'}",
       "number": 2,
       "icon": "🧩",
-      "pedagogicalMode": "guided_exploration",
+      "selectedPath": "${safeMeaningPath}",
+      "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'guided_exploration' : 'blended_interactive'}",
       "pedagogicalModeName": "${targetLang === 'hebrew' ? 'הבנה ובניית משמעות' : 'بناء المعنى والاستكشاف'}",
       "studentPrompt": "المحتوى الصريح: نص القراءة الكامل إن كان فهم المقروء، أو الشرح والقواعد والمفاهيم...",
+      "explanationCards": [
+        { "step": 1, "content": "شرح الفكرة الأولى بلغة مبسطة...", "example": "مثال توضيحي..." },
+        { "step": 2, "content": "شرح الفكرة الثانية والربط بالمعرفة السابقة...", "example": "مثال توضيحي..." }
+      ],
+      "conceptMapKeywords": ["مفهوم 1", "مفهوم 2", "مفهوم 3"],
+      "checkForUnderstanding": {
+        "question": "سؤال فحص فهم سريع للتأكد من استيعاب الشرح؟",
+        "options": ["خيار 1", "خيار 2", "خيار 3"],
+        "correctAnswer": "خيار 1",
+        "feedback": "تغذية راجعة فورية تشرح لماذا الإجابة صحيحة"
+      },
       "teacherGuidance": "إرشادات النمذجة أو قيادة الاستكشاف...",
       "suggestedDuration": 12,
       "scaffold": "منظم بصري أو خطوة مساعدة..."
@@ -2988,6 +3153,24 @@ ${genreDirective}
       "number": 3,
       "icon": "🛠️",
       "studentPrompt": "شرح توجيهي للمهمة وقواعد العمل الجماعي...",
+      "coreTaskDescription": "وصف المهمة الأساسية الموحدة لجميع الطلاب...",
+      "interactiveExercises": [
+        {
+          "question": "سؤال تطبيقي أول...",
+          "type": "mcq",
+          "options": ["خيار أ", "خيار ب", "خيار ج"],
+          "correctAnswer": "خيار أ",
+          "reasoningPrompt": "اشرح بكلماتك لماذا اخترت هذه الإجابة؟"
+        }
+      ],
+      "scaffoldingCard": {
+        "hints": ["تلميح أول لمساعدة الطالب المتعثر...", "تلميح ثانٍ يبسط السؤال..."],
+        "sentenceStarter": "أعتقد أن الحل يبدأ بـ... لأن..."
+      },
+      "deepChallenge": {
+        "errorScenario": "ادعى سامي أن [خطأ شائع في الدرس]... اكتشف الخطأ الذي وقع فيه!",
+        "correctionPrompt": "صوب الخطأ مع التعليل العلمي الدقيق:"
+      },
       "teacherGuidance": "إرشادات المعلم لإدارة المحطة...",
       "suggestedDuration": 15,
       "workMode": "groups",
@@ -3002,6 +3185,12 @@ ${genreDirective}
       "number": 4,
       "icon": "🔎",
       "studentPrompt": "ورقة الدليل الفردي المستقل مع الأسئلة الصريحة (سؤال 1، 2، 3، 4)...",
+      "exitTicketQuestion": "سؤال التقييم الفردي المباشر الذي يقيس معيار النجاح بدقة...",
+      "sentenceStartersForUDL": ["الإجابة هي... والدليل على ذلك...", "أستنتج أن... لأن..."],
+      "supportGroupKitForTeacher": {
+        "alternativeExplanation": "شرح بديل مبسط جداً وبزاوية مختلفة (مثال حسي/قصصي) يشرحه المعلم لمجموعة الدعم المؤقتة...",
+        "parallelFollowUpQuestion": "سؤال موازٍ قصير ومباشر يتأكد به المعلم أن طلاب مجموعة الدعم قد فهموا الفكرة الآن..."
+      },
       "teacherGuidance": "إرشادات تقييم الدليل الفردي...",
       "suggestedDuration": 7,
       "criterion": "معيار التحقق الصريح...",
@@ -3019,6 +3208,12 @@ ${genreDirective}
       "number": 5,
       "icon": "🎒",
       "studentPrompt": "توجيهات الحصاد الصريحة للطلاب...",
+      "summaryTask": "لخص أهم فكرة تعلمتها اليوم في جملة واحدة أو ثلاث كلمات مفتاحية.",
+      "metacognitionReflection": {
+        "question": "ما أكثر شيء ساعدك على الفهم اليوم؟",
+        "choices": ["الأمثلة والشرح المبسط", "التدريب وحل التمارين", "السقالات والتلميحات المساعدة", "النقاش ومقارنة الأفكار"]
+      },
+      "transferTask": "سؤال نقل الأثر: كيف يمكنك استخدام ما تعلمته اليوم في موقف حقيقي خارج المدرسة؟",
       "teacherGuidance": "إرشادات المعلم لختام الحصة...",
       "suggestedDuration": 5,
       "exitTicket": {
@@ -3268,15 +3463,34 @@ ${genreDirective}
   };
 
   const postProcessLesson = (lesson) => {
-    if (!lesson || !lesson.stations) return lesson;
+    if (!lesson) return lesson;
+    if (!lesson.stations) {
+      lesson.stations = {};
+      if (lesson.station1_curiosity) lesson.stations['1_hook'] = lesson.station1_curiosity;
+      if (lesson.station2_meaning) lesson.stations['2_understanding'] = lesson.station2_meaning;
+      if (lesson.station3_practice) lesson.stations['3_practice'] = lesson.station3_practice;
+      if (lesson.station4_evidence) lesson.stations['4_evidence'] = lesson.station4_evidence;
+      if (lesson.station5_harvest) lesson.stations['5_harvest'] = lesson.station5_harvest;
+    }
     const reqAndTitle = (safeRequests + ' ' + safeTitle).toLowerCase();
     const isVideoRequested = reqAndTitle.match(/فيلم|فيديو|مقطع|video|film|movie|סרטון/i);
     const isRiddleRequested = reqAndTitle.match(/أحجية|احجية|لغز|فزورة|غموض|riddle|mystery|חידה/i);
     const isPuzzleRequested = reqAndTitle.match(/بازل|puzzle|ترتيب|تركيب|jigsaw|פאזל/i);
 
     // 1. Language Sanitization on Lesson-Level Fields
+    lesson.title = lesson.title || lesson.lessonTitle || safeTitle;
+    lesson.lessonTitle = lesson.title;
     lesson.subject = lesson.subject || safeSubject;
     lesson.language = targetLang;
+    lesson.meaningPath = safeMeaningPath;
+    lesson.udlOptions = safeUdlList;
+
+    if (safeCustomObjective) {
+      lesson.objective = safeCustomObjective;
+    }
+    if (safeCustomCriteria) {
+      lesson.successCriteria = safeCustomCriteria;
+    }
 
     if (targetLang === 'hebrew') {
       if (!lesson.objective || /[\u0600-\u06FF]/.test(lesson.objective)) {
@@ -3300,6 +3514,15 @@ ${genreDirective}
       if (!lesson.successCriteria || /[\u0600-\u06FF]/.test(lesson.successCriteria)) {
         lesson.successCriteria = `Successful completion of tiered practice tasks, text evidence demonstration, and reflective exit ticket response.`;
       }
+    }
+    lesson.learningGoal = lesson.objective;
+
+    if (!lesson.refreshActivity || !String(lesson.refreshActivity).trim()) {
+      lesson.refreshActivity = targetLang === 'hebrew'
+        ? `⚡ זמן להתרענן (60 שניות)! עמדו ליד הכיסא, קחו נשימה עמוקה במשך 5 שניות, מתחו ידיים למעלה וציירו באוויר עם האצבע מילת מפתח אחת שלמדתם בשיעור (${safeTitle})! 🌟🧘‍♂️`
+        : targetLang === 'english'
+        ? `⚡ Refresh Time (60 Seconds)! Stand up, take a deep breath for 5 seconds, stretch your arms high, and draw the main concept of (${safeTitle}) in the air with your finger! 🌟🧘‍♂️`
+        : `⚡ وقت الانتعاش وتنشيط الدماغ (٦٠ ثانية)! قف مكانك بنشاط، خذ نفساً عميقاً لمدة ٥ ثوانٍ، مدّ ذراعيك للأعلى، ثم ارسم في الهواء بإصبعك رمزاً أو كلمة مفتاحية تعبّر عن درس (${safeTitle})! 🌟🧘‍♂️`;
     }
 
     const hook = lesson.stations['1_hook'];
