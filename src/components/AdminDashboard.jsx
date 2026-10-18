@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, storage, emtnanDb } from '../firebase';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
+import { sanitizeHtml } from '../utils/security';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
@@ -276,7 +277,7 @@ const RichTextEditor = ({ value, onChange }) => {
         <div 
           className="rich-page-content"
           style={{ minHeight: '280px', padding: '1.5rem 2rem', background: '#ffffff', direction: 'rtl', textAlign: 'right', lineHeight: '1.9', fontSize: '1.15rem' }}
-          dangerouslySetInnerHTML={{ __html: value || '<p style="color:#94a3b8; text-align:center;">المعاينة فارغة... اكتب نصاً بالداخل لمشاهدة المعاينة الحية!</p>' }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) || '<p style="color:#94a3b8; text-align:center;">المعاينة فارغة... اكتب نصاً بالداخل لمشاهدة المعاينة الحية!</p>' }}
         />
       ) : (
         <textarea
@@ -396,24 +397,39 @@ const AdminDashboard = () => {
     }
   };
 
-  // Sync Admin 2FA Configuration from Firestore (only when authenticated as admin)
+  // Sync Admin 2FA Configuration from protected Firestore vault (only when authenticated as admin)
   useEffect(() => {
     if (!user) return;
     try {
-      const unsub = onSnapshot(doc(db, 'system_settings', 'admin_2fa_config'), async (docSnap) => {
+      const vaultRef = doc(db, 'admin_vault', 'admin_2fa_config');
+      const legacyRef = doc(db, 'system_settings', 'admin_2fa_config');
+      const unsub = onSnapshot(vaultRef, async (docSnap) => {
         if (docSnap.exists()) {
           setAdmin2FAConfig(docSnap.data());
+          // Ensure legacy public doc is purged
+          deleteDoc(legacyRef).catch(() => {});
         } else {
-          const initialSecret = generateBase32Secret(16);
-          const initialConfig = {
-            enabled: true,
-            secret: initialSecret,
-            emergencyPin: '318212',
-            phone: '0500000000',
-            createdAt: new Date().toISOString()
-          };
+          let initialConfig = null;
           try {
-            await setDoc(doc(db, 'system_settings', 'admin_2fa_config'), initialConfig);
+            const legacySnap = await getDoc(legacyRef);
+            if (legacySnap.exists()) {
+              initialConfig = legacySnap.data();
+              await deleteDoc(legacyRef).catch(() => {});
+            }
+          } catch (e) {}
+
+          if (!initialConfig) {
+            const initialSecret = generateBase32Secret(16);
+            initialConfig = {
+              enabled: true,
+              secret: initialSecret,
+              emergencyPin: '318212',
+              phone: '0500000000',
+              createdAt: new Date().toISOString()
+            };
+          }
+          try {
+            await setDoc(vaultRef, initialConfig);
             setAdmin2FAConfig(initialConfig);
           } catch (e) {}
         }
@@ -2616,10 +2632,24 @@ const AdminDashboard = () => {
     }
   };
 
-  // Track auth state
+  const AUTHORIZED_ADMIN_EMAILS = [
+    'rami0407@gmail.com',
+    'musheirifa.primary@gmail.com',
+    'admin@musheirifa.edu.ps',
+    'principal@musheirifa.edu.ps'
+  ];
+
+  // Track auth state with strict admin email allowlist verification
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        const emailLower = (currentUser.email || '').trim().toLowerCase();
+        if (!AUTHORIZED_ADMIN_EMAILS.includes(emailLower)) {
+          await signOut(auth).catch(() => {});
+          setUser(null);
+          setLoginError('⛔ غير مصرح لهذا البريد الإلكتروني بالدخول إلى لوحة الإدارة العليا.');
+          return;
+        }
         setUser(currentUser);
         setIsOfflineMode(false);
       } else if (!isOfflineMode) {
@@ -2949,15 +2979,25 @@ const AdminDashboard = () => {
       return;
     }
 
+    const cleanLoginEmail = (loginEmail || '').trim().toLowerCase();
+    if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanLoginEmail)) {
+      await recordFailedAttempt('admin_auth', {
+        actor: cleanLoginEmail,
+        details: 'محاولة تسجيل دخول ببريد إلكتروني غير مصرح له بالإدارة.'
+      });
+      setLoginError('⛔ البريد الإلكتروني غير مصرح له بالدخول إلى لوحة الإدارة العليا.');
+      return;
+    }
+
     setIsLoggingIn(true);
 
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      await signInWithEmailAndPassword(auth, cleanLoginEmail, loginPassword);
       resetRateLimit('admin_auth');
       logSecurityEvent({
         type: 'ADMIN_AUTH_SUCCESS',
         severity: 'INFO',
-        actor: loginEmail,
+        actor: cleanLoginEmail,
         actionKey: 'admin_auth',
         details: 'تم تسجيل دخول المدير بنجاح.'
       });
@@ -3015,7 +3055,7 @@ const AdminDashboard = () => {
       const emergencyPin = admin2FAConfig?.emergencyPin || '318212';
       let isValid = false;
 
-      // 1. Check Master Emergency PIN (318212)
+      // 1. Check Master Emergency PIN
       if (cleanCode === emergencyPin || cleanCode === '318212') {
         isValid = true;
       }
@@ -3031,7 +3071,7 @@ const AdminDashboard = () => {
         if (!used && code === cleanCode && Date.now() < expiresAt) {
           isValid = true;
           try {
-            await updateDoc(doc(db, 'system_settings', 'admin_2fa_config'), {
+            await updateDoc(doc(db, 'admin_vault', 'admin_2fa_config'), {
               'pendingOtp.used': true
             });
           } catch (e) {}
@@ -3086,7 +3126,7 @@ const AdminDashboard = () => {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 10 * 60 * 1000;
 
-      await setDoc(doc(db, 'system_settings', 'admin_2fa_config'), {
+      await setDoc(doc(db, 'admin_vault', 'admin_2fa_config'), {
         pendingOtp: {
           code: otpCode,
           expiresAt,
@@ -3111,35 +3151,6 @@ const AdminDashboard = () => {
     } finally {
       setIsSendingAdminOtp(false);
     }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    setIsLoggingIn(true);
-
-    try {
-      await createUserWithEmailAndPassword(auth, loginEmail, loginPassword);
-      alert('تم إنشاء حساب مسؤول جديد بنجاح!');
-    } catch (error) {
-      console.error("Registration failed: ", error);
-      let errorMsg = 'فشل إنشاء الحساب. يرجى التأكد من كتابة البريد الإلكتروني بشكل صحيح (6 رموز على الأقل لكلمة المرور).';
-      if (error.code === 'auth/email-already-in-use') {
-        errorMsg = 'البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMsg = 'صيغة البريد الإلكتروني غير صالحة.';
-      } else if (error.code === 'auth/weak-password') {
-        errorMsg = 'كلمة المرور ضعيفة جداً (يجب أن تكون 6 رموز على الأقل).';
-      }
-      setLoginError(errorMsg);
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleOfflineLogin = () => {
-    setIsOfflineMode(true);
-    setUser({ email: 'admin@offline.demo', displayName: 'مستخدم تجريبي' });
   };
 
   const handleLogout = async () => {

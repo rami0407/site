@@ -10,15 +10,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 👑 قفل الإدارة العليا: محصور حصراً بإيميلات المدير المعتمدة
+    // 👑 قفل الإدارة العليا: محصور حصراً بإيميلات المدير المعتمدة فقط بدون أي تعبيرات عامة
     function isSuperAdmin() {
       return request.auth != null && (
         request.auth.token.email == 'rami0407@gmail.com' ||
         request.auth.token.email == 'musheirifa.primary@gmail.com' ||
         request.auth.token.email == 'admin@musheirifa.edu.ps' ||
-        request.auth.token.email == 'principal@musheirifa.edu.ps' ||
-        request.auth.token.email.matches('.*@musheirifa\\.edu.*') ||
-        request.auth.token.email.matches('rami.*@gmail\\.com')
+        request.auth.token.email == 'principal@musheirifa.edu.ps'
       );
     }
 
@@ -314,12 +312,15 @@ service cloud.firestore {
                     && isValidString(request.resource.data.details, 2, 1200);
       allow read, update, delete: if isSuperAdmin();
     }
+    match /admin_vault/{docId} {
+      allow read, write: if isSuperAdmin();
+    }
     match /system_security/{docId} {
       allow read: if isTeacher() || isGuard() || isSuperAdmin();
       allow write: if isSuperAdmin();
     }
     match /system_settings/{docId} {
-      allow read: if isSuperAdmin() || (docId != 'admin_2fa_config');
+      allow read: if isSuperAdmin() || (docId != 'admin_2fa_config' && docId != 'guard_config');
       allow write: if isSuperAdmin();
     }
 
@@ -353,7 +354,7 @@ service cloud.firestore {
     }
     match /school_padlet_cards/{docId} {
       allow read, create: if true;
-      allow update: if true;
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy', 'comments']));
       allow delete: if isSuperAdmin();
     }
 
