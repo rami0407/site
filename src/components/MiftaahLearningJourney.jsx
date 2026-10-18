@@ -7,6 +7,10 @@ import {
   evaluateMiftaahExitTicketAI
 } from '../utils/aiService';
 import {
+  exportLessonPlanToWord,
+  exportLessonPlanToPdf
+} from '../utils/lessonPlanExport';
+import {
   getAllTeachers,
   getTeacherById,
   findTeacherByEmail,
@@ -2467,6 +2471,127 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       setActiveLesson(updated[0] || normalizeMiftaahLesson(DEFAULT_EXEMPLAR_LESSON));
     }
     showToast('تم حذف الحصة بنجاح 🗑️');
+  };
+
+  // Build rich export payload for Word (.doc) and PDF from any Miftaah lesson
+  const buildMiftaahExportPayload = (targetLesson = activeLesson) => {
+    const lesson = normalizeMiftaahLesson(targetLesson || activeLesson);
+    const st1 = lesson.stations?.['1_hook'] || {};
+    const st2 = lesson.stations?.['2_understanding'] || {};
+    const st3 = lesson.stations?.['3_practice'] || {};
+    const st4 = lesson.stations?.['4_evidence'] || {};
+    const st5 = lesson.stations?.['5_harvest'] || {};
+
+    const mText = [
+      st1.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st1.teacherScript}` : '',
+      st1.studentPrompt ? `🎯 مهمة الطالب:\n${st1.studentPrompt}` : '',
+      st1.hookStoryOrScenario ? `📖 القصة / الظاهرة المشوّقة:\n${st1.hookStoryOrScenario}` : '',
+      st1.curiosityQuestion ? `❓ سؤال الفضول:\n${st1.curiosityQuestion}` : '',
+      Array.isArray(st1.helperWords) && st1.helperWords.length ? `💡 كلمات مفتاحية مساعدة: ${st1.helperWords.join(' ، ')}` : '',
+      st1.scaffold ? `🗝️ سقالة المساندة (UDL): ${st1.scaffold}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    const fCardsText = Array.isArray(st2.explanationCards) && st2.explanationCards.length
+      ? '🧩 بطاقات بناء المعنى المتدرجة:\n' + st2.explanationCards.map((c, i) => `${i + 1}. ${c.title}: ${c.content}${c.example ? ` (مثال: ${c.example})` : ''}`).join('\n')
+      : '';
+    const fCfuText = st2.checkForUnderstanding?.question
+      ? `⚡ فحص فهم سريع: ${st2.checkForUnderstanding.question}\nالخيارات: ${(st2.checkForUnderstanding.options || []).join(' | ')}`
+      : '';
+
+    const fText = [
+      st2.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st2.teacherScript}` : '',
+      st2.studentPrompt ? `📖 العرض ومحتوى الفهم:\n${st2.studentPrompt}` : '',
+      fCardsText,
+      Array.isArray(st2.conceptMapKeywords) && st2.conceptMapKeywords.length ? `🗺️ خارطة المفاهيم: ${st2.conceptMapKeywords.join(' ⟷ ')}` : '',
+      fCfuText,
+      st2.scaffold ? `🗝️ سقالة المساندة (UDL): ${st2.scaffold}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    const tTasksText = Array.isArray(st3.tasks) && st3.tasks.length
+      ? '⚖️ المهام المتمايزة حسب المستويات:\n' + st3.tasks.map(t => `• [${t.badge || t.tier}]: ${t.task}`).join('\n')
+      : '';
+    const tDeepText = st3.deepChallenge?.scenario
+      ? `🚀 تحدي التعمق (اكتشف الخطأ): ${st3.deepChallenge.scenario}`
+      : '';
+
+    const tText = [
+      st3.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st3.teacherScript}` : '',
+      st3.studentPrompt ? `🛠️ المهمة الأساسية المشتركة:\n${st3.studentPrompt}` : '',
+      tTasksText,
+      tDeepText,
+      st3.scaffold ? `🗝️ سقالة المساندة (פיגום): ${st3.scaffold}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    const supportKitText = st4.supportGroupKitForTeacher?.alternativeExplanation
+      ? `🛠️ حقيبة مجموعة الدعم المؤقتة والمرنة (للمعلم):\n• شرح بديل مبسط: ${st4.supportGroupKitForTeacher.alternativeExplanation}\n• سؤال تحقق موازٍ: ${st4.supportGroupKitForTeacher.parallelFollowUpQuestion || ''}`
+      : '';
+
+    const aText = [
+      st4.criterion ? `✅ معيار التحقق من الفهم: ${st4.criterion}` : '',
+      st4.exitTicketQuestion || st4.studentPrompt ? `🔎 سؤال بطاقة الخروج التكوينية الفردية:\n${st4.exitTicketQuestion || st4.studentPrompt}` : '',
+      Array.isArray(st4.sentenceStartersForUDL) && st4.sentenceStartersForUDL.length ? `✍️ بدايات جمل مساعدة (UDL): ${st4.sentenceStartersForUDL.join(' | ')}` : '',
+      supportKitText
+    ].filter(Boolean).join('\n\n');
+
+    const hExitText = st5.exitTicket
+      ? `🎫 أسئلة الحصاد ونقل الأثر:\n١. ${st5.exitTicket.q1 || ''}\n٢. ${st5.exitTicket.q2 || ''}\n٣. ${st5.exitTicket.q3 || ''}\n٤. ${st5.exitTicket.q4_transfer || ''}`
+      : '';
+
+    const hText = [
+      st5.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st5.teacherScript}` : '',
+      st5.studentPrompt ? `🎒 مهمة الحصاد والتأمل:\n${st5.studentPrompt}` : '',
+      hExitText,
+      st5.transferTask ? `🌱 مهمة نقل الأثر للحياة اليومية: ${st5.transferTask}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    const isHeb = lesson.language === 'hebrew' || /[\u0590-\u05FF]/.test(lesson.title || '');
+    const combinedObjective = [
+      lesson.objective || '',
+      lesson.successCriteria ? `معيار النجاح: ${lesson.successCriteria}` : '',
+      lesson.refreshActivity ? `⚡ نشاط وقت الانتعاش (60 ثانية): ${lesson.refreshActivity}` : '',
+      lesson.code || lesson.pin ? `🔑 كود دخول الطلاب (PIN): ${lesson.code || lesson.pin}` : ''
+    ].filter(Boolean).join(' | ');
+
+    return {
+      subject: lesson.subject || 'عام',
+      grade: lesson.grade || 'المرحلة الابتدائية',
+      title: lesson.title || 'درس مِفتاح تفاعلي',
+      objective: combinedObjective,
+      duration: 45,
+      stations: {
+        m: mText,
+        f: fText,
+        t: tText,
+        a: aText,
+        y: aText,
+        h: hText
+      },
+      teacherName: lesson.authorName || authenticatedTeacher?.nameAr || 'معلم/ة المدرسة',
+      date: new Date().toLocaleDateString('ar-EG'),
+      language: isHeb ? 'he' : 'ar'
+    };
+  };
+
+  const handleExportLessonWord = (targetLesson = activeLesson) => {
+    try {
+      const payload = buildMiftaahExportPayload(targetLesson);
+      exportLessonPlanToWord(payload);
+      showToast(`تم تنزيل الدرس [${payload.title}] كملف وورد (Word .doc) بنجاح! 📄✨`);
+    } catch (err) {
+      console.error('Word export error:', err);
+      showToast('حدث خطأ أثناء تصدير ملف الوورد.');
+    }
+  };
+
+  const handleExportLessonPdf = (targetLesson = activeLesson) => {
+    try {
+      const payload = buildMiftaahExportPayload(targetLesson);
+      exportLessonPlanToPdf(payload);
+      showToast(`جاري فتح نافذة حفظ وطباعة الدرس [${payload.title}] كملف PDF... 🖨️📄`);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('حدث خطأ أثناء تصدير ملف PDF.');
+    }
   };
 
   // Open lesson in Creator for editing
@@ -4968,6 +5093,48 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 <i className="fas fa-play-circle"></i> بدء الحصة 🚀
                               </button>
 
+                              <button
+                                type="button"
+                                onClick={() => handleExportLessonWord(lesson)}
+                                title="تنزيل الدرس كملف وورد (Word .doc)"
+                                style={{
+                                  background: '#1d4ed8',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '6px 10px',
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className="fas fa-file-word"></i> وورد Word
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleExportLessonPdf(lesson)}
+                                title="تنزيل أو طباعة الدرس كملف PDF"
+                                style={{
+                                  background: '#dc2626',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '6px 10px',
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className="fas fa-file-pdf"></i> PDF
+                              </button>
+
                               {!isTemplate && (
                                 <button
                                   type="button"
@@ -5160,6 +5327,46 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 title="بدء جلسة الصف المباشرة بهذه الحصة"
                               >
                                 <i className="fas fa-play"></i> إطلاق بالصف 🚀
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExportLessonWord(lesson)}
+                                title="تنزيل الدرس كملف وورد (Word .doc)"
+                                style={{
+                                  background: '#1d4ed8',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '6px 10px',
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className="fas fa-file-word"></i> وورد
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExportLessonPdf(lesson)}
+                                title="تنزيل أو طباعة الدرس كملف PDF"
+                                style={{
+                                  background: '#dc2626',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '6px 10px',
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className="fas fa-file-pdf"></i> PDF
                               </button>
                               <button
                                 type="button"
@@ -5384,6 +5591,48 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       title="حفظ الحصة الحالية في مكتبتك ومزامنتها سحابياً"
                     >
                       <i className="fas fa-save"></i> حفظ في مكتبتي 💾
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExportLessonWord(activeLesson)}
+                      title="تنزيل الدرس كاملاً بمحطاته الخمس كملف وورد (Word .doc)"
+                      style={{
+                        background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 12px rgba(29, 78, 216, 0.25)'
+                      }}
+                    >
+                      <i className="fas fa-file-word"></i> تنزيل وورد (Word) 📄
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExportLessonPdf(activeLesson)}
+                      title="تنزيل أو طباعة الدرس كاملاً بمحطاته الخمس كملف PDF"
+                      style={{
+                        background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)'
+                      }}
+                    >
+                      <i className="fas fa-file-pdf"></i> تنزيل PDF 📕
                     </button>
                     <button
                       type="button"
@@ -6323,6 +6572,48 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   }}
                 >
                   <i className="fas fa-check-circle"></i> ✅ اعتماد وحفظ الدرس (توليد/تثبيت رمز PIN: {activeLesson.code || activeLesson.pin || sessionState.pin})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportLessonWord(activeLesson)}
+                  title="تنزيل الدرس كاملاً بمحطاته الخمس كملف وورد (Word .doc)"
+                  style={{
+                    background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '9px 14px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <i className="fas fa-file-word"></i> تنزيل وورد (Word) 📄
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportLessonPdf(activeLesson)}
+                  title="تنزيل أو طباعة الدرس كاملاً بمحطاته الخمس كملف PDF"
+                  style={{
+                    background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '9px 14px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <i className="fas fa-file-pdf"></i> تنزيل PDF 📕
                 </button>
 
                 <button
