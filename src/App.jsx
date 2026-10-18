@@ -63,6 +63,7 @@ const EduStaffingPortal = lazyWithRetry(() => import('./components/EduStaffingPo
 const ScientificResearchQuest = lazyWithRetry(() => import('./components/ScientificResearchQuest'));
 const MafatihPedagogyPage = lazyWithRetry(() => import('./components/MafatihPedagogyPage'));
 const MafatihWhiteboardPage = lazyWithRetry(() => import('./components/MafatihWhiteboardPage'));
+const MafatihObservationRubricPage = lazyWithRetry(() => import('./components/MafatihObservationRubricPage'));
 const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
@@ -390,6 +391,20 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <ScientificResearchQuest />
+      </Suspense>
+    );
+  }
+
+  const isMafatihObservationRubricView = currentHash.includes('observation-rubric') || 
+                                           currentHash.includes('rubric-hebrew') || 
+                                           currentHash.includes('hebrew-rubric') || 
+                                           currentHash.includes('mafatih-rubric') ||
+                                           currentHash.includes('miftaah-rubric');
+
+  if (isMafatihObservationRubricView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <MafatihObservationRubricPage />
       </Suspense>
     );
   }

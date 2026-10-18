@@ -7,6 +7,7 @@ import { fetchSharedLessonPlans, saveLessonPlanToSharedLibrary, updateLessonPlan
 import MafatihTeacherCompanion from './MafatihTeacherCompanion';
 import MiftaahLearningJourney from './MiftaahLearningJourney';
 import MafatihWhiteboardPage from './MafatihWhiteboardPage';
+import MafatihObservationRubricPage from './MafatihObservationRubricPage';
 import './MafatihPedagogyPage.css';
 
 export const MIFTAAH_PRINCIPLES = [
@@ -402,6 +403,7 @@ const STANDARD_GRADE_OPTIONS = [
 const MafatihPedagogyPage = () => {
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash || '';
+    if (hash.includes('observation-rubric') || hash.includes('rubric-hebrew') || hash.includes('hebrew-rubric') || hash.includes('mafatih-rubric')) return 'observation-rubric';
     if (hash.includes('whiteboard') || hash.includes('video') || hash.includes('board')) return 'whiteboard';
     if (hash.includes('stations')) return 'stations';
     if (hash.includes('ruler')) return 'ruler';
@@ -1537,6 +1539,26 @@ ${p.stations?.h || ''}
             >
               <i className="fas fa-play-circle"></i> 🎬 סרטון לוח לבן (עברית)
             </button>
+            <button 
+              className="action-btn doc-hero-btn rubric-hero-btn"
+              onClick={() => {
+                setActiveTab('observation-rubric');
+                setTimeout(() => {
+                  const el = document.getElementById('mafatih-rubric-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                color: '#f8fafc',
+                border: '1px solid rgba(52, 211, 153, 0.4)',
+                boxShadow: '0 4px 15px rgba(5, 150, 105, 0.35)',
+                fontWeight: '700'
+              }}
+              title="מחוון לתכנון ולתצפית פדגוגית מקדמת למידה ברוח מודל מפתי&quot;ח"
+            >
+              <i className="fas fa-clipboard-check"></i> 📋 מחוון לתכנון ותצפית (עברית)
+            </button>
           </div>
         </div>
       </header>
@@ -1642,6 +1664,23 @@ ${p.stations?.h || ''}
             }}
           >
             <i className="fas fa-chalkboard"></i> 🎬 סרטון לוח לבן (עברית)
+          </button>
+          <button 
+            className={`tab-btn doc-nav-tab ${activeTab === 'observation-rubric' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('observation-rubric');
+              setTimeout(() => {
+                const el = document.getElementById('mafatih-rubric-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+            style={{
+              borderColor: activeTab === 'observation-rubric' ? '#10b981' : undefined,
+              fontWeight: activeTab === 'observation-rubric' ? '800' : '600',
+              background: activeTab === 'observation-rubric' ? 'rgba(16, 185, 129, 0.15)' : undefined
+            }}
+          >
+            <i className="fas fa-clipboard-list"></i> 📋 מחוון לתכנון ותצפית (עברית)
           </button>
         </div>
       </nav>
@@ -5028,6 +5067,12 @@ ${p.stations?.h || ''}
             </div>
 
             <MafatihWhiteboardPage isEmbedded={true} onBack={() => setActiveTab('stations')} />
+          </section>
+        )}
+
+        {activeTab === 'observation-rubric' && (
+          <section className="rubric-embed-section fade-in" id="mafatih-rubric-section" dir="rtl" style={{ margin: '1rem 0 3rem' }}>
+            <MafatihObservationRubricPage isEmbedded={true} onBack={() => setActiveTab('stations')} />
           </section>
         )}
 </main>
