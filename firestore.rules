@@ -319,7 +319,7 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
     match /system_settings/{docId} {
-      allow read: if true;
+      allow read: if isSuperAdmin() || (docId != 'admin_2fa_config');
       allow write: if isSuperAdmin();
     }
 

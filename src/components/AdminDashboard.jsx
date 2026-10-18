@@ -396,8 +396,9 @@ const AdminDashboard = () => {
     }
   };
 
-  // Sync Admin 2FA Configuration from Firestore
+  // Sync Admin 2FA Configuration from Firestore (only when authenticated as admin)
   useEffect(() => {
+    if (!user) return;
     try {
       const unsub = onSnapshot(doc(db, 'system_settings', 'admin_2fa_config'), async (docSnap) => {
         if (docSnap.exists()) {
@@ -416,10 +417,12 @@ const AdminDashboard = () => {
             setAdmin2FAConfig(initialConfig);
           } catch (e) {}
         }
+      }, (err) => {
+        console.warn('2FA config sync notice:', err.message);
       });
       return () => unsub();
     } catch (e) {}
-  }, []);
+  }, [user]);
 
   const [autoAddToNav, setAutoAddToNav] = useState(true);
 
