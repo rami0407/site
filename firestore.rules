@@ -120,17 +120,30 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
     match /display_board/{docId} {
-      allow read: if true;
-      allow write: if isSuperAdmin();
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
     }
+    match /displayBoard/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 🔑 منظومة وموديل مفاتيـ"ح (Mafatih & Miftaah AI)
     match /mafatihLessonPlans/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin() || isTeacher();
+    }
+    match /miftaah_lessons/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin() || isTeacher();
+    }
+    match /miftaah_meta/{docId} {
       allow read: if true;
-      allow create: if true;
-      allow update, delete: if isSuperAdmin() || isTeacher();
+      allow write: if isSuperAdmin() || isTeacher();
     }
 
     // ==========================================
-    // 3. الطاقم والمعلمين
+    // 3. الطاقم والمعلمين ومنصة الخدمات
     // ==========================================
 
     match /teachers/{docId} {
@@ -149,6 +162,18 @@ service cloud.firestore {
       allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == docId) || isTeacher();
       allow update: if isSuperAdmin() || (isTeacher() && request.auth.uid == docId);
       allow create, delete: if isSuperAdmin();
+    }
+    match /service_platform_teachers/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /service_platform_jobs/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /service_platform_programs/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
     }
 
     // ==========================================
@@ -180,12 +205,16 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 5. الاستطلاعات والمشاركات
+    // 5. الاستطلاعات والمشاركات وبريد السعادة
     // ==========================================
 
     match /parent_polls/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
+    }
+    match /parent_poll_responses/{docId} {
+      allow read, create: if true;
+      allow update, delete: if isSuperAdmin();
     }
     match /school_surveys/{docId} {
       allow read: if true;
@@ -194,6 +223,10 @@ service cloud.firestore {
     match /survey_responses/{docId} {
       allow create: if true;
       allow read, update, delete: if isSuperAdmin();
+    }
+    match /happiness_mail_cards/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
     }
 
     // ==========================================
@@ -206,11 +239,12 @@ service cloud.firestore {
     }
     match /scientific_articles/{document=**} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'likes', 'likedBy']));
     }
 
     // ==========================================
-    // 7. أنشطة الطلاب التفاعلية والركن التعليمي
+    // 7. أنشطة الطلاب التفاعلية والركن التعليمي والمناظرات
     // ==========================================
 
     match /prep_drawings/{docId} {
@@ -234,10 +268,33 @@ service cloud.firestore {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
-    match /students/{docId} {
+    match /world_ideas_config/{docId} {
       allow read: if true;
-      allow create: if true;
-      allow update, delete: if isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+    match /debate_topics/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /debate_comments/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /learning_corner_students/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /math_championship_scores/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /vocab_students/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /students/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
     }
     match /stars/{docId} {
       allow read: if true;
@@ -279,10 +336,6 @@ service cloud.firestore {
     match /family_hall_of_fame/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
-    }
-    match /service_platform_teachers/{docId} {
-      allow read, create: if true;
-      allow update, delete: if isSuperAdmin();
     }
 
     // 📢 منظومة إشعارات المدرسة للهواتف
@@ -346,15 +399,14 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 8.5 📌 بادليت مدرسة مشيرفة التفاعلي (Padlet)
+    // 8.5 📌 بادليت مدرسة مشيرفة التفاعلي ومزامنة الجلسات الحية لمفاتيـ"ح
     // ==========================================
     match /school_padlet_topics/{docId} {
       allow read, create: if true;
       allow update, delete: if isSuperAdmin();
     }
     match /school_padlet_cards/{docId} {
-      allow read, create: if true;
-      allow update: if isSuperAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy', 'comments']));
+      allow read, create, update: if true;
       allow delete: if isSuperAdmin();
     }
 
