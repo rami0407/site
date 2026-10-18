@@ -6261,6 +6261,8 @@
   flex-direction: column;
   transition: all 0.25s ease;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .lesson-library-card:hover {
@@ -6361,20 +6363,75 @@
 .lesson-card-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lesson-card-export-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  box-sizing: border-box;
+}
+
+.btn-card-export-word,
+.btn-card-export-pdf {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.btn-card-export-word {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1.5px solid #bfdbfe;
+}
+
+.btn-card-export-word:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.btn-card-export-pdf {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+}
+
+.btn-card-export-pdf:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
 }
 
 .btn-action-edit {
-  flex: 1;
+  flex: 1 1 110px;
   background: #eff6ff;
   color: #0284c7;
   border: 1.5px solid #bae6fd;
   border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 0.86rem;
+  padding: 8px 10px;
+  font-size: 0.82rem;
   font-weight: 800;
   font-family: inherit;
   cursor: pointer;
@@ -6391,17 +6448,19 @@
 }
 
 .btn-action-launch {
+  flex: 1 1 100px;
   background: #10b981;
   color: #ffffff;
   border: none;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 0.86rem;
+  padding: 8px 12px;
+  font-size: 0.82rem;
   font-weight: 800;
   font-family: inherit;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   transition: all 0.2s ease;
 }
@@ -6418,6 +6477,7 @@
   border-radius: 10px;
   width: 36px;
   height: 36px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -5093,48 +5093,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 <i className="fas fa-play-circle"></i> بدء الحصة 🚀
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleExportLessonWord(lesson)}
-                                title="تنزيل الدرس كملف وورد (Word .doc)"
-                                style={{
-                                  background: '#1d4ed8',
-                                  color: '#ffffff',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  padding: '6px 10px',
-                                  fontWeight: 700,
-                                  fontSize: '0.78rem',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
-                              >
-                                <i className="fas fa-file-word"></i> وورد Word
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleExportLessonPdf(lesson)}
-                                title="تنزيل أو طباعة الدرس كملف PDF"
-                                style={{
-                                  background: '#dc2626',
-                                  color: '#ffffff',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  padding: '6px 10px',
-                                  fontWeight: 700,
-                                  fontSize: '0.78rem',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
-                              >
-                                <i className="fas fa-file-pdf"></i> PDF
-                              </button>
-
                               {!isTemplate && (
                                 <button
                                   type="button"
@@ -5145,6 +5103,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                   <i className="fas fa-trash-alt"></i>
                                 </button>
                               )}
+                            </div>
+
+                            {/* Dedicated Export Row inside the card frame */}
+                            <div className="lesson-card-export-row">
+                              <button
+                                type="button"
+                                className="btn-card-export-word"
+                                onClick={() => handleExportLessonWord(lesson)}
+                                title="تنزيل الدرس كملف وورد (Word .doc)"
+                              >
+                                <i className="fas fa-file-word"></i> تنزيل وورد (Word)
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-card-export-pdf"
+                                onClick={() => handleExportLessonPdf(lesson)}
+                                title="تنزيل أو طباعة الدرس كملف PDF"
+                              >
+                                <i className="fas fa-file-pdf"></i> تنزيل PDF
+                              </button>
                             </div>
                           </div>
                         );
@@ -5330,46 +5308,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleExportLessonWord(lesson)}
-                                title="تنزيل الدرس كملف وورد (Word .doc)"
-                                style={{
-                                  background: '#1d4ed8',
-                                  color: '#ffffff',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  padding: '6px 10px',
-                                  fontWeight: 700,
-                                  fontSize: '0.78rem',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
-                              >
-                                <i className="fas fa-file-word"></i> وورد
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleExportLessonPdf(lesson)}
-                                title="تنزيل أو طباعة الدرس كملف PDF"
-                                style={{
-                                  background: '#dc2626',
-                                  color: '#ffffff',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  padding: '6px 10px',
-                                  fontWeight: 700,
-                                  fontSize: '0.78rem',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
-                              >
-                                <i className="fas fa-file-pdf"></i> PDF
-                              </button>
-                              <button
-                                type="button"
                                 className="btn-action-copy"
                                 onClick={() => handleDuplicateLesson(lesson)}
                                 title="نسخ الحصة"
@@ -5386,6 +5324,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                   <i className="fas fa-trash-alt"></i>
                                 </button>
                               )}
+                            </div>
+
+                            {/* Dedicated Export Row inside the card frame */}
+                            <div className="lesson-card-export-row">
+                              <button
+                                type="button"
+                                className="btn-card-export-word"
+                                onClick={() => handleExportLessonWord(lesson)}
+                                title="تنزيل الدرس كملف وورد (Word .doc)"
+                              >
+                                <i className="fas fa-file-word"></i> تنزيل وورد (Word)
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-card-export-pdf"
+                                onClick={() => handleExportLessonPdf(lesson)}
+                                title="تنزيل أو طباعة الدرس كملف PDF"
+                              >
+                                <i className="fas fa-file-pdf"></i> تنزيل PDF
+                              </button>
                             </div>
                           </div>
                         );
