@@ -238,6 +238,135 @@ const MIFTAAH_STATION_MOTTOS = {
   }
 };
 
+// =========================================================================
+// 1.C MIFTAAH REFRESH & SURPRISE FLASHES BANK (بنك ومضات الانتعاش والمفاجآت المتنوعة)
+// =========================================================================
+const MIFTAAH_REFRESH_FLASHES_BANK = [
+  {
+    id: 'flash_freeze_statue',
+    category: 'surprise_game',
+    categoryLabel: '🎭 لعبة ومفاجأة حركية',
+    icon: '🥶🗿🎬',
+    title: 'مفاجأة التمثال المتجمّد! (Freeze)',
+    duration: 60,
+    text: 'تحرّك في مكانك بحرية لمدة ١٠ ثوانٍ، وعند الإشارة تجمّد فوراً في وضعية «تمثال مبتكر» يعبّر عن فكرة درسنا اليوم دون كلام! من صاحب أذكى تمثال؟ 🗿✨',
+    surpriseBonus: '🎁 تحدي المفاجأة: حاول تخمين ماذا يمثّل تمثال زميلك المجاور في ٥ ثوانٍ فقط!'
+  },
+  {
+    id: 'flash_radar_3things',
+    category: 'brain_teaser',
+    categoryLabel: '🕵️‍♂️ تحدي سرعة بديهة',
+    icon: '🕵️‍♂️🔍⚡',
+    title: 'ومضة الرادار الذكي (تحدي الـ ٣ أشياء!)',
+    duration: 60,
+    text: 'شغّل رادار الملاحظة الفائق! لديك ٦٠ ثانية لتكتشف حولك في الغرفة ٣ أشياء تبدأ بالحرف الأول من عنوان درسنا اليوم أو ترتبط بفكرته! 🕵️‍♂️🌟',
+    surpriseBonus: '🎁 مفاجأة الرادار: من استطاع إيجاد شيء رابع سري لم ينتبه له أحد؟ ارفع يدك بابتسامة!'
+  },
+  {
+    id: 'flash_air_drawing',
+    category: 'movement',
+    categoryLabel: '🎨 حركة وتنشيط الدماغ',
+    icon: '🎨☝️🌈',
+    title: 'ومضة الرسم السحري بكلتا اليدين!',
+    duration: 60,
+    text: 'قف مكانك، ارفع إصبع السبابة في يدك اليمنى ويدك اليسرى معاً، وارسم في الهواء رمزاً كبيراً أو كلمة مفتاحية من درسنا بكلتا اليدين في نفس الوقت لتنشيط فصّي الدماغ! 🧠✨',
+    surpriseBonus: '🌟 تحدي الأبطال المفاجئ: هل تستطيع رسم دائرة بيدك اليمنى ومربّع بيدك اليسرى في الهواء معاً؟ جربها الآن!'
+  },
+  {
+    id: 'flash_brain_riddle_echo',
+    category: 'brain_teaser',
+    categoryLabel: '🧩 لغز ومضة خاطفة',
+    icon: '🧩🎁💡',
+    title: 'مفاجأة اللغز الخاطف لكسر الجمود!',
+    duration: 60,
+    text: 'فكّر بسرعة خلال ٦٠ ثانية في هذا اللغز الذكي: «ما الشيء الذي يتحدث جميع لغات العالم بطلاقة، لكنه لا يملك لساناً ولا يفكر؟» 🤔 (اكشف المفاجأة بالأسفل بعد التفكير!)',
+    surpriseBonus: '🎉 الجواب المفاجئ هو: «صدى الصوت»! لأنه يعيد كل كلمة يسمعها بأي لغة كانت!'
+  },
+  {
+    id: 'flash_rhythm_clap',
+    category: 'movement',
+    categoryLabel: '🎵 إيقاع وطاقة',
+    icon: '👏🎵⚡',
+    title: 'ومضة موجة الإيقاع والطاقة!',
+    duration: 45,
+    text: 'لنصنع موجة طاقة! صفّق ببطء (١.. ٢..)، ثم المس كتفيك مرتين، ثم زد السرعة تدريجياً كقطار ينطلق، ثم توقف فجأة مع زفير عميق وابتسامة عريضة! 🚂👏',
+    surpriseBonus: '⚡ تحدي التناسق المفاجئ: المس رأسك بيدك اليمنى وبطنك بيدك اليسرى، ثم بدّل بينهما بسرعة ٣ مرات!'
+  },
+  {
+    id: 'flash_box_breathing',
+    category: 'mindfulness',
+    categoryLabel: '🧘‍♂️ تركيز وصفاء ذهني',
+    icon: '🧘‍♂️🌬️✨',
+    title: 'ومضة تنفّس الأبطال لتصفية الذهن',
+    duration: 60,
+    text: 'اجلس باستقامة وأغمض عينيك بهدوء: خذ شهيقاً عميقاً خلال ٤ ثوانٍ، احبس النفس ٤ ثوانٍ، أخرج الزفير ببطء خلال ٤ ثوانٍ، ثم افتح عينيك بطاقة متجددة وتركيز مضاعف! 🌿🧘‍♂️',
+    surpriseBonus: '✨ رسالة طاقة إيجابية: قل في سرك بثقة: «عقلي مستعد وذكي، وأنا قادر على إتقان تحديات هذا الدرس!»'
+  },
+  {
+    id: 'flash_mirror_partner',
+    category: 'pair_fun',
+    categoryLabel: '🪞 تفاعل مرح',
+    icon: '🪞🤸‍♂️😄',
+    title: 'ومضة المرآة الصامتة المرحة!',
+    duration: 60,
+    text: 'قف في مكانك: لمدة ٣٠ ثانية قم بعمل ٣ حركات صامتة ومرحة بيديك ووجهك، وعلى زميلك (أو تخيّل صورتك في المرآة) تقليدك بنفس اللحظة، ثم تبادلوا الأدوار! 😄🪞',
+    surpriseBonus: '🤝 تحية الطاقة: لوّح بيدك بتحية "High-Five" في الهواء لزملائك استعداداً للعودة للدرس بحماس!'
+  },
+  {
+    id: 'flash_jumping_energy',
+    category: 'movement',
+    categoryLabel: '🚀 نشاط بدني سريع',
+    icon: '🚀🤸‍♂️⚡',
+    title: 'ومضة قفزات الطاقة وقطف النجوم!',
+    duration: 60,
+    text: 'قف بجانب مقعدك، قم بـ ١٠ قفزات خفيفة على المكان، ثم مدّ ذراعيك عالياً نحو السقف كأنك تقطف نجمة مضيئة، وحرّك كتفيك بلطف لتجديد الدورة الدموية والنشاط الذهني! 🌟💪',
+    surpriseBonus: '🏆 معلومة مدهشة: ٢٠ ثانية من الحركة تضخ أكسجين إضافي للدماغ وتزيد سرعة التذكّر والانتباه!'
+  },
+  {
+    id: 'flash_brain_riddle_steps',
+    category: 'brain_teaser',
+    categoryLabel: '🧩 لغز ومفاجأة ذكية',
+    icon: '🕵️‍♀️🎁🌟',
+    title: 'لغز الومضة الذكية: كلما أخذت منه كَبُر!',
+    duration: 60,
+    text: 'تحدي الـ ٦٠ ثانية لتنشيط الذهن: «ما هو الشيء العجيب الذي كلما أخذت منه زاد حجمه وكَبُر، وكلما أضفت إليه صَغُر؟» 🤔 (اضغط زر كشف المفاجأة لتتأكد من إجابتك!)',
+    surpriseBonus: '🎉 الجواب المفاجئ هو: «الحفرة»! كلما أخذنا منها تراباً كَبُرت، وكلما أضفنا إليها صَغُرت!'
+  },
+  {
+    id: 'flash_backwards_challenge',
+    category: 'surprise_game',
+    categoryLabel: '🔄 تحدي تركيز سريع',
+    icon: '🔄🔢🧠',
+    title: 'مفاجأة العدّ العكسي والتركيز الفائق!',
+    duration: 45,
+    text: 'تحدي تنشيط الذاكرة السريعة: حاول العدّ عكسياً من ٢٠ إلى ١ في عقلك مع الفرقعة بأصابعك أو النقر الخفيف عند كل رقم زوجي، ثم اذكر أهم كلمة في درس اليوم! 🧠⚡',
+    surpriseBonus: '🎉 بطل التركيز! هذا التمرين ينشّط الفص الجبهي المسؤول عن الانتباه السريع وحل المشكلات!'
+  }
+];
+
+const getRefreshConfigFromLesson = (lesson) => {
+  const raw = lesson?.refreshConfig || {};
+  const defaultActivityText = lesson?.refreshActivity || 'قف مكانك، خذ ٣ أنفاس عميقة، حرّك كتفيك ويديك لمدة ٣٠ ثانية، ثم ابتسم واستعد للعودة إلى رحلة التعلّم بنشاط! 🌟';
+  const allBankIds = ['lesson_ai_flash', ...MIFTAAH_REFRESH_FLASHES_BANK.map(f => f.id)];
+  const customFlashes = Array.isArray(raw.teacherCustomFlashes) ? raw.teacherCustomFlashes : [];
+  const defaultPoolIds = [...allBankIds, ...customFlashes.map(f => f.id)];
+
+  return {
+    mode: raw.mode === 'single' ? 'single' : 'surprise', // Default to 'surprise' so flashes are diverse & surprising, or 'single' when teacher pins one
+    selectedFlashId: raw.selectedFlashId || 'lesson_ai_flash',
+    customTitle: raw.customTitle || 'ومضة الانتعاش الخاصة بالدرس',
+    customIcon: raw.customIcon || '⚡🧘‍♂️✨',
+    customCategoryLabel: raw.customCategoryLabel || '🌟 ومضة المعلم المخصصة',
+    customText: raw.customText !== undefined ? raw.customText : defaultActivityText,
+    customSurpriseBonus: raw.customSurpriseBonus !== undefined
+      ? raw.customSurpriseBonus
+      : '🎁 مفاجأة الومضة: شارك زميلك المجاور بكلمة واحدة تصف شعورك أو أهم فكرة لمعت في ذهنك الآن! 🌟',
+    durationSeconds: Number(raw.durationSeconds) > 0 ? Number(raw.durationSeconds) : 60,
+    enabledPoolIds: Array.isArray(raw.enabledPoolIds) && raw.enabledPoolIds.length > 0 ? raw.enabledPoolIds : defaultPoolIds,
+    teacherCustomFlashes: customFlashes
+  };
+};
+
 // NORMALIZATION: GUARANTEE EVERY STATION HAS RICH STUDENT PROMPT & GUIDANCE
 // =========================================================================
 const normalizeMiftaahLesson = (lesson) => {
@@ -266,6 +395,7 @@ const normalizeMiftaahLesson = (lesson) => {
       ? `⚡ Refresh Time (60 Seconds)! Stand up, take a deep breath for 5 seconds, stretch your arms high, and draw the main concept of (${safeTitle}) in the air with your finger! 🌟🧘‍♂️`
       : `⚡ وقت الانتعاش وتنشيط الدماغ (٦٠ ثانية)! قف مكانك بنشاط، خذ نفساً عميقاً لمدة ٥ ثوانٍ، مدّ ذراعيك للأعلى، ثم ارسم في الهواء بإصبعك رمزاً أو كلمة مفتاحية تعبّر عن درس (${safeTitle})! 🌟🧘‍♂️`;
   }
+  l.refreshConfig = getRefreshConfigFromLesson(l);
 
   // Auto-heal dead YouTube URLs and ensure youtubeSearchQuery, hookStoryOrScenario, curiosityQuestion, and helperWords exist
   if (l.stations) {
@@ -2026,6 +2156,18 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // 60-Second Refresh Time Modal State ("⚡ وقت الانتعاش! / זמן להתרענן!")
   const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
   const [refreshTimeLeft, setRefreshTimeLeft] = useState(60);
+  const [currentRefreshFlash, setCurrentRefreshFlash] = useState(null);
+  const [isRefreshSurpriseRevealed, setIsRefreshSurpriseRevealed] = useState(false);
+  const [isSpinningRefreshFlash, setIsSpinningRefreshFlash] = useState(false);
+  const [isCreatorRefreshPanelOpen, setIsCreatorRefreshPanelOpen] = useState(false);
+  const [isModalTeacherRefreshEditOpen, setIsModalTeacherRefreshEditOpen] = useState(false);
+  const [newCustomFlashDraft, setNewCustomFlashDraft] = useState({
+    title: '',
+    icon: '🎁🎉🤩',
+    text: '',
+    surpriseBonus: '',
+    duration: 60
+  });
 
   // Interactive Student Station Widget States
   const [st2CfuSelected, setSt2CfuSelected] = useState(null);
@@ -2397,9 +2539,166 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     return () => clearInterval(t);
   }, [isRefreshModalOpen, refreshTimeLeft]);
 
+  const getAllAvailableRefreshFlashes = (lesson = activeLesson) => {
+    const cfg = getRefreshConfigFromLesson(lesson);
+    const customLessonFlash = {
+      id: 'lesson_ai_flash',
+      category: 'lesson_custom',
+      categoryLabel: cfg.customCategoryLabel || '🌟 ومضة الدرس المخصصة',
+      icon: cfg.customIcon || '⚡🧘‍♂️✨',
+      title: cfg.customTitle || 'ومضة الانتعاش الخاصة بالدرس',
+      duration: cfg.durationSeconds || 60,
+      text: cfg.customText || lesson?.refreshActivity || 'قف مكانك، خذ ٣ أنفاس عميقة، حرّك كتفيك ويديك لمدة ٣٠ ثانية، ثم ابتسم واستعد للعودة إلى رحلة التعلّم بنشاط! 🌟',
+      surpriseBonus: cfg.customSurpriseBonus || ''
+    };
+    const teacherFlashes = Array.isArray(cfg.teacherCustomFlashes) ? cfg.teacherCustomFlashes : [];
+    return [customLessonFlash, ...teacherFlashes, ...MIFTAAH_REFRESH_FLASHES_BANK];
+  };
+
+  const resolveRefreshFlashForDisplay = (lesson = activeLesson, forceSurpriseDifferentFromId = null) => {
+    const cfg = getRefreshConfigFromLesson(lesson);
+    const allFlashes = getAllAvailableRefreshFlashes(lesson);
+
+    if (!forceSurpriseDifferentFromId && cfg.mode === 'single') {
+      const selected = allFlashes.find(f => f.id === cfg.selectedFlashId) || allFlashes[0];
+      return {
+        ...selected,
+        duration: cfg.durationSeconds || selected.duration || 60
+      };
+    }
+
+    const enabledPool = allFlashes.filter(f => cfg.enabledPoolIds.includes(f.id));
+    const pool = enabledPool.length > 0 ? enabledPool : allFlashes;
+    const candidates = (forceSurpriseDifferentFromId && pool.length > 1)
+      ? pool.filter(f => f.id !== forceSurpriseDifferentFromId)
+      : pool;
+    const randomPick = candidates[Math.floor(Math.random() * candidates.length)] || allFlashes[0];
+    return {
+      ...randomPick,
+      duration: randomPick.duration || cfg.durationSeconds || 60
+    };
+  };
+
+  const updateLessonRefreshConfig = (updaterFn, toastMsg = null) => {
+    const currentCfg = getRefreshConfigFromLesson(activeLesson);
+    const nextCfg = updaterFn({ ...currentCfg });
+    let nextRefreshActivityText = activeLesson.refreshActivity;
+
+    if (nextCfg.mode === 'single') {
+      if (nextCfg.selectedFlashId === 'lesson_ai_flash') {
+        nextRefreshActivityText = nextCfg.customText || activeLesson.refreshActivity;
+      } else {
+        const allFlashes = [
+          ...(Array.isArray(nextCfg.teacherCustomFlashes) ? nextCfg.teacherCustomFlashes : []),
+          ...MIFTAAH_REFRESH_FLASHES_BANK
+        ];
+        const found = allFlashes.find(f => f.id === nextCfg.selectedFlashId);
+        if (found) {
+          nextRefreshActivityText = found.text;
+        }
+      }
+    } else if (nextCfg.customText) {
+      nextRefreshActivityText = nextCfg.customText;
+    }
+
+    const nextLesson = {
+      ...activeLesson,
+      refreshActivity: nextRefreshActivityText,
+      refreshConfig: nextCfg
+    };
+    syncLessonLive(nextLesson);
+    if (toastMsg) {
+      showToast(toastMsg);
+    }
+  };
+
   const handleOpenRefreshModal = () => {
-    setRefreshTimeLeft(60);
+    const picked = resolveRefreshFlashForDisplay(activeLesson, currentRefreshFlash?.id || null);
+    setCurrentRefreshFlash(picked);
+    setIsRefreshSurpriseRevealed(false);
+    setRefreshTimeLeft(picked.duration || 60);
     setIsRefreshModalOpen(true);
+  };
+
+  const handleSpinSurpriseFlash = () => {
+    setIsSpinningRefreshFlash(true);
+    setIsRefreshSurpriseRevealed(false);
+    setTimeout(() => {
+      const picked = resolveRefreshFlashForDisplay(activeLesson, currentRefreshFlash?.id || 'force_new');
+      setCurrentRefreshFlash(picked);
+      setRefreshTimeLeft(picked.duration || 60);
+      setIsSpinningRefreshFlash(false);
+    }, 280);
+  };
+
+  const handleSelectSingleRefreshFlash = (flashObj) => {
+    if (!flashObj) return;
+    updateLessonRefreshConfig(cfg => ({
+      ...cfg,
+      mode: 'single',
+      selectedFlashId: flashObj.id,
+      durationSeconds: flashObj.duration || cfg.durationSeconds || 60,
+      ...(flashObj.id === 'lesson_ai_flash' ? {} : {
+        customTitle: flashObj.title,
+        customIcon: flashObj.icon,
+        customText: flashObj.text,
+        customSurpriseBonus: flashObj.surpriseBonus || ''
+      })
+    }), `🎯 تم اعتماد ومضة الانتعاش: «${flashObj.title}»!`);
+    setCurrentRefreshFlash(flashObj);
+    setIsRefreshSurpriseRevealed(false);
+    setRefreshTimeLeft(flashObj.duration || 60);
+  };
+
+  const handleToggleRefreshPoolFlash = (flashId) => {
+    updateLessonRefreshConfig(cfg => {
+      const exists = cfg.enabledPoolIds.includes(flashId);
+      const nextIds = exists
+        ? cfg.enabledPoolIds.filter(id => id !== flashId)
+        : [...cfg.enabledPoolIds, flashId];
+      return {
+        ...cfg,
+        enabledPoolIds: nextIds.length > 0 ? nextIds : [flashId]
+      };
+    });
+  };
+
+  const handleAddCustomTeacherFlash = () => {
+    const cleanText = String(newCustomFlashDraft.text || '').trim();
+    const cleanTitle = String(newCustomFlashDraft.title || '').trim() || 'ومضة مفاجئة من ابتكار المعلم';
+    if (!cleanText) {
+      showToast('⚠️ يرجى كتابة نص نشاط أو لغز ومضة الانتعاش أولاً.');
+      return;
+    }
+    const newFlash = {
+      id: `teacher_flash_${Date.now()}`,
+      category: 'teacher_custom',
+      categoryLabel: '👩‍🏫 ومضة مبتكرة من المعلم',
+      icon: newCustomFlashDraft.icon || '🎁🎉🤩',
+      title: cleanTitle,
+      duration: Number(newCustomFlashDraft.duration) || 60,
+      text: cleanText,
+      surpriseBonus: String(newCustomFlashDraft.surpriseBonus || '').trim()
+    };
+    updateLessonRefreshConfig(cfg => ({
+      ...cfg,
+      teacherCustomFlashes: [newFlash, ...(cfg.teacherCustomFlashes || [])],
+      enabledPoolIds: [newFlash.id, ...(cfg.enabledPoolIds || [])],
+      selectedFlashId: newFlash.id,
+      customTitle: newFlash.title,
+      customIcon: newFlash.icon,
+      customText: newFlash.text,
+      customSurpriseBonus: newFlash.surpriseBonus
+    }), `✨ تمت إضافة ومضة «${cleanTitle}» إلى بنك مفاجآت الانتعاش وتفعيلها!`);
+    setCurrentRefreshFlash(newFlash);
+    setRefreshTimeLeft(newFlash.duration);
+    setNewCustomFlashDraft({
+      title: '',
+      icon: '🎁🎉🤩',
+      text: '',
+      surpriseBonus: '',
+      duration: 60
+    });
   };
 
   // Timer Tick
@@ -6732,16 +7031,428 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontWeight: 700, fontSize: '0.92rem', marginTop: '4px' }}
                 />
               </div>
-              <div className="goal-box" style={{ flex: 1 }}>
-                <span className="goal-label">⚡ نشاط وقت الانتعاش (60 ثانية - זמן להתרענן!):</span>
-                <input
-                  type="text"
-                  value={activeLesson.refreshActivity || ''}
-                  onChange={e => syncLessonLive({ ...activeLesson, refreshActivity: e.target.value })}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #fcd34d', background: '#fffbeb', fontWeight: 700, fontSize: '0.9rem', marginTop: '4px' }}
-                />
+              <div className="goal-box" style={{ flex: 1, border: '1.5px solid #fcd34d', background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', borderRadius: '12px', padding: '10px 12px' }}>
+                {(() => {
+                  const refreshCfg = getRefreshConfigFromLesson(activeLesson);
+                  const allFlashes = getAllAvailableRefreshFlashes(activeLesson);
+                  const activeSingleFlash = allFlashes.find(f => f.id === refreshCfg.selectedFlashId) || allFlashes[0];
+                  return (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                        <span className="goal-label" style={{ color: '#92400e', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          ⚡ ومضة الانتعاش والمفاجأة (זמן להתרענן!):
+                        </span>
+                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => updateLessonRefreshConfig(c => ({ ...c, mode: 'surprise' }), '🎁 تم تفعيل «وضع المفاجأة المتنوعة»! ستظهر ومضة انتعاش متجددة ومفاجئة في كل مرة.')}
+                            style={{
+                              padding: '3px 9px',
+                              borderRadius: '999px',
+                              border: refreshCfg.mode === 'surprise' ? '2px solid #d97706' : '1px solid #cbd5e1',
+                              background: refreshCfg.mode === 'surprise' ? '#f59e0b' : '#ffffff',
+                              color: refreshCfg.mode === 'surprise' ? '#ffffff' : '#475569',
+                              fontWeight: 800,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer'
+                            }}
+                            title="تغيير ومضة الانتعاش تلقائياً بشكل متنوع ومفاجئ للطلاب"
+                          >
+                            🎁 وضع المفاجأة المتنوعة ({refreshCfg.enabledPoolIds.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateLessonRefreshConfig(c => ({ ...c, mode: 'single' }), '🎯 تم تفعيل «ومضة محددة يختارها المعلم»!')}
+                            style={{
+                              padding: '3px 9px',
+                              borderRadius: '999px',
+                              border: refreshCfg.mode === 'single' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                              background: refreshCfg.mode === 'single' ? '#0284c7' : '#ffffff',
+                              color: refreshCfg.mode === 'single' ? '#ffffff' : '#475569',
+                              fontWeight: 800,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer'
+                            }}
+                            title="تثبيت ومضة انتعاش واحدة محددة يختارها أو يكتبها المعلم"
+                          >
+                            🎯 ومضة محددة
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          value={activeLesson.refreshActivity || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            updateLessonRefreshConfig(c => ({
+                              ...c,
+                              customText: val,
+                              selectedFlashId: 'lesson_ai_flash'
+                            }));
+                          }}
+                          placeholder="اكتب ومضة الانتعاش الخاصة بك أو اختر من بنك المفاجآت..."
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #f59e0b', background: '#ffffff', fontWeight: 700, fontSize: '0.86rem' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsCreatorRefreshPanelOpen(prev => !prev)}
+                          style={{
+                            padding: '7px 11px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #d97706',
+                            background: isCreatorRefreshPanelOpen ? '#92400e' : '#ffffff',
+                            color: isCreatorRefreshPanelOpen ? '#ffffff' : '#92400e',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          🎛️ {isCreatorRefreshPanelOpen ? 'إغلاق البنك ▲' : 'تخصيص الومضة 🎁'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenRefreshModal}
+                          style={{
+                            padding: '7px 10px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title="معاينة وتجربة نافذة وقت الانتعاش الآن"
+                        >
+                          👁️ معاينة
+                        </button>
+                      </div>
+
+                      <div style={{ marginTop: '5px', fontSize: '0.75rem', fontWeight: 700, color: '#b45309', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                        <span>
+                          {refreshCfg.mode === 'surprise'
+                            ? `🎲 الوضع الحالي: سحب مفاجئ متنوع من (${refreshCfg.enabledPoolIds.length}) ومضات انتعاش`
+                            : `🎯 الومضة المثبتة: ${activeSingleFlash.icon} ${activeSingleFlash.title} (${refreshCfg.durationSeconds || 60} ثانية)`}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
+
+            {/* EXPANDABLE TEACHER REFRESH & SURPRISE FLASH STUDIO PANEL */}
+            {isCreatorRefreshPanelOpen && (() => {
+              const refreshCfg = getRefreshConfigFromLesson(activeLesson);
+              const allFlashes = getAllAvailableRefreshFlashes(activeLesson);
+              return (
+                <div className="animate-fade-in" style={{
+                  background: 'linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)',
+                  border: '2px solid #f59e0b',
+                  borderRadius: '16px',
+                  padding: '16px 18px',
+                  marginTop: '4px',
+                  boxShadow: '0 10px 25px rgba(245, 158, 11, 0.14)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px dashed #fcd34d' }}>
+                    <div>
+                      <h4 style={{ margin: 0, color: '#9a3412', fontSize: '1.02rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🎁 استوديو ومضات الانتعاش والمفاجآت المتنوعة (تحكم المعلم)</span>
+                      </h4>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#b45309', fontWeight: 700 }}>
+                        حدد هل تريد تثبيت ومضة بعينها، أو تفعيل «وضع المفاجأة المتنوعة» لتظهر للطلاب ومضة جديدة ومدهشة في كل مرة!
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allIds = allFlashes.map(f => f.id);
+                          updateLessonRefreshConfig(c => ({ ...c, mode: 'surprise', enabledPoolIds: allIds }), '🎁 تم تفعيل جميع الومضات في صندوق المفاجآت!');
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #d97706',
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✅ تفعيل كل الومضات كمفاجآت ({allFlashes.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenRefreshModal}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: 'linear-gradient(135deg, #ea580c 0%, #d97706 100%)',
+                          color: '#ffffff',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ⚡ افتح وجرّب نافذة الانتعاش الآن
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grid of Ready & Custom Flashes */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#78350f', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                      <span>📚 اختر من بنك ومضات الانتعاش الجاهزة والمبتكرة ({allFlashes.length} ومضات متنوعة):</span>
+                      <span style={{ fontSize: '0.76rem', color: '#92400e', background: '#fef3c7', padding: '2px 10px', borderRadius: '999px' }}>
+                        💡 اضغط «تثبيت 🎯» لاعتماد ومضة واحدة، أو حدد المربعات ☑️ لإدراجها في السحب المفاجئ
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px', maxHeight: '310px', overflowY: 'auto', padding: '4px' }}>
+                      {allFlashes.map(flash => {
+                        const isPinnedSingle = refreshCfg.mode === 'single' && refreshCfg.selectedFlashId === flash.id;
+                        const isInSurprisePool = refreshCfg.enabledPoolIds.includes(flash.id);
+                        return (
+                          <div
+                            key={flash.id}
+                            style={{
+                              background: isPinnedSingle ? '#eff6ff' : isInSurprisePool ? '#ffffff' : '#f8fafc',
+                              border: isPinnedSingle ? '2px solid #0284c7' : isInSurprisePool ? '1.5px solid #f59e0b' : '1.5px solid #e2e8f0',
+                              borderRadius: '12px',
+                              padding: '10px 12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              gap: '6px',
+                              opacity: (!isInSurprisePool && refreshCfg.mode === 'surprise') ? 0.65 : 1,
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '999px' }}>
+                                  {flash.categoryLabel || '⚡ ومضة انتعاش'} • {flash.duration || 60}ث
+                                </span>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.73rem', fontWeight: 800, color: '#b45309', cursor: 'pointer' }} title="إدراج هذه الومضة في صندوق المفاجآت المتنوعة">
+                                  <input
+                                    type="checkbox"
+                                    checked={isInSurprisePool}
+                                    onChange={() => handleToggleRefreshPoolFlash(flash.id)}
+                                    style={{ accentColor: '#d97706', cursor: 'pointer' }}
+                                  />
+                                  <span>في المفاجآت 🎁</span>
+                                </label>
+                              </div>
+                              <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '1.15rem' }}>{flash.icon}</span>
+                                <span>{flash.title}</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '0.78rem', color: '#334155', lineHeight: 1.5, fontWeight: 600 }}>
+                                {flash.text}
+                              </p>
+                              {flash.surpriseBonus && (
+                                <div style={{ marginTop: '5px', fontSize: '0.73rem', color: '#6d28d9', background: '#f5f3ff', padding: '4px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                  {flash.surpriseBonus}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectSingleRefreshFlash(flash)}
+                                style={{
+                                  flex: 1,
+                                  padding: '5px 10px',
+                                  borderRadius: '7px',
+                                  border: isPinnedSingle ? 'none' : '1px solid #0284c7',
+                                  background: isPinnedSingle ? '#0284c7' : '#f0f9ff',
+                                  color: isPinnedSingle ? '#ffffff' : '#0369a1',
+                                  fontWeight: 800,
+                                  fontSize: '0.76rem',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {isPinnedSingle ? '✓ مثبتة كينبوع انتعاش وحيد 🎯' : '🎯 تثبيت هذه الومضة للدرس'}
+                              </button>
+                              {flash.category === 'teacher_custom' && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateLessonRefreshConfig(c => ({
+                                      ...c,
+                                      teacherCustomFlashes: (c.teacherCustomFlashes || []).filter(item => item.id !== flash.id),
+                                      enabledPoolIds: (c.enabledPoolIds || []).filter(id => id !== flash.id)
+                                    }), '🗑️ تم حذف الومضة المخصصة.');
+                                  }}
+                                  style={{
+                                    padding: '5px 8px',
+                                    borderRadius: '7px',
+                                    border: '1px solid #fca5a5',
+                                    background: '#fef2f2',
+                                    color: '#dc2626',
+                                    fontWeight: 800,
+                                    fontSize: '0.74rem',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="حذف هذه الومضة"
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Custom Flash Creator & Timer Duration Customizer */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #fcd34d',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                    gap: '14px'
+                  }}>
+                    {/* Left: Edit Lesson's Main Custom Flash & Duration */}
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: '0.86rem', color: '#9a3412', marginBottom: '8px' }}>
+                        ✏️ تعديل ومضة الدرس الخاصة ومفاجأتها المخفية:
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                          <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#475569', marginBottom: '3px' }}>عنوان الومضة:</label>
+                          <input
+                            type="text"
+                            value={refreshCfg.customTitle || ''}
+                            onChange={e => updateLessonRefreshConfig(c => ({ ...c, customTitle: e.target.value }))}
+                            placeholder="مثال: ومضة التحدي السريع!"
+                            style={{ width: '100%', padding: '6px 9px', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 700 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#475569', marginBottom: '3px' }}>مدة المؤقت:</label>
+                          <select
+                            value={refreshCfg.durationSeconds || 60}
+                            onChange={e => updateLessonRefreshConfig(c => ({ ...c, durationSeconds: Number(e.target.value) }))}
+                            style={{ padding: '6px 10px', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 800, background: '#fffbeb', color: '#92400e' }}
+                          >
+                            <option value={30}>30 ثانية ⚡</option>
+                            <option value={45}>45 ثانية ⏱️</option>
+                            <option value={60}>60 ثانية (دقيقة) 🌟</option>
+                            <option value={90}>90 ثانية (دقيقة ونصف) 🧘‍♂️</option>
+                            <option value={120}>120 ثانية (دقيقتان) 🚀</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '8px' }}>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#475569', marginBottom: '3px' }}>
+                          🎁 المفاجأة المخفية / جواب اللغز (تظهر للطالب عند الضغط على زر «اكشف المفاجأة!»):
+                        </label>
+                        <input
+                          type="text"
+                          value={refreshCfg.customSurpriseBonus || ''}
+                          onChange={e => updateLessonRefreshConfig(c => ({ ...c, customSurpriseBonus: e.target.value }))}
+                          placeholder="اكتب جواب اللغز أو التحدي الإضافي المفاجئ (اختياري)..."
+                          style={{ width: '100%', padding: '6px 9px', borderRadius: '7px', border: '1px solid #c4b5fd', background: '#f5f3ff', color: '#5b21b6', fontSize: '0.82rem', fontWeight: 700 }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#475569' }}>أيقونة الومضة:</span>
+                        {['⚡🧘‍♂️✨', '🎁🎉🤩', '🥶🗿🎬', '🕵️‍♂️🔍⚡', '🧩🎁💡', '🎨☝️🌈', '👏🎵⚡', '🚀🤸‍♂️⚡'].map(ic => (
+                          <button
+                            key={ic}
+                            type="button"
+                            onClick={() => updateLessonRefreshConfig(c => ({ ...c, customIcon: ic }))}
+                            style={{
+                              padding: '3px 7px',
+                              borderRadius: '6px',
+                              border: refreshCfg.customIcon === ic ? '2px solid #d97706' : '1px solid #e2e8f0',
+                              background: refreshCfg.customIcon === ic ? '#fef3c7' : '#ffffff',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            {ic}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right: Add a Brand New Custom Surprise Flash to the Pool */}
+                    <div style={{ borderRight: '1px dashed #fde68a', paddingRight: '12px' }}>
+                      <div style={{ fontWeight: 900, fontSize: '0.86rem', color: '#0369a1', marginBottom: '8px' }}>
+                        ➕ ابتكار وإضافة ومضة مفاجئة جديدة إلى صندوق المفاجآت:
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                        <input
+                          type="text"
+                          value={newCustomFlashDraft.title}
+                          onChange={e => setNewCustomFlashDraft(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="عنوان الومضة الجديدة (مثال: لغز الكلمة السرية)..."
+                          style={{ flex: 1, padding: '6px 9px', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontWeight: 700 }}
+                        />
+                        <select
+                          value={newCustomFlashDraft.duration}
+                          onChange={e => setNewCustomFlashDraft(prev => ({ ...prev, duration: Number(e.target.value) }))}
+                          style={{ padding: '6px 8px', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 800 }}
+                        >
+                          <option value={30}>30ث</option>
+                          <option value={45}>45ث</option>
+                          <option value={60}>60ث</option>
+                          <option value={90}>90ث</option>
+                        </select>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={newCustomFlashDraft.text}
+                        onChange={e => setNewCustomFlashDraft(prev => ({ ...prev, text: e.target.value }))}
+                        placeholder="اكتب هنا نص الحركة أو اللغز أو المفاجأة التي ستظهر للطلاب..."
+                        style={{ width: '100%', padding: '6px 9px', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', resize: 'vertical' }}
+                      />
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          type="text"
+                          value={newCustomFlashDraft.surpriseBonus}
+                          onChange={e => setNewCustomFlashDraft(prev => ({ ...prev, surpriseBonus: e.target.value }))}
+                          placeholder="🎁 المفاجأة المخفية / الجواب (اختياري)..."
+                          style={{ flex: 1, padding: '6px 9px', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 600 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCustomTeacherFlash}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '7px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          ➕ أضف للبنك
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', width: '100%', paddingTop: '6px', borderTop: '1px dashed #cbd5e1' }}>
               <div className="pillars-badges">
@@ -10798,120 +11509,413 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       {/* ===================================================================== */}
       {/* MODAL 3: 60-SECOND REFRESH TIME MODAL (⚡ وقت الانتعاش - זמן להתרענן) */}
       {/* ===================================================================== */}
-      {isRefreshModalOpen && (
-        <div
-          className="miftaah-modal-overlay animate-fade-in"
-          onClick={() => setIsRefreshModalOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 99999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-          }}
-        >
-          <div
-            className="animate-pop"
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
-              border: '3px solid #f59e0b',
-              borderRadius: '24px',
-              maxWidth: '520px',
-              width: '100%',
-              padding: '28px 24px',
-              textAlign: 'center',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)'
-            }}
-          >
-            <div style={{ fontSize: '3.2rem', marginBottom: '8px' }}>⚡🧘‍♂️✨</div>
-            <h3 style={{ margin: '0 0 6px 0', color: '#9a3412', fontSize: '1.4rem', fontWeight: 900 }}>
-              وقت الانتعاش! (זמן להתרענן!)
-            </h3>
-            <p style={{ margin: '0 0 18px 0', color: '#b45309', fontSize: '0.92rem', fontWeight: 700 }}>
-              استراحة قصيرة لمدة ٦٠ ثانية لتجديد الطاقة والتركيز
-            </p>
+      {isRefreshModalOpen && (() => {
+        const refreshCfg = getRefreshConfigFromLesson(activeLesson);
+        const allFlashes = getAllAvailableRefreshFlashes(activeLesson);
+        const activeFlash = currentRefreshFlash || resolveRefreshFlashForDisplay(activeLesson);
+        const flashDuration = activeFlash?.duration || refreshCfg.durationSeconds || 60;
+        const isTeacherView = viewMode !== 'student';
 
-            {/* Countdown Timer Circle */}
-            <div style={{
-              width: '110px',
-              height: '110px',
-              borderRadius: '50%',
-              margin: '0 auto 18px auto',
-              background: refreshTimeLeft > 0 ? 'linear-gradient(135deg, #fef3c7, #fde68a)' : 'linear-gradient(135deg, #dcfce7, #86efac)',
-              border: `4px solid ${refreshTimeLeft > 0 ? '#f59e0b' : '#16a34a'}`,
+        return (
+          <div
+            className="miftaah-modal-overlay animate-fade-in"
+            onClick={() => setIsRefreshModalOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 99999,
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 6px 18px rgba(245, 158, 11, 0.25)'
-            }}>
-              <span style={{ fontSize: '2rem', fontWeight: 900, color: refreshTimeLeft > 0 ? '#92400e' : '#14532d', lineHeight: 1 }}>
-                {refreshTimeLeft > 0 ? refreshTimeLeft : '✓'}
-              </span>
-              <small style={{ fontSize: '0.75rem', fontWeight: 800, color: refreshTimeLeft > 0 ? '#b45309' : '#15803d', marginTop: '4px' }}>
-                {refreshTimeLeft > 0 ? 'ثانية' : 'انتهى الوقت!'}
-              </small>
-            </div>
-
-            {/* Activity Text */}
-            <div style={{
-              background: '#ffffff',
-              border: '2px solid #fcd34d',
-              borderRadius: '16px',
-              padding: '16px 18px',
-              marginBottom: '20px',
-              color: '#1e293b',
-              fontSize: '1.05rem',
-              fontWeight: 700,
-              lineHeight: 1.7,
-              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.08)'
-            }}>
-              {activeLesson?.refreshActivity || 'قف مكانك، خذ ٣ أنفاس عميقة، حرّك كتفيك ويديك لمدة ٣٠ ثانية، ثم ابتسم واستعد للعودة إلى رحلة التعلّم بنشاط! 🌟'}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setRefreshTimeLeft(60)}
-                style={{
+              padding: '16px',
+              overflowY: 'auto'
+            }}
+          >
+            <div
+              className="animate-pop"
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+                border: '3px solid #f59e0b',
+                borderRadius: '24px',
+                maxWidth: isModalTeacherRefreshEditOpen ? '680px' : '560px',
+                width: '100%',
+                maxHeight: '92vh',
+                overflowY: 'auto',
+                padding: '24px 22px',
+                textAlign: 'center',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.32)',
+                transition: 'max-width 0.25s ease'
+              }}
+            >
+              {/* Top Category & Mode Badges */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                <span style={{
                   background: '#fef3c7',
                   color: '#92400e',
                   border: '1.5px solid #f59e0b',
+                  padding: '4px 12px',
                   borderRadius: '999px',
-                  padding: '10px 18px',
-                  fontWeight: 800,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer'
-                }}
-              >
-                🔄 إعادة المؤقت (٦٠ ثانية)
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsRefreshModalOpen(false)}
-                style={{
-                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '999px',
-                  padding: '10px 24px',
-                  fontWeight: 900,
-                  fontSize: '0.96rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)'
-                }}
-              >
-                🚀 نعود لرحلتنا! (חוזרים למסע שלנו!)
-              </button>
+                  fontSize: '0.78rem',
+                  fontWeight: 900
+                }}>
+                  {activeFlash?.categoryLabel || '⚡ ومضة انتعاش وتنشيط'}
+                </span>
+                {refreshCfg.mode === 'surprise' ? (
+                  <span style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                    color: '#ffffff',
+                    padding: '4px 12px',
+                    borderRadius: '999px',
+                    fontSize: '0.76rem',
+                    fontWeight: 800,
+                    boxShadow: '0 3px 10px rgba(124, 58, 237, 0.25)'
+                  }}>
+                    🎁 صندوق المفاجآت المتنوعة
+                  </span>
+                ) : (
+                  <span style={{
+                    background: '#e0f2fe',
+                    color: '#0369a1',
+                    border: '1px solid #7dd3fc',
+                    padding: '4px 12px',
+                    borderRadius: '999px',
+                    fontSize: '0.76rem',
+                    fontWeight: 800
+                  }}>
+                    🎯 ومضة مختارة من المعلم
+                  </span>
+                )}
+              </div>
+
+              <div style={{
+                fontSize: '3.1rem',
+                marginBottom: '6px',
+                transform: isSpinningRefreshFlash ? 'scale(0.8) rotate(12deg)' : 'scale(1) rotate(0deg)',
+                transition: 'transform 0.25s ease'
+              }}>
+                {isSpinningRefreshFlash ? '🎲🎁✨' : (activeFlash?.icon || '⚡🧘‍♂️✨')}
+              </div>
+
+              <h3 style={{ margin: '0 0 4px 0', color: '#9a3412', fontSize: '1.35rem', fontWeight: 900 }}>
+                وقت الانتعاش! (זמן להתרענן!)
+              </h3>
+              <div style={{ margin: '0 0 6px 0', color: '#7c2d12', fontSize: '1.02rem', fontWeight: 900 }}>
+                {isSpinningRefreshFlash ? 'جاري سحب مفاجأة انتعاش جديدة...' : (activeFlash?.title || 'ومضة تجديد الطاقة والتركيز')}
+              </div>
+              <p style={{ margin: '0 0 14px 0', color: '#b45309', fontSize: '0.86rem', fontWeight: 700 }}>
+                استراحة قصيرة لمدة {flashDuration} ثانية لتجديد الطاقة والتركيز الذهني
+              </p>
+
+              {/* Countdown Timer Circle */}
+              <div style={{
+                width: '106px',
+                height: '106px',
+                borderRadius: '50%',
+                margin: '0 auto 16px auto',
+                background: refreshTimeLeft > 0 ? 'linear-gradient(135deg, #fef3c7, #fde68a)' : 'linear-gradient(135deg, #dcfce7, #86efac)',
+                border: `4px solid ${refreshTimeLeft > 0 ? '#f59e0b' : '#16a34a'}`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 6px 18px rgba(245, 158, 11, 0.25)'
+              }}>
+                <span style={{ fontSize: '1.95rem', fontWeight: 900, color: refreshTimeLeft > 0 ? '#92400e' : '#14532d', lineHeight: 1 }}>
+                  {refreshTimeLeft > 0 ? refreshTimeLeft : '✓'}
+                </span>
+                <small style={{ fontSize: '0.75rem', fontWeight: 800, color: refreshTimeLeft > 0 ? '#b45309' : '#15803d', marginTop: '4px' }}>
+                  {refreshTimeLeft > 0 ? 'ثانية' : 'انتهى الوقت!'}
+                </small>
+              </div>
+
+              {/* Activity Text Card */}
+              <div style={{
+                background: '#ffffff',
+                border: '2px solid #fcd34d',
+                borderRadius: '16px',
+                padding: '15px 18px',
+                marginBottom: '12px',
+                color: '#1e293b',
+                fontSize: '1.03rem',
+                fontWeight: 700,
+                lineHeight: 1.7,
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.08)',
+                opacity: isSpinningRefreshFlash ? 0.45 : 1,
+                transition: 'opacity 0.25s ease'
+              }}>
+                {activeFlash?.text || activeLesson?.refreshActivity || 'قف مكانك، خذ ٣ أنفاس عميقة، حرّك كتفيك ويديك لمدة ٣٠ ثانية، ثم ابتسم واستعد للعودة إلى رحلة التعلّم بنشاط! 🌟'}
+              </div>
+
+              {/* Interactive Surprise Bonus / Riddle Answer Reveal */}
+              {activeFlash?.surpriseBonus && (
+                <div style={{ marginBottom: '16px' }}>
+                  {!isRefreshSurpriseRevealed ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsRefreshSurpriseRevealed(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '9px 18px',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 14px rgba(109, 40, 217, 0.28)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span>🎁 اكشف مفاجأة الومضة / التحدي الإضافي! ✨</span>
+                    </button>
+                  ) : (
+                    <div className="animate-pop" style={{
+                      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                      border: '2px solid #8b5cf6',
+                      borderRadius: '14px',
+                      padding: '12px 16px',
+                      color: '#4c1d95',
+                      fontSize: '0.94rem',
+                      fontWeight: 800,
+                      lineHeight: 1.6
+                    }}>
+                      {activeFlash.surpriseBonus}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Primary Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: isTeacherView ? '14px' : '0' }}>
+                <button
+                  type="button"
+                  onClick={handleSpinSurpriseFlash}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '999px',
+                    padding: '10px 16px',
+                    fontWeight: 900,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
+                  }}
+                  title="سحب ومضة انتعاش مفاجئة ومختلفة"
+                >
+                  🎲 ومضة مفاجئة أخرى!
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRefreshTimeLeft(flashDuration)}
+                  style={{
+                    background: '#fef3c7',
+                    color: '#92400e',
+                    border: '1.5px solid #f59e0b',
+                    borderRadius: '999px',
+                    padding: '10px 16px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔄 إعادة المؤقت ({flashDuration} ثانية)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRefreshModalOpen(false)}
+                  style={{
+                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '999px',
+                    padding: '10px 22px',
+                    fontWeight: 900,
+                    fontSize: '0.94rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)'
+                  }}
+                >
+                  🚀 نعود لرحلتنا! (חוזרים למסע שלנו!)
+                </button>
+              </div>
+
+              {/* TEACHER LIVE CUSTOMIZATION DRAWER INSIDE THE MODAL */}
+              {isTeacherView && (
+                <div style={{ borderTop: '1.5px dashed #fcd34d', paddingTop: '12px', textAlign: 'right' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#92400e' }}>
+                      👩‍🏫 تحكم المعلم المباشر بومضة الانتعاش والمفاجآت:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsModalTeacherRefreshEditOpen(prev => !prev)}
+                      style={{
+                        background: isModalTeacherRefreshEditOpen ? '#92400e' : '#fffbeb',
+                        color: isModalTeacherRefreshEditOpen ? '#ffffff' : '#92400e',
+                        border: '1.5px solid #d97706',
+                        borderRadius: '8px',
+                        padding: '5px 12px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {isModalTeacherRefreshEditOpen ? 'إخفاء قائمة الومضات ▲' : '⚙️ تحديد أو كتابة ومضة الانتعاش ▼'}
+                    </button>
+                  </div>
+
+                  {isModalTeacherRefreshEditOpen && (
+                    <div className="animate-fade-in" style={{
+                      marginTop: '10px',
+                      background: '#ffffff',
+                      border: '1.5px solid #fcd34d',
+                      borderRadius: '14px',
+                      padding: '12px'
+                    }}>
+                      {/* Mode Switcher */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateLessonRefreshConfig(c => ({ ...c, mode: 'surprise' }), '🎁 تم تفعيل وضع المفاجأة المتنوعة!')}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: '8px',
+                            border: refreshCfg.mode === 'surprise' ? '2px solid #7c3aed' : '1px solid #cbd5e1',
+                            background: refreshCfg.mode === 'surprise' ? '#f5f3ff' : '#f8fafc',
+                            color: refreshCfg.mode === 'surprise' ? '#5b21b6' : '#475569',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🎁 وضع المفاجأة المتنوعة (تتغير عشوائياً في كل مرة)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateLessonRefreshConfig(c => ({ ...c, mode: 'single' }), '🎯 تم تفعيل وضع الومضة المحددة من المعلم!')}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: '8px',
+                            border: refreshCfg.mode === 'single' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: refreshCfg.mode === 'single' ? '#eff6ff' : '#f8fafc',
+                            color: refreshCfg.mode === 'single' ? '#0369a1' : '#475569',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🎯 تثبيت ومضة واحدة يحددها المعلم
+                        </button>
+                      </div>
+
+                      {/* Quick Pick from Ready Flashes */}
+                      <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', marginBottom: '6px' }}>
+                        ⚡ اختر ومضة جاهزة لعرضها وتثبيتها فوراً:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '135px', overflowY: 'auto', marginBottom: '10px', padding: '2px' }}>
+                        {allFlashes.map(f => {
+                          const isCurrent = activeFlash?.id === f.id;
+                          return (
+                            <button
+                              key={f.id}
+                              type="button"
+                              onClick={() => handleSelectSingleRefreshFlash(f)}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: '8px',
+                                border: isCurrent ? '2px solid #d97706' : '1px solid #cbd5e1',
+                                background: isCurrent ? '#fef3c7' : '#f8fafc',
+                                color: isCurrent ? '#92400e' : '#334155',
+                                fontWeight: 800,
+                                fontSize: '0.76rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                            >
+                              <span>{f.icon}</span>
+                              <span>{f.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Custom Flash Input right inside the Modal */}
+                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9a3412', marginBottom: '5px' }}>
+                          ✍️ أو اكتب ومضة/مفاجأة مخصصة من عندك الآن:
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={activeLesson?.refreshActivity || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            updateLessonRefreshConfig(c => ({
+                              ...c,
+                              mode: 'single',
+                              selectedFlashId: 'lesson_ai_flash',
+                              customText: val
+                            }));
+                            setCurrentRefreshFlash(prev => ({
+                              ...(prev || {}),
+                              id: 'lesson_ai_flash',
+                              title: refreshCfg.customTitle || 'ومضة المعلم المخصصة',
+                              icon: refreshCfg.customIcon || '⚡🧘‍♂️✨',
+                              text: val,
+                              surpriseBonus: refreshCfg.customSurpriseBonus || '',
+                              duration: refreshCfg.durationSeconds || 60
+                            }));
+                          }}
+                          placeholder="اكتب نشاطاً حركياً أو لغزاً مفاجئاً أو تحدياً سريعاً للطلاب..."
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px' }}
+                        />
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <input
+                            type="text"
+                            value={refreshCfg.customSurpriseBonus || ''}
+                            onChange={e => {
+                              const bonusVal = e.target.value;
+                              updateLessonRefreshConfig(c => ({ ...c, customSurpriseBonus: bonusVal }));
+                              setCurrentRefreshFlash(prev => prev ? { ...prev, surpriseBonus: bonusVal } : prev);
+                            }}
+                            placeholder="🎁 المفاجأة المخفية / جواب اللغز (تظهر عند الضغط على زر كشف المفاجأة)..."
+                            style={{ flex: 1, minWidth: '180px', padding: '6px 9px', borderRadius: '7px', border: '1px solid #c4b5fd', background: '#f5f3ff', fontSize: '0.78rem', fontWeight: 700, color: '#5b21b6' }}
+                          />
+                          <select
+                            value={refreshCfg.durationSeconds || 60}
+                            onChange={e => {
+                              const sec = Number(e.target.value);
+                              updateLessonRefreshConfig(c => ({ ...c, durationSeconds: sec }));
+                              setCurrentRefreshFlash(prev => prev ? { ...prev, duration: sec } : prev);
+                              setRefreshTimeLeft(sec);
+                            }}
+                            style={{ padding: '6px 10px', borderRadius: '7px', border: '1px solid #f59e0b', background: '#fffbeb', color: '#92400e', fontWeight: 800, fontSize: '0.78rem' }}
+                          >
+                            <option value={30}>30 ثانية ⚡</option>
+                            <option value={45}>45 ثانية ⏱️</option>
+                            <option value={60}>60 ثانية 🌟</option>
+                            <option value={90}>90 ثانية 🧘‍♂️</option>
+                            <option value={120}>120 ثانية 🚀</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
