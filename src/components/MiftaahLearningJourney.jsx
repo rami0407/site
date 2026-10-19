@@ -11514,7 +11514,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         const allFlashes = getAllAvailableRefreshFlashes(activeLesson);
         const activeFlash = currentRefreshFlash || resolveRefreshFlashForDisplay(activeLesson);
         const flashDuration = activeFlash?.duration || refreshCfg.durationSeconds || 60;
-        const isTeacherView = viewMode !== 'student';
+        const isTeacherView = activeInterface !== 'student' || Boolean(authenticatedTeacher);
 
         return (
           <div
