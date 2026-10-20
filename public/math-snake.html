@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>🐍 أفعى الأعداد الحسابية - بطولة مشيرفة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    font-family:'Tajawal','Segoe UI',Tahoma,sans-serif;
+    background:radial-gradient(circle at center,#064e3b 0%,#022c22 45%,#020617 100%);
+    overflow:hidden;touch-action:none;
+    display:flex;justify-content:center;align-items:center;
+    height:100vh;width:100vw;
+  }
+  #wrap{
+    position:relative;width:100%;max-width:880px;height:100vh;max-height:640px;
+    background:#061a14;overflow:hidden;
+    box-shadow:0 20px 70px rgba(0,0,0,.7),0 0 0 3px rgba(34,197,94,.55);
+    border-radius:20px;display:flex;flex-direction:column;
+  }
+  @media (max-width:900px){
+    #wrap{max-width:100vw;max-height:100vh;border-radius:0;box-shadow:none;}
+  }
+
+  /* Floating persistent Mute & Menu Bar */
+  #floatingMuteBar{
+    position:absolute;top:10px;left:10px;z-index:300;
+    display:flex;gap:6px;align-items:center;
+  }
+  #soundToggleBtn{
+    pointer-events:auto;cursor:pointer;
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+    border:2px solid #fde047;color:#fff;border-radius:99px;
+    padding:5px 14px;height:36px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    font-size:12px;font-weight:900;font-family:inherit;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);transition:all .15s;
+  }
+  #soundToggleBtn.mutedState{
+    background:linear-gradient(135deg,#475569,#1e293b);
+    border-color:#94a3b8;color:#e2e8f0;
+  }
+  #pauseBtn,#menuQuickBtn{
+    pointer-events:auto;cursor:pointer;
+    background:rgba(15,23,42,.85);border:2px solid rgba(255,255,255,.3);
+    color:#fff;border-radius:99px;padding:5px 12px;height:36px;
+    font-size:12px;font-weight:800;font-family:inherit;
+    display:inline-flex;align-items:center;gap:4px;
+  }
+
+  /* Top Banner: Question & Progress */
+  #topQuestionBanner{
+    background:linear-gradient(135deg,rgba(15,23,42,.92),rgba(6,78,59,.92));
+    border-bottom:2px solid rgba(74,222,128,.4);
+    padding:8px 14px;min-height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;z-index:20;flex-wrap:wrap;
+  }
+  .qBannerMain{
+    display:flex;align-items:center;gap:12px;flex:1;min-width:240px;
+  }
+  #currentQuestionText{
+    font-size:20px;font-weight:900;color:#fde047;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  #topicBadge{
+    background:rgba(34,197,94,.2);border:1px solid #4ade80;
+    color:#bbf7d0;font-size:11px;font-weight:800;
+    padding:3px 10px;border-radius:99px;white-space:nowrap;
+  }
+  .hudStatsWrap{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .hudPill{
+    background:rgba(15,23,42,.75);border:1px solid rgba(250,204,21,.45);
+    color:#fff;font-size:12px;font-weight:800;
+    padding:4px 10px;border-radius:12px;white-space:nowrap;
+  }
+  .hudPill.heartsPill{border-color:#f87171;color:#fca5a5;font-size:13px;}
+
+  /* Canvas Area */
+  #canvasContainer{
+    position:relative;flex:1;width:100%;height:100%;overflow:hidden;
+  }
+  canvas{display:block;width:100%;height:100%;}
+
+  /* Hint / Feedback Popup Toast */
+  #hintToast{
+    position:absolute;top:68px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,rgba(15,23,42,.95),rgba(6,78,59,.95));
+    border:2px solid #38bdf8;color:#e0f2fe;font-size:13px;font-weight:800;
+    padding:8px 18px;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.6);
+    z-index:40;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;
+    max-width:90%;text-align:center;
+  }
+  #hintToast.show{opacity:1;transform:translateX(-50%) translateY(4px);}
+
+  /* Mobile On-Screen D-Pad Controls */
+  #controls{
+    position:absolute;bottom:10px;left:10px;right:10px;
+    display:flex;justify-content:space-between;align-items:flex-end;
+    z-index:30;pointer-events:none;
+  }
+  .dpadCluster{
+    display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);
+    gap:4px;pointer-events:auto;
+  }
+  .dBtn{
+    width:52px;height:52px;border-radius:16px;
+    border:2px solid rgba(74,222,128,.55);
+    background:linear-gradient(180deg,rgba(15,23,42,.85),rgba(6,78,59,.9));
+    color:#4ade80;font-size:22px;font-weight:900;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.45);cursor:pointer;
+    user-select:none;-webkit-user-select:none;font-family:inherit;
+    transition:transform .08s,background .12s;
+  }
+  .dBtn:active{transform:scale(.9);background:rgba(74,222,128,.35);}
+  #dUp{grid-column:2;grid-row:1;}
+  #dLeft{grid-column:1;grid-row:2;}
+  #dDown{grid-column:2;grid-row:3;}
+  #dRight{grid-column:3;grid-row:2;}
+
+  .actionCluster{
+    display:flex;flex-direction:column;gap:8px;pointer-events:auto;
+  }
+  .actBtn{
+    padding:10px 16px;border-radius:18px;
+    border:2px solid rgba(250,204,21,.55);
+    background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(30,41,59,.9));
+    color:#fde047;font-size:13px;font-weight:900;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer;
+    user-select:none;-webkit-user-select:none;font-family:inherit;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .actBtn:active{transform:scale(.93);}
+  .actBtn.hintActBtn{border-color:#38bdf8;color:#7dd3fc;}
+
+  /* Screens (Start / End / Modals) */
+  .screen{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,#064e3b 0%,#0f172a 65%,#020617 100%);
+    display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
+    z-index:150;color:#fff;padding:50px 16px 20px;text-align:center;overflow-y:auto;
+  }
+  .screen.hidden{display:none;}
+  .snakeHeroCard{
+    background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(234,179,8,.18));
+    border:2px solid rgba(74,222,128,.5);border-radius:24px;
+    padding:14px 20px;width:100%;max-width:620px;margin-bottom:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.45);
+  }
+  .snakeHeroCard h1{
+    font-size:26px;color:#4ade80;text-shadow:0 3px 0 #064e3b,0 0 25px rgba(74,222,128,.6);
+    font-weight:900;margin-bottom:4px;
+  }
+  .snakeHeroCard .sub{font-size:13px;color:#bae6fd;font-weight:800;}
+  .howToPlayBadges{
+    display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px;
+  }
+  .htpPill{
+    background:rgba(15,23,42,.75);border:1px solid rgba(74,222,128,.4);
+    padding:4px 10px;border-radius:99px;font-size:11px;color:#bbf7d0;font-weight:700;
+  }
+
+  .sectionTitle{font-size:13px;color:#fde047;font-weight:900;margin:6px 0;}
+  .gradesGrid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:7px;
+    width:100%;max-width:600px;margin-bottom:10px;
+  }
+  @media (max-width:540px){.gradesGrid{grid-template-columns:repeat(3,1fr);}}
+  .gradeBtn{
+    padding:8px 4px;border-radius:14px;border:2px solid rgba(74,222,128,.45);
+    background:rgba(15,23,42,.75);color:#86efac;cursor:pointer;
+    font-family:inherit;transition:all .18s;display:flex;flex-direction:column;align-items:center;
+  }
+  .gradeBtn strong{font-size:15px;font-weight:900;}
+  .gradeBtn span{font-size:10px;color:#cbd5e1;font-weight:700;margin-top:2px;}
+  .gradeBtn.selected{
+    background:linear-gradient(135deg,#22c55e,#15803d);
+    color:#fff;border-color:#bbf7d0;transform:scale(1.05);
+    box-shadow:0 0 20px rgba(34,197,94,.75);
+  }
+  .gradeBtn.selected span{color:#e2e8f0;font-weight:900;}
+
+  .speedSelectRow,.skinSelectRow{
+    display:flex;gap:7px;justify-content:center;flex-wrap:wrap;
+    margin-bottom:10px;max-width:600px;
+  }
+  .optTagBtn{
+    padding:7px 14px;border-radius:14px;border:2px solid rgba(56,189,248,.4);
+    background:rgba(15,23,42,.7);color:#e0f2fe;font-size:12px;font-weight:800;
+    cursor:pointer;font-family:inherit;transition:all .18s;
+  }
+  .optTagBtn.selected{
+    background:linear-gradient(135deg,#0284c7,#0369a1);
+    color:#fff;border-color:#7dd3fc;box-shadow:0 0 16px rgba(56,189,248,.6);
+  }
+
+  .curriculumInfoBox{
+    background:rgba(15,23,42,.85);border:1px solid rgba(74,222,128,.35);
+    border-radius:14px;padding:8px 14px;max-width:600px;width:100%;
+    font-size:12px;color:#bbf7d0;margin-bottom:12px;line-height:1.5;
+  }
+
+  .btn{
+    padding:12px 34px;font-size:17px;font-weight:900;border:none;border-radius:99px;
+    background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;
+    cursor:pointer;margin:4px;box-shadow:0 5px 0 #14532d,0 8px 25px rgba(34,197,94,.45);
+    font-family:inherit;transition:transform .1s;border:2px solid #86efac;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #14532d;}
+  .btn.secondary{
+    background:linear-gradient(135deg,#334155,#1e293b);
+    box-shadow:0 4px 0 #0f172a;border-color:rgba(255,255,255,.2);
+    font-size:13px;padding:9px 18px;
+  }
+
+  .statsStrip{
+    display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px;
+    font-size:12px;color:#fde047;font-weight:800;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <!-- Always-visible Floating Sound Mute & Actions -->
+  <div id="floatingMuteBar">
+    <button id="soundToggleBtn" type="button">🔊 كتم الصوت</button>
+    <button id="pauseBtn" type="button" style="display:none;">⏸️ إيقاف</button>
+    <button id="menuQuickBtn" type="button" style="display:none;">🏠 القائمة</button>
+  </div>
+
+  <!-- Top Banner: Current Question & Stats -->
+  <div id="topQuestionBanner">
+    <div class="qBannerMain">
+      <span id="topicBadge">📚 منهاج الحساب</span>
+      <span id="currentQuestionText">🐍 وجّه الأفعى نحو التفاحة التي تحمل الإجابة الصحيحة!</span>
+    </div>
+    <div class="hudStatsWrap">
+      <div class="hudPill heartsPill" id="heartsHud">❤️❤️❤️</div>
+      <div class="hudPill">⭐ <span id="scoreVal">0</span></div>
+      <div class="hudPill">🪙 <span id="coinsVal">0</span></div>
+      <div class="hudPill">🍎 <span id="eatenVal">0</span>/<span id="targetVal">8</span></div>
+      <div class="hudPill">🔥 ×<span id="comboVal">1</span></div>
+    </div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvasContainer">
+    <canvas id="cv"></canvas>
+    <div id="hintToast">💡 تلميح: فكّر بالعملية العكسية!</div>
+
+    <!-- On-screen Controls for Mobile & Tablets -->
+    <div id="controls">
+      <div class="dpadCluster">
+        <button class="dBtn" id="dUp" type="button">⬆️</button>
+        <button class="dBtn" id="dLeft" type="button">⬅️</button>
+        <button class="dBtn" id="dRight" type="button">➡️</button>
+        <button class="dBtn" id="dDown" type="button">⬇️</button>
+      </div>
+      <div class="actionCluster">
+        <button class="actBtn hintActBtn" id="btnShowHint" type="button">💡 تلميح ذكي</button>
+        <button class="actBtn" id="btnSlowDown" type="button">🐢 إبطاء الأفعى (<b id="slowCount">2</b>)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="snakeHeroCard">
+      <h1>🐍 أفعى الأعداد الحسابية الذكية 🍎</h1>
+      <div class="sub">وفق منهاج الحساب للوسط العربي في دولة إسرائيل — مدرسة مشيرفة الابتدائية</div>
+      <div class="howToPlayBadges">
+        <span class="htpPill">🎯 اقرأ السؤال أعلى الشاشة</span>
+        <span class="htpPill">🍎 كُل التفاحة التي تحمل الإجابة الصحيحة لتكبر أفعاك</span>
+        <span class="htpPill">⚠️ تجنّب أكل الإجابات الخاطئة أو الاصطدام بالذيل</span>
+        <span class="htpPill">⭐ اجمع النجوم والدروع والسرعة البطيئة للتفكير</span>
+      </div>
+    </div>
+
+    <div class="sectionTitle">🎓 اختر الصف الدراسي (وفق منهاج وزارة المعارف للوسط العربي):</div>
+    <div class="gradesGrid" id="gradesGrid">
+      <button class="gradeBtn" data-g="1"><strong>الصف 1</strong><span>الأعداد حتى 20</span></button>
+      <button class="gradeBtn" data-g="2"><strong>الصف 2</strong><span>حتى 100 والضرب</span></button>
+      <button class="gradeBtn selected" data-g="3"><strong>الصف 3</strong><span>حتى 10,000 والقسمة</span></button>
+      <button class="gradeBtn" data-g="4"><strong>الصف 4</strong><span>الكسور والملايين</span></button>
+      <button class="gradeBtn" data-g="5"><strong>الصف 5</strong><span>الكسور العشرية</span></button>
+      <button class="gradeBtn" data-g="6"><strong>الصف 6</strong><span>النسبة المئوية والحجوم</span></button>
+    </div>
+
+    <div class="curriculumInfoBox" id="curriculumInfo">
+      📖 <b>منهاج الصف الثالث (כיתה ג'):</b> المبنى العشري حتى 10,000، جداول الضرب والقسمة، ترتيب العمليات الحسابية، والقسمة مع باقٍ.
+    </div>
+
+    <div class="sectionTitle">⚡ سرعة حركة الأفعى:</div>
+    <div class="speedSelectRow" id="speedRow">
+      <button class="optTagBtn selected" data-spd="slow">🐢 هادئ وبطيء (للتفكير والاسترخاء)</button>
+      <button class="optTagBtn" data-spd="normal">🐇 معتدل وممتع</button>
+      <button class="optTagBtn" data-spd="fast">⚡ سريع للمحترفين</button>
+    </div>
+
+    <div class="sectionTitle">🎨 مظهر ولون الأفعى:</div>
+    <div class="skinSelectRow" id="skinRow">
+      <button class="optTagBtn selected" data-skin="emerald">🟢 الأفعى الزمردية</button>
+      <button class="optTagBtn" data-skin="gold">🟡 الكوبرا الذهبية</button>
+      <button class="optTagBtn" data-skin="neon">🔵 أفعى النيون الفضائية</button>
+      <button class="optTagBtn" data-skin="dragon">🔴 أفعى التنين الناري</button>
+    </div>
+
+    <div>
+      <button class="btn" id="startBtn">🐍 انطلق في التحدي الحسابي!</button>
+    </div>
+
+    <div class="statsStrip">
+      <span>🏆 أعلى نتيجة: <b id="bestScoreTxt">0</b></span>
+      <span>🪙 رصيد العملات: <b id="coinsTotalTxt">0</b></span>
+      <span>🍎 تفاحات صحيحة مكتسبة: <b id="totalEatenTxt">0</b></span>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen hidden" id="endScreen">
+    <div class="snakeHeroCard">
+      <h1 id="endTitleTxt">🏆 جولة أسطورية رائعة!</h1>
+      <div class="sub">بطل الرياضيات المتميز في مدرسة مشيرفة</div>
+    </div>
+    <div id="endStatsBox" style="background:rgba(15,23,42,.9);border:2px solid #4ade80;border-radius:20px;padding:18px 28px;margin:12px 0;font-size:16px;line-height:2;"></div>
+    <div>
+      <button class="btn" id="playAgainBtn">🔄 العب جولة جديدة</button>
+      <button class="btn secondary" id="backMenuBtn">🏠 القائمة الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   🐍 MATH SNAKE — ARAB SECTOR ISRAELI CURRICULUM (GRADES 1–6)
+   ============================================================================ */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 800, H = 500, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth || 800;
+  H = cv.clientHeight || 500;
+  cv.width = W * DPR;
+  cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+/* ============ WebAudio Sound Engine with Persistent Mute ============ */
+const Sound = (() => {
+  let actx = null, musicTimer = null, musicPlaying = false;
+  let muted = false;
+  try { muted = JSON.parse(localStorage.getItem('snake_math_muted') || 'false'); } catch(e) {}
+
+  function syncUI() {
+    const btn = document.getElementById('soundToggleBtn');
+    if (!btn) return;
+    if (muted) {
+      btn.innerHTML = '🔇 الصوت مكتوم';
+      btn.classList.add('mutedState');
+    } else {
+      btn.innerHTML = '🔊 كتم الصوت';
+      btn.classList.remove('mutedState');
+    }
+  }
+  setTimeout(syncUI, 0);
+
+  function init() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx && actx.state === 'suspended' && !muted) actx.resume().catch(() => {});
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    try { localStorage.setItem('snake_math_muted', JSON.stringify(muted)); } catch(e) {}
+    syncUI();
+    if (muted) {
+      stopMusic();
+      if (actx && actx.state === 'running') actx.suspend().catch(() => {});
+    } else {
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+      if (state.running && !state.paused) startMusic();
+    }
+  }
+
+  function tone(freq, dur, type = 'sine', vol = 0.1) {
+    if (muted) return;
+    init();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }
+
+  function eatCorrect() {
+    tone(523, 0.08, 'triangle', 0.15);
+    setTimeout(() => tone(659, 0.1, 'triangle', 0.16), 70);
+    setTimeout(() => tone(784, 0.14, 'triangle', 0.18), 150);
+  }
+  function eatWrong() {
+    tone(220, 0.14, 'sawtooth', 0.16);
+    setTimeout(() => tone(165, 0.22, 'sawtooth', 0.16), 110);
+  }
+  function turn() { tone(880, 0.03, 'sine', 0.04); }
+  function powerup() { [440, 554, 659, 880].forEach((f, i) => setTimeout(() => tone(f, 0.08, 'square', 0.1), i * 55)); }
+  function win() { [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'triangle', 0.14), i * 100)); }
+
+  function startMusic() {
+    if (muted || musicPlaying) return;
+    init(); musicPlaying = true;
+    const melody = [262, 330, 392, 523, 440, 349, 392, 330];
+    let step = 0;
+    musicTimer = setInterval(() => {
+      if (!musicPlaying || muted || state.paused) return;
+      const f = melody[step % melody.length];
+      tone(f, 0.18, 'sine', 0.025);
+      step++;
+    }, 400);
+  }
+  function stopMusic() {
+    musicPlaying = false;
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+
+  return { eatCorrect, eatWrong, turn, powerup, win, startMusic, stopMusic, toggleMute, init };
+})();
+
+document.getElementById('soundToggleBtn').onclick = () => Sound.toggleMute();
+
+/* ============ Store Helpers ============ */
+const Store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+};
+
+/* ============ Curriculum Question Generator (Grades 1–6) ============ */
+const GRADE_INFOS = {
+  1: '📖 <b>منهاج الصف الأول (כיתה א\'):</b> الجمع والطرح في مجال الـ 20، مكونات العدد 10، والعدد السابق والتالي.',
+  2: '📖 <b>منهاج الصف الثاني (כיתה ב\'):</b> الجمع والطرح حتى 100، آحاد وعشرات، وجداول الضرب (2، 3، 4، 5، 10).',
+  3: '📖 <b>منهاج الصف الثالث (כיתה ג\'):</b> المبنى العشري حتى 10,000، جداول الضرب والقسمة، وترتيب العمليات الحسابية.',
+  4: '📖 <b>منهاج الصف الرابع (כיתה ד\'):</b> الأعداد الكبيرة حتى مليون، الكسور البسيطة وجزء من كمية، والمساحة والمحيط.',
+  5: '📖 <b>منهاج الصف الخامس (כיתה ה\'):</b> الكسور العادية والعشرية، المعدل (المتوسط الحسابي)، ومساحة المثلث.',
+  6: '📖 <b>منهاج الصف السادس (כיתה و\'):</b> النسبة المئوية (%) والتخفيضات، ضرب وقسمة الكسور، النسبة والتناسب، وحجم الصندوق.'
+};
+
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function generateSnakeQuestion(grade) {
+  const p = Math.random();
+
+  if (grade === 1) {
+    if (p < 0.4) {
+      const a = rand(3, 11), b = rand(2, 9);
+      const ans = a + b;
+      return {
+        topic: 'الجمع حتى 20',
+        text: `${a} + ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 1),
+        hint: `نعدّ تصاعدياً: ${a} ونضيف له ${b}`
+      };
+    } else if (p < 0.75) {
+      const a = rand(8, 20), b = rand(2, a - 1);
+      const ans = a - b;
+      return {
+        topic: 'الطرح حتى 20',
+        text: `${a} − ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 1),
+        hint: `كم نضيف للعدد ${b} لنصل إلى ${a}؟`
+      };
+    } else {
+      const a = rand(1, 9);
+      const ans = 10 - a;
+      return {
+        topic: 'مكونات العدد 10',
+        text: `${a} + ___ = 10`,
+        answer: ans,
+        options: makeOptions(ans, 1),
+        hint: `صديق العدد ${a} ليكتمل إلى 10`
+      };
+    }
+  }
+
+  if (grade === 2) {
+    if (p < 0.35) {
+      const a = rand(15, 60), b = rand(12, 35);
+      const ans = a + b;
+      return {
+        topic: 'الجمع في مجال الـ 100',
+        text: `${a} + ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 2),
+        hint: `اجمع الآحاد مع الآحاد (${a%10}+${b%10}) والعشرات مع العشرات`
+      };
+    } else if (p < 0.7) {
+      const a = rand(35, 95), b = rand(12, 30);
+      const ans = a - b;
+      return {
+        topic: 'الطرح في مجال الـ 100',
+        text: `${a} − ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 2),
+        hint: `اطرح العشرات أولاً ثم اطرح الآحاد`
+      };
+    } else {
+      const f1 = [2, 3, 4, 5, 10][rand(0, 4)], f2 = rand(2, 9);
+      const ans = f1 * f2;
+      return {
+        topic: 'جدول الضرب الأساسي',
+        text: `${f1} × ${f2} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, f1),
+        hint: `العدد ${f1} مكرر ${f2} مرات`
+      };
+    }
+  }
+
+  if (grade === 3) {
+    if (p < 0.4) {
+      const a = rand(3, 9), b = rand(4, 9);
+      const ans = a * b;
+      return {
+        topic: 'جداول الضرب',
+        text: `${a} × ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, a),
+        hint: `تذكّر جدول ${a}: ${a} × ${b} = ${ans}`
+      };
+    } else if (p < 0.7) {
+      const b = rand(3, 9), ans = rand(3, 9);
+      const a = b * ans;
+      return {
+        topic: 'القسمة بدون باقٍ',
+        text: `${a} ÷ ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 1),
+        hint: `ما هو العدد الذي إذا ضربناه في ${b} كان الناتج ${a}؟`
+      };
+    } else {
+      const a = rand(10, 25), b = rand(2, 5), c = rand(2, 4);
+      const ans = a + b * c;
+      return {
+        topic: 'ترتيب العمليات الحسابية',
+        text: `${a} + ${b} × ${c} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, b),
+        hint: `الضرب أولاً: (${b}×${c}=${b*c}) ثم نجمع ${a}`
+      };
+    }
+  }
+
+  if (grade === 4) {
+    if (p < 0.35) {
+      const den = [4, 5, 6, 8, 10][rand(0, 4)];
+      const total = den * rand(3, 8);
+      const num = rand(1, den - 1);
+      const ans = (total / den) * num;
+      return {
+        topic: 'كسور — جزء من كمية',
+        text: `كم يساوي ${num}/${den} العدد ${total}؟`,
+        answer: ans,
+        options: makeOptions(ans, total / den),
+        hint: `اقسم ${total} ÷ ${den} = ${total/den}، ثم اضرب في ${num}`
+      };
+    } else if (p < 0.7) {
+      const w = rand(5, 12), h = rand(3, 8);
+      const ans = w * h;
+      return {
+        topic: 'مساحة المستطيل',
+        text: `مساحة مستطيل أبعاده ${w} سم و ${h} سم؟`,
+        answer: ans,
+        options: makeOptions(ans, w),
+        hint: `مساحة المستطيل = الطول × العرض (${w} × ${h})`
+      };
+    } else {
+      const a = rand(11, 24), b = rand(11, 15);
+      const ans = a * b;
+      return {
+        topic: 'الضرب العمودي',
+        text: `${a} × ${b} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 10),
+        hint: `${a} × 10 = ${a*10}، ثم أضف الباقي`
+      };
+    }
+  }
+
+  if (grade === 5) {
+    if (p < 0.35) {
+      const a = rand(15, 65) / 10, b = rand(11, 45) / 10;
+      const ans = Number((a + b).toFixed(1));
+      return {
+        topic: 'جمع الكسور العشرية',
+        text: `${a.toFixed(1)} + ${b.toFixed(1)} = ؟`,
+        answer: ans,
+        options: makeOptions(ans, 0.5),
+        hint: `اجمع الأعشار مع الأعشار والأعداد الصحيحة معاً`
+      };
+    } else if (p < 0.7) {
+      const avg = rand(10, 24);
+      const n1 = avg - rand(2, 6), n2 = avg, n3 = avg + (avg - n1);
+      return {
+        topic: 'المعدل (المتوسط الحسابي)',
+        text: `معدل الأعداد: ${n1} ، ${n2} ، ${n3} ؟`,
+        answer: avg,
+        options: makeOptions(avg, 2),
+        hint: `المعدل = المجموع (${n1+n2+n3}) ÷ 3`
+      };
+    } else {
+      const base = rand(4, 10) * 2, height = rand(3, 8);
+      const ans = (base * height) / 2;
+      return {
+        topic: 'مساحة المثلث',
+        text: `مساحة مثلث قاعدته ${base} سم وارتفاعه ${height} سم؟`,
+        answer: ans,
+        options: makeOptions(ans, height),
+        hint: `(القاعدة × الارتفاع) ÷ 2 = (${base}×${height}) ÷ 2`
+      };
+    }
+  }
+
+  // Grade 6
+  if (p < 0.35) {
+    const pct = [10, 20, 25, 50][rand(0, 3)];
+    const price = rand(2, 10) * 20;
+    const discount = (price * pct) / 100;
+    const finalPrice = price - discount;
+    return {
+      topic: 'النسبة المئوية والتخفيض (%)',
+      text: `تخفيض ${pct}% على سعر ${price} ₪، السعر بعد التخفيض؟`,
+      answer: finalPrice,
+      options: makeOptions(finalPrice, 10),
+      hint: `قيمة التخفيض ${discount} ₪، إذن ${price} − ${discount} = ${finalPrice}`
+    };
+  } else if (p < 0.7) {
+    const l = rand(3, 6), w = rand(2, 5), h = rand(2, 4);
+    const ans = l * w * h;
+    return {
+      topic: 'حجم الصندوق',
+      text: `حجم صندوق أبعاده ${l} × ${w} × ${h} سم؟`,
+      answer: ans,
+      options: makeOptions(ans, w * h),
+      hint: `الحجم = الطول × العرض × الارتفاع`
+    };
+  } else {
+    const a = rand(2, 5), b = rand(3, 6), k = rand(2, 4);
+    const ans = b * k;
+    return {
+      topic: 'النسبة والتناسب',
+      text: `إذا كان ${a} : ${b} = ${a*k} : ؟`,
+      answer: ans,
+      options: makeOptions(ans, b),
+      hint: `العدد الأول تضاعف ${k} مرات، فضاعف العدد الثاني ${k} مرات`
+    };
+  }
+}
+
+function makeOptions(correctVal, step = 1) {
+  const set = new Set([String(correctVal)]);
+  let guard = 0;
+  while (set.size < 4 && guard < 40) {
+    guard++;
+    const delta = (rand(1, 4) * step) * (Math.random() < 0.5 ? 1 : -1);
+    const cand = Number((Number(correctVal) + delta).toFixed(1));
+    if (cand >= 0 && String(cand) !== String(correctVal)) set.add(String(cand));
+  }
+  while (set.size < 4) set.add(String(Number(correctVal) + set.size + 1));
+  return [...set].sort(() => Math.random() - 0.5);
+}
+
+/* ============ Game State & Mechanics ============ */
+const SKINS = {
+  emerald: { head: '#22c55e', body: '#15803d', eye: '#facc15', aura: 'rgba(34,197,94,0.4)' },
+  gold:    { head: '#eab308', body: '#ca8a04', eye: '#ffffff', aura: 'rgba(234,179,8,0.45)' },
+  neon:    { head: '#06b6d4', body: '#0284c7', eye: '#f43f5e', aura: 'rgba(6,182,212,0.45)' },
+  dragon:  { head: '#ef4444', body: '#b91c1c', eye: '#fde047', aura: 'rgba(239,68,68,0.45)' }
+};
+
+const state = {
+  running: false, paused: false,
+  grade: 3, speedMode: 'slow', skin: 'emerald',
+  score: 0, coins: 0, hearts: 3, eaten: 0, target: 8, combo: 1,
+  slowCharges: 2, slowActiveTimer: 0, shieldActive: false,
+  gridW: 28, gridH: 18, cellSize: 26,
+  snake: [], dir: { x: 1, y: 0 }, nextDir: { x: 1, y: 0 },
+  apples: [], powerups: [], particles: [],
+  currentQ: null, invulnerable: 0
+};
+
+function getIntervalMs() {
+  if (state.slowActiveTimer > 0) return 260; // Slow motion
+  if (state.speedMode === 'slow') return 180;
+  if (state.speedMode === 'normal') return 135;
+  return 95; // Fast
+}
+
+function spawnQuestionAndApples() {
+  state.currentQ = generateSnakeQuestion(state.grade);
+  document.getElementById('currentQuestionText').innerHTML = `🎯 السؤال: <b>${state.currentQ.text}</b>`;
+  document.getElementById('topicBadge').textContent = `📚 ${state.currentQ.topic}`;
+
+  // Spawn 3 or 4 apples on the grid with options
+  state.apples = [];
+  const opts = state.currentQ.options;
+  opts.forEach(val => {
+    let pos;
+    let guard = 0;
+    do {
+      guard++;
+      pos = { x: rand(2, state.gridW - 3), y: rand(2, state.gridH - 3) };
+    } while (guard < 50 && (isOccupied(pos.x, pos.y) || state.apples.some(a => a.x === pos.x && a.y === pos.y)));
+
+    state.apples.push({
+      x: pos.x, y: pos.y,
+      val: val,
+      isCorrect: String(val) === String(state.currentQ.answer),
+      pulse: Math.random() * Math.PI * 2
+    });
+  });
+
+  // Random chance to spawn a bonus powerup (Shield or Slowdown)
+  if (state.powerups.length === 0 && Math.random() < 0.35) {
+    const kind = Math.random() < 0.5 ? 'shield' : 'slow';
+    let px = rand(2, state.gridW - 3), py = rand(2, state.gridH - 3);
+    if (!isOccupied(px, py)) state.powerups.push({ x: px, y: py, kind, life: 180 });
+  }
+}
+
+function isOccupied(gx, gy) {
+  return state.snake.some(s => s.x === gx && s.y === gy);
+}
+
+function spawnParticles(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    state.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      color, life: 1, r: Math.random() * 3 + 2
+    });
+  }
+}
+
+function showHintToast(msg) {
+  const t = document.getElementById('hintToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ============ Game Logic Step ============ */
+let lastStepTime = 0;
+function gameStep() {
+  if (!state.running || state.paused) return;
+
+  state.dir = { ...state.nextDir };
+  const head = { x: state.snake[0].x + state.dir.x, y: state.snake[0].y + state.dir.y };
+
+  if (state.slowActiveTimer > 0) state.slowActiveTimer--;
+  if (state.invulnerable > 0) state.invulnerable--;
+
+  // Wall Wrap-around (friendly for students!)
+  if (head.x < 0) head.x = state.gridW - 1;
+  else if (head.x >= state.gridW) head.x = 0;
+  if (head.y < 0) head.y = state.gridH - 1;
+  else if (head.y >= state.gridH) head.y = 0;
+
+  // Self Collision Check
+  const selfHit = state.snake.slice(1).some(s => s.x === head.x && s.y === head.y);
+  if (selfHit && state.invulnerable === 0) {
+    if (state.shieldActive) {
+      state.shieldActive = false;
+      state.invulnerable = 20;
+      Sound.powerup();
+      showHintToast('🛡️ الدرع حماك من الاصطدام!');
+    } else {
+      state.hearts--;
+      state.combo = 1;
+      Sound.eatWrong();
+      spawnParticles(head.x * state.cellSize, head.y * state.cellSize, '#ef4444', 16);
+      showHintToast('⚠️ انتبه! اصطدمت بذيل الأفعى!');
+      updateHUD();
+      if (state.hearts <= 0) { finishGame(false); return; }
+      state.invulnerable = 25;
+    }
+  }
+
+  // Check Apple Collisions
+  let grew = false;
+  const appleIdx = state.apples.findIndex(a => a.x === head.x && a.y === head.y);
+  if (appleIdx !== -1) {
+    const app = state.apples[appleIdx];
+    const px = app.x * state.cellSize + state.cellSize / 2;
+    const py = app.y * state.cellSize + state.cellSize / 2;
+
+    if (app.isCorrect) {
+      // Correct Apple!
+      Sound.eatCorrect();
+      spawnParticles(px, py, '#4ade80', 20);
+      state.score += 25 * state.combo;
+      state.coins += 5;
+      state.eaten++;
+      state.combo = Math.min(5, state.combo + 1);
+      grew = true;
+      updateHUD();
+
+      if (state.eaten >= state.target) {
+        finishGame(true);
+        return;
+      } else {
+        spawnQuestionAndApples();
+      }
+    } else {
+      // Wrong Apple!
+      Sound.eatWrong();
+      spawnParticles(px, py, '#ef4444', 15);
+      state.combo = 1;
+      state.apples.splice(appleIdx, 1); // remove wrong apple
+      if (state.shieldActive) {
+        state.shieldActive = false;
+        showHintToast(`🛡️ الدرع حماك! الإجابة ${app.val} غير صحيحة.`);
+      } else {
+        state.hearts--;
+        showHintToast(`❌ ${app.val} ليست الإجابة الصحيحة! 💡 ${state.currentQ.hint}`);
+      }
+      updateHUD();
+      if (state.hearts <= 0) { finishGame(false); return; }
+    }
+  }
+
+  // Check Powerup Collisions
+  for (let i = state.powerups.length - 1; i >= 0; i--) {
+    const pw = state.powerups[i];
+    if (pw.x === head.x && pw.y === head.y) {
+      Sound.powerup();
+      spawnParticles(pw.x * state.cellSize, pw.y * state.cellSize, '#38bdf8', 16);
+      if (pw.kind === 'shield') {
+        state.shieldActive = true;
+        showHintToast('🛡️ تم تفعيل درع الحماية!');
+      } else {
+        state.slowActiveTimer = 55; // slow down for several seconds
+        showHintToast('🐢 تم إبطاء الأفعى لتفكر بتركيز!');
+      }
+      state.powerups.splice(i, 1);
+    } else {
+      pw.life--;
+      if (pw.life <= 0) state.powerups.splice(i, 1);
+    }
+  }
+
+  // Move Snake Forward
+  state.snake.unshift(head);
+  if (!grew) {
+    state.snake.pop();
+  }
+}
+
+/* ============ Canvas Rendering ============ */
+function renderCanvas() {
+  ctx.clearRect(0, 0, W, H);
+  const cs = state.cellSize;
+
+  // Grid background pattern
+  ctx.strokeStyle = 'rgba(34,197,94,0.06)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= state.gridW; x++) {
+    ctx.beginPath(); ctx.moveTo(x * cs, 0); ctx.lineTo(x * cs, state.gridH * cs); ctx.stroke();
+  }
+  for (let y = 0; y <= state.gridH; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * cs); ctx.lineTo(state.gridW * cs, y * cs); ctx.stroke();
+  }
+
+  // Draw Apples with Question Options
+  state.apples.forEach(app => {
+    app.pulse += 0.08;
+    const ax = app.x * cs + cs / 2;
+    const ay = app.y * cs + cs / 2;
+    const r = (cs / 2 - 2) + Math.sin(app.pulse) * 1.5;
+
+    // Outer glow
+    ctx.fillStyle = 'rgba(239,68,68,0.2)';
+    ctx.beginPath(); ctx.arc(ax, ay, r + 5, 0, Math.PI * 2); ctx.fill();
+
+    // Apple body
+    const grad = ctx.createRadialGradient(ax - 2, ay - 2, 2, ax, ay, r);
+    grad.addColorStop(0, '#f87171');
+    grad.addColorStop(1, '#b91c1c');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.fill();
+
+    // Apple leaf
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.ellipse(ax + 4, ay - r + 1, 4, 2, Math.PI / 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Text on Apple (Option Value)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 13px Tajawal, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(app.val, ax, ay + 1);
+  });
+
+  // Draw Powerups
+  state.powerups.forEach(pw => {
+    const px = pw.x * cs + cs / 2, py = pw.y * cs + cs / 2;
+    ctx.fillStyle = pw.kind === 'shield' ? '#38bdf8' : '#fbbf24';
+    ctx.beginPath(); ctx.arc(px, py, cs / 2 - 2, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(pw.kind === 'shield' ? '🛡️' : '🐢', px, py);
+  });
+
+  // Draw Snake
+  const skin = SKINS[state.skin] || SKINS.emerald;
+  state.snake.forEach((seg, i) => {
+    const sx = seg.x * cs + 2;
+    const sy = seg.y * cs + 2;
+    const sz = cs - 4;
+
+    if (i === 0) {
+      // Snake Head
+      ctx.fillStyle = skin.head;
+      ctx.beginPath();
+      ctx.roundRect(sx, sy, sz, sz, 8);
+      ctx.fill();
+
+      // Shield Aura
+      if (state.shieldActive) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+
+      // Eyes
+      ctx.fillStyle = skin.eye;
+      const eyeOffset = 6;
+      let ex1 = sx + 5, ey1 = sy + 5, ex2 = sx + sz - 7, ey2 = sy + 5;
+      if (state.dir.x === 1) { ex1 = sx + sz - 6; ex2 = sx + sz - 6; ey1 = sy + 4; ey2 = sy + sz - 6; }
+      else if (state.dir.x === -1) { ex1 = sx + 4; ex2 = sx + 4; ey1 = sy + 4; ey2 = sy + sz - 6; }
+      else if (state.dir.y === 1) { ey1 = sy + sz - 6; ey2 = sy + sz - 6; ex1 = sx + 4; ex2 = sx + sz - 6; }
+      ctx.beginPath(); ctx.arc(ex1, ey1, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2, ey2, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else {
+      // Body Segments
+      const alpha = Math.max(0.45, 1 - (i / state.snake.length) * 0.45);
+      ctx.fillStyle = skin.body;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.roundRect(sx, sy, sz, sz, 6);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  // Draw Particles
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const pt = state.particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.04;
+    if (pt.life <= 0) {
+      state.particles.splice(i, 1);
+    } else {
+      ctx.globalAlpha = pt.life;
+      ctx.fillStyle = pt.color;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ============ Game Loop ============ */
+let animationFrameId = null;
+function gameLoop(timestamp) {
+  if (state.running) {
+    const interval = getIntervalMs();
+    if (timestamp - lastStepTime >= interval) {
+      lastStepTime = timestamp;
+      gameStep();
+    }
+    renderCanvas();
+  }
+  animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+/* ============ Start / Finish Controls ============ */
+function startGame() {
+  resize();
+  state.gridW = Math.max(16, Math.floor(W / 26));
+  state.gridH = Math.max(12, Math.floor(H / 26));
+  state.cellSize = Math.floor(Math.min(W / state.gridW, H / state.gridH));
+
+  state.running = true;
+  state.paused = false;
+  state.score = 0;
+  state.coins = 0;
+  state.hearts = 3;
+  state.eaten = 0;
+  state.target = 8;
+  state.combo = 1;
+  state.slowCharges = 2;
+  state.slowActiveTimer = 0;
+  state.shieldActive = false;
+  state.invulnerable = 0;
+
+  // Initialize Snake in the middle
+  const startX = Math.floor(state.gridW / 2);
+  const startY = Math.floor(state.gridH / 2);
+  state.snake = [
+    { x: startX, y: startY },
+    { x: startX - 1, y: startY },
+    { x: startX - 2, y: startY }
+  ];
+  state.dir = { x: 1, y: 0 };
+  state.nextDir = { x: 1, y: 0 };
+
+  spawnQuestionAndApples();
+  updateHUD();
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('pauseBtn').style.display = 'inline-flex';
+  document.getElementById('menuQuickBtn').style.display = 'inline-flex';
+
+  Sound.startMusic();
+  cancelAnimationFrame(animationFrameId);
+  lastStepTime = performance.now();
+  animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function finishGame(won) {
+  state.running = false;
+  cancelAnimationFrame(animationFrameId);
+  Sound.stopMusic();
+
+  if (won) Sound.win();
+  else Sound.eatWrong();
+
+  const prevCoins = Store.get('snake_coins', 0);
+  Store.set('snake_coins', prevCoins + state.coins);
+  const prevEaten = Store.get('snake_eaten_total', 0);
+  Store.set('snake_eaten_total', prevEaten + state.eaten);
+  const prevBest = Store.get('snake_best_g' + state.grade, 0);
+  const isNewBest = state.score > prevBest;
+  if (isNewBest) Store.set('snake_best_g' + state.grade, state.score);
+
+  const title = won ? '🏆 أحسنت يا بطل! أتقنت جميع التحديات!' : '🍎 جولة تدريبية رائعة!';
+  document.getElementById('endTitleTxt').textContent = title;
+
+  document.getElementById('endStatsBox').innerHTML =
+    `<div style="font-size:32px;margin-bottom:6px">${won ? '⭐⭐⭐' : '⭐'}</div>` +
+    `🎓 الصف الدراسي: <b>الصف ${state.grade}</b><br>` +
+    `🍎 تفاحات صحيحة تم أكلها: <b style="color:#4ade80">${state.eaten}/${state.target}</b><br>` +
+    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات: <b style="color:#38bdf8">+${state.coins}</b>` +
+    (isNewBest ? `<div style="color:#facc15;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في الصف ${state.grade}!</div>` : '');
+
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('coinsVal').textContent = state.coins;
+  document.getElementById('eatenVal').textContent = state.eaten;
+  document.getElementById('targetVal').textContent = state.target;
+  document.getElementById('comboVal').textContent = state.combo;
+  document.getElementById('slowCount').textContent = state.slowCharges;
+  document.getElementById('heartsHud').textContent = '❤️'.repeat(Math.max(0, state.hearts));
+  document.getElementById('bestScoreTxt').textContent = Store.get('snake_best_g' + state.grade, 0);
+  document.getElementById('coinsTotalTxt').textContent = Store.get('snake_coins', 0);
+  document.getElementById('totalEatenTxt').textContent = Store.get('snake_eaten_total', 0);
+}
+
+/* ============ Direction Controls ============ */
+function setDirection(dx, dy) {
+  if (!state.running || state.paused) return;
+  // Disallow 180-degree immediate reversal
+  if (state.dir.x + dx === 0 && state.dir.y + dy === 0) return;
+  state.nextDir = { x: dx, y: dy };
+  Sound.turn();
+}
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { e.preventDefault(); setDirection(0, -1); }
+  else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { e.preventDefault(); setDirection(0, 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); setDirection(-1, 0); }
+  else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); setDirection(1, 0); }
+  else if (e.key === ' ') {
+    togglePause();
+  }
+});
+
+// Touch D-Pad bindings
+document.getElementById('dUp').addEventListener('pointerdown', e => { e.preventDefault(); setDirection(0, -1); });
+document.getElementById('dDown').addEventListener('pointerdown', e => { e.preventDefault(); setDirection(0, 1); });
+document.getElementById('dLeft').addEventListener('pointerdown', e => { e.preventDefault(); setDirection(-1, 0); });
+document.getElementById('dRight').addEventListener('pointerdown', e => { e.preventDefault(); setDirection(1, 0); });
+
+// Touch swipe gestures on Canvas
+let touchStartX = 0, touchStartY = 0;
+cv.addEventListener('touchstart', e => {
+  if (e.touches.length > 0) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }
+}, { passive: true });
+cv.addEventListener('touchend', e => {
+  if (e.changedTouches.length > 0) {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.hypot(dx, dy) > 25) {
+      if (Math.abs(dx) > Math.abs(dy)) setDirection(dx > 0 ? 1 : -1, 0);
+      else setDirection(0, dy > 0 ? 1 : -1);
+    }
+  }
+}, { passive: true });
+
+// Action buttons
+document.getElementById('btnShowHint').onclick = () => {
+  if (state.currentQ) showHintToast(`💡 تلميح: ${state.currentQ.hint}`);
+};
+document.getElementById('btnSlowDown').onclick = () => {
+  if (state.slowCharges > 0) {
+    state.slowCharges--;
+    state.slowActiveTimer = 55;
+    Sound.powerup();
+    showHintToast('🐢 تم إبطاء الأفعى بنجاح!');
+    updateHUD();
+  } else {
+    showHintToast('⚠️ نفدت شحنات الإبطاء لهذه الجولة!');
+  }
+};
+
+function togglePause() {
+  if (!state.running) return;
+  state.paused = !state.paused;
+  const pBtn = document.getElementById('pauseBtn');
+  pBtn.textContent = state.paused ? '▶️ استئناف' : '⏸️ إيقاف';
+  if (state.paused) Sound.stopMusic();
+  else Sound.startMusic();
+}
+document.getElementById('pauseBtn').onclick = togglePause;
+
+document.getElementById('menuQuickBtn').onclick = () => {
+  state.running = false;
+  Sound.stopMusic();
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('pauseBtn').style.display = 'none';
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+/* ============ Menu Selections ============ */
+document.querySelectorAll('.gradeBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.gradeBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.grade = +b.dataset.g;
+    document.getElementById('curriculumInfo').innerHTML = GRADE_INFOS[state.grade];
+    updateHUD();
+  };
+});
+
+document.querySelectorAll('#speedRow .optTagBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#speedRow .optTagBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.speedMode = b.dataset.spd;
+  };
+});
+
+document.querySelectorAll('#skinRow .optTagBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#skinRow .optTagBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.skin = b.dataset.skin;
+  };
+});
+
+document.getElementById('startBtn').onclick = startGame;
+document.getElementById('playAgainBtn').onclick = startGame;
+document.getElementById('backMenuBtn').onclick = () => {
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('pauseBtn').style.display = 'none';
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+resize();
+updateHUD();
+</script>
+</body>
+</html>

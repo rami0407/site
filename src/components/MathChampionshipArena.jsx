@@ -193,6 +193,24 @@ export const MATH_CHALLENGE_BRANCHES = [
       '4 عوالم مغامرة وقلعة الفوز، مع تلميحات وشرح لكل سؤال 💡'
     ],
     awardTeaser: 'أبطال ماريو الأربعة + راية قلعة الفوز 🏆🍄'
+  },
+  {
+    id: 'snake',
+    viewId: 'branch_snake',
+    gameType: 'snake',
+    title: 'أفعى الأعداد الحسابية 🐍',
+    subtitle: 'التقط التفاحات التي تحمل الإجابات الصحيحة وفق منهاج الوسط العربي',
+    icon: '🐍',
+    color: '#059669',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+    badge: '🍎 أفعى الأعداد',
+    grades: 'صفوف 1 - 6',
+    highlights: [
+      'اقرأ السؤال أعلى الشاشة وكُل التفاحة التي تحمل الإجابة الصحيحة 🎯',
+      'دروع حماية، إبطاء السرعة للتفكير المريح، ومضاعفة النقاط ⭐',
+      '4 أشكال للأفعى وسرعات مخصصة تناسب جميع المستويات 🎓'
+    ],
+    awardTeaser: 'كأس مروّض الأفاعي الحسابية + أوسمة الإتقان 🏆🐍'
   }
 ];
 
@@ -780,6 +798,13 @@ export default function MathChampionshipArena() {
             onClick={() => { setGameState('idle'); setActiveView('branch_mario'); }}
           >
             <i className="fas fa-gamepad"></i> مغامرات ماريو 🍄
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab ${activeView === 'branch_snake' ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_snake'); }}
+          >
+            <i className="fas fa-dragon"></i> أفعى الأعداد 🐍
           </button>
           <button 
             type="button"
@@ -1502,6 +1527,62 @@ export default function MathChampionshipArena() {
                 <iframe
                   src="/math-mario.html?v=1"
                   title="مغامرات سوبر ماريو الحسابية 🍄"
+                  style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 11: MATH SNAKE (ARAB SECTOR CURRICULUM) */}
+        {activeView === 'branch_snake' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span className="branch-current-crumb">🐍 أفعى الأعداد الحسابية (صفوف 1 - 6)</span>
+                <a
+                  href="/math-snake.html?v=1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #047857)',
+                    color: '#fff',
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    fontWeight: '800',
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+                  }}
+                >
+                  ⛶ فتح اللعبة في شاشة كاملة
+                </a>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '880px',
+                  height: '640px',
+                  maxHeight: '85vh',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(16, 185, 129, 0.45)',
+                  background: '#061a14'
+                }}
+              >
+                <iframe
+                  src="/math-snake.html?v=1"
+                  title="أفعى الأعداد الحسابية 🐍"
                   style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
                   allow="autoplay; fullscreen"
                 />
