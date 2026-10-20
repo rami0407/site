@@ -175,6 +175,24 @@ export const MATH_CHALLENGE_BRANCHES = [
       '18 شارة إنجاز، سلسلة التزام يومي، وتقرير أداء شامل 📈'
     ],
     awardTeaser: 'معرض السيارات الرياضية + 18 شارة إنجاز 🏆🏎️'
+  },
+  {
+    id: 'mario',
+    viewId: 'branch_mario',
+    gameType: 'mario',
+    title: 'مغامرات سوبر ماريو الحسابية 🍄',
+    subtitle: 'لعبة منصات ومغامرات وفق منهاج الحساب للوسط العربي في البلاد',
+    icon: '🍄',
+    color: '#16a34a',
+    gradient: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+    badge: '🏰 مغامرة المنصات',
+    grades: 'صفوف 1 - 6',
+    highlights: [
+      'اقفز واضرب صناديق [؟] الذهبية لتظهر أسئلة المنهاج 🟨',
+      'اسحق الأعداء واجمع العملات والفطر السوبر وكرات اللهب 🔥',
+      '4 عوالم مغامرة وقلعة الفوز، مع تلميحات وشرح لكل سؤال 💡'
+    ],
+    awardTeaser: 'أبطال ماريو الأربعة + راية قلعة الفوز 🏆🍄'
   }
 ];
 
@@ -755,6 +773,13 @@ export default function MathChampionshipArena() {
             onClick={() => { setGameState('idle'); setActiveView('branch_racing'); }}
           >
             <i className="fas fa-flag-checkered"></i> سباق الرياضيات 🏎️
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab ${activeView === 'branch_mario' ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_mario'); }}
+          >
+            <i className="fas fa-gamepad"></i> مغامرات ماريو 🍄
           </button>
           <button 
             type="button"
@@ -1422,6 +1447,62 @@ export default function MathChampionshipArena() {
                     border: 'none',
                     display: 'block'
                   }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 10: SUPER MARIO MATH ADVENTURE (ARAB SECTOR CURRICULUM) */}
+        {activeView === 'branch_mario' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span className="branch-current-crumb">🍄 مغامرات سوبر ماريو الحسابية (صفوف 1 - 6)</span>
+                <a
+                  href="/math-mario.html?v=1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #22c55e, #15803d)',
+                    color: '#fff',
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    fontWeight: '800',
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(34, 197, 94, 0.35)'
+                  }}
+                >
+                  ⛶ فتح اللعبة في شاشة كاملة
+                </a>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '880px',
+                  height: '600px',
+                  maxHeight: '85vh',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(34, 197, 94, 0.45)',
+                  background: '#0f172a'
+                }}
+              >
+                <iframe
+                  src="/math-mario.html?v=1"
+                  title="مغامرات سوبر ماريو الحسابية 🍄"
+                  style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
                   allow="autoplay; fullscreen"
                 />
               </div>

@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>🍄 سوبر ماريو الحساب - منهاج الوسط العربي في البلاد</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    font-family:'Tajawal','Segoe UI',Tahoma,sans-serif;
+    background:radial-gradient(circle at center,#1e3a8a 0%,#090d16 100%);
+    overflow:hidden;touch-action:none;
+    display:flex;justify-content:center;align-items:center;
+    height:100vh;width:100vw;
+  }
+  #wrap{
+    position:relative;width:100%;max-width:860px;height:100vh;max-height:600px;
+    background:#5c94fc;overflow:hidden;
+    box-shadow:0 20px 70px rgba(0,0,0,.65),0 0 0 3px rgba(250,204,21,.55);
+    border-radius:20px;
+  }
+  @media (max-width:880px){
+    #wrap{max-width:100vw;max-height:100vh;border-radius:0;box-shadow:none;}
+  }
+  canvas{display:block;width:100%;height:100%;}
+
+  /* Always-visible Floating Sound Mute Bar */
+  #floatingMuteBar{
+    position:absolute;top:10px;left:10px;z-index:300;
+    display:flex;gap:6px;align-items:center;
+  }
+  #soundToggleBtn{
+    pointer-events:auto;cursor:pointer;
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+    border:2px solid #fde047;color:#fff;border-radius:99px;
+    padding:5px 14px;height:36px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    font-size:12px;font-weight:900;font-family:inherit;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);transition:all .15s;
+  }
+  #soundToggleBtn.mutedState{
+    background:linear-gradient(135deg,#475569,#1e293b);
+    border-color:#94a3b8;color:#e2e8f0;
+  }
+  #menuQuickBtn{
+    pointer-events:auto;cursor:pointer;
+    background:rgba(15,23,42,.85);border:2px solid rgba(255,255,255,.3);
+    color:#fff;border-radius:99px;padding:5px 12px;height:36px;
+    font-size:12px;font-weight:800;font-family:inherit;
+    display:none;align-items:center;gap:4px;
+  }
+
+  /* Top Mario HUD */
+  #hud{
+    position:absolute;top:10px;right:12px;left:215px;
+    display:flex;justify-content:flex-start;align-items:center;gap:7px;
+    color:#fff;font-weight:900;font-size:13px;z-index:20;pointer-events:none;flex-wrap:wrap;
+  }
+  .hudBox{
+    background:linear-gradient(135deg,rgba(15,23,42,.86),rgba(30,41,59,.78));
+    padding:5px 11px;border-radius:14px;
+    border:2px solid rgba(250,204,21,.55);
+    backdrop-filter:blur(6px);text-shadow:0 2px 3px rgba(0,0,0,.8);
+    white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.35);
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .hudBox.worldBox{border-color:#4ade80;color:#bbf7d0;}
+  .hudBox.qBox{border-color:#c084fc;color:#f3e8ff;}
+  .hudBox.heartsBox{border-color:#f87171;color:#fecaca;font-size:14px;}
+
+  /* Touch / On-screen Gamepad Controls */
+  #controls{
+    position:absolute;bottom:10px;left:12px;right:12px;
+    display:flex;justify-content:space-between;align-items:flex-end;
+    z-index:30;pointer-events:none;
+  }
+  .dpadGroup,.actionGroup{display:flex;gap:10px;pointer-events:auto;}
+  .ctrlBtn{
+    width:68px;height:68px;border-radius:22px;
+    border:3px solid rgba(250,204,21,.65);
+    background:linear-gradient(180deg,rgba(15,23,42,.82),rgba(2,6,23,.92));
+    color:#fde047;font-size:26px;font-weight:900;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);cursor:pointer;
+    user-select:none;-webkit-user-select:none;transition:transform .08s,background .15s;
+  }
+  .ctrlBtn span{font-size:11px;color:#fff;margin-top:-2px;font-weight:800;}
+  .ctrlBtn:active{transform:scale(.92);background:rgba(250,204,21,.35);}
+  .ctrlBtn.jumpBtn{
+    width:82px;height:82px;border-radius:50%;
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+    border-color:#fde047;color:#fff;font-size:28px;
+    box-shadow:0 8px 24px rgba(239,68,68,.55);
+  }
+  .ctrlBtn.fireBtn{
+    width:66px;height:66px;border-radius:50%;
+    background:linear-gradient(135deg,#f97316,#c2410c);
+    border-color:#fed7aa;color:#fff;font-size:22px;
+  }
+  .ctrlBtn.askBtn{
+    width:66px;height:66px;border-radius:20px;
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+    border-color:#ddd6fe;color:#fff;font-size:20px;
+  }
+
+  /* Quiz Modal (Mario Question Block Overlay) */
+  #quizOverlay{
+    position:absolute;inset:0;
+    background:radial-gradient(circle at center,rgba(15,23,42,.82),rgba(2,6,23,.94));
+    backdrop-filter:blur(6px);
+    display:none;flex-direction:column;justify-content:center;align-items:center;
+    z-index:120;padding:14px;text-align:center;color:#fff;animation:fadeIn .22s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  #quizOverlay.show{display:flex;}
+  .quizCard{
+    width:100%;max-width:480px;
+    background:linear-gradient(165deg,#1e293b,#0f172a);
+    border:4px solid #facc15;border-radius:26px;padding:18px 18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.8),0 0 0 4px rgba(234,179,8,.25);
+    display:flex;flex-direction:column;align-items:center;position:relative;
+  }
+  .qBlockHeader{
+    display:flex;align-items:center;gap:8px;
+    background:linear-gradient(135deg,#f59e0b,#d97706);
+    color:#0f172a;font-weight:900;font-size:13px;
+    padding:5px 16px;border-radius:99px;margin-bottom:8px;
+    box-shadow:0 4px 12px rgba(245,158,11,.4);
+  }
+  #qTopicTag{
+    font-size:12px;color:#38bdf8;font-weight:800;margin-bottom:8px;
+  }
+  .qTopRow{
+    display:flex;justify-content:space-between;align-items:center;
+    width:100%;margin-bottom:8px;gap:8px;flex-wrap:wrap;
+  }
+  #qTimerTxt{font-size:14px;color:#fde047;font-weight:900;}
+  .qHelperBtns{display:flex;gap:6px;}
+  .qHelpBtn{
+    background:rgba(255,255,255,.1);border:1.5px solid rgba(250,204,21,.5);
+    color:#fde047;padding:4px 11px;border-radius:10px;
+    font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;
+  }
+  .qHelpBtn:hover{background:rgba(250,204,21,.22);}
+  #qTimerBar{
+    width:100%;height:9px;background:rgba(255,255,255,.12);
+    border-radius:99px;margin-bottom:10px;overflow:hidden;
+  }
+  #qTimerFill{
+    height:100%;width:100%;
+    background:linear-gradient(90deg,#4ade80,#facc15,#ef4444);
+    border-radius:99px;transition:width .3s linear;
+  }
+  #qHintBox{
+    display:none;background:rgba(56,189,248,.16);border:1.5px solid #38bdf8;
+    color:#e0f2fe;font-size:13px;font-weight:700;padding:8px 12px;
+    border-radius:12px;margin-bottom:10px;width:100%;line-height:1.5;
+  }
+  #qText{
+    font-size:23px;margin-bottom:14px;font-weight:900;color:#fff;
+    background:rgba(255,255,255,.06);padding:12px 16px;border-radius:16px;
+    width:100%;border:1px solid rgba(255,255,255,.12);line-height:1.45;
+  }
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+  .optBtn{
+    padding:13px 10px;font-size:20px;font-weight:900;border:none;border-radius:16px;
+    background:linear-gradient(160deg,#334155,#1e293b);color:#fff;
+    cursor:pointer;border:2px solid #475569;
+    box-shadow:0 4px 0 #0f172a;font-family:inherit;transition:all .12s;
+  }
+  .optBtn:hover{border-color:#fde047;transform:translateY(-1px);}
+  .optBtn:active{transform:translateY(3px);box-shadow:0 1px 0 #0f172a;}
+  .optBtn.correct{
+    background:linear-gradient(160deg,#22c55e,#15803d);
+    border-color:#86efac;box-shadow:0 0 25px rgba(34,197,94,.7);
+  }
+  .optBtn.wrong{
+    background:linear-gradient(160deg,#ef4444,#991b1b);
+    border-color:#fca5a5;animation:shake .4s;
+  }
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  #feedback{font-size:15px;margin-top:12px;min-height:24px;font-weight:800;}
+
+  /* Screens (Start, End, Modals) */
+  .screen{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,#1e3a8a 0%,#0f172a 65%,#020617 100%);
+    display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
+    z-index:150;color:#fff;padding:48px 16px 20px;text-align:center;overflow-y:auto;
+  }
+  .screen.hidden{display:none;}
+  .marioHeroCard{
+    background:linear-gradient(135deg,rgba(239,68,68,.25),rgba(245,158,11,.2));
+    border:2px solid rgba(250,204,21,.5);border-radius:24px;
+    padding:14px 18px;width:100%;max-width:600px;margin-bottom:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.45);
+  }
+  .marioHeroCard h1{
+    font-size:26px;color:#fde047;text-shadow:0 3px 0 #991b1b,0 0 25px rgba(250,204,21,.6);
+    font-weight:900;margin-bottom:4px;
+  }
+  .marioHeroCard .sub{font-size:13px;color:#bae6fd;font-weight:800;}
+  .howToPlayStrip{
+    display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px;
+  }
+  .htpBadge{
+    background:rgba(15,23,42,.75);border:1px solid rgba(250,204,21,.4);
+    padding:4px 10px;border-radius:99px;font-size:11px;color:#fef08a;font-weight:700;
+  }
+
+  .sectionLbl{font-size:13px;color:#fde047;font-weight:900;margin:6px 0;}
+  .gradesGrid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:7px;
+    width:100%;max-width:580px;margin-bottom:10px;
+  }
+  @media (max-width:520px){.gradesGrid{grid-template-columns:repeat(3,1fr);}}
+  .gradeBtn{
+    padding:8px 4px;border-radius:14px;border:2px solid rgba(250,204,21,.45);
+    background:rgba(15,23,42,.75);color:#fde047;cursor:pointer;
+    font-family:inherit;transition:all .18s;display:flex;flex-direction:column;align-items:center;
+  }
+  .gradeBtn strong{font-size:16px;font-weight:900;}
+  .gradeBtn span{font-size:10px;color:#cbd5e1;font-weight:700;margin-top:2px;}
+  .gradeBtn.selected{
+    background:linear-gradient(135deg,#facc15,#eab308);
+    color:#0f172a;border-color:#fff;transform:scale(1.05);
+    box-shadow:0 0 20px rgba(250,204,21,.75);
+  }
+  .gradeBtn.selected span{color:#1e293b;font-weight:900;}
+
+  .worldsRow{
+    display:flex;gap:7px;justify-content:center;flex-wrap:wrap;
+    margin-bottom:10px;max-width:600px;
+  }
+  .worldBtn{
+    padding:7px 13px;border-radius:14px;border:2px solid rgba(56,189,248,.45);
+    background:rgba(15,23,42,.7);color:#e0f2fe;font-size:12px;font-weight:800;
+    cursor:pointer;font-family:inherit;transition:all .18s;
+  }
+  .worldBtn.selected{
+    background:linear-gradient(135deg,#22c55e,#15803d);
+    color:#fff;border-color:#bbf7d0;box-shadow:0 0 16px rgba(34,197,94,.6);
+  }
+
+  .curriculumPreviewBox{
+    background:rgba(15,23,42,.8);border:1px solid rgba(56,189,248,.35);
+    border-radius:14px;padding:8px 14px;max-width:580px;width:100%;
+    font-size:12px;color:#bae6fd;margin-bottom:10px;line-height:1.5;
+  }
+
+  .btn{
+    padding:12px 32px;font-size:17px;font-weight:900;border:none;border-radius:99px;
+    background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;
+    cursor:pointer;margin:4px;box-shadow:0 5px 0 #7f1d1d,0 8px 25px rgba(239,68,68,.5);
+    font-family:inherit;transition:transform .1s;border:2px solid #fde047;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #7f1d1d;}
+  .btn.green{background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 5px 0 #14532d;}
+  .btn.secondary{
+    background:linear-gradient(135deg,#334155,#1e293b);
+    box-shadow:0 4px 0 #0f172a;border-color:rgba(255,255,255,.2);
+    font-size:13px;padding:8px 16px;
+  }
+
+  .statsRow{
+    display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;
+    font-size:12px;color:#fde047;font-weight:800;
+  }
+
+  .heroGrid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+    width:100%;max-width:460px;margin:10px auto;
+  }
+  .heroCard{
+    background:rgba(255,255,255,.07);border:2px solid rgba(250,204,21,.3);
+    border-radius:14px;padding:10px 6px;cursor:pointer;text-align:center;
+  }
+  .heroCard.selected{border-color:#fde047;background:rgba(250,204,21,.18);box-shadow:0 0 18px rgba(250,204,21,.5);}
+  .modal{
+    position:absolute;inset:0;background:rgba(2,6,23,.96);z-index:220;
+    display:none;flex-direction:column;align-items:center;padding:50px 18px 20px;color:#fff;overflow-y:auto;
+  }
+  .modal.show{display:flex;}
+  .closeBtn{
+    position:absolute;top:12px;right:14px;background:rgba(255,255,255,.15);
+    border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+
+  <!-- Always-visible Floating Sound Mute & Menu Bar -->
+  <div id="floatingMuteBar">
+    <button id="soundToggleBtn" type="button">🔊 كتم الصوت</button>
+    <button id="menuQuickBtn" type="button">🏠 القائمة</button>
+  </div>
+
+  <!-- Game HUD -->
+  <div id="hud">
+    <div class="hudBox heartsBox" id="heartsHud">❤️❤️❤️</div>
+    <div class="hudBox">⭐ <span id="scoreVal">0</span></div>
+    <div class="hudBox">🪙 <span id="coinsVal">0</span></div>
+    <div class="hudBox qBox">❓ <span id="qSolvedVal">0</span>/<span id="qTotalVal">6</span></div>
+    <div class="hudBox worldBox" id="worldHud">🌳 العالم 1</div>
+  </div>
+
+  <!-- On-Screen Platformer Controls -->
+  <div id="controls">
+    <div class="dpadGroup">
+      <button class="ctrlBtn" id="btnRight" type="button">▶<span>يمين</span></button>
+      <button class="ctrlBtn" id="btnLeft" type="button">◀<span>يسار</span></button>
+    </div>
+    <div class="actionGroup">
+      <button class="ctrlBtn askBtn" id="btnInstantQ" type="button" title="افتح سؤالاً حسابياً فوراً">❓<span>سؤال</span></button>
+      <button class="ctrlBtn fireBtn" id="btnFire" type="button" title="إطلاق كرة لهب">🔥<span>لهب (<b id="fireCount">3</b>)</span></button>
+      <button class="ctrlBtn jumpBtn" id="btnJump" type="button">⬆️<span>قفز!</span></button>
+    </div>
+  </div>
+
+  <!-- Mario Question Block Modal -->
+  <div id="quizOverlay">
+    <div class="quizCard">
+      <div class="qBlockHeader" id="qHeaderBadge">🍄 صندوق المفاجآت الحسابي [?] — أجب لتربح القوة الخارقة!</div>
+      <div id="qTopicTag">📚 الموضوع: المبنى العشري</div>
+      <div class="qTopRow">
+        <div id="qTimerTxt">⏱️ 35 ثانية</div>
+        <div class="qHelperBtns">
+          <button class="qHelpBtn" id="hintBtn" type="button">💡 شرح وتلميح</button>
+          <button class="qHelpBtn" id="freezeBtn" type="button">⏸️ تجميد الوقت</button>
+        </div>
+      </div>
+      <div id="qTimerBar"><div id="qTimerFill"></div></div>
+      <div id="qHintBox"></div>
+      <div id="qText"></div>
+      <div class="options" id="options"></div>
+      <div id="feedback"></div>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="marioHeroCard">
+      <h1>🍄 مغامرات سوبر ماريو الحسابية 🏰</h1>
+      <div class="sub">منهاج الحساب الرسمي للوسط العربي في إسرائيل — مدرسة مشيرفة الابتدائية</div>
+      <div class="howToPlayStrip">
+        <span class="htpBadge">⬆️ اقفز واضرب صناديق [?] الذهبية برأسك</span>
+        <span class="htpBadge">👾 اقفز فوق الفطر والسلحفاة لسحقها</span>
+        <span class="htpBadge">🍄 الفطر السوبر يكبّر حجمك ويحميك</span>
+        <span class="htpBadge">🚩 صل إلى راية القلعة لإتمام المرحلة!</span>
+      </div>
+    </div>
+
+    <div class="sectionLbl">🎓 اختر الصف الدراسي (وفق منهاج وزارة المعارف للوسط العربي):</div>
+    <div class="gradesGrid" id="gradesGrid">
+      <button class="gradeBtn" data-g="1"><strong>الصف 1</strong><span>الأعداد حتى 20</span></button>
+      <button class="gradeBtn" data-g="2"><strong>الصف 2</strong><span>حتى 100 والضرب</span></button>
+      <button class="gradeBtn selected" data-g="3"><strong>الصف 3</strong><span>حتى 10,000 والقسمة</span></button>
+      <button class="gradeBtn" data-g="4"><strong>الصف 4</strong><span>الكسور والملايين</span></button>
+      <button class="gradeBtn" data-g="5"><strong>الصف 5</strong><span>الكسور العشرية</span></button>
+      <button class="gradeBtn" data-g="6"><strong>الصف 6</strong><span>النسبة المئوية والحجم</span></button>
+    </div>
+
+    <div class="curriculumPreviewBox" id="curriculumPreview">
+      📖 <b>منهاج الصف الثالث (כיתה ג'):</b> المبنى العشري حتى 10,000، جداول الضرب والقسمة، القسمة مع باقٍ، ترتيب العمليات الحسابية، ومحيط المضلعات.
+    </div>
+
+    <div class="sectionLbl">🌍 اختر عالم المغامرة:</div>
+    <div class="worldsRow" id="worldsRow">
+      <button class="worldBtn selected" data-w="0">🌳 1: المروج الخضراء</button>
+      <button class="worldBtn" data-w="1">🏜️ 2: صحراء الأهرامات</button>
+      <button class="worldBtn" data-w="2">❄️ 3: القمم الجليدية</button>
+      <button class="worldBtn" data-w="3">🌋 4: قلعة الحمم</button>
+    </div>
+
+    <div>
+      <button class="btn" id="startBtn">🍄 ابدأ مغامرة ماريو الآن!</button>
+      <button class="btn secondary" id="heroesBtn">👕 اختيار البطل</button>
+    </div>
+
+    <div class="statsRow">
+      <span>🏆 أعلى نتيجة: <b id="bestScoreTxt">0</b></span>
+      <span>🪙 رصيد العملات: <b id="totalCoinsTxt">0</b></span>
+    </div>
+  </div>
+
+  <!-- END / STAGE CLEAR SCREEN -->
+  <div class="screen hidden" id="endScreen">
+    <div class="marioHeroCard">
+      <h1 id="endTitle">🏰 أحسنت! وصلت إلى قلعة الفوز!</h1>
+      <div class="sub" id="endSub">بطل الحساب في مدرسة مشيرفة الابتدائية</div>
+    </div>
+    <div id="endStats" style="background:rgba(15,23,42,.85);border:2px solid #facc15;border-radius:20px;padding:18px 28px;margin:10px 0;font-size:16px;line-height:1.9;"></div>
+    <div>
+      <button class="btn green" id="nextStageBtn">🚀 المرحلة التالية</button>
+      <button class="btn secondary" id="backMenuBtn">🏠 القائمة الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- HERO SHOP MODAL -->
+  <div class="modal" id="heroesModal">
+    <button class="closeBtn" id="closeHeroesBtn">✕</button>
+    <h2 style="color:#fde047;margin-bottom:6px;">👕 أبطال المغامرة الحسابية</h2>
+    <p style="font-size:13px;color:#bae6fd;margin-bottom:10px;">🪙 عملاتك: <b id="shopCoinsTxt">0</b></p>
+    <div class="heroGrid" id="heroGrid"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   🍄 SUPER MARIO MATH ADVENTURE — ISRAELI ARAB SECTOR CURRICULUM (GRADES 1-6)
+   ============================================================================ */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 800, H = 500, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth || 800;
+  H = cv.clientHeight || 500;
+  cv.width = W * DPR;
+  cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+/* ============ WebAudio Sound Engine with Persistent Mute ============ */
+const Sound = (() => {
+  let actx = null, musicTimer = null, musicPlaying = false;
+  let muted = false;
+  try { muted = JSON.parse(localStorage.getItem('mario_math_muted') || 'false'); } catch(e) {}
+
+  function syncUI() {
+    const btn = document.getElementById('soundToggleBtn');
+    if (!btn) return;
+    if (muted) {
+      btn.innerHTML = '🔇 الصوت مكتوم';
+      btn.classList.add('mutedState');
+    } else {
+      btn.innerHTML = '🔊 كتم الصوت';
+      btn.classList.remove('mutedState');
+    }
+  }
+  setTimeout(syncUI, 0);
+
+  function init() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx && actx.state === 'suspended' && !muted) actx.resume().catch(() => {});
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    try { localStorage.setItem('mario_math_muted', JSON.stringify(muted)); } catch(e) {}
+    syncUI();
+    if (muted) {
+      stopMusic();
+      if (actx && actx.state === 'running') actx.suspend().catch(() => {});
+    } else {
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+      if (state.running) startMusic();
+    }
+  }
+
+  function tone(freq, dur, type = 'square', vol = 0.1) {
+    if (muted) return;
+    init();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }
+
+  function jump() {
+    if (muted) return;
+    init();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(180, actx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(520, actx.currentTime + 0.18);
+    g.gain.setValueAtTime(0.09, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.2);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + 0.2);
+  }
+  function coin() { tone(987, 0.07, 'square', 0.1); setTimeout(() => tone(1318, 0.18, 'square', 0.1), 65); }
+  function blockHit() { tone(330, 0.08, 'triangle', 0.14); setTimeout(() => tone(660, 0.12, 'square', 0.12), 60); }
+  function powerup() { [330, 392, 659, 523, 587, 784].forEach((f, i) => setTimeout(() => tone(f, 0.09, 'square', 0.1), i * 55)); }
+  function stomp() { tone(240, 0.08, 'sawtooth', 0.12); setTimeout(() => tone(480, 0.1, 'square', 0.1), 50); }
+  function fireball() { tone(600, 0.06, 'sawtooth', 0.1); setTimeout(() => tone(280, 0.08, 'sawtooth', 0.1), 40); }
+  function hurt() { [280, 220, 160].forEach((f, i) => setTimeout(() => tone(f, 0.12, 'sawtooth', 0.14), i * 80)); }
+  function win() { [523, 659, 784, 1046, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'square', 0.12), i * 110)); }
+
+  function startMusic() {
+    if (muted || musicPlaying) return;
+    init(); musicPlaying = true;
+    // Cheerful Mario-inspired adventure melody
+    const melody = [659, 659, 0, 659, 0, 523, 659, 0, 784, 0, 0, 0, 392, 0, 0, 0];
+    let step = 0;
+    musicTimer = setInterval(() => {
+      if (!musicPlaying || muted || state.paused) return;
+      const f = melody[step % melody.length];
+      if (f > 0) tone(f, 0.12, 'triangle', 0.03);
+      step++;
+    }, 240);
+  }
+  function stopMusic() {
+    musicPlaying = false;
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+
+  return { jump, coin, blockHit, powerup, stomp, fireball, hurt, win, startMusic, stopMusic, toggleMute, init };
+})();
+
+document.getElementById('soundToggleBtn').onclick = () => Sound.toggleMute();
+
+/* ============ Local Storage Helpers ============ */
+const Store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+};
+
+const HEROES = [
+  { id: 'mario', name: 'ماريو الأحمر', cap: '#ef4444', suit: '#2563eb', price: 0 },
+  { id: 'luigi', name: 'لويجي الأخضر', cap: '#22c55e', suit: '#1d4ed8', price: 60 },
+  { id: 'fire',  name: 'ماريو الناري', cap: '#f8fafc', suit: '#dc2626', price: 140 },
+  { id: 'gold',  name: 'البطل الذهبي', cap: '#facc15', suit: '#7c2d12', price: 250 }
+];
+
+function getHero() {
+  const id = Store.get('mm_hero', 'mario');
+  return HEROES.find(h => h.id === id) || HEROES[0];
+}
+
+/* ============ Curriculum Descriptions & Question Engine (Grades 1–6 Arab Sector Israel) ============ */
+const GRADE_DESCRIPTIONS = {
+  1: '📖 <b>منهاج الصف الأول (כיתה א\'):</b> الجمع والطرح في مجال الـ 20، العدد السابق والتالي، الإكمال للعشرة الكاملة (مكونات الـ 10)، ومقارنة الأعداد.',
+  2: '📖 <b>منهاج الصف الثاني (כיתה ב\'):</b> الجمع والطرح في مجال الـ 100، المبنى العشري (آحاد وعشرات)، مفهوم الضرب وجداول (2، 3، 4، 5، 10)، والأعداد الزوجية والفردية.',
+  3: '📖 <b>منهاج الصف الثالث (כיתה ג\'):</b> المبنى العشري حتى 10,000، جداول الضرب والقسمة، القسمة مع باقٍ، ترتيب العمليات الحسابية، ومحيط المضلعات.',
+  4: '📖 <b>منهاج الصف الرابع (כיתה ד\'):</b> الأعداد الكبيرة حتى مليون، الضرب العمودي والقسمة، الكسور البسيطة (جمع وطرح ومقارنة وجزء من كمية)، المساحة والمحيط، وقابلية القسمة.',
+  5: '📖 <b>منهاج الصف الخامس (כיתה ה\'):</b> الكسور العادية والأعداد المخلوطة، الكسور العشرية (جمع، طرح، ضرب وقسمة على 10 و100)، المعدل (المتوسط الحسابي)، ومساحة المثلث.',
+  6: '📖 <b>منهاج الصف السادس (כיתה ו\'):</b> ضرب وقسمة الكسور، النسبة المئوية (%) والتخفيضات، النسبة والتناسب، حجم الصندوق والمكعب، ومحيط الدائرة.'
+};
+
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function makeNumericOptions(ans, step = 1, allowZero = true) {
+  const set = new Set([String(ans)]);
+  let guard = 0;
+  while (set.size < 4 && guard < 50) {
+    guard++;
+    const delta = (rand(1, 5) * step) * (Math.random() < 0.5 ? 1 : -1);
+    const cand = Number((Number(ans) + delta).toFixed(2));
+    if ((allowZero ? cand >= 0 : cand > 0) && String(cand) !== String(ans)) {
+      set.add(String(cand));
+    }
+  }
+  while (set.size < 4) set.add(String(Number(ans) + set.size + 1));
+  return [...set].sort(() => Math.random() - 0.5);
+}
+
+function generateCurriculumQuestion(grade) {
+  const pick = Math.random();
+
+  if (grade === 1) {
+    if (pick < 0.3) {
+      const a = rand(3, 12), b = rand(2, 8);
+      const ans = a + b;
+      return {
+        topic: 'الجمع في مجال الـ 20',
+        text: `كم يساوي:  ${a} + ${b} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 1),
+        hint: `💡 نضع العدد الأكبر (${Math.max(a,b)}) في عقلنا، ثم نعدّ فوقه (${Math.min(a,b)}) خطوات!`
+      };
+    } else if (pick < 0.6) {
+      const a = rand(9, 20), b = rand(2, a - 1);
+      const ans = a - b;
+      return {
+        topic: 'الطرح في مجال الـ 20',
+        text: `كم يساوي:  ${a} − ${b} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 1),
+        hint: `💡 اسأل نفسك: كم نحتاج أن نضيف للعدد ${b} حتى نصل إلى ${a}؟`
+      };
+    } else if (pick < 0.8) {
+      const a = rand(1, 9);
+      const ans = 10 - a;
+      return {
+        topic: 'مكونات العدد 10 (العشرة الكاملة)',
+        text: `أكمل إلى العشرة الكاملة:  ${a} + ___ = 10`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 1),
+        hint: `💡 تذكّر أصدقاء العدد 10: كم ينقص ${a} ليصبح 10؟`
+      };
+    } else {
+      const n = rand(5, 19);
+      const isNext = Math.random() < 0.5;
+      const ans = isNext ? n + 1 : n - 1;
+      return {
+        topic: 'العدد التالي والعدد السابق',
+        text: isNext ? `ما هو العدد التالي للعدد ${n}؟` : `ما هو العدد السابق للعدد ${n}؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 1),
+        hint: isNext ? `💡 العدد التالي يعني نضيف 1 للعدد ${n}.` : `💡 العدد السابق يعني نطرح 1 من العدد ${n}.`
+      };
+    }
+  }
+
+  if (grade === 2) {
+    if (pick < 0.3) {
+      const a = rand(15, 65), b = rand(12, 34);
+      const ans = a + b;
+      return {
+        topic: 'الجمع في مجال الـ 100',
+        text: `احسب ناتج الجمع:  ${a} + ${b} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 2),
+        hint: `💡 اجمع الآحاد مع الآحاد (${a%10} + ${b%10})، ثم اجمع العشرات مع العشرات!`
+      };
+    } else if (pick < 0.55) {
+      const a = rand(40, 98), b = rand(11, 35);
+      const ans = a - b;
+      return {
+        topic: 'الطرح في مجال الـ 100',
+        text: `احسب ناتج الطرح:  ${a} − ${b} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 2),
+        hint: `💡 اطرح العشرات أولاً ثم اطرح الآحاد، وراقب رقم الآحاد في النتيجة.`
+      };
+    } else if (pick < 0.8) {
+      const f1 = [2, 3, 4, 5, 10][rand(0, 4)], f2 = rand(2, 9);
+      const ans = f1 * f2;
+      return {
+        topic: 'مفهوم الضرب وجداول الضرب الأساسية',
+        text: `احسب حاصل الضرب:  ${f1} × ${f2} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, f1),
+        hint: `💡 ${f1} × ${f2} تعني جمع العدد ${f1} مع نفسه ${f2} مرات!`
+      };
+    } else {
+      const tens = rand(2, 9), ones = rand(1, 9);
+      const ans = tens * 10 + ones;
+      return {
+        topic: 'المبنى العشري (آحاد وعشرات)',
+        text: `ما هو العدد المكوّن من ${tens} عشرات و ${ones} آحاد؟`,
+        answer: String(ans),
+        options: [String(ans), String(ones * 10 + tens), String(ans + 10), String(ans - 1)].sort(() => Math.random() - 0.5),
+        hint: `💡 ${tens} عشرات تساوي ${tens*10}، ثم نضيف لها ${ones} آحاد.`
+      };
+    }
+  }
+
+  if (grade === 3) {
+    if (pick < 0.28) {
+      const a = rand(3, 9), b = rand(4, 9);
+      const ans = a * b;
+      return {
+        topic: 'جداول الضرب في مجال الـ 100',
+        text: `كم يساوي:  ${a} × ${b} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, a),
+        hint: `💡 يمكنك حساب ${a} × ${b-1} = ${a*(b-1)} ثم إضافة ${a}!`
+      };
+    } else if (pick < 0.52) {
+      const divisor = rand(3, 9), quotient = rand(2, 8), rem = rand(1, divisor - 1);
+      const dividend = divisor * quotient + rem;
+      const ans = `${quotient} والباقي ${rem}`;
+      const opts = [
+        ans,
+        `${quotient} والباقي ${rem === 1 ? 2 : 1}`,
+        `${quotient + 1} والباقي ${rem}`,
+        `${quotient - 1} والباقي ${divisor - 1}`
+      ].sort(() => Math.random() - 0.5);
+      return {
+        topic: 'القسمة مع باقٍ',
+        text: `ما هو خارج القسمة والباقي في التمرين:  ${dividend} ÷ ${divisor} ؟`,
+        answer: ans,
+        options: opts,
+        hint: `💡 أقرب مضاعف للعدد ${divisor} أصغر من ${dividend} هو ${divisor*quotient} (${divisor}×${quotient})، والباقي هو ${dividend} − ${divisor*quotient} = ${rem}.`
+      };
+    } else if (pick < 0.76) {
+      const a = rand(10, 30), b = rand(2, 6), c = rand(2, 5);
+      const ans = a + b * c;
+      return {
+        topic: 'ترتيب العمليات الحسابية',
+        text: `احسب بحسب ترتيب العمليات الحسابية:  ${a} + ${b} × ${c} = ؟`,
+        answer: String(ans),
+        options: [...new Set([String(ans), String((a + b) * c), String(ans + b), String(ans - c)])].slice(0, 4).sort(() => Math.random() - 0.5),
+        hint: `💡 انتبه! عملية الضرب تسبق عملية الجمع دائماً: احسب (${b} × ${c} = ${b*c}) أولاً ثم اجمع ${a}.`
+      };
+    } else {
+      const th = rand(1, 8), hu = rand(0, 9), te = rand(1, 9), on = rand(0, 9);
+      const num = th * 1000 + hu * 100 + te * 10 + on;
+      const ans = th * 1000;
+      return {
+        topic: 'المبنى العشري حتى 10,000',
+        text: `ما هي قيمة الرقم ${th} في العدد ${num.toLocaleString('en-US')} ؟`,
+        answer: String(ans),
+        options: [String(th * 1000), String(th * 100), String(th * 10), String(th)].sort(() => Math.random() - 0.5),
+        hint: `💡 الرقم ${th} يقع في منزلة الآلاف، لذلك قيمته هي ${th} × 1000 = ${ans}.`
+      };
+    }
+  }
+
+  if (grade === 4) {
+    if (pick < 0.3) {
+      const den = [4, 5, 6, 8, 10][rand(0, 4)];
+      const qty = den * rand(3, 9);
+      const num = rand(1, den - 1);
+      const ans = (qty / den) * num;
+      return {
+        topic: 'الكسور البسيطة — جزء من كمية',
+        text: `كم يساوي  ${num}/${den}  العدد  ${qty} ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, qty / den),
+        hint: `💡 أولاً نقسم الكمية (${qty}) على المقام (${den}) فنجد أن 1/${den} هو ${qty/den}، ثم نضرب في البسط (${num})!`
+      };
+    } else if (pick < 0.55) {
+      const w = rand(4, 12), h = rand(3, 9);
+      const isArea = Math.random() < 0.5;
+      const ans = isArea ? w * h : 2 * (w + h);
+      return {
+        topic: 'المساحة والمحيط للمستطيل',
+        text: isArea
+          ? `مستطيل طوله ${w} سم وعرضه ${h} سم، ما هي مساحته؟`
+          : `مستطيل طوله ${w} سم وعرضه ${h} سم، ما هو محيطه؟`,
+        answer: String(ans),
+        options: [...new Set([String(w * h), String(2 * (w + h)), String(w + h), String(w * h + 4)])].sort(() => Math.random() - 0.5),
+        hint: isArea
+          ? `💡 مساحة المستطيل = الطول × العرض (${w} × ${h}).`
+          : `💡 محيط المستطيل = مجموع أضلاعه الأربعة = 2 × (${w} + ${h}).`
+      };
+    } else if (pick < 0.8) {
+      const a = rand(12, 25), b = rand(11, 16);
+      const ans = a * b;
+      return {
+        topic: 'ضرب أعداد متعددة المنازل',
+        text: `احسب حاصل الضرب:  ${a} × ${b} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 10),
+        hint: `💡 استخدم قانون التوزيع: ${a} × 10 = ${a*10}، و ${a} × ${b-10} = ${a*(b-10)}، ثم اجمعهما!`
+      };
+    } else {
+      const mult3 = rand(12, 40) * 3;
+      const others = [mult3 + 1, mult3 + 2, mult3 + 4];
+      return {
+        topic: 'علامات قابلية القسمة على 3',
+        text: `أيٌّ من الأعداد التالية يقسم على 3 بدون باقٍ؟`,
+        answer: String(mult3),
+        options: [String(mult3), ...others.map(String)].sort(() => Math.random() - 0.5),
+        hint: `💡 يقسم العدد على 3 إذا كان مجموع أرقامه من مضاعفات الـ 3!`
+      };
+    }
+  }
+
+  if (grade === 5) {
+    if (pick < 0.3) {
+      const a = (rand(12, 65) / 10), b = (rand(11, 48) / 10);
+      const ans = Number((a + b).toFixed(1));
+      return {
+        topic: 'جمع وطرح الكسور العشرية',
+        text: `احسب مجموع الكسرين العشريين:  ${a.toFixed(1)} + ${b.toFixed(1)} = ؟`,
+        answer: String(ans),
+        options: makeNumericOptions(ans, 0.5),
+        hint: `💡 رتّب الفاصلة العشرية تحت الفاصلة العشرية، واجمع الأعشار مع الأعشار والأعداد الصحيحة معاً.`
+      };
+    } else if (pick < 0.55) {
+      const avg = rand(8, 20);
+      const n1 = avg - rand(2, 5), n2 = avg, n3 = avg + (avg - n1);
+      return {
+        topic: 'المعدل (المتوسط الحسابي)',
+        text: `ما هو معدل (متوسط) الأعداد الثلاثة:  ${n1} ، ${n2} ، ${n3} ؟`,
+        answer: String(avg),
+        options: makeNumericOptions(avg, 2),
+        hint: `💡 المعدل = مجموع الأعداد مقسوماً على عددها: (${n1} + ${n2} + ${n3}) ÷ 3 = ${n1+n2+n3} ÷ 3.`
+      };
+    } else if (pick < 0.8) {
+      const whole = rand(1, 4), den = [3, 4, 5, 6][rand(0, 3)], num = rand(1, den - 1);
+      const improperNum = whole * den + num;
+      const ans = `${improperNum}/${den}`;
+      return {
+        topic: 'الأعداد المخلوطة والكسور غير الحقيقية',
+        text: `حوّل العدد المخلوط  (${whole} و ${num}/${den})  إلى كسر غير حقيقي:`,
+        answer: ans,
+        options: [ans, `${whole + num}/${den}`, `${whole * num}/${den}`, `${improperNum + 1}/${den}`].sort(() => Math.random() - 0.5),
+        hint: `💡 نضرب العدد الصحيح (${whole}) في المقام (${den}) ثم نضيف البسط (${num}): (${whole}×${den})+${num} = ${improperNum}/${den}.`
+      };
+    } else {
+      const base = rand(4, 12) * 2, height = rand(3, 9);
+      const ans = (base * height) / 2;
+      return {
+        topic: 'مساحة المثلث',
+        text: `مثلث طول قاعدته ${base} سم وارتفاعه ${height} سم، ما هي مساحته؟`,
+        answer: String(ans),
+        options: [...new Set([String(ans), String(base * height), String(base + height), String(ans + base)])].sort(() => Math.random() - 0.5),
+        hint: `💡 مساحة المثلث = (القاعدة × الارتفاع) ÷ 2 = (${base} × ${height}) ÷ 2.`
+      };
+    }
+  }
+
+  // Grade 6 (כיתה ו')
+  if (pick < 0.3) {
+    const pct = [10, 20, 25, 50][rand(0, 3)];
+    const price = rand(2, 12) * 20;
+    const discount = (price * pct) / 100;
+    const finalPrice = price - discount;
+    return {
+      topic: 'النسبة المئوية والتخفيضات (%)',
+      text: `سعر حقيبة ${price} شاقل، حصل عليها تخفيض بنسبة ${pct}%. ما هو سعرها بعد التخفيض؟`,
+      answer: String(finalPrice),
+      options: [...new Set([String(finalPrice), String(discount), String(price - pct), String(finalPrice + 10)])].sort(() => Math.random() - 0.5),
+      hint: `💡 قيمة التخفيض هي ${pct}% من ${price} وتساوي ${discount} شاقل. السعر بعد التخفيض = ${price} − ${discount} = ${finalPrice}.`
+    };
+  } else if (pick < 0.55) {
+    const l = rand(3, 8), w = rand(2, 6), h = rand(2, 5);
+    const ans = l * w * h;
+    return {
+      topic: 'حجم الصندوق',
+      text: `صندوق أبعاده: ${l} سم، ${w} سم، و ${h} سم. ما هو حجمه بالسم المكعب؟`,
+      answer: String(ans),
+      options: makeNumericOptions(ans, w * h),
+      hint: `💡 حجم الصندوق = الطول × العرض × الارتفاع (${l} × ${w} × ${h}).`
+    };
+  } else if (pick < 0.8) {
+    const a = rand(2, 5), b = rand(3, 7), k = rand(2, 5);
+    const ans = b * k;
+    return {
+      topic: 'النسبة والتناسب',
+      text: `النسبة بين عدد الكرات الحمراء والزرقاء هي ${a} : ${b}. إذا كان يوجد ${a*k} كرة حمراء، فكم كرة زرقاء يوجد؟`,
+      answer: String(ans),
+      options: makeNumericOptions(ans, b),
+      hint: `💡 كبر العدد الأول بـ ${k} أضعاف (${a} × ${k} = ${a*k})، إذن نضرب العدد الثاني (${b}) في ${k} أيضاً!`
+    };
+  } else {
+    const n1 = rand(1, 4), d1 = rand(2, 5), n2 = rand(1, 4), d2 = rand(2, 5);
+    const num = n1 * n2, den = d1 * d2;
+    const g = (function gcd(x, y){ return y === 0 ? x : gcd(y, x % y); })(num, den);
+    const ans = `${num/g}/${den/g}`;
+    const opts = [...new Set([ans, `${n1+n2}/${d1+d2}`, `${(num/g)+1}/${den/g}`, `${num}/${den+1}`])];
+    while (opts.length < 4) opts.push(`${opts.length+1}/${den/g+2}`);
+    return {
+      topic: 'ضرب الكسور العادية وتبسيطها',
+      text: `احسب حاصل ضرب الكسرين (بأبسط صورة):  (${n1}/${d1}) × (${n2}/${d2}) = ؟`,
+      answer: ans,
+      options: opts.slice(0, 4).sort(() => Math.random() - 0.5),
+      hint: `💡 في ضرب الكسور نضرب البسط في البسط (${n1}×${n2}=${num}) والمقام في المقام (${d1}×${d2}=${den}) ثم نختزل الكسر!`
+    };
+  }
+}
+
+/* ============ Worlds & Level Builder ============ */
+const WORLDS = [
+  { name: '🌳 المروج الخضراء', sky1: '#38bdf8', sky2: '#bae6fd', groundTop: '#22c55e', groundDirt: '#b45309', brick: '#c2410c', hill: '#16a34a' },
+  { name: '🏜️ صحراء الأهرامات', sky1: '#f59e0b', sky2: '#fef08a', groundTop: '#eab308', groundDirt: '#92400e', brick: '#d97706', hill: '#ca8a04' },
+  { name: '❄️ القمم الجليدية', sky1: '#0284c7', sky2: '#e0f2fe', groundTop: '#f8fafc', groundDirt: '#475569', brick: '#38bdf8', hill: '#94a3b8' },
+  { name: '🌋 قلعة الحمم', sky1: '#450a0a', sky2: '#991b1b', groundTop: '#57534e', groundDirt: '#1c1917', brick: '#44403c', hill: '#7f1d1d' }
+];
+
+const state = {
+  running: false, paused: false,
+  grade: 3, worldIdx: 0,
+  score: 0, coins: 0, hearts: 3, fireAmmo: 3,
+  qSolved: 0, qTarget: 6,
+  cameraX: 0, levelWidth: 3400,
+  keys: { left: false, right: false, jump: false },
+  player: null,
+  blocks: [], pipes: [], enemies: [], coinsList: [], powerups: [], fireballs: [], particles: [], texts: [],
+  flagX: 3150, flagY: 120,
+  currentQ: null, activeBlock: null, qReason: 'block', timerFrozen: false
+};
+
+function buildLevel() {
+  const groundY = H - 76;
+  state.levelWidth = 3500;
+  state.flagX = 3260;
+  state.blocks = [];
+  state.pipes = [];
+  state.enemies = [];
+  state.coinsList = [];
+  state.powerups = [];
+  state.fireballs = [];
+  state.particles = [];
+  state.texts = [];
+
+  state.player = {
+    x: 90, y: groundY - 52,
+    vx: 0, vy: 0,
+    w: 38, h: 48,
+    dir: 1, grounded: false,
+    big: true, invincible: 0,
+    walkFrame: 0
+  };
+
+  // Build Mario Brick & Golden [?] Blocks along the level
+  const stations = [340, 720, 1120, 1540, 1960, 2380, 2780];
+  stations.forEach((sx, idx) => {
+    const by = groundY - 125;
+    // Brick - [?] - Brick formation
+    state.blocks.push({ x: sx - 44, y: by, w: 44, h: 44, type: 'brick', bounce: 0 });
+    state.blocks.push({ x: sx, y: by, w: 44, h: 44, type: 'question', used: false, bounce: 0, reward: idx % 2 === 0 ? 'mushroom' : 'star' });
+    state.blocks.push({ x: sx + 44, y: by, w: 44, h: 44, type: 'brick', bounce: 0 });
+
+    // Upper bonus platform with coins
+    if (idx % 2 === 1) {
+      const highY = groundY - 220;
+      state.blocks.push({ x: sx - 22, y: highY, w: 44, h: 44, type: 'brick', bounce: 0 });
+      state.blocks.push({ x: sx + 22, y: highY, w: 44, h: 44, type: 'question', used: false, bounce: 0, reward: 'mushroom' });
+    }
+
+    // Arc of floating coins
+    for (let c = -1; c <= 1; c++) {
+      state.coinsList.push({ x: sx + c * 38, y: by - 46 - (c === 0 ? 14 : 0), r: 12, taken: false, bob: Math.random() * 6 });
+    }
+
+    // Green Warp Pipes between stations
+    if (idx < stations.length - 1) {
+      const px = sx + 200;
+      const ph = (idx % 2 === 0) ? 68 : 86;
+      state.pipes.push({ x: px, y: groundY - ph, w: 56, h: ph });
+
+      // Spawn Goomba or Koopa patrolling between pipe and next station
+      state.enemies.push({
+        x: px + 95, y: groundY - 36,
+        vx: idx % 2 === 0 ? -1.4 : 1.5,
+        w: 36, h: 36,
+        minX: px + 62, maxX: sx + 340,
+        kind: idx % 3 === 0 ? 'koopa' : 'goomba',
+        alive: true, squashed: 0
+      });
+    }
+  });
+
+  // Final staircase of bricks before the Castle Flagpole
+  for (let step = 0; step < 4; step++) {
+    for (let col = step; col < 4; col++) {
+      state.blocks.push({
+        x: 3000 + col * 42,
+        y: groundY - 42 * (step + 1),
+        w: 42, h: 42,
+        type: 'stone', bounce: 0
+      });
+    }
+  }
+}
+
+/* ============ Physics & Platformer Collisions ============ */
+function spawnParticles(x, y, color, n = 14) {
+  for (let i = 0; i < n; i++) {
+    state.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 9,
+      vy: (Math.random() - 0.7) * 9,
+      life: 1, color, r: Math.random() * 4 + 2
+    });
+  }
+}
+function addFloatingText(txt, x, y, color = '#fde047') {
+  state.texts.push({ txt, x, y, vy: -1.6, life: 1, color });
+}
+
+function moveLeft(down) { state.keys.left = down; }
+function moveRight(down) { state.keys.right = down; }
+function doJump() {
+  if (!state.running || state.paused) return;
+  const p = state.player;
+  if (p.grounded) {
+    p.vy = -13.2;
+    p.grounded = false;
+    Sound.jump();
+    spawnParticles(p.x + p.w / 2, p.y + p.h, '#f8fafc', 6);
+  }
+}
+function shootFireball() {
+  if (!state.running || state.paused) return;
+  if (state.fireAmmo <= 0) {
+    openQuiz(null, 'fireRefill');
+    return;
+  }
+  state.fireAmmo--;
+  updateHUD();
+  const p = state.player;
+  Sound.fireball();
+  state.fireballs.push({
+    x: p.dir > 0 ? p.x + p.w + 4 : p.x - 12,
+    y: p.y + p.h * 0.45,
+    vx: p.dir * 8.5,
+    vy: 2,
+    r: 8, bounces: 0
+  });
+}
+
+function rectOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function updatePhysics() {
+  if (!state.running || state.paused) return;
+  const groundY = H - 76;
+  const p = state.player;
+  p.h = p.big ? 52 : 38;
+
+  // Horizontal movement
+  const accel = 0.75, maxSpeed = 5.4;
+  if (state.keys.left) { p.vx = Math.max(p.vx - accel, -maxSpeed); p.dir = -1; p.walkFrame += 0.25; }
+  else if (state.keys.right) { p.vx = Math.min(p.vx + accel, maxSpeed); p.dir = 1; p.walkFrame += 0.25; }
+  else { p.vx *= 0.8; }
+
+  p.x += p.vx;
+  if (p.x < 10) { p.x = 10; p.vx = 0; }
+
+  // Horizontal collisions with Pipes & Blocks
+  const obstacles = [...state.pipes, ...state.blocks];
+  obstacles.forEach(ob => {
+    if (rectOverlap(p, ob)) {
+      if (p.vx > 0) p.x = ob.x - p.w;
+      else if (p.vx < 0) p.x = ob.x + ob.w;
+      p.vx = 0;
+    }
+  });
+
+  // Vertical movement & Gravity
+  p.vy += 0.62;
+  if (p.vy > 14) p.vy = 14;
+  p.y += p.vy;
+  p.grounded = false;
+
+  // Ground collision
+  if (p.y + p.h >= groundY) {
+    p.y = groundY - p.h;
+    p.vy = 0;
+    p.grounded = true;
+  }
+
+  // Vertical collisions with Blocks & Pipes
+  obstacles.forEach(ob => {
+    if (rectOverlap(p, ob)) {
+      if (p.vy > 0) {
+        // Landing on top of block or pipe
+        p.y = ob.y - p.h;
+        p.vy = 0;
+        p.grounded = true;
+      } else if (p.vy < 0) {
+        // Hitting block from underneath with Mario's head!
+        p.y = ob.y + ob.h;
+        p.vy = 2;
+        if (ob.type === 'question' && !ob.used) {
+          ob.bounce = 10;
+          Sound.blockHit();
+          spawnParticles(ob.x + ob.w / 2, ob.y, '#facc15', 16);
+          openQuiz(ob, 'block');
+        } else if (ob.type === 'brick') {
+          ob.bounce = 8;
+          Sound.blockHit();
+          spawnParticles(ob.x + ob.w / 2, ob.y, '#ea580c', 8);
+        }
+      }
+    }
+  });
+
+  // Animate block bounce
+  state.blocks.forEach(b => { if (b.bounce > 0) b.bounce -= 1; });
+
+  // Collect Floating Coins
+  state.coinsList.forEach(c => {
+    c.bob += 0.1;
+    if (!c.taken) {
+      const dx = (p.x + p.w / 2) - c.x;
+      const dy = (p.y + p.h / 2) - c.y;
+      if (Math.hypot(dx, dy) < c.r + 22) {
+        c.taken = true;
+        state.coins++;
+        state.score += 10;
+        Sound.coin();
+        spawnParticles(c.x, c.y, '#fde047', 10);
+        addFloatingText('+10 🪙', c.x, c.y, '#fde047');
+        updateHUD();
+      }
+    }
+  });
+
+  // Update Powerups (Mushrooms & Stars)
+  for (let i = state.powerups.length - 1; i >= 0; i--) {
+    const pw = state.powerups[i];
+    pw.x += pw.vx;
+    pw.vy += 0.45;
+    pw.y += pw.vy;
+    if (pw.y + pw.h >= groundY) { pw.y = groundY - pw.h; pw.vy = 0; }
+    state.pipes.forEach(pipe => {
+      if (rectOverlap(pw, pipe)) pw.vx *= -1;
+    });
+    if (rectOverlap(p, pw)) {
+      Sound.powerup();
+      state.score += 50;
+      if (pw.kind === 'star') {
+        p.invincible = 360;
+        addFloatingText('⭐ نجمة الحصانة الخارقة!', p.x, p.y - 15, '#fde047');
+      } else {
+        p.big = true;
+        state.hearts = Math.min(3, state.hearts + 1);
+        state.fireAmmo = Math.min(5, state.fireAmmo + 2);
+        addFloatingText('🍄 سوبر ماريو + قلب + لهب!', p.x, p.y - 15, '#4ade80');
+      }
+      spawnParticles(pw.x, pw.y, '#4ade80', 22);
+      state.powerups.splice(i, 1);
+      updateHUD();
+    }
+  }
+
+  // Update Fireballs
+  for (let i = state.fireballs.length - 1; i >= 0; i--) {
+    const fb = state.fireballs[i];
+    fb.x += fb.vx;
+    fb.vy += 0.45;
+    fb.y += fb.vy;
+    if (fb.y + fb.r >= groundY) {
+      fb.y = groundY - fb.r;
+      fb.vy = -6.5;
+      fb.bounces++;
+    }
+    let hit = false;
+    state.enemies.forEach(en => {
+      if (en.alive && Math.hypot(fb.x - (en.x + en.w / 2), fb.y - (en.y + en.h / 2)) < 26) {
+        en.alive = false;
+        en.squashed = 20;
+        hit = true;
+        state.score += 25;
+        Sound.stomp();
+        spawnParticles(en.x + en.w / 2, en.y + en.h / 2, '#f97316', 18);
+        addFloatingText('🔥 +25', en.x, en.y, '#fb923c');
+        updateHUD();
+      }
+    });
+    if (hit || fb.bounces > 4 || fb.x > state.cameraX + W + 50 || fb.x < state.cameraX - 50) {
+      state.fireballs.splice(i, 1);
+    }
+  }
+
+  // Update Enemies (Goombas & Koopas)
+  if (p.invincible > 0) p.invincible--;
+  state.enemies.forEach(en => {
+    if (!en.alive) {
+      if (en.squashed > 0) en.squashed--;
+      return;
+    }
+    en.x += en.vx;
+    if (en.x <= en.minX || en.x + en.w >= en.maxX) en.vx *= -1;
+
+    if (rectOverlap(p, en)) {
+      // Did Mario jump on top of the enemy?
+      if (p.vy > 0 && (p.y + p.h - p.vy) <= en.y + 18) {
+        en.alive = false;
+        en.squashed = 25;
+        p.vy = -10.5; // Bounce up!
+        state.score += 30;
+        Sound.stomp();
+        spawnParticles(en.x + en.w / 2, en.y, '#4ade80', 18);
+        addFloatingText('👟 سحق رائع! +30', en.x, en.y - 10, '#4ade80');
+        updateHUD();
+      } else if (p.invincible > 0) {
+        en.alive = false;
+        en.squashed = 25;
+        state.score += 30;
+        Sound.stomp();
+        spawnParticles(en.x + en.w / 2, en.y, '#fde047', 18);
+        addFloatingText('⭐ +30', en.x, en.y - 10, '#fde047');
+        updateHUD();
+      } else {
+        // Enemy touched Mario from the side -> Trigger Rescue Math Question or shrink!
+        p.invincible = 120;
+        Sound.hurt();
+        spawnParticles(p.x + p.w / 2, p.y + p.h / 2, '#ef4444', 20);
+        openQuiz(null, 'rescue');
+      }
+    }
+  });
+
+  // Check if Mario reached the Castle Flagpole!
+  if (p.x + p.w >= state.flagX) {
+    if (state.qSolved < state.qTarget) {
+      p.x = state.flagX - p.w - 10;
+      openQuiz(null, 'castleBoss');
+    } else {
+      finishStage();
+    }
+  }
+
+  // Smooth Camera Follow
+  const targetCam = Math.max(0, Math.min(state.levelWidth - W, p.x - W * 0.32));
+  state.cameraX += (targetCam - state.cameraX) * 0.14;
+
+  // Update Particles & Floating Texts
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const pt = state.particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.25; pt.life -= 0.03;
+    if (pt.life <= 0) state.particles.splice(i, 1);
+  }
+  for (let i = state.texts.length - 1; i >= 0; i--) {
+    const ft = state.texts[i];
+    ft.y += ft.vy; ft.life -= 0.022;
+    if (ft.life <= 0) state.texts.splice(i, 1);
+  }
+}
+
+/* ============ Canvas Renderer (Super Mario World Style) ============ */
+function drawWorld() {
+  const wTheme = WORLDS[state.worldIdx];
+  const groundY = H - 76;
+
+  // Sky Gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+  skyGrad.addColorStop(0, wTheme.sky1);
+  skyGrad.addColorStop(1, wTheme.sky2);
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(-state.cameraX, 0);
+
+  // Parallax Clouds & Distant Hills
+  for (let i = 0; i < 14; i++) {
+    const cx = i * 280 + 80;
+    const cy = 65 + (i % 3) * 35;
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+    ctx.arc(cx + 20, cy - 8, 26, 0, Math.PI * 2);
+    ctx.arc(cx + 42, cy, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rounded Mario Hills on the horizon
+    const hx = i * 320 + 40;
+    ctx.fillStyle = wTheme.hill;
+    ctx.beginPath();
+    ctx.arc(hx, groundY, 75, Math.PI, 0);
+    ctx.fill();
+  }
+
+  // Ground Floor (Grass top + patterned brick dirt)
+  ctx.fillStyle = wTheme.groundDirt;
+  ctx.fillRect(0, groundY, state.levelWidth, H - groundY);
+  ctx.fillStyle = wTheme.groundTop;
+  ctx.fillRect(0, groundY, state.levelWidth, 16);
+
+  // Green Warp Pipes
+  state.pipes.forEach(pipe => {
+    const pg = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipe.w, 0);
+    pg.addColorStop(0, '#15803d');
+    pg.addColorStop(0.35, '#4ade80');
+    pg.addColorStop(1, '#14532d');
+    ctx.fillStyle = pg;
+    ctx.fillRect(pipe.x + 4, pipe.y + 18, pipe.w - 8, pipe.h - 18);
+    ctx.strokeStyle = '#052e16'; ctx.lineWidth = 2.5;
+    ctx.strokeRect(pipe.x + 4, pipe.y + 18, pipe.w - 8, pipe.h - 18);
+    // Pipe Rim
+    ctx.fillRect(pipe.x, pipe.y, pipe.w, 18);
+    ctx.strokeRect(pipe.x, pipe.y, pipe.w, 18);
+  });
+
+  // Bricks & Glowing Golden [?] Blocks
+  state.blocks.forEach(b => {
+    const by = b.y - b.bounce;
+    if (b.type === 'question') {
+      ctx.fillStyle = b.used ? '#78716c' : '#facc15';
+      ctx.fillRect(b.x, by, b.w, b.h);
+      ctx.strokeStyle = '#451a03'; ctx.lineWidth = 3;
+      ctx.strokeRect(b.x, by, b.w, b.h);
+      if (!b.used) {
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(b.x + 4, by + 4, b.w - 8, 5);
+        ctx.fillStyle = '#713f12';
+        ctx.font = '900 24px Tajawal, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('؟', b.x + b.w / 2, by + 31);
+      }
+    } else if (b.type === 'stone') {
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(b.x, by, b.w, b.h);
+      ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2.5;
+      ctx.strokeRect(b.x, by, b.w, b.h);
+    } else {
+      ctx.fillStyle = wTheme.brick;
+      ctx.fillRect(b.x, by, b.w, b.h);
+      ctx.strokeStyle = '#451a03'; ctx.lineWidth = 2.5;
+      ctx.strokeRect(b.x, by, b.w, b.h);
+      ctx.beginPath();
+      ctx.moveTo(b.x, by + b.h / 2); ctx.lineTo(b.x + b.w, by + b.h / 2);
+      ctx.moveTo(b.x + b.w / 2, by); ctx.lineTo(b.x + b.w / 2, by + b.h / 2);
+      ctx.stroke();
+    }
+  });
+
+  // Floating Coins
+  state.coinsList.forEach(c => {
+    if (c.taken) return;
+    const cy = c.y + Math.sin(c.bob) * 4;
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(c.x, cy, c.r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = '#854d0e'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('★', c.x, cy + 4);
+  });
+
+  // Powerups (Super Mushroom 🍄 & Star ⭐)
+  state.powerups.forEach(pw => {
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pw.kind === 'star' ? '⭐' : '🍄', pw.x + pw.w / 2, pw.y + pw.h - 4);
+  });
+
+  // Fireballs
+  state.fireballs.forEach(fb => {
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath(); ctx.arc(fb.x, fb.y, fb.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(fb.x, fb.y, fb.r * 0.5, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Enemies (Goombas & Koopas)
+  state.enemies.forEach(en => {
+    if (!en.alive && en.squashed <= 0) return;
+    ctx.save();
+    ctx.translate(en.x + en.w / 2, en.y + en.h);
+    if (!en.alive) ctx.scale(1.3, 0.35);
+    if (en.kind === 'koopa') {
+      // Green Koopa Turtle
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath(); ctx.arc(0, -16, 16, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(-14, -16, 28, 12);
+      ctx.beginPath(); ctx.arc(en.vx > 0 ? 14 : -14, -22, 8, 0, Math.PI * 2); ctx.fill();
+    } else {
+      // Classic Brown Goomba Mushroom Enemy
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath(); ctx.arc(0, -18, 18, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(-10, -18, 20, 14);
+      // Angry eyes
+      ctx.fillStyle = '#000';
+      ctx.fillRect(-7, -26, 4, 6);
+      ctx.fillRect(3, -26, 4, 6);
+    }
+    ctx.restore();
+  });
+
+  // End-of-Level Castle & Flagpole
+  const fx = state.flagX;
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(fx, groundY - 260, 6, 260);
+  ctx.fillStyle = '#facc15';
+  ctx.beginPath(); ctx.arc(fx + 3, groundY - 260, 10, 0, Math.PI * 2); ctx.fill();
+  // Pennant Flag
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.moveTo(fx + 6, groundY - 250);
+  ctx.lineTo(fx + 66, groundY - 225);
+  ctx.lineTo(fx + 6, groundY - 200);
+  ctx.closePath(); ctx.fill();
+  // Castle Building
+  const cx = fx + 75;
+  ctx.fillStyle = '#b91c1c';
+  ctx.fillRect(cx, groundY - 150, 130, 150);
+  ctx.fillStyle = '#7f1d1d';
+  for (let i = 0; i < 5; i++) ctx.fillRect(cx + i * 28, groundY - 170, 18, 20);
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.arc(cx + 65, groundY, 28, Math.PI, 0); ctx.fill();
+
+  // Draw Mario Hero Character
+  drawMarioHero();
+
+  // Particles & Floating Texts
+  state.particles.forEach(pt => {
+    ctx.globalAlpha = Math.max(0, pt.life);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+  });
+  state.texts.forEach(ft => {
+    ctx.globalAlpha = Math.max(0, ft.life);
+    ctx.font = '900 16px Tajawal, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+    ctx.strokeText(ft.txt, ft.x, ft.y);
+    ctx.fillStyle = ft.color;
+    ctx.fillText(ft.txt, ft.x, ft.y);
+  });
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawMarioHero() {
+  const p = state.player;
+  if (!p) return;
+  const hero = getHero();
+  ctx.save();
+  ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+  if (p.invincible > 0 && Math.floor(p.invincible / 4) % 2 === 0) {
+    ctx.shadowColor = '#fde047';
+    ctx.shadowBlur = 18;
+  }
+  ctx.scale(p.dir, 1);
+  const hw = p.w / 2, hh = p.h / 2;
+
+  // Boots
+  const legSwing = p.grounded ? Math.sin(p.walkFrame) * 5 : 4;
+  ctx.fillStyle = '#451a03';
+  ctx.fillRect(-hw + 4 + legSwing, hh - 9, 12, 9);
+  ctx.fillRect(hw - 16 - legSwing, hh - 9, 12, 9);
+
+  // Overalls & Shirt
+  ctx.fillStyle = hero.cap;
+  ctx.fillRect(-hw + 4, -4, p.w - 8, hh - 4);
+  ctx.fillStyle = hero.suit;
+  ctx.fillRect(-hw + 7, 2, p.w - 14, hh - 10);
+  // Yellow Overall Buttons
+  ctx.fillStyle = '#fde047';
+  ctx.fillRect(-4, 6, 4, 4);
+  ctx.fillRect(4, 6, 4, 4);
+
+  // Head / Face
+  ctx.fillStyle = '#fed7aa';
+  ctx.beginPath(); ctx.arc(0, -hh + 16, 13, 0, Math.PI * 2); ctx.fill();
+
+  // Eyes & Mustache
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(4, -hh + 12, 3, 5);
+  ctx.fillStyle = '#451a03';
+  ctx.fillRect(2, -hh + 19, 10, 4);
+
+  // Mario Cap + Visor
+  ctx.fillStyle = hero.cap;
+  ctx.beginPath(); ctx.arc(0, -hh + 11, 14, Math.PI, 0); ctx.fill();
+  ctx.fillRect(-14, -hh + 9, 32, 5);
+  ctx.restore();
+}
+
+/* ============ Quiz Modal Interaction ============ */
+const quizOverlay = document.getElementById('quizOverlay');
+let quizTimer = null, timeLeft = 35;
+
+function openQuiz(blockObj, reason = 'block') {
+  state.paused = true;
+  state.activeBlock = blockObj;
+  state.qReason = reason;
+  state.timerFrozen = false;
+  document.getElementById('freezeBtn').textContent = '⏸️ تجميد الوقت';
+  document.getElementById('qHintBox').style.display = 'none';
+  document.getElementById('feedback').textContent = '';
+
+  const header = document.getElementById('qHeaderBadge');
+  if (reason === 'rescue') {
+    header.textContent = '🚨 سؤال الإنقاذ — أجب بشكل صحيح لتحمي بطلك وتكمل المرحلة!';
+  } else if (reason === 'castleBoss') {
+    header.textContent = '🏰 تحدي حارس القلعة — أجب لفتح بوابة القلعة والفوز!';
+  } else if (reason === 'fireRefill') {
+    header.textContent = '🔥 شحن كرات اللهب — أجب لتحصل على 3 كرات نارية إضافية!';
+  } else {
+    header.textContent = '🍄 صندوق المفاجآت [?] — أجب لتربح العملات والفطر السوبر!';
+  }
+
+  const q = generateCurriculumQuestion(state.grade);
+  state.currentQ = q;
+  document.getElementById('qTopicTag').textContent = `📚 موضوع المنهاج: ${q.topic} (الصف ${state.grade})`;
+  document.getElementById('qText').textContent = q.text;
+
+  const optsEl = document.getElementById('options');
+  optsEl.innerHTML = '';
+  q.options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'optBtn';
+    b.textContent = opt;
+    b.onclick = () => submitAnswer(opt, b);
+    optsEl.appendChild(b);
+  });
+
+  timeLeft = 35;
+  document.getElementById('qTimerTxt').textContent = `⏱️ ${timeLeft} ثانية`;
+  document.getElementById('qTimerFill').style.width = '100%';
+  clearInterval(quizTimer);
+  quizTimer = setInterval(() => {
+    if (state.timerFrozen) return;
+    timeLeft--;
+    document.getElementById('qTimerTxt').textContent = `⏱️ ${Math.max(0, timeLeft)} ثانية`;
+    document.getElementById('qTimerFill').style.width = `${(timeLeft / 35) * 100}%`;
+    if (timeLeft <= 0) {
+      clearInterval(quizTimer);
+      submitAnswer('__TIME_UP__', null);
+    }
+  }, 1000);
+
+  quizOverlay.classList.add('show');
+}
+
+document.getElementById('hintBtn').onclick = () => {
+  if (!state.currentQ) return;
+  const hb = document.getElementById('qHintBox');
+  hb.textContent = state.currentQ.hint;
+  hb.style.display = 'block';
+};
+
+document.getElementById('freezeBtn').onclick = () => {
+  state.timerFrozen = true;
+  document.getElementById('freezeBtn').textContent = '❄️ الوقت متجمد!';
+  document.getElementById('qTimerTxt').textContent = '❄️ فكّر بهدوء تام';
+};
+
+function submitAnswer(val, btn) {
+  clearInterval(quizTimer);
+  const q = state.currentQ;
+  const isCorrect = String(val) === String(q.answer);
+  const optsEl = document.getElementById('options');
+  [...optsEl.children].forEach(b => {
+    b.disabled = true;
+    if (b.textContent === String(q.answer)) b.classList.add('correct');
+  });
+  if (btn && !isCorrect) btn.classList.add('wrong');
+
+  const fb = document.getElementById('feedback');
+  if (isCorrect) {
+    Sound.powerup();
+    state.score += 35;
+    state.coins += 10;
+    state.qSolved++;
+    state.fireAmmo = Math.min(6, state.fireAmmo + 2);
+    fb.style.color = '#4ade80';
+    fb.textContent = '🌟 إجابة ممتازة! +35 نقطة و+10 عملات ذهبية وهدية خارقة!';
+
+    if (state.activeBlock) {
+      state.activeBlock.used = true;
+      state.powerups.push({
+        x: state.activeBlock.x + 6,
+        y: state.activeBlock.y - 36,
+        vx: 1.8, vy: -4, w: 32, h: 32,
+        kind: state.activeBlock.reward || 'mushroom'
+      });
+    }
+  } else {
+    Sound.hurt();
+    fb.style.color = '#fca5a5';
+    fb.textContent = `💡 الإجابة الصحيحة هي: ( ${q.answer} ) — تعلّمنا فكرة جديدة!`;
+    if (state.qReason === 'rescue') {
+      state.hearts = Math.max(1, state.hearts - 1);
+    }
+  }
+  updateHUD();
+
+  setTimeout(() => {
+    quizOverlay.classList.remove('show');
+    state.paused = false;
+    state.activeBlock = null;
+    if (state.qReason === 'castleBoss' && state.qSolved >= state.qTarget) {
+      finishStage();
+    }
+  }, isCorrect ? 1300 : 2300);
+}
+
+/* ============ HUD, Loop & Menus ============ */
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('coinsVal').textContent = state.coins;
+  document.getElementById('qSolvedVal').textContent = state.qSolved;
+  document.getElementById('qTotalVal').textContent = state.qTarget;
+  document.getElementById('fireCount').textContent = state.fireAmmo;
+  document.getElementById('heartsHud').textContent = '❤️'.repeat(Math.max(1, state.hearts));
+  document.getElementById('worldHud').textContent = WORLDS[state.worldIdx].name;
+  document.getElementById('bestScoreTxt').textContent = Store.get('mm_best_' + state.grade, 0);
+  document.getElementById('totalCoinsTxt').textContent = Store.get('mm_coins', 0);
+}
+
+let rafId = null;
+function gameLoop() {
+  if (!state.running) return;
+  updatePhysics();
+  drawWorld();
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+function startStage() {
+  resize();
+  state.running = true;
+  state.paused = false;
+  state.score = 0;
+  state.coins = 0;
+  state.hearts = 3;
+  state.fireAmmo = 3;
+  state.qSolved = 0;
+  state.qTarget = 5;
+  state.cameraX = 0;
+  buildLevel();
+  updateHUD();
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('menuQuickBtn').style.display = 'inline-flex';
+  Sound.startMusic();
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+function finishStage() {
+  state.running = false;
+  cancelAnimationFrame(rafId);
+  Sound.stopMusic();
+  Sound.win();
+  const prevCoins = Store.get('mm_coins', 0);
+  Store.set('mm_coins', prevCoins + state.coins);
+  const prevBest = Store.get('mm_best_' + state.grade, 0);
+  const isRecord = state.score > prevBest;
+  if (isRecord) Store.set('mm_best_' + state.grade, state.score);
+
+  document.getElementById('endStats').innerHTML =
+    `<div style="font-size:34px;margin-bottom:6px">⭐⭐⭐</div>` +
+    `🎓 الصف الدراسي: <b>الصف ${state.grade}</b> | 🌍 العالم: <b>${WORLDS[state.worldIdx].name}</b><br>` +
+    `✅ أسئلة المنهاج المحلولة: <b>${state.qSolved}</b> | ⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b><br>` +
+    `🪙 العملات الذهبية المكتسبة: <b style="color:#4ade80">+${state.coins} عملة</b>` +
+    (isRecord ? `<div style="color:#fde047;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في هذا الصف!</div>` : '');
+
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+/* ============ Controls & Event Listeners ============ */
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft(true);
+  if (e.key === 'ArrowRight' || e.key === 'd') moveRight(true);
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') doJump();
+  if (e.key === 'f' || e.key === 'Enter') shootFireball();
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft(false);
+  if (e.key === 'ArrowRight' || e.key === 'd') moveRight(false);
+});
+
+function bindHoldButton(id, fnDown, fnUp) {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', e => { e.preventDefault(); fnDown(); });
+  el.addEventListener('pointerup', e => { e.preventDefault(); fnUp(); });
+  el.addEventListener('pointerleave', fnUp);
+  el.addEventListener('pointercancel', fnUp);
+}
+bindHoldButton('btnLeft', () => moveLeft(true), () => moveLeft(false));
+bindHoldButton('btnRight', () => moveRight(true), () => moveRight(false));
+document.getElementById('btnJump').addEventListener('pointerdown', e => { e.preventDefault(); doJump(); });
+document.getElementById('btnFire').addEventListener('pointerdown', e => { e.preventDefault(); shootFireball(); });
+document.getElementById('btnInstantQ').onclick = () => { if (state.running && !state.paused) openQuiz(null, 'block'); };
+
+document.querySelectorAll('.gradeBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.gradeBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.grade = +b.dataset.g;
+    document.getElementById('curriculumPreview').innerHTML = GRADE_DESCRIPTIONS[state.grade];
+    updateHUD();
+  };
+});
+
+document.querySelectorAll('.worldBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.worldBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.worldIdx = +b.dataset.w;
+  };
+});
+
+document.getElementById('startBtn').onclick = startStage;
+document.getElementById('nextStageBtn').onclick = () => {
+  state.worldIdx = (state.worldIdx + 1) % WORLDS.length;
+  startStage();
+};
+document.getElementById('backMenuBtn').onclick = () => {
+  state.running = false;
+  Sound.stopMusic();
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+document.getElementById('menuQuickBtn').onclick = () => {
+  state.running = false;
+  Sound.stopMusic();
+  quizOverlay.classList.remove('show');
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+function renderHeroShop() {
+  const owned = Store.get('mm_owned_heroes', ['mario']);
+  const sel = Store.get('mm_hero', 'mario');
+  const coins = Store.get('mm_coins', 0);
+  document.getElementById('shopCoinsTxt').textContent = coins;
+  const grid = document.getElementById('heroGrid');
+  grid.innerHTML = '';
+  HEROES.forEach(h => {
+    const isOwned = owned.includes(h.id);
+    const isSel = sel === h.id;
+    const div = document.createElement('div');
+    div.className = 'heroCard' + (isSel ? ' selected' : '');
+    div.innerHTML = `
+      <div style="width:42px;height:42px;margin:0 auto 6px;border-radius:50%;background:${h.cap};border:3px solid ${h.suit};display:flex;align-items:center;justify-content:center;font-size:20px;">🍄</div>
+      <div style="font-size:12px;font-weight:900">${h.name}</div>
+      <div style="font-size:11px;color:#fde047;margin-top:4px">${isOwned ? (isSel ? '✅ مختار' : 'متاح') : '🪙 ' + h.price}</div>
+    `;
+    div.onclick = () => {
+      if (isOwned) {
+        Store.set('mm_hero', h.id);
+        renderHeroShop();
+      } else if (coins >= h.price) {
+        Store.set('mm_coins', coins - h.price);
+        owned.push(h.id);
+        Store.set('mm_owned_heroes', owned);
+        Store.set('mm_hero', h.id);
+        Sound.powerup();
+        renderHeroShop();
+        updateHUD();
+      } else {
+        alert('اجمع المزيد من العملات في المغامرة لشراء هذا البطل!');
+      }
+    };
+    grid.appendChild(div);
+  });
+}
+document.getElementById('heroesBtn').onclick = () => {
+  renderHeroShop();
+  document.getElementById('heroesModal').classList.add('show');
+};
+document.getElementById('closeHeroesBtn').onclick = () => {
+  document.getElementById('heroesModal').classList.remove('show');
+};
+
+resize();
+updateHUD();
+</script>
+</body>
+</html>
