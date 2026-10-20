@@ -1370,7 +1370,7 @@ export default function MathChampionshipArena() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span className="branch-current-crumb">🏎️ فرع سباق الرياضيات السريع (صفوف 1 - 6)</span>
                 <a
-                  href="/math-racing.html?v=turbo2"
+                  href="/math-racing.html?v=turbo3"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -1414,7 +1414,7 @@ export default function MathChampionshipArena() {
                 }}
               >
                 <iframe
-                  src="/math-racing.html?v=turbo2"
+                  src="/math-racing.html?v=turbo3"
                   title="سباق الرياضيات التوربيني 🏎️"
                   style={{
                     width: '100%',
