@@ -157,6 +157,24 @@ export const MATH_CHALLENGE_BRANCHES = [
     grades: 'تدرج ذكي (1 - 6)',
     highlights: ['الأشكال المستوية والمجسمات ثلاثية الأبعاد', 'أنواع الزوايا وتصنيف المثلثات والمحيط', 'مساحات الأشكال، زوايا المثلث 180°، والحجوم'],
     awardTeaser: 'وسام المهندس + كأس إقليدس للهندسة 🏆🏛️'
+  },
+  {
+    id: 'racing',
+    viewId: 'branch_racing',
+    gameType: 'racing',
+    title: 'سباق الرياضيات السريع 🏎️',
+    subtitle: 'سباق السيارات التفاعلي وفق المنهاج الوزاري وجداول الضرب',
+    icon: '🏎️',
+    color: '#ef4444',
+    gradient: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+    badge: '🏎️ سباق السيارات',
+    grades: 'صفوف 1 - 6',
+    highlights: [
+      'سباق سيارات حماسي مع كراج سيارات وعملات ذهبية 🪙',
+      'تدريب ذكي، جداول الضرب (1–12)، وتحدي لاعبين (ثنائي) 🌍',
+      '18 شارة إنجاز، سلسلة التزام يومي، وتقرير أداء شامل 📈'
+    ],
+    awardTeaser: 'معرض السيارات الرياضية + 18 شارة إنجاز 🏆🏎️'
   }
 ];
 
@@ -730,6 +748,13 @@ export default function MathChampionshipArena() {
             onClick={() => { setGameState('idle'); setActiveView('branch_geometry'); }}
           >
             <i className="fas fa-shapes"></i> الهندسة والمساحات 📐
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab ${activeView === 'branch_racing' ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_racing'); }}
+          >
+            <i className="fas fa-flag-checkered"></i> سباق الرياضيات 🏎️
           </button>
           <button 
             type="button"
@@ -1330,6 +1355,75 @@ export default function MathChampionshipArena() {
                     📐 انطلق في تحدي الهندسة والمساحات الآن (90 ثانية)!
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 9: MATH RACING GAME (HTML5 CANVAS) */}
+        {activeView === 'branch_racing' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span className="branch-current-crumb">🏎️ فرع سباق الرياضيات السريع (صفوف 1 - 6)</span>
+                <a
+                  href="/math-racing.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                    color: '#fff',
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    fontWeight: '800',
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)'
+                  }}
+                >
+                  ⛶ فتح اللعبة في شاشة كاملة
+                </a>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '16px 0'
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '480px',
+                  height: '820px',
+                  maxHeight: '85vh',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(239, 68, 68, 0.4)',
+                  background: '#0a0a1a'
+                }}
+              >
+                <iframe
+                  src="/math-racing.html"
+                  title="سباق الرياضيات السريع 🏎️"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
               </div>
             </div>
           </div>
