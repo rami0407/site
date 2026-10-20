@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>⚽ بطولة ركلات الترجيح - عبري للمرحلة الابتدائية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    font-family:'Tajawal','Segoe UI',Tahoma,sans-serif;
+    background:radial-gradient(circle at center,#1e3a8a 0%,#0f172a 50%,#020617 100%);
+    overflow:hidden;touch-action:none;
+    display:flex;justify-content:center;align-items:center;
+    height:100vh;width:100vw;
+  }
+  #wrap{
+    position:relative;width:100%;max-width:880px;height:100vh;max-height:640px;
+    background:#0f172a;overflow:hidden;
+    box-shadow:0 20px 70px rgba(0,0,0,.85),0 0 0 3px rgba(250,204,21,.6);
+    border-radius:20px;display:flex;flex-direction:column;
+  }
+  @media (max-width:900px){
+    #wrap{max-width:100vw;max-height:100vh;border-radius:0;box-shadow:none;}
+  }
+
+  /* Floating persistent Mute & Actions Bar */
+  #floatingMuteBar{
+    position:absolute;top:10px;left:10px;z-index:300;
+    display:flex;gap:6px;align-items:center;
+  }
+  #soundToggleBtn{
+    pointer-events:auto;cursor:pointer;
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+    border:2px solid #fde047;color:#fff;border-radius:99px;
+    padding:5px 14px;height:36px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    font-size:12px;font-weight:900;font-family:inherit;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);transition:all .15s;
+  }
+  #soundToggleBtn.mutedState{
+    background:linear-gradient(135deg,#475569,#1e293b);
+    border-color:#94a3b8;color:#e2e8f0;
+  }
+  #menuQuickBtn{
+    pointer-events:auto;cursor:pointer;
+    background:rgba(15,23,42,.85);border:2px solid rgba(255,255,255,.3);
+    color:#fff;border-radius:99px;padding:5px 12px;height:36px;
+    font-size:12px;font-weight:800;font-family:inherit;
+    display:none;align-items:center;gap:4px;
+  }
+
+  /* Top Banner: Vocabulary Word Challenge */
+  #topWordBanner{
+    background:linear-gradient(135deg,rgba(15,23,42,.94),rgba(30,58,138,.92));
+    border-bottom:2px solid rgba(250,204,21,.5);
+    padding:8px 14px;min-height:58px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;z-index:20;flex-wrap:wrap;
+  }
+  .qBannerMain{
+    display:flex;align-items:center;gap:12px;flex:1;min-width:260px;
+  }
+  #currentWordCard{
+    font-size:22px;font-weight:900;color:#fde047;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  #topicBadge{
+    background:rgba(59,130,246,.25);border:1px solid #60a5fa;
+    color:#dbeafe;font-size:11px;font-weight:800;
+    padding:3px 10px;border-radius:99px;white-space:nowrap;
+  }
+  .hudStatsWrap{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .hudPill{
+    background:rgba(15,23,42,.8);border:1px solid rgba(250,204,21,.45);
+    color:#fff;font-size:12px;font-weight:800;
+    padding:4px 10px;border-radius:12px;white-space:nowrap;
+  }
+  .hudPill.kickPill{border-color:#4ade80;color:#bbf7d0;}
+
+  /* Canvas Area */
+  #canvasContainer{
+    position:relative;flex:1;width:100%;height:100%;overflow:hidden;
+  }
+  canvas{display:block;width:100%;height:100%;}
+
+  /* Goal Targets Grid Overlay (Direct Touch Target Buttons) */
+  #targetsOverlay{
+    position:absolute;top:62px;left:0;right:0;bottom:100px;
+    display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+    gap:16px;padding:20px 40px;pointer-events:none;z-index:25;
+  }
+  @media (max-width:600px){
+    #targetsOverlay{padding:12px 16px;gap:10px;}
+  }
+  .targetPocket{
+    pointer-events:auto;
+    background:rgba(15,23,42,.78);backdrop-filter:blur(5px);
+    border:2.5px dashed rgba(250,204,21,.75);
+    border-radius:20px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:10px;
+    color:#fff;cursor:pointer;transition:all .15s;
+    box-shadow:0 8px 25px rgba(0,0,0,.6);
+  }
+  .targetPocket:hover{
+    background:rgba(250,204,21,.25);border-color:#fde047;
+    transform:scale(1.03);
+  }
+  .targetPocket:active{
+    transform:scale(.96);background:rgba(34,197,94,.4);
+  }
+  .targetWord{
+    font-size:22px;font-weight:900;color:#fde047;
+    text-shadow:0 2px 6px rgba(0,0,0,.9);
+  }
+  .targetCornerHint{
+    font-size:11px;color:#93c5fd;font-weight:700;margin-top:2px;
+  }
+
+  /* Feedback & Goal Celebration Overlay */
+  #celebrationToast{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+    background:linear-gradient(135deg,#22c55e,#15803d);
+    border:3px solid #fde047;color:#fff;font-weight:900;
+    padding:20px 36px;border-radius:26px;text-align:center;
+    box-shadow:0 15px 50px rgba(0,0,0,.8),0 0 30px rgba(34,197,94,.6);
+    z-index:50;transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+    pointer-events:none;
+  }
+  #celebrationToast.show{transform:translate(-50%,-50%) scale(1);}
+  #celebrationToast .goalTitle{font-size:32px;color:#fde047;margin-bottom:4px;}
+  #celebrationToast .goalSub{font-size:16px;}
+
+  /* Hint Toast */
+  #hintToast{
+    position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,rgba(15,23,42,.95),rgba(30,58,138,.95));
+    border:2px solid #38bdf8;color:#e0f2fe;font-size:13px;font-weight:800;
+    padding:8px 18px;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.6);
+    z-index:40;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;
+    max-width:90%;text-align:center;
+  }
+  #hintToast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  /* Bottom Controls */
+  #bottomBar{
+    position:absolute;bottom:10px;left:14px;right:14px;
+    display:flex;justify-content:space-between;align-items:center;
+    z-index:30;pointer-events:auto;
+  }
+  .actionBtn{
+    padding:10px 18px;border-radius:99px;
+    border:2px solid rgba(250,204,21,.55);
+    background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(30,41,59,.9));
+    color:#fde047;font-size:13px;font-weight:900;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer;
+    user-select:none;-webkit-user-select:none;font-family:inherit;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .actionBtn:active{transform:scale(.94);}
+
+  /* Screens */
+  .screen{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,#1e3a8a 0%,#0f172a 65%,#020617 100%);
+    display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
+    z-index:150;color:#fff;padding:50px 16px 20px;text-align:center;overflow-y:auto;
+  }
+  .screen.hidden{display:none;}
+  .penaltyHeroCard{
+    background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(59,130,246,.25));
+    border:2px solid rgba(250,204,21,.5);border-radius:24px;
+    padding:14px 20px;width:100%;max-width:620px;margin-bottom:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.5);
+  }
+  .penaltyHeroCard h1{
+    font-size:26px;color:#fde047;text-shadow:0 3px 0 #1e3a8a,0 0 25px rgba(250,204,21,.6);
+    font-weight:900;margin-bottom:4px;
+  }
+  .penaltyHeroCard .sub{font-size:13px;color:#bae6fd;font-weight:800;}
+  .howToPlayBadges{
+    display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px;
+  }
+  .htpPill{
+    background:rgba(15,23,42,.75);border:1px solid rgba(250,204,21,.4);
+    padding:4px 10px;border-radius:99px;font-size:11px;color:#fef08a;font-weight:700;
+  }
+
+  .sectionTitle{font-size:13px;color:#fde047;font-weight:900;margin:6px 0;}
+  .gradesGrid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:7px;
+    width:100%;max-width:600px;margin-bottom:10px;
+  }
+  @media (max-width:540px){.gradesGrid{grid-template-columns:repeat(3,1fr);}}
+  .gradeBtn{
+    padding:8px 4px;border-radius:14px;border:2px solid rgba(250,204,21,.45);
+    background:rgba(15,23,42,.75);color:#fde047;cursor:pointer;
+    font-family:inherit;transition:all .18s;display:flex;flex-direction:column;align-items:center;
+  }
+  .gradeBtn strong{font-size:15px;font-weight:900;}
+  .gradeBtn span{font-size:10px;color:#cbd5e1;font-weight:700;margin-top:2px;}
+  .gradeBtn.selected{
+    background:linear-gradient(135deg,#facc15,#eab308);
+    color:#0f172a;border-color:#fff;transform:scale(1.05);
+    box-shadow:0 0 20px rgba(250,204,21,.75);
+  }
+  .gradeBtn.selected span{color:#1e293b;font-weight:900;}
+
+  .tagSelectRow{
+    display:flex;gap:7px;justify-content:center;flex-wrap:wrap;
+    margin-bottom:10px;max-width:600px;
+  }
+  .optTagBtn{
+    padding:7px 14px;border-radius:14px;border:2px solid rgba(56,189,248,.4);
+    background:rgba(15,23,42,.7);color:#e0f2fe;font-size:12px;font-weight:800;
+    cursor:pointer;font-family:inherit;transition:all .18s;
+  }
+  .optTagBtn.selected{
+    background:linear-gradient(135deg,#0284c7,#0369a1);
+    color:#fff;border-color:#7dd3fc;box-shadow:0 0 16px rgba(56,189,248,.6);
+  }
+
+  .curriculumInfoBox{
+    background:rgba(15,23,42,.85);border:1px solid rgba(250,204,21,.35);
+    border-radius:14px;padding:8px 14px;max-width:600px;width:100%;
+    font-size:12px;color:#bae6fd;margin-bottom:12px;line-height:1.5;
+  }
+
+  .btn{
+    padding:12px 34px;font-size:17px;font-weight:900;border:none;border-radius:99px;
+    background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;
+    cursor:pointer;margin:4px;box-shadow:0 5px 0 #14532d,0 8px 25px rgba(34,197,94,.45);
+    font-family:inherit;transition:transform .1s;border:2px solid #86efac;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #14532d;}
+  .btn.secondary{
+    background:linear-gradient(135deg,#334155,#1e293b);
+    box-shadow:0 4px 0 #0f172a;border-color:rgba(255,255,255,.2);
+    font-size:13px;padding:9px 18px;
+  }
+
+  .statsStrip{
+    display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px;
+    font-size:12px;color:#fde047;font-weight:800;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <!-- Always-visible Floating Sound Mute & Actions -->
+  <div id="floatingMuteBar">
+    <button id="soundToggleBtn" type="button">🔊 كتم الصوت</button>
+    <button id="menuQuickBtn" type="button">🏠 القائمة</button>
+  </div>
+
+  <!-- Top Banner: Vocabulary Word Challenge -->
+  <div id="topWordBanner">
+    <div class="qBannerMain">
+      <span id="topicBadge">⚽ ركلات الترجيح العبرية</span>
+      <span id="currentWordCard">🎯 اختر زاوية المرمى التي تحمل المعنى الصحيح!</span>
+    </div>
+    <div class="hudStatsWrap">
+      <div class="hudPill kickPill" id="kicksHud">⚽ 0/6</div>
+      <div class="hudPill">⭐ <span id="scoreVal">0</span></div>
+      <div class="hudPill">🪙 <span id="coinsVal">0</span></div>
+      <div class="hudPill">🔥 ×<span id="comboVal">1</span></div>
+    </div>
+  </div>
+
+  <!-- Canvas Container with Interactive Goal Net Targets -->
+  <div id="canvasContainer">
+    <canvas id="cv"></canvas>
+
+    <!-- Goal 4-Corner Targets Overlay -->
+    <div id="targetsOverlay">
+      <div class="targetPocket" id="targetTL" data-corner="TL">
+        <span class="targetWord" id="wordTL">—</span>
+        <span class="targetCornerHint">↖ زاوية علوية يسرى</span>
+      </div>
+      <div class="targetPocket" id="targetTR" data-corner="TR">
+        <span class="targetWord" id="wordTR">—</span>
+        <span class="targetCornerHint">↗ زاوية علوية يمنى</span>
+      </div>
+      <div class="targetPocket" id="targetBL" data-corner="BL">
+        <span class="targetWord" id="wordBL">—</span>
+        <span class="targetCornerHint">↙ زاوية سفلية يسرى</span>
+      </div>
+      <div class="targetPocket" id="targetBR" data-corner="BR">
+        <span class="targetWord" id="wordBR">—</span>
+        <span class="targetCornerHint">↘ زاوية سفلية يمنى</span>
+      </div>
+    </div>
+
+    <!-- Goal Celebration Toast -->
+    <div id="celebrationToast">
+      <div class="goalTitle">⚽ جـــووووول عالمي! 🥅</div>
+      <div class="goalSub" id="celebrationSub">تسديدة صاروخية متقنة في المرمى!</div>
+    </div>
+
+    <!-- Hint Toast -->
+    <div id="hintToast">💡 تلميح: تذكّر الكلمة من درس العبرية!</div>
+
+    <!-- Bottom Actions -->
+    <div id="bottomBar">
+      <button class="actionBtn" id="btnSoundHint" type="button">💡 تلميح الكلمة</button>
+      <button class="actionBtn" id="btnNextWord" type="button">🔄 تخطي وسؤال جديد</button>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="penaltyHeroCard">
+      <h1>⚽ بطولة ركلات الترجيح العبرية 🏆</h1>
+      <div class="sub">منهاج اللغة العبرية للمرحلة الابتدائية (الوسط العربي في دولة إسرائيل) — كلمات ومعاني</div>
+      <div class="howToPlayBadges">
+        <span class="htpPill">📖 اقرأ الكلمة أو المصطلح أعلى الشاشة</span>
+        <span class="htpPill">⚽ سدد الكرة نحو زاوية المرمى التي تحمل المعنى الصحيح</span>
+        <span class="htpPill">🧤 تفوّق على حارس المرمى وسجل أهدافاً تاريخية!</span>
+      </div>
+    </div>
+
+    <div class="sectionTitle">🎓 اختر الصف الدراسي (وفق منهاج وزارة التربية والتعليم للوسط العربي):</div>
+    <div class="gradesGrid" id="gradesGrid">
+      <button class="gradeBtn" data-g="1"><strong>الصف 1</strong><span>كلمات مصورة أولى</span></button>
+      <button class="gradeBtn" data-g="2"><strong>الصف 2</strong><span>المدرسة والألوان</span></button>
+      <button class="gradeBtn selected" data-g="3"><strong>الصف 3</strong><span>العائلة والصف والبيت</span></button>
+      <button class="gradeBtn" data-g="4"><strong>الصف 4</strong><span>الفصول والأطعمة</span></button>
+      <button class="gradeBtn" data-g="5"><strong>الصف 5</strong><span>الأفعال والبيئة</span></button>
+      <button class="gradeBtn" data-g="6"><strong>الصف 6</strong><span>المهن والمواصلات</span></button>
+    </div>
+
+    <div class="curriculumInfoBox" id="curriculumInfo">
+      📖 <b>منهاج الصف الثالث (כיתה ג'):</b> أوצר מילים בסיסי: שלום, מורה, תלמיד, ספר, מחברת, שולחן, משפחה, אבא, אמא, בית, תודה, בבקשה.
+    </div>
+
+    <div class="sectionTitle">🔄 نمط التحدي اللغوي:</div>
+    <div class="tagSelectRow" id="modeRow">
+      <button class="optTagBtn selected" data-mode="heb_to_ar">🇮🇱 عبري ⬅️ عربي (اقرأ بالعبرية واختر المعنى)</button>
+      <button class="optTagBtn" data-mode="ar_to_heb">🇸🇦 عربي ⬅️ عبري (اقرأ بالعربية واختر العبرية)</button>
+      <button class="optTagBtn" data-mode="mixed">🔥 تحدي الأبطال المختلط</button>
+    </div>
+
+    <div class="sectionTitle">⚽ اختر فريقك المفضل:</div>
+    <div class="tagSelectRow" id="teamRow">
+      <button class="optTagBtn selected" data-team="musheirifa">🟢 أبطال مدرسة مشيرفة</button>
+      <button class="optTagBtn" data-team="falcons">🔵 صقور التميز</button>
+      <button class="optTagBtn" data-team="tigers">🟡 نمور الإبداع</button>
+      <button class="optTagBtn" data-team="lions">🔴 أسود البطولة</button>
+    </div>
+
+    <div>
+      <button class="btn" id="startBtn">⚽ انطلق وسدد ركلات الترجيح!</button>
+    </div>
+
+    <div class="statsStrip">
+      <span>🏆 أعلى نتيجة: <b id="bestScoreTxt">0</b></span>
+      <span>🪙 رصيد العملات: <b id="coinsTotalTxt">0</b></span>
+      <span>⚽ أهداف مسجلة: <b id="totalGoalsTxt">0</b></span>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen hidden" id="endScreen">
+    <div class="penaltyHeroCard">
+      <h1 id="endTitleTxt">🏆 كأس بطولة اللغة العبرية!</h1>
+      <div class="sub">هدّاف اللغة العبرية المتميز في مدرسة مشيرفة الابتدائية</div>
+    </div>
+    <div id="endStatsBox" style="background:rgba(15,23,42,.9);border:2px solid #facc15;border-radius:20px;padding:18px 28px;margin:12px 0;font-size:16px;line-height:2;"></div>
+    <div>
+      <button class="btn" id="playAgainBtn">🔄 خوض جولة جديدة</button>
+      <button class="btn secondary" id="backMenuBtn">🏠 القائمة الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   ⚽ HEBREW PENALTY SHOOTOUT — ISRAELI ARAB SECTOR CURRICULUM (GRADES 1–6)
+   ============================================================================ */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 800, H = 500, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth || 800;
+  H = cv.clientHeight || 500;
+  cv.width = W * DPR;
+  cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+/* ============ WebAudio Sound Engine with Persistent Mute ============ */
+const Sound = (() => {
+  let actx = null, crowdTimer = null, crowdPlaying = false;
+  let muted = false;
+  try { muted = JSON.parse(localStorage.getItem('penalty_heb_muted') || 'false'); } catch(e) {}
+
+  function syncUI() {
+    const btn = document.getElementById('soundToggleBtn');
+    if (!btn) return;
+    if (muted) {
+      btn.innerHTML = '🔇 الصوت مكتوم';
+      btn.classList.add('mutedState');
+    } else {
+      btn.innerHTML = '🔊 كتم الصوت';
+      btn.classList.remove('mutedState');
+    }
+  }
+  setTimeout(syncUI, 0);
+
+  function init() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx && actx.state === 'suspended' && !muted) actx.resume().catch(() => {});
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    try { localStorage.setItem('penalty_heb_muted', JSON.stringify(muted)); } catch(e) {}
+    syncUI();
+    if (muted) {
+      stopCrowd();
+      if (actx && actx.state === 'running') actx.suspend().catch(() => {});
+    } else {
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+      if (state.running) startCrowd();
+    }
+  }
+
+  function tone(freq, dur, type = 'sine', vol = 0.1) {
+    if (muted) return;
+    init();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }
+
+  function kick() {
+    tone(140, 0.12, 'sawtooth', 0.2);
+    setTimeout(() => tone(90, 0.18, 'triangle', 0.25), 40);
+  }
+
+  function whistle() {
+    tone(1800, 0.12, 'square', 0.12);
+    setTimeout(() => tone(2200, 0.22, 'square', 0.14), 110);
+  }
+
+  function goal() {
+    whistle();
+    [523, 659, 784, 1046, 1318].forEach((f, i) => {
+      setTimeout(() => tone(f, 0.2, 'triangle', 0.18), i * 90);
+    });
+  }
+
+  function miss() {
+    tone(220, 0.25, 'sawtooth', 0.16);
+    setTimeout(() => tone(160, 0.35, 'sawtooth', 0.16), 140);
+  }
+
+  function startCrowd() {
+    if (muted || crowdPlaying) return;
+    init(); crowdPlaying = true;
+    crowdTimer = setInterval(() => {
+      if (!crowdPlaying || muted) return;
+      tone(120 + Math.random() * 40, 0.3, 'triangle', 0.02);
+    }, 500);
+  }
+  function stopCrowd() {
+    crowdPlaying = false;
+    if (crowdTimer) { clearInterval(crowdTimer); crowdTimer = null; }
+  }
+
+  return { kick, whistle, goal, miss, startCrowd, stopCrowd, toggleMute, init };
+})();
+
+document.getElementById('soundToggleBtn').onclick = () => Sound.toggleMute();
+
+/* ============ Store Helpers ============ */
+const Store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+};
+
+/* ============ Authentic Hebrew Elementary Curriculum Vocabulary (Grades 1–6) ============ */
+const VOCABULARY_BY_GRADE = {
+  1: [
+    { heb: 'שָׁלוֹם', ar: 'سلام / مرحباً', hint: 'تحية اللقاء والسلام' },
+    { heb: 'אַבָּא', ar: 'أب / والدي', hint: 'رب الأسرة' },
+    { heb: 'אִמָּא', ar: 'أم / والدتي', hint: 'أم الأسرة الحنونة' },
+    { heb: 'כֶּלֶב', ar: 'كلب', hint: 'حيوان أليف وفيّ' },
+    { heb: 'שֶׁמֶשׁ', ar: 'شمس', hint: 'تشرق في السماء وتمدنا بالدفء' },
+    { heb: 'מַיִם', ar: 'ماء', hint: 'نشربه كل يوم ليروي عطشنا' },
+    { heb: 'פֶּרַח', ar: 'زهرة / وردة', hint: 'تنمو في الحديقة برائحة عطرة' },
+    { heb: 'בַּיִת', ar: 'بيت / منزل', hint: 'المكان الذي نسكن فيه مع العائلة' },
+    { heb: 'יָד', ar: 'يد', hint: 'جزء من جسمنا نكتب ونمسك به' },
+    { heb: 'עַיִן', ar: 'عين', hint: 'نرى بها الأشياء' }
+  ],
+  2: [
+    { heb: 'בֵּית סֵפֶר', ar: 'مدرسة', hint: 'المكان الذي نذهب إليه لنتعلم' },
+    { heb: 'מוֹרֶה', ar: 'معلّم (مذكر)', hint: 'من يعلم الطلاب في الصف' },
+    { heb: 'מוֹרָה', ar: 'معلّمة (مؤنث)', hint: 'المعلمة الفاضلة التي تعلمنا' },
+    { heb: 'תַּלְמִיד', ar: 'تلميذ / طالب', hint: 'من يجلس في المقعد ليتعلم' },
+    { heb: 'כִּתָּה', ar: 'صف / غرفة دراسية', hint: 'الغرفة المدرسية التي نجلس فيها' },
+    { heb: 'סֵפֶר', ar: 'كتاب', hint: 'نقرأ فيه القصص والدروس' },
+    { heb: 'מַחְבֶּרֶת', ar: 'دفتر', hint: 'نكتب فيه الواجبات والتمارين' },
+    { heb: 'עִפָּרוֹן', ar: 'قلم رصاص', hint: 'نكتب ونرسم به ونمسحه بالممحاة' },
+    { heb: 'שֻׁלְחָן', ar: 'طاولة', hint: 'نضع عليها الكتب والأدوات' },
+    { heb: 'כִּסֵּא', ar: 'كرسي', hint: 'نجلس عليه أمام الطاولة' },
+    { heb: 'לוּחַ', ar: 'لوح', hint: 'يكتب عليه المعلم في مقدمة الصف' },
+    { heb: 'יָרוֹק', ar: 'أخضر', hint: 'لون أوراق الشجر والعشب' },
+    { heb: 'כָּחול', ar: 'أزرق', hint: 'لون البحر والسماء الصافية' },
+    { heb: 'אָדוֹם', ar: 'أحمر', hint: 'لون الفراولة والطماطم' }
+  ],
+  3: [
+    { heb: 'מִשְׁפָּחָה', ar: 'عائلة / أسرة', hint: 'الأب والأم والإخوة والأخوات' },
+    { heb: 'אָח', ar: 'أخ', hint: 'أخي شقيقي في العائلة' },
+    { heb: 'אָחוֹת', ar: 'أخت', hint: 'أختي شقيقتي في العائلة' },
+    { heb: 'סַבָּא', ar: 'جدّ', hint: 'والد الأب أو والد الأم' },
+    { heb: 'סָבְתָא', ar: 'جدّة', hint: 'والدة الأب أو والدة الأم' },
+    { heb: 'חָבֵר', ar: 'صديق / زميل', hint: 'صديقي الوفي الذي يلعب معي' },
+    { heb: 'תּוֹדָה', ar: 'شكراً', hint: 'كلمة تقال عند الامتنان والتقدير' },
+    { heb: 'בְּבַקָּשָׁה', ar: 'عفواً / من فضلك', hint: 'تقال في الأدب والطلب وعند تقديم شيء' },
+    { heb: 'חֶדֶר', ar: 'غرفة', hint: 'غرفة النوم أو الجلوس في البيت' },
+    { heb: 'חַלּוֹן', ar: 'نافذة / شباك', hint: 'يدخل منها الهواء ونور الشمس للغرفة' },
+    { heb: 'דֶּלֶת', ar: 'باب', hint: 'مدخل البيت أو الغرفة' },
+    { heb: 'חָצֵר', ar: 'ساحة', hint: 'ساحة المدرسة أو البيت للعب' },
+    { heb: 'מִשְׂחָק', ar: 'لعبة', hint: 'ما نلعبه للتسلية والمرح' },
+    { heb: 'יוֹם', ar: 'يوم', hint: 'أيام الأسبوع مثل الأحد والاثنين' }
+  ],
+  4: [
+    { heb: 'עוֹנוֹת הַשָּׁנָה', ar: 'فصول السنة', hint: 'الخريف، الشتاء، الربيع، والصيف' },
+    { heb: 'סְתָיו', ar: 'فصل الخريف', hint: 'تتساقط فيه أوراق الأشجار' },
+    { heb: 'חֹרֶף', ar: 'فصل الشتاء', hint: 'فصل المطر والبرد' },
+    { heb: 'אָבִיב', ar: 'فصل الربيع', hint: 'تتفتح فيه الأزهار ويعتدل الجو' },
+    { heb: 'קַיִץ', ar: 'فصل الصيف', hint: 'فصل الحرارة والعطلة الصيفية' },
+    { heb: 'גֶּשֶׁם', ar: 'مطر', hint: 'يهطل من الغيوم في الشتاء' },
+    { heb: 'עָנָן', ar: 'غيمة / سحابة', hint: 'تسير في السماء البيضاء والرمادية' },
+    { heb: 'רוּחַ', ar: 'ريح / هواء', hint: 'تهب وتحرك الأشجار' },
+    { heb: 'לֶחֶם', ar: 'خبز', hint: 'طعام أساسي نصنع منه الشطائر' },
+    { heb: 'חָלָב', ar: 'حليب', hint: 'مشروب أبيض غني بالكالسيوم' },
+    { heb: 'גְּבִינָה', ar: 'جبنة', hint: 'تصنع من الحليب وتؤكل في الإفطار' },
+    { heb: 'תַּפּוּחַ', ar: 'تفاحة', hint: 'فاكهة لذيذة حمراء أو خضراء' },
+    { heb: 'אֲרוּחַת בֹּקֶר', ar: 'وجبة الإفطار', hint: 'الوجبة الصباحية قبل الذهاب للمدرسة' },
+    { heb: 'חַג', ar: 'عيد / مناسبة سعيدة', hint: 'أعياد الفطر والأضحى والمناسبات' }
+  ],
+  5: [
+    { heb: 'קוֹרֵא', ar: 'يقرأُ', hint: 'فعل مضارع للمذكر: يقرأ في الكتاب' },
+    { heb: 'כּוֹתֵב', ar: 'يكتبُ', hint: 'فعل مضارع: يكتب بالقلم في الدفتر' },
+    { heb: 'לוֹמֵד', ar: 'يتعلّمُ / يدرسُ', hint: 'يتعلم دروساً جديدة' },
+    { heb: 'אוֹכֵל', ar: 'يأكلُ', hint: 'يتناول طعامه' },
+    { heb: 'שׁוֹתֶה', ar: 'يشربُ', hint: 'يشرب الماء أو العصير' },
+    { heb: 'מְשַׂחֵק', ar: 'يلعبُ', hint: 'يلعب بالكرة أو الألعاب' },
+    { heb: 'הוֹלֵךְ', ar: 'يمشي / يذهبُ', hint: 'يسير على قدميه' },
+    { heb: 'גָּר', ar: 'يسكنُ / يعيشُ', hint: 'يسكن في قرية مشيرفة أو المدينة' },
+    { heb: 'עִיר', ar: 'مدينة', hint: 'منطقة سكنية كبيرة مثل حيفا أو الناصرة' },
+    { heb: 'כְּפָר', ar: 'قرية', hint: 'بلدة هادئة وريفية مثل مشيرفة' },
+    { heb: 'רְחוֹב', ar: 'شارع', hint: 'طريق تمر فيه السيارات والمشاة' },
+    { heb: 'סִפְרִיָּה', ar: 'مكتبة', hint: 'مكان مليء بالكتب للقراءة والاستعارة' },
+    { heb: 'בֵּית חוֹלִים', ar: 'مستشفى', hint: 'مكان علاج المرضى والمصابين' },
+    { heb: 'יָם', ar: 'بحر', hint: 'مياه مالحة وأمواج وشاطئ' },
+    { heb: 'יַעַר', ar: 'غابة', hint: 'أشجار كثيفة وطبيعة خضراء' }
+  ],
+  6: [
+    { heb: 'רוֹפֵא', ar: 'طبيب / دكتور', hint: 'يعالج المرضى في العيادة والمستشفى' },
+    { heb: 'שׁוֹטֵר', ar: 'شرطي', hint: 'يحافظ على الأمن والنظام في الشوارع' },
+    { heb: 'מְהַנְדֵּס', ar: 'مهندس', hint: 'يصمم المباني والجسور والتكنولوجيا' },
+    { heb: 'נַהָג', ar: 'سائق', hint: 'يقود الحافلة أو السيارة بأمان' },
+    { heb: 'טַיָּס', ar: 'طيار', hint: 'يقود الطائرة في السماء' },
+    { heb: 'אוֹטוֹבּוּס', ar: 'حافلة / باص', hint: 'وسيلة نقل جماعي للركاب والطلاب' },
+    { heb: 'רַכֶּבֶת', ar: 'قطار', hint: 'يسير على السكة الحديدية بين المدن' },
+    { heb: 'מְטוֹס', ar: 'طائرة', hint: 'تطير في الجو لنقل المسافرين' },
+    { heb: 'מְכוֹנִית', ar: 'سيارة', hint: 'مركبة عائلية خاصة للتنقل' },
+    { heb: 'תַּחֲנָה', ar: 'محطة', hint: 'مكان انتظار القطار أو الحافلة' },
+    { heb: 'בְּהַצְלָחָה', ar: 'بالتوفيق / بالنجاح', hint: 'عبارة تشجيعية عند الامتحان أو التحدي' },
+    { heb: 'כָּל הַכָּבוֹד', ar: 'كل الاحترام / أحسنت!', hint: 'عبارة تقدير وإعجاب بالإنجاز' },
+    { heb: 'בְּתֵאָבוֹן', ar: 'صحتين وعافية / شهية طيبة', hint: 'تقال قبل البدء بتناول الطعام' },
+    { heb: 'סְלִיחָה', ar: 'معذرة / عفواً / آسف', hint: 'تقال للاعتذار أو لفت الانتباه بأدب' },
+    { heb: 'יוֹם הֻלֶּדֶת', ar: 'عيد ميلاد', hint: 'يوم ذكرى مولد الإنسان والاحتفال به' }
+  ]
+};
+
+const GRADE_INFOS = {
+  1: '📖 <b>منهاج الصف الأول (כיתה א\'):</b> كلمات المحيط اليومي المصورة: שלום, אבא, אמא, בית, כלב, שמש, מים, פרח.',
+  2: '📖 <b>منهاج الصف الثاني (כיתה ב\'):</b> المدرسة والألوان: בית ספר, מורה, תלמיד, כיתה, ספר, מחברת, שולחן, כחול, אדום, ירוק.',
+  3: '📖 <b>منهاج الصف الثالث (כיתה ג\'):</b> العائلة والبيت والأدب: משפחה, אח, אחות, סבא, סבתא, חבר, תודה, בבקשה, חדר, חלון.',
+  4: '📖 <b>منهاج الصف الرابع (כיתה ד\'):</b> فصول السنة والأطعمة والطقس: עונות השנה, סתיו, חורף, אביב, קיץ, לחם, חלב, גבינה, תפוח.',
+  5: '📖 <b>منهاج الصف الخامس (כיתה ה\'):</b> الأفعال والمجتمع والأماكن: קורא, כותב, לומד, אוכל, שותה, משחק, עיר, כפר, ספרייה, בית חולים.',
+  6: '📖 <b>منهاج الصف السادس (כיתה ו\'):</b> المهن والمواصلات والتعبيرات: רופא, שוטר, מהנדס, טייס, רכבת, מטוס, בהצלחה, כל הכבוד, סליחה.'
+};
+
+/* ============ Game State ============ */
+const state = {
+  running: false,
+  grade: 3, mode: 'heb_to_ar', team: 'musheirifa',
+  kicksTotal: 6, currentKick: 0, goals: 0,
+  score: 0, coins: 0, combo: 1,
+  currentCard: null,
+  options: [], // 4 options for TL, TR, BL, BR
+  ball: { x: 400, y: 440, targetX: 400, targetY: 440, progress: 0, shooting: false, inFlight: false },
+  keeper: { x: 400, y: 220, targetX: 400, targetY: 220, diveProgress: 0, diving: false },
+  shotResult: null, // 'goal' | 'saved'
+  particles: [], confetti: []
+};
+
+function getVocabularyPool(grade) {
+  return VOCABULARY_BY_GRADE[grade] || VOCABULARY_BY_GRADE[3];
+}
+
+function nextQuestion() {
+  const pool = getVocabularyPool(state.grade);
+  const correctItem = pool[Math.floor(Math.random() * pool.length)];
+
+  // Determine question direction according to mode
+  let isHebrewQuestion = true;
+  if (state.mode === 'ar_to_heb') isHebrewQuestion = false;
+  else if (state.mode === 'mixed') isHebrewQuestion = Math.random() < 0.5;
+
+  const questionWord = isHebrewQuestion ? correctItem.heb : correctItem.ar;
+  const correctAns = isHebrewQuestion ? correctItem.ar : correctItem.heb;
+
+  // Pick 3 wrong options from the pool
+  const wrongPool = pool.filter(p => (isHebrewQuestion ? p.ar : p.heb) !== correctAns);
+  const shuffledWrongs = [...wrongPool].sort(() => Math.random() - 0.5).slice(0, 3);
+  const wrongAnswers = shuffledWrongs.map(p => isHebrewQuestion ? p.ar : p.heb);
+
+  const allOpts = [correctAns, ...wrongAnswers].sort(() => Math.random() - 0.5);
+
+  state.currentCard = {
+    item: correctItem,
+    qText: questionWord,
+    correctText: correctAns,
+    isHebrewQuestion: isHebrewQuestion
+  };
+  state.options = allOpts;
+
+  // Update UI top banner
+  const dirLabel = isHebrewQuestion ? 'عبري ⬅️ عربي' : 'عربي ⬅️ عبري';
+  document.getElementById('topicBadge').textContent = `⚽ الصف ${state.grade} (${dirLabel})`;
+  document.getElementById('currentWordCard').innerHTML = `🎯 الكلمة: <b style="font-size:26px;color:#fde047;letter-spacing:1px">${questionWord}</b>`;
+
+  // Place the 4 options into the 4 target pockets
+  document.getElementById('wordTL').textContent = allOpts[0];
+  document.getElementById('wordTR').textContent = allOpts[1];
+  document.getElementById('wordBL').textContent = allOpts[2];
+  document.getElementById('wordBR').textContent = allOpts[3];
+
+  // Reset ball & keeper for new kick
+  state.ball.x = W / 2;
+  state.ball.y = H - 55;
+  state.ball.shooting = false;
+  state.ball.inFlight = false;
+  state.ball.progress = 0;
+
+  state.keeper.x = W / 2;
+  state.keeper.y = H * 0.44;
+  state.keeper.diving = false;
+  state.keeper.diveProgress = 0;
+
+  state.shotResult = null;
+  document.getElementById('celebrationToast').classList.remove('show');
+}
+
+function showHint() {
+  if (!state.currentCard) return;
+  const t = document.getElementById('hintToast');
+  t.innerHTML = `💡 <b>تلميح:</b> ${state.currentCard.item.hint} (المعنى: ${state.currentCard.correctText})`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+/* ============ Penalty Kick Execution ============ */
+const CORNER_COORDS = {
+  TL: { x: 0.28, y: 0.28 },
+  TR: { x: 0.72, y: 0.28 },
+  BL: { x: 0.28, y: 0.52 },
+  BR: { x: 0.72, y: 0.52 }
+};
+
+function executeKick(corner, chosenWord) {
+  if (!state.running || state.ball.shooting) return;
+
+  state.ball.shooting = true;
+  state.ball.inFlight = true;
+  state.ball.progress = 0;
+
+  const targetNorm = CORNER_COORDS[corner] || CORNER_COORDS.TR;
+  state.ball.targetX = W * targetNorm.x;
+  state.ball.targetY = H * targetNorm.y;
+
+  Sound.kick();
+
+  const isCorrect = String(chosenWord).trim() === String(state.currentCard.correctText).trim();
+
+  // Goalkeeper logic: if correct, keeper dives slightly away or too late!
+  // If wrong, keeper dives right into the ball or ball hits the post!
+  state.keeper.diving = true;
+  state.keeper.diveProgress = 0;
+  if (isCorrect) {
+    // Dive towards opposite corner
+    const oppX = (targetNorm.x < 0.5) ? (W * 0.65) : (W * 0.35);
+    state.keeper.targetX = oppX;
+    state.keeper.targetY = state.ball.targetY + 20;
+    state.shotResult = 'goal';
+  } else {
+    // Goalkeeper dives to save it!
+    state.keeper.targetX = state.ball.targetX;
+    state.keeper.targetY = state.ball.targetY;
+    state.shotResult = 'saved';
+  }
+}
+
+function onKickCompleted() {
+  state.currentKick++;
+  updateHUD();
+
+  if (state.shotResult === 'goal') {
+    state.goals++;
+    state.score += 35 * state.combo;
+    state.coins += 10;
+    state.combo = Math.min(5, state.combo + 1);
+
+    Sound.goal();
+    spawnCelebrationConfetti();
+
+    const toast = document.getElementById('celebrationToast');
+    document.getElementById('celebrationSub').innerHTML = `إجابة صحيحة متقنة! <b>${state.currentCard.qText}</b> = <b>${state.currentCard.correctText}</b> ⭐`;
+    toast.classList.add('show');
+  } else {
+    state.combo = 1;
+    Sound.miss();
+    showHint();
+  }
+  updateHUD();
+
+  setTimeout(() => {
+    if (state.currentKick >= state.kicksTotal) {
+      finishChampionship();
+    } else {
+      nextQuestion();
+    }
+  }, 2200);
+}
+
+function spawnCelebrationConfetti() {
+  const colors = ['#fde047', '#22c55e', '#38bdf8', '#ef4444', '#ec4899', '#ffffff'];
+  for (let i = 0; i < 60; i++) {
+    state.confetti.push({
+      x: W / 2, y: H * 0.38,
+      vx: (Math.random() - 0.5) * 16,
+      vy: (Math.random() - 0.7) * 16,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      r: Math.random() * 5 + 3,
+      life: 1
+    });
+  }
+}
+
+/* ============ Rendering Field, Goal, Goalkeeper & Ball ============ */
+function renderField() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Stadium Crowd & Lights Background
+  const standGrad = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+  standGrad.addColorStop(0, '#020617');
+  standGrad.addColorStop(0.6, '#0f172a');
+  standGrad.addColorStop(1, '#1e293b');
+  ctx.fillStyle = standGrad;
+  ctx.fillRect(0, 0, W, H * 0.45);
+
+  // Stadium floodlights
+  for (let i = 0; i < 6; i++) {
+    const lx = (W / 7) * (i + 1);
+    ctx.fillStyle = 'rgba(254,240,138,0.18)';
+    ctx.beginPath();
+    ctx.moveTo(lx, 10);
+    ctx.lineTo(lx - 60, H * 0.65);
+    ctx.lineTo(lx + 60, H * 0.65);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath(); ctx.arc(lx, 10, 6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Pitch Grass with perspective stripes
+  const grassGrad = ctx.createLinearGradient(0, H * 0.45, 0, H);
+  grassGrad.addColorStop(0, '#15803d');
+  grassGrad.addColorStop(0.5, '#16a34a');
+  grassGrad.addColorStop(1, '#14532d');
+  ctx.fillStyle = grassGrad;
+  ctx.fillRect(0, H * 0.45, W, H * 0.55);
+
+  // Mowed grass horizontal stripes
+  for (let y = H * 0.45; y < H; y += 32) {
+    if (Math.floor((y - H * 0.45) / 32) % 2 === 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.06)';
+      ctx.fillRect(0, y, W, 32);
+    }
+  }
+
+  // Penalty Box & Spot White Markings
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+  ctx.lineWidth = 3;
+  // Penalty Spot
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(W / 2, H - 55, 5, 0, Math.PI * 2); ctx.fill();
+  // Penalty Arc
+  ctx.beginPath();
+  ctx.arc(W / 2, H - 55, 65, Math.PI * 1.1, Math.PI * 1.9);
+  ctx.stroke();
+
+  // Goal Structure
+  const goalLeft = W * 0.22, goalRight = W * 0.78;
+  const goalTop = H * 0.20, goalBottom = H * 0.60;
+  const goalW = goalRight - goalLeft, goalH = goalBottom - goalTop;
+
+  // Goal Net Mesh
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(goalLeft, goalTop, goalW, goalH);
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1;
+  for (let x = goalLeft; x <= goalRight; x += 18) {
+    ctx.beginPath(); ctx.moveTo(x, goalTop); ctx.lineTo(x, goalBottom); ctx.stroke();
+  }
+  for (let y = goalTop; y <= goalBottom; y += 18) {
+    ctx.beginPath(); ctx.moveTo(goalLeft, y); ctx.lineTo(goalRight, y); ctx.stroke();
+  }
+
+  // Goal Posts (White Metal Frame)
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 9;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(goalLeft, goalBottom);
+  ctx.lineTo(goalLeft, goalTop);
+  ctx.lineTo(goalRight, goalTop);
+  ctx.lineTo(goalRight, goalBottom);
+  ctx.stroke();
+
+  // Draw Goalkeeper
+  drawGoalkeeper();
+
+  // Draw Ball
+  drawFootball();
+
+  // Draw Confetti
+  for (let i = state.confetti.length - 1; i >= 0; i--) {
+    const c = state.confetti[i];
+    c.x += c.vx; c.y += c.vy; c.vy += 0.35; c.life -= 0.016;
+    if (c.life <= 0) {
+      state.confetti.splice(i, 1);
+    } else {
+      ctx.globalAlpha = c.life;
+      ctx.fillStyle = c.color;
+      ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawGoalkeeper() {
+  const k = state.keeper;
+  if (k.diving) {
+    k.diveProgress = Math.min(1, k.diveProgress + 0.06);
+    k.x += (k.targetX - k.x) * 0.14;
+    k.y += (k.targetY - k.y) * 0.14;
+  }
+
+  ctx.save();
+  ctx.translate(k.x, k.y);
+
+  // Drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(0, 36, 22, 8, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Keeper Body & Shirt (Vibrant Orange / Yellow)
+  ctx.fillStyle = '#f97316';
+  ctx.beginPath();
+  ctx.roundRect(-16, -18, 32, 38, 8);
+  ctx.fill();
+
+  // Keeper Gloves
+  ctx.fillStyle = '#fde047';
+  if (k.diving) {
+    ctx.beginPath(); ctx.arc(-24, -22, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(24, -22, 8, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.arc(-22, 6, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(22, 6, 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Keeper Head
+  ctx.fillStyle = '#fed7aa';
+  ctx.beginPath(); ctx.arc(0, -28, 12, 0, Math.PI * 2); ctx.fill();
+
+  // Hair
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath(); ctx.arc(0, -32, 12, Math.PI, 0); ctx.fill();
+
+  // Shorts & Socks
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-14, 20, 28, 14);
+
+  ctx.restore();
+}
+
+function drawFootball() {
+  const b = state.ball;
+  if (b.inFlight) {
+    b.progress = Math.min(1, b.progress + 0.045);
+    b.x += (b.targetX - b.x) * 0.15;
+    b.y += (b.targetY - b.y) * 0.15;
+    if (b.progress >= 1 && b.shooting) {
+      b.shooting = false;
+      onKickCompleted();
+    }
+  }
+
+  // Ball scale gets smaller as it travels towards goal
+  const scale = 1 - b.progress * 0.45;
+  const r = 18 * scale;
+
+  ctx.save();
+  ctx.translate(b.x, b.y);
+
+  // Ball shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0, r + 4, r * 1.1, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  // White leather ball
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Classic Black Pentagons
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.38, 0, Math.PI * 2); ctx.fill();
+
+  ctx.restore();
+}
+
+let animFrameId = null;
+function gameLoop() {
+  if (state.running) {
+    renderField();
+  }
+  animFrameId = requestAnimationFrame(gameLoop);
+}
+
+/* ============ State Management ============ */
+function startGame() {
+  resize();
+
+  state.running = true;
+  state.score = 0;
+  state.coins = 0;
+  state.combo = 1;
+  state.currentKick = 0;
+  state.goals = 0;
+  state.kicksTotal = 6;
+  state.confetti = [];
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('menuQuickBtn').style.display = 'inline-flex';
+
+  Sound.whistle();
+  Sound.startCrowd();
+
+  nextQuestion();
+  updateHUD();
+
+  cancelAnimationFrame(animFrameId);
+  animFrameId = requestAnimationFrame(gameLoop);
+}
+
+function finishChampionship() {
+  state.running = false;
+  cancelAnimationFrame(animFrameId);
+  Sound.stopCrowd();
+  Sound.whistle();
+
+  const prevCoins = Store.get('penalty_coins', 0);
+  Store.set('penalty_coins', prevCoins + state.coins);
+  const prevGoals = Store.get('penalty_goals_total', 0);
+  Store.set('penalty_goals_total', prevGoals + state.goals);
+  const prevBest = Store.get('penalty_best_g' + state.grade, 0);
+  const isNewBest = state.score > prevBest;
+  if (isNewBest) Store.set('penalty_best_g' + state.grade, state.score);
+
+  const isChampion = state.goals >= 4;
+  document.getElementById('endTitleTxt').textContent = isChampion ? '🏆 بطل ركلات الترجيح العبرية الذهبي!' : '⚽ نهاية ركلات الترجيح!';
+
+  document.getElementById('endStatsBox').innerHTML =
+    `<div style="font-size:32px;margin-bottom:6px">${isChampion ? '⭐⭐⭐' : '⭐'}</div>` +
+    `🎓 الصف الدراسي: <b>الصف ${state.grade}</b><br>` +
+    `⚽ الأهداف المسجلة: <b style="color:#22c55e">${state.goals} من ${state.kicksTotal}</b><br>` +
+    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات الذهبية: <b style="color:#38bdf8">+${state.coins}</b>` +
+    (isNewBest ? `<div style="color:#facc15;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في الصف ${state.grade}!</div>` : '');
+
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('coinsVal').textContent = state.coins;
+  document.getElementById('comboVal').textContent = state.combo;
+  document.getElementById('kicksHud').textContent = `⚽ ${state.goals}/${state.kicksTotal}`;
+  document.getElementById('bestScoreTxt').textContent = Store.get('penalty_best_g' + state.grade, 0);
+  document.getElementById('coinsTotalTxt').textContent = Store.get('penalty_coins', 0);
+  document.getElementById('totalGoalsTxt').textContent = Store.get('penalty_goals_total', 0);
+}
+
+/* ============ Event Listeners ============ */
+// Target Pockets Click / Tap
+['targetTL', 'targetTR', 'targetBL', 'targetBR'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const corner = el.dataset.corner;
+    const wordEl = el.querySelector('.targetWord');
+    const word = wordEl ? wordEl.textContent : '';
+    executeKick(corner, word);
+  });
+});
+
+document.getElementById('btnSoundHint').onclick = showHint;
+document.getElementById('btnNextWord').onclick = () => {
+  if (state.running && !state.ball.shooting) nextQuestion();
+};
+
+document.getElementById('menuQuickBtn').onclick = () => {
+  state.running = false;
+  Sound.stopCrowd();
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+// Menu Selectors
+document.querySelectorAll('.gradeBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.gradeBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.grade = +b.dataset.g;
+    document.getElementById('curriculumInfo').innerHTML = GRADE_INFOS[state.grade];
+    updateHUD();
+  };
+});
+
+document.querySelectorAll('#modeRow .optTagBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#modeRow .optTagBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.mode = b.dataset.mode;
+  };
+});
+
+document.querySelectorAll('#teamRow .optTagBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#teamRow .optTagBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.team = b.dataset.team;
+  };
+});
+
+document.getElementById('startBtn').onclick = startGame;
+document.getElementById('playAgainBtn').onclick = startGame;
+document.getElementById('backMenuBtn').onclick = () => {
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+resize();
+updateHUD();
+</script>
+</body>
+</html>
