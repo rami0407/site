@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>🚀 حرب الفضاء الحسابية - بطولة مشيرفة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    font-family:'Tajawal','Segoe UI',Tahoma,sans-serif;
+    background:radial-gradient(circle at center,#1e1b4b 0%,#0f172a 50%,#020617 100%);
+    overflow:hidden;touch-action:none;
+    display:flex;justify-content:center;align-items:center;
+    height:100vh;width:100vw;
+  }
+  #wrap{
+    position:relative;width:100%;max-width:880px;height:100vh;max-height:640px;
+    background:#030712;overflow:hidden;
+    box-shadow:0 20px 70px rgba(0,0,0,.8),0 0 0 3px rgba(56,189,248,.5);
+    border-radius:20px;display:flex;flex-direction:column;
+  }
+  @media (max-width:900px){
+    #wrap{max-width:100vw;max-height:100vh;border-radius:0;box-shadow:none;}
+  }
+
+  /* Floating persistent Mute & Menu Bar */
+  #floatingMuteBar{
+    position:absolute;top:10px;left:10px;z-index:300;
+    display:flex;gap:6px;align-items:center;
+  }
+  #soundToggleBtn{
+    pointer-events:auto;cursor:pointer;
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+    border:2px solid #fde047;color:#fff;border-radius:99px;
+    padding:5px 14px;height:36px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    font-size:12px;font-weight:900;font-family:inherit;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);transition:all .15s;
+  }
+  #soundToggleBtn.mutedState{
+    background:linear-gradient(135deg,#475569,#1e293b);
+    border-color:#94a3b8;color:#e2e8f0;
+  }
+  #pauseBtn,#menuQuickBtn{
+    pointer-events:auto;cursor:pointer;
+    background:rgba(15,23,42,.85);border:2px solid rgba(255,255,255,.3);
+    color:#fff;border-radius:99px;padding:5px 12px;height:36px;
+    font-size:12px;font-weight:800;font-family:inherit;
+    display:inline-flex;align-items:center;gap:4px;
+  }
+
+  /* Top Banner: Question & HUD */
+  #topQuestionBanner{
+    background:linear-gradient(135deg,rgba(15,23,42,.92),rgba(30,27,75,.92));
+    border-bottom:2px solid rgba(56,189,248,.4);
+    padding:8px 14px;min-height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;z-index:20;flex-wrap:wrap;
+  }
+  .qBannerMain{
+    display:flex;align-items:center;gap:12px;flex:1;min-width:240px;
+  }
+  #currentQuestionText{
+    font-size:20px;font-weight:900;color:#fde047;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  #topicBadge{
+    background:rgba(56,189,248,.2);border:1px solid #38bdf8;
+    color:#bae6fd;font-size:11px;font-weight:800;
+    padding:3px 10px;border-radius:99px;white-space:nowrap;
+  }
+  .hudStatsWrap{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .hudPill{
+    background:rgba(15,23,42,.75);border:1px solid rgba(250,204,21,.45);
+    color:#fff;font-size:12px;font-weight:800;
+    padding:4px 10px;border-radius:12px;white-space:nowrap;
+  }
+  .hudPill.shieldsPill{border-color:#38bdf8;color:#bae6fd;font-size:13px;}
+
+  /* Canvas Area */
+  #canvasContainer{
+    position:relative;flex:1;width:100%;height:100%;overflow:hidden;
+  }
+  canvas{display:block;width:100%;height:100%;}
+
+  /* Hint / Feedback Toast */
+  #hintToast{
+    position:absolute;top:68px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,rgba(15,23,42,.95),rgba(30,27,75,.95));
+    border:2px solid #38bdf8;color:#e0f2fe;font-size:13px;font-weight:800;
+    padding:8px 18px;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.6);
+    z-index:40;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;
+    max-width:90%;text-align:center;
+  }
+  #hintToast.show{opacity:1;transform:translateX(-50%) translateY(4px);}
+
+  /* Mobile On-Screen Controls */
+  #controls{
+    position:absolute;bottom:10px;left:10px;right:10px;
+    display:flex;justify-content:space-between;align-items:flex-end;
+    z-index:30;pointer-events:none;
+  }
+  .dpadCluster{
+    display:flex;gap:10px;pointer-events:auto;
+  }
+  .dBtn{
+    width:66px;height:66px;border-radius:20px;
+    border:2px solid rgba(56,189,248,.6);
+    background:linear-gradient(180deg,rgba(15,23,42,.85),rgba(30,27,75,.92));
+    color:#38bdf8;font-size:26px;font-weight:900;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer;
+    user-select:none;-webkit-user-select:none;font-family:inherit;
+    transition:transform .08s,background .12s;
+  }
+  .dBtn span{font-size:10px;color:#94a3b8;margin-top:-2px;}
+  .dBtn:active{transform:scale(.92);background:rgba(56,189,248,.35);}
+
+  .actionCluster{
+    display:flex;gap:8px;align-items:flex-end;pointer-events:auto;
+  }
+  .actBtn{
+    padding:10px 14px;border-radius:18px;
+    border:2px solid rgba(250,204,21,.55);
+    background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(30,41,59,.9));
+    color:#fde047;font-size:12px;font-weight:900;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer;
+    user-select:none;-webkit-user-select:none;font-family:inherit;
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .actBtn:active{transform:scale(.93);}
+  .actBtn.fireBtn{
+    width:76px;height:76px;border-radius:50%;
+    background:linear-gradient(135deg,#ef4444,#dc2626);
+    border-color:#fde047;color:#fff;font-size:24px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 6px 20px rgba(239,68,68,.55);
+  }
+  .actBtn.fireBtn span{font-size:11px;font-weight:900;color:#fde047;margin-top:-2px;}
+
+  /* Screens */
+  .screen{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,#1e1b4b 0%,#0f172a 65%,#020617 100%);
+    display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
+    z-index:150;color:#fff;padding:50px 16px 20px;text-align:center;overflow-y:auto;
+  }
+  .screen.hidden{display:none;}
+  .spaceHeroCard{
+    background:linear-gradient(135deg,rgba(56,189,248,.22),rgba(168,85,247,.2));
+    border:2px solid rgba(56,189,248,.5);border-radius:24px;
+    padding:14px 20px;width:100%;max-width:620px;margin-bottom:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.5);
+  }
+  .spaceHeroCard h1{
+    font-size:26px;color:#38bdf8;text-shadow:0 3px 0 #1e3a8a,0 0 25px rgba(56,189,248,.6);
+    font-weight:900;margin-bottom:4px;
+  }
+  .spaceHeroCard .sub{font-size:13px;color:#bae6fd;font-weight:800;}
+  .howToPlayBadges{
+    display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px;
+  }
+  .htpPill{
+    background:rgba(15,23,42,.75);border:1px solid rgba(56,189,248,.4);
+    padding:4px 10px;border-radius:99px;font-size:11px;color:#bae6fd;font-weight:700;
+  }
+
+  .sectionTitle{font-size:13px;color:#fde047;font-weight:900;margin:6px 0;}
+  .gradesGrid{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:7px;
+    width:100%;max-width:600px;margin-bottom:10px;
+  }
+  @media (max-width:540px){.gradesGrid{grid-template-columns:repeat(3,1fr);}}
+  .gradeBtn{
+    padding:8px 4px;border-radius:14px;border:2px solid rgba(56,189,248,.45);
+    background:rgba(15,23,42,.75);color:#7dd3fc;cursor:pointer;
+    font-family:inherit;transition:all .18s;display:flex;flex-direction:column;align-items:center;
+  }
+  .gradeBtn strong{font-size:15px;font-weight:900;}
+  .gradeBtn span{font-size:10px;color:#cbd5e1;font-weight:700;margin-top:2px;}
+  .gradeBtn.selected{
+    background:linear-gradient(135deg,#0284c7,#0369a1);
+    color:#fff;border-color:#bae6fd;transform:scale(1.05);
+    box-shadow:0 0 20px rgba(56,189,248,.75);
+  }
+  .gradeBtn.selected span{color:#e2e8f0;font-weight:900;}
+
+  .tagSelectRow{
+    display:flex;gap:7px;justify-content:center;flex-wrap:wrap;
+    margin-bottom:10px;max-width:600px;
+  }
+  .optTagBtn{
+    padding:7px 14px;border-radius:14px;border:2px solid rgba(168,85,247,.4);
+    background:rgba(15,23,42,.7);color:#e9d5ff;font-size:12px;font-weight:800;
+    cursor:pointer;font-family:inherit;transition:all .18s;
+  }
+  .optTagBtn.selected{
+    background:linear-gradient(135deg,#7e22ce,#6b21a8);
+    color:#fff;border-color:#d8b4fe;box-shadow:0 0 16px rgba(168,85,247,.6);
+  }
+
+  .curriculumInfoBox{
+    background:rgba(15,23,42,.85);border:1px solid rgba(56,189,248,.35);
+    border-radius:14px;padding:8px 14px;max-width:600px;width:100%;
+    font-size:12px;color:#bae6fd;margin-bottom:12px;line-height:1.5;
+  }
+
+  .btn{
+    padding:12px 34px;font-size:17px;font-weight:900;border:none;border-radius:99px;
+    background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;
+    cursor:pointer;margin:4px;box-shadow:0 5px 0 #075985,0 8px 25px rgba(2,132,199,.45);
+    font-family:inherit;transition:transform .1s;border:2px solid #38bdf8;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #075985;}
+  .btn.secondary{
+    background:linear-gradient(135deg,#334155,#1e293b);
+    box-shadow:0 4px 0 #0f172a;border-color:rgba(255,255,255,.2);
+    font-size:13px;padding:9px 18px;
+  }
+
+  .statsStrip{
+    display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px;
+    font-size:12px;color:#fde047;font-weight:800;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <!-- Always-visible Floating Sound Mute & Actions -->
+  <div id="floatingMuteBar">
+    <button id="soundToggleBtn" type="button">🔊 كتم الصوت</button>
+    <button id="pauseBtn" type="button" style="display:none;">⏸️ إيقاف</button>
+    <button id="menuQuickBtn" type="button" style="display:none;">🏠 القائمة</button>
+  </div>
+
+  <!-- Top Banner: Current Question & Stats -->
+  <div id="topQuestionBanner">
+    <div class="qBannerMain">
+      <span id="topicBadge">🚀 حلبة الفضاء الحسابية</span>
+      <span id="currentQuestionText">🚀 دمّر الكويكب أو السفينة الفضائية التي تحمل الإجابة الصحيحة!</span>
+    </div>
+    <div class="hudStatsWrap">
+      <div class="hudPill shieldsPill" id="shieldsHud">🛡️🛡️🛡️</div>
+      <div class="hudPill">⭐ <span id="scoreVal">0</span></div>
+      <div class="hudPill">🪙 <span id="coinsVal">0</span></div>
+      <div class="hudPill">🎯 <span id="hitsVal">0</span>/<span id="targetVal">8</span></div>
+      <div class="hudPill">🔥 ×<span id="comboVal">1</span></div>
+    </div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvasContainer">
+    <canvas id="cv"></canvas>
+    <div id="hintToast">💡 تلميح: ركّز على ناتج العملية!</div>
+
+    <!-- Mobile On-screen Controls -->
+    <div id="controls">
+      <div class="dpadCluster">
+        <button class="dBtn" id="btnLeft" type="button">◀<span>يسار</span></button>
+        <button class="dBtn" id="btnRight" type="button">▶<span>يمين</span></button>
+      </div>
+      <div class="actionCluster">
+        <button class="actBtn" id="btnFreeze" type="button">⏸️ تجميد الزمن (<b id="freezeCount">2</b>)</button>
+        <button class="actBtn" id="btnHint" type="button">💡 تحديد الهدف</button>
+        <button class="actBtn fireBtn" id="btnShoot" type="button">🚀<span>إطلاق!</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="spaceHeroCard">
+      <h1>🚀 حرب الفضاء الحسابية 🪐</h1>
+      <div class="sub">وفق منهاج الحساب للوسط العربي في دولة إسرائيل — مدرسة مشيرفة الابتدائية</div>
+      <div class="howToPlayBadges">
+        <span class="htpPill">🎯 اقرأ السؤال أعلى الشاشة ووجّه سفينتك</span>
+        <span class="htpPill">🚀 أطلق أشعة الليزر على الكويكب الذي يحمل الإجابة الصحيحة</span>
+        <span class="htpPill">⚠️ تجنّب إصابة الكويكبات الخاطئة أو اصطدامها بسفينتك</span>
+        <span class="htpPill">⚡ استخدم درع الطاقة وتجميد الزمن عند الحاجة للتفكير</span>
+      </div>
+    </div>
+
+    <div class="sectionTitle">🎓 اختر الصف الدراسي (وفق منهاج وزارة المعارف للوسط العربي):</div>
+    <div class="gradesGrid" id="gradesGrid">
+      <button class="gradeBtn" data-g="1"><strong>الصف 1</strong><span>الأعداد حتى 20</span></button>
+      <button class="gradeBtn" data-g="2"><strong>الصف 2</strong><span>حتى 100 والضرب</span></button>
+      <button class="gradeBtn selected" data-g="3"><strong>الصف 3</strong><span>حتى 10,000 والقسمة</span></button>
+      <button class="gradeBtn" data-g="4"><strong>الصف 4</strong><span>الكسور والملايين</span></button>
+      <button class="gradeBtn" data-g="5"><strong>الصف 5</strong><span>الكسور العشرية</span></button>
+      <button class="gradeBtn" data-g="6"><strong>الصف 6</strong><span>النسبة المئوية والحجوم</span></button>
+    </div>
+
+    <div class="curriculumInfoBox" id="curriculumInfo">
+      📖 <b>منهاج الصف الثالث (כיתה ג'):</b> المبنى العشري حتى 10,000، جداول الضرب والقسمة، وترتيب العمليات الحسابية.
+    </div>
+
+    <div class="sectionTitle">⚡ سرعة هبوط الكويكبات الفضائية:</div>
+    <div class="tagSelectRow" id="speedRow">
+      <button class="optTagBtn selected" data-spd="slow">🐢 هادئ وبطيء (للتفكير والاسترخاء)</button>
+      <button class="optTagBtn" data-spd="normal">🛸 معتدل وممتع</button>
+      <button class="optTagBtn" data-spd="fast">⚡ معركة فضائية سريعة</button>
+    </div>
+
+    <div class="sectionTitle">🛸 اختر مركبتك الفضائية:</div>
+    <div class="tagSelectRow" id="shipRow">
+      <button class="optTagBtn selected" data-ship="blue">🔵 صقر النجوم الأزرق</button>
+      <button class="optTagBtn" data-ship="fire">🔴 فينيق اللهب الناري</button>
+      <button class="optTagBtn" data-ship="emerald">🟢 الحارس الزمردي</button>
+      <button class="optTagBtn" data-ship="gold">🟡 مدمرة المجرة الذهبية</button>
+    </div>
+
+    <div>
+      <button class="btn" id="startBtn">🚀 انطلق في المعركة الحسابية!</button>
+    </div>
+
+    <div class="statsStrip">
+      <span>🏆 أعلى نتيجة: <b id="bestScoreTxt">0</b></span>
+      <span>🪙 رصيد العملات: <b id="coinsTotalTxt">0</b></span>
+      <span>💥 أهداف فلكية محققة: <b id="totalHitsTxt">0</b></span>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen hidden" id="endScreen">
+    <div class="spaceHeroCard">
+      <h1 id="endTitleTxt">🏆 انتصار كوني مبهر!</h1>
+      <div class="sub">طيار الفضاء الرياضي المتميز في مدرسة مشيرفة</div>
+    </div>
+    <div id="endStatsBox" style="background:rgba(15,23,42,.9);border:2px solid #38bdf8;border-radius:20px;padding:18px 28px;margin:12px 0;font-size:16px;line-height:2;"></div>
+    <div>
+      <button class="btn" id="playAgainBtn">🔄 خوض معركة جديدة</button>
+      <button class="btn secondary" id="backMenuBtn">🏠 القائمة الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   🚀 SPACE MATH WAR — ARAB SECTOR ISRAELI CURRICULUM (GRADES 1–6)
+   ============================================================================ */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 800, H = 500, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth || 800;
+  H = cv.clientHeight || 500;
+  cv.width = W * DPR;
+  cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+/* ============ WebAudio Sound Engine with Persistent Mute ============ */
+const Sound = (() => {
+  let actx = null, musicTimer = null, musicPlaying = false;
+  let muted = false;
+  try { muted = JSON.parse(localStorage.getItem('space_math_muted') || 'false'); } catch(e) {}
+
+  function syncUI() {
+    const btn = document.getElementById('soundToggleBtn');
+    if (!btn) return;
+    if (muted) {
+      btn.innerHTML = '🔇 الصوت مكتوم';
+      btn.classList.add('mutedState');
+    } else {
+      btn.innerHTML = '🔊 كتم الصوت';
+      btn.classList.remove('mutedState');
+    }
+  }
+  setTimeout(syncUI, 0);
+
+  function init() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx && actx.state === 'suspended' && !muted) actx.resume().catch(() => {});
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    try { localStorage.setItem('space_math_muted', JSON.stringify(muted)); } catch(e) {}
+    syncUI();
+    if (muted) {
+      stopMusic();
+      if (actx && actx.state === 'running') actx.suspend().catch(() => {});
+    } else {
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+      if (state.running && !state.paused) startMusic();
+    }
+  }
+
+  function tone(freq, dur, type = 'sine', vol = 0.1) {
+    if (muted) return;
+    init();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }
+
+  function laser() {
+    if (muted) return;
+    init();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(880, actx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(140, actx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.08, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.15);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + 0.15);
+  }
+
+  function explode() {
+    tone(120, 0.25, 'sawtooth', 0.2);
+    setTimeout(() => tone(75, 0.35, 'square', 0.18), 70);
+  }
+  function hitCorrect() {
+    explode();
+    setTimeout(() => {
+      tone(523, 0.09, 'triangle', 0.15);
+      setTimeout(() => tone(659, 0.1, 'triangle', 0.15), 70);
+      setTimeout(() => tone(784, 0.15, 'triangle', 0.18), 140);
+    }, 100);
+  }
+  function hitWrong() {
+    tone(180, 0.16, 'sawtooth', 0.16);
+    setTimeout(() => tone(130, 0.22, 'sawtooth', 0.16), 90);
+  }
+  function powerup() { [440, 554, 659, 880].forEach((f, i) => setTimeout(() => tone(f, 0.08, 'triangle', 0.1), i * 55)); }
+  function win() { [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'triangle', 0.14), i * 100)); }
+
+  function startMusic() {
+    if (muted || musicPlaying) return;
+    init(); musicPlaying = true;
+    const melody = [220, 262, 294, 330, 294, 262, 220, 196];
+    let step = 0;
+    musicTimer = setInterval(() => {
+      if (!musicPlaying || muted || state.paused) return;
+      const f = melody[step % melody.length];
+      tone(f, 0.22, 'sine', 0.025);
+      step++;
+    }, 380);
+  }
+  function stopMusic() {
+    musicPlaying = false;
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+
+  return { laser, explode, hitCorrect, hitWrong, powerup, win, startMusic, stopMusic, toggleMute, init };
+})();
+
+document.getElementById('soundToggleBtn').onclick = () => Sound.toggleMute();
+
+/* ============ Store Helpers ============ */
+const Store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+};
+
+/* ============ Curriculum Generator (Grades 1–6) ============ */
+const GRADE_INFOS = {
+  1: '📖 <b>منهاج الصف الأول (כיתה א\'):</b> الجمع والطرح حتى 20، مكونات العدد 10، والعدد السابق والتالي.',
+  2: '📖 <b>منهاج الصف الثاني (כיתה ב\'):</b> الجمع والطرح حتى 100، آحاد وعشرات، وجداول الضرب (2، 3، 4، 5، 10).',
+  3: '📖 <b>منهاج الصف الثالث (כיתה ג\'):</b> المبنى العشري حتى 10,000، جداول الضرب والقسمة، وترتيب العمليات الحسابية.',
+  4: '📖 <b>منهاج الصف الرابع (כיתה ד\'):</b> الأعداد الكبيرة حتى مليون، الكسور البسيطة وجزء من كمية، والمساحة والمحيط.',
+  5: '📖 <b>منهاج الصف الخامس (כיתה ה\'):</b> الكسور العادية والعشرية، المعدل (المتوسط الحسابي)، ومساحة المثلث.',
+  6: '📖 <b>منهاج الصف السادس (כיתה و\'):</b> النسبة المئوية (%) والتخفيضات، ضرب وقسمة الكسور، النسبة والتناسب، وحجم الصندوق.'
+};
+
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function generateSpaceQuestion(grade) {
+  const p = Math.random();
+
+  if (grade === 1) {
+    if (p < 0.4) {
+      const a = rand(3, 11), b = rand(2, 9);
+      const ans = a + b;
+      return { topic: 'الجمع حتى 20', text: `${a} + ${b} = ؟`, answer: ans, options: makeOptions(ans, 1), hint: `نجمع: ${a} ونزيد عليها ${b}` };
+    } else if (p < 0.75) {
+      const a = rand(8, 20), b = rand(2, a - 1);
+      const ans = a - b;
+      return { topic: 'الطرح حتى 20', text: `${a} − ${b} = ؟`, answer: ans, options: makeOptions(ans, 1), hint: `كم خطوة من ${b} إلى ${a}؟` };
+    } else {
+      const a = rand(1, 9);
+      const ans = 10 - a;
+      return { topic: 'مكونات العدد 10', text: `${a} + ___ = 10`, answer: ans, options: makeOptions(ans, 1), hint: `مكمل العدد ${a} إلى 10 هو ${ans}` };
+    }
+  }
+
+  if (grade === 2) {
+    if (p < 0.35) {
+      const a = rand(15, 60), b = rand(12, 35);
+      const ans = a + b;
+      return { topic: 'الجمع حتى 100', text: `${a} + ${b} = ؟`, answer: ans, options: makeOptions(ans, 2), hint: `اجمع الآحاد مع الآحاد (${a%10}+${b%10}) والعشرات معاً` };
+    } else if (p < 0.7) {
+      const a = rand(35, 95), b = rand(12, 30);
+      const ans = a - b;
+      return { topic: 'الطرح حتى 100', text: `${a} − ${b} = ؟`, answer: ans, options: makeOptions(ans, 2), hint: `اطرح العشرات ثم اطرح الآحاد` };
+    } else {
+      const f1 = [2, 3, 4, 5, 10][rand(0, 4)], f2 = rand(2, 9);
+      const ans = f1 * f2;
+      return { topic: 'جدول الضرب', text: `${f1} × ${f2} = ؟`, answer: ans, options: makeOptions(ans, f1), hint: `العدد ${f1} مكرر ${f2} مرات` };
+    }
+  }
+
+  if (grade === 3) {
+    if (p < 0.4) {
+      const a = rand(3, 9), b = rand(4, 9);
+      const ans = a * b;
+      return { topic: 'جداول الضرب', text: `${a} × ${b} = ؟`, answer: ans, options: makeOptions(ans, a), hint: `جدول ${a}: ${a} × ${b} = ${ans}` };
+    } else if (p < 0.7) {
+      const b = rand(3, 9), ans = rand(3, 9);
+      const a = b * ans;
+      return { topic: 'القسمة', text: `${a} ÷ ${b} = ؟`, answer: ans, options: makeOptions(ans, 1), hint: `ما هو العدد الذي إذا ضرب في ${b} أعطى ${a}؟` };
+    } else {
+      const a = rand(10, 25), b = rand(2, 5), c = rand(2, 4);
+      const ans = a + b * c;
+      return { topic: 'ترتيب العمليات', text: `${a} + ${b} × ${c} = ؟`, answer: ans, options: makeOptions(ans, b), hint: `نحسب الضرب أولاً (${b}×${c}=${b*c}) ثم نجمع ${a}` };
+    }
+  }
+
+  if (grade === 4) {
+    if (p < 0.35) {
+      const den = [4, 5, 6, 8, 10][rand(0, 4)];
+      const total = den * rand(3, 8);
+      const num = rand(1, den - 1);
+      const ans = (total / den) * num;
+      return { topic: 'جزء من كمية', text: `كم يساوي ${num}/${den} العدد ${total}؟`, answer: ans, options: makeOptions(ans, total / den), hint: `اقسم ${total} على ${den} ثم اضرب في ${num}` };
+    } else if (p < 0.7) {
+      const w = rand(5, 12), h = rand(3, 8);
+      const ans = w * h;
+      return { topic: 'مساحة المستطيل', text: `مساحة مستطيل ${w} × ${h} سم؟`, answer: ans, options: makeOptions(ans, w), hint: `المساحة = الطول × العرض (${w} × ${h})` };
+    } else {
+      const a = rand(11, 22), b = rand(11, 14);
+      const ans = a * b;
+      return { topic: 'الضرب العمودي', text: `${a} × ${b} = ؟`, answer: ans, options: makeOptions(ans, 10), hint: `استخدم التوزيع: ${a} × 10 = ${a*10}` };
+    }
+  }
+
+  if (grade === 5) {
+    if (p < 0.35) {
+      const a = rand(15, 65) / 10, b = rand(11, 45) / 10;
+      const ans = Number((a + b).toFixed(1));
+      return { topic: 'جمع الكسور العشرية', text: `${a.toFixed(1)} + ${b.toFixed(1)} = ؟`, answer: ans, options: makeOptions(ans, 0.5), hint: `اجمع الأعشار مع الأعشار والأعداد الصحيحة معاً` };
+    } else if (p < 0.7) {
+      const avg = rand(10, 24);
+      const n1 = avg - rand(2, 6), n2 = avg, n3 = avg + (avg - n1);
+      return { topic: 'المعدل الحسابي', text: `معدل الأعداد: ${n1} ، ${n2} ، ${n3} ؟`, answer: avg, options: makeOptions(avg, 2), hint: `المعدل = المجموع (${n1+n2+n3}) ÷ 3` };
+    } else {
+      const base = rand(4, 10) * 2, height = rand(3, 8);
+      const ans = (base * height) / 2;
+      return { topic: 'مساحة المثلث', text: `مساحة مثلث قاعدته ${base} وارتفاعه ${height}؟`, answer: ans, options: makeOptions(ans, height), hint: `(القاعدة × الارتفاع) ÷ 2` };
+    }
+  }
+
+  // Grade 6
+  if (p < 0.35) {
+    const pct = [10, 20, 25, 50][rand(0, 3)];
+    const price = rand(2, 10) * 20;
+    const discount = (price * pct) / 100;
+    const finalPrice = price - discount;
+    return { topic: 'النسبة المئوية والتخفيض', text: `تخفيض ${pct}% على سعر ${price} ₪، كم السعر الجديد؟`, answer: finalPrice, options: makeOptions(finalPrice, 10), hint: `التخفيض هو ${discount} ₪، إذن ${price} − ${discount} = ${finalPrice}` };
+  } else if (p < 0.7) {
+    const l = rand(3, 6), w = rand(2, 5), h = rand(2, 4);
+    const ans = l * w * h;
+    return { topic: 'حجم الصندوق', text: `حجم صندوق أبعاده ${l} × ${w} × ${h} سم؟`, answer: ans, options: makeOptions(ans, w * h), hint: `الحجم = الطول × العرض × الارتفاع` };
+  } else {
+    const a = rand(2, 5), b = rand(3, 6), k = rand(2, 4);
+    const ans = b * k;
+    return { topic: 'النسبة والتناسب', text: `إذا كان ${a} : ${b} = ${a*k} : ؟`, answer: ans, options: makeOptions(ans, b), hint: `العدد الأول تضاعف ${k} مرات، فضاعف العدد الثاني ${k} مرات` };
+  }
+}
+
+function makeOptions(correctVal, step = 1) {
+  const set = new Set([String(correctVal)]);
+  let guard = 0;
+  while (set.size < 4 && guard < 40) {
+    guard++;
+    const delta = (rand(1, 4) * step) * (Math.random() < 0.5 ? 1 : -1);
+    const cand = Number((Number(correctVal) + delta).toFixed(1));
+    if (cand >= 0 && String(cand) !== String(correctVal)) set.add(String(cand));
+  }
+  while (set.size < 4) set.add(String(Number(correctVal) + set.size + 1));
+  return [...set].sort(() => Math.random() - 0.5);
+}
+
+/* ============ Ship Profiles ============ */
+const SHIPS = {
+  blue:    { body: '#0284c7', wing: '#38bdf8', flame: '#67e8f9', name: 'الصقر الأزرق' },
+  fire:    { body: '#dc2626', wing: '#f97316', flame: '#fde047', name: 'فينيق اللهب' },
+  emerald: { body: '#059669', wing: '#10b981', flame: '#a7f3d0', name: 'الحارس الزمردي' },
+  gold:    { body: '#ca8a04', wing: '#eab308', flame: '#ffffff', name: 'مدمرة المجرة' }
+};
+
+/* ============ Game State ============ */
+const state = {
+  running: false, paused: false,
+  grade: 3, speedMode: 'slow', shipType: 'blue',
+  score: 0, coins: 0, shields: 3, hits: 0, target: 8, combo: 1,
+  freezeCharges: 2, freezeTimer: 0, highlightedTarget: false,
+  player: { x: 400, y: 440, w: 48, h: 44, vx: 0, maxSpeed: 7 },
+  keys: { left: false, right: false },
+  lasers: [], asteroids: [], particles: [], stars: [],
+  currentQ: null, invulnerable: 0
+};
+
+// Initialize Background Starfield
+function initStars() {
+  state.stars = [];
+  for (let i = 0; i < 90; i++) {
+    state.stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.8 + 0.6,
+      speed: Math.random() * 1.2 + 0.4,
+      alpha: Math.random() * 0.7 + 0.3
+    });
+  }
+}
+
+function spawnAsteroidTargets() {
+  state.currentQ = generateSpaceQuestion(state.grade);
+  document.getElementById('currentQuestionText').innerHTML = `🎯 السؤال: <b>${state.currentQ.text}</b>`;
+  document.getElementById('topicBadge').textContent = `🚀 ${state.currentQ.topic}`;
+  state.highlightedTarget = false;
+
+  state.asteroids = [];
+  const opts = state.currentQ.options;
+  const colWidth = W / (opts.length + 1);
+
+  opts.forEach((val, i) => {
+    const targetX = colWidth * (i + 1) + (Math.random() - 0.5) * 30;
+    const isCorrect = String(val) === String(state.currentQ.answer);
+    state.asteroids.push({
+      x: targetX,
+      y: -40 - Math.random() * 60,
+      r: 32,
+      val: val,
+      isCorrect: isCorrect,
+      speedY: getAsteroidSpeed(),
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.03,
+      hp: 1
+    });
+  });
+}
+
+function getAsteroidSpeed() {
+  if (state.freezeTimer > 0) return 0.25; // Frozen in stasis field!
+  if (state.speedMode === 'slow') return 0.75;
+  if (state.speedMode === 'normal') return 1.25;
+  return 1.85; // Fast
+}
+
+function spawnParticles(x, y, color, count = 16) {
+  for (let i = 0; i < count; i++) {
+    state.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      color, life: 1, r: Math.random() * 4 + 2
+    });
+  }
+}
+
+function showHintToast(msg) {
+  const t = document.getElementById('hintToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ============ Game Engine Loop ============ */
+function updatePhysics() {
+  if (!state.running || state.paused) return;
+
+  if (state.freezeTimer > 0) state.freezeTimer--;
+  if (state.invulnerable > 0) state.invulnerable--;
+
+  // Player Spaceship Movement
+  const p = state.player;
+  const accel = 1.1;
+  if (state.keys.left) p.vx = Math.max(p.vx - accel, -p.maxSpeed);
+  else if (state.keys.right) p.vx = Math.min(p.vx + accel, p.maxSpeed);
+  else p.vx *= 0.82;
+
+  p.x += p.vx;
+  if (p.x < 36) { p.x = 36; p.vx = 0; }
+  if (p.x > W - 36) { p.x = W - 36; p.vx = 0; }
+
+  // Update Stars (Parallax Space)
+  state.stars.forEach(s => {
+    s.y += s.speed * (state.freezeTimer > 0 ? 0.3 : 1);
+    if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+  });
+
+  // Update Lasers
+  for (let i = state.lasers.length - 1; i >= 0; i--) {
+    const l = state.lasers[i];
+    l.y -= l.speed;
+    if (l.y < -10) { state.lasers.splice(i, 1); continue; }
+
+    // Check Laser vs Asteroid Collisions
+    for (let j = state.asteroids.length - 1; j >= 0; j--) {
+      const ast = state.asteroids[j];
+      const dist = Math.hypot(l.x - ast.x, l.y - ast.y);
+      if (dist < ast.r + 6) {
+        state.lasers.splice(i, 1);
+
+        if (ast.isCorrect) {
+          // HIT CORRECT TARGET!
+          Sound.hitCorrect();
+          spawnParticles(ast.x, ast.y, '#38bdf8', 26);
+          spawnParticles(ast.x, ast.y, '#fde047', 16);
+          state.score += 30 * state.combo;
+          state.coins += 5;
+          state.hits++;
+          state.combo = Math.min(5, state.combo + 1);
+          updateHUD();
+
+          if (state.hits >= state.target) {
+            finishGame(true);
+            return;
+          } else {
+            spawnAsteroidTargets();
+          }
+        } else {
+          // HIT WRONG TARGET!
+          Sound.hitWrong();
+          spawnParticles(ast.x, ast.y, '#ef4444', 16);
+          state.combo = 1;
+          state.asteroids.splice(j, 1); // destroy wrong asteroid
+          showHintToast(`❌ الإجابة ${ast.val} غير صحيحة! 💡 ${state.currentQ.hint}`);
+          updateHUD();
+        }
+        break;
+      }
+    }
+  }
+
+  // Update Asteroids Position & Collision with Ship
+  let anyReachedBottom = false;
+  state.asteroids.forEach(ast => {
+    ast.y += getAsteroidSpeed();
+    ast.rot += ast.rotSpeed;
+
+    // Check Collision with Ship
+    if (Math.hypot(p.x - ast.x, p.y - ast.y) < ast.r + 20 && state.invulnerable === 0) {
+      state.shields--;
+      state.combo = 1;
+      state.invulnerable = 45;
+      Sound.hitWrong();
+      spawnParticles(p.x, p.y, '#ef4444', 22);
+      showHintToast('⚠️ اصطدم كويكب بسفينتك! تضررت الدروع!');
+      updateHUD();
+      if (state.shields <= 0) {
+        finishGame(false);
+      }
+    }
+
+    if (ast.y > H + 40) anyReachedBottom = true;
+  });
+
+  // If correct asteroid escaped past bottom, respawn them from top without penalty
+  if (anyReachedBottom) {
+    state.asteroids.forEach(ast => {
+      if (ast.y > H + 40) {
+        ast.y = -40;
+        ast.x = Math.random() * (W - 120) + 60;
+      }
+    });
+  }
+
+  // Update Particles
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const pt = state.particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.035;
+    if (pt.life <= 0) state.particles.splice(i, 1);
+  }
+}
+
+/* ============ Rendering ============ */
+function renderCanvas() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background Nebula Gradient
+  const bgGrad = ctx.createRadialGradient(W / 2, H * 0.4, 20, W / 2, H * 0.4, W * 0.7);
+  bgGrad.addColorStop(0, 'rgba(56,189,248,0.08)');
+  bgGrad.addColorStop(0.5, 'rgba(168,85,247,0.05)');
+  bgGrad.addColorStop(1, 'rgba(2,6,23,0)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw Starfield
+  state.stars.forEach(s => {
+    ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Draw Falling Asteroids / Alien Targets
+  state.asteroids.forEach(ast => {
+    ctx.save();
+    ctx.translate(ast.x, ast.y);
+    ctx.rotate(ast.rot);
+
+    // Glowing target indicator if smart hint active
+    if (state.highlightedTarget && ast.isCorrect) {
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(0, 0, ast.r + 9, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Outer Aura
+    ctx.fillStyle = 'rgba(56,189,248,0.18)';
+    ctx.beginPath(); ctx.arc(0, 0, ast.r + 4, 0, Math.PI * 2); ctx.fill();
+
+    // Asteroid Body
+    const rockGrad = ctx.createRadialGradient(-6, -6, 2, 0, 0, ast.r);
+    rockGrad.addColorStop(0, '#64748b');
+    rockGrad.addColorStop(0.6, '#334155');
+    rockGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = rockGrad;
+    ctx.beginPath();
+    // Slightly bumpy circular asteroid
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      const dist = ast.r - ((Math.sin(a * 3) + 1) * 2);
+      const px = Math.cos(a) * dist, py = Math.sin(a) * dist;
+      if (a === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Reset rotation for clear Arabic number text
+    ctx.rotate(-ast.rot);
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 16px Tajawal, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ast.val, 0, 1);
+
+    ctx.restore();
+  });
+
+  // Draw Lasers
+  state.lasers.forEach(l => {
+    ctx.fillStyle = '#38bdf8';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(l.x - 2.5, l.y, 5, 18);
+    ctx.shadowBlur = 0;
+  });
+
+  // Draw Spaceship
+  const p = state.player;
+  const ship = SHIPS[state.shipType] || SHIPS.blue;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  if (state.invulnerable > 0 && Math.floor(state.invulnerable / 4) % 2 === 0) {
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 18;
+  }
+
+  // Thruster Flame
+  ctx.fillStyle = ship.flame;
+  ctx.beginPath();
+  const flameLen = 14 + Math.random() * 8;
+  ctx.moveTo(-7, 18); ctx.lineTo(0, 18 + flameLen); ctx.lineTo(7, 18);
+  ctx.fill();
+
+  // Ship Wings
+  ctx.fillStyle = ship.wing;
+  ctx.beginPath();
+  ctx.moveTo(0, -22);
+  ctx.lineTo(-24, 18);
+  ctx.lineTo(-8, 12);
+  ctx.lineTo(8, 12);
+  ctx.lineTo(24, 18);
+  ctx.closePath();
+  ctx.fill();
+
+  // Ship Main Fuselage
+  ctx.fillStyle = ship.body;
+  ctx.beginPath();
+  ctx.moveTo(0, -26);
+  ctx.lineTo(-12, 16);
+  ctx.lineTo(12, 16);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cockpit Glass
+  ctx.fillStyle = '#e0f2fe';
+  ctx.beginPath();
+  ctx.ellipse(0, -4, 5, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wingtip Cannons
+  ctx.fillStyle = '#fde047';
+  ctx.fillRect(-22, 4, 3, 10);
+  ctx.fillRect(19, 4, 3, 10);
+
+  ctx.restore();
+
+  // Draw Particles
+  state.particles.forEach(pt => {
+    ctx.globalAlpha = Math.max(0, pt.life);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+/* ============ Animation Loop ============ */
+let animId = null;
+function gameLoop() {
+  if (state.running) {
+    updatePhysics();
+    renderCanvas();
+  }
+  animId = requestAnimationFrame(gameLoop);
+}
+
+/* ============ Actions ============ */
+function shootLaser() {
+  if (!state.running || state.paused) return;
+  const p = state.player;
+  Sound.laser();
+  state.lasers.push({ x: p.x - 14, y: p.y - 12, speed: 11 });
+  state.lasers.push({ x: p.x + 14, y: p.y - 12, speed: 11 });
+}
+
+function startGame() {
+  resize();
+  initStars();
+
+  state.running = true;
+  state.paused = false;
+  state.score = 0;
+  state.coins = 0;
+  state.shields = 3;
+  state.hits = 0;
+  state.target = 8;
+  state.combo = 1;
+  state.freezeCharges = 2;
+  state.freezeTimer = 0;
+  state.invulnerable = 0;
+  state.lasers = [];
+  state.particles = [];
+
+  state.player.x = W / 2;
+  state.player.y = H - 56;
+  state.player.vx = 0;
+
+  spawnAsteroidTargets();
+  updateHUD();
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('pauseBtn').style.display = 'inline-flex';
+  document.getElementById('menuQuickBtn').style.display = 'inline-flex';
+
+  Sound.startMusic();
+  cancelAnimationFrame(animId);
+  animId = requestAnimationFrame(gameLoop);
+}
+
+function finishGame(won) {
+  state.running = false;
+  cancelAnimationFrame(animId);
+  Sound.stopMusic();
+
+  if (won) Sound.win();
+  else Sound.hitWrong();
+
+  const prevCoins = Store.get('space_coins', 0);
+  Store.set('space_coins', prevCoins + state.coins);
+  const prevHits = Store.get('space_hits_total', 0);
+  Store.set('space_hits_total', prevHits + state.hits);
+  const prevBest = Store.get('space_best_g' + state.grade, 0);
+  const isNewBest = state.score > prevBest;
+  if (isNewBest) Store.set('space_best_g' + state.grade, state.score);
+
+  const title = won ? '🏆 انتصار كوني أسطوري! أتقنت جميع التحديات!' : '🚀 جولة استطلاعية ممتازة!';
+  document.getElementById('endTitleTxt').textContent = title;
+
+  document.getElementById('endStatsBox').innerHTML =
+    `<div style="font-size:32px;margin-bottom:6px">${won ? '⭐⭐⭐' : '⭐'}</div>` +
+    `🎓 الصف الدراسي: <b>الصف ${state.grade}</b><br>` +
+    `🎯 أهداف فضائية مدمرة: <b style="color:#38bdf8">${state.hits}/${state.target}</b><br>` +
+    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات: <b style="color:#4ade80">+${state.coins}</b>` +
+    (isNewBest ? `<div style="color:#facc15;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في الصف ${state.grade}!</div>` : '');
+
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('coinsVal').textContent = state.coins;
+  document.getElementById('hitsVal').textContent = state.hits;
+  document.getElementById('targetVal').textContent = state.target;
+  document.getElementById('comboVal').textContent = state.combo;
+  document.getElementById('freezeCount').textContent = state.freezeCharges;
+  document.getElementById('shieldsHud').textContent = '🛡️'.repeat(Math.max(0, state.shields));
+  document.getElementById('bestScoreTxt').textContent = Store.get('space_best_g' + state.grade, 0);
+  document.getElementById('coinsTotalTxt').textContent = Store.get('space_coins', 0);
+  document.getElementById('totalHitsTxt').textContent = Store.get('space_hits_total', 0);
+}
+
+/* ============ Event Listeners & Controls ============ */
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') state.keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') state.keys.right = true;
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); shootLaser(); }
+  if (e.key === 'f' || e.key === 'F') { triggerFreeze(); }
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') state.keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') state.keys.right = false;
+});
+
+// Mobile button bindings
+function bindHold(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', e => { e.preventDefault(); onDown(); });
+  el.addEventListener('pointerup', e => { e.preventDefault(); onUp(); });
+  el.addEventListener('pointerleave', onUp);
+  el.addEventListener('pointercancel', onUp);
+}
+bindHold('btnLeft', () => state.keys.left = true, () => state.keys.left = false);
+bindHold('btnRight', () => state.keys.right = true, () => state.keys.right = false);
+document.getElementById('btnShoot').addEventListener('pointerdown', e => { e.preventDefault(); shootLaser(); });
+
+// Tap on canvas to move & shoot directly towards target
+cv.addEventListener('pointerdown', e => {
+  if (!state.running || state.paused) return;
+  const rect = cv.getBoundingClientRect();
+  const tx = (e.clientX - rect.left);
+  state.player.x = tx;
+  shootLaser();
+});
+
+function triggerFreeze() {
+  if (state.freezeCharges > 0) {
+    state.freezeCharges--;
+    state.freezeTimer = 75; // Freeze asteroids
+    Sound.powerup();
+    showHintToast('⏸️ تم تجميد حركة الكويكبات لتفكر بتركيز!');
+    updateHUD();
+  } else {
+    showHintToast('⚠️ نفدت شحنات التجميد لهذه الجولة!');
+  }
+}
+document.getElementById('btnFreeze').onclick = triggerFreeze;
+
+document.getElementById('btnHint').onclick = () => {
+  state.highlightedTarget = true;
+  Sound.powerup();
+  if (state.currentQ) showHintToast(`💡 تلميح: ${state.currentQ.hint}`);
+};
+
+function togglePause() {
+  if (!state.running) return;
+  state.paused = !state.paused;
+  const pBtn = document.getElementById('pauseBtn');
+  pBtn.textContent = state.paused ? '▶️ استئناف' : '⏸️ إيقاف';
+  if (state.paused) Sound.stopMusic();
+  else Sound.startMusic();
+}
+document.getElementById('pauseBtn').onclick = togglePause;
+
+document.getElementById('menuQuickBtn').onclick = () => {
+  state.running = false;
+  Sound.stopMusic();
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('pauseBtn').style.display = 'none';
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+/* ============ Menu Selections ============ */
+document.querySelectorAll('.gradeBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.gradeBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.grade = +b.dataset.g;
+    document.getElementById('curriculumInfo').innerHTML = GRADE_INFOS[state.grade];
+    updateHUD();
+  };
+});
+
+document.querySelectorAll('#speedRow .optTagBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#speedRow .optTagBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.speedMode = b.dataset.spd;
+  };
+});
+
+document.querySelectorAll('#shipRow .optTagBtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#shipRow .optTagBtn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.shipType = b.dataset.ship;
+  };
+});
+
+document.getElementById('startBtn').onclick = startGame;
+document.getElementById('playAgainBtn').onclick = startGame;
+document.getElementById('backMenuBtn').onclick = () => {
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('pauseBtn').style.display = 'none';
+  document.getElementById('menuQuickBtn').style.display = 'none';
+  updateHUD();
+};
+
+resize();
+initStars();
+updateHUD();
+</script>
+</body>
+</html>

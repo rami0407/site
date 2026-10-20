@@ -211,6 +211,24 @@ export const MATH_CHALLENGE_BRANCHES = [
       '4 أشكال للأفعى وسرعات مخصصة تناسب جميع المستويات 🎓'
     ],
     awardTeaser: 'كأس مروّض الأفاعي الحسابية + أوسمة الإتقان 🏆🐍'
+  },
+  {
+    id: 'space',
+    viewId: 'branch_space',
+    gameType: 'space',
+    title: 'حرب الفضاء الحسابية 🚀',
+    subtitle: 'أطلق مدافع الليزر نحو الكويكبات التي تحمل الإجابات الصحيحة',
+    icon: '🚀',
+    color: '#0284c7',
+    gradient: 'linear-gradient(135deg, #0284c7 0%, #1e1b4b 100%)',
+    badge: '🪐 معركة الفضاء',
+    grades: 'صفوف 1 - 6',
+    highlights: [
+      'وجّه مركبتك وأطلق الليزر لتفجير ناتج العملية الحسابية 💥',
+      'دروع طاقة، تجميد زمني للتفكير، وتحديد الأهداف الذكية 🛸',
+      '4 سفن فضائية وسرعات متدرجة وفق منهاج الوسط العربي 🎓'
+    ],
+    awardTeaser: 'وسام قائد أسطول الفضاء + كؤوس الدقة 🏆🚀'
   }
 ];
 
@@ -805,6 +823,13 @@ export default function MathChampionshipArena() {
             onClick={() => { setGameState('idle'); setActiveView('branch_snake'); }}
           >
             <i className="fas fa-dragon"></i> أفعى الأعداد 🐍
+          </button>
+          <button 
+            type="button"
+            className={`math-nav-tab ${activeView === 'branch_space' ? 'active' : ''}`}
+            onClick={() => { setGameState('idle'); setActiveView('branch_space'); }}
+          >
+            <i className="fas fa-rocket"></i> حرب الفضاء 🚀
           </button>
           <button 
             type="button"
@@ -1583,6 +1608,62 @@ export default function MathChampionshipArena() {
                 <iframe
                   src="/math-snake.html?v=1"
                   title="أفعى الأعداد الحسابية 🐍"
+                  style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BRANCH 12: MATH SPACE WAR (ARAB SECTOR CURRICULUM) */}
+        {activeView === 'branch_space' && gameState === 'idle' && (
+          <div className="branch-view-container fade-in">
+            <div className="branch-breadcrumb-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
+                <i className="fas fa-arrow-right"></i> العودة لبوابة الرياضيات الرئيسية 🏠
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span className="branch-current-crumb">🚀 حرب الفضاء الحسابية (صفوف 1 - 6)</span>
+                <a
+                  href="/math-space.html?v=1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7, #1e1b4b)',
+                    color: '#fff',
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    fontWeight: '800',
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)'
+                  }}
+                >
+                  ⛶ فتح اللعبة في شاشة كاملة
+                </a>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '880px',
+                  height: '640px',
+                  maxHeight: '85vh',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(56, 189, 248, 0.45)',
+                  background: '#030712'
+                }}
+              >
+                <iframe
+                  src="/math-space.html?v=1"
+                  title="حرب الفضاء الحسابية 🚀"
                   style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
                   allow="autoplay; fullscreen"
                 />
