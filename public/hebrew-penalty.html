@@ -87,37 +87,82 @@
   }
   canvas{display:block;width:100%;height:100%;}
 
-  /* Goal Targets Grid Overlay (Direct Touch Target Buttons) */
+  /* Goal Targets Overlay: Compact Targets at the 4 Goal Corners (Unobstructed View) */
   #targetsOverlay{
-    position:absolute;top:62px;left:0;right:0;bottom:100px;
-    display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
-    gap:16px;padding:20px 40px;pointer-events:none;z-index:25;
-  }
-  @media (max-width:600px){
-    #targetsOverlay{padding:12px 16px;gap:10px;}
+    position:absolute;inset:0;pointer-events:none;z-index:25;
   }
   .targetPocket{
-    pointer-events:auto;
-    background:rgba(15,23,42,.78);backdrop-filter:blur(5px);
-    border:2.5px dashed rgba(250,204,21,.75);
-    border-radius:20px;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;padding:10px;
-    color:#fff;cursor:pointer;transition:all .15s;
-    box-shadow:0 8px 25px rgba(0,0,0,.6);
+    position:absolute;pointer-events:auto;
+    width:clamp(105px, 17vw, 150px);
+    min-height:56px;
+    padding:8px 12px;
+    background:rgba(15, 23, 42, 0.42);
+    backdrop-filter:blur(2px);
+    border:2px solid rgba(250, 204, 21, 0.85);
+    border-radius:16px;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    color:#fff;cursor:pointer;
+    box-shadow:0 4px 18px rgba(0,0,0,0.45), inset 0 0 10px rgba(250,204,21,0.15);
+    text-align:center;
+    transition:transform .18s cubic-bezier(0.34, 1.56, 0.64, 1), background .18s, border-color .18s, box-shadow .18s;
   }
   .targetPocket:hover{
-    background:rgba(250,204,21,.25);border-color:#fde047;
-    transform:scale(1.03);
+    background:rgba(250, 204, 21, 0.28);
+    border-color:#fde047;
+    transform:translate(-50%, -50%) scale(1.08) !important;
+    box-shadow:0 0 25px rgba(250, 204, 21, 0.7);
   }
   .targetPocket:active{
-    transform:scale(.96);background:rgba(34,197,94,.4);
+    transform:translate(-50%, -50%) scale(0.95) !important;
+    background:rgba(34, 197, 94, 0.5);
   }
+
+  /* Exact Alignment with Goal 4 Corners (Canvas: Goal Left 22%, Right 78%, Top 20%, Bottom 60%) */
+  #targetTL{ left:28%; top:26%; transform:translate(-50%, -50%); }
+  #targetTR{ left:72%; top:26%; transform:translate(-50%, -50%); }
+  #targetBL{ left:28%; top:54%; transform:translate(-50%, -50%); }
+  #targetBR{ left:72%; top:54%; transform:translate(-50%, -50%); }
+
   .targetWord{
-    font-size:22px;font-weight:900;color:#fde047;
-    text-shadow:0 2px 6px rgba(0,0,0,.9);
+    font-size:clamp(15px, 2.1vw, 20px);
+    font-weight:900;
+    color:#fde047;
+    text-shadow:0 2px 6px rgba(0,0,0,0.95);
+    line-height:1.2;
+    word-break:break-word;
   }
   .targetCornerHint{
-    font-size:11px;color:#93c5fd;font-weight:700;margin-top:2px;
+    font-size:clamp(10px, 1.2vw, 11px);
+    color:#93c5fd;
+    font-weight:800;
+    margin-top:3px;
+    opacity:0.95;
+    white-space:nowrap;
+  }
+
+  /* Ultra Glass Transparency Mode */
+  #targetsOverlay.ultraGlass .targetPocket{
+    background:rgba(15, 23, 42, 0.20);
+    border-color:rgba(250, 204, 21, 0.55);
+    box-shadow:none;
+    backdrop-filter:none;
+  }
+
+  @media (max-width:600px){
+    .targetPocket{
+      width:clamp(88px, 25vw, 115px);
+      min-height:48px;
+      padding:5px 6px;
+      border-radius:12px;
+      border-width:1.8px;
+    }
+    #targetTL{ left:25%; top:25%; }
+    #targetTR{ left:75%; top:25%; }
+    #targetBL{ left:25%; top:54%; }
+    #targetBR{ left:75%; top:54%; }
+    .targetWord{ font-size:14px; }
+    .targetCornerHint{ font-size:9.5px; }
   }
 
   /* Feedback & Goal Celebration Overlay */
@@ -306,6 +351,7 @@
     <!-- Bottom Actions -->
     <div id="bottomBar">
       <button class="actionBtn" id="btnSoundHint" type="button">💡 تلميح الكلمة</button>
+      <button class="actionBtn" id="btnToggleGlass" type="button">✨ شفافية الأهداف</button>
       <button class="actionBtn" id="btnNextWord" type="button">🔄 تخطي وسؤال جديد</button>
     </div>
   </div>
@@ -843,6 +889,21 @@ function renderField() {
   ctx.lineTo(goalRight, goalBottom);
   ctx.stroke();
 
+  // Subtle Target Rings in Goal Net Corners (Training Targets)
+  const targetRings = [
+    { x: W * 0.28, y: H * 0.26 },
+    { x: W * 0.72, y: H * 0.26 },
+    { x: W * 0.28, y: H * 0.54 },
+    { x: W * 0.72, y: H * 0.54 }
+  ];
+  targetRings.forEach(tr => {
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(tr.x, tr.y, 22, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.2)';
+    ctx.beginPath(); ctx.arc(tr.x, tr.y, 12, 0, Math.PI * 2); ctx.stroke();
+  });
+
   // Draw Goalkeeper
   drawGoalkeeper();
 
@@ -1031,6 +1092,15 @@ function updateHUD() {
 });
 
 document.getElementById('btnSoundHint').onclick = showHint;
+const btnToggleGlass = document.getElementById('btnToggleGlass');
+if (btnToggleGlass) {
+  let ultra = false;
+  btnToggleGlass.onclick = () => {
+    ultra = !ultra;
+    document.getElementById('targetsOverlay').classList.toggle('ultraGlass', ultra);
+    btnToggleGlass.innerHTML = ultra ? '🎯 أهداف عادية' : '✨ شفافية الأهداف';
+  };
+}
 document.getElementById('btnNextWord').onclick = () => {
   if (state.running && !state.ball.shooting) nextQuestion();
 };
