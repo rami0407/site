@@ -1049,6 +1049,27 @@ const LearningCorner = () => {
               بوابة العبري ⚽🇮🇱
             </button>
 
+            <button 
+              onClick={() => window.location.hash = '#/english'}
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '0.7rem 1.4rem',
+                fontWeight: 900,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(2, 132, 199, 0.4)'
+              }}
+            >
+              <i className="fas fa-running"></i>
+              بوابة الإنجليزي 🏃🇬🇧
+            </button>
+
             {activeTab !== 'hub' && (
               <button 
                 onClick={() => setActiveTab('hub')}

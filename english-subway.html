@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Subway Surfers 3D - عداء قطارات اللغة الإنجليزية</title>
+    <!-- خط Cairo ومكتبة Three.js ثلاثية الأبعاد -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a2a3a;
+        }
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة المستخدم العلوية HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .top-left-controls {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        .pause-btn {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(180deg, #57a9e2 0%, #2b6ca3 100%);
+            border: 3px solid #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 5px 0 #153c5e, 0 6px 12px rgba(0,0,0,0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .pause-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #153c5e;
+        }
+        .pause-bar {
+            width: 7px;
+            height: 22px;
+            background: #ffffff;
+            border-radius: 3px;
+            box-shadow: 0 2px 2px rgba(0,0,0,0.3);
+        }
+
+        /* زر كتم الصوت الدائم */
+        .sound-toggle-btn {
+            height: 52px;
+            padding: 0 16px;
+            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+            border: 3px solid #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 5px 0 #196f3d, 0 6px 12px rgba(0,0,0,0.45);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sound-toggle-btn.muted {
+            background: linear-gradient(180deg, #95a5a6 0%, #7f8c8d 100%);
+            box-shadow: 0 5px 0 #566573, 0 6px 12px rgba(0,0,0,0.45);
+        }
+        .sound-toggle-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #196f3d;
+        }
+
+        /* لوحة النقاط والعملات في أعلى اليمين */
+        .top-right-stats {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .score-pill {
+            background: rgba(18, 32, 47, 0.88);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 28px;
+            padding: 5px 18px 5px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            direction: ltr;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+        }
+        .multiplier-text {
+            color: #ffd700;
+            font-weight: 900;
+            font-size: 23px;
+            text-shadow: 0 2px 0 #b87c00;
+        }
+        .star-icon {
+            width: 30px;
+            height: 30px;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+        }
+        .score-digits {
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 27px;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+        }
+        .coin-pill {
+            background: rgba(18, 32, 47, 0.88);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 25px;
+            padding: 4px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: ltr;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+        }
+        .coin-digits {
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 23px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+        }
+        .coin-svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        /* شريط العلامات التعليمية واللوح الطائر */
+        .edu-status-bar {
+            position: absolute;
+            top: 85px;
+            left: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .grade-badge {
+            background: linear-gradient(135deg, #16a34a, #0d9488);
+            border: 2px solid #fff;
+            border-radius: 16px;
+            padding: 5px 14px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .hoverboard-badge {
+            background: linear-gradient(135deg, #e74c3c, #f39c12);
+            border: 2px solid #fff;
+            border-radius: 16px;
+            padding: 5px 14px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        /* النوافذ المنبثقة */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 18, 28, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .card {
+            background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+            border: 3px solid #ffd700;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 580px;
+            padding: 24px;
+            color: #fff;
+            text-align: center;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.75);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+        .card h1 {
+            font-size: 28px;
+            color: #ffd700;
+            text-shadow: 0 3px 0 #9e6b00;
+            margin-bottom: 6px;
+        }
+        .card p {
+            color: #d0dce8;
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+
+        /* شبكة اختيار فروع اللغة الإنجليزية والصفوف */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .subject-btn {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 14px;
+            padding: 10px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .subject-btn.active, .subject-btn:hover {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: #ffd700;
+            transform: translateY(-2px);
+        }
+
+        .grades-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .grade-chip {
+            background: rgba(255,255,255,0.1);
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: 10px;
+            padding: 6px 12px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .grade-chip.active {
+            background: #22c55e;
+            border-color: #facc15;
+            color: #0f172a;
+        }
+
+        .btn-main {
+            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+            border: 3px solid #fff;
+            border-radius: 16px;
+            padding: 12px 28px;
+            color: #fff;
+            font-weight: 900;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #196f3d;
+            transition: transform 0.1s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #196f3d;
+        }
+        .btn-secondary {
+            background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+            border: 2px solid #fff;
+            border-radius: 14px;
+            padding: 10px 20px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* نافذة السؤال التفاعلي */
+        .quiz-tier-badge {
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 15px;
+            margin-bottom: 12px;
+            border: 2px solid #fff;
+        }
+        .tier-1 { background: linear-gradient(135deg, #cd7f32, #8b4513); }
+        .tier-2 { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .tier-3 { background: linear-gradient(135deg, #f1c40f, #d35400); color: #111; }
+
+        .question-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 18px;
+            padding: 18px;
+            font-size: 21px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            line-height: 1.5;
+            color: #ffd700;
+            direction: ltr;
+        }
+        .question-sub-ar {
+            font-size: 14px;
+            color: #93c5fd;
+            font-weight: 700;
+            margin-top: 6px;
+            direction: rtl;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 14px;
+            padding: 12px 18px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: left;
+            direction: ltr;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: #ffd700;
+        }
+        .option-btn.correct {
+            background: #27ae60 !important;
+            border-color: #2ecc71 !important;
+        }
+        .option-btn.wrong {
+            background: #c0392b !important;
+            border-color: #e74c3c !important;
+        }
+        .opt-meaning-hint {
+            font-size: 14px;
+            color: #bae6fd;
+            font-weight: 700;
+            direction: rtl;
+        }
+
+        #floating-feedback {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 34px;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            z-index: 40;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.5s ease-out;
+        }
+
+        .form-group {
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #ffd700;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 1px solid #555;
+            background: #101926;
+            color: #fff;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ثلاثي الأبعاد Three.js Canvas -->
+    <div id="game-canvas"></div>
+
+    <!-- واجهة HUD العلوية -->
+    <div id="hud">
+        <div class="top-left-controls">
+            <div class="pause-btn" id="btn-pause" title="إيقاف مؤقت">
+                <div class="pause-bar"></div>
+                <div class="pause-bar"></div>
+            </div>
+            <button class="sound-toggle-btn" id="btn-sound-toggle" type="button">
+                🔊 كتم الصوت
+            </button>
+        </div>
+
+        <div class="top-right-stats">
+            <div class="score-pill">
+                <span class="multiplier-text" id="ui-multiplier">x6</span>
+                <svg class="star-icon" viewBox="0 0 24 24">
+                    <path fill="#FFD700" stroke="#B87C00" stroke-width="1.5" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span class="score-digits" id="ui-score">03624</span>
+            </div>
+            <div class="coin-pill">
+                <span class="coin-digits" id="ui-coins">89</span>
+                <svg class="coin-svg" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="#FFD700" stroke="#D35400" stroke-width="2"/>
+                    <path fill="#F39C12" d="M12 6l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="edu-status-bar">
+            <div class="grade-badge">
+                🇬🇧 نقاط الإنجليزية: <span id="ui-grade">0</span> (<span id="ui-correct">0</span>/<span id="ui-total">0</span>)
+            </div>
+            <div class="hoverboard-badge" id="btn-hoverboard">
+                🛹 اللوح الطائر: <span id="ui-board-status">نشط (حماية)</span> [مسافة]
+            </div>
+        </div>
+    </div>
+
+    <div id="floating-feedback"></div>
+
+    <!-- نافذة البداية -->
+    <div class="modal-overlay" id="start-modal">
+        <div class="card">
+            <h1>English Subway Surfers 3D 🏃🇬🇧</h1>
+            <p>النسخة التعليمية المخصصة لمنهاج اللغة الإنجليزية للمرحلة الابتدائية (الصفوف 1 - 6)</p>
+
+            <div style="text-align:right; margin-bottom:8px; font-weight:800; color:#ffd700;">اختر الصف الدراسي:</div>
+            <div class="grades-row" id="grade-chips">
+                <button class="grade-chip" data-grade="1">الصف 1</button>
+                <button class="grade-chip" data-grade="2">الصف 2</button>
+                <button class="grade-chip active" data-grade="3">الصف 3</button>
+                <button class="grade-chip" data-grade="4">الصف 4</button>
+                <button class="grade-chip" data-grade="5">الصف 5</button>
+                <button class="grade-chip" data-grade="6">الصف 6</button>
+                <button class="grade-chip" data-grade="all">شامل 🌟</button>
+            </div>
+
+            <div style="text-align:right; margin-bottom:8px; font-weight:800; color:#ffd700;">اختر فرع اللغة الإنجليزية:</div>
+            <div class="subject-grid" id="subject-selector">
+                <button class="subject-btn active" data-sub="all">🌟 شامل (كل المهارات)</button>
+                <button class="subject-btn" data-sub="vocab">📖 Words & Meaning (المفردات)</button>
+                <button class="subject-btn" data-sub="spelling">🔤 Spelling & Phonics (التهجئة)</button>
+                <button class="subject-btn" data-sub="grammar">⚡ Grammar & Verbs (القواعد)</button>
+            </div>
+
+            <div style="background:rgba(0,0,0,0.35); border-radius:14px; padding:12px; margin-bottom:16px; text-align:right; font-size:13.5px; line-height:1.7;">
+                <div>📦 <b>الصندوق البرونزي:</b> يمنح <b>+100 نقطة</b> و <b>+25 عملة</b></div>
+                <div>💎 <b>الصندوق الفضي:</b> يمنح <b>+250 نقطة</b> و <b>+50 عملة</b> ويزيد المضاعف</div>
+                <div>👑 <b>الصندوق الذهبي:</b> يمنح <b>+500 نقطة</b> و <b>+100 عملة</b> ويشحن اللوح الطائر</div>
+                <div style="margin-top:6px; color:#ffd700;">🎮 <b>التحكم:</b> الأسهم / WASD / السحب باللمس للحركة والقفز | المسافة لتفعيل اللوح الطائر.</div>
+            </div>
+
+            <button class="btn-main" id="btn-start-game">🚀 انطلق واركض الآن (Start Run)</button>
+            <button class="btn-secondary" id="btn-open-editor">➕ إضافة وتعديل أسئلة المعلم</button>
+        </div>
+    </div>
+
+    <!-- نافذة السؤال التفاعلي -->
+    <div class="modal-overlay hidden" id="quiz-modal">
+        <div class="card">
+            <div id="quiz-tier-badge" class="quiz-tier-badge tier-1">English Question Box</div>
+            <div id="quiz-rescue-note" style="color:#ff7675; font-weight:800; margin-bottom:8px; display:none;">
+                ⚠️ قطار أمامك! أجب بالإنجليزي بشكل صحيح للنجاة ومواصلة الركض:
+            </div>
+            <div class="question-box">
+                <div id="quiz-question-text">Question appears here?</div>
+                <div class="question-sub-ar" id="quiz-question-ar">المعنى أو التوضيح بالعربية</div>
+            </div>
+            <div class="options-list" id="quiz-options"></div>
+            <div id="quiz-feedback-msg" style="margin-top:14px; font-weight:900; font-size:18px; min-height:26px;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة نهاية اللعبة -->
+    <div class="modal-overlay hidden" id="gameover-modal">
+        <div class="card">
+            <h1 style="color:#ff5252;">Game Over! انتهت الجولة</h1>
+            <p>تقرير إنجازك في سباق اللغة الإنجليزية:</p>
+            <div style="background:rgba(0,0,0,0.35); border-radius:16px; padding:16px; margin-bottom:18px; font-size:18px; line-height:2;">
+                <div>⭐ النقاط الكلية (Total Score): <b style="color:#ffd700;" id="end-score">0</b></div>
+                <div>🪙 العملات الذهبية (Coins): <b style="color:#ffd700;" id="end-coins">0</b></div>
+                <div>🎓 علامة الإنجليزية (English Grade): <b style="color:#2ecc71;" id="end-grade">0</b></div>
+                <div>✅ الإجابات الصحيحة (Accuracy): <b id="end-accuracy">0/0</b></div>
+            </div>
+            <button class="btn-main" id="btn-restart">🔄 جولة جديدة (Play Again)</button>
+        </div>
+    </div>
+
+    <!-- نافذة محرر الأسئلة للمعلم -->
+    <div class="modal-overlay hidden" id="editor-modal">
+        <div class="card">
+            <h1>إضافة سؤال إنجليزي جديد</h1>
+            <div class="form-group">
+                <label>فرع المادة:</label>
+                <select id="ed-subject">
+                    <option value="vocab">Words & Meaning (المفردات)</option>
+                    <option value="spelling">Spelling & Phonics (التهجئة)</option>
+                    <option value="grammar">Grammar & Verbs (القواعد)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الصف المستهدف:</label>
+                <select id="ed-grade">
+                    <option value="1">الصف 1</option>
+                    <option value="2">الصف 2</option>
+                    <option value="3" selected>الصف 3</option>
+                    <option value="4">الصف 4</option>
+                    <option value="5">الصف 5</option>
+                    <option value="6">الصف 6</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>مستوى الصندوق وقيمته:</label>
+                <select id="ed-tier">
+                    <option value="1">مستوى 1 - برونزي (100 نقطة)</option>
+                    <option value="2">مستوى 2 - فضي (250 نقطة)</option>
+                    <option value="3">مستوى 3 - ذهبي (500 نقطة)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>نص السؤال بالإنجليزي:</label>
+                <input type="text" id="ed-q" placeholder="What is the meaning of 'Book'?" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label>توضيح السؤال بالعربية (اختياري):</label>
+                <input type="text" id="ed-q-ar" placeholder="ما معنى كلمة Book؟">
+            </div>
+            <div class="form-group">
+                <label>الإجابة الصحيحة (الخيار الأول):</label>
+                <input type="text" id="ed-opt0" placeholder="Correct Answer" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label>خيار خاطئ 1:</label>
+                <input type="text" id="ed-opt1" placeholder="Wrong 1" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label>خيار خاطئ 2:</label>
+                <input type="text" id="ed-opt2" placeholder="Wrong 2" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label>خيار خاطئ 3:</label>
+                <input type="text" id="ed-opt3" placeholder="Wrong 3" dir="ltr">
+            </div>
+            <button class="btn-main" id="btn-save-question">💾 حفظ السؤال في بنك الإنجليزية</button>
+            <button class="btn-secondary" id="btn-close-editor">رجوع للقائمة</button>
+        </div>
+    </div>
+
+<script>
+/**
+ * 1. مولد المؤثرات الصوتية المدمج مع زر كتم الصوت الدائم
+ */
+const SoundFX = {
+    ctx: null,
+    muted: false,
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        try {
+            this.muted = JSON.parse(localStorage.getItem('english_subway_muted') || 'false');
+        } catch(e) {}
+        this.updateBtnUI();
+    },
+    toggleMute() {
+        this.muted = !this.muted;
+        try {
+            localStorage.setItem('english_subway_muted', JSON.stringify(this.muted));
+        } catch(e) {}
+        this.updateBtnUI();
+    },
+    updateBtnUI() {
+        const btn = document.getElementById('btn-sound-toggle');
+        if (!btn) return;
+        if (this.muted) {
+            btn.innerHTML = '🔇 الصوت مكتوم';
+            btn.classList.add('muted');
+        } else {
+            btn.innerHTML = '🔊 كتم الصوت';
+            btn.classList.remove('muted');
+        }
+    },
+    playTone(freq, type, duration, vol = 0.15) {
+        if (this.muted) return;
+        try {
+            this.init();
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+    },
+    coin() {
+        this.playTone(987.77, 'sine', 0.08, 0.12);
+        setTimeout(() => this.playTone(1318.51, 'sine', 0.18, 0.12), 70);
+    },
+    jump() {
+        this.playTone(320, 'triangle', 0.18, 0.15);
+    },
+    boxPickup() {
+        this.playTone(523.25, 'sine', 0.1, 0.15);
+        setTimeout(() => this.playTone(659.25, 'sine', 0.1, 0.15), 90);
+        setTimeout(() => this.playTone(783.99, 'sine', 0.22, 0.18), 180);
+    },
+    correct() {
+        [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.playTone(f, 'triangle', 0.16, 0.2), i * 80));
+    },
+    wrong() {
+        this.playTone(220, 'sawtooth', 0.25, 0.18);
+        setTimeout(() => this.playTone(160, 'sawtooth', 0.35, 0.18), 180);
+    }
+};
+
+SoundFX.init();
+document.getElementById('btn-sound-toggle').onclick = () => SoundFX.toggleMute();
+
+/**
+ * 2. بنك أسئلة منهاج اللغة الإنجليزية للمرحلة الابتدائية (الصفوف 1 - 6)
+ */
+const DEFAULT_ENGLISH_QUESTIONS = [
+    // الصفوف 1 - 2 (أساسيات ومفردات أولى)
+    { sub: 'vocab', grade: 1, tier: 1, points: 100, coins: 25, q: 'What color is the Sun?', qAr: 'ما هو لون الشمس؟', options: ['Yellow (أصفر)', 'Blue (أزرق)', 'Green (أخضر)', 'Black (أسود)'], ans: 0 },
+    { sub: 'vocab', grade: 1, tier: 1, points: 100, coins: 25, q: 'Which animal says "Woof"?', qAr: 'أي حيوان ينبح "Woof"؟', options: ['Dog (كلب)', 'Cat (قطة)', 'Fish (سمكة)', 'Bird (طائر)'], ans: 0 },
+    { sub: 'spelling', grade: 2, tier: 1, points: 100, coins: 25, q: 'Choose the correct spelling:', qAr: 'اختر التهجئة الصحيحة لكلمة (كتاب):', options: ['Book', 'Bok', 'Boke', 'Bokk'], ans: 0 },
+    { sub: 'vocab', grade: 2, tier: 1, points: 100, coins: 25, q: 'What do we write with?', qAr: 'بماذا نكتب في الصف؟', options: ['Pencil (قلم رصاص)', 'Chair (كرسي)', 'Door (باب)', 'Window (نافذة)'], ans: 0 },
+    { sub: 'vocab', grade: 2, tier: 2, points: 250, coins: 50, q: 'What is the opposite of "Big"?', qAr: 'ما هو عكس كلمة Big (كبير)؟', options: ['Small (صغير)', 'Tall (طويل)', 'Fast (سريع)', 'Hot (حار)'], ans: 0 },
+
+    // الصفوف 3 - 4 (العائلة، المدرسة، الأفعال اليومية)
+    { sub: 'vocab', grade: 3, tier: 1, points: 100, coins: 25, q: 'My mother\'s mother is my ______', qAr: 'والدة أمي هي:', options: ['Grandmother (جدتي)', 'Sister (أختي)', 'Aunt (عمتي/خالتي)', 'Cousin (ابنة العم)'], ans: 0 },
+    { sub: 'grammar', grade: 3, tier: 2, points: 250, coins: 50, q: 'Complete: She ______ a student.', qAr: 'أكمل الفراغ بفعل Be المناسب:', options: ['is', 'are', 'am', 'be'], ans: 0 },
+    { sub: 'spelling', grade: 3, tier: 2, points: 250, coins: 50, q: 'Fill in the missing letter: S _ H O O L', qAr: 'الحرف الناقص في كلمة مدرسة هو:', options: ['C', 'K', 'T', 'P'], ans: 0 },
+    { sub: 'vocab', grade: 4, tier: 1, points: 100, coins: 25, q: 'Which season is very cold and rainy?', qAr: 'أي فصل من فصول السنة بارد وماطر؟', options: ['Winter (الشتاء)', 'Summer (الصيف)', 'Spring (الربيع)', 'Autumn (الخريف)'], ans: 0 },
+    { sub: 'grammar', grade: 4, tier: 2, points: 250, coins: 50, q: 'They ______ playing football now.', qAr: 'أكمل الجملة في زمن المضارع المستمر:', options: ['are', 'is', 'am', 'was'], ans: 0 },
+    { sub: 'spelling', grade: 4, tier: 3, points: 500, coins: 100, q: 'Which word rhymes with "Play"?', qAr: 'أي كلمة تنتهي بنفس النغمة الصوتية لكلمة Play؟', options: ['Day', 'Boy', 'Sun', 'Cat'], ans: 0 },
+
+    // الصفوف 5 - 6 (المهن، الأزمنة، التراكيب والمفردات المتقدمة)
+    { sub: 'vocab', grade: 5, tier: 2, points: 250, coins: 50, q: 'A person who helps sick people is a ______', qAr: 'الشخص الذي يعالج المرضى في المستشفى هو:', options: ['Doctor (طبيب)', 'Pilot (طيار)', 'Farmer (مزارع)', 'Driver (سائق)'], ans: 0 },
+    { sub: 'grammar', grade: 5, tier: 3, points: 500, coins: 100, q: 'Yesterday, I ______ to the library.', qAr: 'أكمل بالفعل الماضي المناسب (أمس ذهبت):', options: ['went', 'go', 'going', 'goes'], ans: 0 },
+    { sub: 'vocab', grade: 6, tier: 2, points: 250, coins: 50, q: 'What is the opposite of "Always"?', qAr: 'ما هو عكس كلمة Always (دائماً)؟', options: ['Never (أبداً)', 'Often (غالباً)', 'Sometimes (أحياناً)', 'Usually (عادة)'], ans: 0 },
+    { sub: 'grammar', grade: 6, tier: 3, points: 500, coins: 100, q: 'If you work hard, you ______ succeed.', qAr: 'أكمل الجملة الشرطية بالكلمة المناسبة:', options: ['will', 'did', 'was', 'were'], ans: 0 },
+    { sub: 'spelling', grade: 6, tier: 3, points: 500, coins: 100, q: 'Choose the correct plural form of "Child":', qAr: 'ما هو الجمع الصحيح لكلمة طفل (Child)؟', options: ['Children', 'Childs', 'Childes', 'Childern'], ans: 0 },
+    { sub: 'vocab', grade: 6, tier: 1, points: 100, coins: 25, q: 'What do we say when someone helps us?', qAr: 'ماذا نقول بالإنجليزية لمن يقدم لنا مساعدة؟', options: ['Thank you! (شكراً لك)', 'Excuse me! (معذرة)', 'Goodbye! (مع السلامة)', 'Sorry! (آسف)'], ans: 0 }
+];
+
+let questionBank = JSON.parse(localStorage.getItem('english_subway_questions')) || DEFAULT_ENGLISH_QUESTIONS;
+let selectedSubject = 'all';
+let selectedGrade = '3';
+
+/**
+ * 3. إعداد مشهد Three.js ثلاثي الأبعاد
+ */
+const container = document.getElementById('game-canvas');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x38bdf8); // سماء صافية مشرقة
+scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0045);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 300);
+camera.position.set(0, 8.8, 12.5);
+camera.lookAt(0, 3.2, -18);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.72);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff7ed, 0.95);
+sunLight.position.set(25, 45, 20);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 1024;
+sunLight.shadow.mapSize.height = 1024;
+scene.add(sunLight);
+
+// المسارات الثلاثة
+const LANES = [-4.2, 0, 4.2];
+
+const environmentGroup = new THREE.Group();
+scene.add(environmentGroup);
+
+function buildEnvironment() {
+    // أرضية الحصى
+    const groundGeo = new THREE.PlaneGeometry(36, 400);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.z = -150;
+    ground.receiveShadow = true;
+    environmentGroup.add(ground);
+
+    // قناة مائية زرقاء على اليسار
+    const waterGeo = new THREE.PlaneGeometry(10, 400);
+    const waterMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
+    const water = new THREE.Mesh(waterGeo, waterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(-14, 0.05, -150);
+    environmentGroup.add(water);
+
+    // قضبان السكة الحديدية
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.75, roughness: 0.25 });
+    LANES.forEach(laneX => {
+        [-0.9, 0.9].forEach(offset => {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 400), railMat);
+            rail.position.set(laneX + offset, 0.11, -150);
+            environmentGroup.add(rail);
+        });
+    });
+
+    // جسر في الأفق البعيد
+    const bridgeGroup = new THREE.Group();
+    const bridgeMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+    const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(4, 18, 6), bridgeMat);
+    leftPillar.position.set(-9, 9, -140);
+    const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(4, 18, 6), bridgeMat);
+    rightPillar.position.set(9, 9, -140);
+    const topBeam = new THREE.Mesh(new THREE.BoxGeometry(26, 4.5, 6), bridgeMat);
+    topBeam.position.set(0, 16.5, -140);
+    bridgeGroup.add(leftPillar, rightPillar, topBeam);
+    environmentGroup.add(bridgeGroup);
+}
+buildEnvironment();
+
+const scrollingProps = [];
+const buildingColors = [0xef4444, 0x0284c7, 0x10b981, 0xf59e0b, 0x8b5cf6, 0x64748b];
+
+function createWindowTexture() {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 256;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 128, 256);
+    ctx.fillStyle = '#38bdf8';
+    for (let y = 20; y < 220; y += 45) {
+        for (let x = 18; x < 100; x += 45) {
+            ctx.fillRect(x, y, 28, 32);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, 28, 32);
+        }
+    }
+    return new THREE.CanvasTexture(c);
+}
+const bldgTex = createWindowTexture();
+
+function initScrollingScenery() {
+    const sleeperMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+    const wireMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+
+    for (let z = 20; z > -180; z -= 4) {
+        LANES.forEach(lx => {
+            const sleeper = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.5), sleeperMat);
+            sleeper.position.set(lx, 0.05, z);
+            scene.add(sleeper);
+            scrollingProps.push(sleeper);
+        });
+
+        if (Math.abs(z) % 16 === 0) {
+            const hRight = 18 + (Math.abs(z) % 7);
+            const colRight = buildingColors[Math.abs(z / 16) % buildingColors.length];
+            const bRight = new THREE.Mesh(
+                new THREE.BoxGeometry(8, hRight, 15.5),
+                new THREE.MeshLambertMaterial({ color: colRight, map: bldgTex })
+            );
+            bRight.position.set(12.5, hRight / 2, z);
+            scene.add(bRight);
+            scrollingProps.push(bRight);
+
+            const hLeft = 18 + ((Math.abs(z) + 3) % 7);
+            const colLeft = buildingColors[(Math.abs(z / 16) + 2) % buildingColors.length];
+            const bLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(8, hLeft, 15.5),
+                new THREE.MeshLambertMaterial({ color: colLeft, map: bldgTex })
+            );
+            bLeft.position.set(-18.5, hLeft / 2, z);
+            scene.add(bLeft);
+            scrollingProps.push(bLeft);
+
+            const overheadBar = new THREE.Mesh(new THREE.BoxGeometry(18, 0.15, 0.15), wireMat);
+            overheadBar.position.set(0, 12.5, z);
+            scene.add(overheadBar);
+            scrollingProps.push(overheadBar);
+        }
+    }
+}
+initScrollingScenery();
+
+/**
+ * 4. شخصية عداء الساب واي (Jake) مع القبعة الحمراء واللوح الطائر
+ */
+const playerGroup = new THREE.Group();
+scene.add(playerGroup);
+
+let hoverboardMesh;
+function buildPlayerCharacter() {
+    hoverboardMesh = new THREE.Group();
+    const boardOuter = new THREE.Mesh(
+        new THREE.BoxGeometry(1.55, 0.14, 3.1),
+        new THREE.MeshLambertMaterial({ color: 0xfacc15 })
+    );
+    const boardInner = new THREE.Mesh(
+        new THREE.BoxGeometry(1.3, 0.17, 2.85),
+        new THREE.MeshLambertMaterial({ color: 0xd97706 })
+    );
+    hoverboardMesh.add(boardOuter, boardInner);
+    hoverboardMesh.position.y = 0.15;
+    hoverboardMesh.rotation.y = 0.12;
+    playerGroup.add(hoverboardMesh);
+
+    const shoeMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+    const jeansMat = new THREE.MeshLambertMaterial({ color: 0x1e3a8a });
+
+    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.0, 0.38), jeansMat);
+    leftLeg.position.set(-0.3, 0.75, 0.2);
+    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.0, 0.38), jeansMat);
+    rightLeg.position.set(0.3, 0.75, -0.2);
+
+    const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.25, 0.65), shoeMat);
+    leftShoe.position.set(-0.3, 0.25, 0.2);
+    const rightShoe = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.25, 0.65), shoeMat);
+    rightShoe.position.set(0.3, 0.25, -0.2);
+    playerGroup.add(leftLeg, rightLeg, leftShoe, rightShoe);
+
+    const torso = new THREE.Mesh(
+        new THREE.BoxGeometry(0.95, 1.15, 0.5),
+        new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    torso.position.y = 1.75;
+    const beltBand = new THREE.Mesh(
+        new THREE.BoxGeometry(0.98, 0.35, 0.54),
+        new THREE.MeshLambertMaterial({ color: 0xef4444 })
+    );
+    beltBand.position.y = 1.35;
+    playerGroup.add(torso, beltBand);
+
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xfbd2a4 });
+    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.26, 0.26), skinMat);
+    leftArm.position.set(-0.95, 2.05, 0);
+    leftArm.rotation.z = 0.15;
+    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.26, 0.26), skinMat);
+    rightArm.position.set(0.95, 2.05, 0);
+    rightArm.rotation.z = -0.15;
+    playerGroup.add(leftArm, rightArm);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), skinMat);
+    head.position.y = 2.65;
+
+    const beanie = new THREE.Mesh(
+        new THREE.SphereGeometry(0.56, 18, 18),
+        new THREE.MeshLambertMaterial({ color: 0xdc2626 })
+    );
+    beanie.position.set(0, 2.8, 0.05);
+    beanie.scale.set(1.05, 0.9, 1.1);
+
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+    const hairLeft = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.65, 8), hairMat);
+    hairLeft.position.set(-0.48, 2.45, 0.1);
+    hairLeft.rotation.z = -0.6;
+    const hairRight = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.65, 8), hairMat);
+    hairRight.position.set(0.48, 2.45, 0.1);
+    hairRight.rotation.z = 0.6;
+
+    playerGroup.add(head, beanie, hairLeft, hairRight);
+}
+buildPlayerCharacter();
+
+/**
+ * 5. قطارات، عملات، وصناديق أسئلة اللغة الإنجليزية
+ */
+const trains = [];
+const coins = [];
+const questionBoxes = [];
+
+function createTrainMesh(type, length = 18) {
+    const group = new THREE.Group();
+    const height = 3.6;
+    const width = 3.1;
+
+    if (type === 'passenger') {
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(width, height, length),
+            new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+        );
+        body.position.y = height / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+
+        const roof = new THREE.Mesh(
+            new THREE.BoxGeometry(width - 0.3, 0.25, length - 0.4),
+            new THREE.MeshLambertMaterial({ color: 0x1e293b })
+        );
+        roof.position.y = height + 0.05;
+        group.add(roof);
+
+        const windshield = new THREE.Mesh(
+            new THREE.BoxGeometry(width - 0.5, 1.5, 0.2),
+            new THREE.MeshLambertMaterial({ color: 0x38bdf8 })
+        );
+        windshield.position.set(0, 2.35, length / 2 + 0.05);
+        group.add(windshield);
+
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+        [-0.95, 0.95].forEach(lx => {
+            const hl = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), lightMat);
+            hl.position.set(lx, 0.85, length / 2 + 0.08);
+            group.add(hl);
+        });
+    } else {
+        const redMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, length), redMat);
+        body.position.y = height / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+
+        if (type === 'coal') {
+            const coalMound = new THREE.Mesh(
+                new THREE.BoxGeometry(width - 0.4, 0.45, length - 1.2),
+                new THREE.MeshLambertMaterial({ color: 0x171717 })
+            );
+            coalMound.position.y = height + 0.1;
+            group.add(coalMound);
+        }
+    }
+
+    group.userData = { width, height, length, type };
+    return group;
+}
+
+function spawnCoin(laneIndex, y, z) {
+    const coinGeo = new THREE.CylinderGeometry(0.62, 0.62, 0.18, 20);
+    const coinMat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        metalness: 0.7,
+        roughness: 0.25,
+        emissive: 0x713f12
+    });
+    const coin = new THREE.Mesh(coinGeo, coinMat);
+    coin.rotation.z = Math.PI / 2;
+    coin.position.set(LANES[laneIndex], y, z);
+    scene.add(coin);
+    coins.push(coin);
+}
+
+function createQuestionBoxTexture(tier) {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+
+    const colors = {
+        1: ['#cd7f32', '#8b4513', '+100'],
+        2: ['#9b59b6', '#6c3483', '+250'],
+        3: ['#f1c40f', '#d35400', '+500']
+    }[tier];
+
+    const grad = ctx.createLinearGradient(0, 0, 128, 128);
+    grad.addColorStop(0, colors[0]);
+    grad.addColorStop(1, colors[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, 120, 120);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 48px "Fredoka One", Cairo, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ABC', 64, 62);
+
+    ctx.fillStyle = '#fef08a';
+    ctx.font = '900 28px Cairo, sans-serif';
+    ctx.fillText(colors[2], 64, 105);
+
+    return new THREE.CanvasTexture(c);
+}
+
+const boxTextures = {
+    1: createQuestionBoxTexture(1),
+    2: createQuestionBoxTexture(2),
+    3: createQuestionBoxTexture(3)
+};
+
+function spawnQuestionBox(laneIndex, y, z) {
+    const rand = Math.random();
+    const tier = rand > 0.75 ? 3 : (rand > 0.35 ? 2 : 1);
+
+    const geo = new THREE.BoxGeometry(1.55, 1.55, 1.55);
+    const mat = new THREE.MeshStandardMaterial({
+        map: boxTextures[tier],
+        roughness: 0.2,
+        metalness: 0.3
+    });
+    const box = new THREE.Mesh(geo, mat);
+    box.position.set(LANES[laneIndex], y, z);
+    box.userData = { tier };
+    scene.add(box);
+    questionBoxes.push(box);
+}
+
+/**
+ * 6. منطق اللعبة والفيزياء (Game State & Physics)
+ */
+const state = {
+    running: false,
+    paused: false,
+    inQuiz: false,
+    rescueMode: false,
+    lane: 1,
+    playerX: 0,
+    playerY: 3.6,
+    velY: 0,
+    gravity: -0.026,
+    jumpPower: 0.56,
+    speed: 0.52,
+    score: 3624,
+    coins: 89,
+    multiplier: 6,
+    eduGrade: 0,
+    correctCount: 0,
+    totalCount: 0,
+    hasHoverboard: true
+};
+
+function resetWorldToScreenshot() {
+    trains.forEach(t => scene.remove(t));
+    coins.forEach(c => scene.remove(c));
+    questionBoxes.forEach(b => scene.remove(b));
+    trains.length = 0;
+    coins.length = 0;
+    questionBoxes.length = 0;
+
+    state.lane = 1;
+    state.playerX = LANES[1];
+    state.playerY = 3.6;
+    state.velY = 0;
+    state.speed = 0.52;
+    state.score = 3624;
+    state.coins = 89;
+    state.multiplier = 6;
+    state.eduGrade = 0;
+    state.correctCount = 0;
+    state.totalCount = 0;
+    state.hasHoverboard = true;
+    hoverboardMesh.visible = true;
+
+    playerGroup.position.set(state.playerX, state.playerY, 4);
+
+    const startCar = createTrainMesh('red_roof', 20);
+    startCar.position.set(LANES[1], 0, 2);
+    scene.add(startCar);
+    trains.push(startCar);
+
+    const midWhiteTrain = createTrainMesh('passenger', 22);
+    midWhiteTrain.position.set(LANES[1], 0, -24);
+    scene.add(midWhiteTrain);
+    trains.push(midWhiteTrain);
+
+    const leftTrain1 = createTrainMesh('passenger', 18);
+    leftTrain1.position.set(LANES[0], 0, 5);
+    scene.add(leftTrain1);
+    trains.push(leftTrain1);
+
+    const leftTrain2 = createTrainMesh('passenger', 18);
+    leftTrain2.position.set(LANES[0], 0, -16);
+    scene.add(leftTrain2);
+    trains.push(leftTrain2);
+
+    const rightCoalCar = createTrainMesh('coal', 18);
+    rightCoalCar.position.set(LANES[2], 0, -8);
+    scene.add(rightCoalCar);
+    trains.push(rightCoalCar);
+
+    for (let i = 0; i < 6; i++) {
+        spawnCoin(0, 4.5 + Math.sin(i * 0.6) * 1.4, -2 - i * 3.2);
+    }
+    spawnQuestionBox(1, 5.0, -18);
+    spawnQuestionBox(2, 5.0, -35);
+
+    updateHUD();
+}
+
+let spawnCounter = 0;
+function spawnObstaclesContinuously() {
+    spawnCounter += state.speed;
+    if (spawnCounter < 28) return;
+    spawnCounter = 0;
+
+    const spawnZ = -155;
+    const occupiedLanes = [];
+
+    const numTrains = Math.random() > 0.45 ? 2 : 1;
+    for (let i = 0; i < numTrains; i++) {
+        const lane = Math.floor(Math.random() * 3);
+        if (!occupiedLanes.includes(lane)) {
+            occupiedLanes.push(lane);
+            const types = ['passenger', 'red_roof', 'coal'];
+            const tType = types[Math.floor(Math.random() * types.length)];
+            const tr = createTrainMesh(tType, 20);
+            tr.position.set(LANES[lane], 0, spawnZ);
+            scene.add(tr);
+            trains.push(tr);
+
+            if (Math.random() > 0.35) {
+                for (let c = -6; c <= 6; c += 3) {
+                    spawnCoin(lane, 4.6, spawnZ + c);
+                }
+            }
+            if (Math.random() > 0.4) {
+                spawnQuestionBox(lane, 5.0, spawnZ);
+            }
+        }
+    }
+
+    for (let l = 0; l < 3; l++) {
+        if (!occupiedLanes.includes(l)) {
+            if (Math.random() > 0.45) {
+                spawnQuestionBox(l, 1.5, spawnZ);
+            } else {
+                for (let c = -6; c <= 6; c += 3) {
+                    spawnCoin(l, 1.2, spawnZ + c);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 7. نظام أسئلة اللغة الإنجليزية
+ */
+function showFloatingFeedback(text, color = '#ffd700') {
+    const el = document.getElementById('floating-feedback');
+    el.textContent = text;
+    el.style.color = color;
+    el.style.opacity = '1';
+    el.style.top = '26%';
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.top = '20%';
+    }, 1100);
+}
+
+function triggerQuizModal(tier = 2, isRescue = false) {
+    state.inQuiz = true;
+    state.rescueMode = isRescue;
+
+    const modal = document.getElementById('quiz-modal');
+    const badge = document.getElementById('quiz-tier-badge');
+    const rescueNote = document.getElementById('quiz-rescue-note');
+    const qText = document.getElementById('quiz-question-text');
+    const qAr = document.getElementById('quiz-question-ar');
+    const optContainer = document.getElementById('quiz-options');
+    const msg = document.getElementById('quiz-feedback-msg');
+
+    msg.textContent = '';
+    optContainer.innerHTML = '';
+    rescueNote.style.display = isRescue ? 'block' : 'none';
+
+    // فلترة الأسئلة حسب المادة والصف والمستوى
+    let pool = questionBank.filter(item => {
+        const matchSub = selectedSubject === 'all' || item.sub === selectedSubject;
+        const matchGrade = selectedGrade === 'all' || !item.grade || String(item.grade) === String(selectedGrade);
+        return matchSub && matchGrade;
+    });
+
+    let tierPool = pool.filter(item => Number(item.tier) === Number(tier));
+    if (tierPool.length === 0) tierPool = pool.length ? pool : DEFAULT_ENGLISH_QUESTIONS;
+
+    const chosen = tierPool[Math.floor(Math.random() * tierPool.length)];
+    const rewardPoints = tier === 3 ? 500 : (tier === 2 ? 250 : 100);
+    const rewardCoins = tier === 3 ? 100 : (tier === 2 ? 50 : 25);
+
+    badge.className = `quiz-tier-badge tier-${tier}`;
+    const tierNames = { 1: '📦 Bronze Box (برونزي)', 2: '💎 Silver Box (فضي)', 3: '👑 Gold Box (ذهبي)' };
+    badge.textContent = `${tierNames[tier]} (+${rewardPoints} pts / +${rewardCoins} coins)`;
+
+    qText.textContent = chosen.q;
+    qAr.textContent = chosen.qAr || 'اختر الإجابة الصحيحة:';
+
+    const indexedOptions = chosen.options.map((txt, idx) => ({ txt, isCorrect: idx === chosen.ans }));
+    indexedOptions.sort(() => Math.random() - 0.5);
+
+    indexedOptions.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = opt.txt;
+        btn.onclick = () => {
+            Array.from(optContainer.children).forEach(b => b.disabled = true);
+            state.totalCount++;
+
+            if (opt.isCorrect) {
+                btn.classList.add('correct');
+                SoundFX.correct();
+                state.correctCount++;
+                state.eduGrade += rewardPoints;
+                state.score += rewardPoints * state.multiplier;
+                state.coins += rewardCoins;
+                if (tier >= 2) state.multiplier++;
+                if (tier === 3 || isRescue) {
+                    state.hasHoverboard = true;
+                    hoverboardMesh.visible = true;
+                }
+
+                msg.style.color = '#2ecc71';
+                msg.textContent = `🎉 Excellent! أحسنت! ربحت +${rewardPoints} نقطة و +${rewardCoins} عملة ذهبية!`;
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    state.inQuiz = false;
+                    if (state.rescueMode) {
+                        state.playerY = 4.2;
+                        state.velY = 0;
+                    }
+                    showFloatingFeedback(`+${rewardPoints} pts!`, '#2ecc71');
+                    updateHUD();
+                }, 1100);
+            } else {
+                btn.classList.add('wrong');
+                SoundFX.wrong();
+                msg.style.color = '#ff5252';
+                msg.textContent = `❌ Try Again! إجابة غير صحيحة`;
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    state.inQuiz = false;
+                    if (state.rescueMode) {
+                        showGameOver();
+                    }
+                    updateHUD();
+                }, 1200);
+            }
+        };
+        optContainer.appendChild(btn);
+    });
+
+    modal.classList.remove('hidden');
+}
+
+function showGameOver() {
+    state.running = false;
+    document.getElementById('end-score').textContent = Math.floor(state.score);
+    document.getElementById('end-coins').textContent = state.coins;
+    document.getElementById('end-grade').textContent = state.eduGrade;
+    document.getElementById('end-accuracy').textContent = `${state.correctCount} of ${state.totalCount}`;
+    document.getElementById('gameover-modal').classList.remove('hidden');
+}
+
+function updateHUD() {
+    document.getElementById('ui-score').textContent = String(Math.floor(state.score)).padStart(5, '0');
+    document.getElementById('ui-coins').textContent = state.coins;
+    document.getElementById('ui-multiplier').textContent = 'x' + state.multiplier;
+    document.getElementById('ui-grade').textContent = state.eduGrade;
+    document.getElementById('ui-correct').textContent = state.correctCount;
+    document.getElementById('ui-total').textContent = state.totalCount;
+    document.getElementById('ui-board-status').textContent = state.hasHoverboard ? 'Active (Shield)' : 'Ready';
+}
+
+/**
+ * 8. نظام التحكم (لوحة المفاتيح + اللمس)
+ */
+function moveLeft() {
+    if (!state.running || state.paused || state.inQuiz) return;
+    if (state.lane > 0) state.lane--;
+}
+function moveRight() {
+    if (!state.running || state.paused || state.inQuiz) return;
+    if (state.lane < 2) state.lane++;
+}
+function jump() {
+    if (!state.running || state.paused || state.inQuiz) return;
+    if (state.velY === 0) {
+        state.velY = state.jumpPower;
+        SoundFX.jump();
+    }
+}
+function quickDrop() {
+    if (!state.running || state.paused || state.inQuiz) return;
+    if (state.playerY > 0.2) {
+        state.velY = -0.45;
+    }
+}
+function activateHoverboard() {
+    if (!state.running || state.paused || state.inQuiz) return;
+    if (!state.hasHoverboard) {
+        state.hasHoverboard = true;
+        hoverboardMesh.visible = true;
+        showFloatingFeedback('🛹 Hoverboard Shield Activated!', '#f39c12');
+        updateHUD();
+    }
+}
+
+window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') moveLeft();
+    else if (e.code === 'ArrowRight' || e.code === 'KeyD') moveRight();
+    else if (e.code === 'ArrowUp' || e.code === 'KeyW') jump();
+    else if (e.code === 'ArrowDown' || e.code === 'KeyS') quickDrop();
+    else if (e.code === 'Space') activateHoverboard();
+});
+
+let touchStartX = 0, touchStartY = 0;
+window.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+
+window.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) < 25 && Math.abs(dy) < 25) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) moveRight();
+        else if (dx < -30) moveLeft();
+    } else {
+        if (dy < -30) jump();
+        else if (dy > 30) quickDrop();
+    }
+}, { passive: true });
+
+/**
+ * 9. حلقة التحديث والتحريك المستمر
+ */
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (state.running && !state.paused && !state.inQuiz) {
+        state.speed = Math.min(0.85, state.speed + 0.00008);
+        state.score += state.speed * 0.35 * state.multiplier;
+
+        scrollingProps.forEach(prop => {
+            prop.position.z += state.speed;
+            if (prop.position.z > 25) prop.position.z -= 200;
+        });
+
+        const targetX = LANES[state.lane];
+        state.playerX += (targetX - state.playerX) * 0.22;
+
+        let groundHeight = 0;
+        const playerZ = playerGroup.position.z;
+
+        for (let i = trains.length - 1; i >= 0; i--) {
+            const tr = trains[i];
+            tr.position.z += state.speed;
+
+            const halfLen = tr.userData.length / 2;
+            const sameLane = Math.abs(tr.position.x - state.playerX) < 1.5;
+            const withinZ = Math.abs(tr.position.z - playerZ) < (halfLen + 0.7);
+
+            if (sameLane && withinZ) {
+                if (state.playerY >= tr.userData.height - 0.55) {
+                    groundHeight = Math.max(groundHeight, tr.userData.height);
+                } else {
+                    if (state.hasHoverboard) {
+                        state.hasHoverboard = false;
+                        hoverboardMesh.visible = false;
+                        state.playerY = tr.userData.height + 0.5;
+                        state.velY = 0.25;
+                        showFloatingFeedback('🛡️ Hoverboard Protected You!', '#e67e22');
+                        updateHUD();
+                    } else {
+                        triggerQuizModal(2, true);
+                    }
+                }
+            }
+
+            if (tr.position.z > 40) {
+                scene.remove(tr);
+                trains.splice(i, 1);
+            }
+        }
+
+        state.playerY += state.velY;
+        if (state.playerY > groundHeight) {
+            state.velY += state.gravity;
+        }
+        if (state.playerY <= groundHeight) {
+            state.playerY = groundHeight;
+            state.velY = 0;
+        }
+
+        playerGroup.position.set(state.playerX, state.playerY, playerZ);
+        playerGroup.rotation.z = (state.playerX - targetX) * 0.12;
+
+        for (let i = coins.length - 1; i >= 0; i--) {
+            const c = coins[i];
+            c.position.z += state.speed;
+            c.rotation.y += 0.08;
+
+            if (c.position.distanceTo(playerGroup.position) < 1.85) {
+                SoundFX.coin();
+                state.coins++;
+                state.score += 10 * state.multiplier;
+                scene.remove(c);
+                coins.splice(i, 1);
+                continue;
+            }
+            if (c.position.z > 20) {
+                scene.remove(c);
+                coins.splice(i, 1);
+            }
+        }
+
+        for (let i = questionBoxes.length - 1; i >= 0; i--) {
+            const b = questionBoxes[i];
+            b.position.z += state.speed;
+            b.rotation.y += 0.05;
+            b.rotation.x += 0.02;
+
+            if (b.position.distanceTo(playerGroup.position) < 2.1) {
+                SoundFX.boxPickup();
+                const boxTier = b.userData.tier;
+                scene.remove(b);
+                questionBoxes.splice(i, 1);
+                triggerQuizModal(boxTier, false);
+                break;
+            }
+            if (b.position.z > 20) {
+                scene.remove(b);
+                questionBoxes.splice(i, 1);
+            }
+        }
+
+        spawnObstaclesContinuously();
+        updateHUD();
+    }
+
+    renderer.render(scene, camera);
+}
+
+/**
+ * 10. ربط أزرار الواجهة ومحرر الأسئلة
+ */
+document.querySelectorAll('#subject-selector .subject-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#subject-selector .subject-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedSubject = btn.getAttribute('data-sub');
+    });
+});
+
+document.querySelectorAll('#grade-chips .grade-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        document.querySelectorAll('#grade-chips .grade-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedGrade = chip.getAttribute('data-grade');
+    });
+});
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+    SoundFX.init();
+    document.getElementById('start-modal').classList.add('hidden');
+    resetWorldToScreenshot();
+    state.running = true;
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+    document.getElementById('gameover-modal').classList.add('hidden');
+    resetWorldToScreenshot();
+    state.running = true;
+});
+
+document.getElementById('btn-pause').addEventListener('click', () => {
+    if (!state.running || state.inQuiz) return;
+    state.paused = !state.paused;
+    showFloatingFeedback(state.paused ? '⏸️ Paused (إيقاف)' : '▶️ Resume (استئناف)', '#ffffff');
+});
+
+document.getElementById('btn-hoverboard').addEventListener('click', activateHoverboard);
+
+document.getElementById('btn-open-editor').addEventListener('click', () => {
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('editor-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-close-editor').addEventListener('click', () => {
+    document.getElementById('editor-modal').classList.add('hidden');
+    document.getElementById('start-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-save-question').addEventListener('click', () => {
+    const sub = document.getElementById('ed-subject').value;
+    const grade = document.getElementById('ed-grade').value;
+    const tier = parseInt(document.getElementById('ed-tier').value, 10);
+    const q = document.getElementById('ed-q').value.trim();
+    const qAr = document.getElementById('ed-q-ar').value.trim();
+    const o0 = document.getElementById('ed-opt0').value.trim();
+    const o1 = document.getElementById('ed-opt1').value.trim();
+    const o2 = document.getElementById('ed-opt2').value.trim();
+    const o3 = document.getElementById('ed-opt3').value.trim();
+
+    if (!q || !o0 || !o1 || !o2 || !o3) {
+        alert('يرجى تعبئة نص السؤال وجميع الخيارات الأربعة.');
+        return;
+    }
+
+    const points = tier === 3 ? 500 : (tier === 2 ? 250 : 100);
+    const coins = tier === 3 ? 100 : (tier === 2 ? 50 : 25);
+
+    questionBank.push({
+        sub,
+        grade,
+        tier,
+        points,
+        coins,
+        q,
+        qAr,
+        options: [o0, o1, o2, o3],
+        ans: 0
+    });
+    localStorage.setItem('english_subway_questions', JSON.stringify(questionBank));
+    alert('✅ تم حفظ السؤال بنجاح في بنك أسئلة اللغة الإنجليزية!');
+    document.getElementById('ed-q').value = '';
+    document.getElementById('ed-q-ar').value = '';
+});
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+resetWorldToScreenshot();
+animate();
+</script>
+</body>
+</html>

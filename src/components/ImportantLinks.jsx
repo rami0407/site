@@ -404,6 +404,23 @@ const ImportantLinks = () => {
             });
           }
 
+          // 10. English Language Arena (بوابة اللغة الإنجليزية - Subway Surfers 3D)
+          const hasEnglishArena = list.some(l => 
+            (l.title && (l.title.includes('إنجليزي') || l.title.includes('إنجليزية') || l.title.includes('English') || l.title.includes('انكليزي'))) || 
+            (l.url && (l.url.includes('english') || l.url.includes('subway')))
+          );
+          if (!hasEnglishArena) {
+            list.splice(4, 0, {
+              id: 'school-english-arena-default',
+              title: 'بوابة اللغة الإنجليزية (Subway Surfers 3D 🏃)',
+              icon: 'fa-running',
+              url: '#/english',
+              desc: 'لعبة عداء قطارات الأنفاق الإنجليزية ثلاثية الأبعاد وبنك المفردات والصوتيات والقواعد لصفوف 1 - 6 وفق المنهاج الوزاري.',
+              badge: 'إنجليزي 3D 🏃',
+              highlight: true
+            });
+          }
+
           setLinks(list);
           try {
             localStorage.setItem('cached_important_links', JSON.stringify(list));
@@ -437,7 +454,8 @@ const ImportantLinks = () => {
             const isMafatih = !isMiftaah && (link.url?.includes('mafatih') || link.badge?.includes('مفاتيح') || link.badge?.includes('مفتاح') || link.title?.includes('مفاتيح') || link.title?.includes('مفتاح') || link.title?.includes('מפתי"ח') || link.title?.includes('מפת"ح'));
             const isMath = link.url?.includes('math-championship') || link.badge?.includes('بطولة') || link.badge?.includes('كؤوس') || link.title?.includes('أولمبياد') || link.title?.includes('الرياضيات');
             const isHebrew = link.url?.includes('hebrew') || link.badge?.includes('عبري') || link.title?.includes('العبرية') || link.title?.includes('العبري');
-            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath && !isMiftaah && !isHebrew;
+            const isEnglish = link.url?.includes('english') || link.badge?.includes('إنجليزي') || link.title?.includes('الإنجليزية') || link.title?.includes('English') || link.title?.includes('انكليزي');
+            const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath && !isMiftaah && !isHebrew && !isEnglish;
 
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             let iconGradient = undefined;
@@ -454,6 +472,8 @@ const ImportantLinks = () => {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #ca8a04 100%)';
             } else if (isHebrew) {
               iconGradient = 'linear-gradient(135deg, #10b981 0%, #059669 50%, #064e3b 100%)';
+            } else if (isEnglish) {
+              iconGradient = 'linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0c4a6e 100%)';
             } else if (isTasbih) {
               iconGradient = 'linear-gradient(135deg, #059669 0%, #064e3b 100%)';
             } else if (isMonawaat) {

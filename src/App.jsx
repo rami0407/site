@@ -67,6 +67,7 @@ const MafatihObservationRubricPage = lazyWithRetry(() => import('./components/Ma
 const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 const HebrewPage = lazyWithRetry(() => import('./components/HebrewPage'));
+const EnglishPage = lazyWithRetry(() => import('./components/EnglishPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
 const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
@@ -447,6 +448,19 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <HebrewPage />
+      </Suspense>
+    );
+  }
+
+  const isEnglishView = currentHash.includes('english') || 
+    currentHash.includes('subway') || 
+    currentHash.includes('ingleezi') || 
+    currentHash.includes('en-subway');
+
+  if (isEnglishView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <EnglishPage />
       </Suspense>
     );
   }
