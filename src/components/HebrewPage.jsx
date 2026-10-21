@@ -5,13 +5,13 @@ export default function HebrewPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('space'); // 'space' | 'ninja' | 'penalty' | 'vocab'
+  const [activeTab, setActiveTab] = useState('racer'); // 'racer' | 'space' | 'ninja' | 'penalty' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة العبرية | حرب الفضاء ونينجا الكلمات وركلات الترجيح 🚀⚔️⚽🇮🇱';
+    document.title = 'بوابة اللغة العبرية | سباق التيربو وحرب الفضاء ونينجا الكلمات 🏎️🚀⚔️⚽🇮🇱';
   }, []);
 
   const currentGradeWords = VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -123,6 +123,24 @@ export default function HebrewPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => setActiveTab('racer')}
+              style={{
+                background: activeTab === 'racer' ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#fff',
+                border: activeTab === 'racer' ? '2px solid #fde047' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'racer' ? '0 4px 14px rgba(249, 115, 22, 0.55)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              🏎️ سباق الكلمات (Turbo Racer)
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('space')}
               style={{
                 background: activeTab === 'space' ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(15, 23, 42, 0.65)',
@@ -194,7 +212,7 @@ export default function HebrewPage() {
               📖 بنك الكلمات والمعاني
             </button>
             <a
-              href={activeTab === 'space' ? '/hebrew-space.html?v=1' : activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
+              href={activeTab === 'racer' ? '/hebrew-racer.html?v=1' : activeTab === 'space' ? '/hebrew-space.html?v=1' : activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -253,10 +271,10 @@ export default function HebrewPage() {
               🏆 المنهاج المعتمد للوسط العربي في إسرائيل (الصفوف 1 - 6)
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم العبريَّة باللعبِ وحرب الفضاء ونينجا الكلمات! 🚀⚔️⚽
+              تعلَّم العبريَّة باللعبِ وسباق التيربو وحرب الفضاء! 🏎️🚀⚔️⚽
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#dcfce7', lineHeight: '1.7', fontWeight: '600' }}>
-              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>حرب الفضاء ومجرة الكلمات (Galaxy Defender 🚀)</b> و<b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
+              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>سباق التيربو ومضمار الكلمات (Turbo Word Racer 🏎️)</b> و<b>حرب الفضاء ومجرة الكلمات (Galaxy Defender 🚀)</b> و<b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
             </p>
           </div>
 
@@ -270,7 +288,7 @@ export default function HebrewPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>3</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>4</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -285,6 +303,150 @@ export default function HebrewPage() {
             </div>
           </div>
         </div>
+
+        {/* TAB -2: HEBREW TURBO WORD RACER */}
+        {activeTab === 'racer' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#020617',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85), 0 0 0 3px rgba(249, 115, 22, 0.45)',
+              border: '2px solid rgba(249, 115, 22, 0.5)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e1b4b, #020617)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(249, 115, 22, 0.35)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🏎️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#f97316', fontWeight: '900' }}>
+                      Hebrew Turbo Word Racer — מֵרוֹץ הַמִּלִּים הַמָּהִיר
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#fdba74' }}>
+                      سباق سيارات التيربو ثلاثي الأبعاد: وجّه سيارتك نحو بوابة الكلمة العبرية الصحيحة ونل دفعة النيترو!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/hebrew-racer.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                      color: '#ffffff',
+                      border: '1px solid #fde047',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/hebrew-racer.html?v=1"
+                  title="Hebrew Turbo Word Racer"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(249, 115, 22, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🏎️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#f97316', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. القيادة وتغيير المسارات
+                  </h4>
+                  <p style={{ margin: 0, color: '#ffedd5', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    انقر على أزرار التوجيه أو استخدم الأسهم ⬅️ ➡️ للتنقل بسرعة ودقة بين المسارات الثلاثة للمضمار.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(74, 222, 128, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🏁</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#4ade80', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. بوابات الكلمات المشكولة (הַנִּקּוּד)
+                  </h4>
+                  <p style={{ margin: 0, color: '#ffedd5', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اقرأ المعنى المطلوب واسمع النطق الصوتي الفوري، واعبر بالسيارة من خلال البوابة الحاملة للكلمة العبرية المناسبة.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(250, 204, 21, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>⚡</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. تيربو النيترو (NITRO) والنجوم
+                  </h4>
+                  <p style={{ margin: 0, color: '#ffedd5', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اجمع النجوم الذهبية وسرّع بالنيترو لرفع السرعة ومضاعف النقاط x2، x3 و x5 والتصدر في قائمة الأبطال!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TAB -1: HEBREW SPACE GALAXY DEFENDER GAME */}
         {activeTab === 'space' && (

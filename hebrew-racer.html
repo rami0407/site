@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מֵרוֹץ הַמִּלִּים הַמָּהִיר 🏎️💨 | Hebrew Turbo Word Racer</title>
+    <!-- استدعاء خطوط Google: Assistant العبري و Cairo العربي و Orbitron للأرقام الرياضية -->
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@600;700;800;900&family=Cairo:wght@600;700;800;900&family=Orbitron:wght@700;900&family=Fredoka+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Assistant', 'Cairo', sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #020617;
+            color: #ffffff;
+            touch-action: none;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #050510;
+        }
+
+        /* قماش الرسم Canvas للعبة ثلاثية الأبعاد */
+        #racer-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة الـ HUD العلوية */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .ctrl-btn {
+            background: linear-gradient(180deg, #1e293b, #0f172a);
+            border: 2px solid rgba(56, 189, 248, 0.4);
+            color: #ffffff;
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: all 0.15s ease;
+        }
+        .ctrl-btn:active {
+            transform: scale(0.92);
+            border-color: #38bdf8;
+            background: #0284c7;
+        }
+
+        /* لوحة الهدف والسؤال التفاعلي في منتصف الأعلى */
+        .mission-panel {
+            flex: 1;
+            max-width: 580px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.96));
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4), inset 0 0 15px rgba(56, 189, 248, 0.15);
+            border-radius: 20px;
+            padding: 8px 18px;
+            text-align: center;
+            pointer-events: auto;
+            animation: pulseGlow 3s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+            50% { border-color: #facc15; box-shadow: 0 0 25px rgba(250, 204, 21, 0.45); }
+            100% { border-color: #a855f7; box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
+        }
+
+        .mission-target-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .mission-ar-text {
+            font-size: clamp(1.2rem, 3vw, 1.65rem);
+            font-weight: 900;
+            color: #facc15;
+            font-family: 'Cairo', sans-serif;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 15px rgba(250, 204, 21, 0.4);
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .hear-btn {
+            background: rgba(250, 204, 21, 0.2);
+            border: 1.5px solid #facc15;
+            color: #fef08a;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .hear-btn:active {
+            transform: scale(0.9);
+            background: #facc15;
+            color: #000;
+        }
+
+        .mission-sub-hint {
+            font-size: 0.82rem;
+            color: #67e8f9;
+            font-weight: 700;
+        }
+
+        /* عدادات السرعة والدرع والنقاط على اليمين */
+        .hud-stats-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .stat-badge {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 1.25rem;
+            color: #ffffff;
+        }
+
+        .score-val { color: #facc15; text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+        .coins-val { color: #38bdf8; }
+        .speed-val { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
+
+        /* شريط القلوب / الدرع */
+        .hearts-bar {
+            display: flex;
+            gap: 4px;
+            font-size: 1.25rem;
+        }
+        .heart-icon {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+            transition: transform 0.2s;
+        }
+
+        /* مضاعف الـ Combo */
+        .combo-pill {
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            padding: 3px 12px;
+            border-radius: 99px;
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
+            transform: scale(0.9);
+            transition: all 0.2s;
+        }
+        .combo-active {
+            transform: scale(1.1);
+            animation: bounceCombo 0.4s ease-out;
+        }
+        @keyframes bounceCombo {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* عناصر التحكم باللمس أسفل الشاشة */
+        .hud-bottom-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            width: 100%;
+            padding-bottom: 8px;
+            pointer-events: auto;
+        }
+
+        .steer-arrows {
+            display: flex;
+            gap: 12px;
+        }
+
+        .steer-btn {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+            border: 2px solid #38bdf8;
+            color: #ffffff;
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.9rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 15px rgba(56, 189, 248, 0.3);
+            transition: all 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .steer-btn:active {
+            transform: scale(0.92);
+            background: #0284c7;
+            border-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.8), 0 0 25px rgba(56, 189, 248, 0.7);
+        }
+
+        .nitro-btn {
+            background: linear-gradient(135deg, #f97316, #ef4444);
+            border: 3px solid #fef08a;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 22px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5), 0 0 20px rgba(249, 115, 22, 0.5);
+            transition: all 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            min-width: 130px;
+            height: 76px;
+        }
+        .nitro-btn:active {
+            transform: scale(0.93);
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 0 3px 15px rgba(239, 68, 68, 0.8);
+        }
+        .nitro-btn .nitro-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.25rem;
+            color: #ffffff;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nitro-btn .nitro-sub {
+            font-size: 0.75rem;
+            color: #fef08a;
+            font-weight: 800;
+        }
+
+        /* نافذة البداية واختيار الصف / النهاية */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.88);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        .racer-card {
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+            border: 3px solid #38bdf8;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 35px rgba(56, 189, 248, 0.4);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 580px;
+            padding: 28px 24px;
+            text-align: center;
+            color: #ffffff;
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .racer-card h1 {
+            font-size: clamp(1.6rem, 4vw, 2.3rem);
+            color: #facc15;
+            font-weight: 900;
+            margin-bottom: 6px;
+            text-shadow: 0 3px 12px rgba(250, 204, 21, 0.4);
+            font-family: 'Assistant', 'Cairo', sans-serif;
+        }
+
+        .racer-card p {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* شبكة اختيار الصف المدرسي */
+        .grade-selector-title {
+            font-size: 0.9rem;
+            color: #38bdf8;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .grade-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .grade-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 10px;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .grade-btn:hover, .grade-btn.active {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            border-color: #38bdf8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-start-race {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+            border: 3px solid #6ee7b7;
+            border-radius: 20px;
+            padding: 14px 28px;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 1.35rem;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+            transition: all 0.15s;
+            width: 100%;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-start-race:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .instructions-box {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 14px;
+            text-align: right;
+            font-size: 0.88rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-top: 14px;
+        }
+        .instructions-box b {
+            color: #facc15;
+        }
+
+        /* رسالة التغذية الراجعة الطافية عند عبور البوابة */
+        #feedback-toast {
+            position: absolute;
+            top: 28%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 50;
+            pointer-events: none;
+            padding: 14px 32px;
+            border-radius: 24px;
+            font-weight: 900;
+            font-size: 2rem;
+            color: #fff;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            font-family: 'Assistant', 'Cairo', sans-serif;
+        }
+        #feedback-toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .toast-correct {
+            background: linear-gradient(135deg, #10b981, #047857);
+            border: 3px solid #6ee7b7;
+            text-shadow: 0 0 15px rgba(110, 231, 183, 0.7);
+        }
+        .toast-wrong {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border: 3px solid #fca5a5;
+            text-shadow: 0 0 15px rgba(252, 165, 165, 0.7);
+        }
+
+        /* شريط تقدم السباق أسفل نافذة السؤال */
+        .progress-track-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 99px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #38bdf8, #a855f7);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <!-- قماش الرسم ثلاثي الأبعاد -->
+        <canvas id="racer-canvas"></canvas>
+
+        <!-- رسالة التغذية الراجعة عند المرور بالبوابة -->
+        <div id="feedback-toast"></div>
+
+        <!-- واجهة المستخدم HUD -->
+        <div id="hud">
+            <!-- الجزء العلوي -->
+            <div class="hud-top">
+                <!-- أزرار التحكم: إيقاف، صوت، تكبير -->
+                <div class="top-left-controls">
+                    <button class="ctrl-btn" id="btn-pause" title="הַפְסָקָה / إيقاف مؤقت">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="ctrl-btn" id="btn-mute" title="קול / كتم أو تشغيل الصوت">
+                        <i class="fas fa-volume-up" id="mute-icon"></i>
+                    </button>
+                    <button class="ctrl-btn" id="btn-fullscreen" title="מסך מלא / ملء الشاشة">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+
+                <!-- لوحة الهدف الحالية -->
+                <div class="mission-panel">
+                    <div class="mission-target-label">
+                        <span>🎯 מְשִׂימַת הַמֵּרוֹץ: אֱסֹף אֶת הַמִּלָּה הַנְּכוֹנָה</span>
+                    </div>
+                    <div class="mission-ar-text">
+                        <span id="target-arabic">جاري التحميل...</span>
+                        <button class="hear-btn" id="btn-hear-word" title="הַשְׁמַע קוֹל / استمع للنطق العبري">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <div class="mission-sub-hint" id="target-hint">
+                        اختر المسار الذي يحمل الكلمة العبرية المطابقة للمعنى!
+                    </div>
+                    <div class="progress-track-bar">
+                        <div class="progress-fill" id="track-progress-fill"></div>
+                    </div>
+                </div>
+
+                <!-- عدادات السرعة والدرع والنقاط -->
+                <div class="hud-stats-right">
+                    <div class="stat-badge">
+                        <div class="hearts-bar" id="hearts-container">
+                            <span class="heart-icon">❤️</span>
+                            <span class="heart-icon">❤️</span>
+                            <span class="heart-icon">❤️</span>
+                        </div>
+                    </div>
+                    <div class="stat-badge">
+                        <span style="font-size: 1rem;">🏆</span>
+                        <span class="stat-value score-val" id="score-display">0</span>
+                    </div>
+                    <div class="stat-badge">
+                        <span style="font-size: 1rem;">⚡</span>
+                        <span class="stat-value speed-val" id="speed-display">100 KM/H</span>
+                    </div>
+                    <div class="combo-pill" id="combo-pill">x1 COMBO</div>
+                </div>
+            </div>
+
+            <!-- الجزء السفلي: أزرار التوجيه للشاشات اللمسية -->
+            <div class="hud-bottom-controls">
+                <div class="steer-arrows">
+                    <button class="steer-btn" id="btn-steer-left" title="פְּנֵה שְׂמֹאלָה / يسار">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="steer-btn" id="btn-steer-right" title="פְּנֵה יָמִינָה / يمين">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <button class="nitro-btn" id="btn-nitro">
+                    <div class="nitro-title">
+                        <i class="fas fa-bolt"></i> NITRO
+                    </div>
+                    <div class="nitro-sub">תְּאוּצָה / تيربو</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- نافذة البداية واختيار الصف -->
+        <div class="modal-overlay" id="start-modal">
+            <div class="racer-card">
+                <h1>🏎️ מֵרוֹץ הַמִּלִּים הַמָּהִיר 💨</h1>
+                <h3 style="color: #38bdf8; font-weight: 800; margin-bottom: 12px;">Hebrew Turbo Word Racer</h3>
+                <p>
+                    انطلق بسيارتك التيربو على المضمار ثلاثي الأبعاد! استمع لنطق الكلمات العبرية بالتشكيل (הַנִּקּוּד)، ووجّه السيارة نحو البوابة الصحيحة لتنال دفعة النيترو والنقاط المضاعفة!
+                </p>
+
+                <div class="grade-selector-title">
+                    <i class="fas fa-graduation-cap"></i> בְּחַר כִּתָּה / اختر الصف المدرسي:
+                </div>
+                <div class="grade-grid">
+                    <button class="grade-btn" data-grade="1">כִּתָּה א' (صف 1)</button>
+                    <button class="grade-btn" data-grade="2">כִּתָּה ב' (صف 2)</button>
+                    <button class="grade-btn active" data-grade="3">כִּתָּה ג' (صف 3)</button>
+                    <button class="grade-btn" data-grade="4">כִּתָּה ד' (صف 4)</button>
+                    <button class="grade-btn" data-grade="5">כִּתָּה ה' (صف 5)</button>
+                    <button class="grade-btn" data-grade="6">כִּתָּה ו' (صف 6)</button>
+                </div>
+
+                <button class="btn-start-race" id="btn-start-game">
+                    <i class="fas fa-flag-checkered"></i> הַתְחֵל מֵרוֹץ / ابدأ السباق
+                </button>
+
+                <div class="instructions-box">
+                    <div>🎮 <b>طريقة القيادة:</b> استخدم الأسهم ⬅️ ➡️ أو A / D على لوحة المفاتيح، أو أزرار الشاشة اللمسية للتنقل بين المسارات الـ 3.</div>
+                    <div style="margin-top: 4px;">🚀 <b>تيربو النيترو:</b> اضغط زر المسافة (Space) أو زر NITRO لزيادة السرعة ومضاعفة النقاط!</div>
+                    <div style="margin-top: 4px;">❤️ <b>دروع الطاقة:</b> لديك 3 فرص. تجنّب البوابات الخاطئة والاصطدام لتحافظ على صدارتك!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة نهاية السباق / النتيجة -->
+        <div class="modal-overlay hidden" id="gameover-modal">
+            <div class="racer-card">
+                <div style="font-size: 3.5rem; margin-bottom: 10px;" id="gameover-icon">🏆</div>
+                <h1 id="gameover-title">כָּל הַכָּבוֹד! אַלּוּף הַמֵּרוֹץ!</h1>
+                <p id="gameover-sub">أكملت مضمار الكلمات العبرية بنجاح باهر!</p>
+
+                <div style="background: rgba(255,255,255,0.06); border-radius: 20px; padding: 18px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border: 1.5px solid rgba(255,255,255,0.15);">
+                    <div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">הַנִּקּוּד / النقاط</div>
+                        <div style="font-size: 1.6rem; font-weight: 900; color: #facc15;" id="final-score">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">נְכוֹנוֹת / الدقة</div>
+                        <div style="font-size: 1.6rem; font-weight: 900; color: #4ade80;" id="final-accuracy">100%</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">כּוֹכָבִים / النجوم</div>
+                        <div style="font-size: 1.6rem; font-weight: 900; color: #38bdf8;" id="final-stars">⭐ 15</div>
+                    </div>
+                </div>
+
+                <button class="btn-start-race" id="btn-restart-game">
+                    <i class="fas fa-redo"></i> מֵרוֹץ חָדָשׁ / سباق جديد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        /**
+         * Authentic Hebrew Elementary Curriculum Vocabulary (Grades 1-6)
+         * Israeli Ministry of Education Curriculum for Arab Elementary Schools
+         */
+        const VOCABULARY_DATA = {
+            1: [
+                { heb: 'שָׁלוֹם', ar: 'سلام / مرحباً', icon: '👋' },
+                { heb: 'אַבָּא', ar: 'أب / والدي', icon: '👨' },
+                { heb: 'אִמָּא', ar: 'أم / والدتي', icon: '👩' },
+                { heb: 'כֶּלֶב', ar: 'كلب', icon: '🐶' },
+                { heb: 'שֶׁמֶשׁ', ar: 'شمس', icon: '☀️' },
+                { heb: 'מַיִם', ar: 'ماء', icon: '💧' },
+                { heb: 'פֶּרַח', ar: 'زهرة / وردة', icon: '🌸' },
+                { heb: 'בַּיִת', ar: 'بيت / منزل', icon: '🏠' },
+                { heb: 'יָד', ar: 'يد', icon: '✋' },
+                { heb: 'עַיִן', ar: 'عين', icon: '👁️' }
+            ],
+            2: [
+                { heb: 'בֵּית סֵפֶר', ar: 'مدرسة', icon: '🏫' },
+                { heb: 'מוֹרֶה', ar: 'معلّم (مذكر)', icon: '👨‍🏫' },
+                { heb: 'מוֹרָה', ar: 'معلّمة (مؤنث)', icon: '👩‍🏫' },
+                { heb: 'תַּלְמִיד', ar: 'تلميذ / طالب', icon: '👦' },
+                { heb: 'כִּתָּה', ar: 'صف دراسي', icon: '🚪' },
+                { heb: 'סֵפֶר', ar: 'كتاب', icon: '📖' },
+                { heb: 'מַחְבֶּרֶת', ar: 'دفتر', icon: '📓' },
+                { heb: 'עִפָּרוֹן', ar: 'قلم رصاص', icon: '✏️' },
+                { heb: 'שֻׁלְחָן', ar: 'طاولة', icon: '🪑' },
+                { heb: 'יָרוֹק', ar: 'أخضر', icon: '🟢' },
+                { heb: 'כָּחוֹל', ar: 'أزرق', icon: '🔵' },
+                { heb: 'אָדוֹם', ar: 'أحمر', icon: '🔴' }
+            ],
+            3: [
+                { heb: 'מִשְׁפָּחָה', ar: 'عائلة / أسرة', icon: '👨‍👩‍👧‍👦' },
+                { heb: 'אָח', ar: 'أخ', icon: '👦' },
+                { heb: 'אָחוֹת', ar: 'أخت', icon: '👧' },
+                { heb: 'סַבָּא', ar: 'جدّ', icon: '👴' },
+                { heb: 'סָבְתָא', ar: 'جدّة', icon: '👵' },
+                { heb: 'חָבֵר', ar: 'صديق', icon: '🤝' },
+                { heb: 'תּוֹדָה', ar: 'شكراً', icon: '🙏' },
+                { heb: 'בְּבַקָּשָׁה', ar: 'من فضلك / عفواً', icon: '✨' },
+                { heb: 'חֶדֶר', ar: 'غرفة', icon: '🛋️' },
+                { heb: 'חַלּוֹן', ar: 'نافذة / شباك', icon: '🪟' },
+                { heb: 'דֶּלֶת', ar: 'باب', icon: '🚪' },
+                { heb: 'מִשְׂחָק', ar: 'لعبة', icon: '🎮' }
+            ],
+            4: [
+                { heb: 'סְתָיו', ar: 'فصل الخريف', icon: '🍂' },
+                { heb: 'חֹרֶף', ar: 'فصل الشتاء', icon: '❄️' },
+                { heb: 'אָבִיב', ar: 'فصل الربيع', icon: '🌷' },
+                { heb: 'קַיִץ', ar: 'فصل الصيف', icon: '🏖️' },
+                { heb: 'גֶּשֶׁם', ar: 'مطر', icon: '🌧️' },
+                { heb: 'עָנָן', ar: 'غيمة / سحابة', icon: '☁️' },
+                { heb: 'רוּחַ', ar: 'ريح / هواء', icon: '💨' },
+                { heb: 'לֶחֶם', ar: 'خبز', icon: '🍞' },
+                { heb: 'חָלָב', ar: 'حليب', icon: '🥛' },
+                { heb: 'גְּבִינָה', ar: 'جبنة', icon: '🧀' },
+                { heb: 'תַּפּוּחַ', ar: 'تفاحة', icon: '🍎' }
+            ],
+            5: [
+                { heb: 'קוֹרֵא', ar: 'يقرأُ', icon: '📖' },
+                { heb: 'כּוֹתֵב', ar: 'يكتبُ', icon: '✍️' },
+                { heb: 'לוֹמֵד', ar: 'يتعلّمُ', icon: '🧠' },
+                { heb: 'אוֹכֵל', ar: 'يأكلُ', icon: '🍽️' },
+                { heb: 'שׁוֹתֶה', ar: 'يشربُ', icon: '🥤' },
+                { heb: 'מְשַׂחֵק', ar: 'يلعبُ', icon: '⚽' },
+                { heb: 'הוֹלֵךְ', ar: 'يمشي / يذهبُ', icon: '🚶' },
+                { heb: 'גָּר', ar: 'يسكنُ / يعيشُ', icon: '🏡' },
+                { heb: 'עִיר', ar: 'مدينة', icon: '🏙️' },
+                { heb: 'כְּפָר', ar: 'قرية', icon: '🏘️' },
+                { heb: 'סִפְרִיָּה', ar: 'مكتبة', icon: '📚' }
+            ],
+            6: [
+                { heb: 'רוֹפֵא', ar: 'طبيب / دكتور', icon: '🩺' },
+                { heb: 'שׁוֹטֵר', ar: 'شرطي', icon: '👮' },
+                { heb: 'מְהַנְדֵּס', ar: 'مهندس', icon: '👷' },
+                { heb: 'נַהָג', ar: 'سائق', icon: '🚗' },
+                { heb: 'טַיָּס', ar: 'طيار', icon: '👨‍✈️' },
+                { heb: 'אוֹטוֹבּוּס', ar: 'حافلة / باص', icon: '🚌' },
+                { heb: 'רַכֶּבֶת', ar: 'قطار', icon: '🚆' },
+                { heb: 'מְטוֹס', ar: 'طائرة', icon: '✈️' },
+                { heb: 'מְכוֹנִית', ar: 'سيارة', icon: '🏎️' },
+                { heb: 'בְּהַצְלָחָה', ar: 'بالتوفيق والنجاح', icon: '🌟' },
+                { heb: 'כָּל הַכָּבוֹד', ar: 'كل الاحترام / ممتاز', icon: '👏' }
+            ]
+        };
+
+        // Audio Synthesis System via Web Audio API
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.isMuted = localStorage.getItem('hebrew_racer_muted') === 'true';
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playEngineTone(speedPercent) {
+                if (this.isMuted || !this.ctx) return;
+                // Subdued background engine hum
+            }
+
+            playSteer() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch(e) {}
+            }
+
+            playCorrect() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const notes = [440, 554.37, 659.25, 880]; // A major chord fanfare
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.05);
+                        gain.gain.setValueAtTime(0.18, this.ctx.currentTime + idx * 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.05 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + idx * 0.05);
+                        osc.stop(this.ctx.currentTime + idx * 0.05 + 0.35);
+                    });
+                } catch(e) {}
+            }
+
+            playWrong() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(70, this.ctx.currentTime + 0.28);
+                    gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.28);
+                } catch(e) {}
+            }
+
+            playNitro() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    // White noise blast + rising sine
+                    const bufferSize = this.ctx.sampleRate * 0.4;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(3000, this.ctx.currentTime + 0.4);
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start();
+                } catch(e) {}
+            }
+
+            playStar() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, this.ctx.currentTime); // B5
+                    osc.frequency.exponentialRampToValueAtTime(1318.51, this.ctx.currentTime + 0.12); // E6
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.15);
+                } catch(e) {}
+            }
+        }
+
+        // Hebrew Native Speech Engine
+        function speakHebrew(text) {
+            if (!('speechSynthesis' in window)) return;
+            try {
+                window.speechSynthesis.cancel();
+                // Strip niqqud for pristine native phonetic synthesis
+                const clean = text.replace(/[\u0591-\u05C7]/g, '');
+                const utt = new SpeechSynthesisUtterance(clean);
+                utt.lang = 'he-IL';
+                utt.rate = 0.88;
+                window.speechSynthesis.speak(utt);
+            } catch(e) {}
+        }
+
+        // Main Racer Game Engine
+        class HebrewTurboRacer {
+            constructor() {
+                this.canvas = document.getElementById('racer-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.sfx = new SoundFX();
+
+                // Screen & Perspective setup
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                this.cameraFOV = 100;
+                this.horizonY = 0.46;
+
+                // State
+                this.selectedGrade = 3;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.isNitro = false;
+                this.nitroTimer = 0;
+
+                // Stats
+                this.score = 0;
+                this.combo = 1;
+                this.hearts = 3;
+                this.speed = 100; // km/h
+                this.baseSpeed = 100;
+                this.distance = 0;
+                this.questionIndex = 0;
+                this.correctAnswers = 0;
+                this.totalQuestions = 15;
+                this.starsCollected = 0;
+
+                // Player Car Model
+                // Lane positions: -1 = Left, 0 = Center, 1 = Right
+                this.targetLane = 0;
+                this.currentLaneX = 0; // Smooth interpolated position
+                this.carTilt = 0; // Tilt while steering
+
+                // Gates & World Objects
+                this.activeGates = null; // Next upcoming 3-arch gateway
+                this.roadSegments = [];
+                this.particles = [];
+                this.roadItems = []; // Rotating star coins / speed pads
+
+                // Questions queue
+                this.questionsQueue = [];
+                this.currentQuestion = null;
+
+                // Shake effect
+                this.screenShake = 0;
+
+                this.initDOM();
+                this.initResize();
+                this.initInputs();
+            }
+
+            initDOM() {
+                // Grade selection
+                document.querySelectorAll('.grade-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.selectedGrade = parseInt(btn.dataset.grade, 10);
+                    });
+                });
+
+                document.getElementById('btn-start-game').addEventListener('click', () => {
+                    this.sfx.init();
+                    document.getElementById('start-modal').classList.add('hidden');
+                    this.startGame();
+                });
+
+                document.getElementById('btn-restart-game').addEventListener('click', () => {
+                    document.getElementById('gameover-modal').classList.add('hidden');
+                    this.startGame();
+                });
+
+                // Top controls
+                document.getElementById('btn-mute').addEventListener('click', () => {
+                    this.sfx.isMuted = !this.sfx.isMuted;
+                    localStorage.setItem('hebrew_racer_muted', this.sfx.isMuted);
+                    document.getElementById('mute-icon').className = this.sfx.isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+                });
+                if (this.sfx.isMuted) {
+                    document.getElementById('mute-icon').className = 'fas fa-volume-mute';
+                }
+
+                document.getElementById('btn-pause').addEventListener('click', () => {
+                    this.isPaused = !this.isPaused;
+                    document.getElementById('btn-pause').innerHTML = this.isPaused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+                });
+
+                document.getElementById('btn-fullscreen').addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(()=>{});
+                    } else {
+                        document.exitFullscreen().catch(()=>{});
+                    }
+                });
+
+                document.getElementById('btn-hear-word').addEventListener('click', () => {
+                    if (this.currentQuestion) {
+                        speakHebrew(this.currentQuestion.targetHeb);
+                    }
+                });
+
+                // Bottom Steering & Nitro Buttons
+                document.getElementById('btn-steer-left').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    this.steer(-1);
+                });
+                document.getElementById('btn-steer-right').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    this.steer(1);
+                });
+                document.getElementById('btn-nitro').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    this.activateNitro();
+                });
+            }
+
+            initResize() {
+                const resize = () => {
+                    this.width = window.innerWidth;
+                    this.height = window.innerHeight;
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+                };
+                window.addEventListener('resize', resize);
+                resize();
+            }
+
+            initInputs() {
+                // Keyboard controls
+                window.addEventListener('keydown', (e) => {
+                    if (!this.isRunning || this.isPaused) return;
+                    if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+                        this.steer(-1);
+                    } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+                        this.steer(1);
+                    } else if (e.code === 'Space' || e.code === 'ArrowUp') {
+                        e.preventDefault();
+                        this.activateNitro();
+                    }
+                });
+
+                // Swipe Gestures on Canvas
+                let touchStartX = 0;
+                let touchStartY = 0;
+                window.addEventListener('touchstart', (e) => {
+                    if (e.touches.length > 0) {
+                        touchStartX = e.touches[0].clientX;
+                        touchStartY = e.touches[0].clientY;
+                    }
+                }, { passive: true });
+
+                window.addEventListener('touchend', (e) => {
+                    if (!this.isRunning || this.isPaused) return;
+                    if (e.changedTouches.length > 0) {
+                        const dx = e.changedTouches[0].clientX - touchStartX;
+                        const dy = e.changedTouches[0].clientY - touchStartY;
+                        if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+                            if (dx < 0) this.steer(1); // Swipe left/right depending on RTL/screen
+                            else this.steer(-1);
+                        } else if (dy < -45) {
+                            this.activateNitro(); // Swipe up for Nitro
+                        }
+                    }
+                }, { passive: true });
+
+                // Direct lane click/tap on canvas
+                this.canvas.addEventListener('pointerdown', (e) => {
+                    if (!this.isRunning || this.isPaused) return;
+                    // Ignore clicks on HUD buttons
+                    if (e.clientY < 110 || e.clientY > this.height - 100) return;
+                    const xRatio = e.clientX / this.width;
+                    if (xRatio < 0.33) {
+                        this.setLane(-1);
+                    } else if (xRatio > 0.66) {
+                        this.setLane(1);
+                    } else {
+                        this.setLane(0);
+                    }
+                });
+            }
+
+            steer(dir) {
+                const next = this.targetLane + dir;
+                if (next >= -1 && next <= 1) {
+                    this.targetLane = next;
+                    this.sfx.playSteer();
+                    this.carTilt = dir * 0.18;
+                }
+            }
+
+            setLane(lane) {
+                if (lane !== this.targetLane) {
+                    const dir = lane > this.targetLane ? 1 : -1;
+                    this.targetLane = lane;
+                    this.sfx.playSteer();
+                    this.carTilt = dir * 0.18;
+                }
+            }
+
+            activateNitro() {
+                if (this.isNitro) return;
+                this.isNitro = true;
+                this.nitroTimer = 180; // 3 seconds at 60fps
+                this.speed = 190;
+                this.sfx.playNitro();
+                this.addSpeedBurstParticles();
+            }
+
+            startGame() {
+                this.isRunning = true;
+                this.isPaused = false;
+                this.score = 0;
+                this.combo = 1;
+                this.hearts = 3;
+                this.speed = this.baseSpeed;
+                this.distance = 0;
+                this.questionIndex = 0;
+                this.correctAnswers = 0;
+                this.starsCollected = 0;
+                this.targetLane = 0;
+                this.currentLaneX = 0;
+                this.particles = [];
+                this.roadItems = [];
+
+                this.buildQuestionsQueue();
+                this.updateHUD();
+                this.spawnNextQuestionGate();
+
+                lastTime = performance.now();
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+
+            buildQuestionsQueue() {
+                const gradeWords = VOCABULARY_DATA[this.selectedGrade] || VOCABULARY_DATA[3];
+                // Shuffle array
+                const shuffled = [...gradeWords].sort(() => Math.random() - 0.5);
+                this.questionsQueue = shuffled.slice(0, this.totalQuestions);
+            }
+
+            spawnNextQuestionGate() {
+                if (this.questionIndex >= this.questionsQueue.length) {
+                    this.endGame(true);
+                    return;
+                }
+
+                const targetWord = this.questionsQueue[this.questionIndex];
+                this.currentQuestion = {
+                    targetHeb: targetWord.heb,
+                    targetAr: targetWord.ar,
+                    icon: targetWord.icon
+                };
+
+                // Prepare 3 choices: 1 correct + 2 distractors
+                const gradeWords = VOCABULARY_DATA[this.selectedGrade] || VOCABULARY_DATA[3];
+                const distractors = gradeWords
+                    .filter(w => w.heb !== targetWord.heb)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 2);
+
+                const choices = [
+                    { heb: targetWord.heb, isCorrect: true, icon: targetWord.icon },
+                    { heb: distractors[0].heb, isCorrect: false, icon: distractors[0].icon },
+                    { heb: distractors[1].heb, isCorrect: false, icon: distractors[1].icon }
+                ].sort(() => Math.random() - 0.5);
+
+                // Map choices to lanes: -1 (left), 0 (center), 1 (right)
+                const laneChoices = {
+                    [-1]: choices[0],
+                    [0]: choices[1],
+                    [1]: choices[2]
+                };
+
+                // Upcoming gate starts in distance at z = 1200
+                this.activeGates = {
+                    z: 1200,
+                    lanes: laneChoices,
+                    passed: false
+                };
+
+                // Spawn some stars and boost pads between player and gate
+                for (let i = 0; i < 3; i++) {
+                    const randomLane = [-1, 0, 1][Math.floor(Math.random() * 3)];
+                    this.roadItems.push({
+                        z: 400 + i * 240,
+                        lane: randomLane,
+                        type: Math.random() > 0.4 ? 'star' : 'pad',
+                        collected: false
+                    });
+                }
+
+                // Update HUD Question
+                document.getElementById('target-arabic').innerHTML = `
+                    <span>${targetWord.ar}</span>
+                    <span style="font-size: 1.5rem;">${targetWord.icon}</span>
+                `;
+                document.getElementById('target-hint').textContent = `
+                    חַפֵּשׂ אֶת: "${targetWord.heb}" — اختر المسار المناسب للكلمة!
+                `;
+
+                // Auto speak Hebrew target word with natural accent
+                speakHebrew(targetWord.heb);
+            }
+
+            updateHUD() {
+                document.getElementById('score-display').textContent = this.score;
+                document.getElementById('speed-display').textContent = `${Math.round(this.speed)} KM/H`;
+
+                // Hearts
+                let heartsHtml = '';
+                for (let i = 0; i < 3; i++) {
+                    heartsHtml += i < this.hearts ? '<span class="heart-icon">❤️</span>' : '<span class="heart-icon" style="opacity:0.25; filter:grayscale(1);">🖤</span>';
+                }
+                document.getElementById('hearts-container').innerHTML = heartsHtml;
+
+                // Combo
+                const comboEl = document.getElementById('combo-pill');
+                comboEl.textContent = `x${this.combo} COMBO`;
+                if (this.combo > 1) {
+                    comboEl.classList.add('combo-active');
+                } else {
+                    comboEl.classList.remove('combo-active');
+                }
+
+                // Progress
+                const percent = (this.questionIndex / this.totalQuestions) * 100;
+                document.getElementById('track-progress-fill').style.width = `${percent}%`;
+            }
+
+            showFeedback(text, isCorrect) {
+                const toast = document.getElementById('feedback-toast');
+                toast.className = isCorrect ? 'toast-correct show' : 'toast-wrong show';
+                toast.innerHTML = text;
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 1300);
+            }
+
+            addSpeedBurstParticles() {
+                for (let i = 0; i < 30; i++) {
+                    this.particles.push({
+                        x: this.width * 0.5 + (Math.random() - 0.5) * 200,
+                        y: this.height * 0.85,
+                        vx: (Math.random() - 0.5) * 8,
+                        vy: -Math.random() * 8 - 4,
+                        size: Math.random() * 6 + 2,
+                        color: Math.random() > 0.5 ? '#f97316' : '#38bdf8',
+                        alpha: 1,
+                        decay: 0.03
+                    });
+                }
+            }
+
+            addExplosionParticles(x, y, isGood) {
+                for (let i = 0; i < 45; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const spd = Math.random() * 9 + 2;
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * spd,
+                        vy: Math.sin(angle) * spd,
+                        size: Math.random() * 8 + 3,
+                        color: isGood ? (Math.random() > 0.5 ? '#facc15' : '#4ade80') : '#ef4444',
+                        alpha: 1,
+                        decay: 0.025
+                    });
+                }
+            }
+
+            gameLoop(currentTime) {
+                if (!this.isRunning) return;
+
+                const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+                lastTime = currentTime;
+
+                if (!this.isPaused) {
+                    this.update(dt);
+                }
+                this.render();
+
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+
+            update(dt) {
+                // Smooth lane switching interpolation
+                this.currentLaneX += (this.targetLane - this.currentLaneX) * 12 * dt;
+                this.carTilt *= 0.88;
+
+                // Nitro timer
+                if (this.isNitro) {
+                    this.nitroTimer--;
+                    if (this.nitroTimer <= 0) {
+                        this.isNitro = false;
+                        this.speed = this.baseSpeed;
+                    }
+                }
+
+                // Advance world distance
+                const moveSpeed = (this.speed * 4) * dt;
+                this.distance += moveSpeed;
+
+                // Screen Shake decay
+                if (this.screenShake > 0) {
+                    this.screenShake *= 0.9;
+                    if (this.screenShake < 0.1) this.screenShake = 0;
+                }
+
+                // Update Road Collectibles (Stars / Pads)
+                for (let i = this.roadItems.length - 1; i >= 0; i--) {
+                    const item = this.roadItems[i];
+                    item.z -= moveSpeed;
+
+                    // Collision check with player
+                    if (!item.collected && item.z <= 60 && item.z >= 10) {
+                        if (Math.abs(this.currentLaneX - item.lane) < 0.45) {
+                            item.collected = true;
+                            if (item.type === 'star') {
+                                this.score += 50 * this.combo;
+                                this.starsCollected++;
+                                this.sfx.playStar();
+                                this.showFloatingText('+50 ⭐', this.width * (0.5 + this.currentLaneX * 0.2), this.height * 0.75, '#facc15');
+                            } else if (item.type === 'pad') {
+                                this.activateNitro();
+                            }
+                            this.updateHUD();
+                        }
+                    }
+
+                    if (item.z < 0) {
+                        this.roadItems.splice(i, 1);
+                    }
+                }
+
+                // Update Active Question Gates
+                if (this.activeGates && !this.activeGates.passed) {
+                    this.activeGates.z -= moveSpeed;
+
+                    // Check if player reaches the gate
+                    if (this.activeGates.z <= 45) {
+                        this.activeGates.passed = true;
+                        this.evaluateGatePass();
+                    }
+                }
+
+                // Update Particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= p.decay;
+                    if (p.alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            evaluateGatePass() {
+                // Determine chosen lane based on player's position
+                const chosenLane = Math.round(this.currentLaneX);
+                const choice = this.activeGates.lanes[chosenLane];
+
+                const playerScreenX = this.width * (0.5 + this.currentLaneX * 0.2);
+                const playerScreenY = this.height * 0.8;
+
+                if (choice && choice.isCorrect) {
+                    // CORRECT CHOICE!
+                    this.correctAnswers++;
+                    this.score += 250 * this.combo;
+                    this.combo = Math.min(this.combo + 1, 5);
+                    this.sfx.playCorrect();
+                    this.activateNitro(); // Free turbo on correct answer!
+                    this.addExplosionParticles(playerScreenX, playerScreenY, true);
+
+                    const praises = ['מְצֻיָּן! 🌟', 'כָּל הַכָּבוֹד! 👏', 'נָכוֹן מְאֹד! 🚀', 'אַלּוּף! 🏆'];
+                    const chosenPraise = praises[Math.floor(Math.random() * praises.length)];
+                    this.showFeedback(`${chosenPraise}<br><span style="font-size: 1.3rem;">${choice.heb} = ${this.currentQuestion.targetAr}</span>`, true);
+                    this.screenShake = 6;
+                } else {
+                    // WRONG CHOICE!
+                    this.hearts--;
+                    this.combo = 1;
+                    this.sfx.playWrong();
+                    this.addExplosionParticles(playerScreenX, playerScreenY, false);
+                    this.screenShake = 16;
+                    this.speed = Math.max(60, this.speed - 30);
+
+                    const target = this.currentQuestion.targetHeb;
+                    this.showFeedback(`טָעוּת! ❌<br><span style="font-size: 1.2rem;">הַמִּלָּה הַנְּכוֹנָה: ${target}</span>`, false);
+
+                    if (this.hearts <= 0) {
+                        this.updateHUD();
+                        setTimeout(() => this.endGame(false), 900);
+                        return;
+                    }
+                }
+
+                this.questionIndex++;
+                this.updateHUD();
+
+                // Spawn next question gate after a short sprint
+                setTimeout(() => {
+                    if (this.isRunning) {
+                        this.spawnNextQuestionGate();
+                    }
+                }, 1000);
+            }
+
+            showFloatingText(text, x, y, color) {
+                this.particles.push({
+                    x: x,
+                    y: y,
+                    vx: 0,
+                    vy: -2,
+                    text: text,
+                    size: 20,
+                    color: color,
+                    alpha: 1,
+                    decay: 0.02
+                });
+            }
+
+            endGame(isVictory) {
+                this.isRunning = false;
+                const modal = document.getElementById('gameover-modal');
+                const title = document.getElementById('gameover-title');
+                const sub = document.getElementById('gameover-sub');
+                const icon = document.getElementById('gameover-icon');
+
+                if (isVictory) {
+                    icon.textContent = '🏆';
+                    title.textContent = 'כָּל הַכָּבוֹד! אַלּוּף הַמֵּרוֹץ!';
+                    sub.textContent = 'أكملت سباق مضمار الكلمات العبرية بنجاح باهر وبسرعة خارقة!';
+                } else {
+                    icon.textContent = '💥';
+                    title.textContent = 'הַמֵּרוֹץ הִסְתַּיֵּם!';
+                    sub.textContent = 'نفدت فرص درع الطاقة! تدرب على الكلمات وحاول مجدداً لتفوز بكأس البطولة!';
+                }
+
+                document.getElementById('final-score').textContent = this.score;
+                const accuracy = this.questionIndex > 0 ? Math.round((this.correctAnswers / this.questionIndex) * 100) : 100;
+                document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+                document.getElementById('final-stars').textContent = `⭐ ${this.starsCollected}`;
+
+                modal.classList.remove('hidden');
+            }
+
+            // ================== RENDERING ENGINE ==================
+            render() {
+                const ctx = this.ctx;
+                const w = this.width;
+                const h = this.height;
+
+                ctx.save();
+
+                // Apply Screen Shake
+                if (this.screenShake > 0) {
+                    const sx = (Math.random() - 0.5) * this.screenShake;
+                    const sy = (Math.random() - 0.5) * this.screenShake;
+                    ctx.translate(sx, sy);
+                }
+
+                // 1. Sky & Synthwave Horizon
+                const horizonY = h * this.horizonY;
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+                skyGrad.addColorStop(0, '#030712');
+                skyGrad.addColorStop(0.5, '#1e1b4b');
+                skyGrad.addColorStop(1, '#4c1d95');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, w, horizonY);
+
+                // Neon Setting Sun on Horizon
+                const sunRadius = Math.min(w, h) * 0.16;
+                const sunY = horizonY - 10;
+                const sunGrad = ctx.createLinearGradient(0, sunY - sunRadius, 0, sunY + sunRadius);
+                sunGrad.addColorStop(0, '#facc15');
+                sunGrad.addColorStop(0.5, '#f43f5e');
+                sunGrad.addColorStop(1, '#8b5cf6');
+                ctx.fillStyle = sunGrad;
+                ctx.beginPath();
+                ctx.arc(w * 0.5, sunY, sunRadius, Math.PI, 0, false);
+                ctx.fill();
+
+                // Sun horizontal blinds lines
+                ctx.strokeStyle = '#1e1b4b';
+                ctx.lineWidth = 3;
+                for (let y = sunY - sunRadius * 0.6; y < sunY; y += 9) {
+                    ctx.beginPath();
+                    ctx.moveTo(w * 0.5 - sunRadius, y);
+                    ctx.lineTo(w * 0.5 + sunRadius, y);
+                    ctx.stroke();
+                }
+
+                // Mountain silhouettes
+                ctx.fillStyle = '#0f0e26';
+                ctx.beginPath();
+                ctx.moveTo(0, horizonY);
+                for (let x = 0; x <= w; x += 60) {
+                    const my = horizonY - 25 - Math.sin(x * 0.015) * 20 - Math.cos(x * 0.04) * 12;
+                    ctx.lineTo(x, my);
+                }
+                ctx.lineTo(w, horizonY);
+                ctx.closePath();
+                ctx.fill();
+
+                // 2. 3D Perspective Highway Road
+                const roadBottomW = w * 0.88;
+                const roadTopW = w * 0.08;
+                const roadBottomL = (w - roadBottomW) * 0.5;
+                const roadBottomR = roadBottomL + roadBottomW;
+                const roadTopL = (w - roadTopW) * 0.5;
+                const roadTopR = roadTopL + roadTopW;
+
+                // Ground background (Grass/Grid)
+                const groundGrad = ctx.createLinearGradient(0, horizonY, 0, h);
+                groundGrad.addColorStop(0, '#064e3b');
+                groundGrad.addColorStop(1, '#022c22');
+                ctx.fillStyle = groundGrad;
+                ctx.fillRect(0, horizonY, w, h - horizonY);
+
+                // Road Asphalt polygon
+                ctx.beginPath();
+                ctx.moveTo(roadTopL, horizonY);
+                ctx.lineTo(roadTopR, horizonY);
+                ctx.lineTo(roadBottomR, h);
+                ctx.lineTo(roadBottomL, h);
+                ctx.closePath();
+                ctx.fillStyle = '#0a0f1d';
+                ctx.fill();
+
+                // Animated Road Perspective Stripes (Striped bars rushing down)
+                const totalSegments = 24;
+                for (let i = 0; i < totalSegments; i++) {
+                    // Segment depth calculation with exponential perspective
+                    const p1 = Math.pow((i + (this.distance * 0.04 % 1)) / totalSegments, 2.5);
+                    const p2 = Math.pow((i + 1 + (this.distance * 0.04 % 1)) / totalSegments, 2.5);
+
+                    const y1 = horizonY + (h - horizonY) * p1;
+                    const y2 = horizonY + (h - horizonY) * p2;
+
+                    const rw1 = roadTopW + (roadBottomW - roadTopW) * p1;
+                    const rw2 = roadTopW + (roadBottomW - roadTopW) * p2;
+
+                    const rx1 = (w - rw1) * 0.5;
+                    const rx2 = (w - rw2) * 0.5;
+
+                    // Alternating road shade
+                    ctx.fillStyle = (i % 2 === 0) ? 'rgba(30, 41, 59, 0.45)' : 'rgba(15, 23, 42, 0.2)';
+                    ctx.beginPath();
+                    ctx.moveTo(rx1, y1);
+                    ctx.lineTo(rx1 + rw1, y1);
+                    ctx.lineTo(rx2 + rw2, y2);
+                    ctx.lineTo(rx2, y2);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Road Shoulders (Red/White neon rumble strips)
+                    const curbW1 = rw1 * 0.05;
+                    const curbW2 = rw2 * 0.05;
+                    ctx.fillStyle = (i % 2 === 0) ? '#ef4444' : '#ffffff';
+                    // Left Curb
+                    ctx.beginPath();
+                    ctx.moveTo(rx1 - curbW1, y1);
+                    ctx.lineTo(rx1, y1);
+                    ctx.lineTo(rx2, y2);
+                    ctx.lineTo(rx2 - curbW2, y2);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Right Curb
+                    ctx.beginPath();
+                    ctx.moveTo(rx1 + rw1, y1);
+                    ctx.lineTo(rx1 + rw1 + curbW1, y1);
+                    ctx.lineTo(rx2 + rw2 + curbW2, y2);
+                    ctx.lineTo(rx2 + rw2, y2);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // 3. Lane Dividers (Dashed Neon Cyan Lines for 3 Lanes)
+                // Left divider at 1/3, Right divider at 2/3
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([18, 14]);
+                ctx.lineDashOffset = -(this.distance * 0.8) % 32;
+
+                // Left Lane Divider
+                ctx.beginPath();
+                ctx.moveTo(roadTopL + roadTopW * 0.333, horizonY);
+                ctx.lineTo(roadBottomL + roadBottomW * 0.333, h);
+                ctx.stroke();
+
+                // Right Lane Divider
+                ctx.beginPath();
+                ctx.moveTo(roadTopL + roadTopW * 0.666, horizonY);
+                ctx.lineTo(roadBottomL + roadBottomW * 0.666, h);
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset line dash
+
+                // Outer Glowing Road Borders
+                ctx.strokeStyle = '#a855f7';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#a855f7';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.moveTo(roadTopL, horizonY);
+                ctx.lineTo(roadBottomL, h);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(roadTopR, horizonY);
+                ctx.lineTo(roadBottomR, h);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // 4. Draw Collectibles (Stars / Pads) on the Road
+                this.renderRoadItems(ctx, horizonY, h, roadTopW, roadBottomW);
+
+                // 5. Draw Upcoming 3-Arch Question Gates
+                if (this.activeGates && !this.activeGates.passed) {
+                    this.renderGates(ctx, horizonY, h, roadTopW, roadBottomW);
+                }
+
+                // 6. Draw Player Supercar
+                this.renderPlayerCar(ctx, h, roadBottomL, roadBottomW);
+
+                // 7. Draw Particles and Floating Text
+                this.renderParticles(ctx);
+
+                ctx.restore();
+            }
+
+            renderRoadItems(ctx, horizonY, h, roadTopW, roadBottomW) {
+                const w = this.width;
+                for (const item of this.roadItems) {
+                    if (item.collected || item.z <= 0) continue;
+
+                    // Perspective scale
+                    const scale = 220 / (220 + item.z);
+                    const y = horizonY + (h - horizonY) * Math.pow(scale, 1.4);
+                    const rw = roadTopW + (roadBottomW - roadTopW) * scale;
+                    const rx = (w - rw) * 0.5;
+
+                    // Lane X: lane is -1, 0, or 1 -> maps to 1/6, 3/6, 5/6 of road
+                    const laneOffsets = { [-1]: 0.166, [0]: 0.5, [1]: 0.833 };
+                    const itemX = rx + rw * laneOffsets[item.lane];
+                    const size = Math.max(12, 48 * scale);
+
+                    ctx.save();
+                    ctx.translate(itemX, y);
+                    if (item.type === 'star') {
+                        // Rotating glowing Star
+                        ctx.shadowColor = '#facc15';
+                        ctx.shadowBlur = 12 * scale;
+                        ctx.font = `${Math.round(size)}px sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('⭐', 0, 0);
+                    } else if (item.type === 'pad') {
+                        // Neon Speed Nitro Pad
+                        ctx.shadowColor = '#38bdf8';
+                        ctx.shadowBlur = 14 * scale;
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.beginPath();
+                        ctx.moveTo(-size * 0.8, size * 0.4);
+                        ctx.lineTo(0, -size * 0.6);
+                        ctx.lineTo(size * 0.8, size * 0.4);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            renderGates(ctx, horizonY, h, roadTopW, roadBottomW) {
+                const w = this.width;
+                const gate = this.activeGates;
+                const scale = 240 / (240 + gate.z);
+                if (scale < 0.05) return;
+
+                const y = horizonY + (h - horizonY) * Math.pow(scale, 1.35);
+                const rw = roadTopW + (roadBottomW - roadTopW) * scale;
+                const rx = (w - rw) * 0.5;
+                const gateHeight = Math.max(25, (h * 0.32) * scale);
+
+                const laneWidth = rw / 3;
+                const lanes = [-1, 0, 1];
+
+                // Draw Overhead High-Tech Arch Truss
+                ctx.save();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = Math.max(2, 6 * scale);
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 12 * scale;
+
+                // Main overhead horizontal bar
+                ctx.beginPath();
+                ctx.moveTo(rx, y - gateHeight);
+                ctx.lineTo(rx + rw, y - gateHeight);
+                ctx.stroke();
+
+                // 4 Vertical Pillars
+                for (let i = 0; i <= 3; i++) {
+                    const px = rx + i * laneWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(px, y - gateHeight);
+                    ctx.lineTo(px, y);
+                    ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+
+                // Draw 3 Gate Signboards with Hebrew words
+                lanes.forEach((laneIdx, i) => {
+                    const choice = gate.lanes[laneIdx];
+                    if (!choice) return;
+
+                    const laneCenterX = rx + (i + 0.5) * laneWidth;
+                    const boardW = laneWidth * 0.9;
+                    const boardH = gateHeight * 0.65;
+                    const boardY = y - gateHeight + (gateHeight - boardH) * 0.5;
+
+                    // Glowing board background
+                    const boardGrad = ctx.createLinearGradient(0, boardY, 0, boardY + boardH);
+                    boardGrad.addColorStop(0, 'rgba(15, 23, 42, 0.95)');
+                    boardGrad.addColorStop(1, 'rgba(2, 6, 23, 0.98)');
+                    ctx.fillStyle = boardGrad;
+
+                    // Neon border for gate (Color indicates lane style)
+                    ctx.strokeStyle = i === 0 ? '#38bdf8' : (i === 1 ? '#facc15' : '#ec4899');
+                    ctx.lineWidth = Math.max(1.5, 4 * scale);
+                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowBlur = 8 * scale;
+
+                    ctx.beginPath();
+                    // Rounded rect
+                    const r = Math.max(4, 12 * scale);
+                    ctx.roundRect(laneCenterX - boardW * 0.5, boardY, boardW, boardH, r);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Hebrew Word text with full vowels (הַנִּקּוּד)
+                    const fontSize = Math.max(9, Math.round(30 * scale));
+                    ctx.font = `900 ${fontSize}px 'Assistant', 'Cairo', sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#ffffff';
+
+                    // Display Hebrew Word
+                    ctx.fillText(choice.heb, laneCenterX, boardY + boardH * 0.45);
+
+                    // Mini emoji under word if scale is large enough
+                    if (scale > 0.3) {
+                        ctx.font = `${Math.round(fontSize * 0.8)}px sans-serif`;
+                        ctx.fillText(choice.icon || '✨', laneCenterX, boardY + boardH * 0.82);
+                    }
+                });
+
+                ctx.restore();
+            }
+
+            renderPlayerCar(ctx, h, roadBottomL, roadBottomW) {
+                const w = this.width;
+                // Car is fixed at bottom Y = h * 0.82
+                const carY = h * 0.82;
+                // Car X tracks currentLaneX (-1 to 1) -> maps across bottom road
+                const laneW = roadBottomW / 3;
+                const carX = roadBottomL + (1.5 + this.currentLaneX) * laneW;
+
+                const carW = Math.min(w * 0.22, 130);
+                const carH = carW * 0.72;
+
+                ctx.save();
+                ctx.translate(carX, carY);
+                ctx.rotate(this.carTilt);
+
+                // Neon Underglow shadow
+                ctx.shadowColor = this.isNitro ? '#f97316' : '#38bdf8';
+                ctx.shadowBlur = 24;
+                ctx.fillStyle = this.isNitro ? 'rgba(249, 115, 22, 0.45)' : 'rgba(56, 189, 248, 0.35)';
+                ctx.beginPath();
+                ctx.ellipse(0, carH * 0.45, carW * 0.55, carH * 0.2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Dual Exhaust Nitro Flames
+                const flameLen = this.isNitro ? (Math.random() * 35 + 30) : (Math.random() * 14 + 10);
+                const flameGrad = ctx.createLinearGradient(0, carH * 0.4, 0, carH * 0.4 + flameLen);
+                flameGrad.addColorStop(0, '#ffffff');
+                flameGrad.addColorStop(0.3, this.isNitro ? '#facc15' : '#38bdf8');
+                flameGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                ctx.fillStyle = flameGrad;
+
+                // Left & Right Exhaust
+                [-carW * 0.28, carW * 0.28].forEach(exX => {
+                    ctx.beginPath();
+                    ctx.moveTo(exX - 8, carH * 0.38);
+                    ctx.lineTo(exX + 8, carH * 0.38);
+                    ctx.lineTo(exX, carH * 0.38 + flameLen);
+                    ctx.closePath();
+                    ctx.fill();
+                });
+
+                // Car Chassis (Futuristic Cyber Supercar viewed from behind)
+                const bodyGrad = ctx.createLinearGradient(-carW * 0.5, 0, carW * 0.5, 0);
+                bodyGrad.addColorStop(0, '#0f172a');
+                bodyGrad.addColorStop(0.2, '#0284c7');
+                bodyGrad.addColorStop(0.5, '#38bdf8');
+                bodyGrad.addColorStop(0.8, '#0284c7');
+                bodyGrad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = bodyGrad;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+
+                // Main body polygon
+                ctx.beginPath();
+                ctx.moveTo(-carW * 0.45, carH * 0.35);
+                ctx.lineTo(-carW * 0.42, -carH * 0.05);
+                ctx.lineTo(-carW * 0.28, -carH * 0.35);
+                ctx.lineTo(carW * 0.28, -carH * 0.35);
+                ctx.lineTo(carW * 0.42, -carH * 0.05);
+                ctx.lineTo(carW * 0.45, carH * 0.35);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Rear Windshield Cabin
+                const glassGrad = ctx.createLinearGradient(0, -carH * 0.32, 0, 0);
+                glassGrad.addColorStop(0, '#1e293b');
+                glassGrad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = glassGrad;
+                ctx.beginPath();
+                ctx.moveTo(-carW * 0.24, -carH * 0.32);
+                ctx.lineTo(carW * 0.24, -carH * 0.32);
+                ctx.lineTo(carW * 0.32, -carH * 0.05);
+                ctx.lineTo(-carW * 0.32, -carH * 0.05);
+                ctx.closePath();
+                ctx.fill();
+
+                // Rear Tail-Lights (Strip light neon bar)
+                ctx.fillStyle = '#ef4444';
+                ctx.shadowColor = '#ef4444';
+                ctx.shadowBlur = 15;
+                ctx.fillRect(-carW * 0.38, carH * 0.1, carW * 0.76, 8);
+                ctx.shadowBlur = 0;
+
+                // High Rear Spoiler
+                ctx.fillStyle = '#0f172a';
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2.5;
+                ctx.fillRect(-carW * 0.48, -carH * 0.42, carW * 0.96, 7);
+                ctx.strokeRect(-carW * 0.48, -carH * 0.42, carW * 0.96, 7);
+
+                // Spoiler struts
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(-carW * 0.3, -carH * 0.35, 6, carH * 0.12);
+                ctx.fillRect(carW * 0.3 - 6, -carH * 0.35, 6, carH * 0.12);
+
+                // Wide Tires
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(-carW * 0.52, carH * 0.05, 14, carH * 0.35);
+                ctx.fillRect(carW * 0.52 - 14, carH * 0.05, 14, carH * 0.35);
+
+                ctx.restore();
+            }
+
+            renderParticles(ctx) {
+                for (const p of this.particles) {
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+
+                    if (p.text) {
+                        ctx.font = `900 ${p.size}px 'Orbitron', 'Cairo', sans-serif`;
+                        ctx.fillStyle = p.color;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(p.text, p.x, p.y);
+                    } else {
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        let lastTime = performance.now();
+        window.addEventListener('DOMContentLoaded', () => {
+            window.turboRacer = new HebrewTurboRacer();
+        });
+    })();
+    </script>
+</body>
+</html>
