@@ -5,12 +5,12 @@ export default function EnglishPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('space'); // 'space' | 'basketball' | 'subway' | 'vocab'
+  const [activeTab, setActiveTab] = useState('ninja'); // 'ninja' | 'space' | 'basketball' | 'subway' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة الإنجليزية | حرب الفضاء وسلة صب واي وبنك الكلمات 🚀🏀🏃🇬🇧';
+    document.title = 'بوابة اللغة الإنجليزية | نينجا الكلمات وحرب الفضاء وسلة صب واي ⚔️🚀🏀🏃🇬🇧';
   }, []);
 
   const currentGradeWords = ENGLISH_VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -117,6 +117,24 @@ export default function EnglishPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => setActiveTab('ninja')}
+              style={{
+                background: activeTab === 'ninja' ? 'linear-gradient(135deg, #ea580c, #c2410c)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#ffffff',
+                border: activeTab === 'ninja' ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'ninja' ? '0 4px 15px rgba(234, 88, 12, 0.5)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              ⚔️ نينجا الكلمات (Word Ninja)
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('space')}
               style={{
                 background: activeTab === 'space' ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(15, 23, 42, 0.65)',
@@ -188,7 +206,7 @@ export default function EnglishPage() {
               📖 معجم وبنك المفردات والصوتيات
             </button>
             <a
-              href={activeTab === 'space' ? '/english-space.html?v=1' : activeTab === 'basketball' ? '/english-basketball.html?v=1' : '/english-subway.html?v=1'}
+              href={activeTab === 'ninja' ? '/english-ninja.html?v=1' : activeTab === 'space' ? '/english-space.html?v=1' : activeTab === 'basketball' ? '/english-basketball.html?v=1' : '/english-subway.html?v=1'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -247,10 +265,10 @@ export default function EnglishPage() {
               ⭐ English for Elementary Schools (Grades 1 – 6) | Core Band I
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم الإنجليزية بحرب الفضاء والسلة والمغامرات! 🚀🏀🏃
+              تعلَّم الإنجليزية بنينجا الكلمات وحرب الفضاء والسلة! ⚔️🚀🏀
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#e0f2fe', lineHeight: '1.7', fontWeight: '600' }}>
-              بوابة إلكترونية تفاعلية متكاملة تجمع بين <b>حرب الفضاء ومعركة المجرة (Galaxy Defender 🚀)</b>، <b>دوري رميات السلة (Slam Dunk 🏀)</b>، وسباق قطارات الأنفاق <b>Subway Surfers 3D 🏃</b>، مع بنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية وفق منهاج <b>Band I</b> لوزارة التربية والتعليم.
+              بوابة إلكترونية تفاعلية شاملة تضم <b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b>، <b>حرب الفضاء ومعركة المجرة (Galaxy Defender 🚀)</b>، <b>دوري رميات السلة (Slam Dunk 🏀)</b>، وسباق <b>Subway Surfers 3D 🏃</b>، مع معجم وبنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية حسب منهاج <b>Band I</b> لوزارة التربية والتعليم.
             </p>
           </div>
 
@@ -264,7 +282,7 @@ export default function EnglishPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>3</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>4</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -279,6 +297,150 @@ export default function EnglishPage() {
             </div>
           </div>
         </div>
+
+        {/* TAB -1: WORD NINJA FRUIT SLICE GAME */}
+        {activeTab === 'ninja' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#0a0402',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85), 0 0 0 3px rgba(245, 158, 11, 0.45)',
+              border: '2px solid rgba(245, 158, 11, 0.5)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #2b1307, #451a03)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(245, 158, 11, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>⚔️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#facc15', fontWeight: '900' }}>
+                      English Word Ninja — نينجا تقطيع كلمات اللغة الإنجليزية (Band I)
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#fed7aa' }}>
+                      استمع للنطق الإنجليزي السليم وقطّع الفواكه التي تطابق المعنى الصحيح وتفادَ القنابل!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/english-ninja.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #ea580c, #c2410c)',
+                      color: '#ffffff',
+                      border: '1px solid #facc15',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(234, 88, 12, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/english-ninja.html?v=1"
+                  title="English Word Ninja"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(30, 14, 7, 0.8)',
+                border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>⚔️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. سيف النينجا الخارق
+                  </h4>
+                  <p style={{ margin: 0, color: '#fed7aa', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اسحب إصبعك على شاشة اللمس أو حرّك الفأرة بسرعة لتقطيع الفواكه الطائرة في الهواء بنصفين وعصير متناثر!
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(30, 14, 7, 0.8)',
+                border: '1.5px solid rgba(34, 197, 94, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🍉</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#4ade80', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. مطابقة كلمات Band I
+                  </h4>
+                  <p style={{ margin: 0, color: '#fed7aa', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اقرأ الكلمة أو استمع لنطقها، ثم قطّع فقط الفاكهة التي تحمل المعنى الصحيح من بين الفواكه المتطايرة.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(30, 14, 7, 0.8)',
+                border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>💣</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#f87171', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. تفادي القنابل وسلسلة الـ Combo
+                  </h4>
+                  <p style={{ margin: 0, color: '#fed7aa', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    احذر من لمس القنابل 💣 حتى لا تفقد قلوبك، واستمر في تقطيع الأهداف المتتالية لرفع مضاعف النقاط x2 و x3!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TAB 0: GALAXY DEFENDER SPACE GAME */}
         {activeTab === 'space' && (

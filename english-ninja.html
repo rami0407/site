@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Word Ninja ⚔️ - نينجا تقطيع كلمات اللغة الإنجليزية (Band I)</title>
+    <!-- خط Cairo ومكتبة أيقونات FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #180d07;
+            color: #ffffff;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #2a150b 0%, #150a04 70%, #0a0402 100%);
+        }
+
+        /* قماش الرسم Canvas للنينجا والفواكه المتطايرة وأثر السيف */
+        #ninja-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة المستخدم العلوية HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: linear-gradient(180deg, #381f12, #211107);
+            border: 2px solid rgba(245, 158, 11, 0.4);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .control-btn:hover {
+            border-color: #f59e0b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        }
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+
+        .sound-toggle-btn.muted {
+            background: linear-gradient(180deg, #475569, #334155);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        /* شاشة مهمة النينجا المعلقة (Dojo Scroll Target) */
+        .ninja-scroll-box {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 650px;
+            background: linear-gradient(180deg, rgba(38, 19, 9, 0.96), rgba(24, 11, 5, 0.96));
+            border: 3px solid #f59e0b;
+            border-radius: 20px;
+            padding: 10px 18px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(245, 158, 11, 0.35);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        .scroll-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-bottom: 1px dashed rgba(245, 158, 11, 0.3);
+            padding-bottom: 4px;
+        }
+
+        .band-badge {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            border: 1px solid #f97316;
+        }
+
+        .category-badge {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fde047;
+            border: 1px solid rgba(234, 179, 8, 0.4);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .ninja-target-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 4px 0;
+        }
+
+        .ninja-target-word {
+            font-size: clamp(22px, 3.8vw, 32px);
+            font-weight: 900;
+            color: #fde047;
+            font-family: 'Fredoka One', 'Cairo', sans-serif;
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .audio-replay-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: 2px solid #fef08a;
+            color: #1c0b03;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+        .audio-replay-btn:hover {
+            transform: scale(1.15);
+            background: #fbbf24;
+        }
+        .audio-replay-btn:active {
+            transform: scale(0.95);
+        }
+
+        .ninja-prompt-subtext {
+            font-size: 13px;
+            color: #fed7aa;
+            font-weight: 700;
+        }
+
+        /* لوحة إحصائيات النينجا باليمين */
+        .top-right-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .stat-pill {
+            background: rgba(30, 14, 7, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        }
+        .stat-pill.score-pill {
+            border-color: #facc15;
+        }
+        .stat-pill.hearts-pill {
+            border-color: #ef4444;
+        }
+        .stat-val {
+            font-size: 16px;
+            font-weight: 900;
+            color: #facc15;
+            letter-spacing: 1px;
+        }
+
+        .hearts-container {
+            display: flex;
+            gap: 4px;
+            font-size: 14px;
+            color: #ef4444;
+        }
+
+        /* أسفل الشاشة: شريط التلميح */
+        .bottom-hud-bar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .ninja-tip-pill {
+            background: rgba(30, 14, 7, 0.85);
+            border: 1.5px solid rgba(245, 158, 11, 0.4);
+            color: #fed7aa;
+            padding: 6px 18px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            animation: pulseHint 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseHint {
+            0%, 100% { transform: translateY(0); opacity: 0.9; }
+            50% { transform: translateY(-4px); opacity: 1; border-color: #facc15; }
+        }
+
+        /* النوافذ المنبثقة */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 4, 2, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: linear-gradient(180deg, #2b1307 0%, #150904 100%);
+            border: 3px solid #f59e0b;
+            border-radius: 26px;
+            padding: 28px;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(245, 158, 11, 0.35);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-card h2 {
+            font-size: clamp(22px, 3.5vw, 28px);
+            color: #facc15;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .modal-card p {
+            color: #fed7aa;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .grade-chips-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .grade-chip {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #fed7aa;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .grade-chip.active, .grade-chip:hover {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            border-color: #facc15;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(234, 88, 12, 0.5);
+        }
+
+        .btn-action-main {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            border: 3px solid #ffffff;
+            color: #1c0b03;
+            font-size: 18px;
+            font-weight: 900;
+            padding: 12px 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 0 #92400e, 0 8px 20px rgba(245, 158, 11, 0.4);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-action-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #92400e;
+        }
+
+        .celebration-popup {
+            position: absolute;
+            top: 48%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 40px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 25px #ea580c, 0 4px 15px rgba(0,0,0,0.8);
+            z-index: 50;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .celebration-popup.show {
+            transform: translate(-50%, -50%) scale(1.15);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- قماش الرسم التفاعلي لسيف النينجا وتقطيع الفواكه -->
+    <canvas id="ninja-canvas"></canvas>
+
+    <!-- واجهة المستخدم HUD -->
+    <div id="hud">
+        <div class="hud-header">
+            <div class="top-left-controls">
+                <button class="control-btn" onclick="goBackToEnglishPage()">
+                    <i class="fas fa-arrow-right"></i> البوابة 🇬🇧
+                </button>
+                <button class="control-btn" onclick="restartGame()">
+                    <i class="fas fa-redo"></i> جولة جديدة
+                </button>
+                <button class="control-btn sound-toggle-btn" id="btn-sound" onclick="toggleSound()">
+                    <i class="fas fa-volume-up" id="sound-icon"></i> <span id="sound-text">صوت عالي</span>
+                </button>
+            </div>
+
+            <!-- لوحة النقاط والقلوب والـ Combo -->
+            <div class="top-right-stats">
+                <div class="stat-pill score-pill">
+                    <span style="font-size: 12px; color: #fed7aa; font-weight: 800;">النقاط</span>
+                    <span class="stat-val" id="score-display">0</span>
+                    <i class="fas fa-trophy" style="color: #facc15;"></i>
+                </div>
+                <div class="stat-pill hearts-pill">
+                    <span style="font-size: 11px; color: #fed7aa; font-weight: 800;">المحاولات</span>
+                    <div class="hearts-container" id="hearts-display">
+                        <i class="fas fa-heart"></i>
+                        <i class="fas fa-heart"></i>
+                        <i class="fas fa-heart"></i>
+                    </div>
+                </div>
+                <div class="stat-pill" style="border-color: #ec4899;">
+                    <span style="font-size: 11px; color: #fed7aa; font-weight: 800;">المتتالية</span>
+                    <span class="stat-val" id="streak-display" style="color: #f472b6;">0x</span>
+                    <i class="fas fa-fire" style="color: #f43f5e;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- لفافة النينجا والهدف الإنجليزي المعلق -->
+        <div class="ninja-scroll-box" id="scroll-box">
+            <div class="scroll-top-bar">
+                <span class="band-badge" id="grade-badge">Band I • Elementary</span>
+                <span class="category-badge" id="category-badge">Ninja Slice</span>
+                <span style="font-size: 11px; color: #f59e0b; font-weight: 800;">
+                    الكلمة <span id="word-index-display">1</span> / <span id="word-total-display">15</span>
+                </span>
+            </div>
+
+            <div class="ninja-target-display">
+                <span class="ninja-target-word" id="ninja-target-word">Ready...</span>
+                <button class="audio-replay-btn" id="btn-play-audio" title="استمع للنطق الإنجليزي الصحيح (مسافة / R)">
+                    <i class="fas fa-volume-high"></i>
+                </button>
+            </div>
+
+            <div class="ninja-prompt-subtext" id="ninja-prompt-subtext">
+                مرّر سيفك في الهواء لتقطيع الفاكهة التي تحمل المعنى الصحيح وتفادَ القنابل!
+            </div>
+        </div>
+
+        <!-- أسفل الشاشة: شريط التلميح -->
+        <div class="bottom-hud-bar">
+            <div class="ninja-tip-pill">
+                ⚔️ اسحب إصبعك أو الفأرة بسرعة كالسيف لتقطيع الفاكهة الطائرة في الهواء!
+            </div>
+        </div>
+
+        <!-- نافذة التغذية المنبثقة -->
+        <div class="celebration-popup" id="celebration-text">JUICY SLICE! 🍉 +100</div>
+    </div>
+
+    <!-- نافذة البداية (Start Modal) -->
+    <div class="modal-overlay" id="start-modal">
+        <div class="modal-card">
+            <div style="font-size: 54px; margin-bottom: 6px;">⚔️🍉</div>
+            <h2>English Word Ninja</h2>
+            <h3 style="color: #f59e0b; font-size: 16px; margin-bottom: 12px; font-weight: 800;">نينجا تقطيع كلمات اللغة الإنجليزية (Band I)</h3>
+            <p>
+                استعد لدوجو النينجا! استمع للنطق الإنجليزي الصحيح لكلمات <b>Band I</b>، ومرّر سيفك اللامع لتقطيع الفاكهة التي تطابق المعنى قبل سقوطها!
+            </p>
+
+            <div style="font-size: 14px; font-weight: 800; color: #facc15; margin-bottom: 10px;">
+                اختر مرحلة الصف الدراسي:
+            </div>
+            <div class="grade-chips-container">
+                <button class="grade-chip active" onclick="selectGradeFilter('all', this)">جميع الصفوف (1 - 6)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('1-2', this)">الصفوف 1 - 2 (تأسيسي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('3-4', this)">الصفوف 3 - 4 (ابتدائي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('5-6', this)">الصفوف 5 - 6 (متقدم)</button>
+            </div>
+
+            <div style="background: rgba(43,19,7,0.7); padding: 12px; border-radius: 14px; margin-bottom: 18px; font-size: 13px; color: #fed7aa; text-align: right; border: 1px solid rgba(245, 158, 11, 0.25);">
+                🥋 <b>قواعد النينجا:</b><br>
+                • اسحب بسرعة فوق الفاكهة الصحيحة لتقطيعها لنصفين مع رذاذ العصير اللامع.<br>
+                • احذر من تقطيع القنابل 💣 أو الخيارات الخاطئة حتى لا تخسر من قلوبك الثلاثة.<br>
+                • حافظ على التقطيع المتتالي لتفعيل مضاعف Combo النينجا الخارق!
+            </div>
+
+            <button class="btn-action-main" onclick="startGame()">
+                <i class="fas fa-play"></i> انطلاق تحدي النينجا الآن!
+            </button>
+        </div>
+    </div>
+
+    <!-- نافذة نهاية الجولة (Game Over Modal) -->
+    <div class="modal-overlay hidden" id="gameover-modal">
+        <div class="modal-card">
+            <div style="font-size: 52px; margin-bottom: 8px;" id="gameover-emoji">🥋</div>
+            <h2 id="gameover-title">إتقان فنون النينجا!</h2>
+            <p id="gameover-desc">أداء بطولي متميز في معجم Band I للغة الإنجليزية.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                <div style="background: rgba(30,14,7,0.85); border: 2px solid #f59e0b; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #fed7aa;">النقاط النهائية</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #facc15;" id="final-score">0</div>
+                </div>
+                <div style="background: rgba(30,14,7,0.85); border: 2px solid #10b981; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #fed7aa;">فواكه مقطوعة</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #34d399;" id="final-correct">0/0</div>
+                </div>
+                <div style="background: rgba(30,14,7,0.85); border: 2px solid #ec4899; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #fed7aa;">أعلى Combo</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #f472b6;" id="final-streak">0x</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-action-main" onclick="restartGame()" style="flex: 1;">
+                    <i class="fas fa-redo"></i> العب مرة أخرى
+                </button>
+                <button class="control-btn" onclick="goBackToEnglishPage()" style="flex: 1; padding: 14px; font-size: 15px; justify-content: center;">
+                    <i class="fas fa-book-open"></i> بنك الكلمات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ------------------------------------------------------------------
+ * 1. BAND I COMPREHENSIVE CURRICULUM QUESTIONS (Grades 1 to 6)
+ * Aligned with the Israeli Ministry of Education English Curriculum.
+ * ------------------------------------------------------------------
+ */
+const NINJA_QUESTION_BANK = [
+    // Grades 1-2 Foundation:
+    { grade: '1-2', eng: 'Apple', category: 'Food', prompt: 'قطّع فاكهة Apple (تفاحة)', choices: ['تفاحة 🍎', 'موزة 🍌', 'برتقالة 🍊'], correct: 0, fruitType: 'apple' },
+    { grade: '1-2', eng: 'Cat', category: 'Animals', prompt: 'قطّع الكلمة التي تعني Cat (قطة)', choices: ['كلب 🐶', 'قطة 🐱', 'سمكة 🐟'], correct: 1, fruitType: 'watermelon' },
+    { grade: '1-2', eng: 'Sun', category: 'Nature', prompt: 'قطّع الكلمة التي تعني Sun (شمس)', choices: ['قمر 🌙', 'نجمة ⭐', 'شمس ☀️'], correct: 2, fruitType: 'orange' },
+    { grade: '1-2', eng: 'Book', category: 'School', prompt: 'قطّع معنى كلمة Book (كتاب)', choices: ['كتاب 📖', 'قلم ✏️', 'حقيبة 🎒'], correct: 0, fruitType: 'banana' },
+    { grade: '1-2', eng: 'Red', category: 'Colors', prompt: 'قطّع الفاكهة ذات اللون Red (أحمر)', choices: ['أزرق 🔵', 'أحمر 🔴', 'أخضر 🟢'], correct: 1, fruitType: 'strawberry' },
+    { grade: '1-2', eng: 'Mother', category: 'Family', prompt: 'قطّع معنى كلمة Mother (أم)', choices: ['أب 👨', 'أخت 👧', 'أم 👩'], correct: 2, fruitType: 'apple' },
+    { grade: '1-2', eng: 'School', category: 'Places', prompt: 'قطّع معنى كلمة School (مدرسة)', choices: ['مدرسة 🏫', 'حديقة 🌳', 'بيت 🏠'], correct: 0, fruitType: 'watermelon' },
+
+    // Grades 3-4 Elementary Core:
+    { grade: '3-4', eng: 'Water', category: 'Drinks', prompt: 'قطّع معنى كلمة Water (ماء)', choices: ['ماء 💧', 'حليب 🥛', 'عصير 🧃'], correct: 0, fruitType: 'watermelon' },
+    { grade: '3-4', eng: 'Happy', category: 'Feelings', prompt: 'قطّع معنى كلمة Happy (سعيد)', choices: ['حزين 😢', 'سعيد 😊', 'غاضب 😠'], correct: 1, fruitType: 'banana' },
+    { grade: '3-4', eng: 'Opposite of: COLD', category: 'Opposites', prompt: 'ما هو عكس Cold (بارد)؟', choices: ['Cool (معتدل)', 'Slow (بطيء)', 'Hot (حار ☀️)'], correct: 2, fruitType: 'orange' },
+    { grade: '3-4', eng: 'Winter', category: 'Seasons', prompt: 'قطّع معنى فصل Winter', choices: ['فصل الشتاء ❄️', 'فصل الصيف 🏖️', 'فصل الخريف 🍂'], correct: 0, fruitType: 'apple' },
+    { grade: '3-4', eng: 'Window', category: 'Home', prompt: 'قطّع معنى كلمة Window (نافذة)', choices: ['باب 🚪', 'نافذة 🪟', 'غرفة 🛋️'], correct: 1, fruitType: 'strawberry' },
+    { grade: '3-4', eng: 'Hand', category: 'Body', prompt: 'قطّع جزء الجسم Hand (يد)', choices: ['عين 👁️', 'قدم 🦶', 'يد ✋'], correct: 2, fruitType: 'orange' },
+    { grade: '3-4', eng: 'Breakfast', category: 'Meals', prompt: 'قطّع وجبة Breakfast', choices: ['وجبة الإفطار 🍳', 'وجبة الغداء 🍲', 'وجبة العشاء 🥪'], correct: 0, fruitType: 'banana' },
+
+    // Grades 5-6 Upper Elementary:
+    { grade: '5-6', eng: 'Doctor', category: 'Jobs', prompt: 'قطّع معنى مهنة Doctor (طبيب)', choices: ['معلم 👨‍🏫', 'طبيب 🩺', 'طيار 👨‍✈️'], correct: 1, fruitType: 'watermelon' },
+    { grade: '5-6', eng: 'Hospital', category: 'Places', prompt: 'قطّع معنى مكان Hospital (مستشفى)', choices: ['مستشفى 🏥', 'مكتبة 📚', 'مطار ✈️'], correct: 0, fruitType: 'apple' },
+    { grade: '5-6', eng: 'Opposite of: FAST', category: 'Opposites', prompt: 'ما هو عكس Fast (سريع)؟', choices: ['Quick', 'Strong', 'Slow (بطيء 🐢)'], correct: 2, fruitType: 'orange' },
+    { grade: '5-6', eng: 'Always', category: 'Adverbs', prompt: 'قطّع معنى Always (100% frequency)', choices: ['دائماً 🔄', 'أبداً 🚫', 'أحياناً ⏳'], correct: 0, fruitType: 'strawberry' },
+    { grade: '5-6', eng: 'Never', category: 'Adverbs', prompt: 'قطّع معنى Never (0% frequency)', choices: ['غالباً', 'أبداً / بالمرة ❌', 'دائماً'], correct: 1, fruitType: 'banana' },
+    { grade: '5-6', eng: 'Train', category: 'Transport', prompt: 'قطّع وسيلة النقل Train (قطار)', choices: ['طائرة ✈️', 'حافلة 🚌', 'قطار 🚆'], correct: 2, fruitType: 'watermelon' },
+    { grade: '5-6', eng: 'Beautiful', category: 'Adjectives', prompt: 'قطّع معنى صفة Beautiful', choices: ['جميل ورائع ✨', 'قبيح 👾', 'قديم 🏚️'], correct: 0, fruitType: 'apple' },
+    { grade: '5-6', eng: 'Well done', category: 'Expressions', prompt: 'قطّع معنى عبارة Well done', choices: ['حظاً موفقاً', 'أحسنت وعمل رائع! 🌟', 'معذرة'], correct: 1, fruitType: 'strawberry' }
+];
+
+/**
+ * ------------------------------------------------------------------
+ * 2. SOUND SYNTHESIS (Zero External Audio Dependencies)
+ * Procedural Web Audio API for Blade Swish, Juicy Slice, Bomb Boom
+ * ------------------------------------------------------------------
+ */
+let audioCtx = null;
+let isMuted = localStorage.getItem('english_ninja_muted') === 'true';
+
+function initAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtx = new AudioContext();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (isMuted) return;
+    try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'swish') {
+            // Ninja sword swoosh
+            const bufferSize = audioCtx.sampleRate * 0.15;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1200, now);
+            filter.frequency.exponentialRampToValueAtTime(400, now + 0.15);
+            filter.Q.value = 2.0;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+
+        } else if (type === 'slice') {
+            // Juicy fruit slice sound (sharp impact + wet splash)
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(450, now);
+            osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+            gain.gain.setValueAtTime(0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.18);
+
+        } else if (type === 'bomb') {
+            // Bomb explosion
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.35);
+
+        } else if (type === 'triumph') {
+            // Combo fanfare
+            [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.4);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.4);
+            });
+        }
+    } catch (e) {
+        console.warn('Audio issue:', e);
+    }
+}
+
+function toggleSound() {
+    isMuted = !isMuted;
+    localStorage.setItem('english_ninja_muted', isMuted ? 'true' : 'false');
+    updateSoundUI();
+}
+
+function updateSoundUI() {
+    const btn = document.getElementById('btn-sound');
+    const icon = document.getElementById('sound-icon');
+    const text = document.getElementById('sound-text');
+    if (isMuted) {
+        btn.classList.add('muted');
+        icon.className = 'fas fa-volume-mute';
+        text.innerText = 'مكتوم';
+    } else {
+        btn.classList.remove('muted');
+        icon.className = 'fas fa-volume-up';
+        text.innerText = 'صوت عالي';
+    }
+}
+
+// English Speech Pronunciation
+function speakEnglishWord(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+        window.speechSynthesis.cancel();
+        const cleanWord = text.replace(/Opposite of:\s*/i, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanWord);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.88;
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('TTS error:', e);
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 3. CANVAS NINJA ENGINE (Blade Slashes, Flying Fruits, Splatters)
+ * ------------------------------------------------------------------
+ */
+const canvas = document.getElementById('ninja-canvas');
+const ctx = canvas.getContext('2d');
+let canvasWidth = 0;
+let canvasHeight = 0;
+
+function resizeCanvas() {
+    canvasWidth = canvas.width = window.innerWidth;
+    canvasHeight = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Blade Slash Trail Points
+let bladePoints = [];
+let isMouseDown = false;
+
+// Flying items & juice splatters
+let flyingFruits = [];
+let slicedHalves = [];
+let juiceDrops = [];
+let floatingTexts = [];
+
+// Game State
+let currentGradeFilter = 'all';
+let currentFilteredQuestions = [];
+let currentQuestionIndex = 0;
+let currentScore = 0;
+let currentStreak = 0;
+let maxStreak = 0;
+let correctCount = 0;
+let lives = 3;
+let isGameActive = false;
+let waveSpawnTimer = null;
+
+function selectGradeFilter(filter, el) {
+    currentGradeFilter = filter;
+    document.querySelectorAll('.grade-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+function getFilteredQuestions() {
+    if (currentGradeFilter === 'all') {
+        return [...NINJA_QUESTION_BANK].sort(() => Math.random() - 0.5);
+    }
+    return NINJA_QUESTION_BANK.filter(q => q.grade === currentGradeFilter).sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+    initAudioContext();
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('gameover-modal').classList.add('hidden');
+
+    currentFilteredQuestions = getFilteredQuestions();
+    if (currentFilteredQuestions.length === 0) {
+        currentFilteredQuestions = [...NINJA_QUESTION_BANK];
+    }
+
+    currentQuestionIndex = 0;
+    currentScore = 0;
+    currentStreak = 0;
+    maxStreak = 0;
+    correctCount = 0;
+    lives = 3;
+
+    flyingFruits = [];
+    slicedHalves = [];
+    juiceDrops = [];
+    floatingTexts = [];
+    isGameActive = true;
+
+    updateStatsUI();
+    loadQuestion(currentQuestionIndex);
+}
+
+function restartGame() {
+    startGame();
+}
+
+function loadQuestion(index) {
+    if (index >= currentFilteredQuestions.length) {
+        endGame(true);
+        return;
+    }
+
+    const q = currentFilteredQuestions[index];
+    const totalQ = Math.min(15, currentFilteredQuestions.length);
+
+    document.getElementById('grade-badge').innerText = `Band I • Grade ${q.grade}`;
+    document.getElementById('category-badge').innerText = q.category;
+    document.getElementById('word-index-display').innerText = (index + 1);
+    document.getElementById('word-total-display').innerText = totalQ;
+
+    document.getElementById('ninja-target-word').innerText = q.eng;
+    document.getElementById('ninja-prompt-subtext').innerText = q.prompt;
+
+    // Auto pronunciation
+    speakEnglishWord(q.eng);
+
+    // Launch fruits from bottom
+    launchFruitWave(q);
+}
+
+// Fruit Color themes
+const FRUIT_THEMES = {
+    watermelon: { outer: '#15803d', inner: '#ef4444', seed: '#18181b', name: 'Watermelon' },
+    apple: { outer: '#dc2626', inner: '#fef08a', seed: '#78350f', name: 'Apple' },
+    orange: { outer: '#ea580c', inner: '#fb923c', seed: '#ffffff', name: 'Orange' },
+    banana: { outer: '#eab308', inner: '#fef9c3', seed: '#ca8a04', name: 'Banana' },
+    strawberry: { outer: '#b91c1c', inner: '#f87171', seed: '#fef08a', name: 'Strawberry' }
+};
+
+function launchFruitWave(q) {
+    flyingFruits = [];
+    const count = q.choices.length;
+    const spacing = canvasWidth / (count + 1);
+
+    for (let i = 0; i < count; i++) {
+        const fruitKey = ['watermelon', 'apple', 'orange', 'banana', 'strawberry'][i % 5];
+        const theme = FRUIT_THEMES[fruitKey];
+
+        // Launch upwards with parabolic trajectory
+        const startX = spacing * (i + 1) + (Math.random() * 40 - 20);
+        const targetX = canvasWidth * 0.5 + (i - 1) * (canvasWidth * 0.25);
+        const vx = (targetX - startX) * 0.015;
+        const vy = -(Math.random() * 4 + 14); // strong upward thrust
+
+        flyingFruits.push({
+            id: i,
+            x: startX,
+            y: canvasHeight + 50,
+            vx: vx,
+            vy: vy,
+            radius: Math.min(52, canvasWidth * 0.1),
+            label: q.choices[i],
+            isCorrect: (i === q.correct),
+            theme: theme,
+            rotation: Math.random() * Math.PI,
+            vRot: (Math.random() * 0.08 - 0.04),
+            gravity: 0.32,
+            sliced: false
+        });
+    }
+
+    // Add an occasional decoy Bomb (20% chance if score > 300)
+    if (currentScore > 300 && Math.random() < 0.35) {
+        flyingFruits.push({
+            id: 99,
+            x: canvasWidth * 0.5 + (Math.random() * 160 - 80),
+            y: canvasHeight + 50,
+            vx: (Math.random() * 2 - 1),
+            vy: -(Math.random() * 3 + 13),
+            radius: 38,
+            label: '💣 BOMB',
+            isBomb: true,
+            isCorrect: false,
+            rotation: 0,
+            vRot: 0.05,
+            gravity: 0.32,
+            sliced: false
+        });
+    }
+}
+
+/**
+ * Main Ninja Loop (Animation & Physics)
+ */
+function updateNinjaGame() {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    // 1. Draw Dojo Background Glow & Wood Texture
+    const bgGrad = ctx.createRadialGradient(canvasWidth * 0.5, canvasHeight * 0.4, 50, canvasWidth * 0.5, canvasHeight * 0.5, canvasWidth * 0.8);
+    bgGrad.addColorStop(0, '#2c1409');
+    bgGrad.addColorStop(0.6, '#180a03');
+    bgGrad.addColorStop(1, '#090301');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Decorative Dojo Bamboo/Line Slits
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.08)';
+    ctx.lineWidth = 3;
+    for (let x = 40; x < canvasWidth; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvasHeight);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    if (!isGameActive) {
+        requestAnimationFrame(updateNinjaGame);
+        return;
+    }
+
+    // 2. Update & Draw Flying Whole Fruits
+    let allFellOrSliced = true;
+    for (let i = flyingFruits.length - 1; i >= 0; i--) {
+        const f = flyingFruits[i];
+        if (f.sliced) continue;
+
+        f.x += f.vx;
+        f.y += f.vy;
+        f.vy += f.gravity;
+        f.rotation += f.vRot;
+
+        // Check if on screen
+        if (f.y < canvasHeight + 80) {
+            allFellOrSliced = false;
+        }
+
+        // Draw Fruit / Bomb
+        drawFruit(f);
+    }
+
+    // If all fruits fell down without being sliced, relaunch question so player doesn't get stuck!
+    if (allFellOrSliced && flyingFruits.length > 0) {
+        flyingFruits = [];
+        setTimeout(() => {
+            if (isGameActive) {
+                const q = currentFilteredQuestions[currentQuestionIndex];
+                if (q) launchFruitWave(q);
+            }
+        }, 600);
+    }
+
+    // 3. Update & Draw Sliced Fruit Halves
+    for (let i = slicedHalves.length - 1; i >= 0; i--) {
+        const h = slicedHalves[i];
+        h.x += h.vx;
+        h.y += h.vy;
+        h.vy += 0.38;
+        h.rotation += h.vRot;
+
+        drawFruitHalf(h);
+
+        if (h.y > canvasHeight + 100) {
+            slicedHalves.splice(i, 1);
+        }
+    }
+
+    // 4. Update & Draw Juice Splatter Drops
+    for (let i = juiceDrops.length - 1; i >= 0; i--) {
+        const d = juiceDrops[i];
+        d.x += d.vx;
+        d.y += d.vy;
+        d.vy += 0.25;
+        d.life -= 0.025;
+
+        if (d.life <= 0) {
+            juiceDrops.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = d.life;
+        ctx.fillStyle = d.color;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // 5. Update & Draw Floating Score Popups
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1.6;
+        ft.life -= 0.02;
+
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = ft.life;
+        ctx.fillStyle = ft.color;
+        ctx.font = '900 24px Fredoka One, Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 8;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+
+    // 6. Draw Glowing Katana Blade Slash Trail
+    drawBladeTrail();
+
+    requestAnimationFrame(updateNinjaGame);
+}
+
+function drawFruit(f) {
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rotation);
+
+    if (f.isBomb) {
+        // Draw Bomb 💣
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Fuse & Spark
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, -f.radius);
+        ctx.quadraticCurveTo(15, -f.radius - 15, 20, -f.radius - 20);
+        ctx.stroke();
+
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(20, -f.radius - 20, 6 + Math.random() * 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 13px Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💣 BOMB', 0, 0);
+
+    } else {
+        // Fruit Outer Rind
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = f.theme.outer;
+        ctx.beginPath();
+        ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Fruit Inner Flesh
+        ctx.fillStyle = f.theme.inner;
+        ctx.beginPath();
+        ctx.arc(0, 0, f.radius * 0.88, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Seeds
+        ctx.fillStyle = f.theme.seed;
+        ctx.beginPath();
+        ctx.arc(-10, -6, 3, 0, Math.PI * 2);
+        ctx.arc(10, 8, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Text Badge Label on Fruit (high contrast & clear)
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.roundRect = ctx.roundRect || function(x, y, w, h, r) {
+            ctx.fillRect(x, y, w, h);
+        };
+        const textWidth = ctx.measureText(f.label).width;
+        ctx.beginPath();
+        ctx.rect(-f.radius * 1.1, -14, f.radius * 2.2, 28);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 15px Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(f.label, 0, 0);
+    }
+
+    ctx.restore();
+}
+
+function drawFruitHalf(h) {
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    ctx.rotate(h.rotation);
+
+    // Draw Sliced Semicircle
+    ctx.fillStyle = h.theme.outer;
+    ctx.beginPath();
+    ctx.arc(0, 0, h.radius, 0, Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = h.theme.inner;
+    ctx.beginPath();
+    ctx.arc(0, 0, h.radius * 0.88, 0, Math.PI);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function drawBladeTrail() {
+    if (bladePoints.length < 2) return;
+
+    ctx.save();
+    for (let i = 1; i < bladePoints.length; i++) {
+        const p1 = bladePoints[i - 1];
+        const p2 = bladePoints[i];
+        const alpha = (i / bladePoints.length);
+
+        ctx.strokeStyle = `rgba(254, 240, 138, ${alpha})`;
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 15;
+        ctx.lineWidth = alpha * 9;
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Fade trail points
+    bladePoints.shift();
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 4. BLADE SLICING INTERSECTION LOGIC
+ * ------------------------------------------------------------------
+ */
+function recordBladePoint(x, y) {
+    bladePoints.push({ x: x, y: y });
+    if (bladePoints.length > 9) bladePoints.shift();
+
+    // Check intersection with any active flying fruit
+    if (bladePoints.length >= 2) {
+        const p1 = bladePoints[bladePoints.length - 2];
+        const p2 = bladePoints[bladePoints.length - 1];
+        checkBladeSlice(p1, p2);
+    }
+}
+
+function checkBladeSlice(p1, p2) {
+    for (let f of flyingFruits) {
+        if (f.sliced) continue;
+
+        // Distance from fruit center to segment p1->p2
+        const dist = distToSegment({ x: f.x, y: f.y }, p1, p2);
+        if (dist < f.radius + 12) {
+            sliceFruit(f);
+            break;
+        }
+    }
+}
+
+function distToSegment(p, v, w) {
+    const l2 = (v.x - w.x) * (v.x - w.x) + (v.y - w.y) * (v.y - w.y);
+    if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+}
+
+function sliceFruit(f) {
+    f.sliced = true;
+    playSound('swish');
+
+    if (f.isBomb) {
+        // SLICED BOMB! BOOM!
+        playSound('bomb');
+        spawnJuiceSplatter(f.x, f.y, '#ef4444', 35);
+        lives--;
+        currentStreak = 0;
+        updateStatsUI();
+
+        floatingTexts.push({
+            x: f.x,
+            y: f.y,
+            text: '💣 BOMB! -1 LIFE',
+            color: '#ef4444',
+            life: 1.0
+        });
+
+        if (lives <= 0) {
+            endGame(false);
+        }
+        return;
+    }
+
+    if (f.isCorrect) {
+        // PERFECT TARGET SLICE!
+        playSound('slice');
+        playSound('triumph');
+        spawnJuiceSplatter(f.x, f.y, f.theme.inner, 40);
+
+        // Split into 2 halves falling left and right
+        slicedHalves.push({
+            x: f.x - 15,
+            y: f.y,
+            vx: f.vx - 3.5,
+            vy: f.vy - 1,
+            radius: f.radius,
+            theme: f.theme,
+            rotation: f.rotation,
+            vRot: -0.1
+        });
+        slicedHalves.push({
+            x: f.x + 15,
+            y: f.y,
+            vx: f.vx + 3.5,
+            vy: f.vy - 1,
+            radius: f.radius,
+            theme: f.theme,
+            rotation: f.rotation + Math.PI,
+            vRot: 0.1
+        });
+
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        correctCount++;
+
+        const comboMultiplier = Math.min(3, 1 + Math.floor(currentStreak / 3));
+        const pts = 100 * comboMultiplier;
+        currentScore += pts;
+
+        floatingTexts.push({
+            x: f.x,
+            y: f.y,
+            text: `+${pts} PTS! 🍉`,
+            color: '#facc15',
+            life: 1.0
+        });
+
+        const celebration = document.getElementById('celebration-text');
+        celebration.innerText = currentStreak >= 3 ? `🔥 COMBO x${comboMultiplier}! +${pts}` : `JUICY SLICE! 🍉 +${pts}`;
+        celebration.classList.add('show');
+        setTimeout(() => celebration.classList.remove('show'), 750);
+
+        updateStatsUI();
+
+        // Advance to next question after splash animation
+        flyingFruits = [];
+        setTimeout(() => {
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }, 900);
+
+    } else {
+        // SLICED WRONG FRUIT!
+        playSound('slice');
+        spawnJuiceSplatter(f.x, f.y, '#94a3b8', 20);
+        lives--;
+        currentStreak = 0;
+        updateStatsUI();
+
+        floatingTexts.push({
+            x: f.x,
+            y: f.y,
+            text: 'WRONG! -1 LIFE',
+            color: '#ef4444',
+            life: 1.0
+        });
+
+        if (lives <= 0) {
+            endGame(false);
+        }
+    }
+}
+
+function spawnJuiceSplatter(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        juiceDrops.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 2,
+            size: Math.random() * 5 + 3,
+            color: color,
+            life: 1.0
+        });
+    }
+}
+
+function updateStatsUI() {
+    document.getElementById('score-display').innerText = currentScore;
+    document.getElementById('streak-display').innerText = `${currentStreak}x`;
+
+    const heartsContainer = document.getElementById('hearts-display');
+    let heartsHtml = '';
+    for (let i = 0; i < 3; i++) {
+        heartsHtml += (i < lives) ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart" style="color:#64748b;"></i>';
+    }
+    heartsContainer.innerHTML = heartsHtml;
+}
+
+function endGame(victory) {
+    isGameActive = false;
+    document.getElementById('gameover-modal').classList.remove('hidden');
+    document.getElementById('final-score').innerText = currentScore;
+    document.getElementById('final-correct').innerText = `${correctCount}/${currentQuestionIndex + 1}`;
+    document.getElementById('final-streak').innerText = `${maxStreak}x`;
+
+    const emojiEl = document.getElementById('gameover-emoji');
+    const titleEl = document.getElementById('gameover-title');
+    const descEl = document.getElementById('gameover-desc');
+
+    if (victory || correctCount >= 10) {
+        emojiEl.innerText = '🥋⚔️';
+        titleEl.innerText = 'معلم النينجا الأكبر!';
+        descEl.innerText = 'ما شاء الله! سرعة سيف خاطفة وإتقان رائع لمعجم Band I للغة الإنجليزية.';
+    } else {
+        emojiEl.innerText = '🍉';
+        titleEl.innerText = 'مجهود طيب، واصل التدريب!';
+        descEl.innerText = 'أداء واعد! درّب سيفك وراجع الكلمات لتصل إلى مرتبة النينجا الذهبي.';
+    }
+}
+
+function goBackToEnglishPage() {
+    if (window.top !== window.self) {
+        try {
+            window.top.location.hash = '#english';
+        } catch (e) {
+            window.location.href = '/#/english';
+        }
+    } else {
+        window.location.href = '/#/english';
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 5. CONTROLS & LISTENERS (Mouse & Touch Slicing)
+ * ------------------------------------------------------------------
+ */
+window.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    bladePoints = [];
+    recordBladePoint(e.clientX, e.clientY);
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (isMouseDown) {
+        recordBladePoint(e.clientX, e.clientY);
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    isMouseDown = false;
+});
+
+// Touch Events for Mobile / Tablet
+window.addEventListener('touchstart', (e) => {
+    bladePoints = [];
+    if (e.touches.length > 0) {
+        recordBladePoint(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+        recordBladePoint(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+// Keyboard shortcut to replay audio
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === 'r' || e.key === 'R') {
+        const currentQ = currentFilteredQuestions[currentQuestionIndex];
+        if (currentQ) speakEnglishWord(currentQ.eng);
+    } else if (e.key === 'm' || e.key === 'M') {
+        toggleSound();
+    }
+});
+
+document.getElementById('btn-play-audio').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    if (currentQ) speakEnglishWord(currentQ.eng);
+});
+
+// Setup on boot
+window.onload = () => {
+    updateSoundUI();
+    resizeCanvas();
+    updateNinjaGame();
+};
+</script>
+</body>
+</html>
