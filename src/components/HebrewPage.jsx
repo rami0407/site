@@ -5,13 +5,13 @@ export default function HebrewPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('game'); // 'game' | 'vocab' | 'curriculum'
+  const [activeTab, setActiveTab] = useState('ninja'); // 'ninja' | 'penalty' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة العبرية | ركلات الترجيح وبنك الكلمات ⚽🇮🇱';
+    document.title = 'بوابة اللغة العبرية | نينجا الكلمات وركلات الترجيح ⚔️⚽🇮🇱';
   }, []);
 
   const currentGradeWords = VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -123,17 +123,35 @@ export default function HebrewPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => setActiveTab('game')}
+              onClick={() => setActiveTab('ninja')}
               style={{
-                background: activeTab === 'game' ? 'linear-gradient(135deg, #22c55e, #15803d)' : 'rgba(15, 23, 42, 0.65)',
+                background: activeTab === 'ninja' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'rgba(15, 23, 42, 0.65)',
                 color: '#fff',
-                border: activeTab === 'game' ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.2)',
+                border: activeTab === 'ninja' ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.2)',
                 padding: '8px 16px',
                 borderRadius: '99px',
-                fontWeight: '800',
+                fontWeight: '900',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'game' ? '0 4px 14px rgba(34, 197, 94, 0.4)' : 'none',
+                boxShadow: activeTab === 'ninja' ? '0 4px 14px rgba(34, 197, 94, 0.5)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              ⚔️ نينجا الكلمات (Word Ninja)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('penalty')}
+              style={{
+                background: activeTab === 'penalty' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#fff',
+                border: activeTab === 'penalty' ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'penalty' ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
                 transition: 'all 0.2s'
               }}
             >
@@ -143,27 +161,28 @@ export default function HebrewPage() {
               type="button"
               onClick={() => setActiveTab('vocab')}
               style={{
-                background: activeTab === 'vocab' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'rgba(15, 23, 42, 0.65)',
+                background: activeTab === 'vocab' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : 'rgba(15, 23, 42, 0.65)',
                 color: '#fff',
-                border: activeTab === 'vocab' ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                border: activeTab === 'vocab' ? '2px solid #c084fc' : '1px solid rgba(255,255,255,0.2)',
                 padding: '8px 16px',
                 borderRadius: '99px',
-                fontWeight: '800',
+                fontWeight: '900',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'vocab' ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+                boxShadow: activeTab === 'vocab' ? '0 4px 14px rgba(124, 58, 237, 0.4)' : 'none',
                 transition: 'all 0.2s'
               }}
             >
               📖 بنك الكلمات والمعاني
             </button>
             <a
-              href="/hebrew-penalty.html?v=2"
+              href={activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                background: 'linear-gradient(135deg, #eab308, #ca8a04)',
-                color: '#0f172a',
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1.5px solid rgba(255, 255, 255, 0.3)',
+                color: '#ffffff',
                 padding: '8px 16px',
                 borderRadius: '99px',
                 fontWeight: '900',
@@ -172,7 +191,7 @@ export default function HebrewPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 4px 14px rgba(234, 179, 8, 0.4)',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
                 transition: 'transform 0.15s'
               }}
             >
@@ -216,10 +235,10 @@ export default function HebrewPage() {
               🏆 المنهاج المعتمد للوسط العربي في إسرائيل (الصفوف 1 - 6)
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم العبريَّة باللعبِ والتسديدِ نحو المرمى! ⚽🥅
+              تعلَّم العبريَّة باللعبِ ونينجا الكلمات وركلات الترجيح! ⚔️⚽🥅
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#dcfce7', lineHeight: '1.7', fontWeight: '600' }}>
-              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية لتعزيز الثروة اللغوية العبرية (אוצר מילים)، ضبط النطق السليم مع التشكيل الكامل (הַנִּקּוּד)، واكتساب المعاني بأسلوب رياضي ممتع وحماسي.
+              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>نينجا تقطيع الكلمات العبرية (Hebrew Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
             </p>
           </div>
 
@@ -233,24 +252,168 @@ export default function HebrewPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>6</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>صفوف دراسية</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>2</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
             <div>
               <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#4ade80' }}>80+</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>كلمة أساسية</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>كلمة مشكولة</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#38bdf8' }}>3</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>أنماط تسديد</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#38bdf8' }}>6</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>صفوف دراسية</div>
             </div>
           </div>
         </div>
 
-        {/* TAB 1: INTERACTIVE GAME ARENA */}
-        {activeTab === 'game' && (
+        {/* TAB 0: HEBREW WORD NINJA GAME */}
+        {activeTab === 'ninja' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#011812',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85), 0 0 0 3px rgba(34, 197, 94, 0.45)',
+              border: '2px solid rgba(250, 204, 21, 0.5)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #064e3b, #022c22)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(34, 197, 94, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>⚔️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#facc15', fontWeight: '900' }}>
+                      Hebrew Word Ninja — نينجا تقطيع الكلمات العبرية بالتشكيل
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#86efac' }}>
+                      استمع للنطق العبري السليم، قطّع الفاكهة التي تطابق المعنى المطلوب وتفادَ القنابل!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/hebrew-ninja.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                      color: '#ffffff',
+                      border: '1px solid #facc15',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(34, 197, 94, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/hebrew-ninja.html?v=1"
+                  title="Hebrew Word Ninja"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(2, 44, 34, 0.8)',
+                border: '1.5px solid rgba(250, 204, 21, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>⚔️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. سيف النينجا الخاطف
+                  </h4>
+                  <p style={{ margin: 0, color: '#dcfce7', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اسحب إصبعك على شاشة اللمس أو حرّك الفأرة بسرعة لتقطيع الفاكهة الطائرة في الهواء لنصفين.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(2, 44, 34, 0.8)',
+                border: '1.5px solid rgba(74, 222, 128, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🍉</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#4ade80', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. الكلمات العبرية بالتشكيل (הַנִּקּוּד)
+                  </h4>
+                  <p style={{ margin: 0, color: '#dcfce7', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اقرأ الكلمة أو استمع لنطقها، ثم قطّع فقط الفاكهة التي تحمل الكلمة العبرية المطابقة للمعنى المطلوب.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(2, 44, 34, 0.8)',
+                border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>💣</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#f87171', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. تفادي القنابل وسلسلة الـ Combo
+                  </h4>
+                  <p style={{ margin: 0, color: '#dcfce7', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    احذر من لمس القنابل 💣 حتى لا تفقد قلوبك، واستمر في تقطيع الأهداف المتتالية لرفع مضاعف النقاط x2 و x3!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 1: INTERACTIVE PENALTY GAME ARENA */}
+        {activeTab === 'penalty' && (
           <section className="fade-in">
             <div style={{
               background: '#030712',

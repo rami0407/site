@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hebrew Word Ninja ⚔️ נינג'ת המילים - نينجا تقطيع الكلمات العبرية</title>
+    <!-- خط Cairo ومكتبة أيقونات FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Fredoka+One&family=Assistant:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #062b1e;
+            color: #ffffff;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #064e3b 0%, #022c22 70%, #011812 100%);
+        }
+
+        /* قماش الرسم Canvas للنينجا والفواكه المتطايرة وأثر السيف */
+        #ninja-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة المستخدم العلوية HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: linear-gradient(180deg, #065f46, #022c22);
+            border: 2px solid rgba(74, 222, 128, 0.4);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .control-btn:hover {
+            border-color: #4ade80;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(74, 222, 128, 0.4);
+        }
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+
+        .sound-toggle-btn.muted {
+            background: linear-gradient(180deg, #475569, #334155);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        /* شاشة مهمة النينجا العبرية (Dojo Scroll Target) */
+        .ninja-scroll-box {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 650px;
+            background: linear-gradient(180deg, rgba(2, 44, 34, 0.96), rgba(6, 78, 59, 0.96));
+            border: 3px solid #facc15;
+            border-radius: 20px;
+            padding: 10px 18px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(250, 204, 21, 0.35);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        .scroll-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-bottom: 1px dashed rgba(250, 204, 21, 0.3);
+            padding-bottom: 4px;
+        }
+
+        .grade-badge {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            border: 1px solid #4ade80;
+        }
+
+        .category-badge {
+            background: rgba(250, 204, 21, 0.2);
+            color: #fde047;
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .ninja-target-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 4px 0;
+        }
+
+        .ninja-target-word {
+            font-size: clamp(22px, 3.8vw, 32px);
+            font-weight: 900;
+            color: #facc15;
+            font-family: 'Cairo', 'Assistant', sans-serif;
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .audio-replay-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: 2px solid #a7f3d0;
+            color: #ffffff;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+        .audio-replay-btn:hover {
+            transform: scale(1.15);
+            background: #059669;
+        }
+        .audio-replay-btn:active {
+            transform: scale(0.95);
+        }
+
+        .ninja-prompt-subtext {
+            font-size: 13px;
+            color: #dcfce7;
+            font-weight: 700;
+        }
+
+        /* لوحة إحصائيات النينجا باليمين */
+        .top-right-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .stat-pill {
+            background: rgba(2, 44, 34, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        }
+        .stat-pill.score-pill {
+            border-color: #facc15;
+        }
+        .stat-pill.hearts-pill {
+            border-color: #ef4444;
+        }
+        .stat-val {
+            font-size: 16px;
+            font-weight: 900;
+            color: #facc15;
+            letter-spacing: 1px;
+        }
+
+        .hearts-container {
+            display: flex;
+            gap: 4px;
+            font-size: 14px;
+            color: #ef4444;
+        }
+
+        /* أسفل الشاشة: شريط التلميح */
+        .bottom-hud-bar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .ninja-tip-pill {
+            background: rgba(2, 44, 34, 0.85);
+            border: 1.5px solid rgba(74, 222, 128, 0.4);
+            color: #bbf7d0;
+            padding: 6px 18px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            animation: pulseHint 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseHint {
+            0%, 100% { transform: translateY(0); opacity: 0.9; }
+            50% { transform: translateY(-4px); opacity: 1; border-color: #facc15; }
+        }
+
+        /* النوافذ المنبثقة */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 44, 34, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
+            border: 3px solid #facc15;
+            border-radius: 26px;
+            padding: 28px;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(250, 204, 21, 0.35);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-card h2 {
+            font-size: clamp(22px, 3.5vw, 28px);
+            color: #facc15;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .modal-card p {
+            color: #dcfce7;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .grade-chips-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .grade-chip {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #dcfce7;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .grade-chip.active, .grade-chip:hover {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            border-color: #facc15;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+        }
+
+        .btn-action-main {
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+            border: 3px solid #ffffff;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 900;
+            padding: 12px 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 0 #15803d, 0 8px 20px rgba(34, 197, 94, 0.4);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-action-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #15803d;
+        }
+
+        .celebration-popup {
+            position: absolute;
+            top: 48%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 40px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 25px #22c55e, 0 4px 15px rgba(0,0,0,0.8);
+            z-index: 50;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .celebration-popup.show {
+            transform: translate(-50%, -50%) scale(1.15);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- قماش الرسم التفاعلي لسيف النينجا وتقطيع الفواكه العبرية -->
+    <canvas id="ninja-canvas"></canvas>
+
+    <!-- واجهة المستخدم HUD -->
+    <div id="hud">
+        <div class="hud-header">
+            <div class="top-left-controls">
+                <button class="control-btn" onclick="goBackToHebrewPage()">
+                    <i class="fas fa-arrow-right"></i> البوابة 🇮🇱
+                </button>
+                <button class="control-btn" onclick="restartGame()">
+                    <i class="fas fa-redo"></i> جولة جديدة
+                </button>
+                <button class="control-btn sound-toggle-btn" id="btn-sound" onclick="toggleSound()">
+                    <i class="fas fa-volume-up" id="sound-icon"></i> <span id="sound-text">صوت عالي</span>
+                </button>
+            </div>
+
+            <!-- لوحة النقاط والقلوب والـ Combo -->
+            <div class="top-right-stats">
+                <div class="stat-pill score-pill">
+                    <span style="font-size: 12px; color: #dcfce7; font-weight: 800;">النقاط</span>
+                    <span class="stat-val" id="score-display">0</span>
+                    <i class="fas fa-trophy" style="color: #facc15;"></i>
+                </div>
+                <div class="stat-pill hearts-pill">
+                    <span style="font-size: 11px; color: #dcfce7; font-weight: 800;">المحاولات</span>
+                    <div class="hearts-container" id="hearts-display">
+                        <i class="fas fa-heart"></i>
+                        <i class="fas fa-heart"></i>
+                        <i class="fas fa-heart"></i>
+                    </div>
+                </div>
+                <div class="stat-pill" style="border-color: #38bdf8;">
+                    <span style="font-size: 11px; color: #dcfce7; font-weight: 800;">المتتالية</span>
+                    <span class="stat-val" id="streak-display" style="color: #38bdf8;">0x</span>
+                    <i class="fas fa-fire" style="color: #facc15;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- لفافة النينجا والهدف العبري المعلق -->
+        <div class="ninja-scroll-box" id="scroll-box">
+            <div class="scroll-top-bar">
+                <span class="grade-badge" id="grade-badge">عبري • ابتدائي</span>
+                <span class="category-badge" id="category-badge">נינג'ת המילים</span>
+                <span style="font-size: 11px; color: #facc15; font-weight: 800;">
+                    الكلمة <span id="word-index-display">1</span> / <span id="word-total-display">15</span>
+                </span>
+            </div>
+
+            <div class="ninja-target-display">
+                <span class="ninja-target-word" id="ninja-target-word">Ready...</span>
+                <button class="audio-replay-btn" id="btn-play-audio" title="استمع للنطق العبري الصحيح (مسافة / R)">
+                    <i class="fas fa-volume-high"></i>
+                </button>
+            </div>
+
+            <div class="ninja-prompt-subtext" id="ninja-prompt-subtext">
+                مرّر سيفك في الهواء لتقطيع الفاكهة التي تحمل الكلمة العبرية المطابقة وتفادَ القنابل!
+            </div>
+        </div>
+
+        <!-- أسفل الشاشة: شريط التلميح -->
+        <div class="bottom-hud-bar">
+            <div class="ninja-tip-pill">
+                ⚔️ اسحب إصبعك أو الفأرة بسرعة لتقطيع الفاكهة العبرية في الهواء!
+            </div>
+        </div>
+
+        <!-- نافذة التغذية المنبثقة -->
+        <div class="celebration-popup" id="celebration-text">כל הכבוד! 🍉 +100</div>
+    </div>
+
+    <!-- نافذة البداية (Start Modal) -->
+    <div class="modal-overlay" id="start-modal">
+        <div class="modal-card">
+            <div style="font-size: 54px; margin-bottom: 6px;">⚔️🍉</div>
+            <h2>Hebrew Word Ninja</h2>
+            <h3 style="color: #4ade80; font-size: 16px; margin-bottom: 12px; font-weight: 800;">נינג'ת המילים העברית - نينجا الكلمات العبرية</h3>
+            <p>
+                تحدَّ سرعتك في دوجو النينجا للغة العبرية! استمع للنطق العبري الصحيح مع التشكيل الكامل (הַנִּקּוּד)، ومرّر سيفك الذهبي لتقطيع الفاكهة التي تطابق المعنى قبل سقوطها!
+            </p>
+
+            <div style="font-size: 14px; font-weight: 800; color: #facc15; margin-bottom: 10px;">
+                اختر مرحلة الصف الدراسي:
+            </div>
+            <div class="grade-chips-container">
+                <button class="grade-chip active" onclick="selectGradeFilter('all', this)">جميع الصفوف (1 - 6)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('1-2', this)">الصفوف 1 - 2 (تأسيسي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('3-4', this)">الصفوف 3 - 4 (ابتدائي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('5-6', this)">الصفوف 5 - 6 (متقدم)</button>
+            </div>
+
+            <div style="background: rgba(2,44,34,0.7); padding: 12px; border-radius: 14px; margin-bottom: 18px; font-size: 13px; color: #dcfce7; text-align: right; border: 1px solid rgba(74, 222, 128, 0.25);">
+                🥋 <b>قواعد النينجا:</b><br>
+                • اسحب بسرعة فوق الفاكهة العبرية الصحيحة لتقطيعها لنصفين مع رذاذ العصير المتطاير.<br>
+                • احذر من تقطيع القنابل 💣 أو الخيارات الخاطئة حتى لا تخسر من قلوبك الثلاثة.<br>
+                • حافظ على التقطيع المتتالي لتفعيل مضاعف Combo النينجا الخارق!
+            </div>
+
+            <button class="btn-action-main" onclick="startGame()">
+                <i class="fas fa-play"></i> انطلاق تحدي النينجا الآن!
+            </button>
+        </div>
+    </div>
+
+    <!-- نافذة نهاية الجولة (Game Over Modal) -->
+    <div class="modal-overlay hidden" id="gameover-modal">
+        <div class="modal-card">
+            <div style="font-size: 52px; margin-bottom: 8px;" id="gameover-emoji">🥋</div>
+            <h2 id="gameover-title">إتقان فنون النينجا العبرية!</h2>
+            <p id="gameover-desc">أداء بطولي متميز في معجم المنهاج العبري للمرحلة الابتدائية.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                <div style="background: rgba(2,44,34,0.85); border: 2px solid #facc15; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #dcfce7;">النقاط النهائية</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #facc15;" id="final-score">0</div>
+                </div>
+                <div style="background: rgba(2,44,34,0.85); border: 2px solid #22c55e; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #dcfce7;">فواكه مقطوعة</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #4ade80;" id="final-correct">0/0</div>
+                </div>
+                <div style="background: rgba(2,44,34,0.85); border: 2px solid #38bdf8; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #dcfce7;">أعلى Combo</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #38bdf8;" id="final-streak">0x</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-action-main" onclick="restartGame()" style="flex: 1;">
+                    <i class="fas fa-redo"></i> العب مرة أخرى
+                </button>
+                <button class="control-btn" onclick="goBackToHebrewPage()" style="flex: 1; padding: 14px; font-size: 15px; justify-content: center;">
+                    <i class="fas fa-book-open"></i> بنك الكلمات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ------------------------------------------------------------------
+ * 1. AUTHENTIC HEBREW CURRICULUM QUESTIONS (Grades 1 to 6)
+ * Aligned with the Israeli Ministry of Education Curriculum for Hebrew in Arab Elementary Schools.
+ * ------------------------------------------------------------------
+ */
+const HEBREW_NINJA_BANK = [
+    // Grades 1-2 Foundation:
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: مدرسة', hebTarget: 'בֵּית סֵפֶר', choices: ['בֵּית סֵפֶר', 'בַּיִת', 'גַּן'], correct: 0 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: شمس', hebTarget: 'שֶׁמֶשׁ', choices: ['יָרֵחַ', 'שֶׁמֶשׁ', 'כּוֹכָב'], correct: 1 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: كلب', hebTarget: 'כֶּלֶב', choices: ['חָתוּל', 'דָּג', 'כֶּלֶב'], correct: 2 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: كتاب', hebTarget: 'סֵפֶר', choices: ['סֵפֶר', 'מַחְבֶּרֶת', 'עִפָּרוֹן'], correct: 0 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: ماء', hebTarget: 'מַיִם', choices: ['חָלָב', 'מַיִם', 'מִיץ'], correct: 1 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: معلّم', hebTarget: 'מוֹרֶה', choices: ['תַּלְמִיד', 'נַהָג', 'מוֹרֶה'], correct: 2 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: سلام / مرحباً', hebTarget: 'שָׁלוֹם', choices: ['שָׁלוֹם', 'תּוֹדָה', 'בֹּקֶר'], correct: 0 },
+    { grade: '1-2', arPrompt: 'قطّع الكلمة العبرية التي تعني: أم / والدة', hebTarget: 'אִמָּא', choices: ['אַבָּא', 'אִמָּא', 'אָחוֹת'], correct: 1 },
+
+    // Grades 3-4 Elementary Core:
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: عائلة / أسرة', hebTarget: 'מִשְׁפָּחָה', choices: ['כִּתָּה', 'מִשְׁפָּחָה', 'חֲבֵרִים'], correct: 1 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: صديق', hebTarget: 'חָבֵר', choices: ['אוֹיֵב', 'שָׁכֵן', 'חָבֵר'], correct: 2 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: فصل الشتاء', hebTarget: 'חֹרֶף', choices: ['חֹרֶף', 'קַיִץ', 'סְתָיו'], correct: 0 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: نافذة / شباك', hebTarget: 'חַלּוֹן', choices: ['דֶּלֶת', 'חַלּוֹן', 'קִיר'], correct: 1 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: مطر', hebTarget: 'גֶּשֶׁם', choices: ['שֶׁלֶג', 'רוּחַ', 'גֶּשֶׁם'], correct: 2 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: خبز', hebTarget: 'לֶחֶם', choices: ['לֶחֶם', 'גְּבִינָה', 'בֵּיצָה'], correct: 0 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: تفاحة', hebTarget: 'תַּפּוּחַ', choices: ['בָּנָנָה', 'תַּפּוּחַ', 'תַּפּוּז'], correct: 1 },
+    { grade: '3-4', arPrompt: 'قطّع الكلمة العبرية التي تعني: وجبة الإفطار', hebTarget: 'אֲרוּחַת בֹּקֶר', choices: ['אֲרוּחַת צָהֳרַיִם', 'אֲרוּחַת עֶרֶב', 'אֲרוּחַת בֹּקֶר'], correct: 2 },
+
+    // Grades 5-6 Upper Elementary:
+    { grade: '5-6', arPrompt: 'قطّع الكلمة العبرية التي تعني: طبيب', hebTarget: 'רוֹפֵא', choices: ['רוֹפֵא', 'שׁוֹטֵר', 'טַיָּס'], correct: 0 },
+    { grade: '5-6', arPrompt: 'قطّع الكلمة العبرية التي تعني: مستشفى', hebTarget: 'בֵּית חוֹלִים', choices: ['סִפְרִיָּה', 'בֵּית חוֹלִים', 'תַּחֲנָה'], correct: 1 },
+    { grade: '5-6', arPrompt: 'قطّع الكلمة العبرية التي تعني: قطار', hebTarget: 'רַכֶּבֶת', choices: ['אוֹטוֹבּוּס', 'מְטוֹס', 'רַכֶּבֶת'], correct: 2 },
+    { grade: '5-6', arPrompt: 'قطّع الفعل العبري الذي يعني: يقرأُ', hebTarget: 'קוֹרֵא', choices: ['קוֹרֵא', 'כּוֹתֵב', 'לוֹמֵד'], correct: 0 },
+    { grade: '5-6', arPrompt: 'قطّع الفعل العبري الذي يعني: يكتبُ', hebTarget: 'כּוֹתֵב', choices: ['מְשַׂחֵק', 'כּוֹתֵב', 'שׁוֹתֶה'], correct: 1 },
+    { grade: '5-6', arPrompt: 'قطّع الكلمة العبرية التي تعني: قرية (مثل مشيرفة)', hebTarget: 'כְּפָר', choices: ['עִיר', 'מְדִינָה', 'כְּפָר'], correct: 2 },
+    { grade: '5-6', arPrompt: 'قطّع العبارة العبرية التي تعني: كل الاحترام / أحسنت!', hebTarget: 'כָּל הַכָּבוֹד', choices: ['כָּל הַכָּבוֹד', 'בְּהַצְלָחָה', 'סְלִיחָה'], correct: 0 },
+    { grade: '5-6', arPrompt: 'قطّع العبارة العبرية التي تعني: بالتوفيق / بالنجاح', hebTarget: 'בְּהַצְלָחָה', choices: ['בְּתֵאָבוֹן', 'בְּהַצְלָחָה', 'שָׁלוֹם'], correct: 1 }
+];
+
+/**
+ * ------------------------------------------------------------------
+ * 2. SOUND SYNTHESIS (Zero External Audio Dependencies)
+ * Procedural Web Audio API for Katana Swish, Juicy Slice, Bomb Boom
+ * ------------------------------------------------------------------
+ */
+let audioCtx = null;
+let isMuted = localStorage.getItem('hebrew_ninja_muted') === 'true';
+
+function initAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtx = new AudioContext();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (isMuted) return;
+    try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'swish') {
+            // Ninja sword swoosh
+            const bufferSize = audioCtx.sampleRate * 0.15;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1300, now);
+            filter.frequency.exponentialRampToValueAtTime(450, now + 0.15);
+            filter.Q.value = 2.5;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+
+        } else if (type === 'slice') {
+            // Juicy fruit slice sound
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(480, now);
+            osc.frequency.exponentialRampToValueAtTime(140, now + 0.18);
+            gain.gain.setValueAtTime(0.65, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.18);
+
+        } else if (type === 'bomb') {
+            // Bomb explosion
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.exponentialRampToValueAtTime(35, now + 0.35);
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.35);
+
+        } else if (type === 'triumph') {
+            // Success fanfare
+            [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.4);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.4);
+            });
+        }
+    } catch (e) {
+        console.warn('Audio issue:', e);
+    }
+}
+
+function toggleSound() {
+    isMuted = !isMuted;
+    localStorage.setItem('hebrew_ninja_muted', isMuted ? 'true' : 'false');
+    updateSoundUI();
+}
+
+function updateSoundUI() {
+    const btn = document.getElementById('btn-sound');
+    const icon = document.getElementById('sound-icon');
+    const text = document.getElementById('sound-text');
+    if (isMuted) {
+        btn.classList.add('muted');
+        icon.className = 'fas fa-volume-mute';
+        text.innerText = 'مكتوم';
+    } else {
+        btn.classList.remove('muted');
+        icon.className = 'fas fa-volume-up';
+        text.innerText = 'صوت عالي';
+    }
+}
+
+// Hebrew Native Speech Pronunciation
+function speakHebrewWord(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+        window.speechSynthesis.cancel();
+        // Strip niqqud so the speech synthesis engine pronounces cleanly
+        const cleanHebrew = text.replace(/[\u0591-\u05C7]/g, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanHebrew);
+        utterance.lang = 'he-IL';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('TTS error:', e);
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 3. CANVAS NINJA ENGINE (Blade Slashes, Flying Hebrew Fruits, Splatters)
+ * ------------------------------------------------------------------
+ */
+const canvas = document.getElementById('ninja-canvas');
+const ctx = canvas.getContext('2d');
+let canvasWidth = 0;
+let canvasHeight = 0;
+
+function resizeCanvas() {
+    canvasWidth = canvas.width = window.innerWidth;
+    canvasHeight = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Blade Slash Trail Points
+let bladePoints = [];
+let isMouseDown = false;
+
+// Flying items & juice splatters
+let flyingFruits = [];
+let slicedHalves = [];
+let juiceDrops = [];
+let floatingTexts = [];
+
+// Game State
+let currentGradeFilter = 'all';
+let currentFilteredQuestions = [];
+let currentQuestionIndex = 0;
+let currentScore = 0;
+let currentStreak = 0;
+let maxStreak = 0;
+let correctCount = 0;
+let lives = 3;
+let isGameActive = false;
+
+function selectGradeFilter(filter, el) {
+    currentGradeFilter = filter;
+    document.querySelectorAll('.grade-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+function getFilteredQuestions() {
+    if (currentGradeFilter === 'all') {
+        return [...HEBREW_NINJA_BANK].sort(() => Math.random() - 0.5);
+    }
+    return HEBREW_NINJA_BANK.filter(q => q.grade === currentGradeFilter).sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+    initAudioContext();
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('gameover-modal').classList.add('hidden');
+
+    currentFilteredQuestions = getFilteredQuestions();
+    if (currentFilteredQuestions.length === 0) {
+        currentFilteredQuestions = [...HEBREW_NINJA_BANK];
+    }
+
+    currentQuestionIndex = 0;
+    currentScore = 0;
+    currentStreak = 0;
+    maxStreak = 0;
+    correctCount = 0;
+    lives = 3;
+
+    flyingFruits = [];
+    slicedHalves = [];
+    juiceDrops = [];
+    floatingTexts = [];
+    isGameActive = true;
+
+    updateStatsUI();
+    loadQuestion(currentQuestionIndex);
+}
+
+function restartGame() {
+    startGame();
+}
+
+function loadQuestion(index) {
+    if (index >= currentFilteredQuestions.length) {
+        endGame(true);
+        return;
+    }
+
+    const q = currentFilteredQuestions[index];
+    const totalQ = Math.min(15, currentFilteredQuestions.length);
+
+    document.getElementById('grade-badge').innerText = `עברית • صف ${q.grade}`;
+    document.getElementById('category-badge').innerText = 'נינג\'ת המילים';
+    document.getElementById('word-index-display').innerText = (index + 1);
+    document.getElementById('word-total-display').innerText = totalQ;
+
+    document.getElementById('ninja-target-word').innerText = q.arPrompt;
+    document.getElementById('ninja-prompt-subtext').innerText = `المعنى المطلوب: ${q.arPrompt.replace('قطّع الكلمة العبرية التي تعني: ', '').replace('قطّع الفعل العبري الذي يعني: ', '').replace('قطّع العبارة العبرية التي تعني: ', '')}`;
+
+    // Auto pronunciation in Hebrew
+    speakHebrewWord(q.hebTarget);
+
+    // Launch Hebrew fruits wave
+    launchFruitWave(q);
+}
+
+// Fruit Color themes
+const FRUIT_THEMES = {
+    watermelon: { outer: '#15803d', inner: '#ef4444', seed: '#18181b', name: 'Watermelon' },
+    apple: { outer: '#dc2626', inner: '#fef08a', seed: '#78350f', name: 'Apple' },
+    orange: { outer: '#ea580c', inner: '#fb923c', seed: '#ffffff', name: 'Orange' },
+    banana: { outer: '#eab308', inner: '#fef9c3', seed: '#ca8a04', name: 'Banana' },
+    strawberry: { outer: '#b91c1c', inner: '#f87171', seed: '#fef08a', name: 'Strawberry' }
+};
+
+function launchFruitWave(q) {
+    flyingFruits = [];
+    const count = q.choices.length;
+    const spacing = canvasWidth / (count + 1);
+
+    for (let i = 0; i < count; i++) {
+        const fruitKey = ['watermelon', 'apple', 'orange', 'banana', 'strawberry'][i % 5];
+        const theme = FRUIT_THEMES[fruitKey];
+
+        // Launch upwards with parabolic trajectory
+        const startX = spacing * (i + 1) + (Math.random() * 40 - 20);
+        const targetX = canvasWidth * 0.5 + (i - 1) * (canvasWidth * 0.25);
+        const vx = (targetX - startX) * 0.015;
+        const vy = -(Math.random() * 4 + 14);
+
+        flyingFruits.push({
+            id: i,
+            x: startX,
+            y: canvasHeight + 50,
+            vx: vx,
+            vy: vy,
+            radius: Math.min(54, canvasWidth * 0.11),
+            label: q.choices[i],
+            isCorrect: (i === q.correct),
+            theme: theme,
+            rotation: Math.random() * Math.PI,
+            vRot: (Math.random() * 0.08 - 0.04),
+            gravity: 0.32,
+            sliced: false
+        });
+    }
+
+    // Occasional decoy Bomb
+    if (currentScore > 300 && Math.random() < 0.35) {
+        flyingFruits.push({
+            id: 99,
+            x: canvasWidth * 0.5 + (Math.random() * 160 - 80),
+            y: canvasHeight + 50,
+            vx: (Math.random() * 2 - 1),
+            vy: -(Math.random() * 3 + 13),
+            radius: 38,
+            label: '💣 פצצה',
+            isBomb: true,
+            isCorrect: false,
+            rotation: 0,
+            vRot: 0.05,
+            gravity: 0.32,
+            sliced: false
+        });
+    }
+}
+
+/**
+ * Main Ninja Loop
+ */
+function updateNinjaGame() {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    // 1. Draw Dojo Background Glow
+    const bgGrad = ctx.createRadialGradient(canvasWidth * 0.5, canvasHeight * 0.4, 50, canvasWidth * 0.5, canvasHeight * 0.5, canvasWidth * 0.8);
+    bgGrad.addColorStop(0, '#064e3b');
+    bgGrad.addColorStop(0.6, '#022c22');
+    bgGrad.addColorStop(1, '#011812');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Decorative Dojo Lines
+    ctx.save();
+    ctx.strokeStyle = 'rgba(74, 222, 128, 0.08)';
+    ctx.lineWidth = 3;
+    for (let x = 40; x < canvasWidth; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvasHeight);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    if (!isGameActive) {
+        requestAnimationFrame(updateNinjaGame);
+        return;
+    }
+
+    // 2. Update & Draw Flying Whole Fruits
+    let allFellOrSliced = true;
+    for (let i = flyingFruits.length - 1; i >= 0; i--) {
+        const f = flyingFruits[i];
+        if (f.sliced) continue;
+
+        f.x += f.vx;
+        f.y += f.vy;
+        f.vy += f.gravity;
+        f.rotation += f.vRot;
+
+        if (f.y < canvasHeight + 80) {
+            allFellOrSliced = false;
+        }
+
+        drawFruit(f);
+    }
+
+    // If all fruits fell without being sliced, relaunch
+    if (allFellOrSliced && flyingFruits.length > 0) {
+        flyingFruits = [];
+        setTimeout(() => {
+            if (isGameActive) {
+                const q = currentFilteredQuestions[currentQuestionIndex];
+                if (q) launchFruitWave(q);
+            }
+        }, 600);
+    }
+
+    // 3. Update & Draw Sliced Fruit Halves
+    for (let i = slicedHalves.length - 1; i >= 0; i--) {
+        const h = slicedHalves[i];
+        h.x += h.vx;
+        h.y += h.vy;
+        h.vy += 0.38;
+        h.rotation += h.vRot;
+
+        drawFruitHalf(h);
+
+        if (h.y > canvasHeight + 100) {
+            slicedHalves.splice(i, 1);
+        }
+    }
+
+    // 4. Update & Draw Juice Splatter Drops
+    for (let i = juiceDrops.length - 1; i >= 0; i--) {
+        const d = juiceDrops[i];
+        d.x += d.vx;
+        d.y += d.vy;
+        d.vy += 0.25;
+        d.life -= 0.025;
+
+        if (d.life <= 0) {
+            juiceDrops.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = d.life;
+        ctx.fillStyle = d.color;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // 5. Update & Draw Floating Score Popups
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1.6;
+        ft.life -= 0.02;
+
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = ft.life;
+        ctx.fillStyle = ft.color;
+        ctx.font = '900 24px Fredoka One, Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 8;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+
+    // 6. Draw Glowing Katana Blade Slash Trail
+    drawBladeTrail();
+
+    requestAnimationFrame(updateNinjaGame);
+}
+
+function drawFruit(f) {
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rotation);
+
+    if (f.isBomb) {
+        // Bomb 💣
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, -f.radius);
+        ctx.quadraticCurveTo(15, -f.radius - 15, 20, -f.radius - 20);
+        ctx.stroke();
+
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(20, -f.radius - 20, 6 + Math.random() * 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 13px Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💣 פצצה', 0, 0);
+
+    } else {
+        // Fruit Outer Rind
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = f.theme.outer;
+        ctx.beginPath();
+        ctx.arc(0, 0, f.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Fruit Inner Flesh
+        ctx.fillStyle = f.theme.inner;
+        ctx.beginPath();
+        ctx.arc(0, 0, f.radius * 0.88, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Seeds
+        ctx.fillStyle = f.theme.seed;
+        ctx.beginPath();
+        ctx.arc(-10, -6, 3, 0, Math.PI * 2);
+        ctx.arc(10, 8, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Text Badge Label on Fruit (Hebrew with niqqud)
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(2, 44, 34, 0.88)';
+        ctx.beginPath();
+        ctx.rect(-f.radius * 1.15, -16, f.radius * 2.3, 32);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px Assistant, Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.direction = 'rtl';
+        ctx.fillText(f.label, 0, 0);
+    }
+
+    ctx.restore();
+}
+
+function drawFruitHalf(h) {
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    ctx.rotate(h.rotation);
+
+    ctx.fillStyle = h.theme.outer;
+    ctx.beginPath();
+    ctx.arc(0, 0, h.radius, 0, Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = h.theme.inner;
+    ctx.beginPath();
+    ctx.arc(0, 0, h.radius * 0.88, 0, Math.PI);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function drawBladeTrail() {
+    if (bladePoints.length < 2) return;
+
+    ctx.save();
+    for (let i = 1; i < bladePoints.length; i++) {
+        const p1 = bladePoints[i - 1];
+        const p2 = bladePoints[i];
+        const alpha = (i / bladePoints.length);
+
+        ctx.strokeStyle = `rgba(167, 243, 208, ${alpha})`;
+        ctx.shadowColor = '#34d399';
+        ctx.shadowBlur = 15;
+        ctx.lineWidth = alpha * 9;
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    bladePoints.shift();
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 4. BLADE SLICING INTERSECTION LOGIC
+ * ------------------------------------------------------------------
+ */
+function recordBladePoint(x, y) {
+    bladePoints.push({ x: x, y: y });
+    if (bladePoints.length > 9) bladePoints.shift();
+
+    if (bladePoints.length >= 2) {
+        const p1 = bladePoints[bladePoints.length - 2];
+        const p2 = bladePoints[bladePoints.length - 1];
+        checkBladeSlice(p1, p2);
+    }
+}
+
+function checkBladeSlice(p1, p2) {
+    for (let f of flyingFruits) {
+        if (f.sliced) continue;
+
+        const dist = distToSegment({ x: f.x, y: f.y }, p1, p2);
+        if (dist < f.radius + 12) {
+            sliceFruit(f);
+            break;
+        }
+    }
+}
+
+function distToSegment(p, v, w) {
+    const l2 = (v.x - w.x) * (v.x - w.x) + (v.y - w.y) * (v.y - w.y);
+    if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+}
+
+function sliceFruit(f) {
+    f.sliced = true;
+    playSound('swish');
+
+    if (f.isBomb) {
+        playSound('bomb');
+        spawnJuiceSplatter(f.x, f.y, '#ef4444', 35);
+        lives--;
+        currentStreak = 0;
+        updateStatsUI();
+
+        floatingTexts.push({
+            x: f.x,
+            y: f.y,
+            text: '💣 פצצה! -1 LIFE',
+            color: '#ef4444',
+            life: 1.0
+        });
+
+        if (lives <= 0) {
+            endGame(false);
+        }
+        return;
+    }
+
+    if (f.isCorrect) {
+        // CORRECT SLICE!
+        playSound('slice');
+        playSound('triumph');
+        spawnJuiceSplatter(f.x, f.y, f.theme.inner, 40);
+
+        slicedHalves.push({
+            x: f.x - 15,
+            y: f.y,
+            vx: f.vx - 3.5,
+            vy: f.vy - 1,
+            radius: f.radius,
+            theme: f.theme,
+            rotation: f.rotation,
+            vRot: -0.1
+        });
+        slicedHalves.push({
+            x: f.x + 15,
+            y: f.y,
+            vx: f.vx + 3.5,
+            vy: f.vy - 1,
+            radius: f.radius,
+            theme: f.theme,
+            rotation: f.rotation + Math.PI,
+            vRot: 0.1
+        });
+
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        correctCount++;
+
+        const comboMultiplier = Math.min(3, 1 + Math.floor(currentStreak / 3));
+        const pts = 100 * comboMultiplier;
+        currentScore += pts;
+
+        floatingTexts.push({
+            x: f.x,
+            y: f.y,
+            text: `+${pts} כָּל הַכָּבוֹד! 🍉`,
+            color: '#facc15',
+            life: 1.0
+        });
+
+        const celebration = document.getElementById('celebration-text');
+        celebration.innerText = currentStreak >= 3 ? `🔥 COMBO x${comboMultiplier}! +${pts}` : `כל הכבוד! 🌟 +${pts}`;
+        celebration.classList.add('show');
+        setTimeout(() => celebration.classList.remove('show'), 750);
+
+        updateStatsUI();
+
+        flyingFruits = [];
+        setTimeout(() => {
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }, 900);
+
+    } else {
+        // WRONG FRUIT SLICE
+        playSound('slice');
+        spawnJuiceSplatter(f.x, f.y, '#94a3b8', 20);
+        lives--;
+        currentStreak = 0;
+        updateStatsUI();
+
+        floatingTexts.push({
+            x: f.x,
+            y: f.y,
+            text: 'טָעוּת! -1 LIFE',
+            color: '#ef4444',
+            life: 1.0
+        });
+
+        if (lives <= 0) {
+            endGame(false);
+        }
+    }
+}
+
+function spawnJuiceSplatter(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        juiceDrops.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 2,
+            size: Math.random() * 5 + 3,
+            color: color,
+            life: 1.0
+        });
+    }
+}
+
+function updateStatsUI() {
+    document.getElementById('score-display').innerText = currentScore;
+    document.getElementById('streak-display').innerText = `${currentStreak}x`;
+
+    const heartsContainer = document.getElementById('hearts-display');
+    let heartsHtml = '';
+    for (let i = 0; i < 3; i++) {
+        heartsHtml += (i < lives) ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart" style="color:#64748b;"></i>';
+    }
+    heartsContainer.innerHTML = heartsHtml;
+}
+
+function endGame(victory) {
+    isGameActive = false;
+    document.getElementById('gameover-modal').classList.remove('hidden');
+    document.getElementById('final-score').innerText = currentScore;
+    document.getElementById('final-correct').innerText = `${correctCount}/${currentQuestionIndex + 1}`;
+    document.getElementById('final-streak').innerText = `${maxStreak}x`;
+
+    const emojiEl = document.getElementById('gameover-emoji');
+    const titleEl = document.getElementById('gameover-title');
+    const descEl = document.getElementById('gameover-desc');
+
+    if (victory || correctCount >= 10) {
+        emojiEl.innerText = '🥋⚔️';
+        titleEl.innerText = 'אַלּוּף הַנִּינְגָ\'ה! بطل النينجا العبري';
+        descEl.innerText = 'כָּל הַכָּבוֹד! سرعة سيف خاطفة وإتقان رائع لكلمات المنهاج العبري.';
+    } else {
+        emojiEl.innerText = '🍉';
+        titleEl.innerText = 'مجهود طيب، واصل التدريب!';
+        descEl.innerText = 'أداء واعد! درّب سيفك وراجع الكلمات لتصل إلى مرتبة النينجا الذهبي.';
+    }
+}
+
+function goBackToHebrewPage() {
+    if (window.top !== window.self) {
+        try {
+            window.top.location.hash = '#hebrew';
+        } catch (e) {
+            window.location.href = '/#/hebrew';
+        }
+    } else {
+        window.location.href = '/#/hebrew';
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 5. CONTROLS & LISTENERS (Mouse & Touch Slicing)
+ * ------------------------------------------------------------------
+ */
+window.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    bladePoints = [];
+    recordBladePoint(e.clientX, e.clientY);
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (isMouseDown) {
+        recordBladePoint(e.clientX, e.clientY);
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    isMouseDown = false;
+});
+
+// Touch Events for Mobile / Tablet
+window.addEventListener('touchstart', (e) => {
+    bladePoints = [];
+    if (e.touches.length > 0) {
+        recordBladePoint(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+        recordBladePoint(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+// Keyboard shortcut to replay audio
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === 'r' || e.key === 'R') {
+        const currentQ = currentFilteredQuestions[currentQuestionIndex];
+        if (currentQ) speakHebrewWord(currentQ.hebTarget);
+    } else if (e.key === 'm' || e.key === 'M') {
+        toggleSound();
+    }
+});
+
+document.getElementById('btn-play-audio').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    if (currentQ) speakHebrewWord(currentQ.hebTarget);
+});
+
+// Setup on boot
+window.onload = () => {
+    updateSoundUI();
+    resizeCanvas();
+    updateNinjaGame();
+};
+</script>
+</body>
+</html>
