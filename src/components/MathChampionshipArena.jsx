@@ -229,24 +229,6 @@ export const MATH_CHALLENGE_BRANCHES = [
       '4 سفن فضائية وسرعات متدرجة وفق منهاج الوسط العربي 🎓'
     ],
     awardTeaser: 'وسام قائد أسطول الفضاء + كؤوس الدقة 🏆🚀'
-  },
-  {
-    id: 'penalty',
-    viewId: 'branch_penalty',
-    gameType: 'penalty',
-    title: 'ركلات الترجيح العبرية ⚽',
-    subtitle: 'سدد الكرة نحو زاوية المرمى الصحيحة وفق منهاج اللغة العبرية للمرحلة الابتدائية',
-    icon: '⚽',
-    color: '#16a34a',
-    gradient: 'linear-gradient(135deg, #15803d 0%, #064e3b 100%)',
-    badge: '🥅 دوري العبرية',
-    grades: 'صفوف 1 - 6',
-    highlights: [
-      'كلمات ومعاني مع تشكيل كامل (נִקּוּד) وترجمة للعربية 🎯',
-      '3 مسارات: עברית ⬅ ערבית، ערבית ⬅ עברית، وبطولة النجوم 🌟',
-      'حارس مرمى تفاعلي، تشجيع جماهيري، ومؤثرات صوتية حماسية مع زر كتم الصوت 🔊'
-    ],
-    awardTeaser: 'كأس هداف اللغة العبرية + شارة القناص الذهبي 🏆⚽'
   }
 ];
 
@@ -851,10 +833,12 @@ export default function MathChampionshipArena() {
           </button>
           <button 
             type="button"
-            className={`math-nav-tab ${activeView === 'branch_penalty' ? 'active' : ''}`}
-            onClick={() => { setGameState('idle'); setActiveView('branch_penalty'); }}
+            className="math-nav-tab"
+            style={{ border: '1.5px solid rgba(34, 197, 94, 0.45)', color: '#86efac' }}
+            onClick={() => { window.location.hash = '#/hebrew'; }}
+            title="الانتقال إلى صفحة اللغة العبرية المخصصة"
           >
-            <i className="fas fa-futbol"></i> ركلات العبرية ⚽
+            <i className="fas fa-futbol"></i> صفحة العبري ⚽
           </button>
           <button 
             type="button"
@@ -1697,61 +1681,7 @@ export default function MathChampionshipArena() {
           </div>
         )}
 
-        {/* BRANCH 13: HEBREW PENALTY SHOOTOUT (ISRAELI CURRICULUM) */}
-        {activeView === 'branch_penalty' && gameState === 'idle' && (
-          <div className="branch-view-container fade-in">
-            <div className="branch-breadcrumb-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <button type="button" className="back-to-hub-btn" onClick={() => setActiveView('hub')}>
-                <i className="fas fa-arrow-right"></i> العودة للبوابة الرئيسية 🏠
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span className="branch-current-crumb">⚽ ركلات الترجيح العبرية (אוצר מילים - صفوف 1 - 6)</span>
-                <a
-                  href="/hebrew-penalty.html?v=1"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    background: 'linear-gradient(135deg, #15803d, #064e3b)',
-                    color: '#fff',
-                    padding: '8px 16px',
-                    borderRadius: '12px',
-                    fontWeight: '800',
-                    fontSize: '0.9rem',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.35)'
-                  }}
-                >
-                  ⛶ فتح اللعبة في شاشة كاملة
-                </a>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: '880px',
-                  height: '660px',
-                  maxHeight: '88vh',
-                  borderRadius: '24px',
-                  overflow: 'hidden',
-                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(34, 197, 94, 0.45)',
-                  background: '#064e3b'
-                }}
-              >
-                <iframe
-                  src="/hebrew-penalty.html?v=1"
-                  title="ركلات الترجيح العبرية ⚽"
-                  style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                  allow="autoplay; fullscreen"
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* VIEW 2: ACTIVE GAME ARENA (PLAYING MODE) */}
         {gameState === 'playing' && currentQuestion && (

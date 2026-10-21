@@ -1028,6 +1028,27 @@ const LearningCorner = () => {
               أولمبياد الرياضيات 🏆⚡
             </button>
 
+            <button 
+              onClick={() => window.location.hash = '#/hebrew'}
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #064e3b)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '0.7rem 1.4rem',
+                fontWeight: 900,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
+              }}
+            >
+              <i className="fas fa-futbol"></i>
+              بوابة العبري ⚽🇮🇱
+            </button>
+
             {activeTab !== 'hub' && (
               <button 
                 onClick={() => setActiveTab('hub')}

@@ -66,6 +66,7 @@ const MafatihWhiteboardPage = lazyWithRetry(() => import('./components/MafatihWh
 const MafatihObservationRubricPage = lazyWithRetry(() => import('./components/MafatihObservationRubricPage'));
 const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahLearningJourney'));
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
+const HebrewPage = lazyWithRetry(() => import('./components/HebrewPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
 const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
@@ -436,7 +437,21 @@ function App() {
 
   const isMafatihView = currentHash.includes('mafatih') || currentHash.includes('mafateeh') || currentHash.includes('pedagogy');
 
-    const isMathView = currentHash.includes('math-championship') || 
+    const isHebrewView = currentHash.includes('hebrew') || 
+    currentHash.includes('ivrit') || 
+    currentHash.includes('hebrew-penalty') || 
+    currentHash.includes('ibri') ||
+    currentHash.includes('hebrew-arena');
+
+  if (isHebrewView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <HebrewPage />
+      </Suspense>
+    );
+  }
+
+  const isMathView = currentHash.includes('math-championship') || 
     currentHash.includes('math-arena') || 
     currentHash.includes('math-game') || 
     currentHash.includes('hisab') || 
