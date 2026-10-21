@@ -5,12 +5,12 @@ export default function EnglishPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('game'); // 'game' | 'vocab'
+  const [activeTab, setActiveTab] = useState('basketball'); // 'basketball' | 'subway' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة الإنجليزية | Subway Surfers 3D وبنك الكلمات 🏃🇬🇧';
+    document.title = 'بوابة اللغة الإنجليزية | ألعاب Band I وبنك الكلمات 🏀🏃🇬🇧';
   }, []);
 
   const currentGradeWords = ENGLISH_VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -117,21 +117,39 @@ export default function EnglishPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => setActiveTab('game')}
+              onClick={() => setActiveTab('basketball')}
               style={{
-                background: activeTab === 'game' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'rgba(15, 23, 42, 0.65)',
-                color: '#fff',
-                border: activeTab === 'game' ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.2)',
+                background: activeTab === 'basketball' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(15, 23, 42, 0.65)',
+                color: activeTab === 'basketball' ? '#0f172a' : '#fff',
+                border: activeTab === 'basketball' ? '2px solid #fde047' : '1px solid rgba(255,255,255,0.2)',
                 padding: '8px 16px',
                 borderRadius: '99px',
-                fontWeight: '800',
+                fontWeight: '900',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'game' ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+                boxShadow: activeTab === 'basketball' ? '0 4px 14px rgba(245, 158, 11, 0.5)' : 'none',
                 transition: 'all 0.2s'
               }}
             >
-              🏃 سباق صب واي للثروة اللغوية 3D
+              🏀 رميات السلة (Band I Slam Dunk)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('subway')}
+              style={{
+                background: activeTab === 'subway' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#fff',
+                border: activeTab === 'subway' ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'subway' ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              🏃 سباق صب واي 3D
             </button>
             <button
               type="button"
@@ -142,7 +160,7 @@ export default function EnglishPage() {
                 border: activeTab === 'vocab' ? '2px solid #34d399' : '1px solid rgba(255,255,255,0.2)',
                 padding: '8px 16px',
                 borderRadius: '99px',
-                fontWeight: '800',
+                fontWeight: '900',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
                 boxShadow: activeTab === 'vocab' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none',
@@ -152,12 +170,13 @@ export default function EnglishPage() {
               📖 معجم وبنك المفردات والصوتيات
             </button>
             <a
-              href="/english-subway.html?v=1"
+              href={activeTab === 'subway' ? '/english-subway.html?v=1' : '/english-basketball.html?v=1'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                color: '#0f172a',
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1.5px solid rgba(255, 255, 255, 0.3)',
+                color: '#ffffff',
                 padding: '8px 16px',
                 borderRadius: '99px',
                 fontWeight: '900',
@@ -166,7 +185,7 @@ export default function EnglishPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
                 transition: 'transform 0.15s'
               }}
             >
@@ -207,13 +226,13 @@ export default function EnglishPage() {
               fontWeight: '900',
               marginBottom: '10px'
             }}>
-              ⭐ English for Elementary Schools (Grades 1 – 6) | Foundation Band I
+              ⭐ English for Elementary Schools (Grades 1 – 6) | Core Band I
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم الإنجليزية بالركض والمغامرة واللوح الطائر! 🏃🛹
+              تعلَّم الإنجليزية باللعب والمغامرة ورميات السلة! 🏀🏃
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#e0f2fe', lineHeight: '1.7', fontWeight: '600' }}>
-              منصة تفاعلية ممتعة تجمع بين سباق قطارات الأنفاق الشهير <b>Subway Surfers 3D</b> وبنك المفردات والصوتيات والقواعد الإنجليزية لطلاب مدرسة مشيرفة الابتدائية. اجمع العملات، افتح الصناديق، وأجب عن الأسئلة لتعزيز مهاراتك ومضاعفة نقاطك!
+              بوابة إلكترونية تفاعلية ممتعة تجمع بين <b>دوري رميات السلة (Slam Dunk)</b>، وسباق قطارات الأنفاق <b>Subway Surfers 3D</b>، ومعجم وبنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية حسب منهاج <b>Band I</b> لوزارة التربية والتعليم. سدد، اركض، واستمع للنطق الصحيح!
             </p>
           </div>
 
@@ -227,24 +246,167 @@ export default function EnglishPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>6</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>صفوف دراسية</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>2</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#38bdf8' }}>3D</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>بيئة واقعية</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#38bdf8' }}>Band I</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>معجم الوزارة</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#4ade80' }}>80+</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>سؤال وكلمة</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#4ade80' }}>100+</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>سؤال ومفردة</div>
             </div>
           </div>
         </div>
 
-        {/* TAB 1: 3D SUBWAY SURFERS GAME */}
-        {activeTab === 'game' && (
+        {/* TAB 1: BASKETBALL SLAM DUNK GAME */}
+        {activeTab === 'basketball' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#030712',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.7), 0 0 0 3px rgba(245, 158, 11, 0.45)',
+              border: '2px solid rgba(250, 204, 21, 0.45)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(245, 158, 11, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🏀</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#facc15', fontWeight: '900' }}>
+                      English Slam Dunk 3D — دوري رميات السلة لمعجم Band I
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                      استمع للنطق الإنجليزي السليم وسدد الكرة داخل السلة التي تحمل المعنى الصحيح!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/english-basketball.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      color: '#0f172a',
+                      border: '1px solid #fde047',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/english-basketball.html?v=1"
+                  title="English Slam Dunk 3D"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🎯</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. تسديد ذكي واختيار السلة
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اقرأ الكلمة أو اضغط على مكبر الصوت للاستماع لنطقها، ثم اضغط على السلة التي تطابق الإجابة الصحيحة أو استخدم المفاتيح 1، 2، 3.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1.5px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>📚</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. معجم Band I الرسمي
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    تشمل الأسئلة معاني الكلمات، الأضداد (Opposites)، تصنيف الفئات (Animals, Food, Jobs, Places)، وجمل السياق اليومي.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1.5px solid rgba(34, 197, 94, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🔥</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#4ade80', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. متتالية النقاط ومضاعف On Fire!
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    كل رمية صحيحة تمنحك +100 نقطة؛ واستمرار الرميات دون خطأ يرفع المتتالية إلى x2 و x3 ليشتعل الملعب بالنيران والتشجيع!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 2: 3D SUBWAY SURFERS GAME */}
+        {activeTab === 'subway' && (
           <section className="fade-in">
             <div style={{
               background: '#030712',

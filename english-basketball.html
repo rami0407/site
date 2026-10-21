@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Slam Dunk 3D - دوري رميات السلة الإنجليزية (Band I)</title>
+    <!-- خط Cairo ومكتبة أيقونات FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0b1320;
+            color: #ffffff;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, #1e3a8a 0%, #0f172a 60%, #020617 100%);
+        }
+
+        /* ملعب كرة السلة Canvas */
+        #court-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة المستخدم العلوية HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: linear-gradient(180deg, #1e293b, #0f172a);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .control-btn:hover {
+            border-color: #f59e0b;
+            transform: translateY(-2px);
+        }
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+
+        .sound-toggle-btn.muted {
+            background: linear-gradient(180deg, #475569, #334155);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        /* لوحة النقاط الرقمية (Jumbotron) */
+        .jumbotron-box {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 680px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            border: 3px solid #f59e0b;
+            border-radius: 20px;
+            padding: 12px 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 25px rgba(245, 158, 11, 0.35);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        .jumbotron-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+            padding-bottom: 6px;
+        }
+
+        .band-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0f172a;
+            font-weight: 900;
+            font-size: 12px;
+            padding: 3px 12px;
+            border-radius: 99px;
+            letter-spacing: 0.5px;
+        }
+
+        .category-badge {
+            background: rgba(56, 189, 248, 0.2);
+            color: #7dd3fc;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 8px;
+        }
+
+        .question-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 6px 0;
+        }
+
+        .question-text-eng {
+            font-size: clamp(22px, 3.8vw, 32px);
+            font-weight: 900;
+            color: #ffffff;
+            font-family: 'Fredoka One', 'Cairo', sans-serif;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            letter-spacing: 1px;
+        }
+
+        .audio-replay-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: 2px solid #93c5fd;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+        .audio-replay-btn:hover {
+            transform: scale(1.12);
+            background: #2563eb;
+        }
+        .audio-replay-btn:active {
+            transform: scale(0.95);
+        }
+
+        .question-subtext {
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 700;
+        }
+
+        /* لوحة الإحصائيات باليمين */
+        .top-right-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .stat-pill {
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+        .stat-pill.score-pill {
+            border-color: #f59e0b;
+        }
+        .stat-pill.streak-pill {
+            border-color: #ec4899;
+        }
+        .stat-val {
+            font-size: 18px;
+            font-weight: 900;
+            color: #facc15;
+            letter-spacing: 1px;
+        }
+
+        /* منطقة السلال الثلاث (Hoops Interaction Zone) */
+        #hoops-container {
+            position: absolute;
+            top: 24%;
+            left: 0;
+            width: 100%;
+            height: 38%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .hoop-target-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 320px;
+            margin: 0 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .hoop-target-wrapper:hover {
+            transform: translateY(-8px) scale(1.03);
+        }
+
+        .hoop-target-wrapper:active {
+            transform: translateY(2px) scale(0.98);
+        }
+
+        /* لوحة السلة (Backboard) */
+        .hoop-backboard {
+            width: 100%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(241, 245, 249, 0.9));
+            border: 4px solid #1e293b;
+            border-radius: 16px;
+            padding: 12px 10px;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255,255,255,0.3);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .hoop-backboard::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 2px dashed #94a3b8;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        .hoop-key-hint {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: #1e293b;
+            color: #facc15;
+            font-size: 11px;
+            font-weight: 900;
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hoop-choice-text {
+            font-size: clamp(16px, 2.5vw, 22px);
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.3;
+            margin: 4px 0;
+            word-break: break-word;
+        }
+
+        .hoop-choice-sub {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        /* حلقة السلة والشباك */
+        .hoop-rim-container {
+            position: relative;
+            width: 110px;
+            height: 70px;
+            margin-top: -6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hoop-rim {
+            width: 90px;
+            height: 16px;
+            border: 5px solid #ea580c;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: 0 4px 10px rgba(234, 88, 12, 0.7);
+            z-index: 2;
+            transition: transform 0.15s;
+        }
+
+        .hoop-net {
+            width: 70px;
+            height: 52px;
+            margin-top: -8px;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255,255,255,0.85),
+                rgba(255,255,255,0.85) 3px,
+                transparent 3px,
+                transparent 10px
+            ),
+            repeating-linear-gradient(
+                -45deg,
+                rgba(255,255,255,0.85),
+                rgba(255,255,255,0.85) 3px,
+                transparent 3px,
+                transparent 10px
+            );
+            clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);
+            border-top: 2px solid #cbd5e1;
+            transform-origin: top center;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* عند الرمي والهدف (Success Animation) */
+        .hoop-target-wrapper.correct .hoop-backboard {
+            background: linear-gradient(180deg, #10b981, #059669);
+            border-color: #34d399;
+            box-shadow: 0 0 35px #10b981;
+            transform: scale(1.05);
+        }
+        .hoop-target-wrapper.correct .hoop-choice-text,
+        .hoop-target-wrapper.correct .hoop-choice-sub {
+            color: #ffffff;
+        }
+        .hoop-target-wrapper.correct .hoop-rim {
+            border-color: #facc15;
+            box-shadow: 0 0 20px #facc15;
+            transform: scaleY(1.3);
+        }
+        .hoop-target-wrapper.correct .hoop-net {
+            transform: scale(1.2, 1.35) rotate(4deg);
+        }
+
+        /* عند الخطأ */
+        .hoop-target-wrapper.wrong .hoop-backboard {
+            background: linear-gradient(180deg, #ef4444, #dc2626);
+            border-color: #fca5a5;
+            box-shadow: 0 0 30px #ef4444;
+            animation: shake 0.4s ease;
+        }
+        .hoop-target-wrapper.wrong .hoop-choice-text,
+        .hoop-target-wrapper.wrong .hoop-choice-sub {
+            color: #ffffff;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+
+        /* أسفل الشاشة: كرة السلة والتلميح */
+        .bottom-court-area {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .shoot-hint-pill {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1.5px solid rgba(250, 204, 21, 0.5);
+            color: #fef08a;
+            padding: 6px 18px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            animation: pulseHint 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseHint {
+            0%, 100% { transform: translateY(0); opacity: 0.9; }
+            50% { transform: translateY(-4px); opacity: 1; border-color: #facc15; }
+        }
+
+        /* تأثير الكرة أثناء الطيران في Canvas يتم رسمه، ولكن نضيف كرة تفاعلية للضغط والسحب */
+        .basketball-shooter {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #f97316 0%, #ea580c 45%, #9a3412 100%);
+            box-shadow: inset -6px -6px 14px rgba(0,0,0,0.6), inset 4px 4px 10px rgba(255,255,255,0.4), 0 10px 25px rgba(0,0,0,0.7);
+            position: relative;
+            cursor: grab;
+            pointer-events: auto;
+            transition: transform 0.15s ease;
+        }
+
+        .basketball-shooter:hover {
+            transform: scale(1.08) translateY(-4px);
+            box-shadow: inset -6px -6px 14px rgba(0,0,0,0.6), inset 4px 4px 10px rgba(255,255,255,0.4), 0 14px 30px rgba(249, 115, 22, 0.45);
+        }
+
+        .basketball-shooter:active {
+            cursor: grabbing;
+            transform: scale(0.96);
+        }
+
+        /* خطوط كرة السلة الكلاسيكية */
+        .basketball-shooter::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #431407;
+            transform: translateY(-50%);
+        }
+        .basketball-shooter::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 3px;
+            height: 100%;
+            background: #431407;
+            transform: translateX(-50%);
+        }
+
+        /* نوافذ منبثقة (Modal Dialogs) */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 7, 18, 0.88);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 3px solid #f59e0b;
+            border-radius: 28px;
+            padding: 28px;
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 35px rgba(245, 158, 11, 0.3);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-card h2 {
+            font-size: clamp(22px, 3.5vw, 30px);
+            color: #facc15;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .modal-card p {
+            color: #cbd5e1;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .grade-chips-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 22px;
+        }
+
+        .grade-chip {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .grade-chip.active, .grade-chip:hover {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: #fde047;
+            color: #0f172a;
+            transform: translateY(-2px);
+        }
+
+        .btn-action-main {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            border: 3px solid #ffffff;
+            color: #0f172a;
+            font-size: 19px;
+            font-weight: 900;
+            padding: 12px 28px;
+            border-radius: 18px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 0 #92400e, 0 8px 20px rgba(245, 158, 11, 0.4);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-action-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #92400e;
+        }
+
+        /* التغذية البصرية العائمة (Popups) */
+        .celebration-popup {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 44px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 30px #f59e0b;
+            z-index: 50;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .celebration-popup.show {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 1;
+        }
+
+        /* رسالة منبثقة عند تصحيح الإجابة */
+        .feedback-banner {
+            position: absolute;
+            bottom: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #38bdf8;
+            border-radius: 16px;
+            padding: 10px 24px;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 15px;
+            z-index: 30;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- خلفية ملعب كرة السلة الواقعي والكرات المتحركة -->
+    <canvas id="court-canvas"></canvas>
+
+    <!-- واجهة المستخدم HUD -->
+    <div id="hud">
+        <!-- الشريط العلوي للأزرار والتحكم -->
+        <div class="hud-header">
+            <div class="top-left-controls">
+                <button class="control-btn" id="btn-home" onclick="goBackToEnglishPage()">
+                    <i class="fas fa-arrow-right"></i> البوابة 🇬🇧
+                </button>
+                <button class="control-btn" id="btn-restart" onclick="restartGame()">
+                    <i class="fas fa-redo"></i> جولة جديدة
+                </button>
+                <button class="control-btn sound-toggle-btn" id="btn-sound" onclick="toggleSound()">
+                    <i class="fas fa-volume-up" id="sound-icon"></i> <span id="sound-text">صوت عالي</span>
+                </button>
+            </div>
+
+            <!-- لوحة النقاط والمتتالية -->
+            <div class="top-right-stats">
+                <div class="stat-pill score-pill">
+                    <span style="font-size: 13px; color: #cbd5e1; font-weight: 800;">النقاط</span>
+                    <span class="stat-val" id="score-display">0</span>
+                    <i class="fas fa-trophy" style="color: #facc15;"></i>
+                </div>
+                <div class="stat-pill streak-pill">
+                    <span style="font-size: 12px; color: #cbd5e1; font-weight: 800;">المتتالية</span>
+                    <span class="stat-val" id="streak-display">0x</span>
+                    <i class="fas fa-fire" style="color: #f43f5e;"></i>
+                </div>
+                <div class="stat-pill" style="border-color: #38bdf8;">
+                    <span style="font-size: 12px; color: #cbd5e1; font-weight: 800;">الوقت</span>
+                    <span class="stat-val" id="timer-display" style="color: #38bdf8;">60s</span>
+                    <i class="fas fa-stopwatch" style="color: #38bdf8;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة الجيمبوترون المعلقة (السؤال الحالي والتكرار الصوتي) -->
+        <div class="jumbotron-box" id="jumbotron">
+            <div class="jumbotron-top-bar">
+                <span class="band-badge" id="grade-badge">Band I • Foundation</span>
+                <span class="category-badge" id="category-badge">Word Meaning</span>
+                <span style="font-size: 12px; color: #facc15; font-weight: 800;">
+                    السؤال <span id="question-index-display">1</span> / <span id="question-total-display">15</span>
+                </span>
+            </div>
+
+            <div class="question-display">
+                <span class="question-text-eng" id="question-text">Ready...</span>
+                <button class="audio-replay-btn" id="btn-play-audio" title="استمع للنطق الإنجليزي الصحيح (مسافة)">
+                    <i class="fas fa-volume-high"></i>
+                </button>
+            </div>
+
+            <div class="question-subtext" id="question-prompt">
+                اختر السلة الصحيحة وسدد نحوها بالضغط أو السحب!
+            </div>
+        </div>
+
+        <!-- السلال الثلاث التفاعلية للخيارات الثلاثة -->
+        <div id="hoops-container">
+            <!-- Hoop A -->
+            <div class="hoop-target-wrapper" id="hoop-0" onclick="shootAtHoop(0)">
+                <div class="hoop-backboard">
+                    <span class="hoop-key-hint">1</span>
+                    <div class="hoop-choice-text" id="choice-text-0">الخيار 1</div>
+                    <div class="hoop-choice-sub" id="choice-sub-0">Option A</div>
+                </div>
+                <div class="hoop-rim-container">
+                    <div class="hoop-rim"></div>
+                    <div class="hoop-net"></div>
+                </div>
+            </div>
+
+            <!-- Hoop B -->
+            <div class="hoop-target-wrapper" id="hoop-1" onclick="shootAtHoop(1)">
+                <div class="hoop-backboard">
+                    <span class="hoop-key-hint">2</span>
+                    <div class="hoop-choice-text" id="choice-text-1">الخيار 2</div>
+                    <div class="hoop-choice-sub" id="choice-sub-1">Option B</div>
+                </div>
+                <div class="hoop-rim-container">
+                    <div class="hoop-rim"></div>
+                    <div class="hoop-net"></div>
+                </div>
+            </div>
+
+            <!-- Hoop C -->
+            <div class="hoop-target-wrapper" id="hoop-2" onclick="shootAtHoop(2)">
+                <div class="hoop-backboard">
+                    <span class="hoop-key-hint">3</span>
+                    <div class="hoop-choice-text" id="choice-text-2">الخيار 3</div>
+                    <div class="hoop-choice-sub" id="choice-sub-2">Option C</div>
+                </div>
+                <div class="hoop-rim-container">
+                    <div class="hoop-rim"></div>
+                    <div class="hoop-net"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- التغذية الراجعة والتنبيه عند التسجيل -->
+        <div class="celebration-popup" id="celebration-text">SWISH! 🌟 +150</div>
+        <div class="feedback-banner" id="feedback-banner"></div>
+
+        <!-- أسفل الشاشة: كرة السلة للتسديد المباشر -->
+        <div class="bottom-court-area">
+            <div class="shoot-hint-pill">
+                🏀 اضغط على السلة أو المفاتيح 1، 2، 3 للتسديد نحو الهدف!
+            </div>
+            <div class="basketball-shooter" id="basketball-ball" onclick="shootAtHoop(0)"></div>
+        </div>
+    </div>
+
+    <!-- نافذة البداية واختيار الصف (Start Modal) -->
+    <div class="modal-overlay" id="start-modal">
+        <div class="modal-card">
+            <div style="font-size: 50px; margin-bottom: 6px;">🏀🔥</div>
+            <h2>دوري رميات السلة الإنجليزية 3D</h2>
+            <p>
+                تحدَّ مهاراتك في مفردات <b>Band I</b> لوزارة التربية والتعليم! استمع للنطق الإنجليزي السليم وسدد الكرة داخل السلة التي تحمل المعنى الصحيح.
+            </p>
+
+            <div style="font-size: 14px; font-weight: 800; color: #facc15; margin-bottom: 10px;">
+                اختر الصف الدراسي للمسابقة:
+            </div>
+            <div class="grade-chips-container">
+                <button class="grade-chip active" onclick="selectGradeFilter('all', this)">جميع الصفوف (1 - 6)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('1-2', this)">الصفوف 1 - 2 (تأسيسي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('3-4', this)">الصفوف 3 - 4 (ابتدائي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('5-6', this)">الصفوف 5 - 6 (متقدم)</button>
+            </div>
+
+            <div style="background: rgba(15,23,42,0.6); padding: 12px; border-radius: 14px; margin-bottom: 20px; font-size: 13px; color: #94a3b8; text-align: right;">
+                💡 <b>طريقة اللعب:</b><br>
+                • اضغط على السلة التي تطابق الإجابة الصحيحة لتسديد رمية متقنة.<br>
+                • استخدم أزرار <b>1، 2، 3</b> على لوحة المفاتيح أو المس الشاشة.<br>
+                • حافظ على التسديدات المتتالية لمضاعفة النقاط x2 و x3 وإشعال السلة بالنيران!
+            </div>
+
+            <button class="btn-action-main" onclick="startGame()">
+                <i class="fas fa-play"></i> انطلاق دوري السلة الآن!
+            </button>
+        </div>
+    </div>
+
+    <!-- نافذة نهاية الجولة (Game Over Modal) -->
+    <div class="modal-overlay hidden" id="gameover-modal">
+        <div class="modal-card">
+            <div style="font-size: 52px; margin-bottom: 8px;" id="gameover-emoji">🏆</div>
+            <h2 id="gameover-title">نهاية الرميات الرائعة!</h2>
+            <p id="gameover-desc">أداء بطولي متميز في معجم Band I للغة الإنجليزية.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                <div style="background: rgba(15,23,42,0.8); border: 2px solid #f59e0b; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 12px; color: #cbd5e1;">النقاط النهائية</div>
+                    <div style="font-size: 26px; font-weight: 900; color: #facc15;" id="final-score">0</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.8); border: 2px solid #10b981; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 12px; color: #cbd5e1;">الرميات الصحيحة</div>
+                    <div style="font-size: 26px; font-weight: 900; color: #34d399;" id="final-correct">0/0</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.8); border: 2px solid #ec4899; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 12px; color: #cbd5e1;">أعلى متتالية</div>
+                    <div style="font-size: 26px; font-weight: 900; color: #f472b6;" id="final-streak">0x</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-action-main" onclick="restartGame()" style="flex: 1;">
+                    <i class="fas fa-redo"></i> العب مرة أخرى
+                </button>
+                <button class="control-btn" onclick="goBackToEnglishPage()" style="flex: 1; padding: 14px; font-size: 16px; justify-content: center;">
+                    <i class="fas fa-book-open"></i> بنك الكلمات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ------------------------------------------------------------------
+ * 1. BAND I COMPREHENSIVE CURRICULUM QUESTIONS (Grades 1 to 6)
+ * Aligned with the Israeli Ministry of Education English Curriculum.
+ * ------------------------------------------------------------------
+ */
+const QUESTION_BANK = [
+    // Grades 1-2 Foundation:
+    { grade: '1-2', eng: 'Teacher', category: 'School', prompt: 'ما معنى كلمة Teacher؟', choices: ['معلم / معلمة', 'طبيب', 'سائق'], correct: 0 },
+    { grade: '1-2', eng: 'Book', category: 'School', prompt: 'ما معنى كلمة Book؟', choices: ['قلم', 'كتاب', 'دفتر'], correct: 1 },
+    { grade: '1-2', eng: 'School', category: 'School', prompt: 'ما معنى كلمة School؟', choices: ['حديقة', 'مستشفى', 'مدرسة'], correct: 2 },
+    { grade: '1-2', eng: 'Dog', category: 'Animals', prompt: 'ما معنى كلمة Dog؟', choices: ['كلب', 'قطة', 'عصفور'], correct: 0 },
+    { grade: '1-2', eng: 'Cat', category: 'Animals', prompt: 'ما معنى كلمة Cat؟', choices: ['سمكة', 'قطة', 'حصان'], correct: 1 },
+    { grade: '1-2', eng: 'Apple', category: 'Food', prompt: 'ما معنى كلمة Apple؟', choices: ['موزة', 'برتقالة', 'تفاحة'], correct: 2 },
+    { grade: '1-2', eng: 'Red', category: 'Colors', prompt: 'ما هو اللون Red؟', choices: ['أحمر', 'أزرق', 'أخضر'], correct: 0 },
+    { grade: '1-2', eng: 'Blue', category: 'Colors', prompt: 'ما هو اللون Blue؟', choices: ['أصفر', 'أزرق', 'برتقالي'], correct: 1 },
+    { grade: '1-2', eng: 'Sun', category: 'Nature', prompt: 'ما معنى كلمة Sun؟', choices: ['قمر', 'غيمة', 'شمس'], correct: 2 },
+    { grade: '1-2', eng: 'Mother', category: 'Family', prompt: 'ما معنى كلمة Mother؟', choices: ['أم', 'أب', 'أخت'], correct: 0 },
+    { grade: '1-2', eng: 'Father', category: 'Family', prompt: 'ما معنى كلمة Father؟', choices: ['عم', 'أب', 'جد'], correct: 1 },
+    { grade: '1-2', eng: 'Sister', category: 'Family', prompt: 'ما معنى كلمة Sister؟', choices: ['أخ', 'صديق', 'أخت'], correct: 2 },
+    { grade: '1-2', eng: 'Pencil', category: 'School', prompt: 'ما معنى كلمة Pencil؟', choices: ['قلم رصاص', 'ممحاة', 'مسطرة'], correct: 0 },
+    { grade: '1-2', eng: 'Hello', category: 'Greetings', prompt: 'نقول Hello لكي نُعبّر عن:', choices: ['وداعاً', 'مرحباً / أهلاً', 'شكراً'], correct: 1 },
+    { grade: '1-2', eng: 'Yellow', category: 'Colors', prompt: 'ما هو اللون Yellow؟', choices: ['أخضر', 'رمادي', 'أصفر'], correct: 2 },
+
+    // Grades 3-4 Elementary Core:
+    { grade: '3-4', eng: 'Water', category: 'Drinks', prompt: 'ما معنى كلمة Water؟', choices: ['ماء', 'حليب', 'عصير'], correct: 0 },
+    { grade: '3-4', eng: 'Friend', category: 'Social', prompt: 'ما معنى كلمة Friend؟', choices: ['عدو', 'صديق', 'جار'], correct: 1 },
+    { grade: '3-4', eng: 'House', category: 'Home', prompt: 'ما معنى كلمة House؟', choices: ['شارع', 'حديقة', 'بيت / منزل'], correct: 2 },
+    { grade: '3-4', eng: 'Window', category: 'Home', prompt: 'ما معنى كلمة Window؟', choices: ['نافذة / شباك', 'باب', 'غرفة'], correct: 0 },
+    { grade: '3-4', eng: 'Hand', category: 'Body', prompt: 'ما معنى كلمة Hand؟', choices: ['قدم', 'يد', 'رأس'], correct: 1 },
+    { grade: '3-4', eng: 'Eye', category: 'Body', prompt: 'ما معنى كلمة Eye؟', choices: ['أذن', 'أنف', 'عين'], correct: 2 },
+    { grade: '3-4', eng: 'Winter', category: 'Seasons', prompt: 'ما هو فصل Winter؟', choices: ['فصل الشتاء', 'فصل الصيف', 'فصل الخريف'], correct: 0 },
+    { grade: '3-4', eng: 'Summer', category: 'Seasons', prompt: 'ما هو فصل Summer؟', choices: ['الربيع', 'الصيف', 'الشتاء'], correct: 1 },
+    { grade: '3-4', eng: 'Happy', category: 'Feelings', prompt: 'ما معنى كلمة Happy؟', choices: ['غاضب', 'حزين', 'سعيد / فرحان'], correct: 2 },
+    { grade: '3-4', eng: 'Sad', category: 'Feelings', prompt: 'ما هو عكس (Opposite) لكلمة Sad؟', choices: ['Happy (سعيد)', 'Angry (غاضب)', 'Tired (تعبان)'], correct: 0 },
+    { grade: '3-4', eng: 'Hot', category: 'Adjectives', prompt: 'ما هو عكس كلمة Hot؟', choices: ['Warm (دافئ)', 'Cold (بارد)', 'Fast (سريع)'], correct: 1 },
+    { grade: '3-4', eng: 'Big', category: 'Adjectives', prompt: 'ما هو عكس كلمة Big (كبير)؟', choices: ['Tall (طويل)', 'Wide (عريض)', 'Small (صغير)'], correct: 2 },
+    { grade: '3-4', eng: 'Rain', category: 'Weather', prompt: 'ما معنى كلمة Rain؟', choices: ['مطر', 'ثلج', 'رياح'], correct: 0 },
+    { grade: '3-4', eng: 'Breakfast', category: 'Meals', prompt: 'وجبة Breakfast هي وجبة:', choices: ['العشاء', 'الإفطار الصباحي', 'الغداء'], correct: 1 },
+    { grade: '3-4', eng: 'Thank you', category: 'Politeness', prompt: 'نقول Thank you للتعبير عن:', choices: ['الاعتذار', 'الترحيب', 'الشكر والامتنان'], correct: 2 },
+
+    // Grades 5-6 Upper Elementary & Advanced Band I:
+    { grade: '5-6', eng: 'Doctor', category: 'Jobs', prompt: 'ما معنى كلمة Doctor؟', choices: ['طبيب / دكتورة', 'مهندس', 'طيار'], correct: 0 },
+    { grade: '5-6', eng: 'Hospital', category: 'Places', prompt: 'ما معنى كلمة Hospital؟', choices: ['مدرسة', 'مستشفى', 'مكتبة'], correct: 1 },
+    { grade: '5-6', eng: 'Library', category: 'Places', prompt: 'ما المكان الذي يسمى Library؟', choices: ['المطعم', 'الملعب', 'المكتبة العامة'], correct: 2 },
+    { grade: '5-6', eng: 'Village', category: 'Places', prompt: 'مشيرفة قرية جميلة. ما معنى قرية؟', choices: ['Village', 'City', 'Country'], correct: 0 },
+    { grade: '5-6', eng: 'Read', category: 'Verbs', prompt: 'ما معنى الفعل Read في جملة I read books؟', choices: ['يكتب', 'يقرأ', 'يرسم'], correct: 1 },
+    { grade: '5-6', eng: 'Write', category: 'Verbs', prompt: 'ما معنى الفعل Write؟', choices: ['يلعب', 'يستمع', 'يكتب'], correct: 2 },
+    { grade: '5-6', eng: 'Always', category: 'Adverbs', prompt: 'ما معنى كلمة Always (100% frequency)؟', choices: ['دائماً', 'أحياناً', 'أبداً'], correct: 0 },
+    { grade: '5-6', eng: 'Never', category: 'Adverbs', prompt: 'ما معنى كلمة Never (0% frequency)؟', choices: ['نادراً', 'أبداً / بالمرة', 'دائماً'], correct: 1 },
+    { grade: '5-6', eng: 'Train', category: 'Transport', prompt: 'وسيلة النقل التي تسمى Train هي:', choices: ['الطائرة', 'الحافلة', 'القطار'], correct: 2 },
+    { grade: '5-6', eng: 'Airplane', category: 'Transport', prompt: 'ما معنى Airplane؟', choices: ['طائرة', 'سفينة', 'دراجة'], correct: 0 },
+    { grade: '5-6', eng: 'Beautiful', category: 'Adjectives', prompt: 'ما معنى صفة Beautiful؟', choices: ['قبيح', 'جميل ورائع', 'قديم'], correct: 1 },
+    { grade: '5-6', eng: 'Fast', category: 'Opposites', prompt: 'ما هو عكس كلمة Fast (سريع)؟', choices: ['Quick (سريع)', 'Strong (قوي)', 'Slow (بطيء)'], correct: 2 },
+    { grade: '5-6', eng: 'Open', category: 'Opposites', prompt: 'ما هو عكس كلمة Open (افتح)؟', choices: ['Close (أغلق)', 'Clean (نظف)', 'Look (انظر)'], correct: 0 },
+    { grade: '5-6', eng: 'Good luck', category: 'Idioms', prompt: 'نقول Good luck لنتمنى لشخص ما:', choices: ['شفاء عاجل', 'حظاً موفقاً وبالتوفيق', 'عيداً سعيداً'], correct: 1 },
+    { grade: '5-6', eng: 'Well done', category: 'Idioms', prompt: 'عبارة Well done تعني:', choices: ['إلى اللقاء', 'معذرة', 'أحسنت وعمل رائع!'], correct: 2 }
+];
+
+/**
+ * ------------------------------------------------------------------
+ * 2. SOUND SYNTHESIS (Zero External Audio Dependencies)
+ * Procedural Web Audio API for Basketball Swish, Rim hit, Cheers
+ * ------------------------------------------------------------------
+ */
+let audioCtx = null;
+let isMuted = localStorage.getItem('english_basketball_muted') === 'true';
+
+function initAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtx = new AudioContext();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (isMuted) return;
+    try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'bounce') {
+            // Ball bounce on hardwood
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'swish') {
+            // High frequency swoosh through net
+            const bufferSize = audioCtx.sampleRate * 0.25;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1400, now);
+            filter.frequency.exponentialRampToValueAtTime(700, now + 0.25);
+            filter.Q.value = 3.0;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+        } else if (type === 'rim') {
+            // Metallic ring off the rim
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(260, now + 0.22);
+            gain.gain.setValueAtTime(0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.22);
+        } else if (type === 'cheer') {
+            // Stadium crowd cheer chord
+            [330, 440, 550, 660].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            });
+        }
+    } catch (e) {
+        console.warn('Audio synthesis issue:', e);
+    }
+}
+
+function toggleSound() {
+    isMuted = !isMuted;
+    localStorage.setItem('english_basketball_muted', isMuted ? 'true' : 'false');
+    updateSoundUI();
+}
+
+function updateSoundUI() {
+    const btn = document.getElementById('btn-sound');
+    const icon = document.getElementById('sound-icon');
+    const text = document.getElementById('sound-text');
+    if (isMuted) {
+        btn.classList.add('muted');
+        icon.className = 'fas fa-volume-mute';
+        text.innerText = 'مكتوم';
+    } else {
+        btn.classList.remove('muted');
+        icon.className = 'fas fa-volume-up';
+        text.innerText = 'صوت عالي';
+    }
+}
+
+// English Speech Pronunciation
+function speakEnglishWord(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.88;
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('TTS error:', e);
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 3. CANVAS COURT RENDERING & BALL PHYSICS
+ * ------------------------------------------------------------------
+ */
+const canvas = document.getElementById('court-canvas');
+const ctx = canvas.getContext('2d');
+let courtWidth = 0;
+let courtHeight = 0;
+
+function resizeCanvas() {
+    courtWidth = canvas.width = window.innerWidth;
+    courtHeight = canvas.height = window.innerHeight;
+    drawCourt();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Animated ball shots & fireworks particles
+let flyingBalls = [];
+let particles = [];
+
+function drawCourt() {
+    ctx.clearRect(0, 0, courtWidth, courtHeight);
+
+    // Hardwood floor gradient & planks
+    const woodGrad = ctx.createLinearGradient(0, 0, 0, courtHeight);
+    woodGrad.addColorStop(0, '#1e293b');
+    woodGrad.addColorStop(0.3, '#1e1b4b');
+    woodGrad.addColorStop(0.7, '#0f172a');
+    woodGrad.addColorStop(1, '#020617');
+    ctx.fillStyle = woodGrad;
+    ctx.fillRect(0, 0, courtWidth, courtHeight);
+
+    // Perspective basketball court lines (3-Point line, Key, Center line)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+    ctx.lineWidth = 3;
+
+    // Outer boundary
+    ctx.strokeRect(courtWidth * 0.05, courtHeight * 0.15, courtWidth * 0.9, courtHeight * 0.8);
+
+    // Key area (Trapezoid leading to hoops)
+    ctx.beginPath();
+    ctx.moveTo(courtWidth * 0.25, courtHeight * 0.95);
+    ctx.lineTo(courtWidth * 0.35, courtHeight * 0.28);
+    ctx.lineTo(courtWidth * 0.65, courtHeight * 0.28);
+    ctx.lineTo(courtWidth * 0.75, courtHeight * 0.95);
+    ctx.stroke();
+
+    // Free throw circle
+    ctx.beginPath();
+    ctx.ellipse(courtWidth * 0.5, courtHeight * 0.55, courtWidth * 0.18, courtHeight * 0.12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 3-Point large arc
+    ctx.beginPath();
+    ctx.arc(courtWidth * 0.5, courtHeight * 0.25, courtWidth * 0.42, 0, Math.PI);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Update and draw flying balls
+    for (let i = flyingBalls.length - 1; i >= 0; i--) {
+        const b = flyingBalls[i];
+        b.t += 0.038;
+
+        if (b.t >= 1) {
+            // Ball reached hoop!
+            b.onReach();
+            flyingBalls.splice(i, 1);
+            continue;
+        }
+
+        // Parabolic arc interpolation:
+        // P(t) = (1-t)^2 * P0 + 2*(1-t)*t * P_control + t^2 * P_target
+        const p0x = b.startX;
+        const p0y = b.startY;
+        const p2x = b.targetX;
+        const p2y = b.targetY;
+        const p1x = (p0x + p2x) / 2;
+        const p1y = Math.min(p0y, p2y) - (courtHeight * 0.32); // High parabolic arc
+
+        const currentX = (1 - b.t) * (1 - b.t) * p0x + 2 * (1 - b.t) * b.t * p1x + b.t * b.t * p2x;
+        const currentY = (1 - b.t) * (1 - b.t) * p0y + 2 * (1 - b.t) * b.t * p1y + b.t * b.t * p2y;
+
+        // Size perspective (shrinks as it flies away)
+        const currentRadius = b.radius * (1 - b.t * 0.48);
+
+        // Draw shadow on court
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(currentX, p0y - (p0y - p2y) * b.t, currentRadius * 1.2, currentRadius * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw basketball with rotation & shine
+        ctx.save();
+        ctx.translate(currentX, currentY);
+        ctx.rotate(b.t * Math.PI * 4);
+
+        const ballGrad = ctx.createRadialGradient(-currentRadius * 0.3, -currentRadius * 0.3, currentRadius * 0.1, 0, 0, currentRadius);
+        ballGrad.addColorStop(0, '#fb923c');
+        ballGrad.addColorStop(0.6, '#ea580c');
+        ballGrad.addColorStop(1, '#7c2d12');
+
+        ctx.fillStyle = ballGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Basketball seams
+        ctx.strokeStyle = '#311005';
+        ctx.lineWidth = Math.max(1.5, currentRadius * 0.1);
+        ctx.beginPath();
+        ctx.moveTo(-currentRadius, 0);
+        ctx.lineTo(currentRadius, 0);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, -currentRadius);
+        ctx.lineTo(0, currentRadius);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // Update and draw celebratory particles (confetti & stars)
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2; // gravity
+        p.life -= 0.025;
+
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+
+    requestAnimationFrame(drawCourt);
+}
+
+function spawnCelebrationParticles(x, y) {
+    const colors = ['#facc15', '#38bdf8', '#4ade80', '#f43f5e', '#a855f7'];
+    for (let i = 0; i < 40; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 3,
+            size: Math.random() * 5 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 1.0
+        });
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 4. GAME STATE & QUESTION LOGIC
+ * ------------------------------------------------------------------
+ */
+let currentGradeFilter = 'all';
+let currentFilteredQuestions = [];
+let currentQuestionIndex = 0;
+let currentScore = 0;
+let currentStreak = 0;
+let maxStreak = 0;
+let correctCount = 0;
+let isShootingLocked = false;
+let gameTimer = 60;
+let timerInterval = null;
+
+function selectGradeFilter(filter, el) {
+    currentGradeFilter = filter;
+    document.querySelectorAll('.grade-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+function getFilteredQuestions() {
+    if (currentGradeFilter === 'all') {
+        return [...QUESTION_BANK].sort(() => Math.random() - 0.5);
+    }
+    return QUESTION_BANK.filter(q => q.grade === currentGradeFilter).sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+    initAudioContext();
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('gameover-modal').classList.add('hidden');
+
+    currentFilteredQuestions = getFilteredQuestions();
+    if (currentFilteredQuestions.length === 0) {
+        currentFilteredQuestions = [...QUESTION_BANK];
+    }
+
+    currentQuestionIndex = 0;
+    currentScore = 0;
+    currentStreak = 0;
+    maxStreak = 0;
+    correctCount = 0;
+    isShootingLocked = false;
+    gameTimer = 60;
+
+    updateStatsUI();
+    loadQuestion(currentQuestionIndex);
+
+    // Timer countdown
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        gameTimer--;
+        document.getElementById('timer-display').innerText = gameTimer + 's';
+        if (gameTimer <= 0) {
+            clearInterval(timerInterval);
+            endGame();
+        }
+    }, 1000);
+}
+
+function restartGame() {
+    startGame();
+}
+
+function loadQuestion(index) {
+    if (index >= currentFilteredQuestions.length) {
+        // Shuffle and restart questions if we reached the end
+        currentFilteredQuestions = getFilteredQuestions();
+        currentQuestionIndex = 0;
+        index = 0;
+    }
+
+    const q = currentFilteredQuestions[index];
+    const totalQ = Math.min(15, currentFilteredQuestions.length);
+
+    document.getElementById('grade-badge').innerText = `Band I • Grade ${q.grade}`;
+    document.getElementById('category-badge').innerText = q.category;
+    document.getElementById('question-index-display').innerText = (index + 1);
+    document.getElementById('question-total-display').innerText = totalQ;
+
+    document.getElementById('question-text').innerText = q.eng;
+    document.getElementById('question-prompt').innerText = q.prompt;
+
+    // Reset Hoops Visuals
+    for (let i = 0; i < 3; i++) {
+        const hoopEl = document.getElementById(`hoop-${i}`);
+        hoopEl.className = 'hoop-target-wrapper';
+        document.getElementById(`choice-text-${i}`).innerText = q.choices[i] || '—';
+        document.getElementById(`choice-sub-${i}`).innerText = `Hoop ${String.fromCharCode(65 + i)}`;
+    }
+
+    // Hide feedback banner
+    const banner = document.getElementById('feedback-banner');
+    banner.style.display = 'none';
+
+    // Auto pronunciation
+    speakEnglishWord(q.eng);
+
+    isShootingLocked = false;
+}
+
+// Shoot at targeted hoop (0, 1, or 2)
+function shootAtHoop(hoopIndex) {
+    if (isShootingLocked || gameTimer <= 0) return;
+    isShootingLocked = true;
+
+    initAudioContext();
+    playSound('bounce');
+
+    const hoopEl = document.getElementById(`hoop-${hoopIndex}`);
+    const hoopRect = hoopEl.getBoundingClientRect();
+    const targetX = hoopRect.left + hoopRect.width / 2;
+    const targetY = hoopRect.top + hoopRect.height * 0.75;
+
+    const ballShooter = document.getElementById('basketball-ball');
+    const ballRect = ballShooter.getBoundingClientRect();
+    const startX = ballRect.left + ballRect.width / 2;
+    const startY = ballRect.top + ballRect.height / 2;
+
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    const isCorrect = (hoopIndex === currentQ.correct);
+
+    // Launch flying ball in canvas
+    flyingBalls.push({
+        startX: startX,
+        startY: startY,
+        targetX: targetX,
+        targetY: targetY,
+        radius: 36,
+        t: 0,
+        onReach: () => {
+            handleShotResult(hoopIndex, isCorrect, targetX, targetY);
+        }
+    });
+}
+
+function handleShotResult(hoopIndex, isCorrect, x, y) {
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    const chosenHoopEl = document.getElementById(`hoop-${hoopIndex}`);
+
+    if (isCorrect) {
+        // SUCCESS: Perfect Swish!
+        playSound('swish');
+        playSound('cheer');
+        chosenHoopEl.classList.add('correct');
+        spawnCelebrationParticles(x, y);
+
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        correctCount++;
+
+        const comboMultiplier = Math.min(3, 1 + Math.floor(currentStreak / 3));
+        const pointsAdded = 100 * comboMultiplier;
+        currentScore += pointsAdded;
+
+        // Show celebration popup
+        const celebration = document.getElementById('celebration-text');
+        celebration.innerText = currentStreak >= 3 ? `🔥 ON FIRE! x${comboMultiplier} +${pointsAdded}` : `SWISH! 🌟 +${pointsAdded}`;
+        celebration.classList.add('show');
+        setTimeout(() => celebration.classList.remove('show'), 900);
+
+        updateStatsUI();
+
+        // Move to next question after short delay
+        setTimeout(() => {
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }, 1100);
+
+    } else {
+        // MISS: Hit the rim
+        playSound('rim');
+        chosenHoopEl.classList.add('wrong');
+        currentStreak = 0;
+        updateStatsUI();
+
+        // Highlight correct hoop so student learns!
+        const correctHoopEl = document.getElementById(`hoop-${currentQ.correct}`);
+        correctHoopEl.classList.add('correct');
+
+        const banner = document.getElementById('feedback-banner');
+        banner.innerHTML = `💡 الإجابة الصحيحة لـ <b>${currentQ.eng}</b> هي: <span style="color:#facc15;">${currentQ.choices[currentQ.correct]}</span>`;
+        banner.style.display = 'block';
+
+        // Move to next question after learning opportunity
+        setTimeout(() => {
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }, 2200);
+    }
+}
+
+function updateStatsUI() {
+    document.getElementById('score-display').innerText = currentScore;
+    document.getElementById('streak-display').innerText = currentStreak + 'x';
+}
+
+function endGame() {
+    clearInterval(timerInterval);
+    document.getElementById('gameover-modal').classList.remove('hidden');
+    document.getElementById('final-score').innerText = currentScore;
+    document.getElementById('final-correct').innerText = `${correctCount}/${currentQuestionIndex + 1}`;
+    document.getElementById('final-streak').innerText = `${maxStreak}x`;
+
+    const totalQ = currentQuestionIndex + 1;
+    const ratio = totalQ > 0 ? (correctCount / totalQ) : 0;
+
+    const emojiEl = document.getElementById('gameover-emoji');
+    const titleEl = document.getElementById('gameover-title');
+    const descEl = document.getElementById('gameover-desc');
+
+    if (ratio >= 0.8) {
+        emojiEl.innerText = '🏆';
+        titleEl.innerText = 'بطل دوري كرة السلة الإنجليزية!';
+        descEl.innerText = 'ما شاء الله! إتقان مذهل لمعجم ومفردات Band I للمرحلة الابتدائية.';
+    } else if (ratio >= 0.5) {
+        emojiEl.innerText = '⭐';
+        titleEl.innerText = 'رميات رائعة ومستوى واعد!';
+        descEl.innerText = 'أداء جيد جداً! كرر المحاولة لتصل إلى نسبة رميات 100%.';
+    } else {
+        emojiEl.innerText = '🏀';
+        titleEl.innerText = 'مجهود طيب، واصل التدريب!';
+        descEl.innerText = 'راجع الكلمات في بنك المفردات بالأسفل وسدد من جديد لتحقيق رقم قياسي.';
+    }
+}
+
+function goBackToEnglishPage() {
+    if (window.top !== window.self) {
+        // We are in an iframe
+        try {
+            window.top.location.hash = '#english';
+        } catch (e) {
+            window.location.href = '/#/english';
+        }
+    } else {
+        window.location.href = '/#/english';
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 5. CONTROLS (Keyboard & Audio Replay)
+ * ------------------------------------------------------------------
+ */
+document.getElementById('btn-play-audio').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    if (currentQ) speakEnglishWord(currentQ.eng);
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === '1') {
+        shootAtHoop(0);
+    } else if (e.key === '2') {
+        shootAtHoop(1);
+    } else if (e.key === '3') {
+        shootAtHoop(2);
+    } else if (e.code === 'Space') {
+        const currentQ = currentFilteredQuestions[currentQuestionIndex];
+        if (currentQ) speakEnglishWord(currentQ.eng);
+    } else if (e.key === 'm' || e.key === 'M') {
+        toggleSound();
+    }
+});
+
+// Setup on boot
+window.onload = () => {
+    updateSoundUI();
+    resizeCanvas();
+};
+</script>
+</body>
+</html>
