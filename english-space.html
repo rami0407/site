@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Galaxy Defender - حرب الفضاء ومعركة مجرة الكلمات (Band I)</title>
+    <!-- خط Cairo ومكتبة أيقونات FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Fredoka+One&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #020617;
+            color: #ffffff;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(ellipse at 50% 40%, #0f172a 0%, #030712 70%, #000000 100%);
+        }
+
+        /* فضاء النجوم والليزر Canvas */
+        #space-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة المستخدم العلوية HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: linear-gradient(180deg, #1e293b, #0f172a);
+            border: 2px solid rgba(56, 189, 248, 0.4);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .control-btn:hover {
+            border-color: #38bdf8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.4);
+        }
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+
+        .sound-toggle-btn.muted {
+            background: linear-gradient(180deg, #475569, #334155);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        /* شاشة قيادة المجرة (Command Bridge Jumbotron) */
+        .galaxy-mission-box {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 660px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.95));
+            border: 2px solid #38bdf8;
+            border-radius: 20px;
+            padding: 10px 18px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(56, 189, 248, 0.35);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        .mission-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-bottom: 1px dashed rgba(56, 189, 248, 0.3);
+            padding-bottom: 4px;
+        }
+
+        .band-badge {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            letter-spacing: 0.5px;
+            border: 1px solid #38bdf8;
+        }
+
+        .category-badge {
+            background: rgba(250, 204, 21, 0.15);
+            color: #fde047;
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .mission-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 4px 0;
+        }
+
+        .mission-text-eng {
+            font-size: clamp(22px, 3.6vw, 30px);
+            font-weight: 900;
+            color: #fde047;
+            font-family: 'Fredoka One', 'Orbitron', 'Cairo', sans-serif;
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .audio-replay-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: 2px solid #93c5fd;
+            color: #fff;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+        .audio-replay-btn:hover {
+            transform: scale(1.15);
+            background: #2563eb;
+        }
+        .audio-replay-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mission-subtext {
+            font-size: 13px;
+            color: #bae6fd;
+            font-weight: 700;
+        }
+
+        /* لوحة إحصائيات السفينة (الدرع والنقاط) */
+        .top-right-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .stat-pill {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        }
+        .stat-pill.score-pill {
+            border-color: #facc15;
+        }
+        .stat-pill.shield-pill {
+            border-color: #38bdf8;
+        }
+        .stat-val {
+            font-size: 16px;
+            font-weight: 900;
+            color: #facc15;
+            letter-spacing: 1px;
+        }
+
+        /* درع الطاقة للسفينة */
+        .shield-bar-wrapper {
+            width: 75px;
+            height: 10px;
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid #38bdf8;
+            border-radius: 99px;
+            overflow: hidden;
+            padding: 1px;
+        }
+        .shield-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, #22c55e);
+            border-radius: 99px;
+            transition: width 0.3s ease;
+        }
+
+        /* أسفل الشاشة: تعليمات التحكم السريع */
+        .bottom-hud-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .flight-tip-pill {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1.5px solid rgba(56, 189, 248, 0.4);
+            color: #bae6fd;
+            padding: 6px 14px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .touch-fire-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: 2px solid #fecaca;
+            color: #ffffff;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .touch-fire-btn:active {
+            transform: scale(0.92);
+        }
+
+        @media (max-width: 768px) {
+            .touch-fire-btn {
+                display: flex;
+            }
+        }
+
+        /* النوافذ المنبثقة (Modals) */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 3px solid #38bdf8;
+            border-radius: 26px;
+            padding: 28px;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(56, 189, 248, 0.35);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-card h2 {
+            font-size: clamp(22px, 3.5vw, 28px);
+            color: #facc15;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .modal-card p {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .grade-chips-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .grade-chip {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #e2e8f0;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .grade-chip.active, .grade-chip:hover {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            border-color: #38bdf8;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-action-main {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            border: 3px solid #ffffff;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+            padding: 12px 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 0 #0369a1, 0 8px 20px rgba(56, 189, 248, 0.4);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-action-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #0369a1;
+        }
+
+        .celebration-popup {
+            position: absolute;
+            top: 48%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 38px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 25px #f59e0b, 0 4px 15px rgba(0,0,0,0.8);
+            z-index: 50;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .celebration-popup.show {
+            transform: translate(-50%, -50%) scale(1.15);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- فضاء النجوم والليزر وسفن الأعداء -->
+    <canvas id="space-canvas"></canvas>
+
+    <!-- واجهة المستخدم العلوية HUD -->
+    <div id="hud">
+        <div class="hud-header">
+            <div class="top-left-controls">
+                <button class="control-btn" onclick="goBackToEnglishPage()">
+                    <i class="fas fa-arrow-right"></i> البوابة 🇬🇧
+                </button>
+                <button class="control-btn" onclick="restartGame()">
+                    <i class="fas fa-redo"></i> معركة جديدة
+                </button>
+                <button class="control-btn sound-toggle-btn" id="btn-sound" onclick="toggleSound()">
+                    <i class="fas fa-volume-up" id="sound-icon"></i> <span id="sound-text">صوت عالي</span>
+                </button>
+            </div>
+
+            <!-- لوحة النقاط والدرع -->
+            <div class="top-right-stats">
+                <div class="stat-pill score-pill">
+                    <span style="font-size: 12px; color: #cbd5e1; font-weight: 800;">النقاط</span>
+                    <span class="stat-val" id="score-display">0</span>
+                    <i class="fas fa-trophy" style="color: #facc15;"></i>
+                </div>
+                <div class="stat-pill shield-pill">
+                    <span style="font-size: 11px; color: #cbd5e1; font-weight: 800;">الدرع</span>
+                    <div class="shield-bar-wrapper">
+                        <div class="shield-bar-fill" id="shield-fill"></div>
+                    </div>
+                    <i class="fas fa-shield-alt" style="color: #38bdf8;"></i>
+                </div>
+                <div class="stat-pill" style="border-color: #ec4899;">
+                    <span style="font-size: 11px; color: #cbd5e1; font-weight: 800;">المتتالية</span>
+                    <span class="stat-val" id="streak-display" style="color: #f472b6;">0x</span>
+                    <i class="fas fa-fire" style="color: #f43f5e;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة مهمة المجرة (السؤال الإنجليزي المعلق) -->
+        <div class="galaxy-mission-box" id="mission-box">
+            <div class="mission-top-bar">
+                <span class="band-badge" id="grade-badge">Band I • Elementary</span>
+                <span class="category-badge" id="category-badge">Space Mission</span>
+                <span style="font-size: 11px; color: #38bdf8; font-weight: 800;">
+                    الهدف <span id="mission-index-display">1</span> / <span id="mission-total-display">15</span>
+                </span>
+            </div>
+
+            <div class="mission-display">
+                <span class="mission-text-eng" id="mission-target-word">Target</span>
+                <button class="audio-replay-btn" id="btn-play-audio" title="استمع للنطق الإنجليزي الصحيح (R / مسافة)">
+                    <i class="fas fa-volume-high"></i>
+                </button>
+            </div>
+
+            <div class="mission-subtext" id="mission-subtext">
+                وجّه سفينتك وأطلق ليزر البلازما على السفينة الفضائية المطابقة للمعنى!
+            </div>
+        </div>
+
+        <!-- شريط التلميح وأزرار اللمس السريع في الأسفل -->
+        <div class="bottom-hud-bar">
+            <div class="flight-tip-pill">
+                🚀 حرّك الفأرة/اللمس للتوجيه • اضغط لإطلاق الليزر وتدمير السفينة المطابقة!
+            </div>
+            <div class="touch-fire-btn" id="btn-touch-fire" onclick="firePlayerLaser()">
+                <i class="fas fa-crosshairs"></i>
+            </div>
+        </div>
+
+        <!-- التغذية البصرية المنبثقة -->
+        <div class="celebration-popup" id="celebration-text">TARGET HIT! 💥 +100</div>
+    </div>
+
+    <!-- نافذة البداية (Start Modal) -->
+    <div class="modal-overlay" id="start-modal">
+        <div class="modal-card">
+            <div style="font-size: 54px; margin-bottom: 6px;">🚀🌌</div>
+            <h2>English Galaxy Defender</h2>
+            <h3 style="color: #38bdf8; font-size: 16px; margin-bottom: 12px; font-weight: 800;">حرب الفضاء ومعركة مجرة الكلمات (Band I)</h3>
+            <p>
+                قُد سفينتك الفضائية في أعماق المجرة! استمع للنطق الإنجليزي السليم لكلمات <b>Band I</b> وسدد مدافع البلازما لتدمير سفن الفضائيين التي تحمل المعنى الصحيح.
+            </p>
+
+            <div style="font-size: 14px; font-weight: 800; color: #facc15; margin-bottom: 10px;">
+                اختر مرحلة الصف الدراسي:
+            </div>
+            <div class="grade-chips-container">
+                <button class="grade-chip active" onclick="selectGradeFilter('all', this)">جميع الصفوف (1 - 6)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('1-2', this)">الصفوف 1 - 2 (تأسيسي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('3-4', this)">الصفوف 3 - 4 (ابتدائي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('5-6', this)">الصفوف 5 - 6 (متقدم)</button>
+            </div>
+
+            <div style="background: rgba(15,23,42,0.65); padding: 12px; border-radius: 14px; margin-bottom: 18px; font-size: 13px; color: #94a3b8; text-align: right; border: 1px solid rgba(56, 189, 248, 0.2);">
+                🎮 <b>طريقة القيادة:</b><br>
+                • حرّك الفأرة أو اسحب بإصبعك لتوجيه السفينة يميناً ويساراً.<br>
+                • اضغط بالفأرة أو زر المسافة لإطلاق ليزر البلازما الخارق.<br>
+                • كل إصابة صحيحة تدمر سفينة العدو وتمنحك نقاطاً درعية وCombo مضاعفاً!
+            </div>
+
+            <button class="btn-action-main" onclick="startGame()">
+                <i class="fas fa-rocket"></i> انطلاق معركة الفضاء الآن!
+            </button>
+        </div>
+    </div>
+
+    <!-- نافذة نهاية المعركة (Game Over Modal) -->
+    <div class="modal-overlay hidden" id="gameover-modal">
+        <div class="modal-card">
+            <div style="font-size: 52px; margin-bottom: 8px;" id="gameover-emoji">🏆</div>
+            <h2 id="gameover-title">انتصار مجري عظيم!</h2>
+            <p id="gameover-desc">لقد دافعت بنجاح عن مجرة المعرفة وأتقنت معجم Band I للغة الإنجليزية.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                <div style="background: rgba(15,23,42,0.85); border: 2px solid #f59e0b; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #cbd5e1;">النقاط</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #facc15;" id="final-score">0</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.85); border: 2px solid #38bdf8; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #cbd5e1;">سفن مدمرة</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #38bdf8;" id="final-correct">0/0</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.85); border: 2px solid #ec4899; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #cbd5e1;">أعلى Combo</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #f472b6;" id="final-streak">0x</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-action-main" onclick="restartGame()" style="flex: 1;">
+                    <i class="fas fa-redo"></i> معركة جديدة
+                </button>
+                <button class="control-btn" onclick="goBackToEnglishPage()" style="flex: 1; padding: 14px; font-size: 15px; justify-content: center;">
+                    <i class="fas fa-book-open"></i> بنك الكلمات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ------------------------------------------------------------------
+ * 1. BAND I COMPREHENSIVE CURRICULUM QUESTIONS (Grades 1 to 6)
+ * Aligned with the Israeli Ministry of Education English Curriculum.
+ * ------------------------------------------------------------------
+ */
+const SPACE_QUESTION_BANK = [
+    // Grades 1-2 Foundation:
+    { grade: '1-2', eng: 'Sun', category: 'Nature', prompt: 'دمّر السفينة التي تعني Sun (شمس)', choices: ['شمس ☀️', 'قمر 🌙', 'نجمة ⭐'], correct: 0 },
+    { grade: '1-2', eng: 'Cat', category: 'Animals', prompt: 'دمّر السفينة التي تعني Cat (قطة)', choices: ['كلب 🐶', 'قطة 🐱', 'سمكة 🐟'], correct: 1 },
+    { grade: '1-2', eng: 'Apple', category: 'Food', prompt: 'دمّر السفينة التي تعني Apple (تفاحة)', choices: ['موزة 🍌', 'برتقالة 🍊', 'تفاحة 🍎'], correct: 2 },
+    { grade: '1-2', eng: 'Book', category: 'School', prompt: 'دمّر السفينة التي تعني Book (كتاب)', choices: ['كتاب 📖', 'قلم ✏️', 'حقيبة 🎒'], correct: 0 },
+    { grade: '1-2', eng: 'School', category: 'Places', prompt: 'دمّر السفينة التي تعني School (مدرسة)', choices: ['حديقة 🌳', 'مدرسة 🏫', 'بيت 🏠'], correct: 1 },
+    { grade: '1-2', eng: 'Blue', category: 'Colors', prompt: 'دمّر السفينة التي تحمل اللون Blue (أزرق)', choices: ['أحمر 🔴', 'أخضر 🟢', 'أزرق 🔵'], correct: 2 },
+    { grade: '1-2', eng: 'Dog', category: 'Animals', prompt: 'دمّر السفينة التي تعني Dog (كلب)', choices: ['كلب 🐕', 'عصفور 🐦', 'أرنب 🐇'], correct: 0 },
+    { grade: '1-2', eng: 'Mother', category: 'Family', prompt: 'دمّر السفينة التي تعني Mother (أم)', choices: ['أب 👨', 'أم 👩', 'أخت 👧'], correct: 1 },
+
+    // Grades 3-4 Elementary Core:
+    { grade: '3-4', eng: 'Water', category: 'Drinks', prompt: 'استهدف سفينة Water (ماء)', choices: ['ماء 💧', 'عصير 🧃', 'حليب 🥛'], correct: 0 },
+    { grade: '3-4', eng: 'Friend', category: 'Social', prompt: 'استهدف سفينة Friend (صديق)', choices: ['غريب 👤', 'صديق 🤝', 'معلم 🧑‍🏫'], correct: 1 },
+    { grade: '3-4', eng: 'Window', category: 'Home', prompt: 'استهدف سفينة Window (نافذة)', choices: ['باب 🚪', 'غرفة 🛏️', 'نافذة 🪟'], correct: 2 },
+    { grade: '3-4', eng: 'Winter', category: 'Seasons', prompt: 'استهدف سفينة فصل Winter (الشتاء)', choices: ['فصل الشتاء ❄️', 'فصل الصيف ☀️', 'فصل الخريف 🍂'], correct: 0 },
+    { grade: '3-4', eng: 'Opposite of: HOT', category: 'Opposites', prompt: 'ما هو عكس Hot (حار)؟', choices: ['Warm (دافئ)', 'Cold (بارد ❄️)', 'Fast (سريع)'], correct: 1 },
+    { grade: '3-4', eng: 'Opposite of: BIG', category: 'Opposites', prompt: 'ما هو عكس Big (كبير)؟', choices: ['Tall (طويل)', 'High (مرتفع)', 'Small (صغير 🔬)'], correct: 2 },
+    { grade: '3-4', eng: 'Happy', category: 'Feelings', prompt: 'استهدف سفينة Happy (سعيد)', choices: ['سعيد 😊', 'حزين 😢', 'غاضب 😠'], correct: 0 },
+    { grade: '3-4', eng: 'Rain', category: 'Weather', prompt: 'استهدف سفينة Rain (مطر)', choices: ['ثلج ❄️', 'مطر 🌧️', 'رياح 💨'], correct: 1 },
+
+    // Grades 5-6 Upper Elementary & Advanced Band I:
+    { grade: '5-6', eng: 'Doctor', category: 'Jobs', prompt: 'استهدف سفينة مهنة Doctor (طبيب)', choices: ['معلم 👨‍🏫', 'طيار 👨‍✈️', 'طبيب 🩺'], correct: 2 },
+    { grade: '5-6', eng: 'Hospital', category: 'Places', prompt: 'استهدف سفينة مكان Hospital (مستشفى)', choices: ['مستشفى 🏥', 'مكتبة 📚', 'مطار ✈️'], correct: 0 },
+    { grade: '5-6', eng: 'Opposite of: FAST', category: 'Opposites', prompt: 'ما هو عكس Fast (سريع)؟', choices: ['Quick', 'Slow (بطيء 🐢)', 'Easy'], correct: 1 },
+    { grade: '5-6', eng: 'Opposite of: OPEN', category: 'Opposites', prompt: 'ما هو عكس Open (افتح)؟', choices: ['Start', 'Run', 'Close (أغلق 🔒)'], correct: 2 },
+    { grade: '5-6', eng: 'Always', category: 'Adverbs', prompt: 'استهدف سفينة Always (100% frequency)', choices: ['دائماً 🔄', 'أبداً 🚫', 'أحياناً ⏳'], correct: 0 },
+    { grade: '5-6', eng: 'Never', category: 'Adverbs', prompt: 'استهدف سفينة Never (0% frequency)', choices: ['غالباً', 'أبداً / بالمرة ❌', 'دائماً'], correct: 1 },
+    { grade: '5-6', eng: 'Train', category: 'Transport', prompt: 'استهدف وسيلة Train (قطار)', choices: ['حافلة 🚌', 'طائرة ✈️', 'قطار 🚆'], correct: 2 },
+    { grade: '5-6', eng: 'Beautiful', category: 'Adjectives', prompt: 'استهدف معنى صفة Beautiful', choices: ['جميل ورائع ✨', 'قبيح 👾', 'قديم 🏚️'], correct: 0 },
+    { grade: '5-6', eng: 'Well done', category: 'Expressions', prompt: 'استهدف معنى عبارة Well done', choices: ['حظاً موفقاً', 'أحسنت وعمل رائع! 🌟', 'معذرة'], correct: 1 }
+];
+
+/**
+ * ------------------------------------------------------------------
+ * 2. SOUND SYNTHESIS (Zero External Audio Dependencies)
+ * Procedural Web Audio API for Laser Blasts, Explosions, Warp Drive
+ * ------------------------------------------------------------------
+ */
+let audioCtx = null;
+let isMuted = localStorage.getItem('english_space_muted') === 'true';
+
+function initAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtx = new AudioContext();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (isMuted) return;
+    try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'laser') {
+            // Futuristic plasma laser shot
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.15);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+
+        } else if (type === 'explosion') {
+            // Deep space explosion noise
+            const bufferSize = audioCtx.sampleRate * 0.4;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(600, now);
+            filter.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+
+        } else if (type === 'hit_shield') {
+            // Metallic deflection clang
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+            gain.gain.setValueAtTime(0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.25);
+
+        } else if (type === 'triumph') {
+            // Sci-fi victory fanfare
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.5);
+            });
+        }
+    } catch (e) {
+        console.warn('Audio synthesis issue:', e);
+    }
+}
+
+function toggleSound() {
+    isMuted = !isMuted;
+    localStorage.setItem('english_space_muted', isMuted ? 'true' : 'false');
+    updateSoundUI();
+}
+
+function updateSoundUI() {
+    const btn = document.getElementById('btn-sound');
+    const icon = document.getElementById('sound-icon');
+    const text = document.getElementById('sound-text');
+    if (isMuted) {
+        btn.classList.add('muted');
+        icon.className = 'fas fa-volume-mute';
+        text.innerText = 'مكتوم';
+    } else {
+        btn.classList.remove('muted');
+        icon.className = 'fas fa-volume-up';
+        text.innerText = 'صوت عالي';
+    }
+}
+
+// Native English Speech Synthesis
+function speakEnglishWord(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+        window.speechSynthesis.cancel();
+        // Clean out prompt extras if any
+        const cleanWord = text.replace(/Opposite of:\s*/i, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanWord);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.88;
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('TTS error:', e);
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 3. CANVAS GALAXY ENGINE (Stars, Starship, Enemy Ships, Lasers)
+ * ------------------------------------------------------------------
+ */
+const canvas = document.getElementById('space-canvas');
+const ctx = canvas.getContext('2d');
+let spaceWidth = 0;
+let spaceHeight = 0;
+
+function resizeCanvas() {
+    spaceWidth = canvas.width = window.innerWidth;
+    spaceHeight = canvas.height = window.innerHeight;
+    initStars();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Background Parallax Stars
+let stars = [];
+function initStars() {
+    stars = [];
+    const count = Math.floor((spaceWidth * spaceHeight) / 5000);
+    for (let i = 0; i < count; i++) {
+        stars.push({
+            x: Math.random() * spaceWidth,
+            y: Math.random() * spaceHeight,
+            radius: Math.random() * 1.8 + 0.5,
+            speed: Math.random() * 1.5 + 0.5,
+            alpha: Math.random() * 0.8 + 0.2
+        });
+    }
+}
+
+// Player Starship Object
+const player = {
+    x: 0,
+    y: 0,
+    width: 60,
+    height: 54,
+    speed: 12,
+    targetX: 0,
+    shield: 100,
+    thrusterFlicker: 0
+};
+
+let lasers = [];
+let enemyShips = [];
+let explosions = [];
+let floatingTexts = [];
+
+// Game Controller State
+let currentGradeFilter = 'all';
+let currentFilteredQuestions = [];
+let currentQuestionIndex = 0;
+let currentScore = 0;
+let currentStreak = 0;
+let maxStreak = 0;
+let correctCount = 0;
+let isGameActive = false;
+
+function selectGradeFilter(filter, el) {
+    currentGradeFilter = filter;
+    document.querySelectorAll('.grade-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+function getFilteredQuestions() {
+    if (currentGradeFilter === 'all') {
+        return [...SPACE_QUESTION_BANK].sort(() => Math.random() - 0.5);
+    }
+    return SPACE_QUESTION_BANK.filter(q => q.grade === currentGradeFilter).sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+    initAudioContext();
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('gameover-modal').classList.add('hidden');
+
+    currentFilteredQuestions = getFilteredQuestions();
+    if (currentFilteredQuestions.length === 0) {
+        currentFilteredQuestions = [...SPACE_QUESTION_BANK];
+    }
+
+    currentQuestionIndex = 0;
+    currentScore = 0;
+    currentStreak = 0;
+    maxStreak = 0;
+    correctCount = 0;
+    player.shield = 100;
+    player.x = spaceWidth / 2;
+    player.targetX = spaceWidth / 2;
+    player.y = spaceHeight - 90;
+
+    lasers = [];
+    explosions = [];
+    floatingTexts = [];
+    isGameActive = true;
+
+    updateStatsUI();
+    loadQuestion(currentQuestionIndex);
+}
+
+function restartGame() {
+    startGame();
+}
+
+function loadQuestion(index) {
+    if (index >= currentFilteredQuestions.length) {
+        endGame(true);
+        return;
+    }
+
+    const q = currentFilteredQuestions[index];
+    const totalQ = Math.min(15, currentFilteredQuestions.length);
+
+    document.getElementById('grade-badge').innerText = `Band I • Grade ${q.grade}`;
+    document.getElementById('category-badge').innerText = q.category;
+    document.getElementById('mission-index-display').innerText = (index + 1);
+    document.getElementById('mission-total-display').innerText = totalQ;
+
+    document.getElementById('mission-target-word').innerText = q.eng;
+    document.getElementById('mission-subtext').innerText = q.prompt;
+
+    // Auto-pronounce
+    speakEnglishWord(q.eng);
+
+    // Spawn 3 descending alien cruisers representing the 3 choices
+    spawnEnemySquad(q);
+}
+
+function spawnEnemySquad(q) {
+    enemyShips = [];
+    const count = q.choices.length;
+    const spacing = spaceWidth / (count + 1);
+
+    for (let i = 0; i < count; i++) {
+        enemyShips.push({
+            id: i,
+            x: spacing * (i + 1),
+            y: -80,
+            targetY: 130 + (i % 2) * 40,
+            width: Math.min(180, spaceWidth * 0.28),
+            height: 65,
+            label: q.choices[i],
+            isCorrect: (i === q.correct),
+            health: 1,
+            wobble: Math.random() * Math.PI * 2,
+            speedY: 1.8 + Math.random() * 0.5,
+            hitCooldown: 0
+        });
+    }
+}
+
+// Fire player plasma laser
+function firePlayerLaser() {
+    if (!isGameActive) return;
+    playSound('laser');
+
+    // Dual plasma cannons on wings
+    lasers.push({
+        x: player.x - 20,
+        y: player.y - 10,
+        vy: -18,
+        color: '#38bdf8'
+    });
+    lasers.push({
+        x: player.x + 20,
+        y: player.y - 10,
+        vy: -18,
+        color: '#38bdf8'
+    });
+}
+
+/**
+ * Main Game Loop
+ */
+function updateGame() {
+    // 1. Draw Space & Nebula
+    ctx.clearRect(0, 0, spaceWidth, spaceHeight);
+
+    // Moving Stars
+    ctx.fillStyle = '#ffffff';
+    for (let s of stars) {
+        s.y += s.speed;
+        if (s.y > spaceHeight) {
+            s.y = 0;
+            s.x = Math.random() * spaceWidth;
+        }
+        ctx.globalAlpha = s.alpha;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
+    if (!isGameActive) {
+        requestAnimationFrame(updateGame);
+        return;
+    }
+
+    // 2. Smoothly move player ship towards targetX
+    player.x += (player.targetX - player.x) * 0.18;
+    // Boundary clamp
+    player.x = Math.max(player.width / 2 + 10, Math.min(spaceWidth - player.width / 2 - 10, player.x));
+    player.y = spaceHeight - 90;
+
+    // 3. Update & Draw Lasers
+    for (let i = lasers.length - 1; i >= 0; i--) {
+        const l = lasers[i];
+        l.y += l.vy;
+
+        // Draw laser bolt with neon glow
+        ctx.save();
+        ctx.shadowColor = l.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = l.color;
+        ctx.fillRect(l.x - 2.5, l.y, 5, 20);
+        ctx.restore();
+
+        // Check collision with enemy ships
+        let laserConsumed = false;
+        for (let enemy of enemyShips) {
+            if (
+                l.x >= enemy.x - enemy.width / 2 &&
+                l.x <= enemy.x + enemy.width / 2 &&
+                l.y >= enemy.y - enemy.height / 2 &&
+                l.y <= enemy.y + enemy.height / 2
+            ) {
+                laserConsumed = true;
+                handleEnemyHit(enemy);
+                break;
+            }
+        }
+
+        if (laserConsumed || l.y < -30) {
+            lasers.splice(i, 1);
+        }
+    }
+
+    // 4. Update & Draw Enemy Ships
+    for (let i = enemyShips.length - 1; i >= 0; i--) {
+        const e = enemyShips[i];
+        e.wobble += 0.04;
+
+        if (e.y < e.targetY) {
+            e.y += e.speedY;
+        } else {
+            // Gentle floating hovering
+            e.y += Math.sin(e.wobble) * 0.4;
+        }
+
+        // Draw Alien Cruiser Body
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        // Hull gradient
+        const hullGrad = ctx.createLinearGradient(0, -e.height / 2, 0, e.height / 2);
+        if (e.hitCooldown > 0) {
+            hullGrad.addColorStop(0, '#f87171');
+            hullGrad.addColorStop(1, '#dc2626');
+            e.hitCooldown--;
+        } else {
+            hullGrad.addColorStop(0, '#1e293b');
+            hullGrad.addColorStop(0.5, '#0f172a');
+            hullGrad.addColorStop(1, '#020617');
+        }
+
+        ctx.fillStyle = hullGrad;
+        ctx.strokeStyle = e.isCorrect ? '#38bdf8' : '#64748b';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = e.isCorrect ? '#38bdf8' : 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 12;
+
+        // Angular spaceship polygon
+        ctx.beginPath();
+        ctx.moveTo(0, e.height / 2 + 10); // Nose pointing down
+        ctx.lineTo(e.width / 2, -e.height / 2);
+        ctx.lineTo(e.width / 2 - 15, -e.height / 2 - 10);
+        ctx.lineTo(-e.width / 2 + 15, -e.height / 2 - 10);
+        ctx.lineTo(-e.width / 2, -e.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Target Choice Text Box on Hull
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold clamp(13px, 2vw, 16px) Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 0;
+        ctx.fillText(e.label, 0, -2);
+
+        // Alien Cockpit glowing sphere
+        ctx.fillStyle = e.isCorrect ? '#38bdf8' : '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(0, e.height / 2 - 4, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // 5. Draw Player Starship
+    drawPlayerShip();
+
+    // 6. Explosions & Particles
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        const p = explosions[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+
+        if (p.life <= 0) {
+            explosions.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // 7. Floating Text Score Popups
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1.4;
+        ft.life -= 0.02;
+
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = ft.life;
+        ctx.fillStyle = ft.color;
+        ctx.font = '900 20px Fredoka One, Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+
+    requestAnimationFrame(updateGame);
+}
+
+function drawPlayerShip() {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+
+    // Thruster Plasma Jet Trails
+    player.thrusterFlicker = (player.thrusterFlicker + 1) % 4;
+    const jetLen = 18 + Math.random() * 12;
+
+    const thrusterGrad = ctx.createLinearGradient(0, player.height / 2, 0, player.height / 2 + jetLen);
+    thrusterGrad.addColorStop(0, '#38bdf8');
+    thrusterGrad.addColorStop(0.5, '#0284c7');
+    thrusterGrad.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = thrusterGrad;
+    ctx.beginPath();
+    ctx.moveTo(-14, player.height / 2 - 2);
+    ctx.lineTo(0, player.height / 2 + jetLen);
+    ctx.lineTo(14, player.height / 2 - 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Starfighter Hull (Sleek aerodynamic delta fighter)
+    const shipGrad = ctx.createLinearGradient(0, -player.height / 2, 0, player.height / 2);
+    shipGrad.addColorStop(0, '#f8fafc');
+    shipGrad.addColorStop(0.4, '#38bdf8');
+    shipGrad.addColorStop(1, '#0c4a6e');
+
+    ctx.fillStyle = shipGrad;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 15;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -player.height / 2 - 8); // Sharp nose
+    ctx.lineTo(player.width / 2, player.height / 2);
+    ctx.lineTo(player.width / 2 - 8, player.height / 2 + 4);
+    ctx.lineTo(0, player.height / 2 - 6);
+    ctx.lineTo(-player.width / 2 + 8, player.height / 2 + 4);
+    ctx.lineTo(-player.width / 2, player.height / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Cockpit Canopy (Glowing cyan)
+    ctx.fillStyle = '#0284c7';
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 7, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Force Field Shield Bubble (if shield active)
+    if (player.shield > 20) {
+        ctx.strokeStyle = `rgba(56, 189, 248, ${player.shield / 250})`;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(0, 0, player.width * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function handleEnemyHit(enemy) {
+    if (enemy.isCorrect) {
+        // CORRECT HIT!
+        playSound('explosion');
+        playSound('triumph');
+        createExplosion(enemy.x, enemy.y, '#38bdf8', 35);
+        createExplosion(enemy.x, enemy.y, '#facc15', 25);
+
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        correctCount++;
+
+        const comboMultiplier = Math.min(3, 1 + Math.floor(currentStreak / 3));
+        const pts = 100 * comboMultiplier;
+        currentScore += pts;
+
+        // Floating score
+        floatingTexts.push({
+            x: enemy.x,
+            y: enemy.y,
+            text: `+${pts} PTS! 💥`,
+            color: '#facc15',
+            life: 1.0
+        });
+
+        // Banner popup
+        const celebration = document.getElementById('celebration-text');
+        celebration.innerText = currentStreak >= 3 ? `🔥 COMBO x${comboMultiplier}! +${pts}` : `TARGET DESTROYED! 💥 +${pts}`;
+        celebration.classList.add('show');
+        setTimeout(() => celebration.classList.remove('show'), 800);
+
+        updateStatsUI();
+
+        // Clear remaining enemies and advance to next question
+        enemyShips = [];
+        setTimeout(() => {
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }, 900);
+
+    } else {
+        // WRONG TARGET HIT!
+        playSound('hit_shield');
+        createExplosion(enemy.x, enemy.y, '#ef4444', 20);
+        enemy.hitCooldown = 15;
+
+        currentStreak = 0;
+        player.shield = Math.max(0, player.shield - 25);
+        updateStatsUI();
+
+        floatingTexts.push({
+            x: enemy.x,
+            y: enemy.y,
+            text: `MISS! -25 Shield`,
+            color: '#ef4444',
+            life: 1.0
+        });
+
+        if (player.shield <= 0) {
+            endGame(false);
+        }
+    }
+}
+
+function createExplosion(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        explosions.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: Math.random() * 4 + 2,
+            color: color,
+            life: 1.0
+        });
+    }
+}
+
+function updateStatsUI() {
+    document.getElementById('score-display').innerText = currentScore;
+    document.getElementById('streak-display').innerText = `${currentStreak}x`;
+    document.getElementById('shield-fill').style.width = `${player.shield}%`;
+}
+
+function endGame(victory) {
+    isGameActive = false;
+    document.getElementById('gameover-modal').classList.remove('hidden');
+    document.getElementById('final-score').innerText = currentScore;
+    document.getElementById('final-correct').innerText = `${correctCount}/${currentQuestionIndex + 1}`;
+    document.getElementById('final-streak').innerText = `${maxStreak}x`;
+
+    const emojiEl = document.getElementById('gameover-emoji');
+    const titleEl = document.getElementById('gameover-title');
+    const descEl = document.getElementById('gameover-desc');
+
+    if (victory || correctCount >= 10) {
+        emojiEl.innerText = '🏆';
+        titleEl.innerText = 'بطل أساطيل الفضاء الإنجليزية!';
+        descEl.innerText = 'ما شاء الله! دفاع بطولي وإتقان كامل لمعجم Band I للغة الإنجليزية.';
+    } else {
+        emojiEl.innerText = '🚀';
+        titleEl.innerText = 'معركة شجاعة، واصل التدريب!';
+        descEl.innerText = 'أداء جيد! استعد طاقتك وراجع الكلمات لتنتصر في المعركة القادمة.';
+    }
+}
+
+function goBackToEnglishPage() {
+    if (window.top !== window.self) {
+        try {
+            window.top.location.hash = '#english';
+        } catch (e) {
+            window.location.href = '/#/english';
+        }
+    } else {
+        window.location.href = '/#/english';
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 4. USER CONTROLS & LISTENERS
+ * ------------------------------------------------------------------
+ */
+// Mouse move steers ship
+window.addEventListener('mousemove', (e) => {
+    player.targetX = e.clientX;
+});
+
+// Click / Touch fires plasma laser
+window.addEventListener('mousedown', (e) => {
+    // Avoid firing if clicking on HUD buttons
+    if (e.target.closest('#hud button, .modal-card')) return;
+    firePlayerLaser();
+});
+
+// Touch controls for mobile & tablets
+window.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+        player.targetX = e.touches[0].clientX;
+    }
+}, { passive: true });
+
+// Keyboard controls
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        firePlayerLaser();
+    } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        player.targetX -= 40;
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        player.targetX += 40;
+    } else if (e.key === 'r' || e.key === 'R') {
+        const currentQ = currentFilteredQuestions[currentQuestionIndex];
+        if (currentQ) speakEnglishWord(currentQ.eng);
+    } else if (e.key === 'm' || e.key === 'M') {
+        toggleSound();
+    }
+});
+
+document.getElementById('btn-play-audio').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    if (currentQ) speakEnglishWord(currentQ.eng);
+});
+
+// Setup on boot
+window.onload = () => {
+    updateSoundUI();
+    resizeCanvas();
+    updateGame();
+};
+</script>
+</body>
+</html>

@@ -5,12 +5,12 @@ export default function EnglishPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('basketball'); // 'basketball' | 'subway' | 'vocab'
+  const [activeTab, setActiveTab] = useState('space'); // 'space' | 'basketball' | 'subway' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة الإنجليزية | ألعاب Band I وبنك الكلمات 🏀🏃🇬🇧';
+    document.title = 'بوابة اللغة الإنجليزية | حرب الفضاء وسلة صب واي وبنك الكلمات 🚀🏀🏃🇬🇧';
   }, []);
 
   const currentGradeWords = ENGLISH_VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -117,6 +117,24 @@ export default function EnglishPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => setActiveTab('space')}
+              style={{
+                background: activeTab === 'space' ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#ffffff',
+                border: activeTab === 'space' ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'space' ? '0 4px 15px rgba(56, 189, 248, 0.5)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              🚀 حرب الفضاء (Galaxy Defender)
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('basketball')}
               style={{
                 background: activeTab === 'basketball' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(15, 23, 42, 0.65)',
@@ -131,21 +149,21 @@ export default function EnglishPage() {
                 transition: 'all 0.2s'
               }}
             >
-              🏀 رميات السلة (Band I Slam Dunk)
+              🏀 رميات السلة (Slam Dunk)
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('subway')}
               style={{
-                background: activeTab === 'subway' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'rgba(15, 23, 42, 0.65)',
+                background: activeTab === 'subway' ? 'linear-gradient(135deg, #059669, #047857)' : 'rgba(15, 23, 42, 0.65)',
                 color: '#fff',
-                border: activeTab === 'subway' ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                border: activeTab === 'subway' ? '2px solid #4ade80' : '1px solid rgba(255,255,255,0.2)',
                 padding: '8px 16px',
                 borderRadius: '99px',
                 fontWeight: '900',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'subway' ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+                boxShadow: activeTab === 'subway' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none',
                 transition: 'all 0.2s'
               }}
             >
@@ -155,22 +173,22 @@ export default function EnglishPage() {
               type="button"
               onClick={() => setActiveTab('vocab')}
               style={{
-                background: activeTab === 'vocab' ? 'linear-gradient(135deg, #10b981, #059669)' : 'rgba(15, 23, 42, 0.65)',
+                background: activeTab === 'vocab' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : 'rgba(15, 23, 42, 0.65)',
                 color: '#fff',
-                border: activeTab === 'vocab' ? '2px solid #34d399' : '1px solid rgba(255,255,255,0.2)',
+                border: activeTab === 'vocab' ? '2px solid #c084fc' : '1px solid rgba(255,255,255,0.2)',
                 padding: '8px 16px',
                 borderRadius: '99px',
                 fontWeight: '900',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                boxShadow: activeTab === 'vocab' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none',
+                boxShadow: activeTab === 'vocab' ? '0 4px 14px rgba(124, 58, 237, 0.4)' : 'none',
                 transition: 'all 0.2s'
               }}
             >
               📖 معجم وبنك المفردات والصوتيات
             </button>
             <a
-              href={activeTab === 'subway' ? '/english-subway.html?v=1' : '/english-basketball.html?v=1'}
+              href={activeTab === 'space' ? '/english-space.html?v=1' : activeTab === 'basketball' ? '/english-basketball.html?v=1' : '/english-subway.html?v=1'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -229,10 +247,10 @@ export default function EnglishPage() {
               ⭐ English for Elementary Schools (Grades 1 – 6) | Core Band I
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم الإنجليزية باللعب والمغامرة ورميات السلة! 🏀🏃
+              تعلَّم الإنجليزية بحرب الفضاء والسلة والمغامرات! 🚀🏀🏃
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#e0f2fe', lineHeight: '1.7', fontWeight: '600' }}>
-              بوابة إلكترونية تفاعلية ممتعة تجمع بين <b>دوري رميات السلة (Slam Dunk)</b>، وسباق قطارات الأنفاق <b>Subway Surfers 3D</b>، ومعجم وبنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية حسب منهاج <b>Band I</b> لوزارة التربية والتعليم. سدد، اركض، واستمع للنطق الصحيح!
+              بوابة إلكترونية تفاعلية متكاملة تجمع بين <b>حرب الفضاء ومعركة المجرة (Galaxy Defender 🚀)</b>، <b>دوري رميات السلة (Slam Dunk 🏀)</b>، وسباق قطارات الأنفاق <b>Subway Surfers 3D 🏃</b>، مع بنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية وفق منهاج <b>Band I</b> لوزارة التربية والتعليم.
             </p>
           </div>
 
@@ -246,7 +264,7 @@ export default function EnglishPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>2</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>3</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -261,6 +279,150 @@ export default function EnglishPage() {
             </div>
           </div>
         </div>
+
+        {/* TAB 0: GALAXY DEFENDER SPACE GAME */}
+        {activeTab === 'space' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#030712',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.8), 0 0 0 3px rgba(56, 189, 248, 0.45)',
+              border: '2px solid rgba(56, 189, 248, 0.5)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #0f172a, #0369a1)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(56, 189, 248, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🚀</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#facc15', fontWeight: '900' }}>
+                      English Galaxy Defender — حرب الفضاء ومعركة مجرة الكلمات (Band I)
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#bae6fd' }}>
+                      وجّه سفينتك وأطلق ليزر البلازما على سفن الفضائيين التي تحمل المعنى الصحيح لكلمات Band I!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/english-space.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                      color: '#ffffff',
+                      border: '1px solid #38bdf8',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(2, 132, 199, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/english-space.html?v=1"
+                  title="English Galaxy Defender"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1.5px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🚀</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. قيادة السفينة وليزر البلازما
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    حرّك الفأرة أو اسحب باللمس لتوجيه سفينتك الحربية، واضغط بالفأرة أو زر المسافة لإطلاق قذائف الليزر.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1.5px solid rgba(250, 204, 21, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🎯</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. استهداف السفينة المطابقة
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    استمع للكلمة الإنجليزية بالضغط على مكبر الصوت، وصوّب الليزر مباشرة نحو السفينة التي تحمل المعنى المطلوب لتدميرها.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1.5px solid rgba(236, 72, 153, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🛡️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#f472b6', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. درع الطاقة وسلسلة الـ Combo
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    احذر من إصابة السفن الخاطئة حتى لا ينفد درعك؛ وحافظ على الرميات المتتالية لمضاعفة النقاط x2 و x3 وإشعال ساحة الفضاء!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TAB 1: BASKETBALL SLAM DUNK GAME */}
         {activeTab === 'basketball' && (
