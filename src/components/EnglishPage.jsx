@@ -5,12 +5,12 @@ export default function EnglishPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('ninja'); // 'ninja' | 'space' | 'basketball' | 'subway' | 'vocab'
+  const [activeTab, setActiveTab] = useState('racer'); // 'racer' | 'ninja' | 'space' | 'basketball' | 'subway' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة الإنجليزية | نينجا الكلمات وحرب الفضاء وسلة صب واي ⚔️🚀🏀🏃🇬🇧';
+    document.title = 'بوابة اللغة الإنجليزية | سباق السيارات ونينجا وحرب الفضاء وسلة صب واي 🏎️⚔️🚀🏀🏃🇬🇧';
   }, []);
 
   const currentGradeWords = ENGLISH_VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -117,6 +117,24 @@ export default function EnglishPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => setActiveTab('racer')}
+              style={{
+                background: activeTab === 'racer' ? 'linear-gradient(135deg, #ef4444, #b91c1c)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#ffffff',
+                border: activeTab === 'racer' ? '2px solid #f87171' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'racer' ? '0 4px 15px rgba(239, 68, 68, 0.5)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              🏎️ سباق السيارات (Speed Racer)
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('ninja')}
               style={{
                 background: activeTab === 'ninja' ? 'linear-gradient(135deg, #ea580c, #c2410c)' : 'rgba(15, 23, 42, 0.65)',
@@ -206,7 +224,7 @@ export default function EnglishPage() {
               📖 معجم وبنك المفردات والصوتيات
             </button>
             <a
-              href={activeTab === 'ninja' ? '/english-ninja.html?v=1' : activeTab === 'space' ? '/english-space.html?v=1' : activeTab === 'basketball' ? '/english-basketball.html?v=1' : '/english-subway.html?v=1'}
+              href={activeTab === 'racer' ? '/english-racer.html?v=1' : activeTab === 'ninja' ? '/english-ninja.html?v=1' : activeTab === 'space' ? '/english-space.html?v=1' : activeTab === 'basketball' ? '/english-basketball.html?v=1' : '/english-subway.html?v=1'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -265,10 +283,10 @@ export default function EnglishPage() {
               ⭐ English for Elementary Schools (Grades 1 – 6) | Core Band I
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم الإنجليزية بنينجا الكلمات وحرب الفضاء والسلة! ⚔️🚀🏀
+              تعلَّم الإنجليزية بسباق السيارات والنينجا وحرب الفضاء! 🏎️⚔️🚀
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#e0f2fe', lineHeight: '1.7', fontWeight: '600' }}>
-              بوابة إلكترونية تفاعلية شاملة تضم <b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b>، <b>حرب الفضاء ومعركة المجرة (Galaxy Defender 🚀)</b>، <b>دوري رميات السلة (Slam Dunk 🏀)</b>، وسباق <b>Subway Surfers 3D 🏃</b>، مع معجم وبنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية حسب منهاج <b>Band I</b> لوزارة التربية والتعليم.
+              بوابة إلكترونية تفاعلية شاملة تضم <b>سباق سيارات الكلمات (Speed Racer 🏎️)</b>، <b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b>، <b>حرب الفضاء ومعركة المجرة (Galaxy Defender 🚀)</b>، <b>دوري رميات السلة (Slam Dunk 🏀)</b>، وسباق <b>Subway Surfers 3D 🏃</b>، مع معجم وبنك المفردات والصوتيات لطلاب مدرسة مشيرفة الابتدائية وفق منهاج <b>Band I</b> لوزارة التربية والتعليم.
             </p>
           </div>
 
@@ -282,7 +300,7 @@ export default function EnglishPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>4</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>5</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -297,6 +315,150 @@ export default function EnglishPage() {
             </div>
           </div>
         </div>
+
+        {/* TAB -2: SPEED RACER 3D HIGHWAY GAME */}
+        {activeTab === 'racer' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#090d16',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85), 0 0 0 3px rgba(239, 68, 68, 0.45)',
+              border: '2px solid rgba(239, 68, 68, 0.5)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(239, 68, 68, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🏎️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#facc15', fontWeight: '900' }}>
+                      English Speed Racer 3D — سباق سيارات الكلمات الإنجليزية (Band I)
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#fca5a5' }}>
+                      انطلق بأقصى سرعة ووجّه سيارتك الرياضية نحو المسار ذي البوابة الإنجليزية الصحيحة!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/english-racer.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                      color: '#ffffff',
+                      border: '1px solid #f87171',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/english-racer.html?v=1"
+                  title="English Speed Racer 3D"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🏎️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#f87171', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. قيادة السيارة وتغيير المسار
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    استخدم الأسهم يمين/يسار أو أزرار A/D أو السحب واللمس للهواتف للتبديل بين المسارات الثلاثة.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1.5px solid rgba(250, 204, 21, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🏁</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. عبور البوابة الإنجليزية الصحيحة
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    استمع للنطق الصوتي للكلمة، وتأكد من توجيه سيارتك لتعبر البوابة التي تحمل المعنى المطلوب لكلمات Band I.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1.5px solid rgba(6, 182, 212, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>⚡</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#06b6d4', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. نيترو التوربو ومضاعف الـ Combo
+                  </h4>
+                  <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    كل عبور صحيح يُشعل نيترو التوربو ويزيد سرعة السيارة ومضاعفة النقاط x2 و x3 لتصبح أسرع متسابق!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TAB -1: WORD NINJA FRUIT SLICE GAME */}
         {activeTab === 'ninja' && (
