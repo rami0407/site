@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hebrew Galaxy Defender 🚀 - حرب الفضاء ومجرة الكلمات العبرية</title>
+    <!-- خط Cairo ومكتبة أيقونات FontAwesome و Assistant العبري -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Fredoka+One&family=Assistant:wght@700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #020617;
+            color: #ffffff;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(ellipse at 50% 40%, #064e3b 0%, #022c22 60%, #01140e 100%);
+        }
+
+        /* فضاء النجوم والليزر Canvas */
+        #space-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* واجهة المستخدم العلوية HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: linear-gradient(180deg, #065f46, #022c22);
+            border: 2px solid rgba(74, 222, 128, 0.4);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(74, 222, 128, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .control-btn:hover {
+            border-color: #4ade80;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(74, 222, 128, 0.4);
+        }
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+
+        .sound-toggle-btn.muted {
+            background: linear-gradient(180deg, #475569, #334155);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        /* شاشة قيادة المجرة العبرية (Command Bridge Jumbotron) */
+        .galaxy-mission-box {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 660px;
+            background: linear-gradient(180deg, rgba(2, 44, 34, 0.95), rgba(6, 78, 59, 0.96));
+            border: 2px solid #4ade80;
+            border-radius: 20px;
+            padding: 10px 18px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(74, 222, 128, 0.35);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        .mission-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-bottom: 1px dashed rgba(74, 222, 128, 0.3);
+            padding-bottom: 4px;
+        }
+
+        .grade-badge {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            border: 1px solid #4ade80;
+        }
+
+        .category-badge {
+            background: rgba(250, 204, 21, 0.15);
+            color: #fde047;
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .mission-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 4px 0;
+        }
+
+        .mission-target-word {
+            font-size: clamp(22px, 3.6vw, 30px);
+            font-weight: 900;
+            color: #facc15;
+            font-family: 'Cairo', 'Assistant', sans-serif;
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .audio-replay-btn {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: 2px solid #bbf7d0;
+            color: #ffffff;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+        .audio-replay-btn:hover {
+            transform: scale(1.15);
+            background: #16a34a;
+        }
+        .audio-replay-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mission-subtext {
+            font-size: 13px;
+            color: #dcfce7;
+            font-weight: 700;
+        }
+
+        /* لوحة إحصائيات السفينة (الدرع والنقاط) */
+        .top-right-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .stat-pill {
+            background: rgba(2, 44, 34, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        }
+        .stat-pill.score-pill {
+            border-color: #facc15;
+        }
+        .stat-pill.shield-pill {
+            border-color: #4ade80;
+        }
+        .stat-val {
+            font-size: 16px;
+            font-weight: 900;
+            color: #facc15;
+            letter-spacing: 1px;
+        }
+
+        /* درع الطاقة للسفينة */
+        .shield-bar-wrapper {
+            width: 75px;
+            height: 10px;
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid #4ade80;
+            border-radius: 99px;
+            overflow: hidden;
+            padding: 1px;
+        }
+        .shield-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            border-radius: 99px;
+            transition: width 0.3s ease;
+        }
+
+        /* أسفل الشاشة: تعليمات التحكم وزر إطلاق النار اللمسي */
+        .bottom-hud-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .flight-tip-pill {
+            background: rgba(2, 44, 34, 0.85);
+            border: 1.5px solid rgba(74, 222, 128, 0.4);
+            color: #dcfce7;
+            padding: 6px 14px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .touch-fire-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: 2px solid #fecaca;
+            color: #ffffff;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .touch-fire-btn:active {
+            transform: scale(0.92);
+        }
+
+        @media (max-width: 768px) {
+            .touch-fire-btn {
+                display: flex;
+            }
+        }
+
+        /* النوافذ المنبثقة */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 44, 34, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
+            border: 3px solid #facc15;
+            border-radius: 26px;
+            padding: 28px;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(250, 204, 21, 0.35);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-card h2 {
+            font-size: clamp(22px, 3.5vw, 28px);
+            color: #facc15;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .modal-card p {
+            color: #dcfce7;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .grade-chips-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .grade-chip {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #dcfce7;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .grade-chip.active, .grade-chip:hover {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            border-color: #facc15;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+        }
+
+        .btn-action-main {
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+            border: 3px solid #ffffff;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 900;
+            padding: 12px 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 0 #15803d, 0 8px 20px rgba(34, 197, 94, 0.4);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-action-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #15803d;
+        }
+
+        .celebration-popup {
+            position: absolute;
+            top: 48%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 38px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 25px #22c55e, 0 4px 15px rgba(0,0,0,0.8);
+            z-index: 50;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .celebration-popup.show {
+            transform: translate(-50%, -50%) scale(1.15);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- فضاء النجوم والليزر وسفن الأعداء العبرية -->
+    <canvas id="space-canvas"></canvas>
+
+    <!-- واجهة المستخدم العلوية HUD -->
+    <div id="hud">
+        <div class="hud-header">
+            <div class="top-left-controls">
+                <button class="control-btn" onclick="goBackToHebrewPage()">
+                    <i class="fas fa-arrow-right"></i> البوابة 🇮🇱
+                </button>
+                <button class="control-btn" onclick="restartGame()">
+                    <i class="fas fa-redo"></i> معركة جديدة
+                </button>
+                <button class="control-btn sound-toggle-btn" id="btn-sound" onclick="toggleSound()">
+                    <i class="fas fa-volume-up" id="sound-icon"></i> <span id="sound-text">صوت عالي</span>
+                </button>
+            </div>
+
+            <!-- لوحة النقاط والدرع -->
+            <div class="top-right-stats">
+                <div class="stat-pill score-pill">
+                    <span style="font-size: 12px; color: #dcfce7; font-weight: 800;">النقاط</span>
+                    <span class="stat-val" id="score-display">0</span>
+                    <i class="fas fa-trophy" style="color: #facc15;"></i>
+                </div>
+                <div class="stat-pill shield-pill">
+                    <span style="font-size: 11px; color: #dcfce7; font-weight: 800;">الدرع</span>
+                    <div class="shield-bar-wrapper">
+                        <div class="shield-bar-fill" id="shield-fill"></div>
+                    </div>
+                    <i class="fas fa-shield-alt" style="color: #4ade80;"></i>
+                </div>
+                <div class="stat-pill" style="border-color: #38bdf8;">
+                    <span style="font-size: 11px; color: #dcfce7; font-weight: 800;">المتتالية</span>
+                    <span class="stat-val" id="streak-display" style="color: #38bdf8;">0x</span>
+                    <i class="fas fa-fire" style="color: #facc15;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة مهمة المجرة (السؤال العبري المعلق) -->
+        <div class="galaxy-mission-box" id="mission-box">
+            <div class="mission-top-bar">
+                <span class="grade-badge" id="grade-badge">عبري • ابتدائي</span>
+                <span class="category-badge" id="category-badge">קרב כוכבים</span>
+                <span style="font-size: 11px; color: #facc15; font-weight: 800;">
+                    الهدف <span id="mission-index-display">1</span> / <span id="mission-total-display">15</span>
+                </span>
+            </div>
+
+            <div class="mission-display">
+                <span class="mission-target-word" id="mission-target-word">Ready...</span>
+                <button class="audio-replay-btn" id="btn-play-audio" title="استمع للنطق العبري الصحيح (مسافة / R)">
+                    <i class="fas fa-volume-high"></i>
+                </button>
+            </div>
+
+            <div class="mission-subtext" id="mission-subtext">
+                وجّه سفينتك وأطلق ليزر البلازما على السفينة الفضائية المطابقة للمعنى!
+            </div>
+        </div>
+
+        <!-- شريط التلميح وأزرار اللمس السريع في الأسفل -->
+        <div class="bottom-hud-bar">
+            <div class="flight-tip-pill">
+                🚀 حرّك الفأرة/اللمس للتوجيه • اضغط لإطلاق الليزر وتدمير السفينة العبرية المطابقة!
+            </div>
+            <div class="touch-fire-btn" id="btn-touch-fire" onclick="firePlayerLaser()">
+                <i class="fas fa-crosshairs"></i>
+            </div>
+        </div>
+
+        <!-- التغذية البصرية المنبثقة -->
+        <div class="celebration-popup" id="celebration-text">כל הכبود! 💥 +100</div>
+    </div>
+
+    <!-- نافذة البداية (Start Modal) -->
+    <div class="modal-overlay" id="start-modal">
+        <div class="modal-card">
+            <div style="font-size: 54px; margin-bottom: 6px;">🚀🌌</div>
+            <h2>Hebrew Galaxy Defender</h2>
+            <h3 style="color: #4ade80; font-size: 16px; margin-bottom: 12px; font-weight: 800;">מלחמת הכוכבים בעברית - حرب الفضاء ومجرة الكلمات العبرية</h3>
+            <p>
+                قُد سفينتك الفضائية في أعماق مجرة المعرفة! استمع للنطق العبري السليم للكلمات المشكولة بالكامل (הַנִּקּוּד)، وسدد مدافع البلازما لتدمير سفن الأعداء المطابقة للمعنى المطلوب.
+            </p>
+
+            <div style="font-size: 14px; font-weight: 800; color: #facc15; margin-bottom: 10px;">
+                اختر مرحلة الصف الدراسي:
+            </div>
+            <div class="grade-chips-container">
+                <button class="grade-chip active" onclick="selectGradeFilter('all', this)">جميع الصفوف (1 - 6)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('1-2', this)">الصفوف 1 - 2 (تأسيسي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('3-4', this)">الصفوف 3 - 4 (ابتدائي)</button>
+                <button class="grade-chip" onclick="selectGradeFilter('5-6', this)">الصفوف 5 - 6 (متقدم)</button>
+            </div>
+
+            <div style="background: rgba(2,44,34,0.7); padding: 12px; border-radius: 14px; margin-bottom: 18px; font-size: 13px; color: #dcfce7; text-align: right; border: 1px solid rgba(74, 222, 128, 0.25);">
+                🎮 <b>طريقة القيادة:</b><br>
+                • حرّك الفأرة أو اسحب بإصبعك لتوجيه السفينة يميناً ويساراً.<br>
+                • اضغط بالفأرة أو زر المسافة لإطلاق ليزر البلازما الأخضر الخارق.<br>
+                • كل إصابة صحيحة تدمر سفينة العدو وتمنحك نقاطاً درعية وCombo مضاعفاً!
+            </div>
+
+            <button class="btn-action-main" onclick="startGame()">
+                <i class="fas fa-rocket"></i> انطلاق معركة الفضاء الآن!
+            </button>
+        </div>
+    </div>
+
+    <!-- نافذة نهاية المعركة (Game Over Modal) -->
+    <div class="modal-overlay hidden" id="gameover-modal">
+        <div class="modal-card">
+            <div style="font-size: 52px; margin-bottom: 8px;" id="gameover-emoji">🏆</div>
+            <h2 id="gameover-title">انتصار مجري عظيم!</h2>
+            <p id="gameover-desc">لقد دافعت بنجاح عن مجرة المعرفة وأتقنت معجم المنهاج العبري.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                <div style="background: rgba(2,44,34,0.85); border: 2px solid #facc15; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #dcfce7;">النقاط</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #facc15;" id="final-score">0</div>
+                </div>
+                <div style="background: rgba(2,44,34,0.85); border: 2px solid #4ade80; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #dcfce7;">سفن مدمرة</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #4ade80;" id="final-correct">0/0</div>
+                </div>
+                <div style="background: rgba(2,44,34,0.85); border: 2px solid #38bdf8; padding: 12px; border-radius: 16px;">
+                    <div style="font-size: 11px; color: #dcfce7;">أعلى Combo</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #38bdf8;" id="final-streak">0x</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-action-main" onclick="restartGame()" style="flex: 1;">
+                    <i class="fas fa-redo"></i> معركة جديدة
+                </button>
+                <button class="control-btn" onclick="goBackToHebrewPage()" style="flex: 1; padding: 14px; font-size: 15px; justify-content: center;">
+                    <i class="fas fa-book-open"></i> بنك الكلمات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ------------------------------------------------------------------
+ * 1. AUTHENTIC HEBREW CURRICULUM QUESTIONS (Grades 1 to 6)
+ * Aligned with the Israeli Ministry of Education Curriculum for Hebrew in Arab Elementary Schools.
+ * ------------------------------------------------------------------
+ */
+const HEBREW_SPACE_BANK = [
+    // Grades 1-2 Foundation:
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: مدرسة', hebTarget: 'בֵּית סֵפֶר', choices: ['בֵּית סֵפֶר', 'בַּיִת', 'גַּן'], correct: 0 },
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: شمس', hebTarget: 'שֶׁמֶשׁ', choices: ['יָרֵחַ', 'שֶׁמֶשׁ', 'כּוֹכָב'], correct: 1 },
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: كلب', hebTarget: 'כֶּלֶב', choices: ['חָתוּל', 'דָּג', 'כֶּלֶב'], correct: 2 },
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: كتاب', hebTarget: 'סֵפֶר', choices: ['סֵפֶר', 'מַחְבֶּרֶת', 'עִפָּרוֹן'], correct: 0 },
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: ماء', hebTarget: 'מַיִם', choices: ['חָלָב', 'מַיִם', 'מִיץ'], correct: 1 },
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: معلّم', hebTarget: 'מוֹרֶה', choices: ['תַּלְמִיד', 'נַהָג', 'מוֹרֶה'], correct: 2 },
+    { grade: '1-2', arPrompt: 'دمّر السفينة التي تعني: سلام / مرحباً', hebTarget: 'שָׁלוֹם', choices: ['שָׁלוֹם', 'תּוֹדָה', 'בֹּקֶר'], correct: 0 },
+
+    // Grades 3-4 Elementary Core:
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: عائلة / أسرة', hebTarget: 'מִשְׁפָּחָה', choices: ['כִּתָּה', 'מִשְׁפָּחָה', 'חֲבֵרִים'], correct: 1 },
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: صديق', hebTarget: 'חָבֵר', choices: ['אוֹיֵב', 'שָׁכֵן', 'חָבֵר'], correct: 2 },
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: فصل الشتاء', hebTarget: 'חֹרֶף', choices: ['חֹרֶף', 'קַיִץ', 'סְתָיו'], correct: 0 },
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: نافذة / شباك', hebTarget: 'חַלּוֹן', choices: ['דֶּלֶת', 'חַלּוֹן', 'קִיר'], correct: 1 },
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: مطر', hebTarget: 'גֶּשֶׁם', choices: ['שֶׁלֶג', 'רוּחַ', 'גֶּשֶׁם'], correct: 2 },
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: خبز', hebTarget: 'לֶחֶם', choices: ['לֶחֶם', 'גְּבִינָה', 'בֵּיצָה'], correct: 0 },
+    { grade: '3-4', arPrompt: 'دمّر السفينة التي تعني: تفاحة', hebTarget: 'תַּפּוּחַ', choices: ['בָּנָנָה', 'תַּפּוּחַ', 'תַּפּוּז'], correct: 1 },
+
+    // Grades 5-6 Upper Elementary:
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: طبيب', hebTarget: 'רוֹפֵא', choices: ['רוֹפֵא', 'שׁוֹטֵר', 'טַיָּס'], correct: 0 },
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: مستشفى', hebTarget: 'בֵּית חוֹלִים', choices: ['סִפְרִיָּה', 'בֵּית חוֹלִים', 'תַּחֲנָה'], correct: 1 },
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: قطار', hebTarget: 'רַכֶּבֶת', choices: ['אוֹטוֹבּוּس', 'מְטוֹס', 'רַכֶּבֶת'], correct: 2 },
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: يقرأُ', hebTarget: 'קוֹרֵא', choices: ['קוֹרֵא', 'כּוֹتֵב', 'לוֹמֵד'], correct: 0 },
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: يكتبُ', hebTarget: 'כּוֹتֵב', choices: ['מְשַׂחֵק', 'כּוֹتֵב', 'שׁוֹתֶה'], correct: 1 },
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: قرية (مثل مشيرفة)', hebTarget: 'כְּפָר', choices: ['עִיר', 'מְדִינָה', 'כְּפָר'], correct: 2 },
+    { grade: '5-6', arPrompt: 'دمّر السفينة التي تعني: كل الاحترام / أحسنت!', hebTarget: 'כָּל הַכָּבוֹד', choices: ['כָּל הַכָּבוֹד', 'בְּהַצְלָחָה', 'סְלִיחָה'], correct: 0 }
+];
+
+/**
+ * ------------------------------------------------------------------
+ * 2. SOUND SYNTHESIS (Zero External Audio Dependencies)
+ * Procedural Web Audio API for Laser Blasts, Explosions, Fanfare
+ * ------------------------------------------------------------------
+ */
+let audioCtx = null;
+let isMuted = localStorage.getItem('hebrew_space_muted') === 'true';
+
+function initAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtx = new AudioContext();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (isMuted) return;
+    try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'laser') {
+            // Emerald Plasma Laser
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(820, now);
+            osc.frequency.exponentialRampToValueAtTime(120, now + 0.15);
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+
+        } else if (type === 'explosion') {
+            // Space explosion noise
+            const bufferSize = audioCtx.sampleRate * 0.4;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(650, now);
+            filter.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+
+        } else if (type === 'hit_shield') {
+            // Deflection clang
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+            gain.gain.setValueAtTime(0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.25);
+
+        } else if (type === 'triumph') {
+            // Triumph Fanfare
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.5);
+            });
+        }
+    } catch (e) {
+        console.warn('Audio issue:', e);
+    }
+}
+
+function toggleSound() {
+    isMuted = !isMuted;
+    localStorage.setItem('hebrew_space_muted', isMuted ? 'true' : 'false');
+    updateSoundUI();
+}
+
+function updateSoundUI() {
+    const btn = document.getElementById('btn-sound');
+    const icon = document.getElementById('sound-icon');
+    const text = document.getElementById('sound-text');
+    if (isMuted) {
+        btn.classList.add('muted');
+        icon.className = 'fas fa-volume-mute';
+        text.innerText = 'מكتوم';
+    } else {
+        btn.classList.remove('muted');
+        icon.className = 'fas fa-volume-up';
+        text.innerText = 'صوت عالي';
+    }
+}
+
+// Native Hebrew Speech Synthesis
+function speakHebrewWord(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+        window.speechSynthesis.cancel();
+        const cleanHebrew = text.replace(/[\u0591-\u05C7]/g, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanHebrew);
+        utterance.lang = 'he-IL';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('TTS error:', e);
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 3. CANVAS GALAXY ENGINE (Stars, Starship, Enemy Ships, Lasers)
+ * ------------------------------------------------------------------
+ */
+const canvas = document.getElementById('space-canvas');
+const ctx = canvas.getContext('2d');
+let spaceWidth = 0;
+let spaceHeight = 0;
+
+function resizeCanvas() {
+    spaceWidth = canvas.width = window.innerWidth;
+    spaceHeight = canvas.height = window.innerHeight;
+    initStars();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Background Stars
+let stars = [];
+function initStars() {
+    stars = [];
+    const count = Math.floor((spaceWidth * spaceHeight) / 5000);
+    for (let i = 0; i < count; i++) {
+        stars.push({
+            x: Math.random() * spaceWidth,
+            y: Math.random() * spaceHeight,
+            radius: Math.random() * 1.8 + 0.5,
+            speed: Math.random() * 1.5 + 0.5,
+            alpha: Math.random() * 0.8 + 0.2
+        });
+    }
+}
+
+// Player Starship Object
+const player = {
+    x: 0,
+    y: 0,
+    width: 60,
+    height: 54,
+    speed: 12,
+    targetX: 0,
+    shield: 100,
+    thrusterFlicker: 0
+};
+
+let lasers = [];
+let enemyShips = [];
+let explosions = [];
+let floatingTexts = [];
+
+// Game Controller State
+let currentGradeFilter = 'all';
+let currentFilteredQuestions = [];
+let currentQuestionIndex = 0;
+let currentScore = 0;
+let currentStreak = 0;
+let maxStreak = 0;
+let correctCount = 0;
+let isGameActive = false;
+
+function selectGradeFilter(filter, el) {
+    currentGradeFilter = filter;
+    document.querySelectorAll('.grade-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+function getFilteredQuestions() {
+    if (currentGradeFilter === 'all') {
+        return [...HEBREW_SPACE_BANK].sort(() => Math.random() - 0.5);
+    }
+    return HEBREW_SPACE_BANK.filter(q => q.grade === currentGradeFilter).sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+    initAudioContext();
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('gameover-modal').classList.add('hidden');
+
+    currentFilteredQuestions = getFilteredQuestions();
+    if (currentFilteredQuestions.length === 0) {
+        currentFilteredQuestions = [...HEBREW_SPACE_BANK];
+    }
+
+    currentQuestionIndex = 0;
+    currentScore = 0;
+    currentStreak = 0;
+    maxStreak = 0;
+    correctCount = 0;
+    player.shield = 100;
+    player.x = spaceWidth / 2;
+    player.targetX = spaceWidth / 2;
+    player.y = spaceHeight - 90;
+
+    lasers = [];
+    explosions = [];
+    floatingTexts = [];
+    isGameActive = true;
+
+    updateStatsUI();
+    loadQuestion(currentQuestionIndex);
+}
+
+function restartGame() {
+    startGame();
+}
+
+function loadQuestion(index) {
+    if (index >= currentFilteredQuestions.length) {
+        endGame(true);
+        return;
+    }
+
+    const q = currentFilteredQuestions[index];
+    const totalQ = Math.min(15, currentFilteredQuestions.length);
+
+    document.getElementById('grade-badge').innerText = `עברית • صف ${q.grade}`;
+    document.getElementById('category-badge').innerText = 'קרב כוכבים';
+    document.getElementById('mission-index-display').innerText = (index + 1);
+    document.getElementById('mission-total-display').innerText = totalQ;
+
+    document.getElementById('mission-target-word').innerText = q.arPrompt;
+    document.getElementById('mission-subtext').innerText = `المعنى المستهدف: ${q.arPrompt.replace('دمّر السفينة التي تعني: ', '')}`;
+
+    // Auto-pronounce
+    speakHebrewWord(q.hebTarget);
+
+    // Spawn 3 descending alien cruisers
+    spawnEnemySquad(q);
+}
+
+function spawnEnemySquad(q) {
+    enemyShips = [];
+    const count = q.choices.length;
+    const spacing = spaceWidth / (count + 1);
+
+    for (let i = 0; i < count; i++) {
+        enemyShips.push({
+            id: i,
+            x: spacing * (i + 1),
+            y: -80,
+            targetY: 130 + (i % 2) * 40,
+            width: Math.min(180, spaceWidth * 0.28),
+            height: 65,
+            label: q.choices[i],
+            isCorrect: (i === q.correct),
+            health: 1,
+            wobble: Math.random() * Math.PI * 2,
+            speedY: 1.8 + Math.random() * 0.5,
+            hitCooldown: 0
+        });
+    }
+}
+
+function firePlayerLaser() {
+    if (!isGameActive) return;
+    playSound('laser');
+
+    lasers.push({
+        x: player.x - 20,
+        y: player.y - 10,
+        vy: -18,
+        color: '#4ade80'
+    });
+    lasers.push({
+        x: player.x + 20,
+        y: player.y - 10,
+        vy: -18,
+        color: '#4ade80'
+    });
+}
+
+function updateGame() {
+    ctx.clearRect(0, 0, spaceWidth, spaceHeight);
+
+    // Moving Stars
+    ctx.fillStyle = '#ffffff';
+    for (let s of stars) {
+        s.y += s.speed;
+        if (s.y > spaceHeight) {
+            s.y = 0;
+            s.x = Math.random() * spaceWidth;
+        }
+        ctx.globalAlpha = s.alpha;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
+    if (!isGameActive) {
+        requestAnimationFrame(updateGame);
+        return;
+    }
+
+    // Move player ship
+    player.x += (player.targetX - player.x) * 0.18;
+    player.x = Math.max(player.width / 2 + 10, Math.min(spaceWidth - player.width / 2 - 10, player.x));
+    player.y = spaceHeight - 90;
+
+    // Lasers
+    for (let i = lasers.length - 1; i >= 0; i--) {
+        const l = lasers[i];
+        l.y += l.vy;
+
+        ctx.save();
+        ctx.shadowColor = l.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = l.color;
+        ctx.fillRect(l.x - 2.5, l.y, 5, 20);
+        ctx.restore();
+
+        let laserConsumed = false;
+        for (let enemy of enemyShips) {
+            if (
+                l.x >= enemy.x - enemy.width / 2 &&
+                l.x <= enemy.x + enemy.width / 2 &&
+                l.y >= enemy.y - enemy.height / 2 &&
+                l.y <= enemy.y + enemy.height / 2
+            ) {
+                laserConsumed = true;
+                handleEnemyHit(enemy);
+                break;
+            }
+        }
+
+        if (laserConsumed || l.y < -30) {
+            lasers.splice(i, 1);
+        }
+    }
+
+    // Enemy Ships
+    for (let i = enemyShips.length - 1; i >= 0; i--) {
+        const e = enemyShips[i];
+        e.wobble += 0.04;
+
+        if (e.y < e.targetY) {
+            e.y += e.speedY;
+        } else {
+            e.y += Math.sin(e.wobble) * 0.4;
+        }
+
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        const hullGrad = ctx.createLinearGradient(0, -e.height / 2, 0, e.height / 2);
+        if (e.hitCooldown > 0) {
+            hullGrad.addColorStop(0, '#f87171');
+            hullGrad.addColorStop(1, '#dc2626');
+            e.hitCooldown--;
+        } else {
+            hullGrad.addColorStop(0, '#064e3b');
+            hullGrad.addColorStop(0.5, '#022c22');
+            hullGrad.addColorStop(1, '#011812');
+        }
+
+        ctx.fillStyle = hullGrad;
+        ctx.strokeStyle = e.isCorrect ? '#4ade80' : '#facc15';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = e.isCorrect ? '#4ade80' : 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 12;
+
+        ctx.beginPath();
+        ctx.moveTo(0, e.height / 2 + 10);
+        ctx.lineTo(e.width / 2, -e.height / 2);
+        ctx.lineTo(e.width / 2 - 15, -e.height / 2 - 10);
+        ctx.lineTo(-e.width / 2 + 15, -e.height / 2 - 10);
+        ctx.lineTo(-e.width / 2, -e.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold clamp(14px, 2.2vw, 18px) Assistant, Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.direction = 'rtl';
+        ctx.shadowBlur = 0;
+        ctx.fillText(e.label, 0, -2);
+
+        ctx.fillStyle = e.isCorrect ? '#4ade80' : '#facc15';
+        ctx.beginPath();
+        ctx.arc(0, e.height / 2 - 4, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // Player Ship
+    drawPlayerShip();
+
+    // Explosions
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        const p = explosions[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+
+        if (p.life <= 0) {
+            explosions.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Floating Text
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1.4;
+        ft.life -= 0.02;
+
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = ft.life;
+        ctx.fillStyle = ft.color;
+        ctx.font = '900 20px Fredoka One, Cairo, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+
+    requestAnimationFrame(updateGame);
+}
+
+function drawPlayerShip() {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+
+    player.thrusterFlicker = (player.thrusterFlicker + 1) % 4;
+    const jetLen = 18 + Math.random() * 12;
+
+    const thrusterGrad = ctx.createLinearGradient(0, player.height / 2, 0, player.height / 2 + jetLen);
+    thrusterGrad.addColorStop(0, '#4ade80');
+    thrusterGrad.addColorStop(0.5, '#22c55e');
+    thrusterGrad.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = thrusterGrad;
+    ctx.beginPath();
+    ctx.moveTo(-14, player.height / 2 - 2);
+    ctx.lineTo(0, player.height / 2 + jetLen);
+    ctx.lineTo(14, player.height / 2 - 2);
+    ctx.closePath();
+    ctx.fill();
+
+    const shipGrad = ctx.createLinearGradient(0, -player.height / 2, 0, player.height / 2);
+    shipGrad.addColorStop(0, '#f8fafc');
+    shipGrad.addColorStop(0.4, '#4ade80');
+    shipGrad.addColorStop(1, '#064e3b');
+
+    ctx.fillStyle = shipGrad;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#4ade80';
+    ctx.shadowBlur = 15;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -player.height / 2 - 8);
+    ctx.lineTo(player.width / 2, player.height / 2);
+    ctx.lineTo(player.width / 2 - 8, player.height / 2 + 4);
+    ctx.lineTo(0, player.height / 2 - 6);
+    ctx.lineTo(-player.width / 2 + 8, player.height / 2 + 4);
+    ctx.lineTo(-player.width / 2, player.height / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#16a34a';
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 7, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (player.shield > 20) {
+        ctx.strokeStyle = `rgba(74, 222, 128, ${player.shield / 250})`;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(0, 0, player.width * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function handleEnemyHit(enemy) {
+    if (enemy.isCorrect) {
+        playSound('explosion');
+        playSound('triumph');
+        createExplosion(enemy.x, enemy.y, '#4ade80', 35);
+        createExplosion(enemy.x, enemy.y, '#facc15', 25);
+
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        correctCount++;
+
+        const comboMultiplier = Math.min(3, 1 + Math.floor(currentStreak / 3));
+        const pts = 100 * comboMultiplier;
+        currentScore += pts;
+
+        floatingTexts.push({
+            x: enemy.x,
+            y: enemy.y,
+            text: `+${pts} כָּל הַכָּבוֹד! 💥`,
+            color: '#facc15',
+            life: 1.0
+        });
+
+        const celebration = document.getElementById('celebration-text');
+        celebration.innerText = currentStreak >= 3 ? `🔥 COMBO x${comboMultiplier}! +${pts}` : `כָּל הַכָּבוֹד! 💥 +${pts}`;
+        celebration.classList.add('show');
+        setTimeout(() => celebration.classList.remove('show'), 800);
+
+        updateStatsUI();
+
+        enemyShips = [];
+        setTimeout(() => {
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }, 900);
+
+    } else {
+        playSound('hit_shield');
+        createExplosion(enemy.x, enemy.y, '#ef4444', 20);
+        enemy.hitCooldown = 15;
+
+        currentStreak = 0;
+        player.shield = Math.max(0, player.shield - 25);
+        updateStatsUI();
+
+        floatingTexts.push({
+            x: enemy.x,
+            y: enemy.y,
+            text: `MISS! -25 Shield`,
+            color: '#ef4444',
+            life: 1.0
+        });
+
+        if (player.shield <= 0) {
+            endGame(false);
+        }
+    }
+}
+
+function createExplosion(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        explosions.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: Math.random() * 4 + 2,
+            color: color,
+            life: 1.0
+        });
+    }
+}
+
+function updateStatsUI() {
+    document.getElementById('score-display').innerText = currentScore;
+    document.getElementById('streak-display').innerText = `${currentStreak}x`;
+    document.getElementById('shield-fill').style.width = `${player.shield}%`;
+}
+
+function endGame(victory) {
+    isGameActive = false;
+    document.getElementById('gameover-modal').classList.remove('hidden');
+    document.getElementById('final-score').innerText = currentScore;
+    document.getElementById('final-correct').innerText = `${correctCount}/${currentQuestionIndex + 1}`;
+    document.getElementById('final-streak').innerText = `${maxStreak}x`;
+
+    const emojiEl = document.getElementById('gameover-emoji');
+    const titleEl = document.getElementById('gameover-title');
+    const descEl = document.getElementById('gameover-desc');
+
+    if (victory || correctCount >= 10) {
+        emojiEl.innerText = '🏆🚀';
+        titleEl.innerText = 'بطل أساطيل الفضاء العبرية!';
+        descEl.innerText = 'כָּל הַכָּבוֹד! دفاع بطولي وإتقان كامل لكلمات المنهاج العبري.';
+    } else {
+        emojiEl.innerText = '🚀';
+        titleEl.innerText = 'معركة شجاعة، واصل التدريب!';
+        descEl.innerText = 'أداء جيد! استعد طاقتك وراجع الكلمات لتنتصر في المعركة القادمة.';
+    }
+}
+
+function goBackToHebrewPage() {
+    if (window.top !== window.self) {
+        try {
+            window.top.location.hash = '#hebrew';
+        } catch (e) {
+            window.location.href = '/#/hebrew';
+        }
+    } else {
+        window.location.href = '/#/hebrew';
+    }
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 4. USER CONTROLS & LISTENERS
+ * ------------------------------------------------------------------
+ */
+window.addEventListener('mousemove', (e) => {
+    player.targetX = e.clientX;
+});
+
+window.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#hud button, .modal-card')) return;
+    firePlayerLaser();
+});
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+        player.targetX = e.touches[0].clientX;
+    }
+}, { passive: true });
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        firePlayerLaser();
+    } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        player.targetX -= 40;
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        player.targetX += 40;
+    } else if (e.key === 'r' || e.key === 'R') {
+        const currentQ = currentFilteredQuestions[currentQuestionIndex];
+        if (currentQ) speakHebrewWord(currentQ.hebTarget);
+    } else if (e.key === 'm' || e.key === 'M') {
+        toggleSound();
+    }
+});
+
+document.getElementById('btn-play-audio').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQ = currentFilteredQuestions[currentQuestionIndex];
+    if (currentQ) speakHebrewWord(currentQ.hebTarget);
+});
+
+// Setup on boot
+window.onload = () => {
+    updateSoundUI();
+    resizeCanvas();
+    updateGame();
+};
+</script>
+</body>
+</html>

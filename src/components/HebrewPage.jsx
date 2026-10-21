@@ -5,13 +5,13 @@ export default function HebrewPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('ninja'); // 'ninja' | 'penalty' | 'vocab'
+  const [activeTab, setActiveTab] = useState('space'); // 'space' | 'ninja' | 'penalty' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة العبرية | نينجا الكلمات وركلات الترجيح ⚔️⚽🇮🇱';
+    document.title = 'بوابة اللغة العبرية | حرب الفضاء ونينجا الكلمات وركلات الترجيح 🚀⚔️⚽🇮🇱';
   }, []);
 
   const currentGradeWords = VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -123,6 +123,24 @@ export default function HebrewPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => setActiveTab('space')}
+              style={{
+                background: activeTab === 'space' ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#fff',
+                border: activeTab === 'space' ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'space' ? '0 4px 14px rgba(56, 189, 248, 0.5)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              🚀 حرب الفضاء (Galaxy Defender)
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('ninja')}
               style={{
                 background: activeTab === 'ninja' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'rgba(15, 23, 42, 0.65)',
@@ -176,7 +194,7 @@ export default function HebrewPage() {
               📖 بنك الكلمات والمعاني
             </button>
             <a
-              href={activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
+              href={activeTab === 'space' ? '/hebrew-space.html?v=1' : activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -235,10 +253,10 @@ export default function HebrewPage() {
               🏆 المنهاج المعتمد للوسط العربي في إسرائيل (الصفوف 1 - 6)
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم العبريَّة باللعبِ ونينجا الكلمات وركلات الترجيح! ⚔️⚽🥅
+              تعلَّم العبريَّة باللعبِ وحرب الفضاء ونينجا الكلمات! 🚀⚔️⚽
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#dcfce7', lineHeight: '1.7', fontWeight: '600' }}>
-              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>نينجا تقطيع الكلمات العبرية (Hebrew Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
+              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>حرب الفضاء ومجرة الكلمات (Galaxy Defender 🚀)</b> و<b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
             </p>
           </div>
 
@@ -252,7 +270,7 @@ export default function HebrewPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>2</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>3</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -267,6 +285,150 @@ export default function HebrewPage() {
             </div>
           </div>
         </div>
+
+        {/* TAB -1: HEBREW SPACE GALAXY DEFENDER GAME */}
+        {activeTab === 'space' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#030712',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85), 0 0 0 3px rgba(56, 189, 248, 0.45)',
+              border: '2px solid rgba(56, 189, 248, 0.5)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #0f172a, #030712)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(56, 189, 248, 0.3)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>🚀</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#38bdf8', fontWeight: '900' }}>
+                      Hebrew Galaxy Defender — حرب الفضاء ومجرة الكلمات العبرية
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#93c5fd' }}>
+                      سفينة الفضاء بمدافع البلازما: اسمع نطق الكلمة واقصف المركبة المعادية الصحيحة قبل نفاد الدرع!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/hebrew-space.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                      color: '#ffffff',
+                      border: '1px solid #38bdf8',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(2, 132, 199, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/hebrew-space.html?v=1"
+                  title="Hebrew Galaxy Defender"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🚀</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. قيادة المقاتلة الفضائية
+                  </h4>
+                  <p style={{ margin: 0, color: '#e0f2fe', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    حرّك المقاتلة يميناً ويساراً بواسطة شاشة اللمس، أو مفاتيح الأسهم (أو A/D) على لوحة المفاتيح.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(74, 222, 128, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>⚡</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#4ade80', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. مدافع البلازما والمطابقة
+                  </h4>
+                  <p style={{ margin: 0, color: '#e0f2fe', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    اضغط زر الإطلاق (أو المسافة) لإطلاق الليزر على المركبة الفضائية التي تحمل الكلمة العبرية المناسبة للمطلوب.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(250, 204, 21, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🛡️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#facc15', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. الدرع ومضاعف النقاط
+                  </h4>
+                  <p style={{ margin: 0, color: '#e0f2fe', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    تجنّب استهداف المركبات الخاطئة أو الاصطدام بالشهب، وحقق إصابات متتالية لتفعيل درع الطاقة ومضاعف النقاط x5!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TAB 0: HEBREW WORD NINJA GAME */}
         {activeTab === 'ninja' && (
