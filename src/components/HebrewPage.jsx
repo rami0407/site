@@ -5,13 +5,13 @@ export default function HebrewPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('racer'); // 'racer' | 'space' | 'ninja' | 'penalty' | 'vocab'
+  const [activeTab, setActiveTab] = useState('minecraft'); // 'minecraft' | 'racer' | 'space' | 'ninja' | 'penalty' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'بوابة اللغة العبرية | سباق التيربو وحرب الفضاء ونينجا الكلمات 🏎️🚀⚔️⚽🇮🇱';
+    document.title = 'بوابة اللغة العبرية | ماينكرافت وسباق الكلمات وحرب الفضاء ⛏️🏎️🚀⚔️⚽🇮🇱';
   }, []);
 
   const currentGradeWords = VOCABULARY_BY_GRADE[selectedGrade] || [];
@@ -123,6 +123,24 @@ export default function HebrewPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => setActiveTab('minecraft')}
+              style={{
+                background: activeTab === 'minecraft' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'rgba(15, 23, 42, 0.65)',
+                color: '#fff',
+                border: activeTab === 'minecraft' ? '2px solid #86efac' : '1px solid rgba(255,255,255,0.2)',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                fontWeight: '900',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'minecraft' ? '0 4px 14px rgba(34, 197, 94, 0.55)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              ⛏️ ماينكرافت (Minecraft Craft)
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('racer')}
               style={{
                 background: activeTab === 'racer' ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'rgba(15, 23, 42, 0.65)',
@@ -212,7 +230,7 @@ export default function HebrewPage() {
               📖 بنك الكلمات والمعاني
             </button>
             <a
-              href={activeTab === 'racer' ? '/hebrew-racer.html?v=1' : activeTab === 'space' ? '/hebrew-space.html?v=1' : activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
+              href={activeTab === 'minecraft' ? '/hebrew-minecraft.html?v=1' : activeTab === 'racer' ? '/hebrew-racer.html?v=1' : activeTab === 'space' ? '/hebrew-space.html?v=1' : activeTab === 'ninja' ? '/hebrew-ninja.html?v=1' : '/hebrew-penalty.html?v=2'}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -271,10 +289,10 @@ export default function HebrewPage() {
               🏆 المنهاج المعتمد للوسط العربي في إسرائيل (الصفوف 1 - 6)
             </div>
             <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2.1rem)', margin: '0 0 10px', color: '#ffffff', fontWeight: '900' }}>
-              تعلَّم العبريَّة باللعبِ وسباق التيربو وحرب الفضاء! 🏎️🚀⚔️⚽
+              تعلَّم العبريَّة باللعبِ وماينكرافت وسباق التيربو! ⛏️🏎️🚀⚔️⚽
             </h2>
             <p style={{ margin: 0, fontSize: '1rem', color: '#dcfce7', lineHeight: '1.7', fontWeight: '600' }}>
-              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>سباق التيربو ومضمار الكلمات (Turbo Word Racer 🏎️)</b> و<b>حرب الفضاء ومجرة الكلمات (Galaxy Defender 🚀)</b> و<b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
+              منصة تفاعلية متخصصة لطلاب المرحلة الابتدائية تضم لعبة <b>ماينكرافت الكلمات (Minecraft Word Craft ⛏️)</b> و<b>سباق التيربو (Turbo Word Racer 🏎️)</b> و<b>حرب الفضاء ومجرة الكلمات (Galaxy Defender 🚀)</b> و<b>نينجا تقطيع الكلمات (Word Ninja ⚔️)</b> و<b>ركلات الترجيح (Penalty Shootout ⚽)</b> وبنك الكلمات والمعاني بالتشكيل الكامل (הַנִּקּוּד) والنطق الصوتي السليم.
             </p>
           </div>
 
@@ -288,7 +306,7 @@ export default function HebrewPage() {
             textAlign: 'center'
           }}>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>4</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#facc15' }}>5</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>ألعاب تفاعلية</div>
             </div>
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -303,6 +321,150 @@ export default function HebrewPage() {
             </div>
           </div>
         </div>
+
+        {/* TAB -3: HEBREW MINECRAFT WORD CRAFT */}
+        {activeTab === 'minecraft' && (
+          <section className="fade-in">
+            <div style={{
+              background: '#1e1b18',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85), 0 0 0 3px rgba(34, 197, 94, 0.5)',
+              border: '2px solid rgba(34, 197, 94, 0.6)'
+            }}>
+              {/* Game Frame Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #14532d, #052e16)',
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                borderBottom: '2px solid rgba(34, 197, 94, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.6rem' }}>⛏️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#86efac', fontWeight: '900' }}>
+                      Minecraft Word Craft — עוֹלַם הַמַּיְינְקְרַאפְט וְהַמִּלִּים
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#bbf7d0' }}>
+                      عالم ماينكرافت ثلاثي الأبعاد: احفر كتل الكلمات العبرية بمعول الماس، اجمع كرات الـ XP والماس وتفادَ الـ TNT!
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a
+                    href="/hebrew-minecraft.html?v=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                      color: '#ffffff',
+                      border: '1px solid #86efac',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: '900',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(34, 197, 94, 0.5)'
+                    }}
+                  >
+                    <i className="fas fa-expand"></i> شاشة كاملة ⛶
+                  </a>
+                </div>
+              </div>
+
+              {/* Game iFrame */}
+              <div style={{ position: 'relative', width: '100%', height: '720px', maxHeight: '88vh' }}>
+                <iframe
+                  src="/hebrew-minecraft.html?v=1"
+                  title="Hebrew Minecraft Word Craft"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            </div>
+
+            {/* How to Play Quick Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              marginTop: '24px'
+            }}>
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(34, 197, 94, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>⛏️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#4ade80', fontSize: '1.05rem', fontWeight: '800' }}>
+                    1. معول الماس وتعدين الكتل
+                  </h4>
+                  <p style={{ margin: 0, color: '#dcfce7', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    انقر أو اضغط باستمرار على كتلة البلوك التي تحمل الكلمة العبرية المطابقة لحفرها وكسرها.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>💎</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1.05rem', fontWeight: '800' }}>
+                    2. كرات الـ XP والماس في الـ Hotbar
+                  </h4>
+                  <p style={{ margin: 0, color: '#dcfce7', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    كل إجابة صحيحة تطلق كرات خبرة مشعة وتملأ شريط مستواك (Lv) وتمنحك قطع الماس والزمرد والكتب!
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                borderRadius: '18px',
+                padding: '18px',
+                display: 'flex',
+                gap: '14px',
+                alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: '1.8rem' }}>🧨</span>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', color: '#f87171', fontSize: '1.05rem', fontWeight: '800' }}>
+                    3. الحذر من متفجرات الـ TNT
+                  </h4>
+                  <p style={{ margin: 0, color: '#dcfce7', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    إياك وحفر كتل الـ TNT المفخخة حتى لا تنفجر وتفقد قلوب حياتك الـ 5 الماينكرافتية!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TAB -2: HEBREW TURBO WORD RACER */}
         {activeTab === 'racer' && (

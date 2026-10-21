@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>עוֹלַם הַמַּיְינְקְרַאפְט וְהַמִּלִּים ⛏️🧱 | Hebrew Minecraft Word Craft</title>
+    <!-- استدعاء خطوط Google: Press Start 2P لماينكرافت، و Assistant للعبري و Cairo للعربي -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Assistant:wght@600;700;800;900&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1b120c;
+            color: #ffffff;
+            touch-action: none;
+            font-family: 'Assistant', 'Cairo', sans-serif;
+        }
+
+        #minecraft-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #4a80ba; /* لون سماء ماينكرافت الصافية */
+        }
+
+        #world-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            cursor: crosshair;
+        }
+
+        /* واجهة الـ HUD بأسلوب ماينكرافت الأصلي */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .top-ctrls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        /* أزرار ماينكرافت ذات الحواف الحجرية الكلاسيكية */
+        .mc-btn {
+            background: #737373;
+            border: 3px solid #000000;
+            border-top-color: #b3b3b3;
+            border-left-color: #b3b3b3;
+            border-bottom-color: #3b3b3b;
+            border-right-color: #3b3b3b;
+            color: #ffffff;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #000;
+            transition: all 0.08s ease;
+            text-shadow: 2px 2px #000;
+        }
+        .mc-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #000;
+            border-top-color: #3b3b3b;
+            border-left-color: #3b3b3b;
+            border-bottom-color: #b3b3b3;
+            border-right-color: #b3b3b3;
+        }
+
+        /* لوحة مهمة التعدين المركزية (Minecraft Quest Board) */
+        .quest-board {
+            flex: 1;
+            max-width: 620px;
+            margin: 0 auto;
+            background: #2b2622;
+            border: 4px solid #14110f;
+            border-top-color: #5c4f43;
+            border-left-color: #5c4f43;
+            box-shadow: 0 6px 0 #000, 0 10px 25px rgba(0,0,0,0.6);
+            border-radius: 4px;
+            padding: 10px 18px;
+            text-align: center;
+            pointer-events: auto;
+        }
+
+        .quest-title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.68rem;
+            color: #55ff55;
+            text-shadow: 2px 2px #000;
+            margin-bottom: 4px;
+        }
+
+        .quest-target-arabic {
+            font-size: clamp(1.2rem, 3.2vw, 1.7rem);
+            font-weight: 900;
+            color: #ffff55;
+            font-family: 'Cairo', sans-serif;
+            text-shadow: 2px 2px 0 #000, 0 0 10px rgba(255,255,85,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 2px 0;
+        }
+
+        .btn-hear-mc {
+            background: #5c4f43;
+            border: 2px solid #000;
+            border-top-color: #8c7866;
+            border-left-color: #8c7866;
+            color: #ffff55;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #000;
+        }
+        .btn-hear-mc:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #000;
+        }
+
+        .quest-instruction {
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            font-weight: 700;
+        }
+
+        /* لوحة إحصائيات الماس والـ XP في أعلى اليمين */
+        .hud-stats-mc {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        .mc-stat-chip {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #3b3b3b;
+            padding: 4px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.8rem;
+            color: #ffffff;
+            text-shadow: 2px 2px #000;
+        }
+        .val-diamond { color: #55ffff; }
+        .val-emerald { color: #55ff55; }
+
+        /* منطقة الـ HUD السفلية: قلוב الحياة، شريط الـ XP، والـ Hotbar الماينكرافتي */
+        .hud-bottom-mc {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            pointer-events: auto;
+            margin-bottom: 4px;
+        }
+
+        /* شريط القلوب والطعام */
+        .bars-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 440px;
+            padding: 0 4px;
+        }
+
+        .hearts-mc {
+            display: flex;
+            gap: 2px;
+            font-size: 1.25rem;
+        }
+
+        .hunger-mc {
+            display: flex;
+            gap: 2px;
+            font-size: 1.15rem;
+        }
+
+        /* شريط خبرة ماينكرافت الأخضر الشهיר (Experience Bar) */
+        .xp-bar-container {
+            position: relative;
+            width: 100%;
+            max-width: 440px;
+            height: 10px;
+            background: #111111;
+            border: 2px solid #000000;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .xp-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(180deg, #80ff00, #40b000);
+            box-shadow: 0 0 8px #80ff00;
+            transition: width 0.25s ease;
+        }
+
+        .xp-level-text {
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.85rem;
+            color: #80ff00;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        /* الـ Hotbar ذو الـ 9 خانات الأصلي لماينكرافت */
+        .mc-hotbar {
+            display: flex;
+            background: #8f8f8f;
+            border: 3px solid #000;
+            border-top-color: #ffffff;
+            border-left-color: #ffffff;
+            border-bottom-color: #373737;
+            border-right-color: #373737;
+            padding: 2px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.7);
+        }
+
+        .hotbar-slot {
+            width: 44px;
+            height: 44px;
+            background: #8b8b8b;
+            border: 2px solid #373737;
+            border-top-color: #373737;
+            border-left-color: #373737;
+            border-bottom-color: #ffffff;
+            border-right-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 1.5rem;
+            image-rendering: pixelated;
+        }
+        .hotbar-slot.selected {
+            border: 3px solid #ffffff;
+            outline: 2px solid #000000;
+            transform: scale(1.08);
+            z-index: 2;
+        }
+        .slot-count {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.55rem;
+            color: #ffffff;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        /* نافذة البداية واختيار الصف المدرسي بأسلوب ماينكرافت */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        .mc-card {
+            background: #c6c6c6;
+            border: 4px solid #000000;
+            border-top-color: #ffffff;
+            border-left-color: #ffffff;
+            border-bottom-color: #555555;
+            border-right-color: #555555;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.85);
+            width: 100%;
+            max-width: 580px;
+            padding: 24px;
+            text-align: center;
+            color: #1a1a1a;
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .mc-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(1rem, 2.8vw, 1.5rem);
+            color: #2b2b2b;
+            text-shadow: 2px 2px #fff;
+            margin-bottom: 6px;
+        }
+
+        .mc-subtitle {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #0284c7;
+            margin-bottom: 12px;
+        }
+
+        .mc-desc {
+            color: #374151;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        /* شبكة الصفوف المدرسية */
+        .mc-grade-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mc-grade-btn {
+            background: #737373;
+            border: 3px solid #000;
+            border-top-color: #b3b3b3;
+            border-left-color: #b3b3b3;
+            border-bottom-color: #3b3b3b;
+            border-right-color: #3b3b3b;
+            padding: 10px;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-shadow: 1px 1px #000;
+            transition: all 0.1s;
+        }
+        .mc-grade-btn:hover, .mc-grade-btn.active {
+            background: #2563eb;
+            border-top-color: #60a5fa;
+            border-left-color: #60a5fa;
+            border-bottom-color: #1e3a8a;
+            border-right-color: #1e3a8a;
+            color: #ffff55;
+            transform: translateY(-2px);
+        }
+
+        .mc-btn-play {
+            background: #22c55e;
+            border: 4px solid #000;
+            border-top-color: #86efac;
+            border-left-color: #86efac;
+            border-bottom-color: #15803d;
+            border-right-color: #15803d;
+            padding: 14px 28px;
+            color: #ffffff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #000;
+            width: 100%;
+            margin-bottom: 14px;
+            text-shadow: 2px 2px #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .mc-btn-play:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #000;
+        }
+
+        .mc-tips {
+            background: #8b8b8b;
+            border: 2px solid #373737;
+            padding: 12px;
+            text-align: right;
+            font-size: 0.85rem;
+            color: #111827;
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        /* رسالة التغذية الراجعة الطافية عند كسر البلوك */
+        #feedback-toast {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 50;
+            pointer-events: none;
+            padding: 16px 36px;
+            border: 4px solid #000;
+            border-radius: 4px;
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: #fff;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.85);
+            text-shadow: 2px 2px #000;
+        }
+        #feedback-toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .mc-correct-toast {
+            background: #15803d;
+            border-color: #4ade80;
+        }
+        .mc-wrong-toast {
+            background: #b91c1c;
+            border-color: #f87171;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="minecraft-container">
+        <!-- قماش الرسم التفاعلي لعالم الكتل ثلاثي الأبعاد -->
+        <canvas id="world-canvas"></canvas>
+
+        <!-- رسالة التغذية الراجعة -->
+        <div id="feedback-toast"></div>
+
+        <!-- واجهة المستخدم HUD -->
+        <div id="hud">
+            <!-- الجزء العلوي: أزرار التحكم ومهمة التعدين وإحصائيات الماس -->
+            <div class="hud-header">
+                <div class="top-ctrls">
+                    <button class="mc-btn" id="btn-pause" title="הַפְסָקָה / إيقاف مؤقت">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="mc-btn" id="btn-mute" title="קול / كتم أو تشغيل الصوت">
+                        <i class="fas fa-volume-up" id="mute-icon"></i>
+                    </button>
+                    <button class="mc-btn" id="btn-fullscreen" title="מסך מלא / شاشة كاملة">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+
+                <!-- لوحة المهمة -->
+                <div class="quest-board">
+                    <div class="quest-title-bar">
+                        <span>⛏️ מְשִׂימַת חֲצִיבָה: מְצָא אֶת הַבְּלוֹק הַנָּכוֹן</span>
+                    </div>
+                    <div class="quest-target-arabic">
+                        <span id="target-ar-word">جاري التحميل...</span>
+                        <button class="btn-hear-mc" id="btn-hear-word" title="הַשְׁמַע קוֹל / استمع لنطق الكلمة">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <div class="quest-instruction" id="target-sub-hint">
+                        انقر على كتلة البلوك التي تحمل الكلمة العبرية المطابقة لحفرها!
+                    </div>
+                </div>
+
+                <!-- الإحصائيات -->
+                <div class="hud-stats-mc">
+                    <div class="mc-stat-chip">
+                        <span>💎</span>
+                        <span class="val-diamond" id="diamond-count">0</span>
+                    </div>
+                    <div class="mc-stat-chip">
+                        <span>🟢</span>
+                        <span class="val-emerald" id="emerald-count">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الجزء السفلي: القلوب، شريط XP، والـ Hotbar الماينكرافتي -->
+            <div class="hud-bottom-mc">
+                <div class="bars-row">
+                    <div class="hearts-mc" id="hearts-mc-bar">
+                        <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>
+                    </div>
+                    <div class="hunger-mc">
+                        <span>🍗</span><span>🍗</span><span>🍗</span><span>🍗</span><span>🍗</span>
+                    </div>
+                </div>
+
+                <div class="xp-bar-container">
+                    <div class="xp-level-text" id="xp-level-display">Lv 1</div>
+                    <div class="xp-fill" id="xp-fill-bar"></div>
+                </div>
+
+                <div class="mc-hotbar">
+                    <div class="hotbar-slot selected">
+                        <span>⛏️</span>
+                        <span class="slot-count">1</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>💎</span>
+                        <span class="slot-count" id="slot-diamonds">0</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>🟢</span>
+                        <span class="slot-count" id="slot-emeralds">0</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>🪵</span>
+                        <span class="slot-count" id="slot-wood">0</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>📖</span>
+                        <span class="slot-count" id="slot-books">0</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>🥇</span>
+                        <span class="slot-count" id="slot-gold">0</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>🍏</span>
+                        <span class="slot-count">3</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>🗡️</span>
+                        <span class="slot-count">1</span>
+                    </div>
+                    <div class="hotbar-slot">
+                        <span>🧭</span>
+                        <span class="slot-count">1</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة البداية واختيار الصف المدرسي -->
+        <div class="modal-overlay" id="start-modal">
+            <div class="mc-card">
+                <div class="mc-title">MINECRAFT HEBREW</div>
+                <div class="mc-subtitle">עוֹלַם הַמַּיְינְקְרַאפְט וְהַמִּלִּים ⛏️🧱</div>
+                <p class="mc-desc">
+                    مرحباً بك في عالم ماينكرافت التعليمي! استخدم معول الماس الخاص بك لحفر الكتل التي تحمل الكلمات العبرية المشكولة (**הַנִּקּוּד**). احذر من ملامسة كتل الـ TNT المفخخة، واجمع كرات الـ XP والماس لتطوير عتادك!
+                </p>
+
+                <div style="font-weight: 900; margin-bottom: 8px; text-align: right;">
+                    🎓 בְּחַר כִּתָּה / اختر الصف المدرسي:
+                </div>
+                <div class="mc-grade-grid">
+                    <button class="mc-grade-btn" data-grade="1">כִּתָּה א' (صف 1)</button>
+                    <button class="mc-grade-btn" data-grade="2">כִּתָּה ב' (صف 2)</button>
+                    <button class="mc-grade-btn active" data-grade="3">כִּתָּה ג' (صف 3)</button>
+                    <button class="mc-grade-btn" data-grade="4">כִּתָּה ד' (صف 4)</button>
+                    <button class="mc-grade-btn" data-grade="5">כִּתָּה ה' (صف 5)</button>
+                    <button class="mc-grade-btn" data-grade="6">כִּתָּה ו' (صف 6)</button>
+                </div>
+
+                <button class="mc-btn-play" id="btn-start-mc">
+                    <span>⛏️</span> הַתְחֵל לַחְצֹב / ابدأ التعدين!
+                </button>
+
+                <div class="mc-tips">
+                    <div>🎮 <b>طريقة اللعب:</b> انقر أو اضغط باستمرار على كتلة البلوك الصحيحة لحفرها بمعول الماس.</div>
+                    <div style="margin-top: 4px;">🧨 <b>تحذير المتفجرات:</b> تجنب كتل الـ TNT المتفجرة حتى لا تخسر قلوبك!</div>
+                    <div style="margin-top: 4px;">💎 <b>تجميع الموارد:</b> كل إجابة صحيحة تمنحك كرات خبرة (XP Orbs) وماس وزمرد في الـ Hotbar!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة نهاية المغامرة -->
+        <div class="modal-overlay hidden" id="gameover-modal">
+            <div class="mc-card">
+                <div style="font-size: 3.5rem; margin-bottom: 10px;" id="gameover-icon">🏆</div>
+                <div class="mc-title" id="gameover-title">כָּל הַכָּבוֹד! אַלּוּף מַיְינְקְרַאפְט!</div>
+                <p class="mc-desc" id="gameover-sub">أكملت مهمة حفر الكلمات العبرية بنجاح باهر وجمعت كميات هائلة من الماس والخبرة!</p>
+
+                <div style="background: #8b8b8b; border: 3px solid #373737; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: #111;">הַנִּקּוּד / النقاط</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: #ffff55;" id="final-mc-score">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #111;">דַּרְגָּה / المستوى</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: #80ff00;" id="final-mc-level">Lv 10</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #111;">יַהֲלוֹמִים / الماس</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: #55ffff;" id="final-mc-diamonds">💎 15</div>
+                    </div>
+                </div>
+
+                <button class="mc-btn-play" id="btn-restart-mc">
+                    <span>🔄</span> מִשְׂחָק חָדָשׁ / جولة جديدة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        /**
+         * Authentic Hebrew Elementary Curriculum Vocabulary (Grades 1-6)
+         * Israeli Ministry of Education Curriculum for Arab Elementary Schools
+         */
+        const VOCABULARY_DATA = {
+            1: [
+                { heb: 'שָׁלוֹם', ar: 'سلام / مرحباً', type: 'grass', icon: '👋' },
+                { heb: 'אַבָּא', ar: 'أب / والدي', type: 'wood', icon: '👨' },
+                { heb: 'אִמָּא', ar: 'أم / والدتي', type: 'diamond', icon: '👩' },
+                { heb: 'כֶּלֶב', ar: 'كلب', type: 'emerald', icon: '🐶' },
+                { heb: 'שֶׁמֶשׁ', ar: 'شمس', type: 'gold', icon: '☀️' },
+                { heb: 'מַיִם', ar: 'ماء', type: 'diamond', icon: '💧' },
+                { heb: 'פֶּרַח', ar: 'زهرة / وردة', type: 'grass', icon: '🌸' },
+                { heb: 'בַּיִת', ar: 'بيت / منزل', type: 'wood', icon: '🏠' },
+                { heb: 'יָד', ar: 'يد', type: 'stone', icon: '✋' },
+                { heb: 'עַיִן', ar: 'عين', type: 'emerald', icon: '👁️' }
+            ],
+            2: [
+                { heb: 'בֵּית סֵפֶר', ar: 'مدرسة', type: 'wood', icon: '🏫' },
+                { heb: 'מוֹרֶה', ar: 'معلّم (مذكر)', type: 'stone', icon: '👨‍🏫' },
+                { heb: 'מוֹרָה', ar: 'معلّمة (مؤنث)', type: 'stone', icon: '👩‍🏫' },
+                { heb: 'תַּלְמִיד', ar: 'تلميذ / طالب', type: 'grass', icon: '👦' },
+                { heb: 'כִּתָּה', ar: 'صف دراسي', type: 'wood', icon: '🚪' },
+                { heb: 'סֵפֶר', ar: 'كتاب', type: 'diamond', icon: '📖' },
+                { heb: 'מַחְבֶּרֶת', ar: 'دفتر', type: 'emerald', icon: '📓' },
+                { heb: 'עִפָּרוֹن', ar: 'قلم رصاص', type: 'gold', icon: '✏️' },
+                { heb: 'שֻׁלְחָן', ar: 'طاولة', type: 'wood', icon: '🪑' },
+                { heb: 'כָּחוֹל', ar: 'أزرق', type: 'diamond', icon: '🔵' },
+                { heb: 'יָרוֹק', ar: 'أخضر', type: 'emerald', icon: '🟢' },
+                { heb: 'אָדוֹם', ar: 'أحمر', type: 'redstone', icon: '🔴' }
+            ],
+            3: [
+                { heb: 'מִשְׁפָּחָה', ar: 'عائلة / أسرة', type: 'wood', icon: '👨‍👩‍👧‍👦' },
+                { heb: 'אָח', ar: 'أخ', type: 'grass', icon: '👦' },
+                { heb: 'אָחוֹת', ar: 'أخت', type: 'grass', icon: '👧' },
+                { heb: 'סַבָּא', ar: 'جدّ', type: 'gold', icon: '👴' },
+                { heb: 'סָבְתָא', ar: 'جدّة', type: 'gold', icon: '👵' },
+                { heb: 'חָבֵר', ar: 'صديق', type: 'emerald', icon: '🤝' },
+                { heb: 'תּוֹדָה', ar: 'شكراً', type: 'diamond', icon: '🙏' },
+                { heb: 'בְּבַקָּשָׁה', ar: 'من فضلك / عفواً', type: 'emerald', icon: '✨' },
+                { heb: 'חֶדֶר', ar: 'غرفة', type: 'wood', icon: '🛋️' },
+                { heb: 'חַלּוֹן', ar: 'نافذة / شباك', type: 'diamond', icon: '🪟' },
+                { heb: 'דֶּלֶת', ar: 'باب', type: 'wood', icon: '🚪' },
+                { heb: 'מִשְׂחָק', ar: 'لعبة', type: 'gold', icon: '🎮' }
+            ],
+            4: [
+                { heb: 'סְתָיו', ar: 'فصل الخريف', type: 'wood', icon: '🍂' },
+                { heb: 'חֹרֶף', ar: 'فصل الشتاء', type: 'diamond', icon: '❄️' },
+                { heb: 'אָבִיב', ar: 'فصل الربيع', type: 'emerald', icon: '🌷' },
+                { heb: 'קַיִץ', ar: 'فصل الصيف', type: 'gold', icon: '🏖️' },
+                { heb: 'גֶּשֶׁם', ar: 'مطر', type: 'diamond', icon: '🌧️' },
+                { heb: 'עָנָן', ar: 'غيمة / سحابة', type: 'grass', icon: '☁️' },
+                { heb: 'רוּחַ', ar: 'ريح / هواء', type: 'stone', icon: '💨' },
+                { heb: 'לֶחֶם', ar: 'خبز', type: 'gold', icon: '🍞' },
+                { heb: 'חָלָב', ar: 'حليب', type: 'diamond', icon: '🥛' },
+                { heb: 'גְּבִינָה', ar: 'جبنة', type: 'gold', icon: '🧀' },
+                { heb: 'תַּפּוּחַ', ar: 'تفاحة', type: 'redstone', icon: '🍎' }
+            ],
+            5: [
+                { heb: 'קוֹרֵא', ar: 'يقرأُ', type: 'diamond', icon: '📖' },
+                { heb: 'כּוֹתֵב', ar: 'يكتبُ', type: 'gold', icon: '✍️' },
+                { heb: 'לוֹמֵד', ar: 'يتعلّمُ', type: 'emerald', icon: '🧠' },
+                { heb: 'אוֹכֵל', ar: 'يأكلُ', type: 'wood', icon: '🍽️' },
+                { heb: 'שׁוֹתֶה', ar: 'يشربُ', type: 'diamond', icon: '🥤' },
+                { heb: 'מְשַׂחֵק', ar: 'يلعبُ', type: 'emerald', icon: '⚽' },
+                { heb: 'הוֹלֵךְ', ar: 'يمشي / يذهبُ', type: 'grass', icon: '🚶' },
+                { heb: 'גָּר', ar: 'يسكنُ / يعيشُ', type: 'wood', icon: '🏡' },
+                { heb: 'עִיר', ar: 'مدينة', type: 'stone', icon: '🏙️' },
+                { heb: 'כְּפָר', ar: 'قرية', type: 'grass', icon: '🏘️' },
+                { heb: 'סִפְרִיָּה', ar: 'مكتبة', type: 'diamond', icon: '📚' }
+            ],
+            6: [
+                { heb: 'רוֹפֵא', ar: 'طبيب / دكتور', type: 'diamond', icon: '🩺' },
+                { heb: 'שׁוֹטֵר', ar: 'شرطي', type: 'stone', icon: '👮' },
+                { heb: 'מְהַנְדֵּס', ar: 'مهندس', type: 'redstone', icon: '👷' },
+                { heb: 'נַהָג', ar: 'سائق', type: 'wood', icon: '🚗' },
+                { heb: 'טַיָּס', ar: 'طيار', type: 'diamond', icon: '👨‍✈️' },
+                { heb: 'אוֹטוֹבּוּס', ar: 'حافلة / باص', type: 'gold', icon: '🚌' },
+                { heb: 'רַכֶּבֶת', ar: 'قطار', type: 'stone', icon: '🚆' },
+                { heb: 'מְטוֹס', ar: 'طائرة', type: 'diamond', icon: '✈️' },
+                { heb: 'מְכוֹנִית', ar: 'سيارة', type: 'gold', icon: '🏎️' },
+                { heb: 'בְּהַצְלָחָה', ar: 'بالتوفيق والنجاح', type: 'emerald', icon: '🌟' },
+                { heb: 'כָּל הַכָּבוֹד', ar: 'كل الاحترام / ممتاز', type: 'diamond', icon: '👏' }
+            ]
+        };
+
+        // Minecraft Procedural Sound Synthesizer via Web Audio API
+        class MCSound {
+            constructor() {
+                this.ctx = null;
+                this.isMuted = localStorage.getItem('hebrew_mc_muted') === 'true';
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            // Minecraft Pickaxe Digging crunchy sound
+            playHit() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const bufferSize = this.ctx.sampleRate * 0.06;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(600 + Math.random() * 400, this.ctx.currentTime);
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.06);
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start();
+                } catch(e) {}
+            }
+
+            // Block Break / Pop item drop
+            playBreak() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.12);
+                } catch(e) {}
+            }
+
+            // Famous Minecraft Experience Orb chime (Ding!)
+            playXpOrb() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    // High pitched random frequency like Minecraft XP
+                    const freqs = [880, 987, 1046, 1174, 1318];
+                    const f = freqs[Math.floor(Math.random() * freqs.length)];
+                    osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e) {}
+            }
+
+            // TNT explosion / hurt sound
+            playBoom() {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const bufferSize = this.ctx.sampleRate * 0.45;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.15));
+                    }
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(200, this.ctx.currentTime);
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start();
+                } catch(e) {}
+            }
+        }
+
+        // Native Hebrew Speech Engine
+        function speakHebrew(text) {
+            if (!('speechSynthesis' in window)) return;
+            try {
+                window.speechSynthesis.cancel();
+                const clean = text.replace(/[\u0591-\u05C7]/g, '');
+                const utt = new SpeechSynthesisUtterance(clean);
+                utt.lang = 'he-IL';
+                utt.rate = 0.86;
+                window.speechSynthesis.speak(utt);
+            } catch(e) {}
+        }
+
+        // Minecraft Word Engine Class
+        class HebrewMinecraftWorld {
+            constructor() {
+                this.canvas = document.getElementById('world-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.sfx = new MCSound();
+
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+
+                // State
+                this.selectedGrade = 3;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.score = 0;
+                this.xp = 0;
+                this.level = 1;
+                this.hearts = 5;
+                this.diamonds = 0;
+                this.emeralds = 0;
+                this.woodCount = 0;
+                this.bookCount = 0;
+                this.goldCount = 0;
+
+                this.questionIndex = 0;
+                this.totalQuestions = 15;
+                this.questionsQueue = [];
+                this.currentQuestion = null;
+
+                // Isometric Blocks in World
+                this.blocks = [];
+                this.particles = [];
+                this.xpOrbs = [];
+
+                // Pickaxe swing animation
+                this.pickaxeAngle = 0;
+                this.isMining = false;
+                this.activeMiningBlock = null;
+
+                // Screen shake
+                this.shakeAmount = 0;
+
+                this.initDOM();
+                this.initResize();
+                this.initEvents();
+            }
+
+            initDOM() {
+                // Grade selection
+                document.querySelectorAll('.mc-grade-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.mc-grade-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.selectedGrade = parseInt(btn.dataset.grade, 10);
+                    });
+                });
+
+                document.getElementById('btn-start-mc').addEventListener('click', () => {
+                    this.sfx.init();
+                    document.getElementById('start-modal').classList.add('hidden');
+                    this.startGame();
+                });
+
+                document.getElementById('btn-restart-mc').addEventListener('click', () => {
+                    document.getElementById('gameover-modal').classList.add('hidden');
+                    this.startGame();
+                });
+
+                // Top controls
+                document.getElementById('btn-mute').addEventListener('click', () => {
+                    this.sfx.isMuted = !this.sfx.isMuted;
+                    localStorage.setItem('hebrew_mc_muted', this.sfx.isMuted);
+                    document.getElementById('mute-icon').className = this.sfx.isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+                });
+                if (this.sfx.isMuted) {
+                    document.getElementById('mute-icon').className = 'fas fa-volume-mute';
+                }
+
+                document.getElementById('btn-pause').addEventListener('click', () => {
+                    this.isPaused = !this.isPaused;
+                    document.getElementById('btn-pause').innerHTML = this.isPaused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+                });
+
+                document.getElementById('btn-fullscreen').addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(()=>{});
+                    } else {
+                        document.exitFullscreen().catch(()=>{});
+                    }
+                });
+
+                document.getElementById('btn-hear-word').addEventListener('click', () => {
+                    if (this.currentQuestion) {
+                        speakHebrew(this.currentQuestion.targetHeb);
+                    }
+                });
+            }
+
+            initResize() {
+                const resize = () => {
+                    this.width = window.innerWidth;
+                    this.height = window.innerHeight;
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+                    if (this.isRunning && this.currentQuestion) {
+                        this.positionBlocks();
+                    }
+                };
+                window.addEventListener('resize', resize);
+                resize();
+            }
+
+            initEvents() {
+                // Pointer down to mine block
+                const handlePointerDown = (clientX, clientY) => {
+                    if (!this.isRunning || this.isPaused) return;
+
+                    // Check which block was clicked
+                    for (let i = this.blocks.length - 1; i >= 0; i--) {
+                        const b = this.blocks[i];
+                        if (b.isDestroyed) continue;
+
+                        // Hit detection on isometric block bounding box
+                        const dx = clientX - b.x;
+                        const dy = clientY - b.y;
+                        if (Math.abs(dx) < b.size * 0.9 && dy > -b.size * 1.5 && dy < b.size * 0.8) {
+                            this.mineBlock(b);
+                            break;
+                        }
+                    }
+                };
+
+                this.canvas.addEventListener('pointerdown', (e) => {
+                    handlePointerDown(e.clientX, e.clientY);
+                });
+            }
+
+            startGame() {
+                this.isRunning = true;
+                this.isPaused = false;
+                this.score = 0;
+                this.xp = 0;
+                this.level = 1;
+                this.hearts = 5;
+                this.diamonds = 0;
+                this.emeralds = 0;
+                this.woodCount = 0;
+                this.bookCount = 0;
+                this.goldCount = 0;
+                this.questionIndex = 0;
+
+                this.particles = [];
+                this.xpOrbs = [];
+
+                this.buildQuestions();
+                this.updateHUD();
+                this.loadNextQuestion();
+
+                lastTime = performance.now();
+                requestAnimationFrame((t) => this.loop(t));
+            }
+
+            buildQuestions() {
+                const gradeWords = VOCABULARY_DATA[this.selectedGrade] || VOCABULARY_DATA[3];
+                const shuffled = [...gradeWords].sort(() => Math.random() - 0.5);
+                this.questionsQueue = shuffled.slice(0, this.totalQuestions);
+            }
+
+            loadNextQuestion() {
+                if (this.questionIndex >= this.questionsQueue.length) {
+                    this.endGame(true);
+                    return;
+                }
+
+                const target = this.questionsQueue[this.questionIndex];
+                this.currentQuestion = {
+                    targetHeb: target.heb,
+                    targetAr: target.ar,
+                    type: target.type,
+                    icon: target.icon
+                };
+
+                // Prepare 3 Hebrew Word Blocks (1 correct + 2 distractors) + 1 occasional TNT Block
+                const gradeWords = VOCABULARY_DATA[this.selectedGrade] || VOCABULARY_DATA[3];
+                const distractors = gradeWords
+                    .filter(w => w.heb !== target.heb)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 2);
+
+                const choices = [
+                    { heb: target.heb, isCorrect: true, type: target.type || 'diamond', icon: target.icon },
+                    { heb: distractors[0].heb, isCorrect: false, type: distractors[0].type || 'gold', icon: distractors[0].icon },
+                    { heb: distractors[1].heb, isCorrect: false, type: distractors[1].type || 'emerald', icon: distractors[1].icon }
+                ].sort(() => Math.random() - 0.5);
+
+                // Add TNT block if grade >= 2
+                const blockList = [...choices];
+                if (Math.random() > 0.35) {
+                    blockList.push({
+                        heb: 'TNT 🧨',
+                        isCorrect: false,
+                        isTNT: true,
+                        type: 'tnt',
+                        icon: '💥'
+                    });
+                }
+
+                this.blocks = blockList.map((item, idx) => ({
+                    ...item,
+                    index: idx,
+                    x: 0,
+                    y: 0,
+                    size: 70,
+                    crackProgress: 0,
+                    isDestroyed: false,
+                    floatOffset: Math.random() * Math.PI * 2
+                }));
+
+                this.positionBlocks();
+
+                // Update HUD
+                document.getElementById('target-ar-word').innerHTML = `
+                    <span>${target.ar}</span>
+                    <span style="font-size: 1.5rem;">${target.icon}</span>
+                `;
+                document.getElementById('target-sub-hint').textContent = `
+                    חֲצֹב אֶת: "${target.heb}" — احفر كتلة الكلمة الصحيحة!
+                `;
+
+                speakHebrew(target.heb);
+            }
+
+            positionBlocks() {
+                const count = this.blocks.length;
+                const blockSize = Math.min(this.width * 0.16, 85);
+                const startY = this.height * 0.58;
+
+                // Distribute blocks evenly horizontally
+                const spacing = Math.min(this.width / (count + 1), 220);
+                const startX = (this.width - (count - 1) * spacing) * 0.5;
+
+                this.blocks.forEach((b, i) => {
+                    b.x = startX + i * spacing;
+                    b.y = startY + (i % 2 === 0 ? -15 : 15);
+                    b.size = blockSize;
+                });
+            }
+
+            mineBlock(block) {
+                // Swing Diamond Pickaxe
+                this.isMining = true;
+                this.pickaxeAngle = -0.7;
+                setTimeout(() => { this.pickaxeAngle = 0.4; }, 60);
+                setTimeout(() => { this.pickaxeAngle = 0; this.isMining = false; }, 180);
+
+                this.sfx.playHit();
+                block.crackProgress += 0.5; // Requires 2 hits to break
+
+                // Emit mining dust particles
+                this.addDustParticles(block.x, block.y, block.type);
+
+                if (block.crackProgress >= 1.0) {
+                    block.isDestroyed = true;
+                    this.evaluateBlockBreak(block);
+                }
+            }
+
+            evaluateBlockBreak(block) {
+                if (block.isTNT) {
+                    // Mined TNT!
+                    this.sfx.playBoom();
+                    this.hearts -= 2;
+                    this.shakeAmount = 22;
+                    this.addExplosionParticles(block.x, block.y, '#ef4444');
+                    this.showFeedback('הִתְפּוֹצְצוּת TNT! 💥<br><span style="font-size: 1.1rem;">احذر من المتفجرات!</span>', false);
+
+                    if (this.hearts <= 0) {
+                        this.updateHUD();
+                        setTimeout(() => this.endGame(false), 900);
+                        return;
+                    }
+                } else if (block.isCorrect) {
+                    // Correct Block Mined!
+                    this.sfx.playBreak();
+                    this.score += 200;
+                    this.xp += 35;
+                    this.addExplosionParticles(block.x, block.y, '#4ade80');
+                    this.spawnXpOrbs(block.x, block.y);
+
+                    // Inventory Reward
+                    if (block.type === 'diamond') this.diamonds++;
+                    else if (block.type === 'emerald') this.emeralds++;
+                    else if (block.type === 'wood') this.woodCount++;
+                    else if (block.type === 'gold') this.goldCount++;
+                    this.bookCount++;
+
+                    // Check level up
+                    if (this.xp >= this.level * 60) {
+                        this.level++;
+                        this.sfx.playXpOrb();
+                    }
+
+                    const praises = ['כָּל הַכָּבוֹד! 🌟', 'חֲצִיבָה מְצֻיֶּנֶת! ⛏️', 'נָכוֹן מְאֹד! 💎', 'אַלּוּף הַבְּלוֹקִים! 🧱'];
+                    const p = praises[Math.floor(Math.random() * praises.length)];
+                    this.showFeedback(`${p}<br><span style="font-size: 1.25rem;">${block.heb} = ${this.currentQuestion.targetAr}</span>`, true);
+
+                    this.questionIndex++;
+                    setTimeout(() => {
+                        if (this.isRunning) this.loadNextQuestion();
+                    }, 1200);
+                } else {
+                    // Wrong Block Mined!
+                    this.sfx.playBoom();
+                    this.hearts--;
+                    this.shakeAmount = 14;
+                    this.addExplosionParticles(block.x, block.y, '#ef4444');
+                    this.showFeedback(`טָעוּת! ❌<br><span style="font-size: 1.15rem;">הַמִּלָּה הַנְּכוֹנָה: ${this.currentQuestion.targetHeb}</span>`, false);
+
+                    if (this.hearts <= 0) {
+                        this.updateHUD();
+                        setTimeout(() => this.endGame(false), 900);
+                        return;
+                    }
+                }
+
+                this.updateHUD();
+            }
+
+            showFeedback(html, isGood) {
+                const toast = document.getElementById('feedback-toast');
+                toast.className = isGood ? 'mc-correct-toast show' : 'mc-wrong-toast show';
+                toast.innerHTML = html;
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 1300);
+            }
+
+            addDustParticles(x, y, type) {
+                const colors = {
+                    grass: '#4ade80',
+                    diamond: '#38bdf8',
+                    emerald: '#22c55e',
+                    gold: '#facc15',
+                    wood: '#854d0e',
+                    stone: '#94a3b8',
+                    tnt: '#ef4444'
+                };
+                const c = colors[type] || '#ffffff';
+
+                for (let i = 0; i < 12; i++) {
+                    this.particles.push({
+                        x: x + (Math.random() - 0.5) * 40,
+                        y: y + (Math.random() - 0.5) * 40,
+                        vx: (Math.random() - 0.5) * 6,
+                        vy: -Math.random() * 5 - 2,
+                        size: Math.random() * 6 + 3,
+                        color: c,
+                        alpha: 1,
+                        gravity: 0.25
+                    });
+                }
+            }
+
+            addExplosionParticles(x, y, color) {
+                for (let i = 0; i < 35; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const spd = Math.random() * 8 + 2;
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * spd,
+                        vy: Math.sin(angle) * spd,
+                        size: Math.random() * 8 + 4,
+                        color: color,
+                        alpha: 1,
+                        gravity: 0.2
+                    });
+                }
+            }
+
+            spawnXpOrbs(x, y) {
+                for (let i = 0; i < 6; i++) {
+                    this.xpOrbs.push({
+                        x: x + (Math.random() - 0.5) * 30,
+                        y: y + (Math.random() - 0.5) * 30,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: -Math.random() * 6 - 3,
+                        size: 9,
+                        color: Math.random() > 0.5 ? '#80ff00' : '#ffff00',
+                        age: 0
+                    });
+                }
+            }
+
+            updateHUD() {
+                document.getElementById('diamond-count').textContent = this.diamonds;
+                document.getElementById('emerald-count').textContent = this.emeralds;
+
+                // Inventory slot counters
+                document.getElementById('slot-diamonds').textContent = this.diamonds;
+                document.getElementById('slot-emeralds').textContent = this.emeralds;
+                document.getElementById('slot-wood').textContent = this.woodCount;
+                document.getElementById('slot-books').textContent = this.bookCount;
+                document.getElementById('slot-gold').textContent = this.goldCount;
+
+                // Hearts
+                let heartsHtml = '';
+                for (let i = 0; i < 5; i++) {
+                    heartsHtml += i < this.hearts ? '<span>❤️</span>' : '<span style="opacity:0.25; filter:grayscale(1);">🖤</span>';
+                }
+                document.getElementById('hearts-mc-bar').innerHTML = heartsHtml;
+
+                // XP Bar & Level
+                document.getElementById('xp-level-display').textContent = `Lv ${this.level}`;
+                const targetXp = this.level * 60;
+                const percent = Math.min((this.xp / targetXp) * 100, 100);
+                document.getElementById('xp-fill-bar').style.width = `${percent}%`;
+            }
+
+            endGame(isWin) {
+                this.isRunning = false;
+                const modal = document.getElementById('gameover-modal');
+                const title = document.getElementById('gameover-title');
+                const sub = document.getElementById('gameover-sub');
+                const icon = document.getElementById('gameover-icon');
+
+                if (isWin) {
+                    icon.textContent = '🏆';
+                    title.textContent = 'כָּל הַכָּבוֹד! אַלּוּף מַיְינְקְרַאפְט!';
+                    sub.textContent = 'أكملت مهمة حفر الكلمات العبرية بنجاح باهر وجمعت كميات أسطورية من الخبرة والماس!';
+                } else {
+                    icon.textContent = '💀';
+                    title.textContent = 'נִגְמְרוּ הַחַיִּים!';
+                    sub.textContent = 'نفدت قلوبك في المغامرة! تدرب على الكلمات وحاول مجدداً لتصبح بطل ماينكرافت!';
+                }
+
+                document.getElementById('final-mc-score').textContent = this.score;
+                document.getElementById('final-mc-level').textContent = `Lv ${this.level}`;
+                document.getElementById('final-mc-diamonds').textContent = `💎 ${this.diamonds}`;
+
+                modal.classList.remove('hidden');
+            }
+
+            // ================== RENDERING SYSTEM ==================
+            loop(currentTime) {
+                if (!this.isRunning) return;
+
+                const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+                lastTime = currentTime;
+
+                if (!this.isPaused) {
+                    this.update(dt);
+                }
+                this.render();
+
+                requestAnimationFrame((t) => this.loop(t));
+            }
+
+            update(dt) {
+                // Decay shake
+                if (this.shakeAmount > 0) {
+                    this.shakeAmount *= 0.88;
+                    if (this.shakeAmount < 0.1) this.shakeAmount = 0;
+                }
+
+                // Update particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += p.gravity || 0.2;
+                    p.alpha -= 0.025;
+                    if (p.alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+
+                // Update XP Orbs (Magnet toward player at bottom-center)
+                const targetX = this.width * 0.5;
+                const targetY = this.height * 0.92;
+                for (let i = this.xpOrbs.length - 1; i >= 0; i--) {
+                    const orb = this.xpOrbs[i];
+                    orb.age += dt;
+
+                    // Float then home in
+                    if (orb.age > 0.3) {
+                        const dx = targetX - orb.x;
+                        const dy = targetY - orb.y;
+                        orb.vx += dx * 0.06;
+                        orb.vy += dy * 0.06;
+                        orb.vx *= 0.92;
+                        orb.vy *= 0.92;
+                    }
+                    orb.x += orb.vx;
+                    orb.y += orb.vy;
+
+                    // Collected when close to bottom
+                    if (Math.hypot(targetX - orb.x, targetY - orb.y) < 25) {
+                        this.xpOrbs.splice(i, 1);
+                        this.sfx.playXpOrb();
+                    }
+                }
+            }
+
+            render() {
+                const ctx = this.ctx;
+                const w = this.width;
+                const h = this.height;
+
+                ctx.save();
+
+                // Apply Screen Shake
+                if (this.shakeAmount > 0) {
+                    const sx = (Math.random() - 0.5) * this.shakeAmount;
+                    const sy = (Math.random() - 0.5) * this.shakeAmount;
+                    ctx.translate(sx, sy);
+                }
+
+                // 1. Minecraft Sky & Pixel Clouds
+                ctx.fillStyle = '#65a5e8';
+                ctx.fillRect(0, 0, w, h);
+
+                // Pixel Sun (Square)
+                const sunSize = 64;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.75, 45, sunSize, sunSize);
+                ctx.fillStyle = '#ffff88';
+                ctx.fillRect(w * 0.75 + 4, 49, sunSize - 8, sunSize - 8);
+
+                // Pixel Clouds
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                ctx.fillRect(w * 0.1, 70, 160, 36);
+                ctx.fillRect(w * 0.14, 55, 90, 20);
+                ctx.fillRect(w * 0.5, 95, 220, 42);
+                ctx.fillRect(w * 0.58, 80, 110, 22);
+
+                // 2. Minecraft Voxel Landscape in background
+                const groundY = h * 0.68;
+                // Layered grass & dirt hills
+                ctx.fillStyle = '#3f7c32'; // Grass green
+                ctx.beginPath();
+                ctx.moveTo(0, groundY);
+                for (let x = 0; x <= w; x += 40) {
+                    ctx.lineTo(x, groundY + Math.sin(x * 0.01) * 15);
+                }
+                ctx.lineTo(w, h);
+                ctx.lineTo(0, h);
+                ctx.closePath();
+                ctx.fill();
+
+                // Dirt lower layer
+                ctx.fillStyle = '#593d26';
+                ctx.fillRect(0, groundY + 30, w, h - (groundY + 30));
+
+                // Pixel Trees in background
+                this.renderVoxelTree(ctx, w * 0.08, groundY - 50);
+                this.renderVoxelTree(ctx, w * 0.22, groundY - 70);
+                this.renderVoxelTree(ctx, w * 0.78, groundY - 60);
+                this.renderVoxelTree(ctx, w * 0.92, groundY - 45);
+
+                // 3. Render Floating Isometric Minecraft Blocks
+                for (const b of this.blocks) {
+                    if (b.isDestroyed) continue;
+                    this.renderIsometricBlock(ctx, b);
+                }
+
+                // 4. Render Particles and XP Orbs
+                this.renderParticles(ctx);
+
+                // 5. Render Diamond Pickaxe swinging in bottom right
+                this.renderPickaxe(ctx);
+
+                ctx.restore();
+            }
+
+            renderVoxelTree(ctx, x, y) {
+                // Trunk (Wood)
+                ctx.fillStyle = '#5c4028';
+                ctx.fillRect(x - 10, y + 20, 20, 50);
+                // Leaves (Green cubes)
+                ctx.fillStyle = '#2e6b21';
+                ctx.fillRect(x - 35, y - 25, 70, 50);
+                ctx.fillStyle = '#3a872a';
+                ctx.fillRect(x - 25, y - 45, 50, 30);
+            }
+
+            renderIsometricBlock(ctx, b) {
+                const s = b.size;
+                const x = b.x;
+                const floatY = b.y + Math.sin(performance.now() * 0.003 + b.floatOffset) * 6;
+
+                ctx.save();
+                ctx.translate(x, floatY);
+
+                // Colors per block type
+                let topColor = '#55a13a';
+                let leftColor = '#604128';
+                let rightColor = '#4a321e';
+                let oreColor = null;
+
+                if (b.type === 'diamond') {
+                    topColor = '#808080'; leftColor = '#696969'; rightColor = '#505050';
+                    oreColor = '#55ffff';
+                } else if (b.type === 'emerald') {
+                    topColor = '#808080'; leftColor = '#696969'; rightColor = '#505050';
+                    oreColor = '#55ff55';
+                } else if (b.type === 'gold') {
+                    topColor = '#808080'; leftColor = '#696969'; rightColor = '#505050';
+                    oreColor = '#ffff55';
+                } else if (b.type === 'wood') {
+                    topColor = '#8f683a'; leftColor = '#704f29'; rightColor = '#543b1e';
+                } else if (b.type === 'tnt') {
+                    topColor = '#c43325'; leftColor = '#a82519'; rightColor = '#801c13';
+                }
+
+                // Isometric Top Face
+                ctx.fillStyle = topColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -s * 0.58);
+                ctx.lineTo(s * 0.86, -s * 0.15);
+                ctx.lineTo(0, s * 0.28);
+                ctx.lineTo(-s * 0.86, -s * 0.15);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Isometric Left Face
+                ctx.fillStyle = leftColor;
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.86, -s * 0.15);
+                ctx.lineTo(0, s * 0.28);
+                ctx.lineTo(0, s * 1.15);
+                ctx.lineTo(-s * 0.86, s * 0.72);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Isometric Right Face
+                ctx.fillStyle = rightColor;
+                ctx.beginPath();
+                ctx.moveTo(0, s * 0.28);
+                ctx.lineTo(s * 0.86, -s * 0.15);
+                ctx.lineTo(s * 0.86, s * 0.72);
+                ctx.lineTo(0, s * 1.15);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Sparkly Ore Flecks
+                if (oreColor) {
+                    ctx.fillStyle = oreColor;
+                    // Left face specks
+                    ctx.fillRect(-s * 0.5, s * 0.1, 10, 10);
+                    ctx.fillRect(-s * 0.3, s * 0.5, 8, 8);
+                    // Right face specks
+                    ctx.fillRect(s * 0.2, s * 0.3, 10, 10);
+                    ctx.fillRect(s * 0.5, s * 0.1, 8, 8);
+                }
+
+                // TNT Label
+                if (b.type === 'tnt') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-s * 0.7, s * 0.15, s * 1.4, s * 0.35);
+                    ctx.fillStyle = '#000000';
+                    ctx.font = `900 ${Math.round(s * 0.22)}px 'Press Start 2P', monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('TNT', 0, s * 0.4);
+                }
+
+                // Mining Cracks
+                if (b.crackProgress > 0) {
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(0, s * 0.3);
+                    ctx.lineTo(-s * 0.3, s * 0.6);
+                    ctx.lineTo(0, s * 0.8);
+                    ctx.lineTo(s * 0.3, s * 0.5);
+                    ctx.stroke();
+                }
+
+                // Minecraft Wooden Sign Board above block showing Hebrew Word
+                const signW = s * 2.2;
+                const signH = s * 0.85;
+                const signY = -s * 1.35;
+
+                // Sign post
+                ctx.fillStyle = '#4a321e';
+                ctx.fillRect(-5, signY + signH, 10, s * 0.55);
+
+                // Sign Board Background (Wood oak planks)
+                ctx.fillStyle = '#a67b48';
+                ctx.strokeStyle = '#2b1b0e';
+                ctx.lineWidth = 3;
+                ctx.fillRect(-signW * 0.5, signY, signW, signH);
+                ctx.strokeRect(-signW * 0.5, signY, signW, signH);
+
+                // Hebrew Word text with full vowels (הַנִּקּוּד)
+                ctx.fillStyle = '#000000';
+                ctx.font = `900 ${Math.max(15, Math.round(s * 0.32))}px 'Assistant', 'Cairo', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(b.heb, 0, signY + signH * 0.45);
+
+                // Mini item emoji
+                ctx.font = `${Math.round(s * 0.26)}px sans-serif`;
+                ctx.fillText(b.icon || '💎', 0, signY + signH * 0.82);
+
+                ctx.restore();
+            }
+
+            renderParticles(ctx) {
+                // Particles
+                for (const p of this.particles) {
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                    ctx.restore();
+                }
+
+                // XP Orbs
+                for (const orb of this.xpOrbs) {
+                    ctx.save();
+                    ctx.fillStyle = orb.color;
+                    ctx.shadowColor = orb.color;
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(orb.x, orb.y, orb.size * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            renderPickaxe(ctx) {
+                // Diamond Pickaxe at bottom right
+                const px = this.width * 0.85;
+                const py = this.height * 0.82;
+
+                ctx.save();
+                ctx.translate(px, py);
+                ctx.rotate(this.pickaxeAngle);
+
+                // Wooden Handle
+                ctx.fillStyle = '#6d4c28';
+                ctx.lineWidth = 10;
+                ctx.lineCap = 'square';
+                ctx.strokeStyle = '#5a3d1e';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-75, -75);
+                ctx.stroke();
+
+                // Diamond Pickaxe Head (Cyan curve)
+                ctx.fillStyle = '#55ffff';
+                ctx.strokeStyle = '#00aaaa';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-105, -55);
+                ctx.lineTo(-75, -75);
+                ctx.lineTo(-55, -105);
+                ctx.lineTo(-70, -115);
+                ctx.lineTo(-115, -70);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        let lastTime = performance.now();
+        window.addEventListener('DOMContentLoaded', () => {
+            window.mcWorld = new HebrewMinecraftWorld();
+        });
+    })();
+    </script>
+</body>
+</html>
