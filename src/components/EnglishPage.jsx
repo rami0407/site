@@ -105,10 +105,10 @@ export default function EnglishPage() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                🏃 بَوَّابَةُ اللُّغَةِ الإِنْجِلِيزِيَّة 🇬🇧
+                🏃 بَوَّابَةُ الثَّرْوَةِ اللُّغَوِيَّةِ الإِنْجِلِيزِيَّة 🇬🇧
               </h1>
               <span style={{ fontSize: '0.82rem', color: '#bae6fd', fontWeight: '700' }}>
-                English Learning Portal — Subway Surfers 3D & Vocabulary Bank (صفوف 1 - 6)
+                English Vocabulary & Subway Surfers 3D — بنك المفردات للمرحلة الابتدائية (صفوف 1 - 6)
               </span>
             </div>
           </div>
@@ -131,7 +131,7 @@ export default function EnglishPage() {
                 transition: 'all 0.2s'
               }}
             >
-              🏃 عداء صب واي 3D (Subway Surfers)
+              🏃 سباق صب واي للثروة اللغوية 3D
             </button>
             <button
               type="button"
@@ -149,7 +149,7 @@ export default function EnglishPage() {
                 transition: 'all 0.2s'
               }}
             >
-              📖 بنك الكلمات والصوتيات
+              📖 معجم وبنك المفردات والصوتيات
             </button>
             <a
               href="/english-subway.html?v=1"

@@ -475,32 +475,32 @@
     <div class="modal-overlay" id="start-modal">
         <div class="card">
             <h1>English Subway Surfers 3D 🏃🇬🇧</h1>
-            <p>النسخة التعليمية المخصصة لمنهاج اللغة الإنجليزية للمرحلة الابتدائية (الصفوف 1 - 6)</p>
+            <p>سباق قطارات الأنفاق لتعزيز الثروة اللغوية الإنجليزية (Vocabulary) للمرحلة الابتدائية</p>
 
-            <div style="text-align:right; margin-bottom:8px; font-weight:800; color:#ffd700;">اختر الصف الدراسي:</div>
+            <div style="text-align:right; margin-bottom:8px; font-weight:800; color:#ffd700;">🎓 اختر الصف الدراسي (Grade):</div>
             <div class="grades-row" id="grade-chips">
-                <button class="grade-chip" data-grade="1">الصف 1</button>
-                <button class="grade-chip" data-grade="2">الصف 2</button>
-                <button class="grade-chip active" data-grade="3">الصف 3</button>
-                <button class="grade-chip" data-grade="4">الصف 4</button>
-                <button class="grade-chip" data-grade="5">الصف 5</button>
-                <button class="grade-chip" data-grade="6">الصف 6</button>
+                <button class="grade-chip" data-grade="1">الصف 1 (Grade 1)</button>
+                <button class="grade-chip" data-grade="2">الصف 2 (Grade 2)</button>
+                <button class="grade-chip active" data-grade="3">الصف 3 (Grade 3)</button>
+                <button class="grade-chip" data-grade="4">الصف 4 (Grade 4)</button>
+                <button class="grade-chip" data-grade="5">الصف 5 (Grade 5)</button>
+                <button class="grade-chip" data-grade="6">الصف 6 (Grade 6)</button>
                 <button class="grade-chip" data-grade="all">شامل 🌟</button>
             </div>
 
-            <div style="text-align:right; margin-bottom:8px; font-weight:800; color:#ffd700;">اختر فرع اللغة الإنجليزية:</div>
+            <div style="text-align:right; margin-bottom:8px; font-weight:800; color:#ffd700;">📚 اختر نمط الثروة اللغوية (Vocabulary Focus):</div>
             <div class="subject-grid" id="subject-selector">
-                <button class="subject-btn active" data-sub="all">🌟 شامل (كل المهارات)</button>
-                <button class="subject-btn" data-sub="vocab">📖 Words & Meaning (المفردات)</button>
-                <button class="subject-btn" data-sub="spelling">🔤 Spelling & Phonics (التهجئة)</button>
-                <button class="subject-btn" data-sub="grammar">⚡ Grammar & Verbs (القواعد)</button>
+                <button class="subject-btn active" data-sub="all">🌟 كل الثروة اللغوية (All Words)</button>
+                <button class="subject-btn" data-sub="meaning">📖 معاني المفردات (Meanings)</button>
+                <button class="subject-btn" data-sub="opposites">↔️ الأضداد والمرادفات (Opposites)</button>
+                <button class="subject-btn" data-sub="categories">🍎 مجالات الكلمات (Categories)</button>
             </div>
 
             <div style="background:rgba(0,0,0,0.35); border-radius:14px; padding:12px; margin-bottom:16px; text-align:right; font-size:13.5px; line-height:1.7;">
-                <div>📦 <b>الصندوق البرونزي:</b> يمنح <b>+100 نقطة</b> و <b>+25 عملة</b></div>
-                <div>💎 <b>الصندوق الفضي:</b> يمنح <b>+250 نقطة</b> و <b>+50 عملة</b> ويزيد المضاعف</div>
-                <div>👑 <b>الصندوق الذهبي:</b> يمنح <b>+500 نقطة</b> و <b>+100 عملة</b> ويشحن اللوح الطائر</div>
-                <div style="margin-top:6px; color:#ffd700;">🎮 <b>التحكم:</b> الأسهم / WASD / السحب باللمس للحركة والقفز | المسافة لتفعيل اللوح الطائر.</div>
+                <div>📦 <b>الصندوق البرونزي (كلمات أساسية):</b> يمنح <b>+100 نقطة</b> و <b>+25 عملة</b></div>
+                <div>💎 <b>الصندوق الفضي (أضداد ومفردات مركبة):</b> يمنح <b>+250 نقطة</b> و <b>+50 عملة</b></div>
+                <div>👑 <b>الصندوق الذهبي (تحدي النجوم وسياق الجمل):</b> يمنح <b>+500 نقطة</b> ويشحن درع اللوح الطائر</div>
+                <div style="margin-top:6px; color:#ffd700;">🔊 <b>استماع للنطق:</b> تنطق اللعبة الكلمة الإنجليزية عند فتح كل صندوق!</div>
             </div>
 
             <button class="btn-main" id="btn-start-game">🚀 انطلق واركض الآن (Start Run)</button>
@@ -511,12 +511,15 @@
     <!-- نافذة السؤال التفاعلي -->
     <div class="modal-overlay hidden" id="quiz-modal">
         <div class="card">
-            <div id="quiz-tier-badge" class="quiz-tier-badge tier-1">English Question Box</div>
+            <div id="quiz-tier-badge" class="quiz-tier-badge tier-1">Vocabulary Question Box</div>
             <div id="quiz-rescue-note" style="color:#ff7675; font-weight:800; margin-bottom:8px; display:none;">
-                ⚠️ قطار أمامك! أجب بالإنجليزي بشكل صحيح للنجاة ومواصلة الركض:
+                ⚠️ قطار أمامك! اختر المعنى الصحيح للكلمة لمواصلة الركض:
             </div>
             <div class="question-box">
-                <div id="quiz-question-text">Question appears here?</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div id="quiz-question-text" style="flex:1;">Question appears here?</div>
+                    <button type="button" id="btn-quiz-speak" title="استمع لنطق الكلمة الإنجليزية" style="background:#facc15; border:none; border-radius:50%; width:42px; height:42px; color:#0f172a; font-size:19px; cursor:pointer; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,0.4);">🔊</button>
+                </div>
                 <div class="question-sub-ar" id="quiz-question-ar">المعنى أو التوضيح بالعربية</div>
             </div>
             <div class="options-list" id="quiz-options"></div>
@@ -674,31 +677,63 @@ SoundFX.init();
 document.getElementById('btn-sound-toggle').onclick = () => SoundFX.toggleMute();
 
 /**
- * 2. بنك أسئلة منهاج اللغة الإنجليزية للمرحلة الابتدائية (الصفوف 1 - 6)
+ * 2. بنك أسئلة الثروة اللغوية لمنهاج اللغة الإنجليزية للمرحلة الابتدائية (الصفوف 1 - 6)
  */
 const DEFAULT_ENGLISH_QUESTIONS = [
-    // الصفوف 1 - 2 (أساسيات ومفردات أولى)
-    { sub: 'vocab', grade: 1, tier: 1, points: 100, coins: 25, q: 'What color is the Sun?', qAr: 'ما هو لون الشمس؟', options: ['Yellow (أصفر)', 'Blue (أزرق)', 'Green (أخضر)', 'Black (أسود)'], ans: 0 },
-    { sub: 'vocab', grade: 1, tier: 1, points: 100, coins: 25, q: 'Which animal says "Woof"?', qAr: 'أي حيوان ينبح "Woof"؟', options: ['Dog (كلب)', 'Cat (قطة)', 'Fish (سمكة)', 'Bird (طائر)'], ans: 0 },
-    { sub: 'spelling', grade: 2, tier: 1, points: 100, coins: 25, q: 'Choose the correct spelling:', qAr: 'اختر التهجئة الصحيحة لكلمة (كتاب):', options: ['Book', 'Bok', 'Boke', 'Bokk'], ans: 0 },
-    { sub: 'vocab', grade: 2, tier: 1, points: 100, coins: 25, q: 'What do we write with?', qAr: 'بماذا نكتب في الصف؟', options: ['Pencil (قلم رصاص)', 'Chair (كرسي)', 'Door (باب)', 'Window (نافذة)'], ans: 0 },
-    { sub: 'vocab', grade: 2, tier: 2, points: 250, coins: 50, q: 'What is the opposite of "Big"?', qAr: 'ما هو عكس كلمة Big (كبير)؟', options: ['Small (صغير)', 'Tall (طويل)', 'Fast (سريع)', 'Hot (حار)'], ans: 0 },
+    // ============ GRADE 1: الأساسيات والمحيط القريب ============
+    { sub: 'meaning', grade: 1, tier: 1, points: 100, coins: 25, word: 'Apple', q: 'What is an "Apple"?', qAr: 'ما هو معنى كلمة Apple؟', options: ['تفاحة', 'برتقالة', 'موزة', 'حليب'], ans: 0 },
+    { sub: 'meaning', grade: 1, tier: 1, points: 100, coins: 25, word: 'Cat', q: 'What is a "Cat"?', qAr: 'ما هو معنى كلمة Cat؟', options: ['قطة', 'كلب', 'عصفور', 'سمكة'], ans: 0 },
+    { sub: 'meaning', grade: 1, tier: 1, points: 100, coins: 25, word: 'Sun', q: 'What is the "Sun"?', qAr: 'ما هو معنى كلمة Sun؟', options: ['شمس', 'قمر', 'غيمة', 'مطر'], ans: 0 },
+    { sub: 'meaning', grade: 1, tier: 1, points: 100, coins: 25, word: 'Water', q: 'What is "Water"?', qAr: 'ما هو معنى كلمة Water؟', options: ['ماء', 'عصير', 'شاي', 'خبز'], ans: 0 },
+    { sub: 'categories', grade: 1, tier: 1, points: 100, coins: 25, word: 'Yellow', q: 'Which color is the banana?', qAr: 'ما هو لون الموز بالإنجليزية؟', options: ['Yellow (أصفر)', 'Blue (أزرق)', 'Black (أسود)', 'Red (أحمر)'], ans: 0 },
+    { sub: 'categories', grade: 1, tier: 1, points: 100, coins: 25, word: 'Hand', q: 'Which part of the body do we write with?', qAr: 'أي جزء من الجسم نكتب به؟', options: ['Hand (يد)', 'Foot (قدم)', 'Nose (أنف)', 'Ear (أذن)'], ans: 0 },
+    { sub: 'meaning', grade: 1, tier: 2, points: 250, coins: 50, word: 'Door', q: 'What is a "Door"?', qAr: 'ما معنى كلمة Door؟', options: ['باب', 'نافذة', 'جدار', 'سقف'], ans: 0 },
+    { sub: 'opposites', grade: 1, tier: 2, points: 250, coins: 50, word: 'Big and Small', q: 'What is the opposite of "Big"?', qAr: 'ما هو عكس كلمة Big (كبير)؟', options: ['Small (صغير)', 'Hot (حار)', 'Tall (طويل)', 'Red (أحمر)'], ans: 0 },
 
-    // الصفوف 3 - 4 (العائلة، المدرسة، الأفعال اليومية)
-    { sub: 'vocab', grade: 3, tier: 1, points: 100, coins: 25, q: 'My mother\'s mother is my ______', qAr: 'والدة أمي هي:', options: ['Grandmother (جدتي)', 'Sister (أختي)', 'Aunt (عمتي/خالتي)', 'Cousin (ابنة العم)'], ans: 0 },
-    { sub: 'grammar', grade: 3, tier: 2, points: 250, coins: 50, q: 'Complete: She ______ a student.', qAr: 'أكمل الفراغ بفعل Be المناسب:', options: ['is', 'are', 'am', 'be'], ans: 0 },
-    { sub: 'spelling', grade: 3, tier: 2, points: 250, coins: 50, q: 'Fill in the missing letter: S _ H O O L', qAr: 'الحرف الناقص في كلمة مدرسة هو:', options: ['C', 'K', 'T', 'P'], ans: 0 },
-    { sub: 'vocab', grade: 4, tier: 1, points: 100, coins: 25, q: 'Which season is very cold and rainy?', qAr: 'أي فصل من فصول السنة بارد وماطر؟', options: ['Winter (الشتاء)', 'Summer (الصيف)', 'Spring (الربيع)', 'Autumn (الخريف)'], ans: 0 },
-    { sub: 'grammar', grade: 4, tier: 2, points: 250, coins: 50, q: 'They ______ playing football now.', qAr: 'أكمل الجملة في زمن المضارع المستمر:', options: ['are', 'is', 'am', 'was'], ans: 0 },
-    { sub: 'spelling', grade: 4, tier: 3, points: 500, coins: 100, q: 'Which word rhymes with "Play"?', qAr: 'أي كلمة تنتهي بنفس النغمة الصوتية لكلمة Play؟', options: ['Day', 'Boy', 'Sun', 'Cat'], ans: 0 },
+    // ============ GRADE 2: المدرسة، البيت، الألوان والأفعال ============
+    { sub: 'meaning', grade: 2, tier: 1, points: 100, coins: 25, word: 'Pencil', q: 'What is a "Pencil"?', qAr: 'ما هو معنى كلمة Pencil؟', options: ['قلم رصاص', 'ممحاة', 'مسطرة', 'حقيبة'], ans: 0 },
+    { sub: 'meaning', grade: 2, tier: 1, points: 100, coins: 25, word: 'Teacher', q: 'Who teaches students in school?', qAr: 'من يعلم الطلاب في المدرسة؟', options: ['Teacher (معلّم)', 'Driver (سائق)', 'Doctor (طبيب)', 'Cook (طبّاخ)'], ans: 0 },
+    { sub: 'meaning', grade: 2, tier: 1, points: 100, coins: 25, word: 'House', q: 'What is a "House"?', qAr: 'ما هو معنى كلمة House؟', options: ['بيت / منزل', 'شارع', 'حديقة', 'سيارة'], ans: 0 },
+    { sub: 'categories', grade: 2, tier: 2, points: 250, coins: 50, word: 'Fruit', q: 'Which of the following is a "Fruit"?', qAr: 'أي من الكلمات التالية فاكهة؟', options: ['Banana (موزة)', 'Chair (كرسي)', 'Notebook (دفتر)', 'Shoe (حذاء)'], ans: 0 },
+    { sub: 'opposites', grade: 2, tier: 2, points: 250, coins: 50, word: 'Hot and Cold', q: 'What is the opposite of "Hot"?', qAr: 'ما هو عكس كلمة Hot (حار)؟', options: ['Cold (بارد)', 'Warm (دافئ)', 'Dry (جاف)', 'Fast (سريع)'], ans: 0 },
+    { sub: 'opposites', grade: 2, tier: 2, points: 250, coins: 50, word: 'Happy and Sad', q: 'What is the opposite of "Happy"?', qAr: 'ما هو عكس كلمة Happy (سعيد)؟', options: ['Sad (حزين)', 'Funny (مضحك)', 'Angry (غاضب)', 'Strong (قوي)'], ans: 0 },
+    { sub: 'meaning', grade: 2, tier: 3, points: 500, coins: 100, word: 'Brother', q: 'What is the meaning of "Brother"?', qAr: 'ما هو معنى كلمة Brother؟', options: ['أخ', 'أخت', 'عم / خال', 'جد'], ans: 0 },
 
-    // الصفوف 5 - 6 (المهن، الأزمنة، التراكيب والمفردات المتقدمة)
-    { sub: 'vocab', grade: 5, tier: 2, points: 250, coins: 50, q: 'A person who helps sick people is a ______', qAr: 'الشخص الذي يعالج المرضى في المستشفى هو:', options: ['Doctor (طبيب)', 'Pilot (طيار)', 'Farmer (مزارع)', 'Driver (سائق)'], ans: 0 },
-    { sub: 'grammar', grade: 5, tier: 3, points: 500, coins: 100, q: 'Yesterday, I ______ to the library.', qAr: 'أكمل بالفعل الماضي المناسب (أمس ذهبت):', options: ['went', 'go', 'going', 'goes'], ans: 0 },
-    { sub: 'vocab', grade: 6, tier: 2, points: 250, coins: 50, q: 'What is the opposite of "Always"?', qAr: 'ما هو عكس كلمة Always (دائماً)؟', options: ['Never (أبداً)', 'Often (غالباً)', 'Sometimes (أحياناً)', 'Usually (عادة)'], ans: 0 },
-    { sub: 'grammar', grade: 6, tier: 3, points: 500, coins: 100, q: 'If you work hard, you ______ succeed.', qAr: 'أكمل الجملة الشرطية بالكلمة المناسبة:', options: ['will', 'did', 'was', 'were'], ans: 0 },
-    { sub: 'spelling', grade: 6, tier: 3, points: 500, coins: 100, q: 'Choose the correct plural form of "Child":', qAr: 'ما هو الجمع الصحيح لكلمة طفل (Child)؟', options: ['Children', 'Childs', 'Childes', 'Childern'], ans: 0 },
-    { sub: 'vocab', grade: 6, tier: 1, points: 100, coins: 25, q: 'What do we say when someone helps us?', qAr: 'ماذا نقول بالإنجليزية لمن يقدم لنا مساعدة؟', options: ['Thank you! (شكراً لك)', 'Excuse me! (معذرة)', 'Goodbye! (مع السلامة)', 'Sorry! (آسف)'], ans: 0 }
+    // ============ GRADE 3: العائلة، الحواس، المشاعر وغرف البيت ============
+    { sub: 'meaning', grade: 3, tier: 1, points: 100, coins: 25, word: 'Kitchen', q: 'Where do we cook food?', qAr: 'أين نطبخ الطعام في البيت؟', options: ['Kitchen (مطبخ)', 'Bedroom (غرفة نوم)', 'Garden (حديقة)', 'Bathroom (حمام)'], ans: 0 },
+    { sub: 'meaning', grade: 3, tier: 1, points: 100, coins: 25, word: 'Window', q: 'What is the meaning of "Window"?', qAr: 'ما هو معنى كلمة Window؟', options: ['نافذة / شباك', 'باب', 'طاولة', 'خزانة'], ans: 0 },
+    { sub: 'meaning', grade: 3, tier: 1, points: 100, coins: 25, word: 'Friend', q: 'What is the meaning of "Friend"?', qAr: 'ما هو معنى كلمة Friend؟', options: ['صديق / رفيق', 'معلم', 'جار', 'غريب'], ans: 0 },
+    { sub: 'opposites', grade: 3, tier: 2, points: 250, coins: 50, word: 'Fast and Slow', q: 'What is the opposite of "Fast"?', qAr: 'ما هو عكس كلمة Fast (سريع)؟', options: ['Slow (بطيء)', 'Quick (سريع)', 'High (عالي)', 'Loud (عالي الصوت)'], ans: 0 },
+    { sub: 'opposites', grade: 3, tier: 2, points: 250, coins: 50, word: 'Up and Down', q: 'What is the opposite of "Up"?', qAr: 'ما هو عكس كلمة Up (أعلى)؟', options: ['Down (أسفل)', 'In (داخل)', 'Out (خارج)', 'Near (قريب)'], ans: 0 },
+    { sub: 'categories', grade: 3, tier: 2, points: 250, coins: 50, word: 'Animals', q: 'Which animal has a very long neck?', qAr: 'أي حيوان يملك رقبة طويلة جداً؟', options: ['Giraffe (زرافة)', 'Rabbit (أرنب)', 'Duck (بطة)', 'Cat (قطة)'], ans: 0 },
+    { sub: 'meaning', grade: 3, tier: 3, points: 500, coins: 100, word: 'Thank you', q: 'What do we say when someone helps us?', qAr: 'ماذا نقول بالإنجليزية لمن يقدم لنا مساعدة؟', options: ['Thank you! (شكراً لك)', 'Excuse me! (معذرة)', 'Sorry! (آسف)', 'Hello! (مرحباً)'], ans: 0 },
+
+    // ============ GRADE 4: فصول السنة، الطقس، الأماكن والصفات ============
+    { sub: 'meaning', grade: 4, tier: 1, points: 100, coins: 25, word: 'Winter', q: 'Which season is cold and has rain and snow?', qAr: 'أي فصل من فصول السنة بارد وماطر؟', options: ['Winter (الشتاء)', 'Summer (الصيف)', 'Spring (الربيع)', 'Autumn (الخريف)'], ans: 0 },
+    { sub: 'meaning', grade: 4, tier: 1, points: 100, coins: 25, word: 'Forest', q: 'What is a "Forest"?', qAr: 'ما هو معنى كلمة Forest؟', options: ['غابة كثيفة الأشجار', 'صحراء رملية', 'بحر عميق', 'نهر جارٍ'], ans: 0 },
+    { sub: 'meaning', grade: 4, tier: 1, points: 100, coins: 25, word: 'Breakfast', q: 'What is the first meal of the day?', qAr: 'ما هي أول وجبة نتناولها في الصباح؟', options: ['Breakfast (فطور)', 'Lunch (غداء)', 'Dinner (عشاء)', 'Snack (وجبة خفيفة)'], ans: 0 },
+    { sub: 'opposites', grade: 4, tier: 2, points: 250, coins: 50, word: 'Tall and Short', q: 'What is the opposite of "Tall"?', qAr: 'ما هو عكس كلمة Tall (طويل القامة)؟', options: ['Short (قصير)', 'Long (طويل)', 'Fat (سمين)', 'Slim (نحيف)'], ans: 0 },
+    { sub: 'opposites', grade: 4, tier: 2, points: 250, coins: 50, word: 'Clean and Dirty', q: 'What is the opposite of "Clean"?', qAr: 'ما هو عكس كلمة Clean (نظيف)؟', options: ['Dirty (متسخ)', 'Tidy (مرتب)', 'Bright (مضيء)', 'Fresh (طازج)'], ans: 0 },
+    { sub: 'categories', grade: 4, tier: 3, points: 500, coins: 100, word: 'Rain', q: 'When water falls from clouds, it is ______', qAr: 'عندما يسقط الماء من الغيوم في الشتاء، فهذا هو:', options: ['Rain (مطر)', 'Wind (رياح)', 'Sun (شمس)', 'Sand (رمل)'], ans: 0 },
+    { sub: 'meaning', grade: 4, tier: 3, points: 500, coins: 100, word: 'Castle', q: 'What is a "Castle"?', qAr: 'ما هو معنى كلمة Castle؟', options: ['قلعة / قصر قديم', 'كوخ صغير', 'خيمة', 'برج حديث'], ans: 0 },
+
+    // ============ GRADE 5: المهن، الأفعال، الأماكن والصفات المركبة ============
+    { sub: 'meaning', grade: 5, tier: 1, points: 100, coins: 25, word: 'Doctor', q: 'A person who cures sick people in hospital is a ______', qAr: 'الشخص الذي يعالج المرضى في المستشفى هو:', options: ['Doctor (طبيب)', 'Pilot (طيار)', 'Farmer (مزارع)', 'Carpenter (نجار)'], ans: 0 },
+    { sub: 'meaning', grade: 5, tier: 1, points: 100, coins: 25, word: 'Library', q: 'A place where we borrow and read books is a ______', qAr: 'المكان الذي نستعير ونقرأ منه الكتب هو:', options: ['Library (مكتبة)', 'Bakery (مخبز)', 'Pharmacy (صيدلية)', 'Stadium (ملعب)'], ans: 0 },
+    { sub: 'meaning', grade: 5, tier: 2, points: 250, coins: 50, word: 'Delicious', q: 'What does "Delicious" mean?', qAr: 'ما هو معنى كلمة Delicious لوصف الطعام؟', options: ['لذيذ وشهي', 'حار جداً', 'بارد', 'مالح'], ans: 0 },
+    { sub: 'opposites', grade: 5, tier: 2, points: 250, coins: 50, word: 'Near and Far', q: 'What is the opposite of "Near"?', qAr: 'ما هو عكس كلمة Near (قريب)؟', options: ['Far (بعيد)', 'Close (قريب)', 'Here (هنا)', 'Next (بجانب)'], ans: 0 },
+    { sub: 'opposites', grade: 5, tier: 2, points: 250, coins: 50, word: 'Difficult and Easy', q: 'What is the opposite of "Difficult"?', qAr: 'ما هو عكس كلمة Difficult (صعب)؟', options: ['Easy (سهل)', 'Hard (صعب)', 'Simple (بسيط)', 'Quick (سريع)'], ans: 0 },
+    { sub: 'meaning', grade: 5, tier: 3, points: 500, coins: 100, word: 'Pilot', q: 'Who flies the airplane in the sky?', qAr: 'من يقود الطائرة في السماء؟', options: ['Pilot (طيّار)', 'Sailor (بحّار)', 'Driver (سائق)', 'Astronaut (رائد فضاء)'], ans: 0 },
+    { sub: 'categories', grade: 5, tier: 3, points: 500, coins: 100, word: 'Village', q: 'What is the meaning of "Village"?', qAr: 'ما هو معنى كلمة Village؟', options: ['قرية ريفية', 'مدينة كبرى', 'عاصمة', 'ميناء بحري'], ans: 0 },
+
+    // ============ GRADE 6: المفردات المتقدمة، التعبيرات والأضداد الشائعة ============
+    { sub: 'meaning', grade: 6, tier: 1, points: 100, coins: 25, word: 'Journey', q: 'What does "Journey" mean?', qAr: 'ما هو معنى كلمة Journey؟', options: ['رحلة أو سفر', 'اجتماع', 'مسابقة', 'حفلة'], ans: 0 },
+    { sub: 'meaning', grade: 6, tier: 1, points: 100, coins: 25, word: 'Challenge', q: 'What does "Challenge" mean?', qAr: 'ما هو معنى كلمة Challenge؟', options: ['تحدي واختبار مهارة', 'استسلام', 'خسارة', 'تراجع'], ans: 0 },
+    { sub: 'opposites', grade: 6, tier: 2, points: 250, coins: 50, word: 'Always and Never', q: 'What is the opposite of "Always"?', qAr: 'ما هو عكس كلمة Always (دائماً)؟', options: ['Never (أبداً / إطلاقاً)', 'Often (غالباً)', 'Sometimes (أحياناً)', 'Usually (عادة)'], ans: 0 },
+    { sub: 'opposites', grade: 6, tier: 2, points: 250, coins: 50, word: 'Safe and Dangerous', q: 'What is the opposite of "Dangerous"?', qAr: 'ما هو عكس كلمة Dangerous (خطير)؟', options: ['Safe (آمن)', 'Scary (مخيف)', 'Wild (بري)', 'Dark (مظلم)'], ans: 0 },
+    { sub: 'meaning', grade: 6, tier: 2, points: 250, coins: 50, word: 'Champion', q: 'What is the meaning of "Champion"?', qAr: 'ما هو معنى كلمة Champion؟', options: ['بطل فائز بالبطولة', 'متفرج', 'حكم المباراة', 'حارس مرمى'], ans: 0 },
+    { sub: 'categories', grade: 6, tier: 3, points: 500, coins: 100, word: 'Train', q: 'Which vehicle travels on railway tracks?', qAr: 'أي وسيلة نقل تسير على قضبان السكة الحديدية؟', options: ['Train (قطار)', 'Helicopter (مروحية)', 'Bus (حافلة)', 'Boat (قارب)'], ans: 0 },
+    { sub: 'meaning', grade: 6, tier: 3, points: 500, coins: 100, word: 'Well done', q: 'What does "Well done!" express?', qAr: 'ماذا تعني عبارة "Well done!" عند تشجيع الطالب؟', options: ['أحسنت / عمل ممتاز!', 'مع السلامة', 'حظاً أوفر', 'لا بأس'], ans: 0 }
 ];
 
 let questionBank = JSON.parse(localStorage.getItem('english_subway_questions')) || DEFAULT_ENGLISH_QUESTIONS;
@@ -1202,6 +1237,19 @@ function showFloatingFeedback(text, color = '#ffd700') {
     }, 1100);
 }
 
+function speakEnglishWord(txt) {
+    if (!('speechSynthesis' in window) || SoundFX.muted) return;
+    try {
+        window.speechSynthesis.cancel();
+        const clean = txt.replace(/[^a-zA-Z\s]/g, '').trim();
+        if (!clean) return;
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = 'en-US';
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+    } catch(e) {}
+}
+
 function triggerQuizModal(tier = 2, isRescue = false) {
     state.inQuiz = true;
     state.rescueMode = isRescue;
@@ -1233,11 +1281,20 @@ function triggerQuizModal(tier = 2, isRescue = false) {
     const rewardCoins = tier === 3 ? 100 : (tier === 2 ? 50 : 25);
 
     badge.className = `quiz-tier-badge tier-${tier}`;
-    const tierNames = { 1: '📦 Bronze Box (برونزي)', 2: '💎 Silver Box (فضي)', 3: '👑 Gold Box (ذهبي)' };
+    const tierNames = { 1: '📦 Bronze Box (مفردات أساسية)', 2: '💎 Silver Box (أضداد ومفردات مركبة)', 3: '👑 Gold Box (تحدي النجوم والسياق)' };
     badge.textContent = `${tierNames[tier]} (+${rewardPoints} pts / +${rewardCoins} coins)`;
 
     qText.textContent = chosen.q;
-    qAr.textContent = chosen.qAr || 'اختر الإجابة الصحيحة:';
+    qAr.textContent = chosen.qAr || 'اختر المعنى الصحيح:';
+
+    const speakBtn = document.getElementById('btn-quiz-speak');
+    if (speakBtn) {
+        speakBtn.onclick = () => speakEnglishWord(chosen.word || chosen.q);
+    }
+    // نطق الكلمة فورياً لتعزيز الاستيعاب الصوتي
+    setTimeout(() => {
+        speakEnglishWord(chosen.word || chosen.q);
+    }, 250);
 
     const indexedOptions = chosen.options.map((txt, idx) => ({ txt, isCorrect: idx === chosen.ans }));
     indexedOptions.sort(() => Math.random() - 0.5);
@@ -1264,7 +1321,7 @@ function triggerQuizModal(tier = 2, isRescue = false) {
                 }
 
                 msg.style.color = '#2ecc71';
-                msg.textContent = `🎉 Excellent! أحسنت! ربحت +${rewardPoints} نقطة و +${rewardCoins} عملة ذهبية!`;
+                msg.textContent = `🎉 Excellent! [${chosen.word || chosen.q}] أحسنت! ربحت +${rewardPoints} نقطة!`;
 
                 setTimeout(() => {
                     modal.classList.add('hidden');
