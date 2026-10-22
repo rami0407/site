@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ENGLISH_VOCABULARY_BY_GRADE, ENGLISH_GRADE_INFOS } from '../data/englishCurriculumData';
+import { getStudentSession } from '../utils/studentAuth';
 
 export default function EnglishPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
@@ -7,6 +8,13 @@ export default function EnglishPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('racer'); // 'racer' | 'ninja' | 'space' | 'basketball' | 'subway' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
+  const [studentSession, setStudentSession] = useState(() => getStudentSession());
+
+  useEffect(() => {
+    const handleAuth = () => setStudentSession(getStudentSession());
+    window.addEventListener('studentAuthChanged', handleAuth);
+    return () => window.removeEventListener('studentAuthChanged', handleAuth);
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -245,6 +253,62 @@ export default function EnglishPage() {
             >
               ⛶ شاشة كاملة
             </a>
+
+            {/* Student Unified Profile Chip */}
+            {studentSession ? (
+              <div style={{
+                background: 'linear-gradient(135deg, #7209b7 0%, #3a0ca3 100%)',
+                border: '1.5px solid #facc15',
+                borderRadius: '99px',
+                padding: '6px 14px',
+                color: '#fff',
+                fontWeight: '800',
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.4)'
+              }}>
+                <span>{studentSession.roleIcon || '👨‍🎓'} <strong>{studentSession.fullName}</strong> ({studentSession.studentClass})</span>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event('openStudentAuth'))}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    color: '#fde047',
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    fontWeight: '800'
+                  }}
+                  title="تغيير المستخدم"
+                >
+                  تبديل 🔁
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event('openStudentAuth'))}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: '1.5px solid #6ee7b7',
+                  color: '#fff',
+                  padding: '6px 14px',
+                  borderRadius: '99px',
+                  fontWeight: '800',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <i className="fas fa-user-circle"></i> دخول الطالب 🔑
+              </button>
+            )}
           </div>
         </div>
       </header>

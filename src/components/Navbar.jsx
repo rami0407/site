@@ -390,6 +390,65 @@ const Navbar = () => {
               </li>
             )}
 
+            {/* Mobile Student Profile / Login Card */}
+            {mobileMenuOpen && (
+              <li style={{ padding: '0.5rem 1rem' }}>
+                {studentSession ? (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(114, 9, 183, 0.85) 0%, rgba(58, 12, 163, 0.95) 100%)',
+                    border: '1.5px solid #facc15',
+                    borderRadius: '14px',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px'
+                  }}>
+                    <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 800 }}>
+                      {studentSession.roleIcon || '👨‍🎓'} {studentSession.fullName} <span style={{ color: '#fde047', fontSize: '0.78rem' }}>({studentSession.studentClass})</span>
+                    </span>
+                    <button
+                      onClick={() => { logoutStudent(); setMobileMenuOpen(false); }}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.8)',
+                        border: 'none',
+                        color: '#fff',
+                        padding: '4px 8px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      خروج 🚪
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      border: '1.5px solid #6ee7b7',
+                      color: '#fff',
+                      padding: '10px 14px',
+                      borderRadius: '14px',
+                      fontSize: '0.9rem',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    <i className="fas fa-user-circle"></i> تسجيل الدخول الموحد 🔑
+                  </button>
+                )}
+              </li>
+            )}
+
             {/* Mobile Header Label */}
             {mobileMenuOpen && (
               <li className="mobile-menu-category">القائمة الرئيسية</li>

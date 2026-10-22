@@ -21,27 +21,46 @@ import {
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
 import './MathChampionshipArena.css';
 
 const LOCAL_STORAGE_KEY = 'musheirifa_math_championship_v1';
 
 const getInitialPlayerProfile = () => {
+  const session = getStudentSession();
+  let base = {};
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      base = JSON.parse(saved) || {};
     }
   } catch (e) {}
 
+  let initialName = base.studentName || '';
+  let initialGrade = base.grade || 'الصف الثالث';
+  let initialSection = base.section || 'أ';
+
+  if (session && session.fullName) {
+    initialName = session.fullName;
+    if (session.studentClass) {
+      ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع', 'الصف الخامس', 'الصف السادس'].forEach(g => {
+        if (session.studentClass.includes(g)) initialGrade = g;
+      });
+      ['(أ)', '(ب)', '(ج)', '(د)'].forEach(s => {
+        if (session.studentClass.includes(s)) initialSection = s.replace(/[()]/g, '');
+      });
+    }
+  }
+
   return {
-    studentName: '',
-    grade: 'الصف الثالث',
-    section: 'أ',
-    totalPoints: 0,
-    totalQuestionsSolved: 0,
-    bestStreak: 0,
-    unlockedAwards: [],
-    history: []
+    studentName: initialName,
+    grade: initialGrade,
+    section: initialSection,
+    totalPoints: base.totalPoints || 0,
+    totalQuestionsSolved: base.totalQuestionsSolved || 0,
+    bestStreak: base.bestStreak || 0,
+    unlockedAwards: base.unlockedAwards || [],
+    history: base.history || []
   };
 };
 
@@ -240,6 +259,21 @@ export default function MathChampionshipArena() {
   const [player, setPlayer] = useState(getInitialPlayerProfile);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Sync unified session changes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const sess = getStudentSession();
+      if (sess && sess.fullName) {
+        setPlayer(prev => ({
+          ...prev,
+          studentName: sess.fullName
+        }));
+      }
+    };
+    window.addEventListener('studentAuthChanged', handleAuthChange);
+    return () => window.removeEventListener('studentAuthChanged', handleAuthChange);
+  }, []);
 
   // Multiplication tournament settings
   const [selectedTable, setSelectedTable] = useState('all');

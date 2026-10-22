@@ -75,12 +75,25 @@ const PwaInstallPrompt = lazyWithRetry(() => import('./components/PwaInstallProm
 const NotificationPromptBanner = lazyWithRetry(() => import('./components/NotificationPromptBanner'));
 const SocraticHomeworkModal = lazyWithRetry(() => import('./components/SocraticHomeworkModal'));
 const CentralNotificationModal = lazyWithRetry(() => import('./components/CentralNotificationModal'));
+const StudentAuthModal = lazyWithRetry(() => import('./components/StudentAuthModal'));
+import { getStudentSession } from './utils/studentAuth';
 
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
   const [isGlobalHomeworkHelperOpen, setIsGlobalHomeworkHelperOpen] = useState(false);
   const [isResearchVisible, setIsResearchVisible] = useState(() => getScientificResearchVisibility());
+  const [isStudentAuthOpen, setIsStudentAuthOpen] = useState(() => {
+    try {
+      const hasSession = !!getStudentSession();
+      const hasDismissed = sessionStorage.getItem('dismissed_student_auth') === 'true';
+      const hash = window.location.hash || '';
+      const isInternalStaff = hash.startsWith('#/admin') || hash.startsWith('#admin') || hash.includes('kiosk') || hash.startsWith('#/guard') || hash.startsWith('#/services') || hash.startsWith('#/staff');
+      return !hasSession && !hasDismissed && !isInternalStaff;
+    } catch (e) {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const unsub = subscribeScientificResearchVisibility((val) => {
@@ -96,15 +109,18 @@ function App() {
     };
 
     const handleOpenHomework = () => setIsGlobalHomeworkHelperOpen(true);
+    const handleOpenAuth = () => setIsStudentAuthOpen(true);
 
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('popstate', handleHashChange);
     window.addEventListener('open-homework-helper', handleOpenHomework);
+    window.addEventListener('openStudentAuth', handleOpenAuth);
 
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);
       window.removeEventListener('open-homework-helper', handleOpenHomework);
+      window.removeEventListener('openStudentAuth', handleOpenAuth);
     };
   }, []);
 
@@ -582,6 +598,17 @@ function App() {
             onClose={() => setIsGlobalHomeworkHelperOpen(false)}
           />
         )}
+        <StudentAuthModal
+          isOpen={isStudentAuthOpen}
+          onClose={() => {
+            setIsStudentAuthOpen(false);
+            sessionStorage.setItem('dismissed_student_auth', 'true');
+          }}
+          onSuccess={() => {
+            setIsStudentAuthOpen(false);
+            sessionStorage.removeItem('dismissed_student_auth');
+          }}
+        />
       </Suspense>
     </>
   );
