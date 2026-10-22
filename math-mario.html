@@ -57,6 +57,22 @@
     display:flex;justify-content:flex-start;align-items:center;gap:7px;
     color:#fff;font-weight:900;font-size:13px;z-index:20;pointer-events:none;flex-wrap:wrap;
   }
+  @media (max-width:650px){
+    #floatingMuteBar{
+      top:8px;left:8px;
+    }
+    #soundToggleBtn,#menuQuickBtn{
+      height:30px;padding:3px 10px;font-size:11px;
+    }
+    #hud{
+      top:46px;left:8px;right:8px;
+      justify-content:center;gap:4px;
+    }
+    .hudBox{
+      padding:3px 7px;font-size:11px;border-radius:10px;
+    }
+    .hudBox.heartsBox{font-size:12px;}
+  }
   .hudBox{
     background:linear-gradient(135deg,rgba(15,23,42,.86),rgba(30,41,59,.78));
     padding:5px 11px;border-radius:14px;

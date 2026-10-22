@@ -480,6 +480,66 @@
             background: linear-gradient(90deg, #38bdf8, #a855f7);
             transition: width 0.3s ease;
         }
+
+        /* Phone & Tablet Mobile Responsiveness */
+        @media (max-width: 650px) {
+            #hud {
+                padding: 6px 8px;
+            }
+            .hud-top {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            .top-left-controls {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 6px;
+            }
+            .ctrl-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 0.95rem;
+            }
+            .mission-panel {
+                width: 100%;
+                max-width: 100%;
+                padding: 6px 10px;
+            }
+            .mission-ar-text {
+                font-size: 1.15rem;
+            }
+            .mission-sub-hint {
+                font-size: 0.72rem;
+            }
+            .hud-stats-right {
+                flex-direction: row;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .stat-badge {
+                padding: 3px 8px;
+            }
+            .stat-value {
+                font-size: 0.95rem;
+            }
+            .steer-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            .nitro-btn {
+                min-width: 105px;
+                height: 60px;
+                padding: 8px 14px;
+            }
+            .nitro-btn .nitro-title {
+                font-size: 1.05rem;
+            }
+        }
     </style>
 </head>
 <body>

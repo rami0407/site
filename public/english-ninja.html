@@ -380,6 +380,55 @@
         .hidden {
             display: none !important;
         }
+
+        /* Mobile Phone & Tablet Header Responsiveness */
+        @media (max-width: 680px) {
+            #hud {
+                padding: 6px 8px;
+            }
+            .hud-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            .top-left-controls {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 6px;
+            }
+            .control-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+            .ninja-scroll-box {
+                position: static;
+                transform: none;
+                width: 100%;
+                max-width: 100%;
+                padding: 6px 10px;
+            }
+            .scroll-top-bar {
+                margin-bottom: 4px;
+                padding-bottom: 2px;
+            }
+            .ninja-target-word {
+                font-size: 1.3rem !important;
+            }
+            .ninja-prompt-subtext {
+                font-size: 0.85rem !important;
+            }
+            .top-right-stats {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .stat-pill {
+                padding: 3px 8px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body>

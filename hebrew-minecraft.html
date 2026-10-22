@@ -288,6 +288,60 @@
             font-size: 1.5rem;
             image-rendering: pixelated;
         }
+
+        /* Phone & Tablet Mobile Responsiveness */
+        @media (max-width: 650px) {
+            #hud {
+                padding: 6px 8px;
+            }
+            .hud-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            .top-ctrls {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 6px;
+            }
+            .mc-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 0.95rem;
+            }
+            .quest-board {
+                width: 100%;
+                max-width: 100%;
+                padding: 6px 10px;
+            }
+            .quest-title-bar {
+                font-size: 0.52rem;
+            }
+            .quest-target-arabic {
+                font-size: 1.15rem;
+            }
+            .quest-instruction {
+                font-size: 0.75rem;
+            }
+            .hud-stats-mc {
+                flex-direction: row;
+                width: 100%;
+                justify-content: center;
+                gap: 8px;
+            }
+            .mc-stat-chip {
+                padding: 3px 8px;
+                font-size: 0.65rem;
+            }
+            .hotbar-slot {
+                width: 33px;
+                height: 33px;
+                font-size: 1.05rem;
+            }
+            .bars-row {
+                max-width: 310px;
+            }
+        }
         .hotbar-slot.selected {
             border: 3px solid #ffffff;
             outline: 2px solid #000000;
