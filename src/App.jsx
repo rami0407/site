@@ -72,7 +72,6 @@ const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPa
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
 const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
 const PwaInstallPrompt = lazyWithRetry(() => import('./components/PwaInstallPrompt'));
-const NotificationPromptBanner = lazyWithRetry(() => import('./components/NotificationPromptBanner'));
 const SocraticHomeworkModal = lazyWithRetry(() => import('./components/SocraticHomeworkModal'));
 const CentralNotificationModal = lazyWithRetry(() => import('./components/CentralNotificationModal'));
 const StudentAuthModal = lazyWithRetry(() => import('./components/StudentAuthModal'));
@@ -581,7 +580,6 @@ function App() {
         <FloatingActions />
         <AiAssistant />
         <PwaInstallPrompt />
-        <NotificationPromptBanner />
         <CentralNotificationModal />
         {isGlobalHomeworkHelperOpen && (
           <SocraticHomeworkModal
