@@ -25,10 +25,10 @@ const CATEGORY_MAP = {
 
 // Authorized Gantt/Calendar Teachers
 const GANTT_TEACHERS = [
-  { id: 't1', nameHe: 'אלהאם גבארין', nameAr: 'إلهام جبارين', pin: '318212' },
-  { id: 't2', nameHe: 'עתאב ביدوסי', nameAr: 'عتاب بيدوسي', pin: '318212' },
-  { id: 't3', nameHe: 'גיהאן אגבאריה', nameAr: 'جيهان إغبارية', pin: '318212' },
-  { id: 'admin', nameHe: 'מנהל המערכת (רמי)', nameAr: 'إدارة الموقع', pin: '318212' }
+  { id: 't1', nameHe: 'אלהאם גבארין', nameAr: 'إلهام جبارين' },
+  { id: 't2', nameHe: 'עתאב ביدوסי', nameAr: 'عتاب بيدوسي' },
+  { id: 't3', nameHe: 'גיהאן אגבאריה', nameAr: 'جيهان إغبارية' },
+  { id: 'admin', nameHe: 'מנהל המערכת (רמי)', nameAr: 'إدارة الموقع' }
 ];
 
 const CalendarPage = () => {
@@ -172,7 +172,7 @@ const CalendarPage = () => {
     const teacher = GANTT_TEACHERS.find(t => t.id === loginTeacherId);
 
     if (cleanPin !== '318212') {
-      setLoginError('⚠️ סיסמת הכניסה אינה נכונה. אנא הזיני את הסיסמה (318212).');
+      setLoginError('⚠️ סיסמת הכניסה שגויה. אנא נסי שוב.');
       return;
     }
 
@@ -821,7 +821,7 @@ const CalendarPage = () => {
                   type="password"
                   value={loginPin}
                   onChange={(e) => setLoginPin(e.target.value)}
-                  placeholder="הזיני סיסמה (318212)"
+                  placeholder="הזיני סיסמה..."
                   required
                   autoFocus
                   style={{
