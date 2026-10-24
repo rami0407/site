@@ -83,17 +83,8 @@ function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
   const [isGlobalHomeworkHelperOpen, setIsGlobalHomeworkHelperOpen] = useState(false);
   const [isResearchVisible, setIsResearchVisible] = useState(() => getScientificResearchVisibility());
-  const [isStudentAuthOpen, setIsStudentAuthOpen] = useState(() => {
-    try {
-      const hasSession = !!getStudentSession();
-      const hasDismissed = sessionStorage.getItem('dismissed_student_auth') === 'true';
-      const hash = window.location.hash || '';
-      const isInternalStaff = hash.startsWith('#/admin') || hash.startsWith('#admin') || hash.includes('kiosk') || hash.startsWith('#/guard') || hash.startsWith('#/services') || hash.startsWith('#/staff');
-      return !hasSession && !hasDismissed && !isInternalStaff;
-    } catch (e) {
-      return false;
-    }
-  });
+  // Never open automatically on visit; only when the user explicitly clicks the unified login button
+  const [isStudentAuthOpen, setIsStudentAuthOpen] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeScientificResearchVisibility((val) => {
@@ -600,14 +591,8 @@ function App() {
         )}
         <StudentAuthModal
           isOpen={isStudentAuthOpen}
-          onClose={() => {
-            setIsStudentAuthOpen(false);
-            sessionStorage.setItem('dismissed_student_auth', 'true');
-          }}
-          onSuccess={() => {
-            setIsStudentAuthOpen(false);
-            sessionStorage.removeItem('dismissed_student_auth');
-          }}
+          onClose={() => setIsStudentAuthOpen(false)}
+          onSuccess={() => setIsStudentAuthOpen(false)}
         />
       </Suspense>
     </>

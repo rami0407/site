@@ -157,6 +157,29 @@
         max-height: 94vh;
         overflow-y: auto;
       }
+      .school-close-btn {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: #cbd5e1;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 900;
+        transition: all 0.2s;
+      }
+      .school-close-btn:hover {
+        background: #ef4444;
+        color: #ffffff;
+        transform: scale(1.1);
+      }
       .school-auth-card h3 {
         margin: 8px 0 4px;
         font-size: 21px;
@@ -310,6 +333,7 @@
 
     overlay.innerHTML = `
       <div class="school-auth-card" onclick="event.stopPropagation()">
+        <button type="button" class="school-close-btn" id="school-modal-close" title="إغلاق">✕</button>
         <div class="school-auth-badge">🏫</div>
         <h3>تسجيل الدخول الموحد</h3>
         <p>مدرسة مشيرفة الابتدائية • سجّل بياناتك مرة واحدة لتلعب وتشارك في جميع ألعاب وفروع المدرسة بنفس الاسم!</p>
@@ -360,6 +384,19 @@
     `;
 
     document.body.appendChild(overlay);
+
+    overlay.onclick = function (e) {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    };
+
+    const closeBtn = document.getElementById('school-modal-close');
+    if (closeBtn) {
+      closeBtn.onclick = function () {
+        overlay.remove();
+      };
+    }
 
     const classSelect = document.getElementById('school-input-class');
     if (classSelect && currClass) {
@@ -438,20 +475,13 @@
     openModal: openModal
   };
 
-  // Auto-init on page load
+  // Auto-init on page load (Never pop up automatically; only show the user badge/chip)
   window.addEventListener('DOMContentLoaded', function () {
     updateBadgeUI();
-    // If no session exists, pop up modal automatically!
-    if (!getSession()) {
-      setTimeout(openModal, 400);
-    }
   });
 
   // Also run immediately if DOM is already ready
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     updateBadgeUI();
-    if (!getSession()) {
-      setTimeout(openModal, 400);
-    }
   }
 })();
