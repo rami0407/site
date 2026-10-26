@@ -1,146 +1,2333 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>מפתחח – סרטון לוח לבן | مفتاح - لوح الرحلة التعليمية</title>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#fbfaf6;--ink:#1d2a44;--muted:#5b6578;--line:#d9d6cc;--c1:#e8590c;--c2:#1c7ed6;--c3:#2b9348;--c4:#e0a100;--c5:#1b4fa8;--tray:#eeece4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f2430;--ink:#f2f0e8;--muted:#a9b0bf;--line:#3a4152;--tray:#2a3040;--c1:#ff8a4c;--c2:#5aa9ff;--c3:#5fd17d;--c4:#ffc83d;--c5:#7ba7ff}}
-:root[data-theme="dark"]{--bg:#1f2430;--ink:#f2f0e8;--muted:#a9b0bf;--line:#3a4152;--tray:#2a3040;--c1:#ff8a4c;--c2:#5aa9ff;--c3:#5fd17d;--c4:#ffc83d;--c5:#7ba7ff}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font-family:Rubik,Cairo,"Segoe UI",Arial,sans-serif;display:flex;flex-direction:column}
-.board{flex:1;display:flex;align-items:center;justify-content:center;gap:5vw;padding:4vh 5vw;min-height:0;flex-wrap:wrap;align-content:center}
-.art{width:min(34vw,300px);min-width:170px;aspect-ratio:1}
-.art svg{width:100%;height:100%;overflow:visible}
-.art path,.art circle,.art line,.art rect{fill:none;stroke:var(--col,var(--ink));stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.2s ease forwards}
-.art .f{fill:var(--col);stroke:none;stroke-dasharray:none;opacity:0;animation:pop .6s 1.6s forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-@keyframes pop{to{opacity:.18}}
-.txt{flex:1;min-width:260px;max-width:620px}
-.tag{display:inline-block;font-weight:800;font-size:clamp(1.3rem,3.2vw,2rem);color:var(--col);margin:0 0 .4em;border-bottom:4px solid var(--col);padding-bottom:.1em}
-.ar{display:block;font-size:.65em;font-weight:700;color:var(--muted);border:0;font-family:Cairo,sans-serif;margin-top:2px}
-.say{font-size:clamp(1.25rem,3.4vw,2rem);line-height:1.55;font-weight:600;margin:0}
-.say span{opacity:0;animation:w .35s forwards}
-@keyframes w{to{opacity:1}}
-.sub{margin:.9em 0 0;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);min-height:1.4em;font-family:Cairo,sans-serif;line-height:1.6;font-weight:600;background:rgba(0,0,0,0.03);padding:8px 14px;border-radius:10px;border-right:3px solid var(--col)}
-.here{display:inline-block;margin-top:.8em;padding:.2em .9em;border:3px solid var(--col);border-radius:2em;font-weight:800;color:var(--col);transform:rotate(-3deg);font-size:0.9rem}
-.route{display:flex;align-items:center;justify-content:center;gap:0;padding:1.2vh 4vw 0}
-.stn{display:flex;flex-direction:column;align-items:center;font-size:.72rem;color:var(--muted);flex:0 0 auto;width:15vw;max-width:105px;text-align:center;cursor:pointer}
-.dot{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);display:grid;place-items:center;font-weight:800;margin-bottom:4px;transition:.4s}
-.stn.on .dot{background:var(--col);border-color:var(--col);color:#fff;transform:scale(1.2)}
-.stn.on{color:var(--ink);font-weight:700}
-.seg{flex:1;height:0;border-top:3px dashed var(--line);margin-bottom:22px}
-.bar{height:5px;background:var(--tray);margin:1vh 0 0}
-.bar i{display:block;height:100%;width:0;background:var(--c2);transition:width .4s}
-.ctl{display:flex;gap:10px;justify-content:center;align-items:center;padding:1.2vh 3vw 2vh;background:var(--tray);flex-wrap:wrap}
-button{font:inherit;font-weight:600;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.5em 1em;cursor:pointer;min-width:44px;min-height:44px;transition:0.2s}
-button:hover{border-color:var(--ink)}
-button:focus-visible{outline:3px solid var(--c2);outline-offset:2px}
-button.p{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.lang-btn{background:#e7f5ff;color:#1c7ed6;border-color:#a5d8ff}
-@media (prefers-reduced-motion:reduce){.art path,.art circle,.art line,.art rect{animation-duration:.01s}.say span{animation-duration:.01s}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>منصة مفتاح التفاعلية | مدرسة مشيرفة الابتدائية</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Cairo', 'Tajawal', 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+    .station-active {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: #ffffff;
+      box-shadow: 0 10px 20px -5px rgba(13, 148, 136, 0.4);
+      transform: translateX(-4px);
+    }
+    .station-glowing {
+      background: linear-gradient(135deg, #0d9488 0%, #059669 100%) !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 25px 6px rgba(13, 148, 136, 0.75), 0 0 12px 3px rgba(245, 158, 11, 0.6) !important;
+      border: 2px solid #5eead4 !important;
+      animation: station-glow-pulse 1.8s infinite alternate ease-in-out;
+      transform: scale(1.12);
+    }
+    @keyframes station-glow-pulse {
+      0% { 
+        box-shadow: 0 0 15px 3px rgba(13, 148, 136, 0.6), 0 0 6px 1px rgba(245, 158, 11, 0.4);
+        transform: scale(1.08);
+      }
+      100% { 
+        box-shadow: 0 0 32px 10px rgba(13, 148, 136, 0.95), 0 0 16px 5px rgba(245, 158, 11, 0.75);
+        transform: scale(1.15);
+      }
+    }
+    .key-pulse {
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .mushirfa-pattern {
+      background-image: radial-gradient(#0d9488 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
 </head>
-<body>
-<main class="board" id="board" aria-live="polite"></main>
-<nav class="route" id="route" aria-label="תחנות"></nav>
-<div class="bar"><i id="pg"></i></div>
-<div class="ctl">
-<button id="prev" aria-label="הקודם">▶ הקודם / السابق</button>
-<button id="play" class="p">▶ התחלה / تشغيل</button>
-<button id="next" aria-label="הבא">הבא / التالي ◀</button>
-<button id="voice" aria-pressed="false">🔇 קריינות / تعليق صوتي</button>
-<button id="lang" class="lang-btn">🌐 שפה עיקרית: עברית / العربية</button>
-</div>
-<script>
-var C=['#1d2a44','#e8590c','#1c7ed6','#2b9348','#e0a100','#1b4fa8'];
-var CV=['--ink','--c1','--c2','--c3','--c4','--c5'];
-var ST=[null,['משיכה וסקרנות','مشوِّق ومحفِّز'],['פיתוח הבנה ובניית משמעות','فهم وبناء المعنى'],['תרגול והתנסות','تطبيق وتدريب'],['יישום עצמאי','أدلة الفهم'],['חתימה והעברת הלמידה','حصاد ونقل الأثر']];
-var P={
-key:'<circle cx="100" cy="70" r="46" pathLength="1"/><circle cx="100" cy="70" r="16" pathLength="1"/><path pathLength="1" d="M100 116V190M100 150h26M100 175h20"/><path pathLength="1" d="M82 52q18-14 36 0"/>',
-bulb:'<path pathLength="1" d="M100 24a46 46 0 0 0-26 84c6 6 8 12 8 22h36c0-10 2-16 8-22a46 46 0 0 0-26-84z"/><path pathLength="1" d="M82 146h36M88 162h24"/><path pathLength="1" d="M100 4v8M30 40l6 6M170 40l-6 6M14 90h8M178 90h8"/>',
-book:'<path pathLength="1" d="M100 50C80 36 50 36 22 44v118c28-8 58-8 78 6 20-14 50-14 78-6V44c-28-8-58-8-78 6zM100 50v118"/><path pathLength="1" d="M44 70q22-4 40 4M44 92q22-4 40 4M116 74q18-8 40-4M116 96q18-8 40-4"/>',
-tools:'<path pathLength="1" d="M30 30l140 140"/><path pathLength="1" d="M170 30L96 104"/><path pathLength="1" d="M60 120l-14 14a16 16 0 0 0 22 22l14-14"/><path pathLength="1" d="M150 40l16-16"/>',
-lens:'<circle cx="86" cy="86" r="52" pathLength="1"/><path pathLength="1" d="M124 124l50 50"/><path pathLength="1" d="M62 88l18 18 34-38"/>',
-road:'<path pathLength="1" d="M20 170c30-60 90 10 110-50s30-70 50-90"/><circle cx="20" cy="170" r="8" pathLength="1"/><path pathLength="1" d="M168 28l16 4-10 12z"/>',
-seat:'<circle cx="60" cy="70" r="20" pathLength="1"/><circle cx="140" cy="70" r="20" pathLength="1"/><path pathLength="1" d="M24 150q36-50 72 0M104 150q36-50 72 0"/>',
-timer:'<circle cx="100" cy="106" r="64" pathLength="1"/><path pathLength="1" d="M100 106V68M100 106l28 14M84 30h32"/>',
-phone:'<rect x="56" y="14" width="88" height="170" rx="16" pathLength="1"/><path pathLength="1" d="M76 56h48M76 84h48M76 112h30"/><circle cx="100" cy="162" r="6" pathLength="1"/>',
-heart:'<path pathLength="1" d="M100 170C20 112 40 36 100 78c60-42 80 34 0 92z"/>'
-};
-var S=[
-{s:0,a:'key',t:'שלום, תלמידות ותלמידים! אני מפתחח — המפתח שמלווה אתכם במסע הלמידה.',u:'مرحباً، طالباتي وطلابي الأعزاء! أنا «مِفتاح» — المفتاح الذي يرافقكم في رحلة التعلّم.'},
-{s:0,a:'road',t:'אני כאן כדי לעזור לכם לדעת מה אנחנו לומדים, איפה אנחנו נמצאים, ומה תוכלו לעשות כדי להראות שהבנתם.',u:'أنا هنا لمساعدتكم لتعرفوا ماذا نتعلّم، أين نحن الآن، وماذا يمكنكم فعله لإثبات فهمكم.'},
-{s:0,a:'key',t:'במסע שלנו יש חמש תחנות. מוכנים לצאת לדרך?',u:'في رحلتنا خمس محطات رئيسية وممتعة. هل أنتم مستعدون للانطلاق في المسار؟'},
-{s:1,a:'bulb',t:'בתחנה הראשונה אפתח בשאלה מסקרנת, בסיפור, בחידה או בניסוי קצר. אתן לכם רגע לחשוב ולשער.',u:'المحطة الأولى (مشوّق ومحفّز): سأبدأ بسؤال مثير، قصة، لغز، أو تجربة قصيرة تمنحكم وقتاً للتأمل والتوقع.'},
-{s:1,a:'bulb',t:'ואז נברר יחד: מה נלמד היום, ואיך נדע שהצלחנו?',u:'ثم نتبين معاً: ماذا سنتعلّم اليوم، وكيف سنعرف أننا نجحنا وحققنا معيار النجاح؟'},
-{s:2,a:'book',t:'בתחנה השנייה נבנה את הרעיון החדש ונחבר אותו למה שאתם כבר יודעים. אסביר, אדגים ואכוון אתכם לגלות.',u:'المحطة الثانية (فهم وبناء المعنى): سنبني المفهوم الجديد ونربطه بما تعرفونه مسبقاً. سأشرح، أنمذج، وأوجهكم للاكتشاف.'},
-{s:2,a:'book',t:'ואתם תשאלו, תשוו ותסבירו: איך הגעתם למסקנה?',u:'وأنتم ستطرحون الأسئلة، تقارنون، وتعللون: كيف توصلتم إلى هذا الاستنتاج؟'},
-{s:3,a:'tools',t:'בתחנה השלישית תשתמשו במה שלמדתם. לפעמים לבד, לפעמים בזוגות ולפעמים בקבוצה — לפי המשימה.',u:'المحطة الثالثة (تطبيق وتدريب): ستطبقون ما تعلمتموه؛ أحياناً بشكل فردي، ثنائي، أو داخل مجموعات متمايزة.'},
-{s:3,a:'seat',t:'מי שצריך עזרה יקבל תמיכה, ומי שמוכן יוכל להתקדם לאתגר נוסף.',u:'من يحتاج مساعدة سيجد دعماً وسقالات مساندة، ومن أتقن يمكنه الانطلاق نحو تحدٍ معرفي أعلى.'},
-{s:4,a:'lens',t:'בתחנה הרביעית כל אחד ואחת מכם יראו מה הבינו במשימה קצרה. כך אדע מה הצעד הבא: להתקדם, לתרגל עוד או להסביר בדרך אחרת.',u:'المحطة الرابعة (أدلة الفهم): سيقدم كل طالب منكم دليلاً فردياً مستقلاً، لنحدد الخطوة التالية: التقدم، التدريب، أم التوضيح.'},
-{s:4,a:'lens',t:'אפשר לטעות, ללמוד מהטעות ולנסות שוב.',u:'الخطأ فرصة للتعلّم؛ نكتشفه، نتعلم منه، ونحاول مجدداً بثقة وإصرار!'},
-{s:5,a:'book',t:'בתחנה החמישית נעצור ונחשוב: מה למדתי? מה עזר לי להבין? ואיפה אוכל להשתמש בזה בחיים?',u:'المحطة الخامسة (حصاد ونقل الأثر): نتأمل ثمار رحلتنا: ماذا تعلمت؟ ما الذي ساعدني على الفهم؟ وأين أستخدمه في حياتي؟'},
-{s:5,a:'heart',t:'ומה מיוחד בי?',u:'وما الذي يميّزني ويجعلني فخوراً بما حققته وتعلّمته اليوم؟'},
-{s:0,a:'road',t:'התחנות שלי מוצגות מולכם, והסימון «אנחנו כאן» מראה לאן הגענו. לכל אחד יש מקום להשתתף, והעזרה והאתגר משתנים לפי הצורך שלכם.',u:'محطاتي معروضة أمامكم بوضوح مع إشارة «نحن هنا». لكل طالب مساحة للمشاركة، والدعم والتحدي يتكيفان وفق وتيرتكم.'},
-{s:0,a:'timer',t:'ואם הריכוז נחלש? אגיד: «זמן להתרענן!» נקדיש דקה או שתיים לתנועה או למשחק קשب קצר, ואז נחזור למסע.',u:'وإذا قلّ التركيز؟ نقول: «حان وقت الانتعاش!» نخصص دقيقة للحركة أو تمرين انتباه خفيف، ثم نواصل الرحلة بنشاط.'},
-{s:0,a:'phone',t:'מאחורי הקלעים, יישומון מסייע למורה לתכנן את המסע ולהתאים אותו לכיתה שלנו.',u:'خلف الكواليس، يساعد هذا التطبيق الذكي المعلم في تخطيط مسار الحصة وهندسة محطاتها لتلائم صفنا تماماً.'},
-{s:0,a:'key',t:'אני מפתחח. בואו נסתקרן, נבין, ננסה — וניקח את הלמידה איתנו אל החיים!',u:'أنا مِفتاح. هيا بنا نتساءل، نفهم، نجرّب — وننقل أثر تعلّمنا إلى حياتنا اليومية!'}
-];
-var i=0,playing=false,voice=false,timer=null,activeVoiceLang='he', $=function(x){return document.getElementById(x)};
-var route=$('route');
-for(var k=1;k<=5;k++){
-  if(k>1){var g=document.createElement('div');g.className='seg';route.appendChild(g)}
-  var d=document.createElement('div');d.className='stn';d.id='st'+k;d.style.setProperty('--col','var('+CV[k]+')');
-  d.setAttribute('title', ST[k][1]);
-  d.innerHTML='<div class="dot">'+k+'</div><div>'+ST[k][0]+'</div><div style="font-size:0.85em;color:var(--muted)">'+ST[k][1]+'</div>';
-  (function(targetStation){
-    d.onclick=function(){
-      for(var sIdx=0;sIdx<S.length;sIdx++){
-        if(S[sIdx].s===targetStation){show(sIdx);break;}
+<body class="min-h-screen flex flex-col bg-slate-50">
+
+  <!-- Top Header: School Identity + Global Timer + Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- School Brand -->
+      <div class="flex items-center gap-3">
+        <a href="/#/" class="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center text-white shadow-md hover:opacity-90 transition" title="العودة لموقع المدرسة">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+        </a>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-extrabold text-slate-900 leading-tight">منصة نموذج "مفتاح" (מפתי"ח) التفاعلية</h1>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">مدرسة مشيرفة الابتدائية (318212)</span>
+            <a href="/#/" class="text-xs text-teal-700 font-bold hover:underline bg-teal-50 px-2 py-0.5 rounded border border-teal-100">🏠 الموقع الرئيسي</a>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">"نزرع فكرًا، نغرس قيمًا، نبني إنسانًا، نصنع مستقبلًا" — من التخطيط التربوي إلى الدرس التفاعلي الحي</p>
+        </div>
+      </div>
+
+      <!-- Always-On Lesson Timer & Pacing Badge -->
+      <div class="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl shadow-inner">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-xs text-slate-300 font-semibold" id="timerStationLabel">وقت المحطة:</span>
+        </div>
+        <span id="globalTimerDisplay" class="font-mono text-lg font-extrabold text-amber-400 tracking-wider">08:00</span>
+        <div class="flex items-center gap-1 border-r border-slate-700 pr-2 mr-1">
+          <button type="button" onclick="toggleTimerPause()" id="timerToggleBtn" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-200 transition" title="إيقاف/تشغيل المؤقت">⏸ إيقاف</button>
+          <button type="button" onclick="addTimerMinutes(2)" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-teal-300 transition" title="إضافة دقيقتين">+2 د</button>
+          <button type="button" onclick="triggerRefreshMoment()" class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded transition" title="لحظة انتعاش في نموذج مفتاح">⚡ وقت للانتعاش!</button>
+        </div>
+      </div>
+
+      <!-- Main View Switcher Tabs -->
+      <nav class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+        <button type="button" onclick="switchMainView('planner')" id="tabBtn-planner" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-teal-600 text-white shadow-sm">
+          <span>📋</span>
+          <span>1. تخطيط "مفتاح"</span>
+        </button>
+        <button type="button" onclick="switchMainView('student')" id="tabBtn-student" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-700 hover:bg-white">
+          <span>🎓</span>
+          <span>2. شاشة الطالب التفاعلية</span>
+        </button>
+        <button type="button" onclick="switchMainView('teacher')" id="tabBtn-teacher" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-700 hover:bg-white relative">
+          <span>🖥️</span>
+          <span>3. شاشة المعلم الحية</span>
+          <span id="teacherAlertBadge" class="hidden -top-1 -left-1 w-5 h-5 rounded-full bg-rose-600 text-white text-[11px] flex items-center justify-center font-extrabold animate-bounce">0</span>
+        </button>
+        <button type="button" onclick="switchMainView('portfolio')" id="tabBtn-portfolio" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-700 hover:bg-white">
+          <span>📊</span>
+          <span>4. الملف الشخصي للطالب</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Toast Notification Banner -->
+  <div id="toastContainer" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Refresh Moment Modal ("זמן להתרענן! / وقت للانتعاش!") -->
+  <div id="refreshModal" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-amber-400 text-center space-y-4">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl">⚡</div>
+      <div class="inline-block px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">الإضافة الثانية في نموذج مفتاح — مدرسة مشيرفة</div>
+      <h3 class="text-2xl font-extrabold text-slate-900">"وقت للانتعاش! — זמן להתרענן!"</h3>
+      <p id="refreshActivityText" class="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+        دقيقة واحدة من النشاط الحركي الخفيف وتمرين التنفس والإيقاع الجماعي لتجديد التركيز والحيوية لدى جميع الطلاب بطرق تناسب الجميع.
+      </p>
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button type="button" onclick="changeRefreshActivity()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">🔄 تبديل نشاط الانتعاش</button>
+        <button type="button" onclick="closeRefreshMoment()" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold shadow-md transition">🚀 "نعود إلى رحلتنا! — חוזרים למסע שלנו!"</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 1: MIFTAH SMART LESSON / ACTIVITY / SKILL / MEETING PLANNER      -->
+    <!-- ===================================================================== -->
+    <section id="view-planner" class="space-y-6">
+      <!-- Top Intro Banner + Quick Templates -->
+      <div class="bg-gradient-to-l from-teal-800 via-teal-700 to-emerald-700 rounded-2xl p-6 text-white shadow-lg flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="space-y-2 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-teal-50 text-xs font-semibold">
+            <span>🔑</span>
+            <span>المحطات الخمس: م (مشوّق ومحفّز) • ف (فهم وبناء المعنى) • ت (تطبيق وتدريب) • ا (أدلة للفهم) • ح (حصاد ونقل الأثر)</span>
+          </div>
+          <h2 class="text-2xl font-extrabold">مولّد تخطيط "مفتاح" وتحويله الفوري إلى درس تفاعلي حي</h2>
+          <p class="text-sm text-teal-100 leading-relaxed">
+            خطّط لحصة تعليمية، فعالية تربوية، مهارة، أو اجتماع طاقم يُدار وفق نموذج مفتاح مع دمج إجباري لمبدأَي <strong>الاحتواء والاندماج (UDL)</strong> و<strong>التمايز والقدرات المختلفة</strong>، ثم حوّل التخطيط بضغطة زر إلى بيئة تفاعلية حية للطالب والمعلم.
+          </p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20 space-y-2 min-w-[270px]">
+          <p class="text-xs font-bold text-amber-300">⚡ نماذج جاهزة للتجربة الفورية:</p>
+          <div class="grid grid-cols-1 gap-1.5">
+            <button type="button" onclick="loadPresetPlan('states_of_matter')" class="text-right text-xs bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg font-semibold transition flex items-center justify-between">
+              <span>🧊 حصة علوم: حالات المادة الثلاث (رابع)</span>
+              <span class="text-[10px] bg-amber-400 text-slate-900 px-1.5 py-0.5 rounded font-bold">نموذج الوثيقة</span>
+            </button>
+            <button type="button" onclick="loadPresetPlan('arabic_sentences')" class="text-right text-xs bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg font-semibold transition flex items-center justify-between">
+              <span>📖 لغة عربية: الجملة الاسمية والفعلية (خامس)</span>
+              <span class="text-[10px] bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-bold">أحجية + قصة</span>
+            </button>
+            <button type="button" onclick="loadPresetPlan('social_empathy')" class="text-right text-xs bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg font-semibold transition flex items-center justify-between">
+              <span>🤝 فعالية ومهارة: حل النزاعات والتعاطف (سادس)</span>
+              <span class="text-[10px] bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-bold">اجتماعي سلوكي</span>
+            </button>
+            <button type="button" onclick="loadPresetPlan('staff_meeting')" class="text-right text-xs bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg font-semibold transition flex items-center justify-between">
+              <span>👥 اجتماع طاقم: التقييم التكويني وأدلة الفهم</span>
+              <span class="text-[10px] bg-purple-200 text-purple-950 px-1.5 py-0.5 rounded font-bold">اجتماع بموديل مفتاح</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Planning Form Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Form Inputs Column (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 class="text-lg font-extrabold text-slate-900">بيانات التخطيط وفق نموذج "مفتاح"</h3>
+              <p class="text-xs text-slate-500">الحقول الإجبارية محددة بنجمة حمراء (*) والحقول الاختيارية يكمّلها الذكاء الاصطناعي تلقائياً إن تُركت فارغة</p>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">إجباري: الاحتواء UDL + التمايز</span>
+          </div>
+
+          <!-- 1. Type of Miftah Session -->
+          <div>
+            <label class="block text-xs font-extrabold text-slate-700 mb-2">نوع التخطيط المُدار حسب موديل مفتاح <span class="text-rose-600">*</span></label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="planTypeSelector">
+              <button type="button" onclick="selectPlanType('lesson')" data-type="lesson" class="plan-type-btn py-2.5 px-3 rounded-xl border-2 border-teal-600 bg-teal-50 text-teal-800 text-xs font-bold flex items-center justify-center gap-1.5">📚 حصة تعليمية</button>
+              <button type="button" onclick="selectPlanType('activity')" data-type="activity" class="plan-type-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5">🎭 فعالية تربوية</button>
+              <button type="button" onclick="selectPlanType('skill')" data-type="skill" class="plan-type-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5">🧠 مهارة حياتية/تعلمية</button>
+              <button type="button" onclick="selectPlanType('meeting')" data-type="meeting" class="plan-type-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5">👥 اجتماع طاقم/مدرسة</button>
+            </div>
+          </div>
+
+          <!-- 2. Mandatory Fields -->
+          <div class="p-4 rounded-xl bg-teal-50/50 border border-teal-200 space-y-4">
+            <div class="flex items-center gap-2 text-teal-900 font-extrabold text-sm">
+              <span class="w-6 h-6 rounded-lg bg-teal-600 text-white flex items-center justify-center text-xs">1</span>
+              <span>الحقول الإجبارية الأساسية (Mandatory Fields)</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="inputTopic" class="block text-xs font-bold text-slate-700 mb-1">الموضوع / عنوان الوحدة <span class="text-rose-600">*</span></label>
+                <input id="inputTopic" type="text" value="حالات المادة الثلاث (صلب، سائل، غاز) وخصائصها" placeholder="مثال: حالات المادة، الكسور، التسامح..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-teal-600 focus:outline-none bg-white" />
+              </div>
+              <div>
+                <label for="inputGrade" class="block text-xs font-bold text-slate-700 mb-1">الصف / الفئة المستهدفة <span class="text-rose-600">*</span></label>
+                <select id="inputGrade" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-teal-600 focus:outline-none bg-white">
+                  <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
+                  <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
+                  <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
+                  <option value="الصف الرابع الابتدائي" selected>الصف الرابع الابتدائي</option>
+                  <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
+                  <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
+                  <option value="طاقم المعلمين / الهيئة التدريسية">طاقم المعلمين / الهيئة التدريسية (اجتماع)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label for="inputSkills" class="block text-xs font-bold text-slate-700 mb-1">المهارات المستهدفة <span class="text-rose-600">*</span></label>
+              <input id="inputSkills" type="text" value="الملاحظة العلمية، المقارنة والتصنيف، التعليل المبني على الخصائص، ونقل التعلم لسياق يومي" placeholder="مثال: التفكير الناقد، الاستنتاج، العمل التعاوني، التعليل..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-teal-600 focus:outline-none bg-white" />
+            </div>
+          </div>
+
+          <!-- 3. Interactive pedagogical configuration for Stations 1, 2, 3 & Pacing -->
+          <div class="p-4 rounded-xl bg-amber-50/60 border border-amber-200 space-y-4">
+            <div class="flex items-center gap-2 text-amber-950 font-extrabold text-sm">
+              <span class="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs">2</span>
+              <span>إعدادات تحويل التخطيط إلى درس تفاعلي (المحطات وأسلوب التقدم)</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Station 1 Hook Type -->
+              <div>
+                <label for="inputHookType" class="block text-xs font-bold text-slate-700 mb-1">محفّز المحطة الأولى (م - مشوّق ومحفّز) <span class="text-rose-600">*</span></label>
+                <select id="inputHookType" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                  <option value="video_riddle" selected>🎬 فيديو يوتيوب تفاعلي + أحجية وقصة قصيرة (شامل)</option>
+                  <option value="youtube">🎬 فيلم يوتيوب قصير مع أسئلة تفاعلية</option>
+                  <option value="riddle">🧩 أحجية ذكية مولّدة تثير الفضول</option>
+                  <option value="story">📖 قصة قصيرة من واقع حياة الطالب</option>
+                  <option value="experiment">🔬 تجربة / ظاهرة غير متوقعة (مثل ذوبان مكعب الثلج)</option>
+                </select>
+              </div>
+
+              <!-- Station 2 Method (Exploration vs Direct Instruction) -->
+              <div>
+                <label for="inputStation2Mode" class="block text-xs font-bold text-slate-700 mb-1">أسلوب التعليم في المحطة الثانية (ف - فهم وبناء المعنى) <span class="text-rose-600">*</span></label>
+                <select id="inputStation2Mode" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                  <option value="exploration" selected>🔍 التعلم بالاستكشاف والبحث الموجه (مختبر تفاعلي واستنتاج)</option>
+                  <option value="direct">👨‍🏫 الشرح الموجه والتعلم الوجاهي (شرح مفصل وأمثلة متدرجة)</option>
+                  <option value="blended">⚖️ دمج المسارين (استكشاف موجه يتبعه شرح وتلخيص منظم)</option>
+                </select>
+              </div>
+
+              <!-- Station 3 Practice Mode (Individual / Pair / Group) -->
+              <div>
+                <label for="inputStation3Grouping" class="block text-xs font-bold text-slate-700 mb-1">نمط العمل في المحطة الثالثة (ت - تطبيق وتدريب) <span class="text-rose-600">*</span></label>
+                <select id="inputStation3Grouping" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                  <option value="groups" selected>👥 عمل بمجموعات مع توزيع أدوار واضح + مقارنة زوجية</option>
+                  <option value="pairs">🤝 عمل زوجي (تفكير فردي ثم مقارنة ومصادقة مع زميل)</option>
+                  <option value="individual">👤 عمل فردي مستقل حسب وتيرة الطالب وقدرته</option>
+                </select>
+              </div>
+
+              <!-- Pacing Control Mode -->
+              <div>
+                <label for="inputPacingMode" class="block text-xs font-bold text-slate-700 mb-1">تحكم المعلم بانتقال الطلاب بين المحطات الـ 5 <span class="text-rose-600">*</span></label>
+                <select id="inputPacingMode" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+                  <option value="differentiated" selected>🚀 تقدم متمايز حر (يتقدم كل طالب حسب وتيرته وإنجازه)</option>
+                  <option value="teacher_timed">⏱️ تقدم موحد بقرار المعلم والمؤقت الزمني للمحطة</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Optional Fields -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-slate-800 font-extrabold text-sm">
+                <span class="w-6 h-6 rounded-lg bg-slate-600 text-white flex items-center justify-center text-xs">3</span>
+                <span>الحقول الاختيارية (الأهداف، معيار النجاح، المدة، المجال، رابط يوتيوب)</span>
+              </div>
+              <span class="text-[11px] text-slate-500">اختياري</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="inputDomain" class="block text-xs font-bold text-slate-700 mb-1">المجال</label>
+                <select id="inputDomain" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                  <option value="تعليمي أكاديمي وعلمي" selected>📘 تعليمي أكاديمي</option>
+                  <option value="اجتماعي قيمي وتعاوني">🤝 اجتماعي قيمي</option>
+                  <option value="سلوكي وتنظيم ذاتي">🌱 سلوكي وتنظيم ذاتي</option>
+                  <option value="تطوير مهني وقيادة تربوية">🏫 تطوير مهني / إداري</option>
+                </select>
+              </div>
+              <div>
+                <label for="inputDuration" class="block text-xs font-bold text-slate-700 mb-1">المدة الزمنية الكلية (دقيقة)</label>
+                <input id="inputDuration" type="number" min="15" max="120" value="45" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" />
+              </div>
+              <div>
+                <label for="inputYoutubeId" class="block text-xs font-bold text-slate-700 mb-1">رابط/معرّف فيديو يوتيوب (اختياري)</label>
+                <input id="inputYoutubeId" type="text" value="https://www.youtube.com/watch?v=wclY8F-UoTE" placeholder="رابط يوتيوب أو اتركه للتوليد الذكي" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="inputGoal" class="block text-xs font-bold text-slate-700 mb-1">هدف التعلم (מטרת הלמידה)</label>
+                <textarea id="inputGoal" rows="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" placeholder="ماذا يجب أن يعرف الطالب أو يفهم أو يكون قادراً على فعله؟">أن يميّز الطالب بين الحالة الصلبة والسائلة والغازية للمادة من خلال خصائصها (الشكل، الحجم، القابلية للانضغاط والجريان).</textarea>
+              </div>
+              <div>
+                <label for="inputCriteria" class="block text-xs font-bold text-slate-700 mb-1">معيار النجاح (קריטריון להצלחה)</label>
+                <textarea id="inputCriteria" rows="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" placeholder="أي أداء سيُظهر أن الطالب حقق الهدف؟">أن يصنّف الطالب أمثلة متنوعة إلى حالات المادة الثلاث ويعلّل تصنيفه مستنداً إلى خصائص كل حالة بدقة.</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <button type="button" onclick="generateMiftahPlan()" class="flex-1 min-w-[200px] py-3 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2">
+              <span>📝</span>
+              <span>توليد التخطيط المفصل حسب نموذج "مفتاح"</span>
+            </button>
+            <button type="button" onclick="convertPlanToInteractiveLesson()" class="flex-1 min-w-[240px] py-3 px-5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-extrabold text-sm shadow-lg transition flex items-center justify-center gap-2">
+              <span>✨</span>
+              <span>الخطوة العبقرية: تحويل التخطيط إلى درس تفاعلي حي!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Generated Plan Preview Column (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between space-y-4">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span class="text-[11px] font-bold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200" id="planPreviewBadge">وثيقة التخطيط المولّدة</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1" id="planPreviewTitle">تخطيط حصة: حالات المادة الثلاث (صلب، سائل، غاز)</h3>
+              </div>
+              <button type="button" onclick="convertPlanToInteractiveLesson()" class="text-xs bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
+                🚀 ابدأ الدرس التفاعلي
+              </button>
+            </div>
+
+            <!-- Mandatory Pedagogical Pillars Box (UDL + Differentiation) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <div class="text-xs font-extrabold text-emerald-900 flex items-center gap-1">
+                  <span>♿</span>
+                  <span>الاحتواء والاندماج (UDL - إجباري)</span>
+                </div>
+                <p id="planPreviewUDL" class="text-[11px] text-emerald-800 mt-1 leading-relaxed">
+                  تمثيل متعدد للمعلومة (فيديو، تجربة بصرية، بطاقات صوتية/مقروءة) وخيارات متعددة للتعبير (كتابة، تصنيف تفاعلي، تعليل شفهي/صوتي) في مناخ آمن يسمح بالخطأ والتجربة.
+                </p>
+              </div>
+              <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200">
+                <div class="text-xs font-extrabold text-indigo-900 flex items-center gap-1">
+                  <span>🎯</span>
+                  <span>التمايز والقدرات (إجباري)</span>
+                </div>
+                <p id="planPreviewDiff" class="text-[11px] text-indigo-800 mt-1 leading-relaxed">
+                  3 مسارات مرنة غير ثابتة: (1) مسار مساند بسقالات وبدايات جمل وبطاقات خصائص، (2) مسار معياري، (3) مسار تحدٍّ يفسر حالات استثنائية وأخطاء شائعة.
+                </p>
+              </div>
+            </div>
+
+            <!-- 5 Stations Plan Accordion / Cards -->
+            <div id="planStationsList" class="space-y-2.5 max-h-[430px] overflow-y-auto custom-scroll pl-1">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>المرجع التربوي: Rosenshine (2012), Hattie & Timperley (2007), CAST UDL (2024)</span>
+            <span class="font-bold text-teal-700">مفتاح — مدرسة مشيرفة</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 2: INTERACTIVE STUDENT SCREEN (5 STATIONS + KEY ICON + AI CHECK) -->
+    <!-- ===================================================================== -->
+    <section id="view-student" class="hidden space-y-5">
+      <!-- Student Simulation Bar (Switch Student Ability Profile to see Differentiation in action) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-extrabold text-slate-500 uppercase">معاينة شاشة الطالب بشخصية:</span>
+          <div class="flex flex-wrap items-center gap-1.5" id="studentPersonaButtons">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span id="studentPacingStatusBadge" class="px-3 py-1 rounded-full bg-teal-50 text-teal-800 font-bold border border-teal-200">
+            🚀 التقدم المتمايز مفتوح: يمكنك الانتقال حسب وتيرتك
+          </span>
+          <button type="button" onclick="openStudentPortfolioFromStudentView()" class="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
+            📊 ملفي الشخصي ومهاراتي
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Student Workspace: Right Compact Letter Rail (م - ف - ت - ا - ح) + Center Expanded Canvas + Left Floating Key Icon Drawer -->
+      <div class="flex flex-col md:flex-row gap-5 items-start relative">
+
+        <!-- RIGHT RAIL: Compact 5 Stations Navigation Rail (Only First Letter, Illuminating When Active) -->
+        <aside class="w-full md:w-20 shrink-0 bg-white rounded-2xl border border-slate-200 p-2.5 shadow-sm sticky top-20 flex flex-col items-center gap-3">
+          <!-- Mini Progress Indicator -->
+          <div class="flex flex-col items-center justify-center border-b border-slate-100 pb-2 w-full text-center">
+            <span class="text-[10px] font-black text-slate-400">الإنجاز</span>
+            <span class="text-xs font-black text-teal-700" id="studentOverallProgressText">20%</span>
+            <div class="w-10 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+              <div id="studentOverallProgressBar" class="h-full bg-teal-600 transition-all duration-300" style="width: 20%"></div>
+            </div>
+          </div>
+
+          <!-- 5 Station Letter Badges (Only First Letter: م، ف، ت، ا، ح) -->
+          <div id="studentStationsNav" class="flex md:flex-col gap-3 items-center justify-center w-full py-1">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Quick Goal Trigger Button -->
+          <div class="pt-2 border-t border-slate-100 w-full flex justify-center">
+            <button type="button" onclick="toggleStudentGoalModal()" class="w-10 h-10 rounded-xl bg-slate-50 hover:bg-teal-50 text-slate-600 hover:text-teal-700 border border-slate-200 flex items-center justify-center text-sm transition" title="عرض أهداف الحصة ومعايير النجاح">
+              🎯
+            </button>
+          </div>
+        </aside>
+
+        <!-- CENTER: Expanded Active Station Interactive Lesson Content (Clear & Spacious) -->
+        <div class="flex-1 w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 min-h-[560px] flex flex-col justify-between">
+          <div id="studentStationContentArea" class="space-y-5">
+            <!-- Dynamically rendered based on current station and student ability profile -->
+          </div>
+
+          <!-- Bottom Navigation between Stations -->
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <button type="button" onclick="navigateStudentStation(-1)" id="prevStationBtn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+              ➡️ المحطة السابقة
+            </button>
+            <span id="stationStepIndicator" class="text-xs font-bold text-slate-400">المحطة 1 من 5</span>
+            <button type="button" onclick="navigateStudentStation(1)" id="nextStationBtn" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shadow-md transition">
+              المحطة التالية ⬅️
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LEFT SIDEBAR: Floating Miftah Key Trigger Button (Icon on the left of the screen) -->
+      <div id="miftahKeyTrigger" class="fixed left-5 bottom-8 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-40">
+        <button type="button" onclick="toggleMiftahKeyDrawer()" class="relative group flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 border-2 border-white ring-4 ring-amber-400/40 key-pulse cursor-pointer" title="أيقونة المفتاح: اضغط للحصول على المساعدة، التلميحات، والتحديات">
+          <span class="text-2xl sm:text-3xl group-hover:rotate-12 transition-transform duration-300">🗝️</span>
+          <span class="absolute -bottom-2.5 px-2 py-0.5 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black shadow border border-amber-400/50">
+            مفتاحي
+          </span>
+        </button>
+      </div>
+
+      <!-- LEFT SIDEBAR: Slide-out Drawer for Miftah Key Assistant Options -->
+      <div id="miftahKeyDrawerBackdrop" onclick="closeMiftahKeyDrawer()" class="hidden fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs transition-opacity"></div>
+      
+      <div id="miftahKeyDrawer" class="hidden fixed inset-y-0 left-0 z-50 w-full max-w-sm bg-white shadow-2xl border-r border-slate-200 flex flex-col transform transition-transform duration-300">
+        <!-- Drawer Header -->
+        <div class="p-4 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 flex items-center justify-between shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center text-xl shadow">
+              🗝️
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-slate-950">مفتاحي في كل محطة</h3>
+              <p class="text-[11px] font-bold text-slate-800">خيارات المساعدة، التمايز والتحدي</p>
+            </div>
+          </div>
+          <button type="button" onclick="closeMiftahKeyDrawer()" class="w-8 h-8 rounded-lg bg-black/10 hover:bg-black/20 text-slate-900 font-black flex items-center justify-center transition">
+            ✕
+          </button>
+        </div>
+
+        <!-- Drawer Body: The 4 Interactive Options -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+          <p class="text-xs text-slate-500 font-medium leading-relaxed">
+            اختر أحد خيارات المفتاح الذكي أدناه لتحصل على الدعم الملائم فوراً في هذه المحطة:
+          </p>
+
+          <div class="space-y-2">
+            <button type="button" onclick="useMiftahKeyAction('teacher_help')" class="w-full text-right p-3 rounded-xl bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 transition flex items-center justify-between group">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-base">🙋‍♂️</span>
+                <div>
+                  <div class="text-xs font-extrabold text-slate-900 group-hover:text-rose-800">اطلب مساعدة المعلم</div>
+                  <div class="text-[10px] text-slate-500">يظهر إشعار فوري على شاشة المعلم</div>
+                </div>
+              </div>
+              <span class="text-xs text-rose-600 font-bold">إرسال</span>
+            </button>
+
+            <button type="button" onclick="useMiftahKeyAction('scaffold_hint')" class="w-full text-right p-3 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 transition flex items-center justify-between group">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-base">💡</span>
+                <div>
+                  <div class="text-xs font-extrabold text-slate-900 group-hover:text-amber-900">خذ مساعدة / سقالة تعليمية</div>
+                  <div class="text-[10px] text-slate-500">بطاقة تلميح، كلمات مساعدة وبداية جملة</div>
+                </div>
+              </div>
+              <span class="text-xs text-amber-600 font-bold">عرض</span>
+            </button>
+
+            <button type="button" onclick="useMiftahKeyAction('swap_question')" class="w-full text-right p-3 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 transition flex items-center justify-between group">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-base">🔄</span>
+                <div>
+                  <div class="text-xs font-extrabold text-slate-900 group-hover:text-teal-900">بدّل السؤال بصياغة مناسبة</div>
+                  <div class="text-[10px] text-slate-500">سؤال مكافئ يناسب أسلوب تعلمك</div>
+                </div>
+              </div>
+              <span class="text-xs text-teal-600 font-bold">تبديل</span>
+            </button>
+
+            <button type="button" onclick="useMiftahKeyAction('challenge_strong')" class="w-full text-right p-3 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 transition flex items-center justify-between group">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-base">🚀</span>
+                <div>
+                  <div class="text-xs font-extrabold text-slate-900 group-hover:text-indigo-900">تحدي الأبطال (للطالب المتمكن)</div>
+                  <div class="text-[10px] text-slate-500">سؤال تفكير عميق ونقد علمي</div>
+                </div>
+              </div>
+              <span class="text-xs text-indigo-600 font-bold">تحدي</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Output Box inside Drawer -->
+          <div id="keyActionOutputBox" class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 space-y-2 mt-4">
+            <div class="font-bold text-amber-900 flex items-center gap-1.5">
+              <span>🔑</span>
+              <span>رسالة المفتاح الذكي:</span>
+            </div>
+            <p id="keyActionOutputText" class="text-[11px] leading-relaxed text-slate-700">
+              أهلاً بك! أنا رفيقك في رحلة "مفتاح". إذا واجهت صعوبة في هذه المحطة، أو أردت تبديل السؤال أو خوض تحدٍّ إضافي، اضغط على أحد الخيارات أعلاه.
+            </p>
+          </div>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+          <button type="button" onclick="closeMiftahKeyDrawer()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">
+            إغلاق والعودة للدرس
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Goal Modal for Students -->
+      <div id="studentGoalModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎯</span>
+              <h3 class="font-black text-slate-900 text-sm">أهداف الحصة ومعايير النجاح</h3>
+            </div>
+            <button type="button" onclick="toggleStudentGoalModal()" class="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+          </div>
+          <div class="space-y-3 text-xs">
+            <div class="p-3 rounded-xl bg-teal-50 border border-teal-200 space-y-1">
+              <div class="font-black text-teal-800">🎯 هدف رحلتنا اليوم:</div>
+              <p id="studentSidebarGoal" class="text-slate-700 leading-relaxed"></p>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+              <div class="font-black text-emerald-800">✅ كيف أعرف أنني نجحت؟</div>
+              <p id="studentSidebarCriteria" class="text-slate-700 leading-relaxed"></p>
+            </div>
+          </div>
+          <button type="button" onclick="toggleStudentGoalModal()" class="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition">
+            فهمت، لنتابع التعلم
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 3: TEACHER LIVE SCREEN (STATIONS DISTRIBUTION, ALERTS, PACING)   -->
+    <!-- ===================================================================== -->
+    <section id="view-teacher" class="hidden space-y-6">
+      <!-- Top Control Bar -->
+      <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-lg flex flex-wrap items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-xs font-bold text-teal-300 uppercase">غرفة التحكم الحية للمعلم — نموذج مفتاح</span>
+          </div>
+          <h2 class="text-xl font-extrabold" id="teacherDashboardLessonTitle">الدرس الحي: حالات المادة الثلاث (الصف الرابع)</h2>
+          <p class="text-xs text-slate-300">متابعة فورية لتوزع الطلاب على المحطات الـ 5، طلبات المساعدة من أيقونة المفتاح، وفحص إجابات وأدلة الفهم لكل طالب</p>
+        </div>
+
+        <!-- Pacing & Broadcast Controls -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="bg-slate-800 p-2 rounded-xl border border-slate-700 flex items-center gap-2">
+            <span class="text-xs text-slate-300 font-bold">نمط انتقال الطلاب:</span>
+            <button type="button" onclick="setClassroomPacingMode('differentiated')" id="pacingBtnDiff" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-teal-600 text-white transition">
+              🚀 تقدم متمايز (حسب وتيرة الطالب)
+            </button>
+            <button type="button" onclick="setClassroomPacingMode('teacher_timed')" id="pacingBtnLocked" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-slate-700 text-slate-300 hover:bg-slate-600 transition">
+              ⏱️ موحد بقرار المعلم والزمن
+            </button>
+          </div>
+
+          <div class="bg-slate-800 p-2 rounded-xl border border-slate-700 flex items-center gap-1.5">
+            <span class="text-xs text-slate-300 font-bold">نقل الصف للمحطة:</span>
+            <button type="button" onclick="teacherForceStation(0)" class="px-2 py-1 rounded bg-slate-700 hover:bg-teal-600 text-xs font-bold">م</button>
+            <button type="button" onclick="teacherForceStation(1)" class="px-2 py-1 rounded bg-slate-700 hover:bg-teal-600 text-xs font-bold">ف</button>
+            <button type="button" onclick="teacherForceStation(2)" class="px-2 py-1 rounded bg-slate-700 hover:bg-teal-600 text-xs font-bold">ت</button>
+            <button type="button" onclick="teacherForceStation(3)" class="px-2 py-1 rounded bg-slate-700 hover:bg-teal-600 text-xs font-bold">ا</button>
+            <button type="button" onclick="teacherForceStation(4)" class="px-2 py-1 rounded bg-slate-700 hover:bg-teal-600 text-xs font-bold">ح</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 Stations Live Counter Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="teacherStationCounters">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <!-- Middle Grid: Help Requests from Key Icon + Instant Support Group Builder -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Live Help Alerts from Miftah Key Icon (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">🔑</span>
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900">إشعارات "أيقونة المفتاح" الحية</h3>
+                <p class="text-[11px] text-slate-500">الطلاب الذين طلبوا مساعدة أو بدّلوا السؤال أو فتحوا تحدياً</p>
+              </div>
+            </div>
+            <button type="button" onclick="simulateNewHelpRequest()" class="text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 transition">
+              + محاكاة طلب طالب
+            </button>
+          </div>
+
+          <div id="teacherHelpAlertsList" class="space-y-2.5 max-h-72 overflow-y-auto custom-scroll">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Instant Flexible Support Group -->
+          <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-amber-950">🤝 مجموعة دعم فورية مرنة (קבוצת תמיכה מיידית)</span>
+              <button type="button" onclick="createInstantSupportGroup()" class="text-[11px] bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-2.5 py-1 rounded-lg transition">
+                تجميع وتقديم دعم مركّز
+              </button>
+            </div>
+            <p id="supportGroupStatusText" class="text-[11px] text-amber-900 leading-relaxed">
+              وفق وثيقة مفتاح: يجمع المعلم مجموعة صغيرة مؤقتة ومرنة من الطلاب الذين واجهوا صعوبة في المحطة الحالية لتقديم شرح بديل، ثم يعودون لمهمة قصيرة موازية.
+            </p>
+          </div>
+        </div>
+
+        <!-- Student Progress, Ability & Live Answers Table (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900">لوحة متابعة الطلاب والقدرات وإجابات المحطات</h3>
+              <p class="text-[11px] text-slate-500">اضغط على أي طالب لمعاينة إجاباته أو فتح ملفه الشخصي التراكمي</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <select id="teacherFilterStation" onchange="renderTeacherDashboard()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50">
+                <option value="all">جميع المحطات (الكل)</option>
+                <option value="0">م - مشوّق ومحفّز</option>
+                <option value="1">ف - فهم وبناء المعنى</option>
+                <option value="2">ت - تطبيق وتدريب</option>
+                <option value="3">ا - أدلة للفهم</option>
+                <option value="4">ح - حصاد ونقل الأثر</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-right text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                  <th class="py-2.5 px-3 font-extrabold">الطالب والقدرة/المسار</th>
+                  <th class="py-2.5 px-3 font-extrabold">المحطة الحالية</th>
+                  <th class="py-2.5 px-3 font-extrabold">سير التقدم</th>
+                  <th class="py-2.5 px-3 font-extrabold">آخر إجابة وفحص الذكاء</th>
+                  <th class="py-2.5 px-3 font-extrabold">إجراء المعلم</th>
+                </tr>
+              </thead>
+              <tbody id="teacherStudentsTableBody" class="divide-y divide-slate-100">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 4: STUDENT PERSONAL PROFILE & SKILLS GROWTH PORTFOLIO            -->
+    <!-- ===================================================================== -->
+    <section id="view-portfolio" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center text-xl font-extrabold" id="portfolioStudentAvatar">س</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-extrabold text-slate-900" id="portfolioStudentName">سارة خطيب</h2>
+              <span id="portfolioStudentBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 font-bold border border-teal-200">المسار المعياري المتطور</span>
+            </div>
+            <p class="text-xs text-slate-500" id="portfolioStudentSummary">ملف شخصي تراكمي يوثق تطور المهارات، أدلة الفهم، واستخدام مفاتيح المساندة والتحدي</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label for="portfolioStudentSelect" class="text-xs font-bold text-slate-600">اختر ملف الطالب:</label>
+          <select id="portfolioStudentSelect" onchange="selectPortfolioStudent(this.value)" class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold bg-slate-50">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+      </div>
+
+      <!-- KPI Cards for Selected Student -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="portfolioKpiCards">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Charts & Evidence History -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Skills Radar / Bar Chart (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h3 class="text-sm font-extrabold text-slate-900">تطور المهارات والقدرات عبر محطات "مفتاح"</h3>
+          <p class="text-xs text-slate-500">يقيس التقدم في الفضول وطرح الأسئلة، الاستكشاف والفهم، العمل التعاوني، التعليل في أدلة الفهم، ونقل الأثر</p>
+          <div class="relative h-64 w-full">
+            <canvas id="studentSkillsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Detailed Record of Lessons, Evidence of Understanding & AI Recommendations (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-sm font-extrabold text-slate-900">سجل أدلة الفهم (المحطة 4) والحصاد ونقل الأثر (المحطة 5)</h3>
+            <span class="text-xs text-teal-700 font-bold">تحديث تلقائي من الحصص التفاعلية</span>
+          </div>
+          <div id="portfolioEvidenceTimeline" class="space-y-3 max-h-64 overflow-y-auto custom-scroll">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Complete Interactive Application Logic -->
+  <script>
+    // =========================================================================
+    // 1. STATE & PRESET PLANS (GROUNDED IN MUSHIRFA ELEMENTARY "MIFTAH" MODEL)
+    // =========================================================================
+    const MIFTAH_STATIONS_META = [
+      {
+        id: 0,
+        letter: 'م',
+        hebrewLetter: 'מ',
+        title: 'مشوّق ومحفّز',
+        hebrewTitle: 'משיכה וסקרנות',
+        studentQuestion: 'ما الذي يثير فضولي ولماذا نتعلم هذا؟',
+        shortStudentPhrase: 'أنا أسأل وأستعد',
+        color: 'amber'
+      },
+      {
+        id: 1,
+        letter: 'ف',
+        hebrewLetter: 'פ',
+        title: 'فهم وبناء المعنى',
+        hebrewTitle: 'פיתוח הבנה ובניית משמעות',
+        studentQuestion: 'كيف أفهم الفكرة؟',
+        shortStudentPhrase: 'أنا أفهم وأربط',
+        color: 'teal'
+      },
+      {
+        id: 2,
+        letter: 'ت',
+        hebrewLetter: 'ת',
+        title: 'تطبيق وتدريب',
+        hebrewTitle: 'תרגול והתנסות',
+        studentQuestion: 'كيف أستخدم ما تعلمته؟',
+        shortStudentPhrase: 'أنا أجرب وأتدرب',
+        color: 'sky'
+      },
+      {
+        id: 3,
+        letter: 'ا',
+        hebrewLetter: 'י',
+        title: 'أدلة للفهم',
+        hebrewTitle: 'יישום עצמאי ועדויות להבנה',
+        studentQuestion: 'كيف أُظهر ما فهمته؟',
+        shortStudentPhrase: 'أنا أُظهر ما فهمته',
+        color: 'indigo'
+      },
+      {
+        id: 4,
+        letter: 'ح',
+        hebrewLetter: 'ח',
+        title: 'حصاد ونقل الأثر',
+        hebrewTitle: 'חתימה והעברת הלמידה להקשרים חדשים',
+        studentQuestion: 'ماذا آخذ معي وأين سأستخدمه؟',
+        shortStudentPhrase: 'أنا ألخص وأستخدم ما تعلمته في سياق جديد',
+        color: 'emerald'
+      }
+    ];
+
+    const PRESET_PLANS = {
+      states_of_matter: {
+        planType: 'lesson',
+        topic: 'حالات المادة الثلاث (صلب، سائل، غاز) وخصائصها',
+        grade: 'الصف الرابع الابتدائي',
+        skills: 'الملاحظة العلمية، المقارنة والتصنيف، التعليل المبني على الخصائص، ونقل التعلم لسياق يومي',
+        hookType: 'video_riddle',
+        station2Mode: 'exploration',
+        station3Grouping: 'groups',
+        pacingMode: 'differentiated',
+        domain: 'تعليمي أكاديمي وعلمي',
+        duration: 45,
+        youtubeUrl: 'https://www.youtube.com/watch?v=wclY8F-UoTE',
+        goal: 'أن يميّز الطالب بين الحالة الصلبة والسائلة والغازية للمادة من خلال خصائصها (الشكل، الحجم، القابلية للانضغاط والجريان).',
+        criteria: 'أن يصنّف الطالب أمثلة متنوعة إلى حالات المادة الثلاث ويعلّل تصنيفه مستنداً إلى خصائص كل حالة بدقة.',
+        riddleText: 'أكون قاسياً وبارداً كالحجر، فإذا تركتني في كفك الدافئة سلتُ بين أصابعك دون أن يتغير جوهري، وإذا سخّنتني اختفيتُ في الهواء! فما أنا؟ وهل تغيرت مادتي أم حالتي؟',
+        storyText: 'أحضر المعلم مكعب ثلج ووضعه في طبق أمام الصف، وبعد دقائق بدأ المكعب بالذوبان والتحول إلى ماء سائل. تساءل الطلاب: هل تغيرت المادة نفسها أم تغير شكلها وحالتها فقط؟',
+        hookQuestion: 'عندما يذوب مكعب الثلج في الكأس، هل تغيرت المادة نفسها أم تغير شكلها وحالتها؟ ولماذا؟',
+        hookScaffold: '💡 تلميح وبداية جملة: تذكّر أن الثلج هو ماء متجمد. ابدأ إجابتك بـ: "المادة نفسها (الماء) لم تتغير، ولكن تغيرت حالتها من... إلى... لأن..."',
+        hookSwappedQuestion: 'سؤال مبسط مكافئ: عندما يتحول الثلج إلى ماء للشرب، هل يبقى ماءً أم يصبح مادة جديدة مختلفة تماماً؟ اشرح بكلماتك.',
+        hookChallengeQuestion: '🚀 تحدي الأبطال: لو قمنا بتغطية الكأس وتبخّر الماء ثم تكاثف على الغطاء، كيف تثبت لزميلك أن البخار والماء والثلج هي نفس المادة رغم اختلاف خصائصها؟',
+        explorationItems: [
+          { name: 'مكعب ثلج / حجر', shape: 'ثابت لا يتغير بتغير الوعاء', volume: 'ثابت', compress: 'غير قابل للانضغاط', state: 'صلب' },
+          { name: 'ماء في أوعية مختلفة', shape: 'يأخذ شكل الوعاء الذي يوضع فيه', volume: 'ثابت', compress: 'غير قابل للانضغاط تقريباً', state: 'سائل' },
+          { name: 'هواء داخل محقنة مسدودة بدون إبرة', shape: 'ينتشر ويملأ كل الحيز المتاح', volume: 'متغير', compress: 'قابل للانضغاط بسهولة', state: 'غاز' }
+        ],
+        directExplanationPoints: [
+          'الحالة الصلبة (מוצק): لها شكل ثابت وحجم ثابت ولا تجري (مثل الحجر، الثلج، الخشب).',
+          'الحالة السائلة (נוזל): حجمها ثابت لكن شكلها متغير (تأخذ شكل الوعاء) ولها قدرة على الجريان (مثل الماء، الزيت، العسل).',
+          'الحالة الغازية (גז): ليس لها شكل ثابت ولا حجم ثابت، وتنتشر لتملأ الوعاء ويمكن ضغطها في محقنة (مثل الهواء وبخار الماء).'
+        ],
+        practiceCards: [
+          { item: 'حجر بازلت', correct: 'صلب', reason: 'له شكل ثابت وحجم ثابت ولا يأخذ شكل الوعاء' },
+          { item: 'زيت زيتون', correct: 'سائل', reason: 'يجري ويأخذ شكل الزجاجة مع بقاء حجمه ثابتاً' },
+          { item: 'بخار ماء متصاعد', correct: 'غاز', reason: 'ينتشر في كل المكان وليس له شكل أو حجم ثابت' },
+          { item: 'مكعب ثلج صلب', correct: 'صلب', reason: 'يحافظ على شكله المكعب وحجمه ما دام متجمداً' }
+        ],
+        evidenceTaskPrompt: 'يعرض المعلم أمامك مرطبان "عسل سائل كثيف". في أي حالة من حالات المادة يوجد العسل؟ علّل إجابتك مستنداً إلى خصائص الحالة (التصنيف بدون تعليل لا يكفي!).',
+        evidenceKeywords: ['سائل', 'شكل', 'وعاء', 'يجري', 'يتدفق', 'حجم'],
+        harvestTransferPrompt: 'تجمّد الماء داخل قالب ثلج على شكل نجوم، ثم أخرجناه وتركناه على الطاولة حتى ذاب تماماً. كيف تشرح التغير في شكله مستنداً إلى ما تعلمته اليوم؟'
+      },
+      arabic_sentences: {
+        planType: 'lesson',
+        topic: 'التمييز بين الجملة الاسمية والجملة الفعلية وأركانهما',
+        grade: 'الصف الخامس الابتدائي',
+        skills: 'التحليل النحوي، التمييز بين الاسم والفعل، تحويل الجمل، والتعبير الكتابي السليم',
+        hookType: 'video_riddle',
+        station2Mode: 'blended',
+        station3Grouping: 'pairs',
+        pacingMode: 'differentiated',
+        domain: 'تعليمي أكاديمي وعلمي',
+        duration: 45,
+        youtubeUrl: 'https://www.youtube.com/watch?v=efG2Gf2H2mI',
+        goal: 'أن يميز الطالب بين الجملة الاسمية والجملة الفعلية ويحدد ركني كل جملة ويحوّل بينهما بدقة.',
+        criteria: 'أن يصنف 4 جمل إلى اسمية وفعلية مع تعليل التصنيف بالكلمة المفتاحية الأولى، ويحول جملة فعلية إلى اسمية دون الإخلال بالمعنى.',
+        riddleText: 'أبتسمُ إذا بدأتَ بي باسمٍ وأُخبِركَ عنه خبراً جميلاً، وأتحركُ بنشاطٍ وزمنٍ إذا بدأتَ بي بفعلٍ وفاعل! فمن نحن الأختان في لغة الضاد؟',
+        storyText: 'كتب رامي في مجلة المدرسة: "المدرسةُ منارةُ العلمِ" وكتبت ليلى: "يزرعُ المعلمُ الفكرَ في العقولِ". لاحظ الطلاب أن الجملة الأولى تثبت صفةً للمدرسة، بينما الجملة الثانية تصف حدثاً يجري الآن!',
+        hookQuestion: 'بماذا تختلف بداية جملة "المدرسةُ منارةُ العلمِ" عن بداية جملة "يزرعُ المعلمُ الفكرَ"؟ وأيهما تدل على حدث مرتبط بزمن؟',
+        hookScaffold: '💡 تلميح: انظر إلى الكلمة الأولى في كل جملة: (المدرسةُ) تقبل ال التعريف فهي اسم، بينما (يزرعُ) تدل على عمل يحدث الآن فهي فعل.',
+        hookSwappedQuestion: 'سؤال مكافئ مبسط: استخرج الكلمة الأولى في الجملتين، وحدد أيهما "اسم" وأيهما "فعل".',
+        hookChallengeQuestion: '🚀 تحدي الأبطال: كيف يتغير المعنى البلاغي عندما نقول "المعلمُ يزرعُ الفكرَ" بدلاً من "يزرعُ المعلمُ الفكرَ"؟',
+        explorationItems: [
+          { name: 'العلمُ نورٌ يضيء الدروب', shape: 'تبدأ باسم مرفوع (المبتدأ)', volume: 'تتم معناه كلمة (نورٌ - خبر)', compress: 'ثبات واستقرار', state: 'جملة اسمية' },
+          { name: 'يجتهدُ الطالبُ في دروسه', shape: 'تبدأ بفعل مضارع يدل على حدث', volume: 'يقوم به (الطالبُ - فاعل)', compress: 'تجدد وحدوث', state: 'جملة فعلية' }
+        ],
+        directExplanationPoints: [
+          'الجملة الاسمية: هي التي تبدأ باسم وتتكون من ركنين أساسيين: المبتدأ (الاسم الذي نبدأ به) والخبر (الذي يتمم المعنى).',
+          'الجملة الفعلية: هي التي تبدأ بفعل (ماضٍ أو مضارع أو أمر) وتتكون من الفعل والفاعل الذي قام بالفعل.'
+        ],
+        practiceCards: [
+          { item: 'السماءُ صافيةٌ اليومَ', correct: 'جملة اسمية', reason: 'بدأت باسم معرف بـ (ال) وهو المبتدأ' },
+          { item: 'يتعاونُ الطلابُ في المحطة', correct: 'جملة فعلية', reason: 'بدأت بفعل مضارع يدل على حدث وزمن' },
+          { item: 'الكتابُ صديقٌ مخلصٌ', correct: 'جملة اسمية', reason: 'بدأت باسم وتخبرنا عنه' }
+        ],
+        evidenceTaskPrompt: 'صنّف الجملة التالية: "تُشرقُ الشمسُ صباحاً" ثم حوّلها إلى النوع الآخر مع تعليل خطواتك.',
+        evidenceKeywords: ['فعلية', 'فعل', 'الشمس', 'تشرق', 'اسمية'],
+        harvestTransferPrompt: 'اكتب جملتين لوصف رحلة مدرسية قمت بها: الأولى جملة اسمية تصف جمال المكان، والثانية جملة فعلية تصف نشاطاً قمت به مع زملائك.'
+      },
+      social_empathy: {
+        planType: 'activity',
+        topic: 'التعاطف الرقمي وحل النزاعات بطرق سلمية بنّاءة',
+        grade: 'الصف السادس الابتدائي',
+        skills: 'الإصغاء الفعال، فهم وجهة نظر الآخر، ضبط الانفعال، وصياغة رسائل إيجابية',
+        hookType: 'story',
+        station2Mode: 'exploration',
+        station3Grouping: 'groups',
+        pacingMode: 'differentiated',
+        domain: 'اجتماعي قيمي وتعاوني',
+        duration: 45,
+        youtubeUrl: 'https://www.youtube.com/watch?v=1Evwgu369Jw',
+        goal: 'أن يحلل الطالب مواقف سوء الفهم في التواصل اليومي والرقمي ويطبق خطوات الاستجابة المتعاطفة لحل النزاع.',
+        criteria: 'أن يعيد صياغة رسالة منفعلة إلى رسالة بنّاءة تعبّر عن المشاعر وتحترم الطرف الآخر مع تعليل سبب نجاحها.',
+        riddleText: 'كلمةٌ واحدةٌ مني قد تبني جسراً من الصداقة، وكلمةٌ متسرعةٌ عبر الشاشة قد تهدمه في ثوانٍ! فكيف تتحكم بي قبل أن تضغط زر الإرسال؟',
+        storyText: 'في مجموعة الصف الرقمية، أرسل سامي اقتراحاً لمشروع العلوم، فردّ عليه زميله بكلمة مقتضبة ظنّ سامي أنها سخرية، فشعر بالضيق وأراد الردّ بحدة.',
+        hookQuestion: 'لو كنت مكان سامي، ما الذي قد يجعل الرسالة النصية تُفهم بشكل خاطئ؟ وماذا تفعل قبل الرد؟',
+        hookScaffold: '💡 تلميح: في الرسائل النصية لا نسمع نبرة الصوت ولا نرى تعابير الوجه. ابدأ بـ: "قد نسيء فهم الرسالة لأن... وقبل الرد يجب أن..."',
+        hookSwappedQuestion: 'سؤال مبسط: هل حدث أن فهمت رسالة زميلك خطأ؟ كيف يمكن أن تتأكد من قصده الحقيقي بهدوء؟',
+        hookChallengeQuestion: '🚀 تحدي الأبطال: صمّم ميثاقاً من 3 قواعد ذهبية لمجموعة الصف الرقمية يمنع سوء الفهم ويعزز الاحتواء.',
+        explorationItems: [
+          { name: 'رد فعل متسرع (هجوم/اتهام)', shape: 'يركز على لوم الطرف الآخر', volume: 'يزيد التوتر ويغلق الحوار', compress: 'يؤدي لقطيعة', state: 'استجابة غير بنّاءة' },
+          { name: 'استجابة متعاطفة (توقف، استفسر، عبّر)', shape: 'تبدأ بـ "شعرتُ بـ... هل تقصد...؟"', volume: 'توضح القصد وتبني الثقة', compress: 'تحل المشكلة', state: 'استجابة بنّاءة' }
+        ],
+        directExplanationPoints: [
+          'الخطوة 1 (توقّف وتنفّس): لا تردّ وأنت منفعل.',
+          'الخطوة 2 (افترض حسن النية واستفسر): اسأل زميلك بهدوء عما يقصده.',
+          'الخطوة 3 (رسالة "أنا"): عبّر عن شعورك دون تجريح ("أنا شعرت بكذا عندما...").'
+        ],
+        practiceCards: [
+          { item: '"أنت دائماً تتجاهل فكرتي!"', correct: 'استجابة غير بنّاءة', reason: 'تحتوي على تعميم واتهام مباشر يثير الدفاع' },
+          { item: '"شعرت بأن فكرتي لم تُناقش، هل يمكننا سماعها معاً؟"', correct: 'استجابة بنّاءة', reason: 'تستخدم رسالة (أنا) وتطلب الحوار باحترام' }
+        ],
+        evidenceTaskPrompt: 'تأخر زميلك في تسليم حصته من المهمة الجماعية. اكتب رسالة قصيرة توجهها له تطبق فيها خطوات التعاطف وحل النزاع، وعلّل لماذا اخترت هذه الكلمات.',
+        evidenceKeywords: ['شعرت', 'مساعدة', 'نتعاون', 'لأن', 'احترام', 'فرصة'],
+        harvestTransferPrompt: 'كيف ستستخدم مهارة "التوقف والاستفسار قبل الحكم" في ساحة المدرسة أو في البيت هذا الأسبوع؟'
+      },
+      staff_meeting: {
+        planType: 'meeting',
+        topic: 'اجتماع طاقم: تفعيل محطة "أدلة للفهم" والتقييم التكويني في نموذج مفتاح',
+        grade: 'طاقم المعلمين / الهيئة التدريسية',
+        skills: 'تصميم مهام أدلة الفهم، تحليل استجابات الطلاب، اتخاذ قرارات تدريسية فورية، وتشكيل مجموعات دعم مرنة',
+        hookType: 'story',
+        station2Mode: 'exploration',
+        station3Grouping: 'groups',
+        pacingMode: 'differentiated',
+        domain: 'تطوير مهني وقيادة تربوية',
+        duration: 60,
+        youtubeUrl: 'https://www.youtube.com/watch?v=wclY8F-UoTE',
+        goal: 'أن يصمم المعلمون مهمة "أدلة للفهم" فردية دقيقة مرتبطة بمعيار النجاح، ويحددوا مسارات القرار التدريسي الثلاثة بناءً على أدلة الطلاب.',
+        criteria: 'أن يطور كل طاقم تخصص مهمة دليل فهم واحدة لدرسه القادم مع مصفوفة قرارات المعلم (حقق المعيار / حقق جزئياً / لم يظهر الفهم بعد).',
+        riddleText: 'سؤال يسأله المعلم في نهاية الشرح: "هل فهمتم يا طلاب؟" فيهز الجميع رؤوسهم بـ "نعم"، لكن عند الامتحان نتفاجأ! فما البديل الفعّال في المحطة الرابعة من نموذج مفتاح؟',
+        storyText: 'في وثيقة مدرسة مشيرفة (صفحة 6): إجابات بضعة مشاركين أو السؤال العام "هل فهمتم؟" لا توفر دليلاً شخصياً من كل طالب. المحطة الرابعة تمنح كل طالب فرصة إظهار فهمه المستقل.',
+        hookQuestion: 'لماذا لا يعتبر سؤال "هل فهمتم؟" أو إجابة طالبين في المليئة دليلاً كافياً في نموذج مفتاح؟',
+        hookScaffold: '💡 مرجع الوثيقة: راجع الفرق بين المشاركة الجماعية وبين جمع دليل شخصي مرئي من كل طالب مرتبط بمعيار النجاح.',
+        hookSwappedQuestion: 'اذكر موقفاً صفياً ظننت فيه أن الصف فهم الفكرة، ثم كشفت مهمة فردية قصيرة عن تصور بديل غير دقيق.',
+        hookChallengeQuestion: '🚀 تحدي قيادي: كيف نوظف لغة "أدلة الفهم" كأداة مشتركة في التغذية الراجعة المهنية وتبادل الزيارات الصفية في المدرسة؟',
+        explorationItems: [
+          { name: 'الطالب حقق معيار النجاح بالكامل', shape: 'أداء مستقل مع تعليل سليم', volume: 'قرار التدريس التالي:', compress: 'ينتقل لمهمة جديدة أو تحدٍّ أعمق', state: 'مسار الإثراء' },
+          { name: 'الطالب حقق المعيار بشكل جزئي', shape: 'تصنيف صحيح بدون تعليل دقيق', volume: 'قرار التدريس التالي:', compress: 'تغذية راجعة وتمرين متركز في موضع الصعوبة', state: 'مسار التركيز' },
+          { name: 'الطالب لم يُظهر الفهم المطلوب بعد', shape: 'صعوبة أساسية في المفهوم', volume: 'قرار التدريس التالي:', compress: 'مجموعة دعم فورية مرنة ثم مهمة قصيرة موازية', state: 'مسار الدعم الموازي' }
+        ],
+        directExplanationPoints: [
+          'الدليل الشخصي يجب أن ينفَّذ بأقل قدر من المساعدة التي تكشف الإجابة، مع توفير وسائل الإتاحة (UDL).',
+          'التمييز بين أداء مستقل تماماً وأداء مدعوم بمساندة، وإعطاء مهمة قصيرة موازية بعد الدعم.'
+        ],
+        practiceCards: [
+          { item: 'سؤال الصف شفوياً: "هل كل شيء واضح؟"', correct: 'دليل غير كافٍ', reason: 'لا يكشف فهم كل طالب على حدة' },
+          { item: 'بطاقة خروج يصنف فيها كل طالب مثالاً جديداً ويعلله', correct: 'دليل فهم أصيل', reason: 'يوفر دليلاً فردياً قابلاً للمقارنة بمعيار النجاح' }
+        ],
+        evidenceTaskPrompt: 'صغ مهمة "دليل فهم" قصيرة لحصتك القادمة في موضوع تخصصك، وحدد ماذا ستفعل مع الطالب الذي يحقق المعيار جزئياً.',
+        evidenceKeywords: ['معيار', 'تعليل', 'دعم', 'تغذية راجعة', 'مهمة', 'طالب'],
+        harvestTransferPrompt: 'ما الممارسة الواحدة التي ستطبقها في حصتك غداً لتعزيز المحطة الرابعة (أدلة للفهم) وكيف ستشارك أثرها في اللقاء المهني القادم؟'
       }
     };
-  })(k);
-  route.appendChild(d);
-}
-function show(n){
- i=Math.max(0,Math.min(S.length-1,n));var sc=S[i],st=ST[sc.s];
- var col='var('+CV[sc.s]+')';
- var words=sc.t.split(' ').map(function(w,j){return '<span style="animation-delay:'+(j*0.28+0.3)+'s">'+w+' </span>'}).join('');
- $('board').innerHTML='<div class="art" style="--col:'+col+'"><svg viewBox="0 0 200 200" aria-hidden="true"><g class="f"><circle cx="100" cy="100" r="86"/></g>'+P[sc.a]+'</svg></div><div class="txt" style="--col:'+col+'">'+(st?'<h2 class="tag">'+st[0]+'<span class="ar">'+st[1]+'</span></h2>':'')+'<p class="say">'+words+'</p>'+(sc.u?'<p class="sub" lang="ar" dir="rtl">'+sc.u+'</p>':'')+(sc.s?'<span class="here">אנחנו כאן • نحن هنا</span>':'')+'</div>';
- for(var k=1;k<=5;k++)$('st'+k).classList.toggle('on',k===sc.s);
- $('pg').style.width=((i+1)/S.length*100)+'%';
- clearTimeout(timer);if('speechSynthesis' in window)speechSynthesis.cancel();
- if(playing)schedule(sc);
-}
-function schedule(sc){
- var textToSpeak = (activeVoiceLang==='ar' && sc.u) ? sc.u : sc.t;
- var ms=Math.max(4600,textToSpeak.length*105+1600),done=false;
- function go(){if(done)return;done=true;clearTimeout(timer);if(playing){if(i<S.length-1)show(i+1);else stop()}}
- if(voice&&'speechSynthesis' in window){
-  var u=new SpeechSynthesisUtterance(textToSpeak.replace(/[«»]/g,''));
-  u.lang=activeVoiceLang==='ar'?'ar-SA':'he-IL';
-  u.rate=.92;
-  u.onend=function(){timer=setTimeout(go,1100)};
-  speechSynthesis.speak(u);
-  timer=setTimeout(go,ms+10000);
- }else timer=setTimeout(go,ms);
-}
-function stop(){playing=false;$('play').textContent='▶ המשך / استئناف';clearTimeout(timer);if('speechSynthesis' in window)speechSynthesis.cancel()}
-$('play').onclick=function(){if(playing){stop();return}playing=true;$('play').textContent='❚❚ השהיה / إيقاف مؤقت';if(i>=S.length-1&&$('pg').style.width==='100%')i=0;show(i)};
-$('next').onclick=function(){show(i+1)};
-$('prev').onclick=function(){show(i-1)};
-$('voice').onclick=function(){voice=!voice;this.setAttribute('aria-pressed',voice);this.textContent=voice?'🔊 קריינות פעילה / صوت مفعّل':'🔇 קריינות / تعليق صوتي';if(playing)show(i)};
-$('lang').onclick=function(){
- activeVoiceLang = activeVoiceLang==='he'?'ar':'he';
- this.textContent = activeVoiceLang==='ar' ? '🗣️ نطق الكلمات: العربية (Arabic)' : '🗣️ הקראת קריינות: עברית (Hebrew)';
- if(playing && voice) show(i);
-};
-document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')show(i+1);if(e.key==='ArrowRight')show(i-1);if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();$('play').click()}});
-show(0);
-</script>
+
+    // Classroom Students State
+    const STUDENTS_DATA = [
+      {
+        id: 'st1',
+        name: 'أمير جبارين',
+        avatar: 'أ',
+        abilityLevel: 'support',
+        abilityLabel: 'مسار مساند (يحتاج سقالات وتبسيط)',
+        abilityColor: 'amber',
+        currentStation: 1,
+        progress: 40,
+        keyRequestsCount: 2,
+        challengesSolved: 0,
+        lastAnswer: 'المادة لم تتغير، الثلج أصبح ماءً سائلاً بمساعدة بطاقة الكلمات.',
+        aiEvaluation: 'حقق المعيار جزئياً (بمساندة سقالة) — يُنصح بتمرين قصير موازٍ',
+        statusFlag: 'needs_help',
+        skillsScores: [72, 68, 80, 65, 70],
+        history: [
+          { date: '26/10/2026', lesson: 'حالات المادة الثلاث', evidence: 'صنّف المواد بنجاح بمساندة بطاقة الخصائص، ويحتاج تقوية في كتابة التعليل المستقل.', status: 'حقق جزئياً' },
+          { date: '20/10/2026', lesson: 'دورة المياه في الطبيعة', evidence: 'أجاب شفوياً/تسجيل صوتي عن مراحل التبخر والتكاثف بدقة بعد استخدام تلميح المفتاح.', status: 'حقق المعيار' }
+        ]
+      },
+      {
+        id: 'st2',
+        name: 'سارة إغبارية',
+        avatar: 'س',
+        abilityLevel: 'standard',
+        abilityLabel: 'المسار المعياري المتوازن',
+        abilityColor: 'teal',
+        currentStation: 2,
+        progress: 60,
+        keyRequestsCount: 1,
+        challengesSolved: 1,
+        lastAnswer: 'العسل سائل لأنه يأخذ شكل المرطبان ويجري ببطء وحجمه ثابت.',
+        aiEvaluation: 'حقق معيار النجاح بدقة مع تعليل علمي سليم ✅',
+        statusFlag: 'on_track',
+        skillsScores: [85, 84, 90, 82, 86],
+        history: [
+          { date: '26/10/2026', lesson: 'حالات المادة الثلاث', evidence: 'علّلت حالة العسل السائل بدقة ممتازة وربطت بين الجريان وشكل الوعاء.', status: 'حقق المعيار' },
+          { date: '20/10/2026', lesson: 'دورة المياه في الطبيعة', evidence: 'رسمت مخططاً متكاملاً ونقلت التعلم لتفسير الضباب في الصباح.', status: 'حقق المعيار' }
+        ]
+      },
+      {
+        id: 'st3',
+        name: 'ريان محاجنة',
+        avatar: 'ر',
+        abilityLevel: 'advanced',
+        abilityLabel: 'مسار التحدي والتميز (قوي)',
+        abilityColor: 'indigo',
+        currentStation: 3,
+        progress: 80,
+        keyRequestsCount: 0,
+        challengesSolved: 3,
+        lastAnswer: 'حل تحدي الأبطال: الرمل صلب رغم أنه يُسكب لأن كل حبة رمل لها شكل وحجم ثابتان!',
+        aiEvaluation: 'متفوق — أنجز معيار النجاح + تحدي الأبطال في المفتاح 🚀',
+        statusFlag: 'excelling',
+        skillsScores: [96, 94, 92, 95, 93],
+        history: [
+          { date: '26/10/2026', lesson: 'حالات المادة الثلاث', evidence: 'فسّر لماذا يعتبر السكر والرمل مواد صلبة رغم أخذها شكل الكأس الظاهري.', status: 'تجاوز المعيار (تحدي)' },
+          { date: '20/10/2026', lesson: 'دورة المياه في الطبيعة', evidence: 'صمّم تجربة منزلية لتقطير الماء المالح باستخدام الطاقة الشمسية.', status: 'تجاوز المعيار (تحدي)' }
+        ]
+      },
+      {
+        id: 'st4',
+        name: 'ليان كبها',
+        avatar: 'ل',
+        abilityLevel: 'support',
+        abilityLabel: 'مسار مساند (تعلم بصري/سمعي)',
+        abilityColor: 'amber',
+        currentStation: 0,
+        progress: 25,
+        keyRequestsCount: 2,
+        challengesSolved: 0,
+        lastAnswer: 'طلبت تبديل السؤال بصياغة مبسطة في محطة المشوّق.',
+        aiEvaluation: 'تحتاج دعم المعلم للربط بين الفيديو وهدف التعلم',
+        statusFlag: 'needs_help',
+        skillsScores: [75, 64, 78, 62, 68],
+        history: [
+          { date: '26/10/2026', lesson: 'حالات المادة الثلاث', evidence: 'استفادت من تبديل السؤال إلى صياغة بصرية ومقارنة زوجية.', status: 'قيد المتابعة' }
+        ]
+      },
+      {
+        id: 'st5',
+        name: 'يوسف عثامنة',
+        avatar: 'ي',
+        abilityLevel: 'standard',
+        abilityLabel: 'المسار المعياري المتوازن',
+        abilityColor: 'teal',
+        currentStation: 2,
+        progress: 65,
+        keyRequestsCount: 0,
+        challengesSolved: 1,
+        lastAnswer: 'أكمل تصنيف البطاقات الست في المجموعة وشارك في دور الموثّق.',
+        aiEvaluation: 'تقدم ممتاز في التدريب التعاوني ✅',
+        statusFlag: 'on_track',
+        skillsScores: [80, 82, 88, 79, 81],
+        history: [
+          { date: '26/10/2026', lesson: 'حالات المادة الثلاث', evidence: 'أدى دور الموثق في مجموعته وصنّف البخار والزيت والحجر مع تعليل واضح.', status: 'حقق المعيار' }
+        ]
+      },
+      {
+        id: 'st6',
+        name: 'حلا أرفاعية',
+        avatar: 'ح',
+        abilityLevel: 'advanced',
+        abilityLabel: 'مسار التحدي والتميز (قوي)',
+        abilityColor: 'indigo',
+        currentStation: 4,
+        progress: 95,
+        keyRequestsCount: 0,
+        challengesSolved: 2,
+        lastAnswer: 'أنهت محطة الحصاد وفسرت ذوبان قوالب الثلج ونقل الأثر للمطبخ.',
+        aiEvaluation: 'أتمّت الرحلة بنجاح كامل مع تأمل عميق 🌟',
+        statusFlag: 'excelling',
+        skillsScores: [92, 91, 90, 94, 95],
+        history: [
+          { date: '26/10/2026', lesson: 'حالات المادة الثلاث', evidence: 'أنهت المحطات الخمس وقدمت شرحاً لزميل غائب في محطة الحصاد.', status: 'تجاوز المعيار (تحدي)' }
+        ]
+      }
+    ];
+
+    let LIVE_HELP_ALERTS = [
+      {
+        id: 'al1',
+        studentId: 'st1',
+        studentName: 'أمير جبارين',
+        stationIndex: 1,
+        stationName: 'ف - فهم وبناء المعنى',
+        type: 'teacher_help',
+        message: 'طلب مساعدة المعلم عبر أيقونة المفتاح: يحتاج توضيحاً حول سبب عدم انضغاط الماء في المحقنة مقارنة بالهواء.',
+        time: 'قبل دقيقة',
+        resolved: false
+      },
+      {
+        id: 'al2',
+        studentId: 'st4',
+        studentName: 'ليان كبها',
+        stationIndex: 0,
+        stationName: 'م - مشوّق ومحفّز',
+        type: 'swap_question',
+        message: 'قامت بتبديل السؤال وطلب سقالة بصرية في المحطة الأولى.',
+        time: 'قبل دقيقتين',
+        resolved: false
+      }
+    ];
+
+    let currentView = 'planner';
+    let currentPlan = JSON.parse(JSON.stringify(PRESET_PLANS.states_of_matter));
+    let activeStudentId = 'st2';
+    let activeStudentStation = 0;
+    let activePortfolioStudentId = 'st2';
+    let questionSwappedInStation = false;
+    let challengeOpenedInStation = false;
+    let timerSecondsRemaining = 8 * 60;
+    let timerRunning = true;
+    let timerIntervalId = null;
+    let skillsChartInstance = null;
+
+    const REFRESH_ACTIVITIES = [
+      '👏 إيقاع التركيز السريع: يصفق المعلم نمطاً إيقاعياً ثلاثياً ويكرره الطلاب معاً 3 مرات مع شهيق عميق وزفير هادئ.',
+      '🧊 تمثيل حالات المادة بالحركة (دقيقة واحدة): عندما يقول المعلم "صلب" نقف بثبات، "سائل" نتمايل بنعومة، "غاز" نتحرك بحرية في مكاننا!',
+      '🧘‍♂️ تمرين التمدد والتنفس: نرفع أيدينا للأعلى مع أخذ نفس عميق لمدة 4 ثوانٍ، ثم نسترخي بابتسامة ونستعد للعودة لرحلة مفتاح.'
+    ];
+    let refreshActivityIndex = 0;
+
+    window.onload = function () {
+      renderPlanPreview();
+      renderStudentPersonasBar();
+      renderStudentView();
+      renderTeacherDashboard();
+      populatePortfolioSelector();
+      renderPortfolioView();
+      startGlobalTimer();
+    };
+
+    function startGlobalTimer() {
+      if (timerIntervalId) clearInterval(timerIntervalId);
+      timerIntervalId = setInterval(function () {
+        if (!timerRunning) return;
+        if (timerSecondsRemaining > 0) {
+          timerSecondsRemaining--;
+          updateTimerDOM();
+        } else {
+          timerSecondsRemaining = 8 * 60;
+          showToast('⏰ انتهى الوقت المخصص للمحطة الحالية! يمكن للمعلم نقل الصف للمحطة التالية أو تمديد الوقت.', 'amber');
+          updateTimerDOM();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDOM() {
+      const mins = String(Math.floor(timerSecondsRemaining / 60)).padStart(2, '0');
+      const secs = String(timerSecondsRemaining % 60).padStart(2, '0');
+      const disp = document.getElementById('globalTimerDisplay');
+      if (disp) disp.textContent = mins + ':' + secs;
+      const stationMeta = MIFTAH_STATIONS_META[activeStudentStation] || MIFTAH_STATIONS_META[0];
+      const lbl = document.getElementById('timerStationLabel');
+      if (lbl) lbl.textContent = 'مؤقت محطة (' + stationMeta.letter + '):';
+    }
+
+    function toggleTimerPause() {
+      timerRunning = !timerRunning;
+      const btn = document.getElementById('timerToggleBtn');
+      if (btn) {
+        btn.textContent = timerRunning ? '⏸ إيقاف' : '▶️ تشغيل';
+      }
+      showToast(timerRunning ? '▶️ تم استئناف مؤقت الحصة' : '⏸ تم إيقاف المؤقت مؤقتاً', 'teal');
+    }
+
+    function addTimerMinutes(mins) {
+      timerSecondsRemaining += mins * 60;
+      updateTimerDOM();
+      showToast('⏱️ تمت إضافة ' + mins + ' دقائق لمؤقت المحطة الحالية', 'teal');
+    }
+
+    function triggerRefreshMoment() {
+      const modal = document.getElementById('refreshModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function changeRefreshActivity() {
+      refreshActivityIndex = (refreshActivityIndex + 1) % REFRESH_ACTIVITIES.length;
+      const txt = document.getElementById('refreshActivityText');
+      if (txt) txt.textContent = REFRESH_ACTIVITIES[refreshActivityIndex];
+    }
+
+    function closeRefreshMoment() {
+      const modal = document.getElementById('refreshModal');
+      if (modal) modal.classList.add('hidden');
+      showToast('🚀 "نعود إلى رحلتنا! — חוזרים למסע שלנו!" استأنفنا التعلم بنشاط', 'teal');
+    }
+
+    function switchMainView(viewName) {
+      currentView = viewName;
+      const views = ['planner', 'student', 'teacher', 'portfolio'];
+      views.forEach(function (v) {
+        const sec = document.getElementById('view-' + v);
+        const btn = document.getElementById('tabBtn-' + v);
+        if (sec) {
+          if (v === viewName) sec.classList.remove('hidden');
+          else sec.classList.add('hidden');
+        }
+        if (btn) {
+          if (v === viewName) {
+            btn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-teal-600 text-white shadow-sm relative';
+          } else {
+            btn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-700 hover:bg-white relative';
+          }
+        }
+      });
+
+      if (viewName === 'student') {
+        renderStudentPersonasBar();
+        renderStudentView();
+      } else if (viewName === 'teacher') {
+        renderTeacherDashboard();
+      } else if (viewName === 'portfolio') {
+        renderPortfolioView();
+      }
+    }
+
+    function showToast(message, color) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      const bgMap = {
+        teal: 'bg-teal-900 text-white border-teal-500',
+        amber: 'bg-amber-900 text-white border-amber-400',
+        rose: 'bg-rose-900 text-white border-rose-400',
+        indigo: 'bg-indigo-900 text-white border-indigo-400'
+      };
+      const cls = bgMap[color] || bgMap.teal;
+      toast.className = 'pointer-events-auto p-3.5 rounded-xl border-r-4 shadow-xl text-xs font-bold flex items-center justify-between gap-2 transition-all ' + cls;
+      toast.innerHTML = '<span>' + message + '</span>';
+      container.appendChild(toast);
+      setTimeout(function () {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 4000);
+    }
+
+    function selectPlanType(type) {
+      currentPlan.planType = type;
+      const buttons = document.querySelectorAll('.plan-type-btn');
+      buttons.forEach(function (btn) {
+        if (btn.getAttribute('data-type') === type) {
+          btn.className = 'plan-type-btn py-2.5 px-3 rounded-xl border-2 border-teal-600 bg-teal-50 text-teal-800 text-xs font-bold flex items-center justify-center gap-1.5';
+        } else {
+          btn.className = 'plan-type-btn py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5';
+        }
+      });
+    }
+
+    function loadPresetPlan(presetKey) {
+      const preset = PRESET_PLANS[presetKey];
+      if (!preset) return;
+      currentPlan = JSON.parse(JSON.stringify(preset));
+
+      document.getElementById('inputTopic').value = currentPlan.topic;
+      document.getElementById('inputGrade').value = currentPlan.grade;
+      document.getElementById('inputSkills').value = currentPlan.skills;
+      document.getElementById('inputHookType').value = currentPlan.hookType;
+      document.getElementById('inputStation2Mode').value = currentPlan.station2Mode;
+      document.getElementById('inputStation3Grouping').value = currentPlan.station3Grouping;
+      document.getElementById('inputPacingMode').value = currentPlan.pacingMode;
+      document.getElementById('inputDomain').value = currentPlan.domain;
+      document.getElementById('inputDuration').value = currentPlan.duration;
+      document.getElementById('inputYoutubeId').value = currentPlan.youtubeUrl;
+      document.getElementById('inputGoal').value = currentPlan.goal;
+      document.getElementById('inputCriteria').value = currentPlan.criteria;
+
+      selectPlanType(currentPlan.planType);
+      renderPlanPreview();
+      renderStudentView();
+      renderTeacherDashboard();
+      showToast('✅ تم تحميل نموذج التخطيط: ' + currentPlan.topic, 'teal');
+    }
+
+    function generateMiftahPlan() {
+      const topic = document.getElementById('inputTopic').value.trim();
+      const grade = document.getElementById('inputGrade').value;
+      const skills = document.getElementById('inputSkills').value.trim();
+
+      if (!topic || !skills) {
+        showToast('⚠️ يرجى تعبئة الحقول الإجبارية: الموضوع والمهارات المستهدفة', 'rose');
+        return;
+      }
+
+      const hookType = document.getElementById('inputHookType').value;
+      const station2Mode = document.getElementById('inputStation2Mode').value;
+      const station3Grouping = document.getElementById('inputStation3Grouping').value;
+      const pacingMode = document.getElementById('inputPacingMode').value;
+      const domain = document.getElementById('inputDomain').value;
+      const duration = parseInt(document.getElementById('inputDuration').value, 10) || 45;
+      const youtubeUrl = document.getElementById('inputYoutubeId').value.trim() || 'https://www.youtube.com/watch?v=wclY8F-UoTE';
+      const goalInput = document.getElementById('inputGoal').value.trim();
+      const criteriaInput = document.getElementById('inputCriteria').value.trim();
+
+      const isCustomTopic = topic !== currentPlan.topic;
+      currentPlan.topic = topic;
+      currentPlan.grade = grade;
+      currentPlan.skills = skills;
+      currentPlan.hookType = hookType;
+      currentPlan.station2Mode = station2Mode;
+      currentPlan.station3Grouping = station3Grouping;
+      currentPlan.pacingMode = pacingMode;
+      currentPlan.domain = domain;
+      currentPlan.duration = duration;
+      currentPlan.youtubeUrl = youtubeUrl;
+      currentPlan.goal = goalInput || ('أن يستوعب المتعلم المفاهيم الأساسية في موضوع (' + topic + ') ويطبق مهارات (' + skills + ') بفعالية.');
+      currentPlan.criteria = criteriaInput || ('أن يحلل المتعلم موقفاً تطبيقياً في (' + topic + ') ويعلل إجابته بدقة وفق المعايير المتفق عليها.');
+
+      if (isCustomTopic) {
+        currentPlan.riddleText = 'لغز مفتاح الذكي حول (' + topic + '): أظهرُ في حياتك اليومية وأحتاجُ منك إلى مهارة (' + skills.split('،')[0] + ') لتكتشف سرّي! فكيف يمكنك توظيفي لحل مشكلة حقيقية؟';
+        currentPlan.storyText = 'موقف من واقع (' + grade + '): واجه الطلاب تحدياً عملياً يتعلق بموضوع (' + topic + ')، فاكتشفوا أن فهم الفكرة وتطبيقها خطوة بخطوة يفتح لهم باب الحلول الإبداعية.';
+        currentPlan.hookQuestion = 'ما الذي يثير فضولك في موضوع (' + topic + ')؟ وكيف يرتبط بحياتنا اليومية؟';
+        currentPlan.hookScaffold = '💡 تلميح وبداية جملة: فكّر في مثال شاهدته من قبل يرتبط بـ (' + topic + ')، وابدأ بـ: "يثير فضولي أن أعرف كيف... لأن ذلك يساعدني في..."';
+        currentPlan.hookSwappedQuestion = 'سؤال مكافئ مبسط: اذكر شيئاً واحداً تعرفه مسبقاً عن (' + topic + ') وشيئاً واحداً تودّ تعلمه اليوم.';
+        currentPlan.hookChallengeQuestion = '🚀 تحدي الأبطال: افترض عدم وجود أو تطبيق (' + topic + ') في حياتنا، ما الأثر الذي سيحدث؟ علّل إجابتك.';
+        currentPlan.explorationItems = [
+          { name: 'الحالة/المثال الأول في ' + topic, shape: 'يمثل التطبيق المباشر للمفهوم', volume: 'يعتمد على: ' + skills, compress: 'نتيجة إيجابية واضحة', state: 'تطبيق سليم' },
+          { name: 'الحالة/المثال المقارن (خطأ شائع)', shape: 'يفتقر إلى التعليل أو الدقة', volume: 'يحتاج تصويباً منهجياً', compress: 'نتيجة غير مكتملة', state: 'يحتاج تعديلاً' }
+        ];
+        currentPlan.directExplanationPoints = [
+          'الفكرة المركزية في (' + topic + '): تعريف المفهوم وربطه بالمعرفة السابقة للطلاب.',
+          'خطوات تطبيق المهارة (' + skills + ') بشكل متدرج مع أمثلة واضحة وأمثلة مضادة.'
+        ];
+        currentPlan.practiceCards = [
+          { item: 'موقف تطبيقي (1) يطبق قاعدة ' + topic + ' مع التعليل', correct: 'تطبيق سليم', reason: 'حقق معيار النجاح وربط السبب بالنتيجة' },
+          { item: 'موقف تطبيقي (2) يغفل شرطاً أساسياً في ' + topic, correct: 'يحتاج تعديلاً', reason: 'ينقصه التحقق من المعيار الأساسي' }
+        ];
+        currentPlan.evidenceTaskPrompt = 'مهمة أدلة الفهم المستقلة: قدّم مثالاً تطبيقياً جديداً في موضوع (' + topic + ') وعلّل كيف يحقق هذا المثال معيار النجاح الذي حددناه في بداية الحصة.';
+        currentPlan.evidenceKeywords = ['لأن', 'بسبب', 'مثال', 'معيار', 'تطبيق', 'نستنتج'];
+        currentPlan.harvestTransferPrompt = 'أين يمكنك استخدام ما تعلمته اليوم عن (' + topic + ') في موقف جديد خارج الصف أو في موضوع آخر؟';
+      }
+
+      renderPlanPreview();
+      showToast('✨ تم توليد التخطيط الكامل وفق نموذج "مفتاح" مع دمج الاحتواء والتمايز!', 'teal');
+    }
+
+    function renderPlanPreview() {
+      const typeNames = {
+        lesson: 'تخطيط حصة تعليمية',
+        activity: 'تخطيط فعالية تربوية',
+        skill: 'تخطيط مهارة',
+        meeting: 'تخطيط اجتماع طاقم مدار بموديل مفتاح'
+      };
+      document.getElementById('planPreviewBadge').textContent = (typeNames[currentPlan.planType] || 'تخطيط مفتاح') + ' • ' + currentPlan.grade + ' • ' + currentPlan.duration + ' دقيقة';
+      document.getElementById('planPreviewTitle').textContent = currentPlan.topic;
+
+      const s2Text = currentPlan.station2Mode === 'exploration'
+        ? 'مسار الاستكشاف والبحث الموجه: يفحص المتعلمون المعطيات/التجربة ويستنتجون المفهوم بتوجيه المعلم.'
+        : (currentPlan.station2Mode === 'direct'
+          ? 'مسار الشرح الموجه والوجاهي: يقدم المعلم شرحاً منظماً خطوة بخطوة مع أمثلة وأمثلة مضادة.'
+          : 'مسار مدمج: يبدأ باستكشاف موجه قصير ثم شرح منظم وتثبيت للمفهوم.');
+
+      const s3Text = currentPlan.station3Grouping === 'groups'
+        ? 'عمل تعاوني بمجموعات مع توزيع أدوار (ميسّر، موثّق، فاحص، عارض) + مجموعة دعم فورية مرنة.'
+        : (currentPlan.station3Grouping === 'pairs'
+          ? 'عمل زوجي (تفكير فردي أولي ثم مقارنة الحلول وتبادل تغذية راجعة مع الزميل).'
+          : 'عمل فردي متمايز حسب وتيرة كل طالب مع دعم فوري من المعلم.');
+
+      const hookNames = {
+        video_riddle: 'فيديو يوتيوب تفاعلي + أحجية ذكية وقصة قصيرة',
+        youtube: 'فيلم يوتيوب قصير مع أسئلة تفاعلية ومناقشة الهدف',
+        riddle: 'أحجية ذكية مولّدة تثير الفضول وتفعّل المعرفة السابقة',
+        story: 'قصة قصيرة من واقع حياة الطلاب تربطهم بهدف التعلم',
+        experiment: 'عرض تجربة/ظاهرة محيرة وتدوين فرضيات أولية'
+      };
+
+      const stationPlans = [
+        {
+          meta: MIFTAH_STATIONS_META[0],
+          minutes: Math.round(currentPlan.duration * 0.15),
+          summary: 'الافتتاحية (' + (hookNames[currentPlan.hookType] || '') + '). كتابة هدف التعلم ومعيار النجاح ومناقشة: "' + currentPlan.hookQuestion + '"'
+        },
+        {
+          meta: MIFTAH_STATIONS_META[1],
+          minutes: Math.round(currentPlan.duration * 0.25),
+          summary: s2Text + ' مع فحص فهم مستمر ("لماذا؟"، "كيف عرفت؟").'
+        },
+        {
+          meta: MIFTAH_STATIONS_META[2],
+          minutes: Math.round(currentPlan.duration * 0.25),
+          summary: s3Text + ' وتكييف عدد الأمثلة والسقالات ومستوى التحدي.'
+        },
+        {
+          meta: MIFTAH_STATIONS_META[3],
+          minutes: Math.round(currentPlan.duration * 0.20),
+          summary: 'جمع دليل شخصي مستقل من كل طالب: "' + currentPlan.evidenceTaskPrompt + '" واتخاذ قرار التدريس (إثراء / تمرين مركّز / دعم ومهمة موازية).'
+        },
+        {
+          meta: MIFTAH_STATIONS_META[4],
+          minutes: Math.round(currentPlan.duration * 0.15),
+          summary: 'الأبعاد الثلاثة: (1) تلخيص الفكرة الأهم لزميل غائب، (2) التأمل في الاستراتيجية التي ساعدت على الفهم، (3) نقل التعلم: "' + currentPlan.harvestTransferPrompt + '"'
+        }
+      ];
+
+      const listEl = document.getElementById('planStationsList');
+      listEl.innerHTML = stationPlans.map(function (sp) {
+        return '<div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white transition space-y-1">' +
+          '<div class="flex items-center justify-between">' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="w-6 h-6 rounded-lg bg-teal-600 text-white font-extrabold text-xs flex items-center justify-center">' + sp.meta.letter + '</span>' +
+              '<span class="text-xs font-extrabold text-slate-900">' + sp.meta.title + ' (' + sp.meta.hebrewTitle + ')</span>' +
+            '</div>' +
+            '<span class="text-[11px] font-bold text-slate-500">' + sp.minutes + ' د</span>' +
+          '</div>' +
+          '<p class="text-[11px] text-teal-700 font-semibold">سؤال الطالب: "' + sp.meta.studentQuestion + '"</p>' +
+          '<p class="text-[11px] text-slate-600 leading-relaxed">' + sp.summary + '</p>' +
+        '</div>';
+      }).join('');
+    }
+
+    function convertPlanToInteractiveLesson() {
+      generateMiftahPlan();
+      activeStudentStation = 0;
+      questionSwappedInStation = false;
+      challengeOpenedInStation = false;
+      timerSecondsRemaining = Math.max(5, Math.round(currentPlan.duration * 0.18)) * 60;
+      updateTimerDOM();
+      switchMainView('student');
+      showToast('🎉 تم تحويل التخطيط إلى درس تفاعلي حي! يمكنك الآن التفاعل كطالب أو متابعة شاشة المعلم.', 'teal');
+    }
+
+    function getActiveStudent() {
+      return STUDENTS_DATA.find(function (s) { return s.id === activeStudentId; }) || STUDENTS_DATA[0];
+    }
+
+    function renderStudentPersonasBar() {
+      const container = document.getElementById('studentPersonaButtons');
+      if (!container) return;
+      container.innerHTML = STUDENTS_DATA.slice(0, 3).map(function (st) {
+        const isActive = st.id === activeStudentId;
+        const activeCls = isActive
+          ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+        return '<button type="button" onclick="selectStudentPersona(\'' + st.id + '\')" class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ' + activeCls + '">' +
+          '<span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-extrabold">' + st.avatar + '</span>' +
+          '<span>' + st.name + '</span>' +
+          '<span class="text-[10px] opacity-85">(' + st.abilityLabel.split(' ')[1] + ')</span>' +
+        '</button>';
+      }).join('');
+
+      const pacingBadge = document.getElementById('studentPacingStatusBadge');
+      if (pacingBadge) {
+        if (currentPlan.pacingMode === 'differentiated') {
+          pacingBadge.className = 'px-3 py-1 rounded-full bg-teal-50 text-teal-800 font-bold border border-teal-200';
+          pacingBadge.textContent = '🚀 التقدم المتمايز مفتوح: يمكنك الانتقال بين المحطات حسب وتيرتك';
+        } else {
+          pacingBadge.className = 'px-3 py-1 rounded-full bg-amber-50 text-amber-900 font-bold border border-amber-300';
+          pacingBadge.textContent = '⏱️ انتقال موحد بقرار المعلم والمؤقت الزمني';
+        }
+      }
+    }
+
+    function selectStudentPersona(studentId) {
+      activeStudentId = studentId;
+      const st = getActiveStudent();
+      activeStudentStation = st.currentStation;
+      questionSwappedInStation = false;
+      challengeOpenedInStation = false;
+      renderStudentPersonasBar();
+      renderStudentView();
+      showToast('👤 تمت معاينة شاشة الطالب بشخصية: ' + st.name + ' (' + st.abilityLabel + ')', 'teal');
+    }
+
+    function selectStationFromSidebar(stationIdx) {
+      if (currentPlan.pacingMode === 'teacher_timed' && stationIdx > activeStudentStation + 1) {
+        showToast('⏱️ المعلم فعّل الانتقال الموحد حسب المؤقت! أنجز المحطة الحالية أولاً أو انتظر إشارة المعلم.', 'amber');
+        return;
+      }
+      activeStudentStation = stationIdx;
+      const st = getActiveStudent();
+      st.currentStation = stationIdx;
+      st.progress = Math.max(st.progress, (stationIdx + 1) * 20);
+      questionSwappedInStation = false;
+      challengeOpenedInStation = false;
+      updateTimerDOM();
+      renderStudentView();
+      renderTeacherDashboard();
+    }
+
+    function navigateStudentStation(delta) {
+      const target = activeStudentStation + delta;
+      if (target < 0 || target > 4) return;
+      selectStationFromSidebar(target);
+    }
+
+    function renderStudentView() {
+      const st = getActiveStudent();
+      document.getElementById('studentSidebarGoal').textContent = currentPlan.goal;
+      document.getElementById('studentSidebarCriteria').textContent = currentPlan.criteria;
+
+      const pct = Math.min(100, Math.max(20, (activeStudentStation + 1) * 20));
+      document.getElementById('studentOverallProgressText').textContent = pct + '%';
+      document.getElementById('studentOverallProgressBar').style.width = pct + '%';
+      document.getElementById('stationStepIndicator').textContent = 'المحطة ' + (activeStudentStation + 1) + ' من 5 (' + MIFTAH_STATIONS_META[activeStudentStation].title + ')';
+
+      const navEl = document.getElementById('studentStationsNav');
+      if (navEl) {
+        navEl.innerHTML = MIFTAH_STATIONS_META.map(function (meta, idx) {
+          const isCurrent = idx === activeStudentStation;
+          const isCompleted = idx < activeStudentStation;
+          
+          let btnCls = '';
+          if (isCurrent) {
+            btnCls = 'station-glowing font-black ring-4 ring-teal-400/80 scale-110 z-10';
+          } else if (isCompleted) {
+            btnCls = 'bg-emerald-50 text-emerald-700 border-2 border-emerald-300 font-black hover:bg-emerald-100 hover:scale-105';
+          } else {
+            btnCls = 'bg-slate-100 text-slate-400 border border-slate-200 font-bold hover:bg-slate-200 hover:text-slate-700 hover:scale-105';
+          }
+
+          return '<button type="button" onclick="selectStationFromSidebar(' + idx + ')" ' +
+            'class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative group cursor-pointer ' + btnCls + '" ' +
+            'title="المحطة ' + (idx + 1) + ': ' + meta.title + ' (' + meta.hebrewTitle + ')">' +
+            '<span class="text-xl sm:text-2xl font-black leading-none">' + meta.letter + '</span>' +
+            (isCurrent ? '<span class="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-ping"></span><span class="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-white shadow"></span>' : '') +
+            (isCompleted ? '<span class="absolute -bottom-1 -left-1 text-[10px] bg-emerald-600 text-white rounded-full w-4 h-4 flex items-center justify-center shadow">✓</span>' : '') +
+          '</button>';
+        }).join('');
+      }
+
+      const contentArea = document.getElementById('studentStationContentArea');
+      const meta = MIFTAH_STATIONS_META[activeStudentStation];
+
+      let headerHTML = '<div class="p-4 rounded-2xl bg-gradient-to-l from-slate-900 to-teal-900 text-white flex flex-wrap items-center justify-between gap-3">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-11 h-11 rounded-2xl bg-amber-400 text-slate-950 font-black text-xl flex items-center justify-center shadow">' + meta.letter + '</div>' +
+          '<div>' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="text-xs font-bold text-amber-300">المحطة ' + (activeStudentStation + 1) + ': ' + meta.title + ' (' + meta.hebrewTitle + ')</span>' +
+              '<span class="text-[11px] px-2 py-0.5 rounded-full bg-white/15 text-white font-semibold">' + meta.shortStudentPhrase + '</span>' +
+            '</div>' +
+            '<h3 class="text-base font-extrabold mt-0.5">سؤالي في هذه المحطة: "' + meta.studentQuestion + '"</h3>' +
+          '</div>' +
+        '</div>' +
+        '<div class="text-left">' +
+          '<span class="text-[11px] bg-teal-500/30 border border-teal-400/40 px-2.5 py-1 rounded-lg font-bold text-teal-100">مكيّف لقدرات: ' + st.name + '</span>' +
+        '</div>' +
+      '</div>';
+
+      let diffBannerHTML = '';
+      if (st.abilityLevel === 'support') {
+        diffBannerHTML = '<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-xs text-amber-950">' +
+          '<div><strong>♿ ملاءمة الاحتواء والتمايز التلقائية (UDL):</strong> تم تفعيل الشرح المبسّط، القراءة الصوتية، وبدايات الجمل الداعمة لك.</div>' +
+          '<button type="button" onclick="speakStationText()" class="px-2.5 py-1 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold shrink-0">🔊 استمع للنص</button>' +
+        '</div>';
+      } else if (st.abilityLevel === 'advanced') {
+        diffBannerHTML = '<div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between gap-2 text-xs text-indigo-950">' +
+          '<div><strong>🚀 ملاءمة التمايز للطالب المتمكن:</strong> تم إرفاق سؤال تفكير عميق وتحدي نقد علمي إضافي في هذه المحطة.</div>' +
+          '<button type="button" onclick="useMiftahKeyAction(\'challenge_strong\')" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold shrink-0">افتح التحدي</button>' +
+        '</div>';
+      }
+
+      let bodyHTML = '';
+      if (activeStudentStation === 0) {
+        bodyHTML = buildStation1HookHTML(st);
+      } else if (activeStudentStation === 1) {
+        bodyHTML = buildStation2UnderstandingHTML(st);
+      } else if (activeStudentStation === 2) {
+        bodyHTML = buildStation3PracticeHTML(st);
+      } else if (activeStudentStation === 3) {
+        bodyHTML = buildStation4EvidenceHTML(st);
+      } else if (activeStudentStation === 4) {
+        bodyHTML = buildStation5HarvestHTML(st);
+      }
+
+      contentArea.innerHTML = headerHTML + diffBannerHTML + bodyHTML;
+    }
+
+    function buildStation1HookHTML(st) {
+      const activeQuestion = questionSwappedInStation
+        ? currentPlan.hookSwappedQuestion
+        : (challengeOpenedInStation ? currentPlan.hookChallengeQuestion : currentPlan.hookQuestion);
+
+      return '<div class="space-y-4">' +
+        '<div class="grid grid-cols-1 md:grid-cols-3 gap-3">' +
+          '<div class="p-3.5 rounded-xl bg-slate-900 text-white space-y-2 md:col-span-2">' +
+            '<div class="flex items-center justify-between">' +
+              '<span class="text-xs font-extrabold text-amber-400 flex items-center gap-1.5">🎬 فيلم يوتيوب تفاعلي للمحطة الأولى</span>' +
+              '<a href="' + currentPlan.youtubeUrl + '" target="_blank" rel="noopener noreferrer" class="text-[11px] text-teal-300 underline hover:text-teal-200">فتح في يوتيوب ↗</a>' +
+            '</div>' +
+            '<div class="rounded-xl bg-gradient-to-br from-slate-800 to-teal-950 p-4 border border-slate-700 flex flex-col sm:flex-row items-center gap-4">' +
+              '<div class="w-16 h-16 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-2xl shadow-lg shrink-0">▶</div>' +
+              '<div class="space-y-1 text-right">' +
+                '<div class="text-xs font-extrabold text-white">مشهد محفّز: ' + currentPlan.topic + '</div>' +
+                '<p class="text-[11px] text-slate-300 leading-relaxed">' + currentPlan.storyText + '</p>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-col justify-between space-y-2">' +
+            '<div>' +
+              '<span class="text-xs font-extrabold text-amber-900 flex items-center gap-1">🧩 أحجية المحطة المولّدة</span>' +
+              '<p class="text-xs text-slate-700 mt-1.5 leading-relaxed font-medium">"' + currentPlan.riddleText + '"</p>' +
+            '</div>' +
+            '<button type="button" onclick="revealRiddleAnswer()" class="w-full py-1.5 rounded-lg bg-amber-200/80 hover:bg-amber-300 text-amber-950 text-[11px] font-bold transition">💡 اكشف تلميح الأحجية</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">' +
+          '<div class="flex items-center justify-between">' +
+            '<span class="text-xs font-extrabold text-teal-800">❓ سؤال الفضول والانطلاق (تظهر إجابتك مباشرة لدى المعلم):</span>' +
+            '<button type="button" onclick="openMiftahKeyDrawer()" class="text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg transition">استعن بأيقونة المفتاح 🔑 على اليسار</button>' +
+          '</div>' +
+          '<p class="text-sm font-extrabold text-slate-900 bg-white p-3 rounded-xl border border-slate-200">' + activeQuestion + '</p>' +
+          (st.abilityLevel === 'support' ? '<p class="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200">' + currentPlan.hookScaffold + '</p>' : '') +
+          '<textarea id="station1AnswerInput" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-xs focus:border-teal-600 focus:outline-none bg-white" placeholder="اكتب فرضيتك أو إجابتك هنا بحسب قدراتك...">المادة نفسها (الماء) لم تتغير، ولكن تغيرت حالتها من صلب إلى سائل بسبب اكتساب الحرارة.</textarea>' +
+          '<div class="flex flex-wrap items-center justify-between gap-2">' +
+            '<button type="button" onclick="checkStation1AnswerWithAI()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shadow transition flex items-center gap-1.5">' +
+              '<span>🤖</span><span>افحص إجابتي بالذكاء الاصطناعي وأرسلها للمعلم</span>' +
+            '</button>' +
+            '<span class="text-[11px] text-slate-500">خيارات تعبير إضافية (UDL): 🎙️ تسجيل صوتي | 🎨 تمثيل بصري</span>' +
+          '</div>' +
+          '<div id="station1FeedbackBox" class="hidden p-3 rounded-xl border text-xs leading-relaxed"></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function revealRiddleAnswer() {
+      showToast('🧩 تلميح الأحجية: فكّر في المادة التي تتحول بين الصلب والسائل والغاز مع بقاء جوهرها واحداً!', 'amber');
+    }
+
+    function checkStation1AnswerWithAI() {
+      const inp = document.getElementById('station1AnswerInput');
+      const box = document.getElementById('station1FeedbackBox');
+      if (!inp || !box) return;
+      const val = inp.value.trim();
+      if (!val) {
+        showToast('⚠️ اكتب إجابتك أو فرضيتك أولاً ليفحصها الذكاء الاصطناعي', 'rose');
+        return;
+      }
+      const st = getActiveStudent();
+      st.lastAnswer = val;
+      box.classList.remove('hidden');
+
+      if (val.length > 20) {
+        st.aiEvaluation = 'فرضية ممتازة في محطة المشوّق تربط بين الظاهرة وهدف التعلم ✅';
+        box.className = 'p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-950 text-xs leading-relaxed';
+        box.innerHTML = '<strong>🤖 فحص الذكاء الاصطناعي الفوري:</strong> أحسنت يا ' + st.name + '! إجابتك توضح تمييزك بين ثبات نوع المادة وتغير حالتها/شكلها. تم إرسال إجابتك لشاشة المعلم، ويمكنك الآن الانتقال إلى <strong>المحطة الثانية (ف - فهم وبناء المعنى)</strong>.';
+      } else {
+        st.aiEvaluation = 'إجابة أولية قصيرة — يحتاج تفعيل التلميح لتوضيح السبب';
+        box.className = 'p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-950 text-xs leading-relaxed';
+        box.innerHTML = '<strong>🤖 فحص الذكاء الاصطناعي التوجيهي:</strong> بداية جيدة! حاول أن تضيف <strong>لماذا</strong> حدث هذا التغير (استعن بأيقونة المفتاح 🔑 للحصول على بداية جملة مساندة).';
+      }
+      renderTeacherDashboard();
+      showToast('✅ تم فحص الإجابة وتحديث شاشة المعلم الحية فوراً', 'teal');
+    }
+
+    function buildStation2UnderstandingHTML(st) {
+      const mode = currentPlan.station2Mode;
+      const modeSwitcher = '<div class="flex flex-wrap items-center justify-between gap-2 bg-slate-100 p-2.5 rounded-xl border border-slate-200">' +
+        '<span class="text-xs font-extrabold text-slate-700">أسلوب التعليم المختار في التخطيط لهذه المحطة:</span>' +
+        '<div class="flex items-center gap-1.5">' +
+          '<button type="button" onclick="switchStation2MethodLive(\'exploration\')" class="px-3 py-1 rounded-lg text-xs font-bold transition ' + (mode === 'exploration' ? 'bg-teal-600 text-white shadow' : 'bg-white text-slate-700') + '">🔍 مسار الاستكشاف والبحث الموجه</button>' +
+          '<button type="button" onclick="switchStation2MethodLive(\'direct\')" class="px-3 py-1 rounded-lg text-xs font-bold transition ' + (mode === 'direct' ? 'bg-teal-600 text-white shadow' : 'bg-white text-slate-700') + '">👨‍🏫 مسار الشرح المفصل (التعلم الوجاهي)</button>' +
+        '</div>' +
+      '</div>';
+
+      if (mode === 'direct') {
+        const pointsHTML = currentPlan.directExplanationPoints.map(function (pt, idx) {
+          return '<div class="p-3.5 rounded-xl bg-white border border-slate-200 flex items-start gap-3">' +
+            '<span class="w-6 h-6 rounded-lg bg-teal-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0">' + (idx + 1) + '</span>' +
+            '<p class="text-xs text-slate-800 leading-relaxed font-semibold">' + pt + '</p>' +
+          '</div>';
+        }).join('');
+
+        return '<div class="space-y-4">' +
+          modeSwitcher +
+          '<div class="p-4 rounded-2xl bg-teal-50/70 border border-teal-200 space-y-3">' +
+            '<h4 class="text-sm font-extrabold text-teal-950">👨‍🏫 الشرح الموجه والمنظم خطوة بخطوة (Rosenshine, 2012):</h4>' +
+            '<div class="space-y-2">' + pointsHTML + '</div>' +
+          '</div>' +
+          '<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">' +
+            '<div class="text-xs font-extrabold text-slate-800">❓ سؤال فحص الفهم المرحلي (يتوقف المعلم ويسأل: "لماذا؟ وكيف عرفت؟"):</div>' +
+            '<p class="text-xs text-slate-600">أعطِ مثالاً إضافياً من غرفتك الصفية يوضح الفكرة التي قرأتها في الشرح أعلاه:</p>' +
+            '<div class="flex gap-2">' +
+              '<input id="station2CheckInput" type="text" value="الهواء داخل الكرة ينضغط، بينما الطاولة الخشبية صلبة شكلها ثابت." class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" />' +
+              '<button type="button" onclick="submitStation2Discovery()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold">تحقق من فهمي</button>' +
+            '</div>' +
+            '<div id="station2Feedback" class="hidden p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold"></div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      const rowsHTML = currentPlan.explorationItems.map(function (item, idx) {
+        return '<tr class="border-b border-slate-100 hover:bg-teal-50/40">' +
+          '<td class="py-2.5 px-3 font-extrabold text-slate-900">' + item.name + '</td>' +
+          '<td class="py-2.5 px-3 text-slate-700">' + item.shape + '</td>' +
+          '<td class="py-2.5 px-3 text-slate-700">' + item.volume + '</td>' +
+          '<td class="py-2.5 px-3 text-slate-700">' + item.compress + '</td>' +
+          '<td class="py-2.5 px-3"><span class="px-2.5 py-1 rounded-full bg-teal-100 text-teal-900 font-extrabold text-[11px]">' + item.state + '</span></td>' +
+        '</tr>';
+      }).join('');
+
+      return '<div class="space-y-4">' +
+        modeSwitcher +
+        '<div class="p-4 rounded-2xl bg-teal-50/60 border border-teal-200 space-y-3">' +
+          '<div class="flex items-center justify-between">' +
+            '<h4 class="text-sm font-extrabold text-teal-950">🔍 مختبر الاستكشاف والبحث الموجه: لاحظ، قارن، واستنتج القاعدة بنفسك!</h4>' +
+            '<span class="text-[11px] bg-white px-2.5 py-0.5 rounded-full border border-teal-200 text-teal-800 font-bold">تجربة تفاعلية</span>' +
+          '</div>' +
+          '<p class="text-xs text-slate-700">تأمل نتائج فحص العينات التالية في المختبر التفاعلي، ثم استنتج القاعدة العلمية:</p>' +
+          '<div class="overflow-x-auto bg-white rounded-xl border border-slate-200">' +
+            '<table class="w-full text-right text-xs">' +
+              '<thead><tr class="bg-slate-100 text-slate-700">' +
+                '<th class="py-2 px-3">العينة / المعطى</th>' +
+                '<th class="py-2 px-3">الملاحظة (1): الشكل</th>' +
+                '<th class="py-2 px-3">الملاحظة (2): الحجم/المبنى</th>' +
+                '<th class="py-2 px-3">الملاحظة (3): الانضغاط/الأثر</th>' +
+                '<th class="py-2 px-3">الاستنتاج</th>' +
+              '</tr></thead>' +
+              '<tbody>' + rowsHTML + '</tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>' +
+        '<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">' +
+          '<label for="station2CheckInput" class="block text-xs font-extrabold text-slate-900">💡 سؤال الاستنتاج الموجه ("كيف عرفت؟ ولماذا؟"):</label>' +
+          '<p class="text-xs text-slate-600">بناءً على جدول استكشافك أعلاه، ما الفرق الجوهري الذي اكتشفته بين الحالات؟</p>' +
+          '<div class="flex flex-col sm:flex-row gap-2">' +
+            '<input id="station2CheckInput" type="text" value="اكتشفت أن الصلب شكله وحجمه ثابتان، والسائل يأخذ شكل الوعاء، والغاز ينتشر وينضغط في المحقنة." class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" />' +
+            '<button type="button" onclick="submitStation2Discovery()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shrink-0">🤖 افحص استنتاجي</button>' +
+          '</div>' +
+          '<div id="station2Feedback" class="hidden p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold"></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function switchStation2MethodLive(newMode) {
+      currentPlan.station2Mode = newMode;
+      const sel = document.getElementById('inputStation2Mode');
+      if (sel) sel.value = newMode;
+      renderStudentView();
+      renderPlanPreview();
+      showToast('🔄 تم تبديل أسلوب المحطة الثانية إلى: ' + (newMode === 'exploration' ? 'الاستكشاف الموجه' : 'الشرح المفصل'), 'teal');
+    }
+
+    function submitStation2Discovery() {
+      const inp = document.getElementById('station2CheckInput');
+      const fb = document.getElementById('station2Feedback');
+      if (!inp || !fb) return;
+      const st = getActiveStudent();
+      st.lastAnswer = inp.value;
+      st.aiEvaluation = 'بنى المفهوم بنجاح في المحطة الثانية (' + (currentPlan.station2Mode === 'exploration' ? 'استكشاف' : 'شرح') + ') ✅';
+      fb.classList.remove('hidden');
+      fb.innerHTML = '✅ <strong>استنتاج رائع يا ' + st.name + '!</strong> لقد بنيت المعنى بنفسك وربطت الملاحظات بالقاعدة. يمكنك الانتقال للمحطة الثالثة للتدريب.';
+      renderTeacherDashboard();
+      showToast('✅ تم توثيق استنتاجك في المحطة الثانية وإرساله لشاشة المعلم', 'teal');
+    }
+
+    function buildStation3PracticeHTML(st) {
+      const grouping = currentPlan.station3Grouping;
+      const groupingBanner = grouping === 'groups'
+        ? '<div class="p-3.5 rounded-xl bg-sky-50 border border-sky-200 space-y-2">' +
+            '<div class="flex items-center justify-between">' +
+              '<span class="text-xs font-extrabold text-sky-950">👥 نمط العمل المخطط: عمل تعاوني بمجموعات مع توزيع أدوار واضح</span>' +
+              '<span class="text-[11px] bg-sky-200 text-sky-950 px-2 py-0.5 rounded font-bold">مجموعة رقم 2</span>' +
+            '</div>' +
+            '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">' +
+              '<div class="bg-white p-2 rounded-lg border border-sky-200"><strong>🧭 الميسّر:</strong> ريان محاجنة</div>' +
+              '<div class="bg-white p-2 rounded-lg border border-sky-200"><strong>✍️ الموثّق:</strong> ' + st.name + ' (أنت)</div>' +
+              '<div class="bg-white p-2 rounded-lg border border-sky-200"><strong>🔍 فاحص التعليل:</strong> يوسف عثامنة</div>' +
+              '<div class="bg-white p-2 rounded-lg border border-sky-200"><strong>🎤 العارض:</strong> أمير جبارين</div>' +
+            '</div>' +
+          '</div>'
+        : (grouping === 'pairs'
+          ? '<div class="p-3.5 rounded-xl bg-sky-50 border border-sky-200 text-xs text-sky-950 font-bold">🤝 نمط العمل المخطط: عمل زوجي — ابدأ بالحل الفردي أولاً ثم قارن إجابتك وتعليلك مع شريكك في الزوج.</div>'
+          : '<div class="p-3.5 rounded-xl bg-sky-50 border border-sky-200 text-xs text-sky-950 font-bold">👤 نمط العمل المخطط: تدريب فردي متمايز حسب وتيرتك مع تغذية راجعة فورية.</div>');
+
+      const cardsHTML = currentPlan.practiceCards.map(function (c, i) {
+        return '<div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2">' +
+          '<div class="flex items-center justify-between">' +
+            '<span class="text-xs font-extrabold text-slate-900">بطاقة تدريب (' + (i + 1) + '): ' + c.item + '</span>' +
+            '<span class="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold">تصنيف وتعليل</span>' +
+          '</div>' +
+          '<p class="text-[11px] text-slate-600">التصنيف الصحيح: <strong class="text-teal-700">' + c.correct + '</strong> — التعليل: ' + c.reason + '</p>' +
+        '</div>';
+      }).join('');
+
+      return '<div class="space-y-4">' +
+        groupingBanner +
+        '<div class="space-y-2.5">' +
+          '<h4 class="text-xs font-extrabold text-slate-800">بطاقات التدريب والتجريب التفاعلية (صنّف وعلّل كل اختيار):</h4>' +
+          cardsHTML +
+        '</div>' +
+        '<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">' +
+          '<label for="station3PracticeInput" class="block text-xs font-extrabold text-slate-900">✍️ أضف مساهمتك المحددة في التدريب (أو اشرح خطأً في تصنيف مقترح):</label>' +
+          '<input id="station3PracticeInput" type="text" value="صنّفتُ بخار الماء كغاز لأنه ينتشر في الغرفة وليس له شكل أو حجم ثابت." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white" />' +
+          '<button type="button" onclick="submitStation3Practice()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold">إرسال مساهمة التدريب وتلقي تغذية راجعة</button>' +
+          '<div id="station3Feedback" class="hidden p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold"></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function submitStation3Practice() {
+      const inp = document.getElementById('station3PracticeInput');
+      const fb = document.getElementById('station3Feedback');
+      if (!inp || !fb) return;
+      const st = getActiveStudent();
+      st.lastAnswer = inp.value;
+      st.aiEvaluation = 'أنجز مهمة التدريب التعاوني مع تعليل واضح ✅';
+      fb.classList.remove('hidden');
+      fb.innerHTML = '✅ <strong>تغذية راجعة بانية (Hattie & Timperley):</strong> مساهمتك واضحة ومعللة! أنت الآن جاهز لإثبات فهمك المستقل في المحطة الرابعة (أدلة للفهم).';
+      renderTeacherDashboard();
+      showToast('✅ تم حفظ تدريب المحطة الثالثة وتحديث سجل التقدم لدى المعلم', 'teal');
+    }
+
+    function buildStation4EvidenceHTML(st) {
+      return '<div class="space-y-4">' +
+        '<div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-2">' +
+          '<div class="flex items-center justify-between">' +
+            '<span class="text-xs font-extrabold text-indigo-950">🎯 المحطة الرابعة: تطبيق مستقل وأدلة للفهم (יישום עצמאי ועדויות להבנה)</span>' +
+            '<span class="text-[11px] bg-white px-2.5 py-0.5 rounded-full border border-indigo-200 text-indigo-800 font-bold">دليل شخصي من كل طالب</span>' +
+          '</div>' +
+          '<p class="text-xs text-indigo-900 leading-relaxed font-semibold">' + currentPlan.evidenceTaskPrompt + '</p>' +
+          '<p class="text-[11px] text-slate-600">ملاحظة تربوية من وثيقة مفتاح: يفحص الذكاء الاصطناعي والمعلم كلاً من <strong>التصنيف الصحيح</strong> و<strong>التعليل العلمي</strong> لتحديد خطوتك القادمة.</p>' +
+        '</div>' +
+
+        '<div class="p-4 rounded-2xl bg-white border border-slate-200 space-y-3">' +
+          '<label for="station4EvidenceInput" class="block text-xs font-extrabold text-slate-900">✍️ اكتب دليل فهمك المستقل هنا:</label>' +
+          '<textarea id="station4EvidenceInput" rows="3" class="w-full rounded-xl border border-slate-300 p-3 text-xs bg-slate-50 focus:bg-white focus:border-indigo-600 focus:outline-none" placeholder="اكتب الإجابة مع التعليل الكامل...">العسل موجود في الحالة السائلة، لأنه يأخذ شكل الوعاء الذي يوضع فيه ويمتلك القدرة على الجريان والانسكاب حتى لو كان يجري ببطء، وحجمه ثابت.</textarea>' +
+          '<div class="flex flex-wrap items-center gap-2">' +
+            '<button type="button" onclick="evaluateStation4Evidence()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow transition">🤖 فحص دليل الفهم وتحديد قرار التدريس التالي</button>' +
+            '<button type="button" onclick="fillPartialEvidenceDemo()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold">تجربة إجابة بدون تعليل (حقق جزئياً)</button>' +
+          '</div>' +
+          '<div id="station4DecisionBox" class="hidden p-4 rounded-xl border space-y-2"></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function fillPartialEvidenceDemo() {
+      const inp = document.getElementById('station4EvidenceInput');
+      if (inp) {
+        inp.value = 'العسل في الحالة السائلة.';
+        evaluateStation4Evidence();
+      }
+    }
+
+    function evaluateStation4Evidence() {
+      const inp = document.getElementById('station4EvidenceInput');
+      const box = document.getElementById('station4DecisionBox');
+      if (!inp || !box) return;
+      const val = inp.value.trim();
+      const st = getActiveStudent();
+      st.lastAnswer = val;
+      box.classList.remove('hidden');
+
+      const hasReasoning = val.length > 35 && (val.indexOf('لأن') !== -1 || val.indexOf('شكل') !== -1 || val.indexOf('يجري') !== -1 || val.indexOf('بسبب') !== -1 || val.indexOf('معيار') !== -1);
+      const hasBasic = val.length >= 8;
+
+      if (hasReasoning) {
+        st.aiEvaluation = 'حقق معيار النجاح بالكامل (تصنيف + تعليل) ⬅ ينتقل لتحدٍّ أعمق ✅';
+        st.statusFlag = 'excelling';
+        box.className = 'p-4 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-emerald-950 space-y-1.5 text-xs';
+        box.innerHTML = '<div class="font-extrabold text-sm">✅ النتيجة وفق جدول وثيقة مفتاح: حقق معيار النجاح بالكامل!</div>' +
+          '<p>لقد قدّمتَ التصنيف الصحيح وأتبعته بتعليل علمي يعتمد على خصائص الحالة (أخذ شكل الوعاء والقدرة على الجريان).</p>' +
+          '<p class="font-bold text-teal-900">🚀 قرار التدريس التالي: الانتقال للمحطة الخامسة (الحصاد ونقل الأثر) أو فتح مهمة تحدٍّ أعمق.</p>';
+      } else if (hasBasic) {
+        st.aiEvaluation = 'حقق المعيار جزئياً (تصنيف بدون تعليل كافٍ) ⬅ تغذية راجعة وتمرين مركّز ⚠️';
+        st.statusFlag = 'needs_help';
+        box.className = 'p-4 rounded-xl border-2 border-amber-400 bg-amber-50 text-amber-950 space-y-1.5 text-xs';
+        box.innerHTML = '<div class="font-extrabold text-sm">⚠️ النتيجة وفق جدول وثيقة مفتاح: حقق معيار النجاح بشكل جزئي</div>' +
+          '<p>تصنيفك صحيح، ولكن وفق نموذج مفتاح: <strong>"تصنيف بدون تعليل يتطلب طلب تفسير"</strong>. أضف جملة تشرح <em>لماذا</em> اعتبرته كذلك حسب خصائصه.</p>' +
+          '<p class="font-bold text-amber-900">🛠️ قرار التدريس التالي: تحصل على تغذية راجعة وتمرين متركز في التعليل قبل الانتقال.</p>';
+      } else {
+        st.aiEvaluation = 'لم يُظهر الفهم المطلوب بعد ⬅ شرح بديل ومهمة قصيرة موازية 🆘';
+        st.statusFlag = 'needs_help';
+        box.className = 'p-4 rounded-xl border-2 border-rose-400 bg-rose-50 text-rose-950 space-y-1.5 text-xs';
+        box.innerHTML = '<div class="font-extrabold text-sm">🆘 النتيجة وفق جدول وثيقة مفتاح: لا يزال بحاجة لدعم لإظهار الفهم</div>' +
+          '<p>تم إشعار المعلم لضَمّك إلى مجموعة دعم فورية قصيرة وتقديم مثال بصري، ثم ستحصل على <strong>مهمة قصيرة موازية</strong> لتُظهر فهمك بنجاح.</p>';
+      }
+      renderTeacherDashboard();
+      showToast('📊 تم تقييم دليل الفهم وتحديث قرار التدريس في شاشة المعلم والملف الشخصي', 'indigo');
+    }
+
+    function buildStation5HarvestHTML(st) {
+      return '<div class="space-y-4">' +
+        '<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">' +
+          '<h4 class="text-xs font-extrabold text-emerald-950">🌱 المحطة الخامسة: حصاد ونقل الأثر (חתימה והעברת הלמידה) — الأبعاد الثلاثة المكملة:</h4>' +
+          '<p class="text-[11px] text-emerald-900">أجب عن الأسئلة الثلاثة المرفقة بنموذج مفتاح لتلخيص رحلتك ونقل تعلمك إلى سياق جديد:</p>' +
+        '</div>' +
+
+        '<div class="space-y-3">' +
+          '<div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5">' +
+            '<label for="harvestQ1" class="block text-xs font-extrabold text-slate-900">1️⃣ تلخيص التعلم (סיכום הלמידה): ما الفكرة الأهم التي تعلمتها اليوم؟ (اشرحها لزميل غاب عن الحصة)</label>' +
+            '<input id="harvestQ1" type="text" value="تعلمت أن المواد توجد في 3 حالات (صلب، سائل، غاز) ونميز بينها حسب ثبات الشكل والحجم والقدرة على الجريان والانضغاط." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-slate-50" />' +
+          '</div>' +
+
+          '<div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5">' +
+            '<label for="harvestQ2" class="block text-xs font-extrabold text-slate-900">2️⃣ التأمل في سيرورة التعلم (התבוננות בתהליך): أي نشاط أو أداة ساعدتك اليوم على الفهم، ولماذا؟ وما الذي لا يزال يحتاج توضيحاً؟</label>' +
+            '<input id="harvestQ2" type="text" value="ساعدتني تجربة محقنة الهواء ومقارنة الأوعية في المحطة الثانية لأنني شاهدت الانضغاط وتغير الشكل بنفسي." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-slate-50" />' +
+          '</div>' +
+
+          '<div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5">' +
+            '<label for="harvestQ3" class="block text-xs font-extrabold text-slate-900">3️⃣ نقل التعلم إلى سياق جديد (העברת הלמידה): ' + currentPlan.harvestTransferPrompt + '</label>' +
+            '<input id="harvestQ3" type="text" value="عندما يتجمد الماء يصبح صلباً فيأخذ شكل النجمة ويثبت، وعندما نخرجه يكتسب حرارة فيذوب ويعود سائلاً يجري ويأخذ شكل الطبق." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-slate-50" />' +
+          '</div>' +
+        '</div>' +
+
+        '<button type="button" onclick="submitStation5Harvest()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-extrabold shadow-lg transition">' +
+          '🏆 إنهاء رحلة "مفتاح" وحفظ الحصاد في ملفي الشخصي ولدى المعلم' +
+        '</button>' +
+        '<div id="station5CompletedBanner" class="hidden p-4 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs font-bold text-center"></div>' +
+      '</div>';
+    }
+
+    function submitStation5Harvest() {
+      const q1 = document.getElementById('harvestQ1').value.trim();
+      const q2 = document.getElementById('harvestQ2').value.trim();
+      const q3 = document.getElementById('harvestQ3').value.trim();
+      const st = getActiveStudent();
+      st.progress = 100;
+      st.lastAnswer = 'أتمّ الحصاد الثلاثي: ' + q3;
+      st.aiEvaluation = 'أنهى المحطات الـ 5 بنجاح ونقل التعلم لسياق جديد 🌟';
+      st.statusFlag = 'excelling';
+      st.history.unshift({
+        date: 'الآن (حصة حية)',
+        lesson: currentPlan.topic,
+        evidence: 'تلخيص: ' + q1 + ' | نقل الأثر: ' + q3,
+        status: 'أتم رحلة مفتاح بنجاح'
+      });
+
+      const banner = document.getElementById('station5CompletedBanner');
+      if (banner) {
+        banner.classList.remove('hidden');
+        banner.innerHTML = '🎉 مبارك يا ' + st.name + '! تم توثيق حصادك الثلاثي في ملفك الشخصي التراكمي وإرساله لشاشة المعلم.';
+      }
+      renderTeacherDashboard();
+      showToast('🏆 أحسنت! تم حفظ إجابات محطة الحصاد في الملف الشخصي للطالب وشاشة المعلم', 'teal');
+    }
+
+    
+    function toggleMiftahKeyDrawer() {
+      const drawer = document.getElementById('miftahKeyDrawer');
+      const backdrop = document.getElementById('miftahKeyDrawerBackdrop');
+      if (drawer && backdrop) {
+        if (drawer.classList.contains('hidden')) {
+          openMiftahKeyDrawer();
+        } else {
+          closeMiftahKeyDrawer();
+        }
+      }
+    }
+
+    function openMiftahKeyDrawer() {
+      const drawer = document.getElementById('miftahKeyDrawer');
+      const backdrop = document.getElementById('miftahKeyDrawerBackdrop');
+      if (drawer && backdrop) {
+        drawer.classList.remove('hidden');
+        backdrop.classList.remove('hidden');
+      }
+    }
+
+    function closeMiftahKeyDrawer() {
+      const drawer = document.getElementById('miftahKeyDrawer');
+      const backdrop = document.getElementById('miftahKeyDrawerBackdrop');
+      if (drawer && backdrop) {
+        drawer.classList.add('hidden');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function toggleStudentGoalModal() {
+      const modal = document.getElementById('studentGoalModal');
+      if (modal) {
+        modal.classList.toggle('hidden');
+      }
+    }
+  
+    function toggleKeyMenuHighlight() {
+      openMiftahKeyDrawer();
+      showToast('🔑 اختر من قائمة المفتاح: طلب مساعدة المعلم، سقالة مساندة، تبديل السؤال، أو تحدي الأبطال', 'amber');
+    }
+
+    function useMiftahKeyAction(actionType) {
+      const st = getActiveStudent();
+      const stationMeta = MIFTAH_STATIONS_META[activeStudentStation];
+      const outBox = document.getElementById('keyActionOutputText');
+
+      if (actionType === 'teacher_help') {
+        st.keyRequestsCount++;
+        st.statusFlag = 'needs_help';
+        LIVE_HELP_ALERTS.unshift({
+          id: 'al_' + Date.now(),
+          studentId: st.id,
+          studentName: st.name,
+          stationIndex: activeStudentStation,
+          stationName: stationMeta.letter + ' - ' + stationMeta.title,
+          type: 'teacher_help',
+          message: 'ضغط على أيقونة المفتاح 🔑 لطلب مساعدة المعلم في المحطة (' + stationMeta.title + ').',
+          time: 'الآن',
+          resolved: false
+        });
+        if (outBox) {
+          outBox.innerHTML = '<strong class="text-rose-700">🙋‍♂️ تم إرسال طلب المساعدة للمعلم فوراً!</strong><br>ظهر إشعار باسمك (' + st.name + ') ورقم محطتك الحالية (' + stationMeta.letter + ') على شاشة المعلم الحية.';
+        }
+        renderTeacherDashboard();
+        showToast('🚨 تم إرسال إشعار طلب مساعدة إلى شاشة المعلم الحية!', 'rose');
+      } else if (actionType === 'scaffold_hint') {
+        st.keyRequestsCount++;
+        if (outBox) {
+          outBox.innerHTML = '<strong class="text-amber-800">💡 سقالة تعليمية ومساعدة فورية:</strong><br>' + currentPlan.hookScaffold + '<br><span class="text-[10px] text-slate-500">الكلمات المفتاحية للمحطة: ' + currentPlan.evidenceKeywords.join(' • ') + '</span>';
+        }
+        showToast('💡 تم عرض بطاقة المساعدة والسقالة التعليمية في صندوق المفتاح', 'amber');
+      } else if (actionType === 'swap_question') {
+        questionSwappedInStation = !questionSwappedInStation;
+        challengeOpenedInStation = false;
+        st.keyRequestsCount++;
+        renderStudentView();
+        const updatedOut = document.getElementById('keyActionOutputText');
+        if (updatedOut) {
+          updatedOut.innerHTML = '<strong class="text-teal-800">🔄 تم تبديل صياغة السؤال بنجاح!</strong><br>قام الذكاء الاصطناعي بصياغة سؤال مكافئ يناسب أسلوب تعلمك مع الحفاظ على نفس هدف التعلم.';
+        }
+        showToast('🔄 تم تبديل السؤال في المحطة بصياغة مكافئة ومبسطة', 'teal');
+      } else if (actionType === 'challenge_strong') {
+        challengeOpenedInStation = true;
+        questionSwappedInStation = false;
+        st.challengesSolved++;
+        renderStudentView();
+        const updatedOut = document.getElementById('keyActionOutputText');
+        if (updatedOut) {
+          updatedOut.innerHTML = '<strong class="text-indigo-800">🚀 تحدي الأبطال للطالب القوي مفتوح الآن!</strong><br>' + currentPlan.hookChallengeQuestion;
+        }
+        showToast('🚀 تم فتح سؤال التحدي والتفكير العميق للطالب المتمكن!', 'indigo');
+      }
+    }
+
+    function speakStationText() {
+      showToast('🔊 قارئ الاحتواء الصوتي (UDL): جاري قراءة نص المحطة والتعليمات بصوت واضح...', 'teal');
+    }
+
+    function renderTeacherDashboard() {
+      const titleEl = document.getElementById('teacherDashboardLessonTitle');
+      if (titleEl) titleEl.textContent = 'الدرس الحي: ' + currentPlan.topic + ' (' + currentPlan.grade + ')';
+
+      const btnDiff = document.getElementById('pacingBtnDiff');
+      const btnLock = document.getElementById('pacingBtnLocked');
+      if (btnDiff && btnLock) {
+        if (currentPlan.pacingMode === 'differentiated') {
+          btnDiff.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-teal-600 text-white transition';
+          btnLock.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-slate-700 text-slate-300 hover:bg-slate-600 transition';
+        } else {
+          btnLock.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-amber-500 text-slate-950 transition';
+          btnDiff.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-slate-700 text-slate-300 hover:bg-slate-600 transition';
+        }
+      }
+
+      const countersEl = document.getElementById('teacherStationCounters');
+      if (countersEl) {
+        countersEl.innerHTML = MIFTAH_STATIONS_META.map(function (meta, idx) {
+          const studentsHere = STUDENTS_DATA.filter(function (s) { return s.currentStation === idx; });
+          return '<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">' +
+            '<div class="flex items-center justify-between">' +
+              '<span class="w-8 h-8 rounded-xl bg-teal-600 text-white font-extrabold text-sm flex items-center justify-center">' + meta.letter + '</span>' +
+              '<span class="text-2xl font-black text-slate-900">' + studentsHere.length + ' <span class="text-xs font-normal text-slate-500">طلاب</span></span>' +
+            '</div>' +
+            '<div class="mt-2">' +
+              '<div class="text-xs font-extrabold text-slate-800">' + meta.title + '</div>' +
+              '<div class="text-[11px] text-slate-500 truncate mt-0.5">' + (studentsHere.length ? studentsHere.map(function (s) { return s.name.split(' ')[0]; }).join('، ') : 'لا يوجد طلاب حالياً') + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      const unresolved = LIVE_HELP_ALERTS.filter(function (a) { return !a.resolved; });
+      const badge = document.getElementById('teacherAlertBadge');
+      if (badge) {
+        if (unresolved.length > 0) {
+          badge.classList.remove('hidden');
+          badge.textContent = unresolved.length;
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      const alertsListEl = document.getElementById('teacherHelpAlertsList');
+      if (alertsListEl) {
+        if (LIVE_HELP_ALERTS.length === 0) {
+          alertsListEl.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">لا توجد طلبات مساعدة حالياً</div>';
+        } else {
+          alertsListEl.innerHTML = LIVE_HELP_ALERTS.map(function (al) {
+            return '<div class="p-3 rounded-xl border ' + (al.resolved ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-rose-50/70 border-rose-200') + ' flex items-start justify-between gap-2">' +
+              '<div class="space-y-1">' +
+                '<div class="flex items-center gap-2">' +
+                  '<span class="text-xs font-extrabold text-slate-900">' + al.studentName + '</span>' +
+                  '<span class="text-[10px] px-2 py-0.5 rounded bg-white border border-slate-200 font-bold text-teal-800">محطة: ' + al.stationName + '</span>' +
+                  '<span class="text-[10px] text-slate-400">' + al.time + '</span>' +
+                '</div>' +
+                '<p class="text-[11px] text-slate-700 leading-relaxed">' + al.message + '</p>' +
+              '</div>' +
+              (!al.resolved
+                ? '<button type="button" onclick="resolveHelpAlert(\'' + al.id + '\')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shrink-0">✓ تمت المساندة</button>'
+                : '<span class="text-[10px] font-bold text-emerald-700 shrink-0">✓ عولج</span>') +
+            '</div>';
+          }).join('');
+        }
+      }
+
+      const filterVal = document.getElementById('teacherFilterStation') ? document.getElementById('teacherFilterStation').value : 'all';
+      const filteredStudents = STUDENTS_DATA.filter(function (s) {
+        return filterVal === 'all' || String(s.currentStation) === String(filterVal);
+      });
+
+      const tbody = document.getElementById('teacherStudentsTableBody');
+      if (tbody) {
+        tbody.innerHTML = filteredStudents.map(function (s) {
+          const stMeta = MIFTAH_STATIONS_META[s.currentStation] || MIFTAH_STATIONS_META[0];
+          const badgeColor = s.abilityLevel === 'support'
+            ? 'bg-amber-100 text-amber-900'
+            : (s.abilityLevel === 'advanced' ? 'bg-indigo-100 text-indigo-900' : 'bg-teal-100 text-teal-900');
+
+          return '<tr class="hover:bg-slate-50 transition">' +
+            '<td class="py-3 px-3">' +
+              '<div class="font-extrabold text-slate-900">' + s.name + '</div>' +
+              '<span class="inline-block mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-bold ' + badgeColor + '">' + s.abilityLabel + '</span>' +
+            '</td>' +
+            '<td class="py-3 px-3">' +
+              '<span class="px-2.5 py-1 rounded-lg bg-slate-900 text-white font-bold text-[11px]">' + stMeta.letter + ' - ' + stMeta.title + '</span>' +
+            '</td>' +
+            '<td class="py-3 px-3 w-32">' +
+              '<div class="flex items-center gap-1.5">' +
+                '<div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-teal-600" style="width:' + s.progress + '%"></div></div>' +
+                '<span class="text-[11px] font-bold text-slate-700">' + s.progress + '%</span>' +
+              '</div>' +
+            '</td>' +
+            '<td class="py-3 px-3 max-w-xs">' +
+              '<div class="text-[11px] text-slate-800 font-semibold truncate" title="' + s.lastAnswer + '">"' + s.lastAnswer + '"</div>' +
+              '<div class="text-[10px] text-teal-700 font-bold mt-0.5">' + s.aiEvaluation + '</div>' +
+            '</td>' +
+            '<td class="py-3 px-3">' +
+              '<div class="flex items-center gap-1">' +
+                '<button type="button" onclick="advanceSingleStudent(\'' + s.id + '\')" class="px-2 py-1 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-[11px]" title="نقل للمحطة التالية">ترقية محطة ⬅</button>' +
+                '<button type="button" onclick="openStudentPortfolio(\'' + s.id + '\')" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">📊 الملف</button>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+    }
+
+    function setClassroomPacingMode(mode) {
+      currentPlan.pacingMode = mode;
+      const sel = document.getElementById('inputPacingMode');
+      if (sel) sel.value = mode;
+      renderTeacherDashboard();
+      renderStudentPersonasBar();
+      showToast(mode === 'differentiated' ? '🚀 تم فتح التقدم المتمايز الحر للطلاب حسب وتيرتهم' : '⏱️ تم تفعيل التحكم المركزي بالانتقال حسب المؤقت وقرار المعلم', 'teal');
+    }
+
+    function teacherForceStation(stationIdx) {
+      STUDENTS_DATA.forEach(function (s) {
+        s.currentStation = stationIdx;
+        s.progress = Math.max(s.progress, (stationIdx + 1) * 20);
+      });
+      activeStudentStation = stationIdx;
+      timerSecondsRemaining = 8 * 60;
+      updateTimerDOM();
+      renderTeacherDashboard();
+      renderStudentView();
+      showToast('📢 قام المعلم بنقل الصف إلى المحطة (' + MIFTAH_STATIONS_META[stationIdx].letter + ' - ' + MIFTAH_STATIONS_META[stationIdx].title + ')', 'teal');
+    }
+
+    function resolveHelpAlert(alertId) {
+      const al = LIVE_HELP_ALERTS.find(function (a) { return a.id === alertId; });
+      if (al) al.resolved = true;
+      renderTeacherDashboard();
+      showToast('✅ تم تقديم المساندة للطالب وإغلاق التنبيه', 'teal');
+    }
+
+    function simulateNewHelpRequest() {
+      const randomStudent = STUDENTS_DATA[Math.floor(Math.random() * STUDENTS_DATA.length)];
+      const stMeta = MIFTAH_STATIONS_META[randomStudent.currentStation];
+      LIVE_HELP_ALERTS.unshift({
+        id: 'al_' + Date.now(),
+        studentId: randomStudent.id,
+        studentName: randomStudent.name,
+        stationIndex: randomStudent.currentStation,
+        stationName: stMeta.letter + ' - ' + stMeta.title,
+        type: 'teacher_help',
+        message: 'ضغط على أيقونة المفتاح 🔑: يطلب مساعدة في صياغة التعليل ومهمة موازية.',
+        time: 'الآن',
+        resolved: false
+      });
+      renderTeacherDashboard();
+      showToast('🔔 وصل إشعار مساعدة جديد من ' + randomStudent.name + ' عبر أيقونة المفتاح!', 'rose');
+    }
+
+    function createInstantSupportGroup() {
+      const struggling = STUDENTS_DATA.filter(function (s) { return s.abilityLevel === 'support' || s.statusFlag === 'needs_help'; });
+      const names = struggling.map(function (s) { return s.name; }).join('، ');
+      const txt = document.getElementById('supportGroupStatusText');
+      if (txt) {
+        txt.innerHTML = '✅ <strong>تم تشكيل مجموعة دعم فورية مرنة الآن وتضم:</strong> (' + names + '). تم إرسال بطاقة شرح مبسط ومهمة قصيرة موازية لشاشاتهم.';
+      }
+      showToast('🤝 تم تشكيل مجموعة الدعم الفورية المرنة وإرسال المهمة الموازية للطلاب', 'amber');
+    }
+
+    function advanceSingleStudent(studentId) {
+      const st = STUDENTS_DATA.find(function (s) { return s.id === studentId; });
+      if (!st) return;
+      if (st.currentStation < 4) {
+        st.currentStation++;
+        st.progress = Math.min(100, (st.currentStation + 1) * 20);
+        if (st.id === activeStudentId) activeStudentStation = st.currentStation;
+        renderTeacherDashboard();
+        showToast('⬅ تم نقل الطالب ' + st.name + ' إلى المحطة (' + MIFTAH_STATIONS_META[st.currentStation].title + ')', 'teal');
+      } else {
+        showToast('🌟 الطالب ' + st.name + ' وصل بالفعل إلى المحطة الخامسة (الحصاد)', 'teal');
+      }
+    }
+
+    function populatePortfolioSelector() {
+      const sel = document.getElementById('portfolioStudentSelect');
+      if (!sel) return;
+      sel.innerHTML = STUDENTS_DATA.map(function (s) {
+        return '<option value="' + s.id + '">' + s.name + ' (' + s.abilityLabel + ')</option>';
+      }).join('');
+      sel.value = activePortfolioStudentId;
+    }
+
+    function openStudentPortfolio(studentId) {
+      activePortfolioStudentId = studentId;
+      const sel = document.getElementById('portfolioStudentSelect');
+      if (sel) sel.value = studentId;
+      switchMainView('portfolio');
+    }
+
+    function openStudentPortfolioFromStudentView() {
+      openStudentPortfolio(activeStudentId);
+    }
+
+    function selectPortfolioStudent(studentId) {
+      activePortfolioStudentId = studentId;
+      renderPortfolioView();
+    }
+
+    function renderPortfolioView() {
+      const st = STUDENTS_DATA.find(function (s) { return s.id === activePortfolioStudentId; }) || STUDENTS_DATA[0];
+      document.getElementById('portfolioStudentAvatar').textContent = st.avatar;
+      document.getElementById('portfolioStudentName').textContent = st.name;
+      document.getElementById('portfolioStudentBadge').textContent = st.abilityLabel;
+
+      const avgSkill = Math.round(st.skillsScores.reduce(function (a, b) { return a + b; }, 0) / st.skillsScores.length);
+
+      const kpiEl = document.getElementById('portfolioKpiCards');
+      if (kpiEl) {
+        kpiEl.innerHTML =
+          '<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">' +
+            '<div class="text-xs text-slate-500 font-bold">متوسط إتقان المهارات</div>' +
+            '<div class="text-2xl font-black text-teal-700 mt-1">' + avgSkill + '%</div>' +
+            '<div class="text-[11px] text-emerald-700 font-semibold mt-0.5">↑ تحسن مستمر عبر محطات مفتاح</div>' +
+          '</div>' +
+          '<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">' +
+            '<div class="text-xs text-slate-500 font-bold">المحطة الحالية في الدرس الحي</div>' +
+            '<div class="text-lg font-black text-slate-900 mt-1">' + MIFTAH_STATIONS_META[st.currentStation].letter + ' - ' + MIFTAH_STATIONS_META[st.currentStation].title + '</div>' +
+            '<div class="text-[11px] text-slate-500 mt-0.5">نسبة إنجاز الحصة: ' + st.progress + '%</div>' +
+          '</div>' +
+          '<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">' +
+            '<div class="text-xs text-slate-500 font-bold">استخدام أيقونة المفتاح (مساندة)</div>' +
+            '<div class="text-2xl font-black text-amber-600 mt-1">' + st.keyRequestsCount + ' مرات</div>' +
+            '<div class="text-[11px] text-slate-500 mt-0.5">توظيف واعي للسقالات والتلميحات</div>' +
+          '</div>' +
+          '<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">' +
+            '<div class="text-xs text-slate-500 font-bold">تحديات الأبطال المنجزة</div>' +
+            '<div class="text-2xl font-black text-indigo-600 mt-1">' + st.challengesSolved + ' تحديات</div>' +
+            '<div class="text-[11px] text-indigo-700 font-semibold mt-0.5">أسئلة تفكير عليا ونقل أثر</div>' +
+          '</div>';
+      }
+
+      const timelineEl = document.getElementById('portfolioEvidenceTimeline');
+      if (timelineEl) {
+        timelineEl.innerHTML = st.history.map(function (h) {
+          return '<div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">' +
+            '<div class="flex items-center justify-between">' +
+              '<span class="text-xs font-extrabold text-slate-900">' + h.lesson + '</span>' +
+              '<div class="flex items-center gap-2">' +
+                '<span class="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 font-bold">' + h.status + '</span>' +
+                '<span class="text-[11px] text-slate-400">' + h.date + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<p class="text-xs text-slate-600 leading-relaxed">' + h.evidence + '</p>' +
+          '</div>';
+        }).join('');
+      }
+
+      const canvas = document.getElementById('studentSkillsChart');
+      if (canvas && typeof Chart !== 'undefined') {
+        if (skillsChartInstance) {
+          skillsChartInstance.destroy();
+        }
+        skillsChartInstance = new Chart(canvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ['م: الفضول والتساؤل', 'ف: الاستكشاف والفهم', 'ت: التدريب التعاوني', 'ا: التعليل وأدلة الفهم', 'ح: التأمل ونقل الأثر'],
+            datasets: [{
+              label: 'مستوى التمكن من المهارة (%)',
+              data: st.skillsScores,
+              backgroundColor: ['#f59e0b', '#0d9488', '#0284c7', '#4f46e5', '#10b981'],
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100
+              }
+            },
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+    }
+  </script>
 </body>
 </html>

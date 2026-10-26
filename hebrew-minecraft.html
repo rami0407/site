@@ -1039,17 +1039,20 @@
             }
 
             startGame() {
+                const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+                    ? window.MusheirifaAuth.getGameData('hebrew-minecraft')
+                    : {};
                 this.isRunning = true;
                 this.isPaused = false;
-                this.score = 0;
-                this.xp = 0;
-                this.level = 1;
+                this.score = saved.score || 0;
+                this.xp = saved.xp || 0;
+                this.level = saved.level || 1;
                 this.hearts = 5;
-                this.diamonds = 0;
-                this.emeralds = 0;
-                this.woodCount = 0;
-                this.bookCount = 0;
-                this.goldCount = 0;
+                this.diamonds = saved.diamonds || 0;
+                this.emeralds = saved.emeralds || 0;
+                this.woodCount = saved.woodCount || 0;
+                this.bookCount = saved.bookCount || 0;
+                this.goldCount = saved.goldCount || 0;
                 this.questionIndex = 0;
 
                 this.particles = [];
@@ -1318,6 +1321,19 @@
                 const targetXp = this.level * 60;
                 const percent = Math.min((this.xp / targetXp) * 100, 100);
                 document.getElementById('xp-fill-bar').style.width = `${percent}%`;
+
+                if (window.MusheirifaAuth && window.MusheirifaAuth.saveGameData) {
+                    window.MusheirifaAuth.saveGameData('hebrew-minecraft', {
+                        score: this.score,
+                        xp: this.xp,
+                        level: this.level,
+                        diamonds: this.diamonds,
+                        emeralds: this.emeralds,
+                        woodCount: this.woodCount,
+                        bookCount: this.bookCount,
+                        goldCount: this.goldCount
+                    });
+                }
             }
 
             endGame(isWin) {

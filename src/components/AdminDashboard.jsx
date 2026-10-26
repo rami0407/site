@@ -37,6 +37,7 @@ import StudentDismissalAdminTab from './StudentDismissalAdminTab';
 import ScientificResearchAdminTab from './ScientificResearchAdminTab';
 import MiftaahSupervisionAdminTab from './MiftaahSupervisionAdminTab';
 import MafatihAdminTab from './MafatihAdminTab';
+import HolisticMappingPage from './HolisticMappingPage';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
@@ -5467,6 +5468,27 @@ const AdminDashboard = () => {
               🗝️ منصة مِفتاح — رقابة حصص ومواد المعلمين
             </button>
 
+            {/* 🧭 تبويب سري داخلي: מיפוי הוליסטי רב-שנתי (19 כיתות) */}
+            <button 
+              onClick={() => setActiveTab('holistic-mapping-admin')} 
+              className={`filter-chip ${activeTab === 'holistic-mapping-admin' ? 'active' : ''}`}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'flex-start', 
+                padding: '0.95rem 1.2rem', 
+                fontSize: '1.02rem', 
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'holistic-mapping-admin' ? 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' : '#fef3c7',
+                color: activeTab === 'holistic-mapping-admin' ? '#fef08a' : '#92400e',
+                fontWeight: 900,
+                border: '2px solid #fbbf24',
+                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)'
+              }}
+            >
+              <i className="fas fa-compass" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'holistic-mapping-admin' ? '#fbbf24' : '#d97706' }}></i>
+              🧭 מיפוי הוליסטי רב-שנתי (19 כיתות) 🔒
+            </button>
+
           </div>
         </aside>
 
@@ -9492,6 +9514,13 @@ const AdminDashboard = () => {
               {activeTab === 'miftaah-admin' && (
                 <div>
                   <MiftaahSupervisionAdminTab />
+                </div>
+              )}
+
+              {/* 🧭 تبويب: מיפוי הוליסטי רב-שנתי (19 כיתות) */}
+              {activeTab === 'holistic-mapping-admin' && (
+                <div style={{ margin: '-1.5rem' }}>
+                  <HolisticMappingPage isAdminEmbed={true} />
                 </div>
               )}
 

@@ -69,6 +69,7 @@ const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChamp
 const HebrewPage = lazyWithRetry(() => import('./components/HebrewPage'));
 const EnglishPage = lazyWithRetry(() => import('./components/EnglishPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
+const HolisticMappingPage = lazyWithRetry(() => import('./components/HolisticMappingPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
 const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
 const PwaInstallPrompt = lazyWithRetry(() => import('./components/PwaInstallPrompt'));
@@ -184,6 +185,10 @@ function App() {
   const isTasbihView = currentHash.includes('tasbih');
   const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
   const isPadletView = currentHash.includes('padlet') || currentHash.includes('badlet');
+  const isHolisticMappingView =
+    currentHash.includes('holistic-mapping') ||
+    currentHash.includes('holistic') ||
+    currentHash.includes('mipui');
   const isStudentDismissalView = currentHash.includes('student-dismissal') || currentHash.includes('tasreeh') || currentHash.includes('dismissal');
   const isResearchQuestView = currentHash.includes('scientific-research') || 
     currentHash.includes('research-quest') || 
@@ -196,6 +201,14 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <SchoolPadletPage />
+      </Suspense>
+    );
+  }
+
+  if (isHolisticMappingView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <HolisticMappingPage />
       </Suspense>
     );
   }

@@ -127,6 +127,14 @@ export const newsData = [
 ];
 
 export const importantLinks = [
+  {
+    title: 'منصة نموذج مفتاح التفاعلية الحية (شاشة مستقلة)',
+    icon: 'fa-chalkboard-teacher',
+    url: '/miftaah-whiteboard.html',
+    desc: 'المنصة التفاعلية المتكاملة لموديل مفتاح (מפתי"ח): مولّد التخطيط الفوري، شاشة الطالب التفاعلية، شاشة المعلم الحية، وملف الإنجاز الشخصي.',
+    badge: 'تفاعلي حي ⚡',
+    isAi: true
+  },
   { 
     title: 'منصة مِفتاح AI — رحلة التعلم التفاعلية (طلاب ومعلمون)', 
     icon: 'fa-key', 

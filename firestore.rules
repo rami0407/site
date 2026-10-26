@@ -411,6 +411,18 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // 8.8 🧭 منظومة المسح الشامل للطلاب (מיפוי הוליסטי רב-שנתי - 19 כיתות)
+    // ==========================================
+    match /holistic_mapping_config/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /holistic_mapping_classes/{docId} {
+      allow read, create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
+    // ==========================================
     // 9. المنع التلقائي الشامل لأي مسار آخر (DENY BY DEFAULT)
     // ==========================================
     match /{document=**} {

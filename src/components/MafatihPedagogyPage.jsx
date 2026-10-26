@@ -1450,6 +1450,33 @@ ${p.stations?.h || ''}
               <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
             </a>
 
+            <a 
+              href="/miftaah-whiteboard.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="action-btn whiteboard-btn"
+              style={{
+                background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #047857 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                fontWeight: 900,
+                fontSize: '1rem',
+                padding: '0.75rem 1.6rem',
+                borderRadius: '12px',
+                boxShadow: '0 4px 18px rgba(13, 148, 136, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح منصة مفتاح التفاعلية الحية المستقلة (تخطيط، شاشة الطالب، شاشة المعلم، والملف الشخصي)"
+            >
+              <i className="fas fa-chalkboard-teacher"></i>
+              <span>منصة مفتاح التفاعلية الحية 🔑</span>
+              <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem', opacity: 0.9 }}></i>
+            </a>
+
             <button 
               className="action-btn primary"
               onClick={() => setActiveTab('stations')}

@@ -1,0 +1,377 @@
+/* HolisticMappingPage.css - מיפוי הוליסטי רב-שנתי - בית ספר משيرفة */
+
+.holistic-portal-wrapper {
+  min-height: 100vh;
+  background: #f1f5f9;
+  direction: rtl;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #0f172a;
+  padding-bottom: 4rem;
+}
+
+.holistic-hero-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
+  color: #ffffff;
+  padding: 1.75rem 2rem;
+  border-bottom: 4px solid #fbbf24;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+}
+
+.holistic-hero-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.holistic-title-block h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.holistic-title-block p {
+  margin: 0.35rem 0 0 0;
+  color: #cbd5e1;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+.holistic-top-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.holistic-badge-role {
+  background: rgba(251, 191, 36, 0.2);
+  border: 1.5px solid #fbbf24;
+  color: #fef08a;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.holistic-container {
+  max-width: 1600px;
+  margin: 1.5rem auto;
+  padding: 0 1.25rem;
+}
+
+/* Navigation Tabs */
+.holistic-nav-tabs {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  background: #ffffff;
+  padding: 0.75rem;
+  border-radius: 18px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.holistic-tab-btn {
+  padding: 0.75rem 1.35rem;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  transition: all 0.2s ease;
+}
+
+.holistic-tab-btn:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.holistic-tab-btn.active {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Toolbar & Filter Bar */
+.holistic-toolbar {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.15rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* 19 Classes Selector Grid */
+.classes-strip {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  background: #ffffff;
+  padding: 0.85rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.25rem;
+  align-items: center;
+}
+
+.class-chip-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.class-chip-btn:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.class-chip-btn.active {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1e40af;
+  box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
+}
+
+.class-chip-btn.locked {
+  opacity: 0.55;
+  background: #f1f5f9;
+  color: #64748b;
+  border-style: dashed;
+}
+
+/* Traffic Light Legend Bar */
+.traffic-light-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  padding: 0.65rem 1.15rem;
+  border-radius: 14px;
+  margin-bottom: 1.25rem;
+}
+
+.traffic-pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1.5px solid transparent;
+}
+
+/* Excel / Google Sheets Styled Table */
+.holistic-table-container {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  overflow-x: auto;
+  position: relative;
+  max-height: 75vh;
+}
+
+.holistic-sheet-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+  min-width: 1350px;
+}
+
+.holistic-sheet-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.holistic-sheet-table th {
+  background: #fef3c7;
+  color: #0f172a;
+  font-weight: 900;
+  padding: 0.75rem 0.65rem;
+  border-bottom: 2px solid #cbd5e1;
+  border-left: 1px solid #e2e8f0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.holistic-sheet-table tr.sub-header-row th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 2px solid #94a3b8;
+}
+
+/* Sticky Student Name Column */
+.holistic-sheet-table th.sticky-col,
+.holistic-sheet-table td.sticky-col {
+  position: sticky;
+  right: 0;
+  z-index: 15;
+  background: #ffffff;
+  border-left: 2px solid #94a3b8;
+  min-width: 200px;
+  max-width: 240px;
+}
+
+.holistic-sheet-table thead th.sticky-col {
+  background: #fde68a;
+  z-index: 25;
+}
+
+.holistic-sheet-table tbody tr:hover td {
+  background-color: #f8fafc;
+}
+
+.holistic-sheet-table tbody tr:hover td.sticky-col {
+  background-color: #f1f5f9;
+}
+
+.holistic-sheet-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  border-left: 1px solid #f1f5f9;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* Rounded Pill Select matching the User's Uploaded Image */
+.holistic-pill-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-width: 135px;
+  padding: 0.38rem 0.75rem 0.38rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border: 1.5px solid #cbd5e1;
+  text-align: right;
+  transition: all 0.15s ease;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: left 0.55rem center;
+  background-size: 0.85rem;
+  font-family: inherit;
+}
+
+.holistic-pill-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.holistic-pill-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* Traffic Light Grade Input Cell */
+.grade-traffic-input {
+  width: 72px;
+  padding: 0.4rem 0.35rem;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.92rem;
+  text-align: center;
+  border: 2px solid #cbd5e1;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.grade-traffic-input:focus {
+  outline: none;
+  transform: scale(1.05);
+}
+
+/* Analytics Cards */
+.holistic-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.holistic-kpi-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.25rem;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.holistic-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+  direction: rtl;
+}
+
+.holistic-modal-box {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  max-width: 760px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e2e8f0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .holistic-table-container {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
