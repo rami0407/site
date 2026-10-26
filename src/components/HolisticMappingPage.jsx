@@ -596,24 +596,48 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   };
 
   const handleDeleteColumn = (colId) => {
-    if (!window.confirm('האם למחוק עמודה זו מכל המיפוי?')) return;
+    const colObj = holisticColumns.find((c) => c.id === colId);
+    if (!window.confirm(`האם אתה בטוח שברצונך למחוק את העמודה "${colObj?.titleHe || colId}" מכל המיפוי?`)) return;
     const nextCols = holisticColumns.filter((c) => c.id !== colId);
     setHolisticColumns(nextCols);
     saveGlobalConfig({ holisticColumns: nextCols });
-    triggerToast('🗑️ העמודה הוסרה.');
+    if (editingColForOptions?.id === colId) setEditingColForOptions(null);
+    triggerToast('🗑️ העמודה הוסרה בהצלחה.');
+  };
+
+  const handleRenameColumn = (colId, newTitleHe, newGroupHe) => {
+    const cleanTitle = (newTitleHe || '').trim();
+    if (!cleanTitle) return;
+    const nextCols = holisticColumns.map((col) =>
+      col.id === colId
+        ? {
+            ...col,
+            titleHe: cleanTitle,
+            titleAr: cleanTitle,
+            groupHe: newGroupHe ? newGroupHe.trim() : col.groupHe
+          }
+        : col
+    );
+    setHolisticColumns(nextCols);
+    saveGlobalConfig({ holisticColumns: nextCols });
+    triggerToast('✅ שם השדה / הקטגוריה עודכן בהצלחה!');
   };
 
   const handleAddOptionToColumn = (colId) => {
     if (!newOptionLabel.trim()) return;
+    const cleanLabel = newOptionLabel.trim();
     const nextCols = holisticColumns.map((col) => {
       if (col.id !== colId) return col;
-      const exists = (col.options || []).some((o) => o.value === newOptionLabel.trim());
-      if (exists) return col;
+      const exists = (col.options || []).some((o) => o.value === cleanLabel);
+      if (exists) {
+        alert('אפשרות מענה זו כבר קיימת בשדה זה.');
+        return col;
+      }
       return {
         ...col,
         options: [
           ...(col.options || []),
-          { value: newOptionLabel.trim(), labelHe: newOptionLabel.trim(), color: newOptionColor }
+          { value: cleanLabel, labelHe: cleanLabel, color: newOptionColor }
         ]
       };
     });
@@ -623,7 +647,65 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast('✅ אפשרות מענה חדשה נוספה לשדה!');
   };
 
+  // Edit / Replace an existing option's label or color (and update all students who had the old label)
+  const handleUpdateOptionInColumn = (colId, optIndex, updatedLabel, updatedColor) => {
+    const cleanLabel = (updatedLabel || '').trim();
+    if (!cleanLabel) return;
+
+    let oldValToReplace = null;
+    const nextCols = holisticColumns.map((col) => {
+      if (col.id !== colId) return col;
+      const currentOptions = [...(col.options || [])];
+      if (!currentOptions[optIndex]) return col;
+
+      oldValToReplace = currentOptions[optIndex].value;
+      currentOptions[optIndex] = {
+        ...currentOptions[optIndex],
+        value: cleanLabel,
+        labelHe: cleanLabel,
+        color: updatedColor || currentOptions[optIndex].color || 'green'
+      };
+      return { ...col, options: currentOptions };
+    });
+
+    setHolisticColumns(nextCols);
+    saveGlobalConfig({ holisticColumns: nextCols });
+
+    // If the option text was changed/replaced, automatically update students across classes who had the old value
+    if (oldValToReplace && oldValToReplace !== cleanLabel) {
+      SCHOOL_19_CLASSES.forEach((cls) => {
+        const key = `${selectedYear}_${cls.id}`;
+        const stus = classStudentsMap[key] || [];
+        if (stus.some((s) => s[colId] === oldValToReplace)) {
+          const updatedStus = stus.map((s) =>
+            s[colId] === oldValToReplace ? { ...s, [colId]: cleanLabel } : s
+          );
+          saveClassStudents(cls.id, updatedStus);
+        }
+      });
+    }
+
+    triggerToast('✅ אפשרות המענה עודכנה בהצלחה!');
+  };
+
+  // Reorder an option up (-1) or down (+1)
+  const handleMoveOptionInColumn = (colId, optIndex, direction) => {
+    const nextCols = holisticColumns.map((col) => {
+      if (col.id !== colId) return col;
+      const opts = [...(col.options || [])];
+      const targetIndex = optIndex + direction;
+      if (targetIndex < 0 || targetIndex >= opts.length) return col;
+      const temp = opts[optIndex];
+      opts[optIndex] = opts[targetIndex];
+      opts[targetIndex] = temp;
+      return { ...col, options: opts };
+    });
+    setHolisticColumns(nextCols);
+    saveGlobalConfig({ holisticColumns: nextCols });
+  };
+
   const handleRemoveOptionFromColumn = (colId, optValue) => {
+    if (!window.confirm(`האם למחוק את האפשרות "${optValue}" מרשימת המענים של שדה זה?`)) return;
     const nextCols = holisticColumns.map((col) => {
       if (col.id !== colId) return col;
       return {
@@ -633,6 +715,22 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     });
     setHolisticColumns(nextCols);
     saveGlobalConfig({ holisticColumns: nextCols });
+    triggerToast('🗑️ האפשרות הוסרה מהשדה.');
+  };
+
+  const handleResetColumnDefaultOptions = (colId) => {
+    const defaultCol = DEFAULT_HOLISTIC_COLUMNS.find((c) => c.id === colId);
+    if (!defaultCol) {
+      alert('זהו שדה מותאם אישית שאין לו רשימת ברירת מחדל קבועה.');
+      return;
+    }
+    if (!window.confirm(`האם לשחזר את אפשרויות ברירת המחדל עבור "${defaultCol.titleHe}"?`)) return;
+    const nextCols = holisticColumns.map((col) =>
+      col.id === colId ? { ...col, titleHe: defaultCol.titleHe, groupHe: defaultCol.groupHe, options: [...defaultCol.options] } : col
+    );
+    setHolisticColumns(nextCols);
+    saveGlobalConfig({ holisticColumns: nextCols });
+    triggerToast('🔄 אפשרויות ברירת המחדל שוחזרו!');
   };
 
   const handleAddGradeSubject = (e) => {
@@ -650,6 +748,47 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setNewSubjTitleHe('');
     setNewSubjTitleAr('');
     triggerToast('✅ מקצוע לימודי חדש נוסף לגיליון הציונים!');
+  };
+
+  const handleRenameGradeSubject = (subjId, newTitle) => {
+    const clean = (newTitle || '').trim();
+    if (!clean) return;
+    const nextSubjs = gradeSubjects.map((s) =>
+      s.id === subjId ? { ...s, titleHe: clean, titleAr: clean } : s
+    );
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+    triggerToast('✅ שם המקצוע עודכן בהצלחה!');
+  };
+
+  const handleDeleteGradeSubject = (subjId) => {
+    const subjObj = gradeSubjects.find((s) => s.id === subjId);
+    if (!window.confirm(`האם למחוק את המקצוע "${subjObj?.titleHe || subjId}" מגיליון הציונים?`)) return;
+    const nextSubjs = gradeSubjects.filter((s) => s.id !== subjId);
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+    triggerToast('🗑️ המקצוע הוסר מגיליון הציונים.');
+  };
+
+  const handleMoveGradeSubject = (subjIndex, direction) => {
+    const nextSubjs = [...gradeSubjects];
+    const targetIdx = subjIndex + direction;
+    if (targetIdx < 0 || targetIdx >= nextSubjs.length) return;
+    const temp = nextSubjs[subjIndex];
+    nextSubjs[subjIndex] = nextSubjs[targetIdx];
+    nextSubjs[targetIdx] = temp;
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+  };
+
+  const handleToggleCoordinatorRole = (roleKey, teacherId) => {
+    const currentList = coordinatorIds[roleKey] || [];
+    const exists = currentList.includes(teacherId);
+    const nextList = exists ? currentList.filter((id) => id !== teacherId) : [...currentList, teacherId];
+    const nextCoords = { ...coordinatorIds, [roleKey]: nextList };
+    setCoordinatorIds(nextCoords);
+    saveGlobalConfig({ coordinatorIds: nextCoords });
+    triggerToast('✅ הרשאות הרכזת עודכנו בהצלחה!');
   };
 
   // ==================== 10. PERMISSIONS & DELEGATION HANDLERS ====================
@@ -1850,24 +1989,29 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     <tr className="sub-header-row">
                       {holisticColumns.map((col) => (
                         <th key={`sub_${col.id}`}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
                             <span>בחירה מתוך רשימה</span>
                             {userCapabilities.canManageSchema && (
                               <button
                                 type="button"
                                 onClick={() => setEditingColForOptions(col)}
-                                title="ערוך אפשרויות מענה לשדה זה"
+                                title="הוספה / עריכה / החלפה / מחיקה של אפשרויות מענה לשדה זה"
                                 style={{
-                                  border: 'none',
-                                  background: '#e2e8f0',
-                                  borderRadius: '4px',
-                                  padding: '1px 5px',
+                                  border: '1px solid #93c5fd',
+                                  background: '#dbeafe',
+                                  color: '#1e40af',
+                                  borderRadius: '6px',
+                                  padding: '2px 7px',
                                   cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 900
+                                  fontSize: '0.72rem',
+                                  fontWeight: 900,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
                                 }}
                               >
-                                ⚙️
+                                <span>✏️</span>
+                                <span>עריכת אפשרויות</span>
                               </button>
                             )}
                           </div>
@@ -1955,6 +2099,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                                   value={currentVal}
                                   disabled={!currentClassAccess.canEditMapping}
                                   onChange={(e) => {
+                                    if (e.target.value === '__MANAGE_OPTIONS__') {
+                                      setEditingColForOptions(col);
+                                      return;
+                                    }
                                     if (e.target.value === '__CUSTOM__') {
                                       const customText = window.prompt(`הזן ערך מותאם אישית עבור "${col.titleHe}":`, currentVal);
                                       if (customText !== null) {
@@ -1988,6 +2136,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                                   <option value="__CUSTOM__" style={{ background: '#f8fafc', color: '#2563eb', fontWeight: 900 }}>
                                     ✍️ הקלד הערה / ערך חופשי...
                                   </option>
+                                  {userCapabilities.canManageSchema && (
+                                    <option value="__MANAGE_OPTIONS__" style={{ background: '#fef3c7', color: '#92400e', fontWeight: 900 }}>
+                                      ⚙️ הוספה / עריכה / החלפה של אפשרויות מענה לשדה זה...
+                                    </option>
+                                  )}
                                 </select>
                               </td>
                             );
@@ -2819,87 +2972,200 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         {/* TAB 7: DYNAMIC SCHEMA & SUBJECTS BUILDER (מנהל / רכזת מדידה / הכלה)   */}
         {/* ===================================================================== */}
         {activeMainTab === 'schema-builder' && userCapabilities.canManageSchema && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
-            {/* Add New Holistic Column */}
-            <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#4c1d95' }}>
-                🛠️ הוספת עמודה / תחום חדש למיפוי ההוליסטי
-              </h3>
-              <p style={{ color: '#64748b', fontSize: '0.88rem', marginBottom: '1.25rem', fontWeight: 600 }}>
-                לשימוש מנהל בית הספר, רכזת מדידה והערכה ורכזת הכלה והשתלבות — כל עמודה שתתווסף תופיע בכל 19 הכיתות עם אפשרויות בחירה צבעוניות.
-              </p>
-
-              <form onSubmit={handleAddCustomColumn} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>שם העמודה / התחום החדש:</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="לדוגמה: מעורבות הורים / התאמות בדרכי היבחנות..."
-                    value={newColTitleHe}
-                    onChange={(e) => setNewColTitleHe(e.target.value)}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800, boxSizing: 'border-box' }}
-                  />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Top Row: Active Columns & Answer Options Control + Add New Column */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.5rem' }}>
+              {/* Manage Existing Columns & Their Answer Options */}
+              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '2px solid #93c5fd' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.22rem', fontWeight: 900, color: '#1e3a8a' }}>
+                    📋 ניהול שדות המיפוי ואפשרויות המענה (إدارة الحقول واحتمالات الإجابة)
+                  </h3>
+                  <span style={{ background: '#dbeafe', color: '#1e40af', padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.76rem', fontWeight: 900 }}>
+                    {holisticColumns.length} שדות פעילים
+                  </span>
                 </div>
+                <p style={{ color: '#475569', fontSize: '0.86rem', marginBottom: '1rem', fontWeight: 600 }}>
+                  לחץ על <strong>&quot;✏️ הוספה / עריכה / החלפה של אפשרויות&quot;</strong> ליד כל שדה כדי להוסיף אפשרות מענה חדשה, לשנות או להחליף נוסח קיים, לשנות צבע או למחוק אפשרות:
+                </p>
 
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>קטגוריה ראשית בטבלה:</label>
-                  <select
-                    value={newColGroupHe}
-                    onChange={(e) => setNewColGroupHe(e.target.value)}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '460px', overflowY: 'auto', paddingLeft: '0.25rem' }}>
+                  {holisticColumns.map((col) => (
+                    <div
+                      key={col.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '0.6rem',
+                        padding: '0.8rem 1rem',
+                        background: '#f8fafc',
+                        borderRadius: '14px',
+                        border: '1.5px solid #e2e8f0'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.96rem' }}>
+                          {col.titleHe}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
+                          קטגוריה: {col.groupHe} • <strong>{(col.options || []).length} אפשרויות מענה</strong>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                          {(col.options || []).slice(0, 4).map((o) => {
+                            const p = OPTION_PILL_COLORS[o.color] || OPTION_PILL_COLORS.gray;
+                            return (
+                              <span
+                                key={o.value}
+                                style={{
+                                  background: p.bg,
+                                  color: p.text,
+                                  border: `1px solid ${p.border}`,
+                                  borderRadius: '999px',
+                                  padding: '1px 8px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800
+                                }}
+                              >
+                                {o.labelHe}
+                              </span>
+                            );
+                          })}
+                          {(col.options || []).length > 4 && (
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800 }}>
+                              +{(col.options || []).length - 4} נוספים
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => setEditingColForOptions(col)}
+                          style={{
+                            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '0.5rem 0.9rem',
+                            borderRadius: '10px',
+                            fontWeight: 900,
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 4px 10px rgba(37, 99, 235, 0.2)'
+                          }}
+                        >
+                          ✏️ הוספה / עריכה / החלפה של אפשרויות
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteColumn(col.id)}
+                          title="מחק שדה זה מהמיפוי"
+                          style={{
+                            background: '#fee2e2',
+                            color: '#b91c1c',
+                            border: '1px solid #fca5a5',
+                            padding: '0.45rem 0.65rem',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: 900
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add New Holistic Column */}
+              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.22rem', fontWeight: 900, color: '#4c1d95' }}>
+                  ➕ הוספת עמודה / תחום חדש למיפוי ההוליסטי (إضافة حقل جديد)
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.86rem', marginBottom: '1.15rem', fontWeight: 600 }}>
+                  לשימוש מנהל בית הספר, רכזת מדידה והערכה ורכזת הכלה והשתלבות — כל עמודה שתתווסף תופיע בכל 19 הכיתות עם אפשרויות בחירה צבעוניות.
+                </p>
+
+                <form onSubmit={handleAddCustomColumn} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>שם העמודה / התחום החדש:</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="לדוגמה: מעורבות הורים / התאמות בדרכי היבחנות..."
+                      value={newColTitleHe}
+                      onChange={(e) => setNewColTitleHe(e.target.value)}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800, boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>קטגוריה ראשית בטבלה:</label>
+                    <select
+                      value={newColGroupHe}
+                      onChange={(e) => setNewColGroupHe(e.target.value)}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                    >
+                      <option value="רקע אישי ומשפחתי">רקע אישי ומשפחתי</option>
+                      <option value="תפקוד חברתי וצרכים">תפקוד חברתי וצרכים</option>
+                      <option value="קבלת מענים">קבלת מענים (לימודי / רגשי / התנהגותי / הכלה)</option>
+                      <option value="נוכחות וחוזקות">נוכחות וחוזקות</option>
+                      <option value="מדידה והערכה">מדידה והערכה</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+                      אפשרויות מענה ראשוניות (כל שורה: טקסט | צבע: green / yellow / orange / red / blue / purple):
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={newColOptionsText}
+                      onChange={(e) => setNewColOptionsText(e.target.value)}
+                      style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 700, boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    style={{
+                      background: '#7c3aed',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.85rem',
+                      borderRadius: '12px',
+                      fontWeight: 900,
+                      cursor: 'pointer'
+                    }}
                   >
-                    <option value="רקע אישי ומשפחתי">רקע אישי ומשפחתי</option>
-                    <option value="תפקוד חברתי וצרכים">תפקוד חברתי וצרכים</option>
-                    <option value="קבלת מענים">קבלת מענים (לימודי / רגשי / התנהגותי / הכלה)</option>
-                    <option value="נוכחות וחוזקות">נוכחות וחוזקות</option>
-                    <option value="מדידה והערכה">מדידה והערכה</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                    אפשרויות מענה לבחירה (כל שורה: טקסט | צבע: green / yellow / orange / red / blue / purple):
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={newColOptionsText}
-                    onChange={(e) => setNewColOptionsText(e.target.value)}
-                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 700, boxSizing: 'border-box' }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  style={{
-                    background: '#7c3aed',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.85rem',
-                    borderRadius: '12px',
-                    fontWeight: 900,
-                    cursor: 'pointer'
-                  }}
-                >
-                  ➕ הוסף עמודה לכל הכיתות
-                </button>
-              </form>
+                    ➕ הוסף עמודה חדשה לכל הכיתות
+                  </button>
+                </form>
+              </div>
             </div>
 
-            {/* Add New Academic Subject & Manage Existing Columns */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
-                <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.2rem', fontWeight: 900, color: '#065f46' }}>
-                  📚 הוספת מקצוע / מבחן מיפוי לציוני הרמזור
+            {/* Bottom Row: Grade Subjects Control + Coordinator Permissions Control */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.5rem' }}>
+              {/* Manage Grade Subjects (Add, Rename, Reorder, Delete) */}
+              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #86efac' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 900, color: '#065f46' }}>
+                  📚 ניהול מקצועות הציונים ברמזור (إضافة / تعديل / حذف المواضيع)
                 </h3>
-                <form onSubmit={handleAddGradeSubject} style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <p style={{ color: '#475569', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>
+                  הוסף מקצוע חדש, שנה שם של מקצוע קיים, שנה סדר הופעה או מחק מקצוע מגיליון הציונים:
+                </p>
+
+                <form onSubmit={handleAddGradeSubject} style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.1rem' }}>
                   <input
                     type="text"
                     required
-                    placeholder="שם המקצוע (למשל: מדעים / הבנת הנקרא)..."
+                    placeholder="הקלד שם מקצוע / מבחן חדש להוספה..."
                     value={newSubjTitleHe}
                     onChange={(e) => setNewSubjTitleHe(e.target.value)}
-                    style={{ flex: 1, minWidth: '200px', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                    style={{ flex: 1, minWidth: '200px', padding: '0.68rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
                   />
                   <button
                     type="submit"
@@ -2907,7 +3173,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       background: '#059669',
                       color: 'white',
                       border: 'none',
-                      padding: '0.7rem 1.2rem',
+                      padding: '0.68rem 1.2rem',
                       borderRadius: '10px',
                       fontWeight: 900,
                       cursor: 'pointer'
@@ -2916,68 +3182,174 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     ➕ הוסף מקצוע
                   </button>
                 </form>
-              </div>
 
-              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
-                <h3 style={{ margin: '0 0 0.85rem 0', fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
-                  📋 עמודות המיפוי הפעילות (לחץ ⚙️ לעריכת אפשרויות המענה של כל שדה)
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' }}>
-                  {holisticColumns.map((col) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {gradeSubjects.map((subj, sIdx) => (
                     <div
-                      key={col.id}
+                      key={subj.id}
                       style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
                         alignItems: 'center',
-                        padding: '0.65rem 0.9rem',
-                        background: '#f8fafc',
+                        gap: '0.5rem',
+                        background: '#f0fdf4',
+                        padding: '0.55rem 0.8rem',
                         borderRadius: '10px',
-                        border: '1px solid #e2e8f0'
+                        border: '1px solid #bbf7d0'
                       }}
                     >
-                      <div>
-                        <strong style={{ color: '#0f172a' }}>{col.titleHe}</strong>{' '}
-                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                          ({col.groupHe} — {(col.options || []).length} אפשרויות מענה)
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <button
-                          type="button"
-                          onClick={() => setEditingColForOptions(col)}
+                      <span style={{ fontWeight: 900, color: '#166534', minWidth: '24px' }}>{sIdx + 1}.</span>
+                      <input
+                        type="text"
+                        value={subj.titleHe}
+                        onChange={(e) => handleRenameGradeSubject(subj.id, e.target.value)}
+                        style={{
+                          flex: 1,
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '8px',
+                          border: '1px solid #86efac',
+                          fontWeight: 800,
+                          color: '#0f172a',
+                          background: '#ffffff'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={sIdx === 0}
+                        onClick={() => handleMoveGradeSubject(sIdx, -1)}
+                        title="הזז למעלה"
+                        style={{ border: 'none', background: '#dcfce7', borderRadius: '6px', padding: '4px 7px', cursor: 'pointer' }}
+                      >
+                        ⬆️
+                      </button>
+                      <button
+                        type="button"
+                        disabled={sIdx === gradeSubjects.length - 1}
+                        onClick={() => handleMoveGradeSubject(sIdx, 1)}
+                        title="הזז למטה"
+                        style={{ border: 'none', background: '#dcfce7', borderRadius: '6px', padding: '4px 7px', cursor: 'pointer' }}
+                      >
+                        ⬇️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGradeSubject(subj.id)}
+                        title="מחק מקצוע"
+                        style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', fontWeight: 900 }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Assign Evaluation Coordinator & Inclusion Coordinator */}
+              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #fde68a' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 900, color: '#92400e' }}>
+                  👩‍💼 הרשאות רכזת מדידה והערכה ורכזת הכלה (صلاحيات مركزة التقييم والاحتواء)
+                </h3>
+                <p style={{ color: '#475569', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>
+                  כל מורה שתשויך כאן כרכזת מדידה והערכה או רכזת הכלה תקבל אוטומטית הרשאה מלאה להוסיף, לשנות, להחליף ולמחוק אפשרויות מענה, עמודות ומקצועות בכל הכיתות:
+                </p>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 900, fontSize: '0.86rem', color: '#1e293b', marginBottom: '0.4rem' }}>
+                    📊 רכזת מדידה והערכה (مركزة التقييم والقياس):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                    {(coordinatorIds.evalCoordIds || []).map((tId) => {
+                      const t = getTeacherById(tId);
+                      return (
+                        <span
+                          key={tId}
                           style={{
                             background: '#dbeafe',
                             color: '#1e40af',
-                            border: 'none',
-                            padding: '0.35rem 0.7rem',
-                            borderRadius: '8px',
+                            padding: '0.3rem 0.75rem',
+                            borderRadius: '999px',
                             fontWeight: 800,
-                            cursor: 'pointer',
-                            fontSize: '0.78rem'
+                            fontSize: '0.82rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
                           }}
                         >
-                          ⚙️ אפשרויות מענה
-                        </button>
-                        {col.id.startsWith('custom_col_') && (
+                          <span>{t?.nameHe || tId}</span>
                           <button
                             type="button"
-                            onClick={() => handleDeleteColumn(col.id)}
-                            style={{
-                              background: '#fee2e2',
-                              color: '#b91c1c',
-                              border: 'none',
-                              padding: '0.35rem 0.6rem',
-                              borderRadius: '8px',
-                              cursor: 'pointer'
-                            }}
+                            onClick={() => handleToggleCoordinatorRole('evalCoordIds', tId)}
+                            style={{ border: 'none', background: 'none', color: '#1e40af', cursor: 'pointer', fontWeight: 900 }}
                           >
-                            🗑️
+                            ✕
                           </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) handleToggleCoordinatorRole('evalCoordIds', e.target.value);
+                    }}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                  >
+                    <option value="">➕ הוסף מורה לתפקיד רכזת מדידה והערכה...</option>
+                    {ALL_TEACHERS.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nameHe} — {t.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 900, fontSize: '0.86rem', color: '#1e293b', marginBottom: '0.4rem' }}>
+                    🤝 רכזת הכלה והשתלבות (مركزة الاحتواء والدمج):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                    {(coordinatorIds.inclusionCoordIds || []).map((tId) => {
+                      const t = getTeacherById(tId);
+                      return (
+                        <span
+                          key={tId}
+                          style={{
+                            background: '#f3e8ff',
+                            color: '#6b21a8',
+                            padding: '0.3rem 0.75rem',
+                            borderRadius: '999px',
+                            fontWeight: 800,
+                            fontSize: '0.82rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <span>{t?.nameHe || tId}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCoordinatorRole('inclusionCoordIds', tId)}
+                            style={{ border: 'none', background: 'none', color: '#6b21a8', cursor: 'pointer', fontWeight: 900 }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) handleToggleCoordinatorRole('inclusionCoordIds', e.target.value);
+                    }}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                  >
+                    <option value="">➕ הוסף מורה לתפקיד רכזת הכלה והשתלבות...</option>
+                    {ALL_TEACHERS.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nameHe} — {t.nameAr}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -3059,95 +3431,363 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       </div>
 
       {/* ===================================================================== */}
-      {/* MODAL: EDIT DROPDOWN OPTIONS FOR ANY HOLISTIC FIELD                   */}
+      {/* MODAL: FULL CONTROL OVER FIELD & ANSWER OPTIONS (إضافة/تعديل/تبديل/مسح) */}
       {/* ===================================================================== */}
-      {editingColForOptions && (
-        <div className="holistic-modal-backdrop" onClick={() => setEditingColForOptions(null)}>
-          <div className="holistic-modal-box" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900 }}>
-                ⚙️ עריכת אפשרויות מענה עבור: {editingColForOptions.titleHe}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingColForOptions(null)}
-                style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
+      {editingColForOptions && (() => {
+        const activeCol = holisticColumns.find((c) => c.id === editingColForOptions.id) || editingColForOptions;
+        const activeOptions = activeCol.options || [];
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              {(holisticColumns.find((c) => c.id === editingColForOptions.id)?.options || []).map((opt) => {
-                const pill = OPTION_PILL_COLORS[opt.color] || OPTION_PILL_COLORS.gray;
-                return (
-                  <span
-                    key={opt.value}
-                    style={{
-                      background: pill.bg,
-                      color: pill.text,
-                      border: `1.5px solid ${pill.border}`,
-                      padding: '0.35rem 0.85rem',
-                      borderRadius: '999px',
-                      fontWeight: 800,
-                      fontSize: '0.85rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    <span>{opt.labelHe}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveOptionFromColumn(editingColForOptions.id, opt.value)}
-                      style={{ background: 'none', border: 'none', color: pill.text, cursor: 'pointer', fontWeight: 900 }}
-                    >
-                      ✕
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', background: '#f8fafc', padding: '1rem', borderRadius: '14px' }}>
-              <input
-                type="text"
-                placeholder="הקלד אפשרות מענה חדשה..."
-                value={newOptionLabel}
-                onChange={(e) => setNewOptionLabel(e.target.value)}
-                style={{ flex: 1, padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
-              />
-              <select
-                value={newOptionColor}
-                onChange={(e) => setNewOptionColor(e.target.value)}
-                style={{ padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
-              >
-                <option value="green">ירוק (תקין / חיובי)</option>
-                <option value="yellow">צהוב (בינוני / מעקב)</option>
-                <option value="orange">כתום (מורכב / סיוע)</option>
-                <option value="red">אדום (דחוף / רגישות)</option>
-                <option value="blue">כחול (מידע / התאמה)</option>
-                <option value="purple">סגול (טיפולי / העשרה)</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => handleAddOptionToColumn(editingColForOptions.id)}
+        return (
+          <div className="holistic-modal-backdrop" onClick={() => setEditingColForOptions(null)}>
+            <div
+              className="holistic-modal-box"
+              style={{ maxWidth: '720px', width: '95%', maxHeight: '88vh', overflowY: 'auto' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div
                 style={{
-                  background: '#2563eb',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.65rem 1.2rem',
-                  borderRadius: '10px',
-                  fontWeight: 900,
-                  cursor: 'pointer'
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  borderBottom: '2px solid #e2e8f0',
+                  paddingBottom: '0.9rem',
+                  marginBottom: '1.1rem'
                 }}
               >
-                ➕ הוסף אפשרות
-              </button>
+                <div>
+                  <span
+                    style={{
+                      background: '#dbeafe',
+                      color: '#1e40af',
+                      padding: '0.2rem 0.65rem',
+                      borderRadius: '999px',
+                      fontSize: '0.75rem',
+                      fontWeight: 900
+                    }}
+                  >
+                    🛠️ שליטה מלאה למנהל ולרכזת (إضافة • تعديل • تبديل • مسح)
+                  </span>
+                  <h3 style={{ margin: '0.4rem 0 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+                    ⚙️ ניהול שדה ואפשרויות מענה: {activeCol.titleHe}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingColForOptions(null)}
+                  style={{
+                    background: '#f1f5f9',
+                    border: 'none',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    fontSize: '1.1rem',
+                    fontWeight: 900,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Section 1: Rename Column Title or Group */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  padding: '0.9rem 1rem',
+                  borderRadius: '14px',
+                  border: '1px solid #cbd5e1',
+                  marginBottom: '1.15rem',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr auto',
+                  gap: '0.65rem',
+                  alignItems: 'end'
+                }}
+              >
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.25rem' }}>
+                    ✏️ שם השדה / העמודה (تعديل اسم الحقل):
+                  </label>
+                  <input
+                    type="text"
+                    value={activeCol.titleHe}
+                    onChange={(e) => handleRenameColumn(activeCol.id, e.target.value, activeCol.groupHe)}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1.5px solid #cbd5e1',
+                      fontWeight: 800,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.25rem' }}>
+                    📂 קטגוריה ראשית בטבלה:
+                  </label>
+                  <input
+                    type="text"
+                    value={activeCol.groupHe || ''}
+                    onChange={(e) => handleRenameColumn(activeCol.id, activeCol.titleHe, e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1.5px solid #cbd5e1',
+                      fontWeight: 800,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                {DEFAULT_HOLISTIC_COLUMNS.some((d) => d.id === activeCol.id) && (
+                  <button
+                    type="button"
+                    onClick={() => handleResetColumnDefaultOptions(activeCol.id)}
+                    style={{
+                      background: '#fffbeb',
+                      color: '#92400e',
+                      border: '1px solid #fde68a',
+                      padding: '0.55rem 0.8rem',
+                      borderRadius: '8px',
+                      fontWeight: 800,
+                      fontSize: '0.78rem',
+                      cursor: 'pointer'
+                    }}
+                    title="שחזר את אפשרויות ברירת המחדל המקוריות של שדה זה"
+                  >
+                    🔄 איפוס לברירת מחדל
+                  </button>
+                )}
+              </div>
+
+              {/* Section 2: Add New Answer Option */}
+              <div
+                style={{
+                  background: '#eff6ff',
+                  border: '1.5px solid #93c5fd',
+                  padding: '1rem',
+                  borderRadius: '14px',
+                  marginBottom: '1.15rem'
+                }}
+              >
+                <label style={{ display: 'block', fontWeight: 900, fontSize: '0.86rem', color: '#1e3a8a', marginBottom: '0.5rem' }}>
+                  ➕ הוספת אפשרות מענה חדשה לשדה זה (إضافة احتمال إجابة جديد):
+                </label>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    placeholder="הקלד אפשרות מענה חדשה..."
+                    value={newOptionLabel}
+                    onChange={(e) => setNewOptionLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddOptionToColumn(activeCol.id);
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      minWidth: '200px',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #60a5fa',
+                      fontWeight: 800,
+                      background: '#ffffff'
+                    }}
+                  />
+                  <select
+                    value={newOptionColor}
+                    onChange={(e) => setNewOptionColor(e.target.value)}
+                    style={{
+                      padding: '0.65rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #60a5fa',
+                      fontWeight: 800,
+                      background: '#ffffff'
+                    }}
+                  >
+                    <option value="green">🟢 ירוק (תקין / חיובי)</option>
+                    <option value="yellow">🟡 צהוב (בינוני / מעקב)</option>
+                    <option value="orange">🟠 כתום (מורכב / סיוע)</option>
+                    <option value="red">🔴 אדום (דחוף / רגישות)</option>
+                    <option value="blue">🔵 כחול (מידע / התאמה)</option>
+                    <option value="purple">🟣 סגול (טיפולי / העשרה)</option>
+                    <option value="gray">⚪ אפור (ללא / ניטרלי)</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleAddOptionToColumn(activeCol.id)}
+                    style={{
+                      background: '#2563eb',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.65rem 1.3rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ➕ הוסף אפשרות
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 3: Editable List of All Existing Answer Options */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a' }}>
+                    📋 אפשרויות המענה הקיימות ({activeOptions.length}) — ניתן לערוך טקסט, להחליף צבע, לשנות סדר או למחוק:
+                  </label>
+                </div>
+                <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                  💡 כל שינוי בטקסט של אפשרות קיימת יעדכן אוטומטית גם את כל התלמידים שכבר סומנה להם אפשרות זו!
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' }}>
+                  {activeOptions.map((opt, optIdx) => {
+                    const pill = OPTION_PILL_COLORS[opt.color] || OPTION_PILL_COLORS.gray;
+                    return (
+                      <div
+                        key={optIdx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: '12px',
+                          background: pill.bg,
+                          border: `1.5px solid ${pill.border}`,
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <span style={{ fontWeight: 900, color: pill.text, fontSize: '0.8rem', minWidth: '22px' }}>
+                          {optIdx + 1}.
+                        </span>
+
+                        {/* Editable Option Text Input */}
+                        <input
+                          type="text"
+                          value={opt.labelHe}
+                          onChange={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, e.target.value, opt.color)}
+                          style={{
+                            flex: 1,
+                            minWidth: '180px',
+                            padding: '0.45rem 0.7rem',
+                            borderRadius: '8px',
+                            border: `1px solid ${pill.border}`,
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontWeight: 800,
+                            fontSize: '0.86rem'
+                          }}
+                          title="ערוך או החלף את טקסט האפשרות"
+                        />
+
+                        {/* Editable Option Color Selector */}
+                        <select
+                          value={opt.color || 'green'}
+                          onChange={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, opt.labelHe, e.target.value)}
+                          style={{
+                            padding: '0.45rem 0.55rem',
+                            borderRadius: '8px',
+                            border: `1px solid ${pill.border}`,
+                            background: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                          }}
+                          title="שנה צבע תגית"
+                        >
+                          <option value="green">🟢 ירוק</option>
+                          <option value="yellow">🟡 צהוב</option>
+                          <option value="orange">🟠 כתום</option>
+                          <option value="red">🔴 אדום</option>
+                          <option value="blue">🔵 כחול</option>
+                          <option value="purple">🟣 סגול</option>
+                          <option value="gray">⚪ אפור</option>
+                        </select>
+
+                        {/* Reorder Up / Down */}
+                        <button
+                          type="button"
+                          disabled={optIdx === 0}
+                          onClick={() => handleMoveOptionInColumn(activeCol.id, optIdx, -1)}
+                          title="הזז למעלה"
+                          style={{
+                            background: '#ffffff',
+                            border: `1px solid ${pill.border}`,
+                            borderRadius: '6px',
+                            padding: '4px 7px',
+                            cursor: optIdx === 0 ? 'not-allowed' : 'pointer',
+                            opacity: optIdx === 0 ? 0.4 : 1
+                          }}
+                        >
+                          ⬆️
+                        </button>
+                        <button
+                          type="button"
+                          disabled={optIdx === activeOptions.length - 1}
+                          onClick={() => handleMoveOptionInColumn(activeCol.id, optIdx, 1)}
+                          title="הזז למטה"
+                          style={{
+                            background: '#ffffff',
+                            border: `1px solid ${pill.border}`,
+                            borderRadius: '6px',
+                            padding: '4px 7px',
+                            cursor: optIdx === activeOptions.length - 1 ? 'not-allowed' : 'pointer',
+                            opacity: optIdx === activeOptions.length - 1 ? 0.4 : 1
+                          }}
+                        >
+                          ⬇️
+                        </button>
+
+                        {/* Delete Option */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOptionFromColumn(activeCol.id, opt.value)}
+                          title="מחק אפשרות זו (مسح)"
+                          style={{
+                            background: '#fee2e2',
+                            color: '#b91c1c',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '8px',
+                            padding: '0.4rem 0.65rem',
+                            cursor: 'pointer',
+                            fontWeight: 900,
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          🗑️ מחק
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingColForOptions(null)}
+                  style={{
+                    background: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.7rem 1.8rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✅ סיום ושמירה
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ===================================================================== */}
       {/* MODAL: ADD SINGLE STUDENT                                             */}
