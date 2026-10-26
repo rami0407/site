@@ -19,6 +19,17 @@ const TRUSTED_DEVICE_DURATION = 30 * 24 * 60 * 60 * 1000;
 // In-memory cache of cloud PINs & metadata
 let cloudAccountsCache = {};
 
+// Dynamic custom teachers storage key
+const CUSTOM_TEACHERS_KEY = 'musherfe_custom_teachers_v1';
+let customTeachersCache = [];
+
+try {
+  const savedCustom = getSecureStorage(CUSTOM_TEACHERS_KEY, []);
+  if (Array.isArray(savedCustom)) customTeachersCache = savedCustom;
+} catch {
+  customTeachersCache = [];
+}
+
 // In-memory cache of mapped teachers with stable reference
 const CACHED_TEACHERS = defaultSchoolTeachers.map(t => ({
   ...t,
@@ -26,9 +37,38 @@ const CACHED_TEACHERS = defaultSchoolTeachers.map(t => ({
 }));
 
 /**
- * Get all available school teachers with bilingual display names
+ * Get all available school teachers (default + dynamically added custom teachers)
  */
-export const getAllTeachers = () => CACHED_TEACHERS;
+export const getAllTeachers = () => {
+  if (!customTeachersCache || customTeachersCache.length === 0) return CACHED_TEACHERS;
+  const existingIds = new Set(CACHED_TEACHERS.map(t => t.id));
+  const extras = customTeachersCache
+    .filter(t => t && t.id && !existingIds.has(t.id))
+    .map(t => ({
+      ...t,
+      displayName: `${t.nameAr || t.nameHe} (${t.nameHe || t.nameAr})`
+    }));
+  return [...CACHED_TEACHERS, ...extras];
+};
+
+/**
+ * Sync custom teachers list from cloud config or admin panel
+ */
+export const syncCustomTeachersList = (customList = []) => {
+  if (!Array.isArray(customList)) return getAllTeachers();
+  customTeachersCache = customList;
+  try {
+    setSecureStorage(CUSTOM_TEACHERS_KEY, customList);
+  } catch {
+    // Storage fallback
+  }
+  customList.forEach(t => {
+    if (t && t.id && t.pin) {
+      DEFAULT_CUSTOM_TEACHER_PINS[t.id] = String(t.pin).trim();
+    }
+  });
+  return getAllTeachers();
+};
 
 /**
  * Find a teacher by ID

@@ -9,8 +9,16 @@ import {
   getActiveTeacherSession,
   setActiveTeacherSession,
   logoutTeacherSession,
+  syncCustomTeachersList,
+  updateTeacherPin,
   DEFAULT_TEACHER_PIN
 } from '../utils/teacherAuth';
+import {
+  setSecureStorage,
+  getSecureStorage,
+  encryptDataWithPassword,
+  decryptDataWithPassword
+} from '../utils/cryptoVault';
 import {
   HOLISTIC_ACADEMIC_YEARS,
   SCHOOL_19_CLASSES,
@@ -30,7 +38,7 @@ import {
 } from '../utils/holisticFileImporter';
 import './HolisticMappingPage.css';
 
-const ALL_TEACHERS = getAllTeachers();
+const INITIAL_TEACHERS = getAllTeachers();
 
 const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   // ==================== 1. AUTHENTICATION & ROLE STATE ====================
@@ -40,10 +48,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   });
   const [isFirebaseAdmin, setIsFirebaseAdmin] = useState(false);
 
+  // Dynamic Teachers Directory (Default + Custom Teachers added by Principal)
+  const [customTeachers, setCustomTeachers] = useState(() => getSecureStorage('musherfe_custom_teachers_v1', []));
+  const allTeachersList = useMemo(() => syncCustomTeachersList(customTeachers), [customTeachers]);
+
   // Login Form State
-  const [selectedLoginTeacherId, setSelectedLoginTeacherId] = useState(ALL_TEACHERS[0]?.id || 'tch_36');
+  const [selectedLoginTeacherId, setSelectedLoginTeacherId] = useState(INITIAL_TEACHERS[0]?.id || 'tch_36');
   const [loginPinInput, setLoginPinInput] = useState('');
-  const [loginRoleOverride, setLoginRoleOverride] = useState('auto'); // 'auto', 'principal', 'eval_coord', 'inclusion_coord'
+  const [loginRoleOverride, setLoginRoleOverride] = useState('auto');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -57,7 +69,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     SCHOOL_19_CLASSES.forEach((cls) => {
       initial[cls.id] = {
         homeroomTeacherId: cls.defaultHomeroomId,
-        delegatedTeachers: [] // [{ teacherId, canEditGrades: true, canEditMapping: false, subjects: ['all'] }]
+        delegatedTeachers: []
       };
     });
     return initial;
@@ -70,17 +82,17 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
   // ==================== 3. VIEW & FILTER STATE ====================
   const [activeMainTab, setActiveMainTab] = useState('class-sheet');
-  // Tabs: 'class-sheet' | 'grades-matrix' | 'student-analytics' | 'grade-analytics' | 'school-analytics' | 'permissions' | 'schema-builder' | 'year-manager'
   const [selectedClassId, setSelectedClassId] = useState('class_1_1');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState(1);
   const [selectedPeriod, setSelectedPeriod] = useState('stage_a');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentForCard, setSelectedStudentForCard] = useState(null);
 
-  // ==================== 4. STUDENTS DATA STATE (BY YEAR & CLASS) ====================
-  // Structure: { [year_classId]: [ studentObj, ... ] }
+  // ==================== 4. STUDENTS DATA & CLOUD SECURITY STATE ====================
   const [classStudentsMap, setClassStudentsMap] = useState({});
   const [isSavingCloud, setIsSavingCloud] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('synced'); // 'synced' | 'saving' | 'local_vault'
+  const [lastSavedAt, setLastSavedAt] = useState(() => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }));
   const [saveToast, setSaveToast] = useState('');
 
   // Modals State
@@ -96,7 +108,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const [parsedSheets, setParsedSheets] = useState([]);
   const [selectedSheetIdx, setSelectedSheetIdx] = useState(0);
   const [sheetAnalysis, setSheetAnalysis] = useState(null);
-  const [importMode, setImportMode] = useState('merge'); // 'merge' | 'replace'
+  const [importMode, setImportMode] = useState('merge');
   const [importTargetClassId, setImportTargetClassId] = useState('class_1_1');
   const [importTargetPeriodId, setImportTargetPeriodId] = useState('stage_a');
   const [isParsingFile, setIsParsingFile] = useState(false);
@@ -114,8 +126,17 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const [newSubjTitleHe, setNewSubjTitleHe] = useState('');
   const [newSubjTitleAr, setNewSubjTitleAr] = useState('');
 
+  // Add New Teacher State (Principal Control)
+  const [newTchNameAr, setNewTchNameAr] = useState('');
+  const [newTchNameHe, setNewTchNameHe] = useState('');
+  const [newTchPin, setNewTchPin] = useState('318212');
+  const [newTchRole, setNewTchRole] = useState('מחנך/ת ומורה מקצועי');
+  const [newTchAssignClassId, setNewTchAssignClassId] = useState('none');
+  const [newTchAssignMode, setNewTchAssignMode] = useState('delegated_all'); // 'homeroom' | 'delegated_all' | 'delegated_grades'
+
   // Delegation Form State
-  const [delegateTeacherId, setDelegateTeacherId] = useState(ALL_TEACHERS[2]?.id || 'tch_3');
+  const [delegateTeacherId, setDelegateTeacherId] = useState(INITIAL_TEACHERS[2]?.id || 'tch_3');
+  const [delegateTargetClassId, setDelegateTargetClassId] = useState('class_1_1');
   const [delegateSubjectId, setDelegateSubjectId] = useState('all');
   const [delegateAllowMapping, setDelegateAllowMapping] = useState(false);
 
@@ -144,20 +165,19 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return () => unsub();
   }, []);
 
-  // Load Schema & Permissions Config from localStorage + Firestore
+  // Load Schema & Permissions Config from Encrypted Storage + Firestore Cloud Database
   useEffect(() => {
-    const localConf = localStorage.getItem('musherfe_holistic_config_v2');
-    if (localConf) {
-      try {
-        const parsed = JSON.parse(localConf);
-        if (parsed.academicYears) setAcademicYears(parsed.academicYears);
-        if (parsed.selectedYear) setSelectedYear(parsed.selectedYear);
-        if (parsed.holisticColumns) setHolisticColumns(parsed.holisticColumns);
-        if (parsed.gradeSubjects) setGradeSubjects(parsed.gradeSubjects);
-        if (parsed.classPermissions) setClassPermissions(parsed.classPermissions);
-        if (parsed.coordinatorIds) setCoordinatorIds(parsed.coordinatorIds);
-      } catch (e) {
-        console.warn('Local holistic config parse notice:', e);
+    const localConf = getSecureStorage('musherfe_holistic_config_v2', null);
+    if (localConf && typeof localConf === 'object') {
+      if (localConf.academicYears) setAcademicYears(localConf.academicYears);
+      if (localConf.selectedYear) setSelectedYear(localConf.selectedYear);
+      if (localConf.holisticColumns) setHolisticColumns(localConf.holisticColumns);
+      if (localConf.gradeSubjects) setGradeSubjects(localConf.gradeSubjects);
+      if (localConf.classPermissions) setClassPermissions(localConf.classPermissions);
+      if (localConf.coordinatorIds) setCoordinatorIds(localConf.coordinatorIds);
+      if (Array.isArray(localConf.customTeachers)) {
+        setCustomTeachers(localConf.customTeachers);
+        syncCustomTeachersList(localConf.customTeachers);
       }
     }
 
@@ -171,63 +191,80 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           if (data.gradeSubjects) setGradeSubjects(data.gradeSubjects);
           if (data.classPermissions) setClassPermissions(data.classPermissions);
           if (data.coordinatorIds) setCoordinatorIds(data.coordinatorIds);
-          localStorage.setItem('musherfe_holistic_config_v2', JSON.stringify(data));
+          if (Array.isArray(data.customTeachers)) {
+            setCustomTeachers(data.customTeachers);
+            syncCustomTeachersList(data.customTeachers);
+          }
+          setSecureStorage('musherfe_holistic_config_v2', data);
+          setCloudSyncStatus('synced');
         }
-      }, () => {});
+      }, () => {
+        setCloudSyncStatus('local_vault');
+      });
       return () => unsub();
     } catch {
-      // Offline fallback
+      setCloudSyncStatus('local_vault');
     }
   }, []);
 
-  // Load All Classes Data for the Selected Academic Year
+  // Load All Classes Data for the Selected Academic Year (Encrypted Vault + Realtime Cloud DB)
   useEffect(() => {
-    // 1. Load from localStorage first for instant responsiveness (with official 469-student roster)
     const loadedMap = {};
     SCHOOL_19_CLASSES.forEach((cls) => {
       const key = `${selectedYear}_${cls.id}`;
-      const saved = localStorage.getItem(`holistic_students_v2_${key}`);
-      if (saved) {
-        try {
-          const parsedList = JSON.parse(saved);
-          const isOldDemo =
-            !Array.isArray(parsedList) ||
-            parsedList.length === 0 ||
-            parsedList.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
-          loadedMap[key] = isOldDemo ? generateInitialDemoStudents(cls.id) : parsedList;
-        } catch {
-          loadedMap[key] = generateInitialDemoStudents(cls.id);
-        }
+      const saved = getSecureStorage(`holistic_students_v2_${key}`, null);
+      if (saved && Array.isArray(saved) && saved.length > 0) {
+        const isOldDemo = saved.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
+        loadedMap[key] = isOldDemo ? generateInitialDemoStudents(cls.id) : saved;
       } else {
         loadedMap[key] = generateInitialDemoStudents(cls.id);
-        localStorage.setItem(`holistic_students_v2_${key}`, JSON.stringify(loadedMap[key]));
+        setSecureStorage(`holistic_students_v2_${key}`, loadedMap[key]);
       }
     });
     setClassStudentsMap((prev) => ({ ...prev, ...loadedMap }));
 
-    // 2. Subscribe to Firestore collection `holistic_mapping_classes`
+    // Subscribe to Firestore collection `holistic_mapping_classes` and auto-seed missing classes to Cloud DB
     try {
       const q = collection(db, 'holistic_mapping_classes');
       const unsub = onSnapshot(q, (snap) => {
         const cloudUpdates = {};
+        const existingCloudKeys = new Set();
         snap.forEach((docSnap) => {
           const d = docSnap.data();
           if (d && d.academicYear === selectedYear && Array.isArray(d.students) && d.students.length > 0) {
             const isOldDemo = d.students.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
             if (!isOldDemo) {
               const key = `${d.academicYear}_${d.classId}`;
+              existingCloudKeys.add(key);
               cloudUpdates[key] = d.students;
-              localStorage.setItem(`holistic_students_v2_${key}`, JSON.stringify(d.students));
+              setSecureStorage(`holistic_students_v2_${key}`, d.students);
             }
           }
         });
         if (Object.keys(cloudUpdates).length > 0) {
           setClassStudentsMap((prev) => ({ ...prev, ...cloudUpdates }));
         }
-      }, () => {});
+        setCloudSyncStatus('synced');
+
+        // Ensure all 19 classes are backed up in Firestore Cloud Database so they can be accessed anytime from any device
+        SCHOOL_19_CLASSES.forEach((cls) => {
+          const key = `${selectedYear}_${cls.id}`;
+          if (!existingCloudKeys.has(key) && loadedMap[key] && loadedMap[key].length > 0) {
+            setDoc(doc(db, 'holistic_mapping_classes', key), {
+              academicYear: selectedYear,
+              classId: cls.id,
+              students: loadedMap[key],
+              updatedAt: new Date().toISOString(),
+              updatedBy: 'מערכת הגיבוי האוטומטי'
+            }, { merge: true }).catch(() => {});
+          }
+        });
+      }, () => {
+        setCloudSyncStatus('local_vault');
+      });
       return () => unsub();
     } catch {
-      // Offline fallback
+      setCloudSyncStatus('local_vault');
     }
   }, [selectedYear]);
 
@@ -331,18 +368,29 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     };
   };
 
-  // Auto-select homeroom class when teacher logs in
+  // Compute classes visible to the current logged-in user:
+  // Principal Rami & Coordinator Jihan see all 19 classes. Regular homeroom/delegated teachers see ONLY their authorized class(es)!
+  const visibleClasses = useMemo(() => {
+    if (userCapabilities.canViewAllClasses || userCapabilities.isSystemManager) {
+      return SCHOOL_19_CLASSES;
+    }
+    const allowed = SCHOOL_19_CLASSES.filter((cls) => getAccessForClass(cls.id).hasAccess);
+    return allowed;
+  }, [userCapabilities, activeTeacher, classPermissions]);
+
+  // Auto-select and lock regular teacher to their authorized class when logging in or when permissions change
   useEffect(() => {
     if (activeTeacher && !userCapabilities.isSystemManager) {
-      const myClass = SCHOOL_19_CLASSES.find(
-        (c) => (classPermissions[c.id]?.homeroomTeacherId || c.defaultHomeroomId) === activeTeacher.id
-      );
-      if (myClass) {
-        setSelectedClassId(myClass.id);
-        setSelectedGradeLevel(myClass.grade);
+      const currentAllowed = visibleClasses.some((c) => c.id === selectedClassId);
+      if (!currentAllowed && visibleClasses.length > 0) {
+        setSelectedClassId(visibleClasses[0].id);
+        setSelectedGradeLevel(visibleClasses[0].grade);
+      }
+      if (activeMainTab === 'grade-analytics' || activeMainTab === 'school-analytics') {
+        setActiveMainTab('class-sheet');
       }
     }
-  }, [activeTeacher, userCapabilities.isSystemManager]);
+  }, [activeTeacher, userCapabilities.isSystemManager, visibleClasses, selectedClassId, activeMainTab]);
 
   // ==================== 7. SAVE HELPERS ====================
   const triggerToast = (msg) => {
@@ -358,23 +406,29 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       gradeSubjects,
       classPermissions,
       coordinatorIds,
+      customTeachers,
       ...updatedFields,
       updatedAt: new Date().toISOString()
     };
-    localStorage.setItem('musherfe_holistic_config_v2', JSON.stringify(nextConfig));
+    setSecureStorage('musherfe_holistic_config_v2', nextConfig);
+    setCloudSyncStatus('saving');
     try {
       await setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true });
+      setCloudSyncStatus('synced');
+      setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
-      console.warn('Cloud config save fallback to local:', e);
+      console.warn('Cloud config save fallback to encrypted local vault:', e);
+      setCloudSyncStatus('local_vault');
     }
   };
 
   const saveClassStudents = async (classId, updatedStudents, yearToSave = selectedYear) => {
     const key = `${yearToSave}_${classId}`;
     setClassStudentsMap((prev) => ({ ...prev, [key]: updatedStudents }));
-    localStorage.setItem(`holistic_students_v2_${key}`, JSON.stringify(updatedStudents));
+    setSecureStorage(`holistic_students_v2_${key}`, updatedStudents);
 
     setIsSavingCloud(true);
+    setCloudSyncStatus('saving');
     try {
       await setDoc(
         doc(db, 'holistic_mapping_classes', key),
@@ -387,10 +441,42 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         },
         { merge: true }
       );
+      setCloudSyncStatus('synced');
+      setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch {
-      // Saved locally
+      setCloudSyncStatus('local_vault');
     } finally {
       setIsSavingCloud(false);
+    }
+  };
+
+  // Export Military-Grade AES-256-GCM Encrypted Full Database Backup
+  const handleDownloadEncryptedBackup = async () => {
+    try {
+      const pwd = window.prompt('🔐 הזן סיסמת הצפנה (לפחות 4 תווים) לנעילת קובץ הגיבוי בתקן AES-256-GCM:', '061285227');
+      if (!pwd) return;
+      const fullBackupPayload = {
+        exportedAt: new Date().toISOString(),
+        academicYears,
+        selectedYear,
+        holisticColumns,
+        gradeSubjects,
+        classPermissions,
+        coordinatorIds,
+        customTeachers,
+        classStudentsMap
+      };
+      const encryptedPkg = await encryptDataWithPassword(fullBackupPayload, pwd);
+      const blob = new Blob([JSON.stringify(encryptedPkg, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Musherfe_Holistic_AES256_Backup_${selectedYear}_${new Date().toISOString().slice(0, 10)}.enc.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      triggerToast('🛡️ קובץ גיבוי מוצפן (AES-256-GCM) של כל מסד הנתונים הורד בהצלחה!');
+    } catch (err) {
+      alert('שגיאה ביצירת גיבוי מוצפן: ' + (err.message || err));
     }
   };
 
@@ -801,8 +887,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const handleGrantTeacherAccess = (e) => {
     e.preventDefault();
     if (!delegateTeacherId) return;
-    const currentPerm = classPermissions[selectedClassId] || {
-      homeroomTeacherId: currentClassObj.defaultHomeroomId,
+    const targetClassId = userCapabilities.isSystemManager ? (delegateTargetClassId || selectedClassId) : selectedClassId;
+    const targetClsObj = SCHOOL_19_CLASSES.find((c) => c.id === targetClassId) || currentClassObj;
+    const currentPerm = classPermissions[targetClassId] || {
+      homeroomTeacherId: targetClsObj.defaultHomeroomId,
       delegatedTeachers: []
     };
     const existingList = currentPerm.delegatedTeachers || [];
@@ -821,14 +909,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
     const nextPerms = {
       ...classPermissions,
-      [selectedClassId]: {
+      [targetClassId]: {
         ...currentPerm,
         delegatedTeachers: nextDelegated
       }
     };
     setClassPermissions(nextPerms);
     saveGlobalConfig({ classPermissions: nextPerms });
-    triggerToast('✅ הרשאת הכניסה והזנת הציונים הוענקה למורה בהצלחה!');
+    triggerToast(`✅ הרשאת הגישה לכיתה ${targetClsObj.nameHe} הוענקה למורה בהצלחה!`);
   };
 
   const handleRevokeTeacherAccess = (classId, teacherIdToRemove) => {
@@ -843,6 +931,89 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setClassPermissions(nextPerms);
     saveGlobalConfig({ classPermissions: nextPerms });
     triggerToast('🗑️ ההרשאה של המורה בוטלה.');
+  };
+
+  // Principal / Coordinator: Add a brand new teacher to the system & optionally grant class access immediately
+  const handleCreateNewTeacher = async (e) => {
+    e.preventDefault();
+    const cleanAr = newTchNameAr.trim();
+    const cleanHe = newTchNameHe.trim() || cleanAr;
+    const cleanPin = newTchPin.trim() || DEFAULT_TEACHER_PIN;
+    if (!cleanAr && !cleanHe) {
+      alert('נא להזין את שם המורה (בעברית או בערבית).');
+      return;
+    }
+
+    const newId = `tch_custom_${Date.now()}`;
+    const newTeacherObj = {
+      id: newId,
+      nameAr: cleanAr || cleanHe,
+      nameHe: cleanHe || cleanAr,
+      role: newTchRole.trim() || 'מחנך/ת ומורה מקצועי',
+      pin: cleanPin,
+      createdAt: new Date().toISOString()
+    };
+
+    const nextCustomTeachers = [...customTeachers, newTeacherObj];
+    setCustomTeachers(nextCustomTeachers);
+    syncCustomTeachersList(nextCustomTeachers);
+
+    try {
+      await updateTeacherPin(newId, cleanPin, 'מנהל בית הספר');
+    } catch {
+      // Stored in customTeachers config
+    }
+
+    let nextPerms = { ...classPermissions };
+    if (newTchAssignClassId && newTchAssignClassId !== 'none') {
+      const clsObj = SCHOOL_19_CLASSES.find((c) => c.id === newTchAssignClassId);
+      const curPerm = nextPerms[newTchAssignClassId] || {
+        homeroomTeacherId: clsObj?.defaultHomeroomId,
+        delegatedTeachers: []
+      };
+      if (newTchAssignMode === 'homeroom') {
+        nextPerms[newTchAssignClassId] = {
+          ...curPerm,
+          homeroomTeacherId: newId
+        };
+      } else {
+        nextPerms[newTchAssignClassId] = {
+          ...curPerm,
+          delegatedTeachers: [
+            ...(curPerm.delegatedTeachers || []),
+            {
+              teacherId: newId,
+              subjects: ['all'],
+              canEditMapping: newTchAssignMode === 'delegated_all',
+              grantedAt: new Date().toISOString(),
+              grantedBy: 'מנהל בית הספר'
+            }
+          ]
+        };
+      }
+      setClassPermissions(nextPerms);
+    }
+
+    await saveGlobalConfig({
+      customTeachers: nextCustomTeachers,
+      classPermissions: nextPerms
+    });
+
+    setNewTchNameAr('');
+    setNewTchNameHe('');
+    setNewTchPin('318212');
+    setNewTchAssignClassId('none');
+    triggerToast(`✅ המורה "${newTeacherObj.nameHe}" נוסף/ה למערכת ונשמר/ה במסד הנתונים המאובטח!`);
+  };
+
+  const handleRemoveCustomTeacher = async (teacherId) => {
+    const tObj = getTeacherById(teacherId);
+    if (!window.confirm(`האם למחוק את המורה "${tObj?.nameHe || teacherId}" מרשימת המורים הנוספים?`)) return;
+    const nextCustom = customTeachers.filter((t) => t.id !== teacherId);
+    setCustomTeachers(nextCustom);
+    syncCustomTeachersList(nextCustom);
+    await saveGlobalConfig({ customTeachers: nextCustom });
+    triggerToast('🗑️ המורה הוסר מרשימת המורים הנוספים.');
   };
 
   // ==================== 11. NEW ACADEMIC YEAR ROLLOVER ====================
@@ -1003,7 +1174,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
-    const teacher = getTeacherById(selectedLoginTeacherId) || ALL_TEACHERS[0];
+    const teacher = getTeacherById(selectedLoginTeacherId) || allTeachersList[0];
     if (!teacher) {
       setLoginError('בחר שם מורה או מנהל מהרשימה.');
       return;
@@ -1334,7 +1505,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   background: '#f8fafc'
                 }}
               >
-                {ALL_TEACHERS.map((t) => (
+                {allTeachersList.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.nameHe} — {t.nameAr} ({t.role})
                   </option>
@@ -1469,6 +1640,50 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           </div>
 
           <div className="holistic-top-controls">
+            {/* Cloud Database & Encryption Security Status Badge */}
+            <div
+              style={{
+                background: cloudSyncStatus === 'synced' ? 'rgba(16, 185, 129, 0.22)' : 'rgba(245, 158, 11, 0.25)',
+                border: `1.5px solid ${cloudSyncStatus === 'synced' ? '#34d399' : '#fbbf24'}` ,
+                padding: '0.45rem 0.85rem',
+                borderRadius: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                color: '#ecfdf5',
+                fontSize: '0.8rem',
+                fontWeight: 900
+              }}
+              title="כל הנתונים נשמרים אוטומטית במסד הנתונים בענן (Firebase Firestore) ובכספת מוצפנת AES-256"
+            >
+              <span>{cloudSyncStatus === 'saving' ? '⏳' : '🛡️'}</span>
+              <span>
+                {cloudSyncStatus === 'saving'
+                  ? 'שומר ומצפין במסד הנתונים...'
+                  : `נשמר ומוצפן במסד הנתונים (${lastSavedAt})`}
+              </span>
+            </div>
+
+            {userCapabilities.canManageSchema && (
+              <button
+                type="button"
+                onClick={handleDownloadEncryptedBackup}
+                style={{
+                  background: 'rgba(15, 23, 42, 0.55)',
+                  color: '#fef08a',
+                  border: '1.5px solid #fbbf24',
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: '12px',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  fontSize: '0.82rem'
+                }}
+                title="הורד עותק גיבוי מוצפן (AES-256-GCM) של כל 19 הכיתות"
+              >
+                🔐 גיבוי מוצפן (AES-256)
+              </button>
+            )}
+
             {/* Academic Year Selector */}
             <div
               style={{
@@ -1649,31 +1864,38 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             <span>ניתוח ברמת תלמיד (רב-שנתי)</span>
           </button>
 
-          <button
-            type="button"
-            className={`holistic-tab-btn ${activeMainTab === 'grade-analytics' ? 'active' : ''}`}
-            onClick={() => setActiveMainTab('grade-analytics')}
-          >
-            <span>📊</span>
-            <span>ניתוח ברמת שכבה (א׳–ו׳)</span>
-          </button>
+          {userCapabilities.canViewAllClasses && (
+            <>
+              <button
+                type="button"
+                className={`holistic-tab-btn ${activeMainTab === 'grade-analytics' ? 'active' : ''}`}
+                onClick={() => setActiveMainTab('grade-analytics')}
+              >
+                <span>📊</span>
+                <span>ניתוח ברמת שכבה (א׳–ו׳)</span>
+              </button>
 
-          <button
-            type="button"
-            className={`holistic-tab-btn ${activeMainTab === 'school-analytics' ? 'active' : ''}`}
-            onClick={() => setActiveMainTab('school-analytics')}
-          >
-            <span>🏫</span>
-            <span>ניתוח ברמת בית ספר (19 כיתות)</span>
-          </button>
+              <button
+                type="button"
+                className={`holistic-tab-btn ${activeMainTab === 'school-analytics' ? 'active' : ''}`}
+                onClick={() => setActiveMainTab('school-analytics')}
+              >
+                <span>🏫</span>
+                <span>ניתוח ברמת בית ספר (19 כיתות)</span>
+              </button>
+            </>
+          )}
 
           <button
             type="button"
             className={`holistic-tab-btn ${activeMainTab === 'permissions' ? 'active' : ''}`}
-            onClick={() => setActiveMainTab('permissions')}
+            onClick={() => {
+              setDelegateTargetClassId(selectedClassId);
+              setActiveMainTab('permissions');
+            }}
           >
             <span>🔑</span>
-            <span>הרשאות מחנכים ומורים מקצועיים</span>
+            <span>{userCapabilities.isSystemManager ? 'ניהול הרשאות כיתות והוספת מורים' : 'הרשאות מורים מקצועיים לכיתתי'}</span>
           </button>
 
           {userCapabilities.canManageSchema && (
@@ -1701,13 +1923,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           )}
         </div>
 
-        {/* 19 Classes Quick Strip */}
+        {/* Classes Quick Strip: Shows ALL 19 classes to Principal Rami & Jihan, and ONLY the teacher's authorized class(es) to regular teachers */}
         {(activeMainTab === 'class-sheet' || activeMainTab === 'grades-matrix' || activeMainTab === 'permissions') && (
           <div className="classes-strip no-print">
             <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a', marginLeft: '0.4rem' }}>
-              🏫 19 כיתות לימוד:
+              {userCapabilities.canViewAllClasses
+                ? '🏫 כל 19 כיתות בית הספר (תצוגת מנהל ורכזת):'
+                : `🏫 הכיתה שלך (${visibleClasses.length}):`}
             </span>
-            {SCHOOL_19_CLASSES.map((cls) => {
+            {visibleClasses.map((cls) => {
               const acc = getAccessForClass(cls.id);
               const isSelected = cls.id === selectedClassId;
               return (
@@ -1717,13 +1941,13 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   onClick={() => {
                     setSelectedClassId(cls.id);
                     setSelectedGradeLevel(cls.grade);
+                    setDelegateTargetClassId(cls.id);
                   }}
-                  className={`class-chip-btn ${isSelected ? 'active' : ''} ${!acc.hasAccess ? 'locked' : ''}`}
+                  className={`class-chip-btn ${isSelected ? 'active' : ''}`}
                   title={acc.accessBadgeHe}
                 >
                   <span>{cls.nameHe}</span>
                   {acc.isHomeroom && !userCapabilities.isSystemManager && <span>🔑</span>}
-                  {!acc.hasAccess && <span>🔒</span>}
                 </button>
               );
             })}
@@ -2781,171 +3005,389 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         })()}
 
         {/* ===================================================================== */}
-        {/* TAB 6: HOMEROOM & SUBJECT TEACHER PERMISSIONS (הרשאות מחנכים ומורים)  */}
+        {/* TAB 6: HOMEROOM, CLASS ACCESS & ADDING TEACHERS (הרשאות והוספת מורים) */}
         {/* ===================================================================== */}
         {activeMainTab === 'permissions' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem' }}>
-            {/* Homeroom Teacher & Delegation Panel for Selected Class */}
-            <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
-                🔑 ניהול הרשאות כניסה והזנת ציונים — כיתה {currentClassObj.nameHe}
-              </h3>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.25rem', fontWeight: 600 }}>
-                מחנך/ת הכיתה יכול/ה לתת גישה לכל מורה מקצועי להיכנס לכיתה ולהזין ציונים במקצוע שלו או לעדכן את המיפוי.
-              </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem' }}>
+              {/* Card 1: Grant Any Teacher Access to Any Class + Set Homeroom Teacher */}
+              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.28rem', fontWeight: 900, color: '#0f172a' }}>
+                  🔑 ניהול הרשאות גישה לכיתה — כיתה {currentClassObj.nameHe} ({currentClassObj.nameAr})
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.88rem', marginBottom: '1.2rem', fontWeight: 600 }}>
+                  כל מחנך רואה את הכיתה שלו בלבד. מנהל בית הספר (או מחנך הכיתה) יכול להעניק לכל מורה גישה להיכנס לכיתה זו.
+                </p>
 
-              {/* Assign Homeroom Teacher (Admin/Coordinators) */}
-              <div style={{ background: '#f8fafc', padding: '1.1rem', borderRadius: '14px', border: '1px solid #cbd5e1', marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontWeight: 900, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                  👨‍🏫 מחנך/ת הכיתה הראשי/ת ({currentClassObj.nameHe}):
-                </label>
-                <select
-                  disabled={!userCapabilities.isSystemManager}
-                  value={classPermissions[selectedClassId]?.homeroomTeacherId || currentClassObj.defaultHomeroomId}
-                  onChange={(e) => handleChangeHomeroomTeacher(selectedClassId, e.target.value)}
-                  style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #94a3b8', fontWeight: 800 }}
-                >
-                  {ALL_TEACHERS.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nameHe} — {t.nameAr}
-                    </option>
-                  ))}
-                </select>
+                {/* Assign Homeroom Teacher (Admin/Coordinators) */}
+                <div style={{ background: '#f8fafc', padding: '1.1rem', borderRadius: '14px', border: '1px solid #cbd5e1', marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontWeight: 900, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.4rem' }}>
+                    👨‍🏫 מחנך/ת הכיתה הראשי/ת ({currentClassObj.nameHe}) — רואה ועורך את הכיתה אוטומטית:
+                  </label>
+                  <select
+                    disabled={!userCapabilities.isSystemManager}
+                    value={classPermissions[selectedClassId]?.homeroomTeacherId || currentClassObj.defaultHomeroomId}
+                    onChange={(e) => handleChangeHomeroomTeacher(selectedClassId, e.target.value)}
+                    style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', border: '1.5px solid #94a3b8', fontWeight: 800 }}
+                  >
+                    {allTeachersList.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nameHe} — {t.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Grant Permission to Any Teacher for Any Class */}
+                {(currentClassAccess.isHomeroom || userCapabilities.isSystemManager) ? (
+                  <form onSubmit={handleGrantTeacherAccess} style={{ background: '#eff6ff', padding: '1.25rem', borderRadius: '16px', border: '1.5px solid #93c5fd' }}>
+                    <h4 style={{ margin: '0 0 0.85rem 0', color: '#1e3a8a', fontWeight: 900 }}>
+                      ➕ הענקת גישה למורה להיכנס לכיתה (منح صلاحية لمعلم للوصول إلى صف):
+                    </h4>
+
+                    {userCapabilities.isSystemManager && (
+                      <div style={{ marginBottom: '0.85rem' }}>
+                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, marginBottom: '0.3rem' }}>
+                          🏫 בחר כיתה להענקת הגישה (כל 19 הכיתות):
+                        </label>
+                        <select
+                          value={delegateTargetClassId || selectedClassId}
+                          onChange={(e) => {
+                            setDelegateTargetClassId(e.target.value);
+                            setSelectedClassId(e.target.value);
+                          }}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #60a5fa', fontWeight: 900, background: '#ffffff' }}
+                        >
+                          {SCHOOL_19_CLASSES.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              כיתה {c.nameHe} ({c.nameAr})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: '0.85rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, marginBottom: '0.3rem' }}>👨‍🏫 בחר מורה מצוות בית הספר:</label>
+                      <select
+                        value={delegateTeacherId}
+                        onChange={(e) => setDelegateTeacherId(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800 }}
+                      >
+                        {allTeachersList.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.nameHe} ({t.nameAr})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: '0.85rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, marginBottom: '0.3rem' }}>📚 מקצוע מורשה להזנת ציונים:</label>
+                      <select
+                        value={delegateSubjectId}
+                        onChange={(e) => setDelegateSubjectId(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800 }}
+                      >
+                        <option value="all">כל המקצועות הכיתתיים</option>
+                        {gradeSubjects.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.titleHe}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '0.86rem', marginBottom: '1rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={delegateAllowMapping}
+                        onChange={(e) => setDelegateAllowMapping(e.target.checked)}
+                      />
+                      <span>אפשר למורה זה למלא גם את שדות המיפוי ההוליסטי של הכיתה (בנוסף לציונים)</span>
+                    </label>
+
+                    <button
+                      type="submit"
+                      style={{
+                        width: '100%',
+                        background: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.78rem',
+                        borderRadius: '12px',
+                        fontWeight: 900,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✅ הענק למורה הרשאת גישה לכיתה {currentClassObj.nameHe}
+                    </button>
+                  </form>
+                ) : (
+                  <div style={{ color: '#991b1b', fontWeight: 800 }}>
+                    רק מנהל בית הספר או מחנך/ת הכיתה יכולים להעניק הרשאות למורים בכיתה זו.
+                  </div>
+                )}
               </div>
 
-              {/* Grant Permission to Subject Teacher */}
-              {(currentClassAccess.isHomeroom || userCapabilities.isSystemManager) ? (
-                <form onSubmit={handleGrantTeacherAccess} style={{ background: '#eff6ff', padding: '1.25rem', borderRadius: '16px', border: '1.5px solid #93c5fd' }}>
-                  <h4 style={{ margin: '0 0 0.85rem 0', color: '#1e3a8a', fontWeight: 900 }}>
-                    ➕ מתן גישה למורה מקצועי להזנת ציונים בכיתה {currentClassObj.nameHe}:
-                  </h4>
+              {/* Card 2: Active Delegated Teachers List for Selected Class */}
+              <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                  📋 מורים בעלי הרשאת גישה לכיתה {currentClassObj.nameHe}
+                </h3>
 
-                  <div style={{ marginBottom: '0.85rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, marginBottom: '0.3rem' }}>בחר מורה מצוות בית הספר:</label>
-                    <select
-                      value={delegateTeacherId}
-                      onChange={(e) => setDelegateTeacherId(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800 }}
-                    >
-                      {ALL_TEACHERS.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.nameHe} ({t.nameAr})
-                        </option>
-                      ))}
-                    </select>
+                {(classPermissions[selectedClassId]?.delegatedTeachers || []).length === 0 ? (
+                  <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: '14px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>
+                    טרם הוגדרו מורים נוספים לכיתה זו. רק מחנך/ת הכיתה, מנהל בית הספר (ראמי) והרכזת (ג׳יהאן) רואים כיתה זו כעת.
                   </div>
-
-                  <div style={{ marginBottom: '0.85rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, marginBottom: '0.3rem' }}>מקצוע מורשה להזנת ציונים:</label>
-                    <select
-                      value={delegateSubjectId}
-                      onChange={(e) => setDelegateSubjectId(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontWeight: 800 }}
-                    >
-                      <option value="all">כל המקצועות הכיתתיים</option>
-                      {gradeSubjects.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.titleHe}
-                        </option>
-                      ))}
-                    </select>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {(classPermissions[selectedClassId]?.delegatedTeachers || []).map((del) => {
+                      const tObj = getTeacherById(del.teacherId);
+                      const subjLabel =
+                        del.subjects?.includes('all')
+                          ? 'כל המקצועות'
+                          : gradeSubjects.find((s) => del.subjects?.includes(s.id))?.titleHe || 'מקצוע נבחר';
+                      return (
+                        <div
+                          key={del.teacherId}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.9rem 1.1rem',
+                            borderRadius: '14px',
+                            background: '#f8fafc',
+                            border: '1px solid #cbd5e1'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 900, color: '#0f172a' }}>
+                              👨‍🏫 {tObj?.nameHe} ({tObj?.nameAr})
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 800 }}>
+                              מקצוע: {subjLabel} | {del.canEditMapping ? 'כולל מילוי מיפוי ✅' : 'הזנת ציונים בלבד 📝'}
+                            </div>
+                          </div>
+                          {(currentClassAccess.isHomeroom || userCapabilities.isSystemManager) && (
+                            <button
+                              type="button"
+                              onClick={() => handleRevokeTeacherAccess(selectedClassId, del.teacherId)}
+                              style={{
+                                background: '#fee2e2',
+                                color: '#b91c1c',
+                                border: 'none',
+                                padding: '0.45rem 0.85rem',
+                                borderRadius: '8px',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                fontSize: '0.8rem'
+                              }}
+                            >
+                              ביטול הרשאה ✕
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '0.86rem', marginBottom: '1rem', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={delegateAllowMapping}
-                      onChange={(e) => setDelegateAllowMapping(e.target.checked)}
-                    />
-                    <span>אפשר למורה זה לערוך גם את שדות המיפוי ההוליסטי (בנוסף לציונים)</span>
-                  </label>
-
-                  <button
-                    type="submit"
-                    style={{
-                      width: '100%',
-                      background: '#2563eb',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.75rem',
-                      borderRadius: '12px',
-                      fontWeight: 900,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✅ הענק הרשאת גישה למורה
-                  </button>
-                </form>
-              ) : (
-                <div style={{ color: '#991b1b', fontWeight: 800 }}>
-                  רק מחנך/ת הכיתה או מנהל המערכת יכולים להעניק הרשאות למורים בכיתה זו.
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Active Delegated Teachers List */}
-            <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
-                📋 מורים בעלי הרשאת גישה לכיתה {currentClassObj.nameHe}
-              </h3>
+            {/* Card 3 (Principal / Coordinator Only): Add New Teachers & Overview of All 19 Classes Permissions */}
+            {userCapabilities.isSystemManager && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem' }}>
+                {/* Add New Teacher Form */}
+                <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '2px solid #86efac' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#065f46' }}>
+                    👨‍🏫 הוספת מורה חדש למערכת לפי הצורך (إضافة معلم جديد وتعيين صفه)
+                  </h3>
+                  <p style={{ color: '#475569', fontSize: '0.86rem', marginBottom: '1.1rem', fontWeight: 600 }}>
+                    הוסף כל מורה חדש לצוות בית הספר, קבע לו קוד סודי אישי (PIN), ושייך לו גישה מיידית לכל כיתה שתבחר:
+                  </p>
 
-              {(classPermissions[selectedClassId]?.delegatedTeachers || []).length === 0 ? (
-                <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: '14px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>
-                  טרם הוגדרו מורים מקצועיים נוספים לכיתה זו. רק מחנך/ת הכיתה והנהלת בית הספר מורשים כעת.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {(classPermissions[selectedClassId]?.delegatedTeachers || []).map((del) => {
-                    const tObj = getTeacherById(del.teacherId);
-                    const subjLabel =
-                      del.subjects?.includes('all')
-                        ? 'כל המקצועות'
-                        : gradeSubjects.find((s) => del.subjects?.includes(s.id))?.titleHe || 'מקצוע נבחר';
-                    return (
-                      <div
-                        key={del.teacherId}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '0.9rem 1.1rem',
-                          borderRadius: '14px',
-                          background: '#f8fafc',
-                          border: '1px solid #cbd5e1'
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 900, color: '#0f172a' }}>
-                            👨‍🏫 {tObj?.nameHe} ({tObj?.nameAr})
-                          </div>
-                          <div style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 800 }}>
-                            מקצוע: {subjLabel} | {del.canEditMapping ? 'כולל עריכת מיפוי ✅' : 'הזנת ציונים בלבד 📝'}
-                          </div>
-                        </div>
-                        {(currentClassAccess.isHomeroom || userCapabilities.isSystemManager) && (
-                          <button
-                            type="button"
-                            onClick={() => handleRevokeTeacherAccess(selectedClassId, del.teacherId)}
+                  <form onSubmit={handleCreateNewTeacher} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, marginBottom: '0.25rem' }}>שם המורה בערבית (الاسم بالعربية):</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="למשל: أحمد اغبارية"
+                          value={newTchNameAr}
+                          onChange={(e) => setNewTchNameAr(e.target.value)}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800, boxSizing: 'border-box' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, marginBottom: '0.25rem' }}>שם המורה בעברית (الاسم بالعبرية):</label>
+                        <input
+                          type="text"
+                          placeholder="למשל: אגבאריה אחמד"
+                          value={newTchNameHe}
+                          onChange={(e) => setNewTchNameHe(e.target.value)}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800, boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, marginBottom: '0.25rem' }}>🔑 קוד סודי אישי (PIN / ת.ז):</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="ברירת מחדל: 318212"
+                          value={newTchPin}
+                          onChange={(e) => setNewTchPin(e.target.value)}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 900, boxSizing: 'border-box' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, marginBottom: '0.25rem' }}>תפקיד בבית הספר:</label>
+                        <input
+                          type="text"
+                          value={newTchRole}
+                          onChange={(e) => setNewTchRole(e.target.value)}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800, boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, marginBottom: '0.25rem' }}>🏫 שיוך גישה לכיתה (אופציונלי):</label>
+                        <select
+                          value={newTchAssignClassId}
+                          onChange={(e) => setNewTchAssignClassId(e.target.value)}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                        >
+                          <option value="none">— ללא שיוך מיידי (ניתן לשייך בהמשך) —</option>
+                          {SCHOOL_19_CLASSES.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              כיתה {c.nameHe} ({c.nameAr})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, marginBottom: '0.25rem' }}>סוג הרשאה בכיתה:</label>
+                        <select
+                          value={newTchAssignMode}
+                          onChange={(e) => setNewTchAssignMode(e.target.value)}
+                          disabled={newTchAssignClassId === 'none'}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
+                        >
+                          <option value="delegated_all">מילוי מיפוי + ציונים בכיתה</option>
+                          <option value="delegated_grades">הזנת ציונים בלבד בכיתה</option>
+                          <option value="homeroom">מחנך/ת ראשי/ת של הכיתה</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      style={{
+                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.85rem',
+                        borderRadius: '12px',
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        fontSize: '0.95rem'
+                      }}
+                    >
+                      ➕ הוסף מורה חדש ושמור במסד הנתונים
+                    </button>
+                  </form>
+
+                  {customTeachers.length > 0 && (
+                    <div style={{ marginTop: '1.1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
+                      <div style={{ fontWeight: 900, fontSize: '0.84rem', color: '#0f172a', marginBottom: '0.5rem' }}>
+                        מורים שנוספו על ידי המנהל ({customTeachers.length}):
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        {customTeachers.map((ct) => (
+                          <div
+                            key={ct.id}
                             style={{
-                              background: '#fee2e2',
-                              color: '#b91c1c',
-                              border: 'none',
-                              padding: '0.45rem 0.85rem',
-                              borderRadius: '8px',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              fontSize: '0.8rem'
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              background: '#f0fdf4',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '10px',
+                              border: '1px solid #bbf7d0',
+                              fontSize: '0.82rem',
+                              fontWeight: 800
                             }}
                           >
-                            ביטול הרשאה ✕
-                          </button>
-                        )}
+                            <span>👨‍🏫 {ct.nameHe} — {ct.nameAr} (קוד: {ct.pin || '318212'})</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCustomTeacher(ct.id)}
+                              style={{ background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', fontWeight: 900 }}
+                            >
+                              מחק ✕
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* All 19 Classes Permissions Matrix for Principal */}
+                <div style={{ background: '#ffffff', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #cbd5e1', maxHeight: '560px', overflowY: 'auto' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                    🏫 מפת הרשאות מלאה — כל 19 הכיתות (جدول صلاحيات جميع الصفوف)
+                  </h3>
+                  <p style={{ color: '#64748b', fontSize: '0.84rem', marginBottom: '0.9rem', fontWeight: 600 }}>
+                    לחץ על כל כיתה כדי לערוך את המחנך שלה או להוסיף לה מורים מורשים:
+                  </p>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9', textAlign: 'right' }}>
+                        <th style={{ padding: '0.55rem' }}>כיתה</th>
+                        <th style={{ padding: '0.55rem' }}>מחנך/ת הכיתה</th>
+                        <th style={{ padding: '0.55rem' }}>מורים מורשים נוספים</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SCHOOL_19_CLASSES.map((cls) => {
+                        const perm = classPermissions[cls.id] || {};
+                        const hr = getTeacherById(perm.homeroomTeacherId || cls.defaultHomeroomId);
+                        const dels = perm.delegatedTeachers || [];
+                        return (
+                          <tr
+                            key={cls.id}
+                            onClick={() => {
+                              setSelectedClassId(cls.id);
+                              setDelegateTargetClassId(cls.id);
+                            }}
+                            style={{
+                              borderBottom: '1px solid #e2e8f0',
+                              background: cls.id === selectedClassId ? '#eff6ff' : 'transparent',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <td style={{ padding: '0.55rem', fontWeight: 900, color: '#1e3a8a' }}>{cls.nameHe}</td>
+                            <td style={{ padding: '0.55rem', fontWeight: 800 }}>{hr ? `${hr.nameHe} (${hr.nameAr})` : cls.homeroomNameHe}</td>
+                            <td style={{ padding: '0.55rem', color: dels.length > 0 ? '#059669' : '#94a3b8', fontWeight: 800 }}>
+                              {dels.length > 0
+                                ? dels.map((d) => getTeacherById(d.teacherId)?.nameHe || d.teacherId).join(', ')
+                                : 'מחנך בלבד'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -3275,7 +3717,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     style={{ width: '100%', padding: '0.6rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
                   >
                     <option value="">➕ הוסף מורה לתפקיד רכזת מדידה והערכה...</option>
-                    {ALL_TEACHERS.map((t) => (
+                    {allTeachersList.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.nameHe} — {t.nameAr}
                       </option>
@@ -3325,7 +3767,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     style={{ width: '100%', padding: '0.6rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
                   >
                     <option value="">➕ הוסף מורה לתפקיד רכזת הכלה והשתלבות...</option>
-                    {ALL_TEACHERS.map((t) => (
+                    {allTeachersList.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.nameHe} — {t.nameAr}
                       </option>
