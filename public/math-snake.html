@@ -1030,10 +1030,13 @@ function startGame() {
   state.gridH = Math.max(12, Math.floor(H / 26));
   state.cellSize = Math.floor(Math.min(W / state.gridW, H / state.gridH));
 
+  const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+    ? window.MusheirifaAuth.getGameData('math-snake')
+    : {};
   state.running = true;
   state.paused = false;
-  state.score = 0;
-  state.coins = 0;
+  state.score = saved.score || 0;
+  state.coins = saved.coins || Store.get('snake_coins', 0) || 0;
   state.hearts = 3;
   state.eaten = 0;
   state.target = 8;
@@ -1078,8 +1081,7 @@ function finishGame(won) {
   if (won) Sound.win();
   else Sound.eatWrong();
 
-  const prevCoins = Store.get('snake_coins', 0);
-  Store.set('snake_coins', prevCoins + state.coins);
+  Store.set('snake_coins', Math.max(Store.get('snake_coins', 0), state.coins));
   const prevEaten = Store.get('snake_eaten_total', 0);
   Store.set('snake_eaten_total', prevEaten + state.eaten);
   const prevBest = Store.get('snake_best_g' + state.grade, 0);
@@ -1093,7 +1095,7 @@ function finishGame(won) {
     `<div style="font-size:32px;margin-bottom:6px">${won ? '⭐⭐⭐' : '⭐'}</div>` +
     `🎓 الصف الدراسي: <b>الصف ${state.grade}</b><br>` +
     `🍎 تفاحات صحيحة تم أكلها: <b style="color:#4ade80">${state.eaten}/${state.target}</b><br>` +
-    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات: <b style="color:#38bdf8">+${state.coins}</b>` +
+    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات: <b style="color:#38bdf8">${state.coins}</b>` +
     (isNewBest ? `<div style="color:#facc15;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في الصف ${state.grade}!</div>` : '');
 
   document.getElementById('topQuestionBanner').classList.add('menuMode');
@@ -1103,6 +1105,15 @@ function finishGame(won) {
 }
 
 function updateHUD() {
+  if (state.score > Store.get('snake_best_g' + state.grade, 0)) {
+    Store.set('snake_best_g' + state.grade, state.score);
+  }
+  if (state.coins > Store.get('snake_coins', 0)) {
+    Store.set('snake_coins', state.coins);
+  }
+  if (window.MusheirifaAuth && window.MusheirifaAuth.saveGameData) {
+    window.MusheirifaAuth.saveGameData('math-snake', { score: state.score, coins: state.coins });
+  }
   document.getElementById('scoreVal').textContent = state.score;
   document.getElementById('coinsVal').textContent = state.coins;
   document.getElementById('eatenVal').textContent = state.eaten;

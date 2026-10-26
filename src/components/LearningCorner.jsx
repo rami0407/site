@@ -14,6 +14,7 @@ import {
 import { STATION_NAMES, VOCABULARY_DATA } from '../data/englishVocabData';
 import { HEBREW_STATION_NAMES, HEBREW_VOCAB_DATA } from '../data/hebrewVocabData';
 import AstronomyPage from './AstronomyPage';
+import { snapshotCurrentStudentProgress, restoreStudentProgressFromVault } from '../utils/studentAuth';
 
 const DEFAULT_MULTIPLICATION_STAGES = [
   { number: 1, title: 'جدول 1', multiplier: 1, completed: false, stars: 0 },
@@ -106,6 +107,67 @@ const LearningCorner = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
 
+  // Sync with Unified Student Auth & Restore from Firestore Cloud
+  useEffect(() => {
+    const syncLocalAndCloud = async () => {
+      const sName = localStorage.getItem('school_unified_student_name') || '';
+      const sClass = localStorage.getItem('school_unified_student_class') || '';
+      if (sName && sName !== profileName) {
+        setProfileName(sName);
+        setInputProfileName(sName);
+        setIsEditingProfile(false);
+      }
+      if (sClass && sClass !== profileClass) {
+        setProfileClass(sClass);
+      }
+
+      const lStars = parseInt(localStorage.getItem('lc_unified_stars') || '0', 10);
+      const lTrophies = parseInt(localStorage.getItem('lc_unified_trophies') || '0', 10);
+      const lDiamonds = parseInt(localStorage.getItem('lc_unified_diamonds') || '0', 10);
+      const lXP = parseInt(localStorage.getItem('lc_unified_xp') || '0', 10);
+
+      setUnifiedStars(lStars);
+      setUnifiedTrophies(lTrophies);
+      setUnifiedDiamonds(lDiamonds);
+      setUnifiedXP(lXP);
+
+      const activeName = sName || profileName;
+      const activeClass = sClass || profileClass;
+      if (activeName && activeClass && db) {
+        const sId = `${activeName.trim().replace(/\s+/g, '_')}_${activeClass}`;
+        try {
+          const snap = await getDoc(doc(db, 'learning_corner_students', sId));
+          if (snap.exists()) {
+            const d = snap.data() || {};
+            const mStars = Math.max(lStars, d.stars || 0);
+            const mTrophies = Math.max(lTrophies, d.trophies || 0);
+            const mDiamonds = Math.max(lDiamonds, d.diamonds || 0);
+            const mXP = Math.max(lXP, d.xp || 0);
+
+            setUnifiedStars(mStars);
+            setUnifiedTrophies(mTrophies);
+            setUnifiedDiamonds(mDiamonds);
+            setUnifiedXP(mXP);
+
+            localStorage.setItem('lc_unified_stars', mStars.toString());
+            localStorage.setItem('lc_unified_trophies', mTrophies.toString());
+            localStorage.setItem('lc_unified_diamonds', mDiamonds.toString());
+            localStorage.setItem('lc_unified_xp', mXP.toString());
+            snapshotCurrentStudentProgress();
+          }
+        } catch (e) {}
+      }
+    };
+
+    syncLocalAndCloud();
+    window.addEventListener('studentAuthChanged', syncLocalAndCloud);
+    window.addEventListener('studentPointsUpdated', syncLocalAndCloud);
+    return () => {
+      window.removeEventListener('studentAuthChanged', syncLocalAndCloud);
+      window.removeEventListener('studentPointsUpdated', syncLocalAndCloud);
+    };
+  }, [profileName, profileClass]);
+
   const getRankBadge = (xp) => {
     if (xp >= 300) return { title: '👑 وسام عالم المستقبل', color: '#8b5cf6', bg: '#f3e8ff' };
     if (xp >= 150) return { title: '🏆 عبقري مدرسة مصمص', color: '#f59e0b', bg: '#fef3c7' };
@@ -128,6 +190,8 @@ const LearningCorner = () => {
     localStorage.setItem('lc_unified_trophies', nextTrophies.toString());
     localStorage.setItem('lc_unified_diamonds', nextDiamonds.toString());
     localStorage.setItem('lc_unified_xp', nextXP.toString());
+    snapshotCurrentStudentProgress();
+    window.dispatchEvent(new Event('studentPointsUpdated'));
 
     // Sync to Firestore
     const studentId = getStudentId();

@@ -1767,7 +1767,10 @@ document.getElementById('startBtn').onclick=()=>{
 
 function startGame(duo=false){
   resize();
-  game.running=true; game.score=0; game.correctCount=0; game.wrongCount=0;
+  const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+    ? window.MusheirifaAuth.getGameData('math-racing')
+    : {};
+  game.running=true; game.score=saved.score||0; game.correctCount=0; game.wrongCount=0;
   game.questionsAsked=0; game.combo=0; game.maxCombo=0;
   game.lane=1; game.carX=getLaneCenterX(1); game.carTilt=0; game.speed=4; game.boost=80;
   game.roadOffset=0; game.locked=false; game.shake=0;

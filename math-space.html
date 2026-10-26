@@ -970,10 +970,13 @@ function startGame() {
   resize();
   initStars();
 
+  const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+    ? window.MusheirifaAuth.getGameData('math-space')
+    : {};
   state.running = true;
   state.paused = false;
-  state.score = 0;
-  state.coins = 0;
+  state.score = saved.score || 0;
+  state.coins = saved.coins || Store.get('space_coins', 0) || 0;
   state.shields = 3;
   state.hits = 0;
   state.target = 8;
@@ -1011,8 +1014,7 @@ function finishGame(won) {
   if (won) Sound.win();
   else Sound.hitWrong();
 
-  const prevCoins = Store.get('space_coins', 0);
-  Store.set('space_coins', prevCoins + state.coins);
+  Store.set('space_coins', Math.max(Store.get('space_coins', 0), state.coins));
   const prevHits = Store.get('space_hits_total', 0);
   Store.set('space_hits_total', prevHits + state.hits);
   const prevBest = Store.get('space_best_g' + state.grade, 0);
@@ -1026,7 +1028,7 @@ function finishGame(won) {
     `<div style="font-size:32px;margin-bottom:6px">${won ? '⭐⭐⭐' : '⭐'}</div>` +
     `🎓 الصف الدراسي: <b>الصف ${state.grade}</b><br>` +
     `🎯 أهداف فضائية مدمرة: <b style="color:#38bdf8">${state.hits}/${state.target}</b><br>` +
-    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات: <b style="color:#4ade80">+${state.coins}</b>` +
+    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات: <b style="color:#4ade80">${state.coins}</b>` +
     (isNewBest ? `<div style="color:#facc15;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في الصف ${state.grade}!</div>` : '');
 
   document.getElementById('topQuestionBanner').classList.add('menuMode');
@@ -1036,6 +1038,15 @@ function finishGame(won) {
 }
 
 function updateHUD() {
+  if (state.score > Store.get('space_best_g' + state.grade, 0)) {
+    Store.set('space_best_g' + state.grade, state.score);
+  }
+  if (state.coins > Store.get('space_coins', 0)) {
+    Store.set('space_coins', state.coins);
+  }
+  if (window.MusheirifaAuth && window.MusheirifaAuth.saveGameData) {
+    window.MusheirifaAuth.saveGameData('math-space', { score: state.score, coins: state.coins });
+  }
   document.getElementById('scoreVal').textContent = state.score;
   document.getElementById('coinsVal').textContent = state.coins;
   document.getElementById('hitsVal').textContent = state.hits;

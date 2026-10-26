@@ -1045,10 +1045,13 @@ function gameLoop() {
 /* ============ State Management ============ */
 function startGame() {
   resize();
+  const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+    ? window.MusheirifaAuth.getGameData('hebrew-penalty')
+    : {};
 
   state.running = true;
-  state.score = 0;
-  state.coins = 0;
+  state.score = saved.score || 0;
+  state.coins = saved.coins || Store.get('penalty_coins', 0) || 0;
   state.combo = 1;
   state.currentKick = 0;
   state.goals = 0;
@@ -1077,8 +1080,7 @@ function finishChampionship() {
   Sound.stopCrowd();
   Sound.whistle();
 
-  const prevCoins = Store.get('penalty_coins', 0);
-  Store.set('penalty_coins', prevCoins + state.coins);
+  Store.set('penalty_coins', Math.max(Store.get('penalty_coins', 0), state.coins));
   const prevGoals = Store.get('penalty_goals_total', 0);
   Store.set('penalty_goals_total', prevGoals + state.goals);
   const prevBest = Store.get('penalty_best_g' + state.grade, 0);
@@ -1092,7 +1094,7 @@ function finishChampionship() {
     `<div style="font-size:32px;margin-bottom:6px">${isChampion ? '⭐⭐⭐' : '⭐'}</div>` +
     `🎓 الصف الدراسي: <b>الصف ${state.grade}</b><br>` +
     `⚽ الأهداف المسجلة: <b style="color:#22c55e">${state.goals} من ${state.kicksTotal}</b><br>` +
-    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات الذهبية: <b style="color:#38bdf8">+${state.coins}</b>` +
+    `⭐ مجموع النقاط: <b style="color:#fde047">${state.score}</b> | 🪙 العملات الذهبية: <b style="color:#38bdf8">${state.coins}</b>` +
     (isNewBest ? `<div style="color:#facc15;font-weight:900;margin-top:6px">🏆 رقم قياسي جديد في الصف ${state.grade}!</div>` : '');
 
   document.getElementById('topWordBanner').classList.add('menuMode');
@@ -1101,6 +1103,15 @@ function finishChampionship() {
 }
 
 function updateHUD() {
+  if (state.score > Store.get('penalty_best_g' + state.grade, 0)) {
+    Store.set('penalty_best_g' + state.grade, state.score);
+  }
+  if (state.coins > Store.get('penalty_coins', 0)) {
+    Store.set('penalty_coins', state.coins);
+  }
+  if (window.MusheirifaAuth && window.MusheirifaAuth.saveGameData) {
+    window.MusheirifaAuth.saveGameData('hebrew-penalty', { score: state.score, coins: state.coins });
+  }
   document.getElementById('scoreVal').textContent = state.score;
   document.getElementById('coinsVal').textContent = state.coins;
   document.getElementById('comboVal').textContent = state.combo;

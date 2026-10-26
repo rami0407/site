@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { defaultNavigation, defaultTopNavigation, defaultMainNavigation } from '../data/defaultNavigationData';
-import { getStudentSession, logoutStudent } from '../utils/studentAuth';
+import { getStudentSession, logoutStudent, getStudentProgress, syncStudentProfileWithCloud } from '../utils/studentAuth';
 import StudentAuthModal from './StudentAuthModal';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -32,14 +32,30 @@ const Navbar = () => {
     return defaultMainNavigation;
   });
   const [studentSession, setStudentSession] = useState(getStudentSession());
+  const [studentPoints, setStudentPoints] = useState(() => getStudentProgress().totalPoints || 0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
+    const sess = getStudentSession();
+    if (sess && sess.fullName) {
+      syncStudentProfileWithCloud(sess.fullName, sess.idNumber, sess.studentClass);
+    }
     const handleAuthChange = () => {
       setStudentSession(getStudentSession());
+      setStudentPoints(getStudentProgress().totalPoints || 0);
     };
     window.addEventListener('studentAuthChanged', handleAuthChange);
-    return () => window.removeEventListener('studentAuthChanged', handleAuthChange);
+    window.addEventListener('studentPointsUpdated', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    const intervalId = setInterval(() => {
+      setStudentPoints(getStudentProgress().totalPoints || 0);
+    }, 2500);
+    return () => {
+      window.removeEventListener('studentAuthChanged', handleAuthChange);
+      window.removeEventListener('studentPointsUpdated', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+      clearInterval(intervalId);
+    };
   }, []);
 
   // Real-time navigation links listener from Firestore & LocalStorage for INSTANT zero-delay updates
@@ -291,6 +307,19 @@ const Navbar = () => {
                   fontWeight: 800
                 }}>
                   <span>{studentSession.roleIcon || '👨‍🎓'} أهلاً: {studentSession.fullName} ({studentSession.studentClass})</span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#0f172a',
+                    padding: '2px 9px',
+                    borderRadius: '99px',
+                    fontSize: '0.8rem',
+                    fontWeight: 900,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }} title="مجموع النقاط المحفوظة للطالب">
+                    ⭐ {studentPoints.toLocaleString()} نقطة
+                  </span>
                   <button 
                     onClick={() => logoutStudent()}
                     title="تسجيل الخروج"
@@ -406,6 +435,16 @@ const Navbar = () => {
                   }}>
                     <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 800 }}>
                       {studentSession.roleIcon || '👨‍🎓'} {studentSession.fullName} <span style={{ color: '#fde047', fontSize: '0.78rem' }}>({studentSession.studentClass})</span>
+                      <span style={{
+                        marginRight: '6px',
+                        background: '#facc15',
+                        color: '#0f172a',
+                        padding: '1px 7px',
+                        borderRadius: '99px',
+                        fontSize: '0.75rem',
+                        fontWeight: 900,
+                        display: 'inline-block'
+                      }}>⭐ {studentPoints.toLocaleString()} نقطة</span>
                     </span>
                     <button
                       onClick={() => { logoutStudent(); setMobileMenuOpen(false); }}

@@ -1125,16 +1125,19 @@
             }
 
             startGame() {
+                const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+                    ? window.MusheirifaAuth.getGameData('hebrew-racer')
+                    : {};
                 this.isRunning = true;
                 this.isPaused = false;
-                this.score = 0;
+                this.score = saved.score || 0;
                 this.combo = 1;
                 this.hearts = 3;
                 this.speed = this.baseSpeed;
                 this.distance = 0;
                 this.questionIndex = 0;
                 this.correctAnswers = 0;
-                this.starsCollected = 0;
+                this.starsCollected = saved.coins || 0;
                 this.targetLane = 0;
                 this.currentLaneX = 0;
                 this.particles = [];
@@ -1242,6 +1245,14 @@
                 // Progress
                 const percent = (this.questionIndex / this.totalQuestions) * 100;
                 document.getElementById('track-progress-fill').style.width = `${percent}%`;
+
+                if (window.MusheirifaAuth && window.MusheirifaAuth.saveGameData) {
+                    window.MusheirifaAuth.saveGameData('hebrew-racer', {
+                        score: this.score,
+                        coins: this.starsCollected,
+                        correctCount: this.correctAnswers
+                    });
+                }
             }
 
             showFeedback(text, isCorrect) {

@@ -1181,13 +1181,16 @@ function resetWorldToScreenshot() {
     coins.length = 0;
     questionBoxes.length = 0;
 
+    const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+        ? window.MusheirifaAuth.getGameData('english-subway')
+        : {};
     state.lane = 1;
     state.playerX = LANES[1];
     state.playerY = 3.6;
     state.velY = 0;
     state.speed = 0.52;
-    state.score = 3624;
-    state.coins = 89;
+    state.score = saved.score || 0;
+    state.coins = saved.coins || 0;
     state.multiplier = 6;
     state.eduGrade = 0;
     state.correctCount = 0;

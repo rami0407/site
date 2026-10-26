@@ -21,7 +21,7 @@ import {
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
+import { getStudentSession, saveStudentSession, snapshotCurrentStudentProgress, syncStudentProfileWithCloud } from '../utils/studentAuth';
 import './MathChampionshipArena.css';
 
 const LOCAL_STORAGE_KEY = 'musheirifa_math_championship_v1';
@@ -260,19 +260,17 @@ export default function MathChampionshipArena() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Sync unified session changes
+  // Sync unified session changes & restore student's saved profile
   useEffect(() => {
     const handleAuthChange = () => {
-      const sess = getStudentSession();
-      if (sess && sess.fullName) {
-        setPlayer(prev => ({
-          ...prev,
-          studentName: sess.fullName
-        }));
-      }
+      setPlayer(getInitialPlayerProfile());
     };
     window.addEventListener('studentAuthChanged', handleAuthChange);
-    return () => window.removeEventListener('studentAuthChanged', handleAuthChange);
+    window.addEventListener('studentPointsUpdated', handleAuthChange);
+    return () => {
+      window.removeEventListener('studentAuthChanged', handleAuthChange);
+      window.removeEventListener('studentPointsUpdated', handleAuthChange);
+    };
   }, []);
 
   // Multiplication tournament settings
@@ -324,10 +322,11 @@ export default function MathChampionshipArena() {
   // Timer ref
   const timerRef = useRef(null);
 
-  // Save player state whenever it changes
+  // Save player state whenever it changes (both local key and per-student vault)
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(player));
+      snapshotCurrentStudentProgress();
     } catch (e) {}
   }, [player]);
 
@@ -403,19 +402,13 @@ export default function MathChampionshipArena() {
     clearInterval(timerRef.current);
     setGameState('game_over');
 
-    // Update player totals
+    // Update player history (points & solved count are already saved live on every answer)
     setPlayer(prev => {
-      const newTotal = prev.totalPoints + gameScore;
-      const newQuestions = prev.totalQuestionsSolved + correctCount;
-      const newBestStreak = Math.max(prev.bestStreak, maxStreakThisGame);
-
-      checkAwards(newTotal, newQuestions, newBestStreak);
+      checkAwards(prev.totalPoints, prev.totalQuestionsSolved, Math.max(prev.bestStreak, maxStreakThisGame));
 
       return {
         ...prev,
-        totalPoints: newTotal,
-        totalQuestionsSolved: newQuestions,
-        bestStreak: newBestStreak,
+        bestStreak: Math.max(prev.bestStreak, maxStreakThisGame),
         history: [
           {
             date: new Date().toLocaleDateString('ar-EG'),
@@ -444,6 +437,10 @@ export default function MathChampionshipArena() {
     });
 
     // Sync score to Firestore (if configured)
+    const sess = getStudentSession();
+    if (sess && sess.fullName) {
+      syncStudentProfileWithCloud(sess.fullName, sess.idNumber, sess.studentClass);
+    }
     if (player.studentName && gameScore > 0 && db) {
       try {
         addDoc(collection(db, 'math_championship_scores'), {
@@ -571,6 +568,16 @@ export default function MathChampionshipArena() {
       setGameScore(prev => prev + earned);
       setCorrectCount(prev => prev + 1);
 
+      // Immediately persist earned points & solved count to player profile so nothing is ever lost mid-round
+      const nextTotalPoints = player.totalPoints + earned;
+      const nextQuestionsSolved = player.totalQuestionsSolved + 1;
+      setPlayer(prev => ({
+        ...prev,
+        totalPoints: prev.totalPoints + earned,
+        totalQuestionsSolved: prev.totalQuestionsSolved + 1,
+        bestStreak: Math.max(prev.bestStreak, currentStreak)
+      }));
+
       // Time bonus in speed race
       if (selectedMultMode === 'speed_race' && initialDuration > 0) {
         setTimeLeft(prev => Math.min(prev + 2, 99));
@@ -579,7 +586,7 @@ export default function MathChampionshipArena() {
       }
 
       // Check award unlocks mid-game
-      checkAwards(player.totalPoints + gameScore + earned, player.totalQuestionsSolved + correctCount + 1, currentStreak);
+      checkAwards(nextTotalPoints, nextQuestionsSolved, currentStreak);
 
       // In fast speed mode, auto-advance
       const delay = (activeView === 'play_detective' || activeView === 'play_story' || activeView === 'play_pemdas' || activeView === 'play_pattern' || activeView === 'play_fractions' || activeView === 'play_geometry') ? 1200 : 650;

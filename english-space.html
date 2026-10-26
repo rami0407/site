@@ -874,7 +874,7 @@ function startGame() {
     }
 
     currentQuestionIndex = 0;
-    currentScore = 0;
+    currentScore = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData) ? (window.MusheirifaAuth.getGameData('english-space').score || 0) : 0;
     currentStreak = 0;
     maxStreak = 0;
     correctCount = 0;

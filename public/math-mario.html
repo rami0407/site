@@ -1573,6 +1573,15 @@ function submitAnswer(val, btn) {
 
 /* ============ HUD, Loop & Menus ============ */
 function updateHUD() {
+  if (state.score > Store.get('mm_best_' + state.grade, 0)) {
+    Store.set('mm_best_' + state.grade, state.score);
+  }
+  if (state.coins > Store.get('mm_coins', 0)) {
+    Store.set('mm_coins', state.coins);
+  }
+  if (window.MusheirifaAuth && window.MusheirifaAuth.saveGameData) {
+    window.MusheirifaAuth.saveGameData('math-mario', { score: state.score, coins: state.coins });
+  }
   document.getElementById('scoreVal').textContent = state.score;
   document.getElementById('coinsVal').textContent = state.coins;
   document.getElementById('qSolvedVal').textContent = state.qSolved;
@@ -1594,10 +1603,13 @@ function gameLoop() {
 
 function startStage() {
   resize();
+  const saved = (window.MusheirifaAuth && window.MusheirifaAuth.getGameData)
+    ? window.MusheirifaAuth.getGameData('math-mario')
+    : {};
   state.running = true;
   state.paused = false;
-  state.score = 0;
-  state.coins = 0;
+  state.score = saved.score || 0;
+  state.coins = saved.coins || Store.get('mm_coins', 0) || 0;
   state.hearts = 3;
   state.fireAmmo = 3;
   state.qSolved = 0;

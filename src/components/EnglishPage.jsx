@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ENGLISH_VOCABULARY_BY_GRADE, ENGLISH_GRADE_INFOS } from '../data/englishCurriculumData';
-import { getStudentSession } from '../utils/studentAuth';
+import { getStudentSession, getStudentProgress } from '../utils/studentAuth';
 
 export default function EnglishPage() {
   const [selectedGrade, setSelectedGrade] = useState(3);
@@ -9,11 +9,25 @@ export default function EnglishPage() {
   const [activeTab, setActiveTab] = useState('racer'); // 'racer' | 'ninja' | 'space' | 'basketball' | 'subway' | 'vocab'
   const [isPlayingAudio, setIsPlayingAudio] = useState(null);
   const [studentSession, setStudentSession] = useState(() => getStudentSession());
+  const [studentPoints, setStudentPoints] = useState(() => getStudentProgress().totalPoints || 0);
 
   useEffect(() => {
-    const handleAuth = () => setStudentSession(getStudentSession());
+    const handleAuth = () => {
+      setStudentSession(getStudentSession());
+      setStudentPoints(getStudentProgress().totalPoints || 0);
+    };
     window.addEventListener('studentAuthChanged', handleAuth);
-    return () => window.removeEventListener('studentAuthChanged', handleAuth);
+    window.addEventListener('studentPointsUpdated', handleAuth);
+    window.addEventListener('storage', handleAuth);
+    const id = setInterval(() => {
+      setStudentPoints(getStudentProgress().totalPoints || 0);
+    }, 1500);
+    return () => {
+      window.removeEventListener('studentAuthChanged', handleAuth);
+      window.removeEventListener('studentPointsUpdated', handleAuth);
+      window.removeEventListener('storage', handleAuth);
+      clearInterval(id);
+    };
   }, []);
 
   useEffect(() => {
@@ -270,6 +284,14 @@ export default function EnglishPage() {
                 boxShadow: '0 4px 15px rgba(0,0,0,0.4)'
               }}>
                 <span>{studentSession.roleIcon || '👨‍🎓'} <strong>{studentSession.fullName}</strong> ({studentSession.studentClass})</span>
+                <span style={{
+                  background: '#facc15',
+                  color: '#0f172a',
+                  padding: '2px 8px',
+                  borderRadius: '99px',
+                  fontSize: '0.78rem',
+                  fontWeight: '900'
+                }}>⭐ {studentPoints.toLocaleString()} نقطة</span>
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new Event('openStudentAuth'))}
