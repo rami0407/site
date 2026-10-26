@@ -36,7 +36,8 @@ import {
   parseUploadedHolisticFile,
   analyzeSheetStructure,
   executeHolisticImport,
-  exportClassToExcelWorkbook
+  exportClassToExcelWorkbook,
+  exportAllClassesToExcelWorkbook
 } from '../utils/holisticFileImporter';
 import './HolisticMappingPage.css';
 
@@ -56,10 +57,22 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
   // Login Form State
   const [selectedLoginTeacherId, setSelectedLoginTeacherId] = useState(INITIAL_TEACHERS[0]?.id || 'tch_36');
+  const [selectedLoginClassId, setSelectedLoginClassId] = useState('all_classes');
   const [loginPinInput, setLoginPinInput] = useState('');
   const [loginRoleOverride, setLoginRoleOverride] = useState('auto');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Self-Service Personal PIN Modal State
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [customPinInput, setCustomPinInput] = useState('');
+  const [customPinConfirm, setCustomPinConfirm] = useState('');
+  const [isSavingPin, setIsSavingPin] = useState(false);
+
+  // Cross-Class Student Extractor State (Exclusively for Principal Rami & Coordinator Jihan)
+  const [extractFilterColId, setExtractFilterColId] = useState('all');
+  const [extractFilterVal, setExtractFilterVal] = useState('any_non_empty');
+  const [extractFilterTrafficId, setExtractFilterTrafficId] = useState('all');
 
   // ==================== 2. CONFIGURATION & MULTI-YEAR STATE ====================
   const [academicYears, setAcademicYears] = useState(HOLISTIC_ACADEMIC_YEARS);
@@ -368,7 +381,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
 
     const perm = classPermissions[classId] || {};
-    if (perm.homeroomTeacherId === activeTeacher.id) {
+    if (perm.homeroomTeacherId === activeTeacher.id || activeTeacher.loginSelectedClassId === classId) {
       return {
         hasAccess: true,
         isHomeroom: true,
@@ -1206,6 +1219,24 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   };
 
   // ==================== 13. LOGIN HANDLER ====================
+  const handleSelectLoginTeacher = (tId) => {
+    setSelectedLoginTeacherId(tId);
+    setLoginError('');
+    if (tId === 'tch_36' || tId === 'tch_2') {
+      setSelectedLoginClassId('all_classes');
+      return;
+    }
+    // Find the class where this teacher is homeroom teacher
+    const matchedClass = SCHOOL_19_CLASSES.find(
+      (c) => (classPermissions[c.id]?.homeroomTeacherId || c.defaultHomeroomId) === tId
+    );
+    if (matchedClass) {
+      setSelectedLoginClassId(matchedClass.id);
+    } else if (selectedLoginClassId === 'all_classes') {
+      setSelectedLoginClassId('class_1_1');
+    }
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
@@ -1216,31 +1247,107 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
     const cleanPin = loginPinInput.trim();
     if (!cleanPin) {
-      setLoginError('נא להזין קוד אישי (PIN).');
+      setLoginError('נא להזין קוד סודי (PIN).');
       return;
     }
+
+    const isPrincipalOrJihan = teacher.id === 'tch_36' || teacher.id === 'tch_2';
+    const chosenClassId = (!selectedLoginClassId || selectedLoginClassId === 'all_classes')
+      ? (isPrincipalOrJihan ? 'all_classes' : 'class_1_1')
+      : selectedLoginClassId;
 
     setIsLoggingIn(true);
     try {
       const isValid = await verifyTeacherCredentials(teacher.id, cleanPin);
-      const isJihan = teacher.id === 'tch_2';
-      const allowedPin = isJihan
-        ? (isValid || cleanPin === '061285227')
-        : (isValid || cleanPin === DEFAULT_TEACHER_PIN || cleanPin === '318212');
+      const allowedPin =
+        isValid ||
+        cleanPin === DEFAULT_TEACHER_PIN ||
+        cleanPin === '318212' ||
+        (isPrincipalOrJihan && cleanPin === '061285227');
+
       if (allowedPin) {
         const sessionObj = {
           ...teacher,
-          systemRole: isJihan ? 'eval_coord' : (teacher.id === 'tch_36' ? 'principal' : undefined)
+          systemRole: teacher.id === 'tch_2' ? 'eval_coord' : (teacher.id === 'tch_36' ? 'principal' : 'homeroom_teacher'),
+          loginSelectedClassId: chosenClassId !== 'all_classes' ? chosenClassId : null
         };
+
+        // If a homeroom teacher selected their class on the landing page, open that class immediately and bind it
+        if (chosenClassId && chosenClassId !== 'all_classes') {
+          const clsObj = SCHOOL_19_CLASSES.find((c) => c.id === chosenClassId);
+          setSelectedClassId(chosenClassId);
+          if (clsObj) setSelectedGradeLevel(clsObj.grade);
+          setActiveMainTab('class-sheet');
+
+          if (!isPrincipalOrJihan) {
+            const updatedPerms = {
+              ...classPermissions,
+              [chosenClassId]: {
+                ...(classPermissions[chosenClassId] || { delegatedTeachers: [] }),
+                homeroomTeacherId: teacher.id
+              }
+            };
+            setClassPermissions(updatedPerms);
+            saveGlobalConfig({ classPermissions: updatedPerms });
+          }
+        }
+
         setActiveTeacher(sessionObj);
         setActiveTeacherSession(sessionObj);
         setLoginPinInput('');
       } else {
-        setLoginError(isJihan ? '❌ הקוד הסודי שגוי.' : '❌ הקוד הסודי שגוי. (ברירת מחדל לצוות: 318212)');
+        setLoginError('❌ הקוד הסודי שגוי. הקוד ההתחלתי לכלל הצוות הוא 318212 (או הקוד האישי שבחרת במערכת).');
       }
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  // Self-service handler for any logged-in teacher to set/change their own personal PIN code
+  const handleSaveCustomPin = async (e) => {
+    e.preventDefault();
+    if (!activeTeacher) return;
+    const p1 = customPinInput.trim();
+    const p2 = customPinConfirm.trim();
+    if (p1.length < 4) {
+      alert('⚠️ הקוד הסודי החדש חייב להכיל לפחות 4 תווים או ספרות (يجب أن يتكون الكود السري من 4 خانات على الأقل).');
+      return;
+    }
+    if (p1 !== p2) {
+      alert('⚠️ הקודים שהוזנו אינם תואמים! נא לוודא שהקוד החדש ואימות הקוד זהים.');
+      return;
+    }
+    setIsSavingPin(true);
+    try {
+      await updateTeacherPin(activeTeacher.id, p1, activeTeacher.nameAr || activeTeacher.nameHe);
+      setShowChangePinModal(false);
+      setCustomPinInput('');
+      setCustomPinConfirm('');
+      triggerToast('🔐 הקוד הסודי האישי שלך נשמר בהצלחה! (تم حفظ الكود السري الخاص بك بنجاح)');
+    } catch (err) {
+      alert('שגיאה בשמירת הקוד האישי: ' + (err.message || err));
+    } finally {
+      setIsSavingPin(false);
+    }
+  };
+
+  // Master Export of all 19 classes for Principal Rami & Coordinator Jihan
+  const handleExportAllClassesMaster = () => {
+    if (!userCapabilities.canViewAllClasses) {
+      alert('⛔ רק מנהל בית הספר (ראמי) ורכזת המדידה (ג׳יהאן) מורשים לחלץ ולייצא את כל הכיתות.');
+      return;
+    }
+    const periodObj = ASSESSMENT_PERIODS.find((p) => p.id === selectedPeriod) || ASSESSMENT_PERIODS[0];
+    exportAllClassesToExcelWorkbook({
+      classesList: SCHOOL_19_CLASSES,
+      classStudentsMap,
+      academicYear: selectedYear,
+      periodLabelHe: periodObj.labelHe,
+      periodId: selectedPeriod,
+      holisticColumns,
+      gradeSubjects
+    });
+    triggerToast('📥 קובץ אקסל מאוחד של כל 19 הכיתות (469 תלמידים) הופק והורד בהצלחה!');
   };
 
   // Helper to get pill style for a dropdown value
@@ -1522,14 +1629,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             </p>
           </div>
 
-          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             <div>
-              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                👨‍🏫 בחר שם מחנך / מורה / מנהל:
+              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', color: '#1e293b', marginBottom: '0.4rem' }}>
+                👩‍🏫 1. בחר שם המורה / המחנכת (اختر اسم المعلم/ة):
               </label>
               <select
                 value={selectedLoginTeacherId}
-                onChange={(e) => setSelectedLoginTeacherId(e.target.value)}
+                onChange={(e) => handleSelectLoginTeacher(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '0.85rem 1rem',
@@ -1548,17 +1655,52 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               </select>
             </div>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.65rem 0.9rem', fontSize: '0.83rem', color: '#334155', fontWeight: 700 }}>
-              🛡️ <strong>הרשאות מערכת:</strong> עריכת מבנה הגיליון והוספת עמודות שמורה למנהל ביה"ס (<strong>ראמי</strong>) ולרכזת המדידה (<strong>ג׳יהאן</strong>) בלבד. מחנכי הכיתות מקבלים את קובץ הכיתה מוכן להזנת נתונים וציונים.
+            <div>
+              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', color: '#1e293b', marginBottom: '0.4rem' }}>
+                🏫 2. בחר את הכיתה שבה את/ה מחנך/ת (اختر الصف الذي تربي فيه):
+              </label>
+              <select
+                value={selectedLoginClassId}
+                onChange={(e) => setSelectedLoginClassId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '14px',
+                  border: '2px solid #3b82f6',
+                  fontWeight: 900,
+                  fontSize: '0.95rem',
+                  background: '#eff6ff',
+                  color: '#1e3a8a'
+                }}
+              >
+                {(selectedLoginTeacherId === 'tch_36' || selectedLoginTeacherId === 'tch_2') && (
+                  <option value="all_classes">
+                    👑 כל 19 כיתות בית הספר — وصول شامل لكل الصفوف وتلخيص النتائج (المدير والمركزة)
+                  </option>
+                )}
+                {SCHOOL_19_CLASSES.map((cls) => {
+                  const hrId = classPermissions[cls.id]?.homeroomTeacherId || cls.defaultHomeroomId;
+                  const hrTeacher = getTeacherById(hrId);
+                  return (
+                    <option key={cls.id} value={cls.id}>
+                      כיתה {cls.nameHe} ({cls.nameAr}) — {hrTeacher ? hrTeacher.nameAr : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.65rem 0.9rem', fontSize: '0.82rem', color: '#334155', fontWeight: 700, lineHeight: 1.55 }}>
+              🛡️ <strong>הרשאות מערכת (صلاحيات المنظومة):</strong> גישה לכל 19 הכיתות, סיכום כלל התוצאות, חילוץ מידע מכל הכיתות ועריכת עמודות שמורים למנהל ביה"ס (<strong>ראמי</strong>) ולרכזת המדידה (<strong>ג׳יהאן</strong>) בלבד. כל מחנך/ת נכנס/ת לכיתה שלו/ה בלבד.
             </div>
 
             <div>
-              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                🔑 קוד אישי (PIN):
+              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', color: '#1e293b', marginBottom: '0.4rem' }}>
+                🔑 3. קוד סודי (الكود السري — حالياً للجميع: 318212):
               </label>
               <input
                 type="password"
-                placeholder="הזן קוד אישי (ברירת מחדל: 318212)"
+                placeholder="הזן קוד סודי (ברירת מחדל לכולם: 318212)"
                 value={loginPinInput}
                 onChange={(e) => setLoginPinInput(e.target.value)}
                 required
@@ -1574,6 +1716,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   boxSizing: 'border-box'
                 }}
               />
+              <div style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 800, marginTop: '0.35rem', textAlign: 'center' }}>
+                💡 לאחר הכניסה עם <strong>318212</strong>, כל מורה יכול לבחור קוד סודי אישי משלו מתוך המערכת (بعد الدخول يمكنك اختيار كود خاص بك من داخل المنظومة).
+              </div>
             </div>
 
             {loginError && (
@@ -1838,6 +1983,59 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             >
               💬 וואטסאפ למחנכים
             </button>
+
+            {userCapabilities.canViewAllClasses && (
+              <button
+                type="button"
+                onClick={handleExportAllClassesMaster}
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#ffffff',
+                  border: '1.5px solid #fde68a',
+                  padding: '0.55rem 1rem',
+                  borderRadius: '12px',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  fontSize: '0.84rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
+                }}
+                title="חילוץ וייצוא כל 19 הכיתות לקובץ אקסל מאוחד / استخراج وتلخيص كل الصفوف لملف إكسل"
+              >
+                <span>📥</span>
+                <span>חילוץ כל 19 הכיתות (استخراج كل الصفوف)</span>
+              </button>
+            )}
+
+            {activeTeacher && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomPinInput('');
+                  setCustomPinConfirm('');
+                  setShowChangePinModal(true);
+                }}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.25)',
+                  color: '#dbeafe',
+                  border: '1.5px solid #60a5fa',
+                  padding: '0.55rem 0.95rem',
+                  borderRadius: '12px',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  fontSize: '0.84rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+                title="בחר או שנה קוד סודי אישי / اختيار أو تغيير الكود السري الخاص بي"
+              >
+                <span>🔑</span>
+                <span>בחר קוד אישי (كود خاص بي)</span>
+              </button>
+            )}
 
             {!isAdminEmbed && (
               <button
@@ -2886,7 +3084,214 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     </div>
                   )}
                 </div>
+
+                <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleExportAllClassesMaster}
+                    style={{
+                      background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '0.7rem 1.25rem',
+                      borderRadius: '12px',
+                      fontWeight: 900,
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 6px 18px rgba(5, 150, 105, 0.3)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem'
+                    }}
+                  >
+                    <span>📥</span>
+                    <span>חילוץ וייצוא כל 19 הכיתות לאקסל מאוחד (استخراج وتلخيص كل الصفوف)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    style={{
+                      background: '#1e293b',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '0.7rem 1.1rem',
+                      borderRadius: '12px',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🖨️ הדפסת דוח סיכום
+                  </button>
+                </div>
               </div>
+
+              {/* Cross-Class Information & Student Extractor (Exclusively for Principal Rami & Coordinator Jihan) */}
+              {(() => {
+                const selectedColObj = holisticColumns.find((c) => c.id === extractFilterColId);
+                const extractedStudents = stats.allStudents.filter((stu) => {
+                  // 1. Check Holistic Column filter
+                  if (extractFilterColId !== 'all') {
+                    const rawVal = (stu[extractFilterColId] || '').toString().trim();
+                    if (extractFilterVal === 'any_non_empty') {
+                      if (!rawVal || rawVal === '—' || rawVal === 'ללא' || rawVal === 'תקין') return false;
+                    } else if (rawVal !== extractFilterVal) {
+                      return false;
+                    }
+                  }
+                  // 2. Check Traffic Light filter
+                  if (extractFilterTrafficId !== 'all') {
+                    const avg = getStudentPeriodAverage(stu, selectedPeriod);
+                    const tl = getTrafficLightStyle(avg);
+                    if (tl.id !== extractFilterTrafficId) return false;
+                  }
+                  return true;
+                });
+
+                return (
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
+                      borderRadius: '20px',
+                      padding: '1.4rem 1.6rem',
+                      border: '2px solid #93c5fd',
+                      marginBottom: '1.5rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1rem' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#1e3a8a' }}>
+                          🔍 מנוע חילוץ מידע וריכוז תלמידים מכל הכיתות (استخراج المعلومات والطلاب من كل الصفوف — للمدير والمركزة جيهان)
+                        </h3>
+                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
+                          בחר תחום מיפוי או רמת רמזור כדי לשלוף ולרכז מיידית את כל התלמידים הרלוונטיים מכל הכיתות יחד:
+                        </p>
+                      </div>
+                      <span
+                        style={{
+                          background: '#1e3a8a',
+                          color: '#ffffff',
+                          padding: '0.45rem 1rem',
+                          borderRadius: '999px',
+                          fontWeight: 900,
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        נמצאו {extractedStudents.length} מתוך {stats.totalStudents} תלמידים
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.9rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 900, color: '#1e293b', marginBottom: '0.3rem' }}>
+                          📋 1. סינון לפי עמודת מיפוי (المجال):
+                        </label>
+                        <select
+                          value={extractFilterColId}
+                          onChange={(e) => {
+                            setExtractFilterColId(e.target.value);
+                            setExtractFilterVal('any_non_empty');
+                          }}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #60a5fa', fontWeight: 800, background: '#ffffff' }}
+                        >
+                          <option value="all">כל עמודות המיפוי (ללא סינון עמודה)</option>
+                          {holisticColumns.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.groupHe} — {c.titleHe}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {extractFilterColId !== 'all' && (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 900, color: '#1e293b', marginBottom: '0.3rem' }}>
+                            🎯 2. בחר תשובה / היגד לחילוץ (الإجابة المطلوبة):
+                          </label>
+                          <select
+                            value={extractFilterVal}
+                            onChange={(e) => setExtractFilterVal(e.target.value)}
+                            style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #2563eb', fontWeight: 800, background: '#ffffff' }}
+                          >
+                            <option value="any_non_empty">✨ כל תלמיד עם הערה / מענה פעיל בעמודה זו</option>
+                            {(selectedColObj?.options || []).map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.value}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 900, color: '#1e293b', marginBottom: '0.3rem' }}>
+                          🚦 סינון לפי רמת ציונים ברמזור (مستوى العلامات):
+                        </label>
+                        <select
+                          value={extractFilterTrafficId}
+                          onChange={(e) => setExtractFilterTrafficId(e.target.value)}
+                          style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #60a5fa', fontWeight: 800, background: '#ffffff' }}
+                        >
+                          <option value="all">כל הרמות ברמזור (הכל)</option>
+                          {TRAFFIC_LIGHT_SCALE.map((tl) => (
+                            <option key={tl.id} value={tl.id}>
+                              {tl.labelHe}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {(extractFilterColId !== 'all' || extractFilterTrafficId !== 'all') && (
+                      <div style={{ background: '#ffffff', borderRadius: '14px', border: '1.5px solid #cbd5e1', maxHeight: '320px', overflowY: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.86rem' }}>
+                          <thead>
+                            <tr style={{ background: '#f1f5f9', position: 'sticky', top: 0 }}>
+                              <th style={{ padding: '0.65rem', textAlign: 'right' }}>#</th>
+                              <th style={{ padding: '0.65rem', textAlign: 'right' }}>שם התלמיד/ה</th>
+                              <th style={{ padding: '0.65rem', textAlign: 'right' }}>ת.ז</th>
+                              <th style={{ padding: '0.65rem', textAlign: 'center' }}>כיתה</th>
+                              {selectedColObj && <th style={{ padding: '0.65rem', textAlign: 'right' }}>{selectedColObj.titleHe}</th>}
+                              <th style={{ padding: '0.65rem', textAlign: 'center' }}>ממוצע ציונים</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {extractedStudents.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} style={{ padding: '1.2rem', textAlign: 'center', color: '#64748b', fontWeight: 800 }}>
+                                  לא נמצאו תלמידים העונים לתנאי החילוץ שנבחרו.
+                                </td>
+                              </tr>
+                            ) : (
+                              extractedStudents.map((stu, idx) => {
+                                const avg = getStudentPeriodAverage(stu, selectedPeriod);
+                                const tl = getTrafficLightStyle(avg);
+                                return (
+                                  <tr key={stu.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                    <td style={{ padding: '0.55rem 0.65rem', fontWeight: 800 }}>{idx + 1}</td>
+                                    <td style={{ padding: '0.55rem 0.65rem', fontWeight: 900, color: '#0f172a' }}>{stu.studentName}</td>
+                                    <td style={{ padding: '0.55rem 0.65rem', color: '#475569' }}>{stu.idNumber || '—'}</td>
+                                    <td style={{ padding: '0.55rem 0.65rem', textAlign: 'center', fontWeight: 900, color: '#1d4ed8' }}>{stu._classNameHe}</td>
+                                    {selectedColObj && (
+                                      <td style={{ padding: '0.55rem 0.65rem', fontWeight: 800 }}>{stu[selectedColObj.id] || '—'}</td>
+                                    )}
+                                    <td style={{ padding: '0.55rem 0.65rem', textAlign: 'center' }}>
+                                      <span style={{ background: tl.bg, color: tl.text, padding: '0.15rem 0.55rem', borderRadius: '999px', fontWeight: 900 }}>
+                                        {avg ?? '—'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Traffic Light Distribution KPIs */}
               <div className="holistic-kpi-grid">
@@ -4775,6 +5180,123 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: SELF-SERVICE PERSONAL PIN CODE (בחירת קוד סודי אישי למורה) */}
+      {/* ===================================================================== */}
+      {showChangePinModal && activeTeacher && (
+        <div className="holistic-modal-backdrop" onClick={() => setShowChangePinModal(false)}>
+          <div
+            className="holistic-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '460px', width: '95%' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+                🔑 בחירת קוד סודי אישי (اختيار كود سري خاص بك)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowChangePinModal(false)}
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '10px', padding: '0.4rem 0.75rem', fontWeight: 900, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '0.85rem', marginBottom: '1.1rem', fontSize: '0.86rem', color: '#1e3a8a', fontWeight: 700 }}>
+              👤 <strong>משתמש מחובר:</strong> {activeTeacher.nameHe} — {activeTeacher.nameAr}
+              <div style={{ marginTop: '0.35rem', color: '#334155' }}>
+                כאן באפשרותך להגדיר קוד סודי אישי משלך במקום קוד ברירת המחדל (318212). הקוד נשמר באופן מוצפן.
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveCustomPin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 900, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.35rem' }}>
+                  🔐 הזן קוד סודי אישי חדש (أدخل الكود السري الجديد — 4 خانات على الأقل):
+                </label>
+                <input
+                  type="password"
+                  value={customPinInput}
+                  onChange={(e) => setCustomPinInput(e.target.value)}
+                  placeholder="לדוגמה: 458921"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem',
+                    borderRadius: '12px',
+                    border: '2px solid #3b82f6',
+                    fontSize: '1.05rem',
+                    fontWeight: 900,
+                    textAlign: 'center',
+                    letterSpacing: '3px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 900, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.35rem' }}>
+                  ✅ אימות קוד סודי חדש (تأكيد الكود السري الجديد):
+                </label>
+                <input
+                  type="password"
+                  value={customPinConfirm}
+                  onChange={(e) => setCustomPinConfirm(e.target.value)}
+                  placeholder="הזן שוב את הקוד החדש"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem',
+                    borderRadius: '12px',
+                    border: '2px solid #cbd5e1',
+                    fontSize: '1.05rem',
+                    fontWeight: 900,
+                    textAlign: 'center',
+                    letterSpacing: '3px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePinModal(false)}
+                  style={{
+                    background: '#f1f5f9',
+                    color: '#475569',
+                    border: 'none',
+                    padding: '0.75rem 1.2rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingPin}
+                  style={{
+                    background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    boxShadow: '0 6px 18px rgba(37, 99, 235, 0.3)'
+                  }}
+                >
+                  {isSavingPin ? 'שומר...' : '💾 שמור קוד סודי אישי (حفظ الكود الخاص بي)'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

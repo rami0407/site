@@ -6,9 +6,7 @@ import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verif
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
 
 export const DEFAULT_TEACHER_PIN = '318212';
-export const DEFAULT_CUSTOM_TEACHER_PINS = {
-  tch_2: '061285227' // جيهان اغبارية (אגבאריה ג'יהאן)
-};
+export const DEFAULT_CUSTOM_TEACHER_PINS = {};
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
 const ACTIVE_TEACHER_KEY = 'musherfe_active_teacher_session';
 const TRUSTED_DEVICE_PREFIX = 'musherfe_2fa_trusted_';

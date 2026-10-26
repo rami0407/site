@@ -1,15 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, query, orderBy } from 'firebase/firestore';
 import { importantLinks as fallbackLinks } from '../data/schoolData';
+
+const normalizeAnnualPlansLink = (rawList) => {
+  if (!Array.isArray(rawList)) return fallbackLinks;
+  let foundAnnualPlans = false;
+  const mapped = rawList.map((item) => {
+    const isBulletinBoard =
+      (item.title && (item.title.includes('لوح الاعلانات') || item.title.includes('لوح الإعلانات'))) ||
+      (item.desc && (item.desc.includes('لوح الاعلانات') || item.desc.includes('لوح الإعلانات'))) ||
+      item.title === 'خطط سنوية' ||
+      (item.url && item.url.includes('holistic-mapping'));
+
+    if (isBulletinBoard) {
+      foundAnnualPlans = true;
+      return {
+        ...item,
+        title: 'خطط سنوية',
+        desc: 'خطط سنوية',
+        url: '#/holistic-mapping',
+        icon: item.icon || 'fa-link'
+      };
+    }
+    return item;
+  });
+
+  if (!foundAnnualPlans) {
+    mapped.push({
+      id: 'school-annual-plans-default',
+      title: 'خطط سنوية',
+      icon: 'fa-link',
+      url: '#/holistic-mapping',
+      desc: 'خطط سنوية'
+    });
+  }
+  return mapped;
+};
 
 const ImportantLinks = () => {
   const [links, setLinks] = useState(() => {
     try {
       const cached = localStorage.getItem('cached_important_links');
-      if (cached) return JSON.parse(cached);
+      if (cached) return normalizeAnnualPlansLink(JSON.parse(cached));
     } catch (e) {}
-    return fallbackLinks;
+    return normalizeAnnualPlansLink(fallbackLinks);
   });
 
   useEffect(() => {
@@ -18,8 +53,30 @@ const ImportantLinks = () => {
         const q = query(collection(db, 'links'), orderBy('createdAt', 'asc'));
         const querySnapshot = await getDocs(q);
         const list = [];
-        querySnapshot.forEach((doc) => {
-          list.push({ ...doc.data(), id: doc.id });
+        querySnapshot.forEach((docSnap) => {
+          const d = docSnap.data();
+          const isOldBulletin =
+            (d.title && (d.title.includes('لوح الاعلانات') || d.title.includes('لوح الإعلانات'))) ||
+            (d.desc && (d.desc.includes('لوح الاعلانات') || d.desc.includes('لوح الإعلانات')));
+          if (isOldBulletin) {
+            const updatedDoc = {
+              ...d,
+              id: docSnap.id,
+              title: 'خطط سنوية',
+              desc: 'خطط سنوية',
+              url: '#/holistic-mapping',
+              icon: d.icon || 'fa-link'
+            };
+            list.push(updatedDoc);
+            // Also persist the replacement directly in Firestore so it stays updated everywhere
+            setDoc(
+              doc(db, 'links', docSnap.id),
+              { title: 'خطط سنوية', desc: 'خطط سنوية', url: '#/holistic-mapping' },
+              { merge: true }
+            ).catch(() => {});
+          } else {
+            list.push({ ...d, id: docSnap.id });
+          }
         });
 
         if (list.length === 0) {
@@ -421,14 +478,15 @@ const ImportantLinks = () => {
             });
           }
 
-          setLinks(list);
+          const normalizedList = normalizeAnnualPlansLink(list);
+          setLinks(normalizedList);
           try {
-            localStorage.setItem('cached_important_links', JSON.stringify(list));
+            localStorage.setItem('cached_important_links', JSON.stringify(normalizedList));
           } catch (e) {}
         }
       } catch (error) {
         console.error("Error fetching important links from Firestore:", error);
-        setLinks(fallbackLinks);
+        setLinks(normalizeAnnualPlansLink(fallbackLinks));
       }
     };
 
@@ -596,6 +654,12 @@ const ImportantLinks = () => {
                   if (link.url?.includes('math-championship')) {
                     e.preventDefault();
                     window.location.hash = '#/math-championship';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('holistic-mapping') || link.title === 'خطط سنوية') {
+                    e.preventDefault();
+                    window.location.hash = '#/holistic-mapping';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }

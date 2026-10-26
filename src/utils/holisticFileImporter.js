@@ -602,3 +602,95 @@ export const exportClassToExcelWorkbook = ({
   XLSX.writeFile(wb, filename);
 };
 
+
+/**
+ * Export ALL 19 classes (or selected grade level) + a Master Consolidated Sheet to a multi-sheet Excel (.xlsx) workbook
+ * Exclusively for Principal Rami & Coordinator Jihan
+ */
+export const exportAllClassesToExcelWorkbook = ({
+  classesList,
+  classStudentsMap,
+  academicYear,
+  periodLabelHe,
+  periodId,
+  holisticColumns,
+  gradeSubjects,
+  scopeLabelHe = 'כל_19_הכיתות'
+}) => {
+  const wb = XLSX.utils.book_new();
+
+  // 1. Master Consolidated Sheet (ריכוז כל התלמידים מכל הכיתות)
+  const masterTopHeaders = [
+    'פרטי תלמיד',
+    'פרטי תלמיד',
+    'פרטי תלמיד',
+    'פרטי תלמיד',
+    ...holisticColumns.map((c) => c.groupHe || 'מיפוי הוליסטי'),
+    ...gradeSubjects.map(() => `ציונים (${periodLabelHe})`),
+    'סיכום ציונים'
+  ];
+  const masterSubHeaders = [
+    'כיתה',
+    'שם התלמיד',
+    'ת.ז',
+    'מין',
+    ...holisticColumns.map((c) => c.titleHe),
+    ...gradeSubjects.map((s) => s.titleHe),
+    'ממוצע'
+  ];
+
+  const masterRows = [];
+  classesList.forEach((cls) => {
+    const stus = classStudentsMap[`${academicYear}_${cls.id}`] || [];
+    stus.forEach((stu) => {
+      const scores = gradeSubjects
+        .map((s) => stu?.grades?.[periodId]?.[s.id])
+        .filter((v) => v !== undefined && v !== null && v !== '' && !isNaN(Number(v)))
+        .map(Number);
+      const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : '';
+      masterRows.push([
+        cls.nameHe,
+        stu.studentName || '',
+        stu.idNumber || '',
+        stu.gender || '',
+        ...holisticColumns.map((c) => stu[c.id] || ''),
+        ...gradeSubjects.map((s) => stu?.grades?.[periodId]?.[s.id] ?? ''),
+        avg
+      ]);
+    });
+  });
+
+  const masterWs = XLSX.utils.aoa_to_sheet([masterTopHeaders, masterSubHeaders, ...masterRows]);
+  XLSX.utils.book_append_sheet(wb, masterWs, 'ריכוז כל הכיתות');
+
+  // 2. Individual Sheet for each of the 19 classes
+  classesList.forEach((cls) => {
+    const stus = classStudentsMap[`${academicYear}_${cls.id}`] || [];
+    const topHeaders = [
+      'פרטי תלמיד',
+      'פרטי תלמיד',
+      'פרטי תלמיד',
+      ...holisticColumns.map((c) => c.groupHe || 'מיפוי הוליסטי'),
+      ...gradeSubjects.map(() => `ציונים (${periodLabelHe})`)
+    ];
+    const subHeaders = [
+      'שם התלמיד',
+      'ת.ז',
+      'מין',
+      ...holisticColumns.map((c) => c.titleHe),
+      ...gradeSubjects.map((s) => s.titleHe)
+    ];
+    const rows = stus.map((stu) => [
+      stu.studentName || '',
+      stu.idNumber || '',
+      stu.gender || '',
+      ...holisticColumns.map((c) => stu[c.id] || ''),
+      ...gradeSubjects.map((s) => stu?.grades?.[periodId]?.[s.id] ?? '')
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([topHeaders, subHeaders, ...rows]);
+    const safeSheetName = (cls.nameHe || cls.id).replace(/[\\/?*\[\]:]/g, '').slice(0, 28);
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+  });
+
+  XLSX.writeFile(wb, `ריכוז_מיפוי_הוליסטי_בית_ספרי_${scopeLabelHe}_${academicYear}.xlsx`);
+};
