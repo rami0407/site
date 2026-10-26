@@ -210,11 +210,118 @@ export const decryptString = (encryptedText, key = APP_STORAGE_ENTROPY) => {
   }
 };
 
+/* =========================================================================
+   2B. High-Capacity Encrypted IndexedDB Vault (Prevents QuotaExceededError)
+   ========================================================================= */
+
+const VAULT_IDB_NAME = 'MusherfeEncryptedVaultDB';
+const VAULT_STORE_NAME = 'encryptedRecords';
+const memoryVaultCache = new Map();
+
+const openEncryptedVaultIDB = () => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !window.indexedDB) {
+      reject(new Error('IndexedDB unavailable'));
+      return;
+    }
+    const req = window.indexedDB.open(VAULT_IDB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const idb = e.target.result;
+      if (!idb.objectStoreNames.contains(VAULT_STORE_NAME)) {
+        idb.createObjectStore(VAULT_STORE_NAME, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = (e) => reject(e.target.error);
+  });
+};
+
+export const setEncryptedIDB = async (key, value) => {
+  if (!key) return;
+  memoryVaultCache.set(key, value);
+  try {
+    const raw = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    const encoded = encodeURIComponent(raw);
+    const cipher = transformString(encoded, APP_STORAGE_ENTROPY + key);
+    const payload = `${STORAGE_ENC_PREFIX}${window.btoa(cipher)}`;
+    const idb = await openEncryptedVaultIDB();
+    await new Promise((resolve, reject) => {
+      const tx = idb.transaction(VAULT_STORE_NAME, 'readwrite');
+      tx.objectStore(VAULT_STORE_NAME).put({ key, payload, updatedAt: Date.now() });
+      tx.oncomplete = () => resolve();
+      tx.onerror = (ev) => reject(ev.target.error);
+    });
+  } catch {
+    // Kept in memoryVaultCache & synced to Cloud DB
+  }
+};
+
+export const getEncryptedIDB = async (key, defaultValue = null) => {
+  if (!key) return defaultValue;
+  if (memoryVaultCache.has(key)) return memoryVaultCache.get(key);
+  try {
+    const idb = await openEncryptedVaultIDB();
+    const record = await new Promise((resolve, reject) => {
+      const tx = idb.transaction(VAULT_STORE_NAME, 'readonly');
+      const req = tx.objectStore(VAULT_STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = (ev) => reject(ev.target.error);
+    });
+    if (record && record.payload && typeof record.payload === 'string') {
+      const raw = record.payload;
+      if (raw.startsWith(STORAGE_ENC_PREFIX)) {
+        const b64 = raw.substring(STORAGE_ENC_PREFIX.length);
+        const cipher = window.atob(b64);
+        const decoded = transformString(cipher, APP_STORAGE_ENTROPY + key);
+        const finalStr = decodeURIComponent(decoded);
+        const parsed = JSON.parse(finalStr);
+        memoryVaultCache.set(key, parsed);
+        return parsed;
+      }
+    }
+  } catch {
+    // Fall through to localStorage check
+  }
+  return getSecureStorage(key, defaultValue);
+};
+
 /**
- * Save an item to LocalStorage encrypted
+ * Cleanup stale bulky holistic_students keys from localStorage when quota is reached
+ */
+const freeUpLocalStorageQuota = () => {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && (k.startsWith('holistic_students_') || k.startsWith('temp_'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    // Ignore cleanup errors
+  }
+};
+
+/**
+ * Save an item to LocalStorage encrypted (with automatic IndexedDB spill-over on QuotaExceededError)
  */
 export const setSecureStorage = (key, value) => {
   if (typeof window === 'undefined' || !window.localStorage) return;
+  memoryVaultCache.set(key, value);
+
+  // Route bulky student class datasets directly to high-capacity Encrypted IndexedDB Vault
+  if (key && key.startsWith('holistic_students_')) {
+    setEncryptedIDB(key, value);
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignore
+    }
+    return;
+  }
+
   try {
     if (value === null || value === undefined) {
       window.localStorage.removeItem(key);
@@ -225,46 +332,55 @@ export const setSecureStorage = (key, value) => {
     const cipher = transformString(encoded, APP_STORAGE_ENTROPY + key);
     const b64 = window.btoa(cipher);
     window.localStorage.setItem(key, `${STORAGE_ENC_PREFIX}${b64}`);
-  } catch (e) {
-    console.warn(`[SecureStorage] Error setting ${key}:`, e);
-    // Fallback
-    window.localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  } catch {
+    // Free up old bulky keys and store in Encrypted IndexedDB without throwing
+    freeUpLocalStorageQuota();
+    setEncryptedIDB(key, value);
+    try {
+      const raw = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      if (raw.length < 100000) {
+        window.localStorage.setItem(key, raw);
+      }
+    } catch {
+      // Safely stored in memoryVaultCache & Encrypted IndexedDB
+    }
   }
 };
 
 /**
- * Retrieve an encrypted item from LocalStorage (with seamless backward compatibility for unencrypted keys)
+ * Retrieve an encrypted item from LocalStorage or memoryVaultCache
  */
 export const getSecureStorage = (key, defaultValue = null) => {
+  if (memoryVaultCache.has(key)) return memoryVaultCache.get(key);
   if (typeof window === 'undefined' || !window.localStorage) return defaultValue;
   try {
     const raw = window.localStorage.getItem(key);
     if (raw === null || raw === undefined) return defaultValue;
 
-    // Check if encrypted
     if (raw.startsWith(STORAGE_ENC_PREFIX)) {
       const b64 = raw.substring(STORAGE_ENC_PREFIX.length);
       const cipher = window.atob(b64);
       const decoded = transformString(cipher, APP_STORAGE_ENTROPY + key);
       const finalStr = decodeURIComponent(decoded);
       try {
-        return JSON.parse(finalStr);
+        const parsed = JSON.parse(finalStr);
+        memoryVaultCache.set(key, parsed);
+        return parsed;
       } catch {
+        memoryVaultCache.set(key, finalStr);
         return finalStr;
       }
     }
 
-    // Backward compatibility: If legacy unencrypted value exists, upgrade it automatically!
     try {
       const parsed = JSON.parse(raw);
-      setSecureStorage(key, parsed);
+      memoryVaultCache.set(key, parsed);
       return parsed;
     } catch {
-      setSecureStorage(key, raw);
+      memoryVaultCache.set(key, raw);
       return raw;
     }
-  } catch (e) {
-    console.warn(`[SecureStorage] Error getting ${key}:`, e);
+  } catch {
     return defaultValue;
   }
 };
@@ -273,8 +389,13 @@ export const getSecureStorage = (key, defaultValue = null) => {
  * Remove an item from LocalStorage
  */
 export const removeSecureStorage = (key) => {
+  memoryVaultCache.delete(key);
   if (typeof window === 'undefined' || !window.localStorage) return;
-  window.localStorage.removeItem(key);
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Ignore
+  }
 };
 
 /* =========================================================================

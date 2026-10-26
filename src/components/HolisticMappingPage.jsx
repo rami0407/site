@@ -16,6 +16,8 @@ import {
 import {
   setSecureStorage,
   getSecureStorage,
+  setEncryptedIDB,
+  getEncryptedIDB,
   encryptDataWithPassword,
   decryptDataWithPassword
 } from '../utils/cryptoVault';
@@ -207,9 +209,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
   }, []);
 
-  // Load All Classes Data for the Selected Academic Year (Encrypted Vault + Realtime Cloud DB)
+  const seededCloudKeysRef = useRef(new Set());
+
+  // Load All Classes Data for the Selected Academic Year (Encrypted IndexedDB Vault + Realtime Cloud DB)
   useEffect(() => {
+    let isMounted = true;
     const loadedMap = {};
+
+    // 1. Instant synchronous fallback with official 469-student roster
     SCHOOL_19_CLASSES.forEach((cls) => {
       const key = `${selectedYear}_${cls.id}`;
       const saved = getSecureStorage(`holistic_students_v2_${key}`, null);
@@ -218,15 +225,35 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         loadedMap[key] = isOldDemo ? generateInitialDemoStudents(cls.id) : saved;
       } else {
         loadedMap[key] = generateInitialDemoStudents(cls.id);
-        setSecureStorage(`holistic_students_v2_${key}`, loadedMap[key]);
       }
     });
     setClassStudentsMap((prev) => ({ ...prev, ...loadedMap }));
 
-    // Subscribe to Firestore collection `holistic_mapping_classes` and auto-seed missing classes to Cloud DB
+    // 2. Hydrate from Encrypted IndexedDB Vault asynchronously
+    Promise.all(
+      SCHOOL_19_CLASSES.map(async (cls) => {
+        const key = `${selectedYear}_${cls.id}`;
+        const idbSaved = await getEncryptedIDB(`holistic_students_v2_${key}`, null);
+        if (idbSaved && Array.isArray(idbSaved) && idbSaved.length > 0) {
+          const isOldDemo = idbSaved.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
+          if (!isOldDemo) {
+            loadedMap[key] = idbSaved;
+          }
+        } else {
+          await setEncryptedIDB(`holistic_students_v2_${key}`, loadedMap[key]);
+        }
+      })
+    ).then(() => {
+      if (isMounted) {
+        setClassStudentsMap((prev) => ({ ...prev, ...loadedMap }));
+      }
+    });
+
+    // 3. Subscribe to Firestore collection `holistic_mapping_classes` and seed missing classes ONCE
     try {
       const q = collection(db, 'holistic_mapping_classes');
       const unsub = onSnapshot(q, (snap) => {
+        if (!isMounted) return;
         const cloudUpdates = {};
         const existingCloudKeys = new Set();
         snap.forEach((docSnap) => {
@@ -236,8 +263,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             if (!isOldDemo) {
               const key = `${d.academicYear}_${d.classId}`;
               existingCloudKeys.add(key);
+              seededCloudKeysRef.current.add(key);
               cloudUpdates[key] = d.students;
-              setSecureStorage(`holistic_students_v2_${key}`, d.students);
+              setEncryptedIDB(`holistic_students_v2_${key}`, d.students);
             }
           }
         });
@@ -246,10 +274,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         }
         setCloudSyncStatus('synced');
 
-        // Ensure all 19 classes are backed up in Firestore Cloud Database so they can be accessed anytime from any device
+        // Seed missing classes to Firestore Cloud DB at most ONCE per session
         SCHOOL_19_CLASSES.forEach((cls) => {
           const key = `${selectedYear}_${cls.id}`;
-          if (!existingCloudKeys.has(key) && loadedMap[key] && loadedMap[key].length > 0) {
+          if (!existingCloudKeys.has(key) && !seededCloudKeysRef.current.has(key) && loadedMap[key] && loadedMap[key].length > 0) {
+            seededCloudKeysRef.current.add(key);
             setDoc(doc(db, 'holistic_mapping_classes', key), {
               academicYear: selectedYear,
               classId: cls.id,
@@ -260,11 +289,17 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           }
         });
       }, () => {
-        setCloudSyncStatus('local_vault');
+        if (isMounted) setCloudSyncStatus('local_vault');
       });
-      return () => unsub();
+      return () => {
+        isMounted = false;
+        unsub();
+      };
     } catch {
       setCloudSyncStatus('local_vault');
+      return () => {
+        isMounted = false;
+      };
     }
   }, [selectedYear]);
 
@@ -425,7 +460,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const saveClassStudents = async (classId, updatedStudents, yearToSave = selectedYear) => {
     const key = `${yearToSave}_${classId}`;
     setClassStudentsMap((prev) => ({ ...prev, [key]: updatedStudents }));
-    setSecureStorage(`holistic_students_v2_${key}`, updatedStudents);
+    setEncryptedIDB(`holistic_students_v2_${key}`, updatedStudents);
 
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
