@@ -6,6 +6,9 @@ import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verif
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
 
 export const DEFAULT_TEACHER_PIN = '318212';
+export const DEFAULT_CUSTOM_TEACHER_PINS = {
+  tch_2: '061285227' // جيهان اغبارية (אגבאריה ג'יהאן)
+};
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
 const ACTIVE_TEACHER_KEY = 'musherfe_active_teacher_session';
 const TRUSTED_DEVICE_PREFIX = 'musherfe_2fa_trusted_';
@@ -160,7 +163,7 @@ export const getTeacherPin = (teacherId) => {
     // Storage fallback
   }
 
-  return DEFAULT_TEACHER_PIN;
+  return DEFAULT_CUSTOM_TEACHER_PINS[teacherId] || DEFAULT_TEACHER_PIN;
 };
 
 /**
@@ -235,7 +238,8 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
 
   // 2. Default unified password for all school teachers (318212)
   if (!isValid) {
-    if (cleanEntered === DEFAULT_TEACHER_PIN || cleanEntered === '318212') {
+    const expectedDefaultPin = DEFAULT_CUSTOM_TEACHER_PINS[teacherId] || DEFAULT_TEACHER_PIN;
+    if (cleanEntered === expectedDefaultPin) {
       isValid = true;
     } else {
       const defaultHash = await hashPin(DEFAULT_TEACHER_PIN, teacherId);

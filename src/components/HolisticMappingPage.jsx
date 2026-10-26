@@ -63,9 +63,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return initial;
   });
   const [coordinatorIds, setCoordinatorIds] = useState({
-    principalIds: ['tch_36'],
-    evalCoordIds: ['tch_12', 'tch_14'], // רכזת מדידה והערכה
-    inclusionCoordIds: ['tch_22', 'tch_24'] // רכזת הכלה והשתלבות
+    principalIds: ['tch_36'], // מנהל בית הספר: ראמי ארפאעיה
+    evalCoordIds: ['tch_2'], // רכזת אחראית מורשית לעריכת המבנה והעמודות: ג'יהאן אגבאריה (061285227)
+    inclusionCoordIds: []
   });
 
   // ==================== 3. VIEW & FILTER STATE ====================
@@ -232,6 +232,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   }, [selectedYear]);
 
   // ==================== 6. COMPUTE PERMISSIONS FOR CURRENT USER ====================
+  // ONLY Principal Rami (tch_36 / Firebase Admin) and Coordinator Jihan Agbaria (tch_2) can modify the file structure/columns/options
   const userCapabilities = useMemo(() => {
     if (isAdminEmbed || isFirebaseAdmin) {
       return {
@@ -253,21 +254,13 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
 
     const tId = activeTeacher.id;
-    const isPrincipal =
-      tId === 'tch_36' ||
-      activeTeacher.systemRole === 'principal' ||
-      coordinatorIds.principalIds?.includes(tId);
-    const isEvalCoord =
-      activeTeacher.systemRole === 'eval_coord' ||
-      coordinatorIds.evalCoordIds?.includes(tId);
-    const isInclusionCoord =
-      activeTeacher.systemRole === 'inclusion_coord' ||
-      coordinatorIds.inclusionCoordIds?.includes(tId);
+    const isPrincipal = tId === 'tch_36';
+    const isJihanCoordinator = tId === 'tch_2';
 
-    if (isPrincipal || isEvalCoord || isInclusionCoord) {
-      let title = 'מנהל בית הספר 👑';
-      if (isEvalCoord && !isPrincipal) title = 'רכזת מדידה והערכה 📊';
-      if (isInclusionCoord && !isPrincipal) title = 'רכזת הכלה והשתלבות 🤝';
+    if (isPrincipal || isJihanCoordinator) {
+      const title = isPrincipal
+        ? 'מנהל בית הספר — הרשאת עריכת מבנה מלאה 👑'
+        : 'ג׳יהאן אגבאריה — אחראית מערכת ורכזת (הרשאת עריכה והוספת עמודות מלאה) 📊';
       return {
         isSystemManager: true,
         roleTitleHe: title,
@@ -279,12 +272,12 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
     return {
       isSystemManager: false,
-      roleTitleHe: 'מחנך/ת כיתה / מורה מקצועי 👨‍🏫',
+      roleTitleHe: 'מחנך/ת כיתה (מילוי נתונים בלבד — מבנה הגיליון נעול) 👨‍🏫',
       canManageSchema: false,
       canManageYears: false,
       canViewAllClasses: false
     };
-  }, [activeTeacher, isAdminEmbed, isFirebaseAdmin, coordinatorIds]);
+  }, [activeTeacher, isAdminEmbed, isFirebaseAdmin]);
 
   // Check permissions for a specific class
   const getAccessForClass = (classId) => {
@@ -543,8 +536,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   };
 
   const handleDeleteStudent = (studentId, studentName) => {
-    if (!currentClassAccess.isHomeroom && !userCapabilities.isSystemManager) {
-      alert('רק מחנך הכיתה או מנהל המערכת יכולים למחוק תלמיד.');
+    if (!userCapabilities.canManageSchema) {
+      alert('⛔ רק מנהל בית הספר או ג׳יהאן אגבאריה רשאים להוסיף או להסיר תלמידים מרשימת הכיתה.');
       return;
     }
     if (!window.confirm(`האם אתה בטוח שברצונך להסיר את התלמיד "${studentName}" מהרשימה?`)) return;
@@ -1024,16 +1017,20 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setIsLoggingIn(true);
     try {
       const isValid = await verifyTeacherCredentials(teacher.id, cleanPin);
-      if (isValid || cleanPin === DEFAULT_TEACHER_PIN || cleanPin === '318212') {
+      const isJihan = teacher.id === 'tch_2';
+      const allowedPin = isJihan
+        ? (isValid || cleanPin === '061285227')
+        : (isValid || cleanPin === DEFAULT_TEACHER_PIN || cleanPin === '318212');
+      if (allowedPin) {
         const sessionObj = {
           ...teacher,
-          systemRole: loginRoleOverride === 'auto' ? undefined : loginRoleOverride
+          systemRole: isJihan ? 'eval_coord' : (teacher.id === 'tch_36' ? 'principal' : undefined)
         };
         setActiveTeacher(sessionObj);
         setActiveTeacherSession(sessionObj);
         setLoginPinInput('');
       } else {
-        setLoginError('❌ הקוד הסודי שגוי. (ברירת מחדל לצוות: 318212)');
+        setLoginError(isJihan ? '❌ הקוד הסודי שגוי.' : '❌ הקוד הסודי שגוי. (ברירת מחדל לצוות: 318212)');
       }
     } finally {
       setIsLoggingIn(false);
@@ -1345,28 +1342,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               </select>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                🎯 תפקיד במערכת המיפוי:
-              </label>
-              <select
-                value={loginRoleOverride}
-                onChange={(e) => setLoginRoleOverride(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.8rem 1rem',
-                  borderRadius: '14px',
-                  border: '2px solid #cbd5e1',
-                  fontWeight: 800,
-                  fontSize: '0.92rem',
-                  background: '#f8fafc'
-                }}
-              >
-                <option value="auto">זיהוי אוטומטי לפי הרשאות המורה / המחנך</option>
-                <option value="principal">👑 מנהל בית הספר (גישה מלאה לכל 19 הכיתות והגדרות)</option>
-                <option value="eval_coord">📊 רכזת מדידה והערכה (הוספת עמודות, ציונים וניתוח בית-ספרי)</option>
-                <option value="inclusion_coord">🤝 רכזת הכלה והשתלבות (הוספת תחומי מענים וניתוח בית-ספרי)</option>
-              </select>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.65rem 0.9rem', fontSize: '0.83rem', color: '#334155', fontWeight: 700 }}>
+              🛡️ <strong>הרשאות מערכת:</strong> עריכת מבנה הגיליון והוספת עמודות שמורה למנהל ביה"ס (<strong>ראמי</strong>) ולרכזת המדידה (<strong>ג׳יהאן</strong>) בלבד. מחנכי הכיתות מקבלים את קובץ הכיתה מוכן להזנת נתונים וציונים.
             </div>
 
             <div>
@@ -1821,32 +1798,30 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   }}
                 />
 
-                {(currentClassAccess.canEditMapping || currentClassAccess.canEditGrades) && (
-                  <button
-                    type="button"
-                    onClick={openSmartImportModal}
-                    style={{
-                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                      color: '#ffffff',
-                      border: '2px solid #fde68a',
-                      padding: '0.62rem 1.15rem',
-                      borderRadius: '10px',
-                      fontWeight: 900,
-                      fontSize: '0.88rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 14px rgba(217, 119, 6, 0.3)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.4rem'
-                    }}
-                  >
-                    <span>📂</span>
-                    <span>העלאת קובץ קיים מהמחשב (אקסל / CSV)</span>
-                  </button>
-                )}
-
-                {currentClassAccess.canEditMapping && (
+                {userCapabilities.canManageSchema && (
                   <>
+                    <button
+                      type="button"
+                      onClick={openSmartImportModal}
+                      style={{
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        color: '#ffffff',
+                        border: '2px solid #fde68a',
+                        padding: '0.62rem 1.15rem',
+                        borderRadius: '10px',
+                        fontWeight: 900,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 14px rgba(217, 119, 6, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                    >
+                      <span>📂</span>
+                      <span>העלאת קובץ קיים מהמחשב (אקסל / CSV)</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => setShowAddStudentModal(true)}
@@ -1982,9 +1957,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       >
                         ציונים לפי רמזור — {ASSESSMENT_PERIODS.find((p) => p.id === selectedPeriod)?.labelHe}
                       </th>
-                      <th rowSpan={2} className="no-print">
-                        פעולות
-                      </th>
+                      {userCapabilities.canManageSchema && (
+                        <th rowSpan={2} className="no-print">
+                          פעולות
+                        </th>
+                      )}
                     </tr>
                     <tr className="sub-header-row">
                       {holisticColumns.map((col) => (
@@ -2133,13 +2110,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                                       {currentVal}
                                     </option>
                                   )}
-                                  <option value="__CUSTOM__" style={{ background: '#f8fafc', color: '#2563eb', fontWeight: 900 }}>
-                                    ✍️ הקלד הערה / ערך חופשי...
-                                  </option>
                                   {userCapabilities.canManageSchema && (
-                                    <option value="__MANAGE_OPTIONS__" style={{ background: '#fef3c7', color: '#92400e', fontWeight: 900 }}>
-                                      ⚙️ הוספה / עריכה / החלפה של אפשרויות מענה לשדה זה...
-                                    </option>
+                                    <>
+                                      <option value="__CUSTOM__" style={{ background: '#f8fafc', color: '#2563eb', fontWeight: 900 }}>
+                                        ✍️ הקלד הערה / ערך חופשי...
+                                      </option>
+                                      <option value="__MANAGE_OPTIONS__" style={{ background: '#fef3c7', color: '#92400e', fontWeight: 900 }}>
+                                        ⚙️ הוספה / עריכה / החלפה של אפשרויות מענה לשדה זה...
+                                      </option>
+                                    </>
                                   )}
                                 </select>
                               </td>
@@ -2196,25 +2175,27 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                             </span>
                           </td>
 
-                          {/* Actions */}
-                          <td className="no-print">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteStudent(stu.id, stu.studentName)}
-                              style={{
-                                background: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fecaca',
-                                borderRadius: '8px',
-                                padding: '0.3rem 0.55rem',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem'
-                              }}
-                              title="הסר תלמיד"
-                            >
-                              🗑️
-                            </button>
-                          </td>
+                          {/* Actions (Only Principal Rami & Coordinator Jihan) */}
+                          {userCapabilities.canManageSchema && (
+                            <td className="no-print">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteStudent(stu.id, stu.studentName)}
+                                style={{
+                                  background: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: '8px',
+                                  padding: '0.3rem 0.55rem',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem'
+                                }}
+                                title="הסר תלמיד"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -2239,7 +2220,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   השוואת ציוני התלמידים לפי שלבים (שלב א׳, סמסטר א׳, שלב ב׳, סמסטר ב׳) בצבעי הרמזור
                 </p>
               </div>
-              {(currentClassAccess.canEditMapping || currentClassAccess.canEditGrades) && (
+              {userCapabilities.canManageSchema && (
                 <button
                   type="button"
                   onClick={openSmartImportModal}
