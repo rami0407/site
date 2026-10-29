@@ -366,7 +366,21 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         seededCloudKeysRef.current.add(key);
         cloudUpdatedMsRef.current[key] = incomingMs;
 
-        setClassStudentsMap((prev) => ({ ...prev, [key]: d.students }));
+        setClassStudentsMap((prev) => {
+          const localList = prev[key];
+          if (!dirtyClassKeysRef.current.has(key) || !Array.isArray(localList)) {
+            return { ...prev, [key]: d.students };
+          }
+          // Merge student by student so in-flight local inputs are not overwritten while another teacher saves
+          const merged = d.students.map((incStu) => {
+            const locStu = localList.find((s) => s.id === incStu.id);
+            if (!locStu) return incStu;
+            const locTime = locStu.updatedAt ? Date.parse(locStu.updatedAt) : 0;
+            const incTime = incStu.updatedAt ? Date.parse(incStu.updatedAt) : 0;
+            return locTime > incTime ? locStu : incStu;
+          });
+          return { ...prev, [key]: merged };
+        });
         setEncryptedIDB(`holistic_students_v2_${key}`, d.students);
         setCloudSyncStatus('synced');
 
@@ -512,7 +526,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
 
     const perm = classPermissions[classId] || {};
-    if (perm.homeroomTeacherId === activeTeacher.id || activeTeacher.loginSelectedClassId === classId) {
+    const isHomeroom = perm.homeroomTeacherId === activeTeacher.id || activeTeacher.loginSelectedClassId === classId;
+
+    if (isHomeroom) {
       return {
         hasAccess: true,
         isHomeroom: true,
@@ -537,13 +553,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       };
     }
 
+    // Every logged-in teacher in the school has full permission to fill in grades & skills for all classes!
+    // Sensitive social/behavioral notes in Section 1 remain restricted to homeroom & administration.
     return {
-      hasAccess: false,
+      hasAccess: true,
       isHomeroom: false,
       canEditMapping: false,
-      canEditGrades: false,
-      allowedSubjects: [],
-      accessBadgeHe: 'צפייה בלבד / נעול 🔒'
+      canEditGrades: true,
+      allowedSubjects: ['all'],
+      accessBadgeHe: 'מורה מקצועי (מורשה להזנת ציונים ומיומנויות) 📝'
     };
   };
 
@@ -553,9 +571,24 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     if (userCapabilities.canViewAllClasses || userCapabilities.isSystemManager) {
       return SCHOOL_19_CLASSES;
     }
-    const allowed = SCHOOL_19_CLASSES.filter((cls) => getAccessForClass(cls.id).hasAccess);
-    return allowed;
-  }, [userCapabilities, activeTeacher, classPermissions]);
+    if (!activeTeacher) return [];
+
+    // In Section 2 (Grades & Skills Journal) and Section 3 (Combined 360 Profile):
+    // All teachers can select and navigate across all 19 classes to fill in their subject grades!
+    if (activeMainTab === 'grades-matrix' || activeMainTab === 'student-analytics') {
+      return SCHOOL_19_CLASSES;
+    }
+
+    // In Section 1 (Sensitive Social & Behavioral Mapping):
+    // Homeroom teachers see only their authorized homeroom / delegated class(es)
+    const allowed = SCHOOL_19_CLASSES.filter((cls) => {
+      const perm = classPermissions[cls.id] || {};
+      const isHome = perm.homeroomTeacherId === activeTeacher.id || activeTeacher.loginSelectedClassId === cls.id;
+      const isDelegated = (perm.delegatedTeachers || []).some((d) => d.teacherId === activeTeacher.id);
+      return isHome || isDelegated;
+    });
+    return allowed.length > 0 ? allowed : SCHOOL_19_CLASSES;
+  }, [userCapabilities, activeTeacher, classPermissions, activeMainTab]);
 
   // Auto-select and lock regular teacher to their authorized class when logging in or when permissions change
   useEffect(() => {
@@ -650,14 +683,39 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
   };
 
-  const saveClassStudents = async (classId, updatedStudents, yearToSave = selectedYear, forceImmediateCloud = false) => {
+  const autoSaveDebounceTimersRef = useRef({});
+
+  const saveClassStudents = (classId, updatedStudents, yearToSave = selectedYear, forceImmediateCloud = false) => {
     const key = `${yearToSave}_${classId}`;
     cloudLoadedKeysRef.current.add(key);
+
+    // Instant optimistic update in React State + Local Encrypted DB (0ms delay for the teacher)
     setClassStudentsMap((prev) => ({ ...prev, [key]: updatedStudents }));
     setEncryptedIDB(`holistic_students_v2_${key}`, updatedStudents);
 
-    if (autoSaveEnabled || forceImmediateCloud) {
-      await pushClassToCloudNow(classId, updatedStudents, yearToSave);
+    if (forceImmediateCloud) {
+      if (autoSaveDebounceTimersRef.current[key]) {
+        clearTimeout(autoSaveDebounceTimersRef.current[key]);
+        delete autoSaveDebounceTimersRef.current[key];
+      }
+      return pushClassToCloudNow(classId, updatedStudents, yearToSave);
+    }
+
+    if (autoSaveEnabled) {
+      dirtyClassKeysRef.current.add(key);
+      setHasUnsavedChanges(true);
+      setCloudSyncStatus('saving');
+
+      // Debounce network write by 350ms so rapid typing doesn't create request collisions,
+      // then immediately broadcasts to all other teachers via Firestore onSnapshot
+      if (autoSaveDebounceTimersRef.current[key]) {
+        clearTimeout(autoSaveDebounceTimersRef.current[key]);
+      }
+
+      autoSaveDebounceTimersRef.current[key] = setTimeout(async () => {
+        delete autoSaveDebounceTimersRef.current[key];
+        await pushClassToCloudNow(classId, updatedStudents, yearToSave);
+      }, 350);
     } else {
       dirtyClassKeysRef.current.add(key);
       setHasUnsavedChanges(true);
