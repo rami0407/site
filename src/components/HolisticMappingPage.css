@@ -375,3 +375,218 @@
     overflow: visible !important;
   }
 }
+
+
+/* ========================================================
+   SKILLS & PERCENTAGE MANAGER (RESPONSIVE NO-OVERLAP GRID)
+   ======================================================== */
+.skills-manager-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.skill-manage-item-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid #fcd34d;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.skill-manage-item-card:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.16);
+}
+
+.skill-card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.skill-card-index-badge {
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.skill-card-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #0f172a;
+  background: #f8fafc;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.skill-card-title-input:focus {
+  outline: none;
+  border-color: #f59e0b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.skill-card-delete-btn {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  transition: all 0.15s ease;
+}
+
+.skill-card-delete-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: scale(1.08);
+}
+
+.skill-card-weight-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.55rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.skill-card-weight-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #475569;
+}
+
+.skill-card-weight-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.skill-card-weight-input {
+  width: 62px;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+  border: 2px solid #2563eb;
+  font-weight: 900;
+  text-align: center;
+  font-size: 0.92rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.skill-card-weight-input:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* Add Skill Form */
+.add-skill-form-container {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 0.9rem 1.15rem;
+  border: 1.5px dashed #f59e0b;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.add-skill-title-input {
+  flex: 2;
+  min-width: 220px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  font-weight: 800;
+  font-size: 0.88rem;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.add-skill-title-input:focus {
+  outline: none;
+  border-color: #f59e0b;
+  background: #ffffff;
+}
+
+.add-skill-weight-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f8fafc;
+  padding: 0.4rem 0.8rem;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+}
+
+.add-skill-submit-btn {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0.65rem 1.35rem;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.2);
+  transition: all 0.15s ease;
+}
+
+.add-skill-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(180, 83, 9, 0.3);
+}
+
+.skill-normalize-btn {
+  background: #ffffff;
+  color: #047857;
+  border: 1.5px solid #10b981;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: all 0.15s ease;
+}
+
+.skill-normalize-btn:hover {
+  background: #ecfdf5;
+  border-color: #059669;
+  transform: translateY(-1px);
+}

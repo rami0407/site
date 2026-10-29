@@ -1008,6 +1008,62 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast('🗑️ تم حذف المهارة وإعادة احتساب النسب الموزونة.');
   };
 
+  const handleNormalizeSkillsTo100 = (subjectId) => {
+    const targetSubj = gradeSubjects.find((s) => s.id === subjectId);
+    if (!targetSubj) return;
+    const curSkills = getSkillsForSubject(targetSubj);
+    if (!curSkills || curSkills.length === 0) return;
+
+    const currentTotal = curSkills.reduce((acc, sk) => acc + (parseInt(sk.weight, 10) || 0), 0);
+    let updatedSkillsForSubj = [];
+
+    if (currentTotal === 0) {
+      const baseW = Math.floor(100 / curSkills.length);
+      const rem = 100 - baseW * curSkills.length;
+      updatedSkillsForSubj = curSkills.map((sk, idx) => ({
+        ...sk,
+        weight: baseW + (idx === 0 ? rem : 0)
+      }));
+    } else {
+      let accumulated = 0;
+      updatedSkillsForSubj = curSkills.map((sk, idx) => {
+        const origW = parseInt(sk.weight, 10) || 0;
+        if (idx === curSkills.length - 1) {
+          const lastW = Math.max(1, 100 - accumulated);
+          return { ...sk, weight: lastW };
+        }
+        const scaledW = Math.max(1, Math.round((origW / currentTotal) * 100));
+        accumulated += scaledW;
+        return { ...sk, weight: scaledW };
+      });
+    }
+
+    const nextSubjs = gradeSubjects.map((s) => {
+      if (s.id !== subjectId) return s;
+      return { ...s, skills: updatedSkillsForSubj };
+    });
+
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+
+    // Recalculate student weighted scores
+    const recalculatedStudents = currentStudents.map((stu) => {
+      const nextGrades = { ...(stu.grades || {}) };
+      ASSESSMENT_PERIODS.forEach((p) => {
+        const wScore = computeWeightedSubjectScore(stu, p.id, subjectId, updatedSkillsForSubj);
+        if (wScore !== null) {
+          nextGrades[p.id] = {
+            ...(nextGrades[p.id] || {}),
+            [subjectId]: wScore
+          };
+        }
+      });
+      return { ...stu, grades: nextGrades };
+    });
+    saveClassStudents(selectedClassId, recalculatedStudents);
+    triggerToast('⚖️ تم ضبط وموازنة نسب المهارات لتساوي 100% بنجاح!');
+  };
+
   const handleUpdateStudentGrade = (studentId, periodId, subjectId, rawScore) => {
     const canEditThisSubj =
       currentClassAccess.canEditGrades &&
@@ -3359,8 +3415,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
                 {/* Subject Selector Pills */}
                 {gradesSubMode === 'skills_station' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.9rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                    <span style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.92rem' }}>
                       📚 اختر الموضوع الدراسي:
                     </span>
                     {gradeSubjects.map((subj) => {
@@ -3372,17 +3428,34 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           type="button"
                           onClick={() => setSelectedSubjectForSkills(subj.id)}
                           style={{
-                            background: isSubjSel ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : '#f0fdf4',
-                            color: isSubjSel ? '#ffffff' : '#166534',
-                            border: isSubjSel ? '2px solid #047857' : '1.5px solid #86efac',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '10px',
-                            fontWeight: 900,
-                            fontSize: '0.86rem',
-                            cursor: 'pointer'
+                            background: isSubjSel ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : '#ffffff',
+                            color: isSubjSel ? '#ffffff' : '#1e293b',
+                            border: isSubjSel ? '2px solid #047857' : '1.5px solid #cbd5e1',
+                            padding: '0.5rem 0.95rem',
+                            borderRadius: '12px',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            boxShadow: isSubjSel ? '0 3px 10px rgba(4, 120, 87, 0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
+                            transition: 'all 0.15s ease'
                           }}
                         >
-                          {subj.titleHe} ({subjSkills.length} مهارات)
+                          <span>{subj.titleAr || subj.titleHe}</span>
+                          <span
+                            style={{
+                              background: isSubjSel ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                              color: isSubjSel ? '#ffffff' : '#64748b',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '999px',
+                              fontSize: '0.76rem',
+                              fontWeight: 900
+                            }}
+                          >
+                            {subjSkills.length} مهارات
+                          </span>
                         </button>
                       );
                     })}
@@ -3399,146 +3472,120 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     borderRadius: '18px',
                     padding: '1.25rem 1.5rem',
                     border: '2px solid #f59e0b',
-                    marginBottom: '1.2rem'
+                    marginBottom: '1.2rem',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.1)'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.1rem' }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#92400e' }}>
-                        ⚙️ تحديد المهارات ونسبة كل مهارة (%) — موضوع: {activeSubjObj.titleHe}
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#92400e', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>⚙️ تحديد المهارات ونسبة كل مهارة (%)</span>
+                        <span style={{ fontSize: '0.95rem', color: '#b45309', fontWeight: 800 }}>— موضوع: {activeSubjObj.titleAr || activeSubjObj.titleHe}</span>
                       </h3>
-                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.84rem', color: '#78350f', fontWeight: 700 }}>
+                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.84rem', color: '#78350f', fontWeight: 700 }}>
                         يقرر مركز الموضوع أو المعلم المهارات المطلوبة ونسبة كل مهارة (%)، وتُحسب العلامة الموزونة للمحطة تلقائياً:
                       </p>
                     </div>
-                    <span
-                      style={{
-                        background: totalSkillsWeight === 100 ? '#16a34a' : '#ea580c',
-                        color: '#ffffff',
-                        padding: '0.4rem 0.95rem',
-                        borderRadius: '999px',
-                        fontWeight: 900,
-                        fontSize: '0.86rem'
-                      }}
-                    >
-                      مجموع نسب المهارات: {totalSkillsWeight}% {totalSkillsWeight === 100 ? '✅' : '(يُحسب موزوناً تلقائياً)'}
-                    </span>
-                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                    {activeSkills.map((sk, sIdx) => (
-                      <div
-                        key={sk.id}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                      <span
                         style={{
-                          background: '#ffffff',
-                          borderRadius: '12px',
-                          padding: '0.75rem',
-                          border: '1.5px solid #fcd34d',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem'
+                          background: totalSkillsWeight === 100 ? '#16a34a' : '#ea580c',
+                          color: '#ffffff',
+                          padding: '0.45rem 1rem',
+                          borderRadius: '999px',
+                          fontWeight: 900,
+                          fontSize: '0.86rem',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                         }}
                       >
-                        <span style={{ fontWeight: 900, color: '#b45309' }}>#{sIdx + 1}</span>
-                        <input
-                          type="text"
-                          value={sk.titleHe}
-                          disabled={!canEditThisSubject && !userCapabilities.canManageSchema}
-                          onChange={(e) => handleUpdateSkillWeightOrTitle(activeSubjObj.id, sk.id, 'title', e.target.value)}
-                          style={{
-                            flex: 1,
-                            padding: '0.45rem 0.6rem',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontWeight: 800,
-                            fontSize: '0.84rem'
-                          }}
-                          title="اسم المهارة"
-                        />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        مجموع نسب المهارات: {totalSkillsWeight}% {totalSkillsWeight === 100 ? '✅' : '(يُحسب موزوناً تلقائياً)'}
+                      </span>
+                      {(canEditThisSubject || userCapabilities.canManageSchema) && totalSkillsWeight !== 100 && (
+                        <button
+                          type="button"
+                          onClick={() => handleNormalizeSkillsTo100(activeSubjObj.id)}
+                          className="skill-normalize-btn"
+                          title="إعادة احتساب وتوزيع النسب بالتناسب ليصبح المجموع 100%"
+                        >
+                          ⚖️ ضبط تلقائي إلى 100%
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="skills-manager-card-grid">
+                    {activeSkills.map((sk, sIdx) => (
+                      <div key={sk.id} className="skill-manage-item-card">
+                        {/* Top Row: Index Badge, Skill Title Input, and Delete Button */}
+                        <div className="skill-card-top-row">
+                          <span className="skill-card-index-badge">#{sIdx + 1}</span>
                           <input
-                            type="number"
-                            min="1"
-                            max="100"
-                            value={sk.weight}
+                            type="text"
+                            value={sk.titleHe}
                             disabled={!canEditThisSubject && !userCapabilities.canManageSchema}
-                            onChange={(e) => handleUpdateSkillWeightOrTitle(activeSubjObj.id, sk.id, 'weight', e.target.value)}
-                            style={{
-                              width: '56px',
-                              padding: '0.45rem',
-                              borderRadius: '8px',
-                              border: '2px solid #2563eb',
-                              fontWeight: 900,
-                              textAlign: 'center',
-                              fontSize: '0.88rem',
-                              background: '#eff6ff',
-                              color: '#1e3a8a'
-                            }}
-                            title="نسبة المهارة (%)"
+                            onChange={(e) => handleUpdateSkillWeightOrTitle(activeSubjObj.id, sk.id, 'title', e.target.value)}
+                            placeholder="اسم المهارة..."
+                            className="skill-card-title-input"
+                            title="اسم المهارة"
                           />
-                          <span style={{ fontWeight: 900, color: '#1e3a8a' }}>%</span>
+                          {(canEditThisSubject || userCapabilities.canManageSchema) && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSkillFromSubject(activeSubjObj.id, sk.id)}
+                              className="skill-card-delete-btn"
+                              title="حذف المهارة"
+                            >
+                              🗑️
+                            </button>
+                          )}
                         </div>
-                        {(canEditThisSubject || userCapabilities.canManageSchema) && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSkillFromSubject(activeSubjObj.id, sk.id)}
-                            style={{
-                              background: '#fef2f2',
-                              color: '#dc2626',
-                              border: '1px solid #fecaca',
-                              borderRadius: '8px',
-                              padding: '0.35rem 0.5rem',
-                              cursor: 'pointer'
-                            }}
-                            title="حذف المهارة"
-                          >
-                            🗑️
-                          </button>
-                        )}
+
+                        {/* Bottom Row: Percentage Weight Control */}
+                        <div className="skill-card-weight-row">
+                          <span className="skill-card-weight-label">نسبة المهارة من علامة الموضوع:</span>
+                          <div className="skill-card-weight-input-group">
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={sk.weight}
+                              disabled={!canEditThisSubject && !userCapabilities.canManageSchema}
+                              onChange={(e) => handleUpdateSkillWeightOrTitle(activeSubjObj.id, sk.id, 'weight', e.target.value)}
+                              className="skill-card-weight-input"
+                              title="نسبة المهارة (%)"
+                            />
+                            <span style={{ fontWeight: 900, color: '#1e3a8a', fontSize: '0.92rem' }}>%</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
 
                   {(canEditThisSubject || userCapabilities.canManageSchema) && (
-                    <form onSubmit={handleAddSkillToSubject} style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <form onSubmit={handleAddSkillToSubject} className="add-skill-form-container">
                       <input
                         type="text"
                         placeholder="➕ اسم مهارة جديدة (مثلاً: فهم المقروء / طلاقة القراءة / الهندسة)..."
                         value={newSkillTitleInput}
                         onChange={(e) => setNewSkillTitleInput(e.target.value)}
-                        style={{
-                          flex: 1,
-                          minWidth: '240px',
-                          padding: '0.6rem 0.9rem',
-                          borderRadius: '10px',
-                          border: '1.5px solid #f59e0b',
-                          fontWeight: 800,
-                          background: '#ffffff'
-                        }}
+                        className="add-skill-title-input"
                       />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#ffffff', padding: '0.3rem 0.7rem', borderRadius: '10px', border: '1.5px solid #f59e0b' }}>
-                        <span style={{ fontSize: '0.84rem', fontWeight: 900, color: '#92400e' }}>نسبة المهارة:</span>
+                      <div className="add-skill-weight-group">
+                        <span style={{ fontSize: '0.86rem', fontWeight: 900, color: '#92400e' }}>نسبة المهارة:</span>
                         <input
                           type="number"
                           min="1"
                           max="100"
                           value={newSkillWeightInput}
                           onChange={(e) => setNewSkillWeightInput(e.target.value)}
-                          style={{ width: '55px', border: 'none', fontWeight: 900, fontSize: '0.92rem', textAlign: 'center' }}
+                          style={{ width: '55px', border: 'none', background: 'transparent', fontWeight: 900, fontSize: '0.95rem', textAlign: 'center', color: '#1e3a8a' }}
                         />
                         <span style={{ fontWeight: 900, color: '#92400e' }}>%</span>
                       </div>
                       <button
                         type="submit"
-                        style={{
-                          background: '#d97706',
-                          color: '#ffffff',
-                          border: 'none',
-                          padding: '0.62rem 1.2rem',
-                          borderRadius: '10px',
-                          fontWeight: 900,
-                          cursor: 'pointer'
-                        }}
+                        className="add-skill-submit-btn"
                       >
                         ➕ إضافة المهارة للموضوع
                       </button>
