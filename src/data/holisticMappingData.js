@@ -111,7 +111,8 @@ export const TRAFFIC_LIGHT_SCALE = [
   }
 ];
 
-export const getTrafficLightStyle = (score) => {
+export const getTrafficLightStyle = (score, customScale = null) => {
+  const scaleToUse = Array.isArray(customScale) && customScale.length === 5 ? customScale : TRAFFIC_LIGHT_SCALE;
   if (score === '' || score === null || score === undefined || isNaN(Number(score))) {
     return {
       id: 'empty',
@@ -120,23 +121,57 @@ export const getTrafficLightStyle = (score) => {
       text: '#64748b',
       badgeBg: '#e2e8f0',
       badgeText: '#475569',
-      labelHe: 'לא הוזן'
+      labelHe: 'לא הוזן',
+      labelAr: 'لم يُدخل'
     };
   }
   const num = Math.max(0, Math.min(100, Number(score)));
-  if (num <= 35) return TRAFFIC_LIGHT_SCALE[0];
-  if (num <= 54) return TRAFFIC_LIGHT_SCALE[1];
-  if (num <= 70) return TRAFFIC_LIGHT_SCALE[2];
-  if (num <= 84) return TRAFFIC_LIGHT_SCALE[3];
-  return TRAFFIC_LIGHT_SCALE[4];
+  for (let i = 0; i < scaleToUse.length; i++) {
+    if (num <= scaleToUse[i].max || i === scaleToUse.length - 1) {
+      return scaleToUse[i];
+    }
+  }
+  return scaleToUse[4];
 };
 
-// Assessment Periods (לפי שלבים ולפי סמסטרים)
+// 4 Assessment Stations by Months: 10 (October), 12 (December), 3 (March), 6 (June)
 export const ASSESSMENT_PERIODS = [
-  { id: 'stage_a', labelHe: 'מיפוי פתיחת שנה / שלב א׳', labelAr: 'مسح بداية السنة / مرحلة أ', semester: 'sem_1' },
-  { id: 'sem_1', labelHe: 'סוף סמסטר א׳ (מחצית א׳)', labelAr: 'نهاية الفصل الأول (סמסטר א׳)', semester: 'sem_1' },
-  { id: 'stage_b', labelHe: 'מיפוי אמצע / שלב ב׳', labelAr: 'مسح منتصف العام / مرحلة ב׳', semester: 'sem_2' },
-  { id: 'sem_2', labelHe: 'סוף סמסטר ב׳ (שנתי / מסכם)', labelAr: 'نهاية الفصل الثاني (סמסטר ב׳ / سنوي)', semester: 'sem_2' }
+  {
+    id: 'month_10',
+    monthNum: 10,
+    labelHe: 'תחנת הערכה 1 — חודש 10 (אוקטובר / محطة شهر 10)',
+    labelAr: 'محطة تقييم 1 — شهر 10 (أكتوبر)',
+    shortHe: 'חודש 10 (אוק׳)',
+    shortAr: 'محطة شهر 10',
+    semester: 'sem_1'
+  },
+  {
+    id: 'month_12',
+    monthNum: 12,
+    labelHe: 'תחנת הערכה 2 — חודש 12 (דצמבר / محطة شهر 12)',
+    labelAr: 'محطة تقييم 2 — شهر 12 (ديسمبر)',
+    shortHe: 'חודש 12 (דצמ׳)',
+    shortAr: 'محطة شهر 12',
+    semester: 'sem_1'
+  },
+  {
+    id: 'month_3',
+    monthNum: 3,
+    labelHe: 'תחנת הערכה 3 — חודש 3 (מרץ / محطة شهر 3)',
+    labelAr: 'محطة تقييم 3 — شهر 3 (مارس)',
+    shortHe: 'חודש 3 (מרץ)',
+    shortAr: 'محطة شهر 3',
+    semester: 'sem_2'
+  },
+  {
+    id: 'month_6',
+    monthNum: 6,
+    labelHe: 'תחנת הערכה 4 — חודש 6 (יוני / محطة شهر 6)',
+    labelAr: 'محطة تقييم 4 — شهر 6 (يونيو)',
+    shortHe: 'חודש 6 (יוני)',
+    shortAr: 'محطة شهر 6',
+    semester: 'sem_2'
+  }
 ];
 
 // Default Holistic Mapping Schema matching the uploaded Excel image + customizable options
@@ -343,13 +378,63 @@ export const DEFAULT_HOLISTIC_COLUMNS = [
   }
 ];
 
-// Default Academic Subjects for Grades (ציונים לפי שלבים ולפי סמסטרים)
+// Default Academic Subjects for Grades & Skills Assessment (4 תחנות: חודש 10, 12, 3, 6)
 export const DEFAULT_GRADE_SUBJECTS = [
-  { id: 'arabic', titleHe: 'שפה ערבית (لغة عربية)', titleAr: 'اللغة العربية', order: 1 },
-  { id: 'hebrew', titleHe: 'שפה עברית (עברית)', titleAr: 'اللغة العبرية', order: 2 },
-  { id: 'math', titleHe: 'מתמטיקה (رياضيات)', titleAr: 'الرياضيات', order: 3 },
-  { id: 'english', titleHe: 'אנגלית (إنجليزية)', titleAr: 'اللغة الإنجليزية', order: 4 },
-  { id: 'science', titleHe: 'מדעים וטכנולוגיה (علوم)', titleAr: 'العلوم والتكنولوجيا', order: 5 }
+  {
+    id: 'arabic',
+    titleHe: 'שפה ערבית (اللغة العربية)',
+    titleAr: 'اللغة العربية',
+    order: 1,
+    skills: [
+      { id: 'ar_reading', titleHe: 'הבנת הנקרא (فهم المقروء)', titleAr: 'فهم المقروء', weight: 40 },
+      { id: 'ar_writing', titleHe: 'הבעה בכתב (التعبير الكتابي)', titleAr: 'التعبير الكتابي', weight: 30 },
+      { id: 'ar_grammar', titleHe: 'לשון ודקדוק (المعرفة اللغوية والقواعد)', titleAr: 'المعرفة اللغوية والقواعد', weight: 30 }
+    ]
+  },
+  {
+    id: 'hebrew',
+    titleHe: 'שפה עברית (اللغة العبرية)',
+    titleAr: 'اللغة العبرية',
+    order: 2,
+    skills: [
+      { id: 'he_reading', titleHe: 'הבנת הנקרא (فهم المقروء)', titleAr: 'فهم المقروء', weight: 40 },
+      { id: 'he_vocab', titleHe: 'אוצר מילים ולשון (الثروة اللغوية والقواعد)', titleAr: 'الثروة اللغوية والقواعد', weight: 35 },
+      { id: 'he_expression', titleHe: 'הבעה בע"פ ובכתב (التعبير الشفهي والكتابي)', titleAr: 'التعبير الشفهي والكتابي', weight: 25 }
+    ]
+  },
+  {
+    id: 'math',
+    titleHe: 'מתמטיקה (الرياضيات)',
+    titleAr: 'الرياضيات',
+    order: 3,
+    skills: [
+      { id: 'ma_numbers', titleHe: 'מספרים ופעולות (الأعداد والعمليات الحسابية)', titleAr: 'الأعداد والعمليات الحسابية', weight: 40 },
+      { id: 'ma_problems', titleHe: 'פתרון בעיות מילוליות (حل المسائل الكلامية)', titleAr: 'حل المسائل الكلامية', weight: 35 },
+      { id: 'ma_geometry', titleHe: 'הנדסה ומדידות (الهندسة والقياس)', titleAr: 'الهندسة والقياس', weight: 25 }
+    ]
+  },
+  {
+    id: 'english',
+    titleHe: 'אנגלית (اللغة الإنجليزية)',
+    titleAr: 'اللغة الإنجليزية',
+    order: 4,
+    skills: [
+      { id: 'en_reading', titleHe: 'Reading Comprehension (فهم المقروء)', titleAr: 'فهم المقروء (Reading)', weight: 40 },
+      { id: 'en_vocab', titleHe: 'Vocabulary & Grammar (المفردات والقواعد)', titleAr: 'المفردات والقواعد', weight: 35 },
+      { id: 'en_writing', titleHe: 'Writing & Speaking (الكتابة والمحادثة)', titleAr: 'الكتابة والمحادثة', weight: 25 }
+    ]
+  },
+  {
+    id: 'science',
+    titleHe: 'מדעים וטכנולוגיה (العلوم والتكنولوجيا)',
+    titleAr: 'العلوم والتكنولوجيا',
+    order: 5,
+    skills: [
+      { id: 'sc_knowledge', titleHe: 'ידע מדעי ומושגים (المعرفة والمفاهيم العلمية)', titleAr: 'المعرفة والمفاهيم العلمية', weight: 45 },
+      { id: 'sc_inquiry', titleHe: 'מיומנויות חקר וניסוי (مهارات البحث والتجربة)', titleAr: 'مهارات البحث والتجربة', weight: 35 },
+      { id: 'sc_tasks', titleHe: 'משימות ויישום (المهام التطبيقية)', titleAr: 'المهام التطبيقية', weight: 20 }
+    ]
+  }
 ];
 
 // Pill Color Styles for Dropdown Options (like Google Sheets / Excel conditional pills in user's screenshot)

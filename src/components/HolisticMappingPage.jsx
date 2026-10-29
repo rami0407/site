@@ -99,9 +99,19 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const [activeMainTab, setActiveMainTab] = useState('class-sheet');
   const [selectedClassId, setSelectedClassId] = useState('class_1_1');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState(1);
-  const [selectedPeriod, setSelectedPeriod] = useState('stage_a');
+  const [selectedPeriod, setSelectedPeriod] = useState('month_10');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentForCard, setSelectedStudentForCard] = useState(null);
+
+  // Section 2: Grades & Skills Assessment Record State (4 Stations: Months 10, 12, 3, 6)
+  const [selectedSubjectForSkills, setSelectedSubjectForSkills] = useState('arabic');
+  const [gradesSubMode, setGradesSubMode] = useState('skills_station'); // 'skills_station' | 'all_stations_summary'
+  const [showSkillsManagerPanel, setShowSkillsManagerPanel] = useState(false);
+  const [newSkillTitleInput, setNewSkillTitleInput] = useState('');
+  const [newSkillWeightInput, setNewSkillWeightInput] = useState(25);
+
+  // Section 3: Combined Student & Class Profile State (Social-Behavioral + Grades & Skills)
+  const [combinedSectionMode, setCombinedSectionMode] = useState('student_card'); // 'student_card' | 'class_combined_table'
 
   // ==================== 4. STUDENTS DATA & CLOUD SECURITY STATE ====================
   const [classStudentsMap, setClassStudentsMap] = useState({});
@@ -131,7 +141,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const [sheetAnalysis, setSheetAnalysis] = useState(null);
   const [importMode, setImportMode] = useState('merge');
   const [importTargetClassId, setImportTargetClassId] = useState('class_1_1');
-  const [importTargetPeriodId, setImportTargetPeriodId] = useState('stage_a');
+  const [importTargetPeriodId, setImportTargetPeriodId] = useState('month_10');
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [fileImportError, setFileImportError] = useState('');
   const fileInputRef = useRef(null);
@@ -191,7 +201,21 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     if (!data || typeof data !== 'object') return;
     if (data.academicYears) setAcademicYears(data.academicYears);
     if (data.holisticColumns) setHolisticColumns(data.holisticColumns);
-    if (data.gradeSubjects) setGradeSubjects(data.gradeSubjects);
+    if (Array.isArray(data.gradeSubjects)) {
+      const mergedSubjs = data.gradeSubjects.map((s) => {
+        if (Array.isArray(s.skills) && s.skills.length > 0) return s;
+        const defSubj = DEFAULT_GRADE_SUBJECTS.find((d) => d.id === s.id);
+        return {
+          ...s,
+          skills: defSubj?.skills || [
+            { id: `${s.id}_sk1`, titleHe: 'מיומנות 1 (مهارة 1)', titleAr: 'مهارة 1', weight: 40 },
+            { id: `${s.id}_sk2`, titleHe: 'מיומנות 2 (مهارة 2)', titleAr: 'مهارة 2', weight: 30 },
+            { id: `${s.id}_sk3`, titleHe: 'מיומנות 3 (مهارة 3)', titleAr: 'مهارة 3', weight: 30 }
+          ]
+        };
+      });
+      setGradeSubjects(mergedSubjs);
+    }
     if (data.classPermissions) setClassPermissions(data.classPermissions);
     if (data.coordinatorIds) setCoordinatorIds(data.coordinatorIds);
     if (Array.isArray(data.customTeachers)) {
@@ -209,7 +233,21 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       if (localConf.academicYears) setAcademicYears(localConf.academicYears);
       if (localConf.selectedYear) setSelectedYear(localConf.selectedYear);
       if (localConf.holisticColumns) setHolisticColumns(localConf.holisticColumns);
-      if (localConf.gradeSubjects) setGradeSubjects(localConf.gradeSubjects);
+      if (Array.isArray(localConf.gradeSubjects)) {
+        const mergedLocalSubjs = localConf.gradeSubjects.map((s) => {
+          if (Array.isArray(s.skills) && s.skills.length > 0) return s;
+          const defSubj = DEFAULT_GRADE_SUBJECTS.find((d) => d.id === s.id);
+          return {
+            ...s,
+            skills: defSubj?.skills || [
+              { id: `${s.id}_sk1`, titleHe: 'מיומנות 1 (مهارة 1)', titleAr: 'مهارة 1', weight: 40 },
+              { id: `${s.id}_sk2`, titleHe: 'מיומנות 2 (مهارة 2)', titleAr: 'مهارة 2', weight: 30 },
+              { id: `${s.id}_sk3`, titleHe: 'מיומנות 3 (مهارة 3)', titleAr: 'مهارة 3', weight: 30 }
+            ]
+          };
+        });
+        setGradeSubjects(mergedLocalSubjs);
+      }
       if (localConf.classPermissions) setClassPermissions(localConf.classPermissions);
       if (localConf.coordinatorIds) setCoordinatorIds(localConf.coordinatorIds);
       if (Array.isArray(localConf.customTeachers)) {
@@ -763,6 +801,211 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       stu.id === studentId ? { ...stu, [fieldId]: newValue, updatedAt: new Date().toISOString() } : stu
     );
     saveClassStudents(selectedClassId, updated);
+  };
+
+  // Get skills array for a subject (with fallback defaults)
+  const getSkillsForSubject = (subjectObjOrId) => {
+    const subj =
+      typeof subjectObjOrId === 'string'
+        ? gradeSubjects.find((s) => s.id === subjectObjOrId)
+        : subjectObjOrId;
+    if (subj && Array.isArray(subj.skills) && subj.skills.length > 0) {
+      return subj.skills;
+    }
+    const defSubj = DEFAULT_GRADE_SUBJECTS.find((d) => d.id === (subj?.id || subjectObjOrId));
+    return (
+      defSubj?.skills || [
+        { id: 'sk_1', titleHe: 'מיומנות 1 (مهارة 1)', titleAr: 'مهارة 1', weight: 40 },
+        { id: 'sk_2', titleHe: 'מיומנות 2 (مهارة 2)', titleAr: 'مهارة 2', weight: 30 },
+        { id: 'sk_3', titleHe: 'מיומנות 3 (مهارة 3)', titleAr: 'مهارة 3', weight: 30 }
+      ]
+    );
+  };
+
+  // Compute weighted score for a student in a given station & subject based on skill scores and skill weights (%)
+  const computeWeightedSubjectScore = (stu, periodId, subjectId, customSkillsList = null) => {
+    const skillsList = customSkillsList || getSkillsForSubject(subjectId);
+    const stuSkillMap = stu?.skillGrades?.[periodId]?.[subjectId] || {};
+    let weightedSum = 0;
+    let activeWeightTotal = 0;
+
+    skillsList.forEach((sk) => {
+      const rawVal = stuSkillMap[sk.id];
+      const w = Number(sk.weight) || 0;
+      if (rawVal !== undefined && rawVal !== null && rawVal !== '' && !isNaN(Number(rawVal)) && w > 0) {
+        weightedSum += Number(rawVal) * w;
+        activeWeightTotal += w;
+      }
+    });
+
+    if (activeWeightTotal > 0) {
+      return Math.round(weightedSum / activeWeightTotal);
+    }
+
+    // Fallback to direct subject grade if entered directly
+    const directGrade = stu?.grades?.[periodId]?.[subjectId];
+    if (directGrade !== undefined && directGrade !== null && directGrade !== '' && !isNaN(Number(directGrade))) {
+      return Math.round(Number(directGrade));
+    }
+    return null;
+  };
+
+  // Update a student's score in a specific skill and automatically recalculate the weighted subject score for that station
+  const handleUpdateStudentSkillScore = (studentId, periodId, subjectId, skillId, rawScore) => {
+    const canEditThisSubj =
+      currentClassAccess.canEditGrades &&
+      (currentClassAccess.allowedSubjects.includes('all') ||
+        currentClassAccess.allowedSubjects.includes(subjectId));
+
+    if (!canEditThisSubj) {
+      alert('⛔ אין לך הרשאה להזין ציונים ומיומנויות במקצוע זה עבור כיתה זו.');
+      return;
+    }
+
+    let cleanVal = rawScore;
+    if (rawScore !== '' && rawScore !== null) {
+      const n = Number(rawScore);
+      if (isNaN(n)) return;
+      cleanVal = Math.max(0, Math.min(100, n));
+    }
+
+    const skillsList = getSkillsForSubject(subjectId);
+
+    const updated = currentStudents.map((stu) => {
+      if (stu.id !== studentId) return stu;
+      const prevSkillGrades = stu.skillGrades || {};
+      const prevPeriodSkills = prevSkillGrades[periodId] || {};
+      const prevSubjSkills = {
+        ...(prevPeriodSkills[subjectId] || {}),
+        [skillId]: cleanVal
+      };
+
+      const nextStu = {
+        ...stu,
+        skillGrades: {
+          ...prevSkillGrades,
+          [periodId]: {
+            ...prevPeriodSkills,
+            [subjectId]: prevSubjSkills
+          }
+        }
+      };
+
+      // Automatically calculate weighted station score from the skills and their weights (%)
+      let weightedSum = 0;
+      let activeWeightTotal = 0;
+      skillsList.forEach((sk) => {
+        const v = prevSubjSkills[sk.id];
+        const w = Number(sk.weight) || 0;
+        if (v !== undefined && v !== null && v !== '' && !isNaN(Number(v)) && w > 0) {
+          weightedSum += Number(v) * w;
+          activeWeightTotal += w;
+        }
+      });
+
+      const computedWeighted = activeWeightTotal > 0 ? Math.round(weightedSum / activeWeightTotal) : '';
+      const existingGrades = stu.grades || {};
+      const periodGrades = existingGrades[periodId] || {};
+
+      return {
+        ...nextStu,
+        grades: {
+          ...existingGrades,
+          [periodId]: {
+            ...periodGrades,
+            [subjectId]: computedWeighted
+          }
+        },
+        updatedAt: new Date().toISOString()
+      };
+    });
+
+    saveClassStudents(selectedClassId, updated);
+  };
+
+  // Coordinator / Teacher / Principal: Add, update weight/title, or remove a skill for a subject
+  const handleAddSkillToSubject = (e) => {
+    e.preventDefault();
+    const cleanTitle = newSkillTitleInput.trim();
+    if (!cleanTitle) return;
+    const weightNum = Math.max(1, Math.min(100, Number(newSkillWeightInput) || 20));
+    const newSkillObj = {
+      id: `sk_${selectedSubjectForSkills}_${Date.now()}`,
+      titleHe: cleanTitle,
+      titleAr: cleanTitle,
+      weight: weightNum
+    };
+
+    const nextSubjs = gradeSubjects.map((s) => {
+      if (s.id !== selectedSubjectForSkills) return s;
+      const curSkills = getSkillsForSubject(s);
+      return {
+        ...s,
+        skills: [...curSkills, newSkillObj]
+      };
+    });
+
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+    setNewSkillTitleInput('');
+    setNewSkillWeightInput(25);
+    triggerToast(`✅ تمت إضافة المهارة "${cleanTitle}" (بنسبة ${weightNum}%) بنجاح!`);
+  };
+
+  const handleUpdateSkillWeightOrTitle = (subjectId, skillId, field, newVal) => {
+    let updatedSkillsForSubj = [];
+    const nextSubjs = gradeSubjects.map((s) => {
+      if (s.id !== subjectId) return s;
+      const curSkills = getSkillsForSubject(s).map((sk) => {
+        if (sk.id !== skillId) return sk;
+        if (field === 'weight') {
+          const w = Math.max(0, Math.min(100, Number(newVal) || 0));
+          return { ...sk, weight: w };
+        }
+        return { ...sk, titleHe: newVal, titleAr: newVal };
+      });
+      updatedSkillsForSubj = curSkills;
+      return { ...s, skills: curSkills };
+    });
+
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+
+    // Recalculate weighted grade for current class students if weight changed
+    if (field === 'weight' && updatedSkillsForSubj.length > 0) {
+      const recalculatedStudents = currentStudents.map((stu) => {
+        const nextGrades = { ...(stu.grades || {}) };
+        ASSESSMENT_PERIODS.forEach((p) => {
+          const wScore = computeWeightedSubjectScore(stu, p.id, subjectId, updatedSkillsForSubj);
+          if (wScore !== null) {
+            nextGrades[p.id] = {
+              ...(nextGrades[p.id] || {}),
+              [subjectId]: wScore
+            };
+          }
+        });
+        return { ...stu, grades: nextGrades };
+      });
+      saveClassStudents(selectedClassId, recalculatedStudents);
+    }
+  };
+
+  const handleDeleteSkillFromSubject = (subjectId, skillId) => {
+    const curSkills = getSkillsForSubject(subjectId);
+    if (curSkills.length <= 1) {
+      alert('⚠️ يجب إبقاء مهارة واحدة على الأقل في الموضوع.');
+      return;
+    }
+    const nextSubjs = gradeSubjects.map((s) => {
+      if (s.id !== subjectId) return s;
+      return {
+        ...s,
+        skills: getSkillsForSubject(s).filter((sk) => sk.id !== skillId)
+      };
+    });
+    setGradeSubjects(nextSubjs);
+    saveGlobalConfig({ gradeSubjects: nextSubjs });
+    triggerToast('🗑️ تم حذف المهارة وإعادة احتساب النسب الموزونة.');
   };
 
   const handleUpdateStudentGrade = (studentId, periodId, subjectId, rawScore) => {
@@ -1330,14 +1573,16 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
   // ==================== 12. ANALYTICS COMPUTATION (STUDENT, GRADE, SCHOOL) ====================
   const getStudentAverageScore = (student, periodId = selectedPeriod) => {
-    const pGrades = student?.grades?.[periodId] || {};
     const vals = gradeSubjects
-      .map((subj) => pGrades[subj.id])
-      .filter((v) => v !== undefined && v !== null && v !== '' && !isNaN(Number(v)))
+      .map((subj) => computeWeightedSubjectScore(student, periodId, subj.id))
+      .filter((v) => v !== null && !isNaN(Number(v)))
       .map(Number);
     if (vals.length === 0) return null;
     return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
   };
+
+  // Alias for analytics extractors
+  const getStudentPeriodAverage = getStudentAverageScore;
 
   // Aggregate students for Grade Level (שכבה) or Entire School (19 כיתות)
   const getAggregatedAnalytics = (scope = 'school', targetGrade = selectedGradeLevel) => {
@@ -2361,18 +2606,20 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             type="button"
             className={`holistic-tab-btn ${activeMainTab === 'class-sheet' ? 'active' : ''}`}
             onClick={() => setActiveMainTab('class-sheet')}
+            style={activeMainTab === 'class-sheet' ? { background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: '#fff' } : { border: '2px solid #93c5fd' }}
           >
             <span>📋</span>
-            <span>גיליון מיפוי כיתתי (הוליסטי + ציונים)</span>
+            <span>1. המיפוי החברתי-התנהגותי (الميبوي الاجتماعي السلوكي — بدون علامات)</span>
           </button>
 
           <button
             type="button"
             className={`holistic-tab-btn ${activeMainTab === 'grades-matrix' ? 'active' : ''}`}
             onClick={() => setActiveMainTab('grades-matrix')}
+            style={activeMainTab === 'grades-matrix' ? { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff' } : { border: '2px solid #6ee7b7' }}
           >
             <span>🚦</span>
-            <span>ריכוז ציונים לפי שלבים וסמסטרים (רמזור)</span>
+            <span>2. יומן ציונים ומיומנויות (سجل العلامات والمهارات — محطات 10، 12، 3، 6)</span>
           </button>
 
           <button
@@ -2384,9 +2631,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               }
               setActiveMainTab('student-analytics');
             }}
+            style={activeMainTab === 'student-analytics' ? { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff' } : { border: '2px solid #c4b5fd' }}
           >
-            <span>👨‍🎓</span>
-            <span>ניתוח ברמת תלמיד (רב-שנתי)</span>
+            <span>🎓</span>
+            <span>3. הפרופיל המשולב לתלמיד ולכיתה (القسم الجامع: العلامات + الاجتماعي السلوكي)</span>
           </button>
 
           {userCapabilities.canViewAllClasses && (
@@ -2449,7 +2697,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         </div>
 
         {/* Classes Quick Strip: Shows ALL 19 classes to Principal Rami & Jihan, and ONLY the teacher's authorized class(es) to regular teachers */}
-        {(activeMainTab === 'class-sheet' || activeMainTab === 'grades-matrix' || activeMainTab === 'permissions') && (
+        {(activeMainTab === 'class-sheet' || activeMainTab === 'grades-matrix' || activeMainTab === 'student-analytics' || activeMainTab === 'permissions') && (
           <div className="classes-strip no-print">
             <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a', marginLeft: '0.4rem' }}>
               {userCapabilities.canViewAllClasses
@@ -2748,12 +2996,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           <div>{col.titleHe}</div>
                         </th>
                       ))}
-                      <th
-                        colSpan={gradeSubjects.length + 1}
-                        style={{ background: '#dcfce7', color: '#14532d', borderBottom: '2px solid #86efac' }}
-                      >
-                        ציונים לפי רמזור — {ASSESSMENT_PERIODS.find((p) => p.id === selectedPeriod)?.labelHe}
-                      </th>
                       {userCapabilities.canManageSchema && (
                         <th rowSpan={2} className="no-print">
                           פעולות
@@ -2791,12 +3033,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           </div>
                         </th>
                       ))}
-                      {gradeSubjects.map((subj) => (
-                        <th key={subj.id} style={{ background: '#f0fdf4', color: '#166534' }}>
-                          {subj.titleHe}
-                        </th>
-                      ))}
-                      <th style={{ background: '#bbf7d0', color: '#14532d' }}>ממוצע</th>
                     </tr>
                   </thead>
 
@@ -2922,55 +3158,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                             );
                           })}
 
-                          {/* Traffic Light Subject Grade Cells */}
-                          {gradeSubjects.map((subj) => {
-                            const scoreVal = stu?.grades?.[selectedPeriod]?.[subj.id] ?? '';
-                            const tl = getTrafficLightStyle(scoreVal);
-                            const canEditSubj =
-                              currentClassAccess.canEditGrades &&
-                              (currentClassAccess.allowedSubjects.includes('all') ||
-                                currentClassAccess.allowedSubjects.includes(subj.id));
-
-                            return (
-                              <td key={`${stu.id}_${subj.id}`}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  placeholder="—"
-                                  className="grade-traffic-input"
-                                  disabled={!canEditSubj}
-                                  value={scoreVal}
-                                  onChange={(e) => handleUpdateStudentGrade(stu.id, selectedPeriod, subj.id, e.target.value)}
-                                  style={{
-                                    backgroundColor: tl.bg,
-                                    color: tl.text,
-                                    borderColor: tl.border
-                                  }}
-                                  title={`${subj.titleHe}: ${tl.labelHe}`}
-                                />
-                              </td>
-                            );
-                          })}
-
-                          {/* Student Average Cell */}
-                          <td>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                minWidth: '54px',
-                                padding: '0.38rem 0.6rem',
-                                borderRadius: '999px',
-                                fontWeight: 900,
-                                fontSize: '0.88rem',
-                                backgroundColor: avgTl.bg,
-                                color: avgTl.text,
-                                border: `2px solid ${avgTl.border}`
-                              }}
-                            >
-                              {avgScore !== null ? avgScore : '—'}
-                            </span>
-                          </td>
+                          {/* Grades removed from Section 1 (Moved to dedicated Section 2: Grades & Skills Record) */}
 
                           {/* Actions (Only Principal Rami & Coordinator Jihan) */}
                           {userCapabilities.canManageSchema && (
@@ -3004,187 +3192,850 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         )}
 
         {/* ===================================================================== */}
-        {/* TAB 2: GRADES MATRIX ACROSS STAGES & SEMESTERS (ריכוז ציונים ורמזור)  */}
+        {/* SECTION 2: GRADES & SKILLS RECORD (4 STATIONS: MONTHS 10, 12, 3, 6)    */}
         {/* ===================================================================== */}
-        {activeMainTab === 'grades-matrix' && (
-          <div>
-            <div className="holistic-toolbar">
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
-                  🚦 מטריצת ציונים רב-שלבית ורמזור — כיתה {currentClassObj.nameHe} ({selectedYear})
-                </h2>
-                <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
-                  השוואת ציוני התלמידים לפי שלבים (שלב א׳, סמסטר א׳, שלב ב׳, סמסטר ב׳) בצבעי הרמזור
-                </p>
+        {activeMainTab === 'grades-matrix' && (() => {
+          const activeSubjObj = gradeSubjects.find((s) => s.id === selectedSubjectForSkills) || gradeSubjects[0];
+          const activeSkills = getSkillsForSubject(activeSubjObj);
+          const totalSkillsWeight = activeSkills.reduce((acc, sk) => acc + (Number(sk.weight) || 0), 0);
+          const activePeriodObj = ASSESSMENT_PERIODS.find((p) => p.id === selectedPeriod) || ASSESSMENT_PERIODS[0];
+          const canEditThisSubject =
+            currentClassAccess.canEditGrades &&
+            (currentClassAccess.allowedSubjects.includes('all') ||
+              currentClassAccess.allowedSubjects.includes(activeSubjObj?.id));
+
+          return (
+            <div>
+              {/* Top Toolbar for Section 2 */}
+              <div className="holistic-toolbar no-print" style={{ borderRight: '5px solid #059669' }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '1.38rem', fontWeight: 900, color: '#0f172a' }}>
+                    🚦 القسم الثاني: سجل العلامات وتقييم المهارات — כיתה {currentClassObj.nameHe} ({currentClassObj.nameAr})
+                  </h2>
+                  <p style={{ margin: '0.25rem 0 0 0', color: '#475569', fontSize: '0.88rem', fontWeight: 700 }}>
+                    نفس قوائم وصفوف الطلاب (19 صفاً) | 4 محطات تقييم بالأشهر: <strong>شهر 10، شهر 12، شهر 3، وشهر 6</strong> | تقييم مهارات بنسب مئوية موزونة و5 ألوان حسب 5 نطاقات
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={handleManualSaveNow}
+                    disabled={isSavingCloud}
+                    style={{
+                      background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                      color: '#ffffff',
+                      border: '2px solid #6ee7b7',
+                      padding: '0.6rem 1.15rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    💾 {isSavingCloud ? 'جاري الحفظ...' : 'حفظ يدوي الآن (שמירה ידנית)'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleForceLiveSync}
+                    disabled={isSavingCloud}
+                    style={{
+                      background: '#eff6ff',
+                      color: '#1e3a8a',
+                      border: '1.5px solid #60a5fa',
+                      padding: '0.58rem 0.95rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔄 حتلنة فورية
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSkillsManagerPanel((prev) => !prev)}
+                    style={{
+                      background: showSkillsManagerPanel ? '#1e3a8a' : '#fef3c7',
+                      color: showSkillsManagerPanel ? '#ffffff' : '#92400e',
+                      border: '1.5px solid #f59e0b',
+                      padding: '0.6rem 1.1rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      fontSize: '0.86rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⚙️ تحديد المهارات ونسبها المئوية (%) للموضوع
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportCSV}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#0f172a',
+                      border: '1.5px solid #cbd5e1',
+                      padding: '0.6rem 1rem',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📥 تصدير لإكسل (.xlsx)
+                  </button>
+                </div>
               </div>
-              {userCapabilities.canManageSchema && (
-                <button
-                  type="button"
-                  onClick={openSmartImportModal}
+
+              {/* 4 Assessment Stations Bar (Months 10, 12, 3, 6) + Summary View Switcher */}
+              <div
+                className="no-print"
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '18px',
+                  padding: '1rem 1.25rem',
+                  border: '1.5px solid #cbd5e1',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.9rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.92rem' }}>
+                      📅 اختر محطة التقييم (4 محطات بالأشهر):
+                    </span>
+                    {ASSESSMENT_PERIODS.map((st) => {
+                      const isSel = selectedPeriod === st.id && gradesSubMode === 'skills_station';
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedPeriod(st.id);
+                            setGradesSubMode('skills_station');
+                          }}
+                          style={{
+                            background: isSel ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : '#f8fafc',
+                            color: isSel ? '#ffffff' : '#1e293b',
+                            border: isSel ? '2px solid #1d4ed8' : '1.5px solid #cbd5e1',
+                            padding: '0.55rem 1.1rem',
+                            borderRadius: '12px',
+                            fontWeight: 900,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            boxShadow: isSel ? '0 4px 12px rgba(37, 99, 235, 0.28)' : 'none'
+                          }}
+                        >
+                          📅 {st.labelAr}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGradesSubMode((prev) => (prev === 'all_stations_summary' ? 'skills_station' : 'all_stations_summary'))
+                    }
+                    style={{
+                      background: gradesSubMode === 'all_stations_summary' ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : '#f5f3ff',
+                      color: gradesSubMode === 'all_stations_summary' ? '#ffffff' : '#5b21b6',
+                      border: '1.5px solid #a78bfa',
+                      padding: '0.55rem 1.1rem',
+                      borderRadius: '12px',
+                      fontWeight: 900,
+                      fontSize: '0.86rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📊 {gradesSubMode === 'all_stations_summary' ? 'العودة لتقييم المهارات المفصل' : 'عرض ملخص المحطات الأربع (10، 12، 3، 6) لكل المواضيع'}
+                  </button>
+                </div>
+
+                {/* Subject Selector Pills */}
+                {gradesSubMode === 'skills_station' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #e2e8f0' }}>
+                    <span style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.9rem' }}>
+                      📚 اختر الموضوع الدراسي:
+                    </span>
+                    {gradeSubjects.map((subj) => {
+                      const isSubjSel = subj.id === activeSubjObj?.id;
+                      const subjSkills = getSkillsForSubject(subj);
+                      return (
+                        <button
+                          key={subj.id}
+                          type="button"
+                          onClick={() => setSelectedSubjectForSkills(subj.id)}
+                          style={{
+                            background: isSubjSel ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : '#f0fdf4',
+                            color: isSubjSel ? '#ffffff' : '#166534',
+                            border: isSubjSel ? '2px solid #047857' : '1.5px solid #86efac',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '10px',
+                            fontWeight: 900,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {subj.titleHe} ({subjSkills.length} مهارات)
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Skills & Percentage Weights Manager Panel (حسب رأي المركز أو المعلم) */}
+              {showSkillsManagerPanel && activeSubjObj && (
+                <div
+                  className="no-print"
                   style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                    color: '#ffffff',
-                    border: '2px solid #fde68a',
-                    padding: '0.62rem 1.15rem',
-                    borderRadius: '10px',
-                    fontWeight: 900,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer'
+                    background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                    borderRadius: '18px',
+                    padding: '1.25rem 1.5rem',
+                    border: '2px solid #f59e0b',
+                    marginBottom: '1.2rem'
                   }}
                 >
-                  📂 העלאת קובץ ציונים / מיפוי מהמחשב (אקסל / CSV)
-                </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#92400e' }}>
+                        ⚙️ تحديد المهارات ونسبة كل مهارة (%) — موضوع: {activeSubjObj.titleHe}
+                      </h3>
+                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.84rem', color: '#78350f', fontWeight: 700 }}>
+                        يقرر مركز الموضوع أو المعلم المهارات المطلوبة ونسبة كل مهارة (%)، وتُحسب العلامة الموزونة للمحطة تلقائياً:
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        background: totalSkillsWeight === 100 ? '#16a34a' : '#ea580c',
+                        color: '#ffffff',
+                        padding: '0.4rem 0.95rem',
+                        borderRadius: '999px',
+                        fontWeight: 900,
+                        fontSize: '0.86rem'
+                      }}
+                    >
+                      مجموع نسب المهارات: {totalSkillsWeight}% {totalSkillsWeight === 100 ? '✅' : '(يُحسب موزوناً تلقائياً)'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                    {activeSkills.map((sk, sIdx) => (
+                      <div
+                        key={sk.id}
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          padding: '0.75rem',
+                          border: '1.5px solid #fcd34d',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <span style={{ fontWeight: 900, color: '#b45309' }}>#{sIdx + 1}</span>
+                        <input
+                          type="text"
+                          value={sk.titleHe}
+                          disabled={!canEditThisSubject && !userCapabilities.canManageSchema}
+                          onChange={(e) => handleUpdateSkillWeightOrTitle(activeSubjObj.id, sk.id, 'title', e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '0.45rem 0.6rem',
+                            borderRadius: '8px',
+                            border: '1px solid #cbd5e1',
+                            fontWeight: 800,
+                            fontSize: '0.84rem'
+                          }}
+                          title="اسم المهارة"
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={sk.weight}
+                            disabled={!canEditThisSubject && !userCapabilities.canManageSchema}
+                            onChange={(e) => handleUpdateSkillWeightOrTitle(activeSubjObj.id, sk.id, 'weight', e.target.value)}
+                            style={{
+                              width: '56px',
+                              padding: '0.45rem',
+                              borderRadius: '8px',
+                              border: '2px solid #2563eb',
+                              fontWeight: 900,
+                              textAlign: 'center',
+                              fontSize: '0.88rem',
+                              background: '#eff6ff',
+                              color: '#1e3a8a'
+                            }}
+                            title="نسبة المهارة (%)"
+                          />
+                          <span style={{ fontWeight: 900, color: '#1e3a8a' }}>%</span>
+                        </div>
+                        {(canEditThisSubject || userCapabilities.canManageSchema) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSkillFromSubject(activeSubjObj.id, sk.id)}
+                            style={{
+                              background: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fecaca',
+                              borderRadius: '8px',
+                              padding: '0.35rem 0.5rem',
+                              cursor: 'pointer'
+                            }}
+                            title="حذف المهارة"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {(canEditThisSubject || userCapabilities.canManageSchema) && (
+                    <form onSubmit={handleAddSkillToSubject} style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="➕ اسم مهارة جديدة (مثلاً: فهم المقروء / طلاقة القراءة / الهندسة)..."
+                        value={newSkillTitleInput}
+                        onChange={(e) => setNewSkillTitleInput(e.target.value)}
+                        style={{
+                          flex: 1,
+                          minWidth: '240px',
+                          padding: '0.6rem 0.9rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #f59e0b',
+                          fontWeight: 800,
+                          background: '#ffffff'
+                        }}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#ffffff', padding: '0.3rem 0.7rem', borderRadius: '10px', border: '1.5px solid #f59e0b' }}>
+                        <span style={{ fontSize: '0.84rem', fontWeight: 900, color: '#92400e' }}>نسبة المهارة:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={newSkillWeightInput}
+                          onChange={(e) => setNewSkillWeightInput(e.target.value)}
+                          style={{ width: '55px', border: 'none', fontWeight: 900, fontSize: '0.92rem', textAlign: 'center' }}
+                        />
+                        <span style={{ fontWeight: 900, color: '#92400e' }}>%</span>
+                      </div>
+                      <button
+                        type="submit"
+                        style={{
+                          background: '#d97706',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '0.62rem 1.2rem',
+                          borderRadius: '10px',
+                          fontWeight: 900,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ➕ إضافة المهارة للموضوع
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              {/* Mode A: Detailed Skills Grading Table for Selected Station (10, 12, 3, or 6) & Subject */}
+              {gradesSubMode === 'skills_station' && activeSubjObj ? (
+                <div className="holistic-table-container">
+                  <table className="holistic-sheet-table">
+                    <thead>
+                      <tr>
+                        <th className="sticky-col" rowSpan={2}>
+                          اسم الطالب/ة ({filteredStudents.length})
+                        </th>
+                        <th
+                          colSpan={activeSkills.length}
+                          style={{ background: '#fef3c7', color: '#92400e', borderBottom: '2px solid #f59e0b' }}
+                        >
+                          🎯 تقييم مهارات {activeSubjObj.titleHe} — {activePeriodObj.labelAr} (مجموع النسب: {totalSkillsWeight}%)
+                        </th>
+                        <th
+                          rowSpan={2}
+                          style={{ background: '#dcfce7', color: '#14532d', minWidth: '115px', borderRight: '2px solid #86efac' }}
+                        >
+                          <div>العلامة الموزونة</div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 800 }}>{activePeriodObj.shortAr}</div>
+                        </th>
+                        <th
+                          colSpan={ASSESSMENT_PERIODS.length + 1}
+                          style={{ background: '#e0f2fe', color: '#0369a1', borderBottom: '2px solid #7dd3fc' }}
+                        >
+                          📈 متابعة علامات الطالب في المحطات الأربع ({activeSubjObj.titleAr || activeSubjObj.titleHe}) — 5 ألوان
+                        </th>
+                      </tr>
+                      <tr className="sub-header-row">
+                        {activeSkills.map((sk) => (
+                          <th key={sk.id} style={{ background: '#fffbeb', color: '#78350f', minWidth: '125px' }}>
+                            <div style={{ fontWeight: 900 }}>{sk.titleHe}</div>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                marginTop: '3px',
+                                background: '#fde68a',
+                                color: '#92400e',
+                                padding: '1px 8px',
+                                borderRadius: '999px',
+                                fontSize: '0.74rem',
+                                fontWeight: 900
+                              }}
+                            >
+                              الوزن: {sk.weight}%
+                            </span>
+                          </th>
+                        ))}
+                        {ASSESSMENT_PERIODS.map((st) => (
+                          <th
+                            key={st.id}
+                            style={{
+                              background: st.id === selectedPeriod ? '#bae6fd' : '#f0f9ff',
+                              color: '#0c4a6e',
+                              fontSize: '0.76rem'
+                            }}
+                          >
+                            {st.shortAr}
+                          </th>
+                        ))}
+                        <th style={{ background: '#bae6fd', color: '#0c4a6e', fontSize: '0.76rem' }}>
+                          المعدل السنوي
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {filteredStudents.map((stu, idx) => {
+                        const stationWeighted = computeWeightedSubjectScore(stu, selectedPeriod, activeSubjObj.id, activeSkills);
+                        const stationTl = getTrafficLightStyle(stationWeighted);
+
+                        // Compute annual average across the 4 stations (10, 12, 3, 6) for this subject
+                        const all4Scores = ASSESSMENT_PERIODS.map((st) =>
+                          computeWeightedSubjectScore(stu, st.id, activeSubjObj.id, activeSkills)
+                        ).filter((v) => v !== null);
+                        const annualSubjAvg =
+                          all4Scores.length > 0
+                            ? Math.round(all4Scores.reduce((a, b) => a + b, 0) / all4Scores.length)
+                            : null;
+                        const annualTl = getTrafficLightStyle(annualSubjAvg);
+
+                        return (
+                          <tr key={stu.id}>
+                            <td className="sticky-col" style={{ textAlign: 'right', fontWeight: 900 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+                                <span>
+                                  {idx + 1}. {stu.studentName}
+                                </span>
+                                <span
+                                  onClick={() => {
+                                    setSelectedStudentForCard(stu);
+                                    setActiveMainTab('student-analytics');
+                                  }}
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    background: '#f3e8ff',
+                                    color: '#6b21a8',
+                                    padding: '2px 6px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title="فتح الملف الشامل الجامع للطالب (اجتماعي + علامات)"
+                                >
+                                  ملف جامع ↗
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Skill Score Inputs (0-100) with 5-Color Range Styling */}
+                            {activeSkills.map((sk) => {
+                              const skVal = stu?.skillGrades?.[selectedPeriod]?.[activeSubjObj.id]?.[sk.id] ?? '';
+                              const skTl = getTrafficLightStyle(skVal);
+                              return (
+                                <td key={`${stu.id}_${sk.id}`}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    placeholder="—"
+                                    disabled={!canEditThisSubject}
+                                    value={skVal}
+                                    onChange={(e) =>
+                                      handleUpdateStudentSkillScore(stu.id, selectedPeriod, activeSubjObj.id, sk.id, e.target.value)
+                                    }
+                                    className="grade-traffic-input"
+                                    style={{
+                                      width: '68px',
+                                      backgroundColor: skTl.bg,
+                                      color: skTl.text,
+                                      borderColor: skTl.border
+                                    }}
+                                    title={`${sk.titleHe} (${sk.weight}%): ${skTl.labelAr || skTl.labelHe}`}
+                                  />
+                                </td>
+                              );
+                            })}
+
+                            {/* Weighted Final Score for Selected Station */}
+                            <td style={{ background: '#f8fafc', borderRight: '2px solid #cbd5e1' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  minWidth: '60px',
+                                  padding: '0.38rem 0.65rem',
+                                  borderRadius: '999px',
+                                  fontWeight: 900,
+                                  fontSize: '0.92rem',
+                                  backgroundColor: stationTl.bg,
+                                  color: stationTl.text,
+                                  border: `2px solid ${stationTl.border}`
+                                }}
+                              >
+                                {stationWeighted !== null ? stationWeighted : '—'}
+                              </span>
+                            </td>
+
+                            {/* All 4 Stations (10, 12, 3, 6) Summary Cells */}
+                            {ASSESSMENT_PERIODS.map((st) => {
+                              const stScore = computeWeightedSubjectScore(stu, st.id, activeSubjObj.id, activeSkills);
+                              const stTl = getTrafficLightStyle(stScore);
+                              return (
+                                <td key={st.id} style={{ background: st.id === selectedPeriod ? '#f0f9ff' : undefined }}>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      minWidth: '46px',
+                                      padding: '0.25rem 0.5rem',
+                                      borderRadius: '8px',
+                                      fontWeight: 900,
+                                      fontSize: '0.84rem',
+                                      backgroundColor: stTl.bg,
+                                      color: stTl.text,
+                                      border: `1.5px solid ${stTl.border}`
+                                    }}
+                                  >
+                                    {stScore !== null ? stScore : '—'}
+                                  </span>
+                                </td>
+                              );
+                            })}
+
+                            {/* Annual Subject Average */}
+                            <td>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  minWidth: '52px',
+                                  padding: '0.3rem 0.6rem',
+                                  borderRadius: '999px',
+                                  fontWeight: 900,
+                                  fontSize: '0.86rem',
+                                  backgroundColor: annualTl.bg,
+                                  color: annualTl.text,
+                                  border: `2px solid ${annualTl.border}`
+                                }}
+                              >
+                                {annualSubjAvg !== null ? annualSubjAvg : '—'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* Mode B: All 4 Stations (10, 12, 3, 6) Across All Subjects Matrix */
+                <div className="holistic-table-container">
+                  <table className="holistic-sheet-table">
+                    <thead>
+                      <tr>
+                        <th className="sticky-col" rowSpan={2}>
+                          اسم الطالب/ة ({filteredStudents.length})
+                        </th>
+                        {gradeSubjects.map((subj) => (
+                          <th key={subj.id} colSpan={ASSESSMENT_PERIODS.length} style={{ background: '#e0f2fe', color: '#0369a1' }}>
+                            {subj.titleHe}
+                          </th>
+                        ))}
+                      </tr>
+                      <tr className="sub-header-row">
+                        {gradeSubjects.map((subj) =>
+                          ASSESSMENT_PERIODS.map((p) => (
+                            <th key={`${subj.id}_${p.id}`} style={{ fontSize: '0.74rem' }}>
+                              {p.shortAr}
+                            </th>
+                          ))
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.map((stu, idx) => (
+                        <tr key={stu.id}>
+                          <td className="sticky-col" style={{ textAlign: 'right', fontWeight: 900 }}>
+                            {idx + 1}. {stu.studentName}
+                          </td>
+                          {gradeSubjects.map((subj) =>
+                            ASSESSMENT_PERIODS.map((p) => {
+                              const wVal = computeWeightedSubjectScore(stu, p.id, subj.id);
+                              const tl = getTrafficLightStyle(wVal);
+                              return (
+                                <td key={`${stu.id}_${subj.id}_${p.id}`}>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      minWidth: '48px',
+                                      padding: '0.28rem 0.5rem',
+                                      borderRadius: '8px',
+                                      fontWeight: 900,
+                                      backgroundColor: tl.bg,
+                                      color: tl.text,
+                                      border: `1.5px solid ${tl.border}`
+                                    }}
+                                  >
+                                    {wVal !== null ? wVal : '—'}
+                                  </span>
+                                </td>
+                              );
+                            })
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
-
-            <div className="holistic-table-container">
-              <table className="holistic-sheet-table">
-                <thead>
-                  <tr>
-                    <th className="sticky-col" rowSpan={2}>
-                      שם התלמיד
-                    </th>
-                    {gradeSubjects.map((subj) => (
-                      <th key={subj.id} colSpan={ASSESSMENT_PERIODS.length} style={{ background: '#e0f2fe', color: '#0369a1' }}>
-                        {subj.titleHe}
-                      </th>
-                    ))}
-                  </tr>
-                  <tr className="sub-header-row">
-                    {gradeSubjects.map((subj) =>
-                      ASSESSMENT_PERIODS.map((p) => (
-                        <th key={`${subj.id}_${p.id}`} style={{ fontSize: '0.74rem' }}>
-                          {p.id === 'stage_a'
-                            ? 'שלב א׳'
-                            : p.id === 'sem_1'
-                            ? 'סמסטר א׳'
-                            : p.id === 'stage_b'
-                            ? 'שלב ב׳'
-                            : 'סמסטר ב׳'}
-                        </th>
-                      ))
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentStudents.map((stu, idx) => (
-                    <tr key={stu.id}>
-                      <td className="sticky-col" style={{ textAlign: 'right', fontWeight: 900 }}>
-                        {idx + 1}. {stu.studentName}
-                      </td>
-                      {gradeSubjects.map((subj) =>
-                        ASSESSMENT_PERIODS.map((p) => {
-                          const val = stu?.grades?.[p.id]?.[subj.id] ?? '';
-                          const tl = getTrafficLightStyle(val);
-                          const canEdit =
-                            currentClassAccess.canEditGrades &&
-                            (currentClassAccess.allowedSubjects.includes('all') ||
-                              currentClassAccess.allowedSubjects.includes(subj.id));
-
-                          return (
-                            <td key={`${stu.id}_${subj.id}_${p.id}`}>
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                placeholder="—"
-                                disabled={!canEdit}
-                                value={val}
-                                onChange={(e) => handleUpdateStudentGrade(stu.id, p.id, subj.id, e.target.value)}
-                                className="grade-traffic-input"
-                                style={{
-                                  width: '58px',
-                                  backgroundColor: tl.bg,
-                                  color: tl.text,
-                                  borderColor: tl.border
-                                }}
-                              />
-                            </td>
-                          );
-                        })
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ===================================================================== */}
-        {/* TAB 3: STUDENT-LEVEL ANALYTICS & MULTI-YEAR CARD (ניתוח ברמת תלמיד)   */}
+        {/* SECTION 3: COMBINED STUDENT & CLASS PROFILE (SOCIAL-BEHAVIORAL + GRADES) */}
         {/* ===================================================================== */}
         {activeMainTab === 'student-analytics' && (
           <div>
-            <div className="holistic-toolbar no-print">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <label style={{ fontWeight: 900, color: '#0f172a' }}>👨‍🎓 בחר כיתה ותלמיד לניתוח עומק:</label>
-                <select
-                  value={selectedClassId}
-                  onChange={(e) => {
-                    const newCid = e.target.value;
-                    setSelectedClassId(newCid);
-                    const list = classStudentsMap[`${selectedYear}_${newCid}`] || [];
-                    setSelectedStudentForCard(list[0] || null);
-                  }}
-                  style={{ padding: '0.55rem 0.9rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontWeight: 800 }}
-                >
-                  {SCHOOL_19_CLASSES.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      כיתה {c.nameHe} ({c.nameAr})
-                    </option>
-                  ))}
-                </select>
+            <div className="holistic-toolbar no-print" style={{ borderRight: '5px solid #7c3aed' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                <h2 style={{ margin: 0, fontSize: '1.32rem', fontWeight: 900, color: '#0f172a' }}>
+                  🎓 القسم الثالث الجامع: دمج المجال الاجتماعي-السلوكي + سجل العلامات والمهارات (محطات 10، 12، 3، 6)
+                </h2>
 
-                <select
-                  value={selectedStudentForCard?.id || ''}
-                  onChange={(e) => {
-                    const found = currentStudents.find((s) => s.id === e.target.value);
-                    if (found) setSelectedStudentForCard(found);
-                  }}
-                  style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '2px solid #2563eb', fontWeight: 900 }}
-                >
-                  {currentStudents.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.studentName}
-                    </option>
-                  ))}
-                </select>
+                <div style={{ display: 'flex', gap: '0.45rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setCombinedSectionMode('student_card')}
+                    style={{
+                      background: combinedSectionMode === 'student_card' ? '#7c3aed' : '#f5f3ff',
+                      color: combinedSectionMode === 'student_card' ? '#ffffff' : '#5b21b6',
+                      border: '1.5px solid #a78bfa',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    👤 بطاقة الطالب الجامعة (360°)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCombinedSectionMode('class_combined_table')}
+                    style={{
+                      background: combinedSectionMode === 'class_combined_table' ? '#7c3aed' : '#f5f3ff',
+                      color: combinedSectionMode === 'class_combined_table' ? '#ffffff' : '#5b21b6',
+                      border: '1.5px solid #a78bfa',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📋 الجدول الجامع للصف بالكامل (اجتماعي + محطات العلامات 10، 12، 3، 6)
+                  </button>
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => window.print()}
-                style={{
-                  background: '#1e3a8a',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '10px',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                🖨️ הדפס תעודת מיפוי הוליסטי לתלמיד
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                {combinedSectionMode === 'student_card' && (
+                  <select
+                    value={selectedStudentForCard?.id || ''}
+                    onChange={(e) => {
+                      const found = currentStudents.find((s) => s.id === e.target.value);
+                      if (found) setSelectedStudentForCard(found);
+                    }}
+                    style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '2px solid #7c3aed', fontWeight: 900 }}
+                  >
+                    {currentStudents.map((s, i) => (
+                      <option key={s.id} value={s.id}>
+                        {i + 1}. {s.studentName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  style={{
+                    background: '#1e3a8a',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🖨️ طباعة التقرير الجامع
+                </button>
+              </div>
             </div>
 
-            {selectedStudentForCard ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                {/* Holistic Profile Summary Card */}
+            {combinedSectionMode === 'class_combined_table' ? (
+              /* Combined Master Table for the Entire Class (Social-Behavioral + 4 Grade Stations) */
+              <div className="holistic-table-container">
+                <table className="holistic-sheet-table">
+                  <thead>
+                    <tr>
+                      <th className="sticky-col" rowSpan={2}>
+                        اسم الطالب/ة ({filteredStudents.length})
+                      </th>
+                      <th colSpan={5} style={{ background: '#fde68a', color: '#78350f' }}>
+                        📋 ملخص المجال الاجتماعي-السلوكي والتدخلات
+                      </th>
+                      <th colSpan={ASSESSMENT_PERIODS.length + 1} style={{ background: '#dcfce7', color: '#14532d' }}>
+                        🚦 ملخص المعدل العام للعلامات الموزونة عبر المحطات الأربع (5 ألوان)
+                      </th>
+                    </tr>
+                    <tr className="sub-header-row">
+                      <th>الوضع الصحي</th>
+                      <th>الوضع العائلي</th>
+                      <th>الوضع الاجتماعي</th>
+                      <th>الاحتياجات</th>
+                      <th>المواظبة والحضور</th>
+                      {ASSESSMENT_PERIODS.map((st) => (
+                        <th key={st.id} style={{ background: '#f0fdf4', color: '#166534' }}>
+                          {st.shortAr}
+                        </th>
+                      ))}
+                      <th style={{ background: '#bbf7d0', color: '#14532d' }}>المعدل السنوي العام</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((stu, idx) => {
+                      const stAvgs = ASSESSMENT_PERIODS.map((st) => getStudentAverageScore(stu, st.id));
+                      const validStAvgs = stAvgs.filter((v) => v !== null);
+                      const overallAnnualAvg =
+                        validStAvgs.length > 0
+                          ? Math.round(validStAvgs.reduce((a, b) => a + b, 0) / validStAvgs.length)
+                          : null;
+                      const overallTl = getTrafficLightStyle(overallAnnualAvg);
+
+                      return (
+                        <tr key={stu.id}>
+                          <td className="sticky-col" style={{ textAlign: 'right', fontWeight: 900 }}>
+                            <span
+                              onClick={() => {
+                                setSelectedStudentForCard(stu);
+                                setCombinedSectionMode('student_card');
+                              }}
+                              style={{ cursor: 'pointer', color: '#1e3a8a' }}
+                            >
+                              {idx + 1}. {stu.studentName} ↗
+                            </span>
+                          </td>
+                          {['health_status', 'family_status', 'social_status', 'special_needs', 'attendance_status'].map((cid) => {
+                            const colObj = holisticColumns.find((c) => c.id === cid) || { options: [] };
+                            const val = stu[cid] || '—';
+                            const pill = getPillStyleForValue(colObj, stu[cid]);
+                            return (
+                              <td key={cid}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    background: pill.bg,
+                                    color: pill.text,
+                                    border: `1px solid ${pill.border}`,
+                                    padding: '0.2rem 0.55rem',
+                                    borderRadius: '999px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 800
+                                  }}
+                                >
+                                  {val}
+                                </span>
+                              </td>
+                            );
+                          })}
+                          {ASSESSMENT_PERIODS.map((st, sIdx) => {
+                            const avg = stAvgs[sIdx];
+                            const tl = getTrafficLightStyle(avg);
+                            return (
+                              <td key={st.id}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    minWidth: '48px',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '8px',
+                                    fontWeight: 900,
+                                    backgroundColor: tl.bg,
+                                    color: tl.text,
+                                    border: `1.5px solid ${tl.border}`
+                                  }}
+                                >
+                                  {avg !== null ? avg : '—'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                          <td>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                minWidth: '56px',
+                                padding: '0.32rem 0.65rem',
+                                borderRadius: '999px',
+                                fontWeight: 900,
+                                backgroundColor: overallTl.bg,
+                                color: overallTl.text,
+                                border: `2px solid ${overallTl.border}`
+                              }}
+                            >
+                              {overallAnnualAvg !== null ? overallAnnualAvg : '—'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : selectedStudentForCard ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem' }}>
+                {/* Part A: Social-Behavioral Mapping Profile Card */}
                 <div
                   style={{
                     background: '#ffffff',
                     borderRadius: '22px',
                     padding: '1.75rem',
-                    border: '2px solid #e2e8f0',
+                    border: '2px solid #93c5fd',
                     boxShadow: '0 8px 25px rgba(0,0,0,0.04)'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '1rem' }}>
                     <div>
                       <span style={{ background: '#dbeafe', color: '#1e40af', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 900 }}>
-                        כרטיס תלמיד הוליסטי — {currentClassObj.nameHe} ({selectedYear})
+                        📋 المجال الأول: الميبوي الاجتماعي-السلوكي — {currentClassObj.nameHe} ({selectedYear})
                       </span>
                       <h3 style={{ margin: '0.4rem 0 0 0', fontSize: '1.45rem', fontWeight: 900, color: '#0f172a' }}>
                         {selectedStudentForCard.studentName}
@@ -3204,7 +4055,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                             textAlign: 'center'
                           }}
                         >
-                          <div style={{ fontSize: '0.72rem', fontWeight: 800 }}>ממוצע רמזור</div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800 }}>معدل المحطة الحالية</div>
                           <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{avg ?? '—'}</div>
                         </div>
                       );
@@ -3226,7 +4077,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           }}
                         >
                           <div style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>
-                            {col.titleHe}
+                            {col.titleHe} ({col.titleAr || ''})
                           </div>
                           <span
                             style={{
@@ -3248,133 +4099,160 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   </div>
                 </div>
 
-                {/* Grades Progression Across Stages & Semesters + Multi-Year Longitudinal Archive */}
+                {/* Part B: Grades & Skills across the 4 Assessment Stations (Months 10, 12, 3, 6) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   <div
                     style={{
                       background: '#ffffff',
                       borderRadius: '22px',
                       padding: '1.75rem',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid #86efac',
                       boxShadow: '0 8px 25px rgba(0,0,0,0.04)'
                     }}
                   >
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
-                      📈 התפתחות ציונים לפי שלבים וסמסטרים (רמזור — {selectedYear})
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.22rem', fontWeight: 900, color: '#0f172a' }}>
+                      🚦 المجال الثاني: سجل العلامات وتقييم المهارات عبر المحطات الأربع (شهر 10، 12، 3، 6)
                     </h3>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                       <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                          <th style={{ padding: '0.65rem', textAlign: 'right' }}>מקצוע</th>
+                          <th style={{ padding: '0.65rem', textAlign: 'right' }}>الموضوع الدراسي</th>
                           {ASSESSMENT_PERIODS.map((p) => (
                             <th key={p.id} style={{ padding: '0.65rem', textAlign: 'center' }}>
-                              {p.id === 'stage_a'
-                                ? 'שלב א׳'
-                                : p.id === 'sem_1'
-                                ? 'סמסטר א׳'
-                                : p.id === 'stage_b'
-                                ? 'שלב ב׳'
-                                : 'סמסטר ב׳'}
+                              {p.shortAr}
                             </th>
                           ))}
+                          <th style={{ padding: '0.65rem', textAlign: 'center', background: '#dcfce7', color: '#14532d' }}>
+                            المعدل السنوي
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {gradeSubjects.map((subj) => (
-                          <tr key={subj.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                            <td style={{ padding: '0.65rem', fontWeight: 800 }}>{subj.titleHe}</td>
-                            {ASSESSMENT_PERIODS.map((p) => {
-                              const sc = selectedStudentForCard?.grades?.[p.id]?.[subj.id];
-                              const tl = getTrafficLightStyle(sc);
-                              return (
-                                <td key={p.id} style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                  <span
-                                    style={{
-                                      display: 'inline-block',
-                                      minWidth: '44px',
-                                      padding: '0.25rem 0.5rem',
-                                      borderRadius: '8px',
-                                      background: tl.bg,
-                                      color: tl.text,
-                                      border: `1.5px solid ${tl.border}`,
-                                      fontWeight: 900
-                                    }}
-                                  >
-                                    {sc !== undefined && sc !== '' ? sc : '—'}
-                                  </span>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
+                        {gradeSubjects.map((subj) => {
+                          const stScores = ASSESSMENT_PERIODS.map((p) =>
+                            computeWeightedSubjectScore(selectedStudentForCard, p.id, subj.id)
+                          );
+                          const validScores = stScores.filter((v) => v !== null);
+                          const subjAnnualAvg =
+                            validScores.length > 0
+                              ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
+                              : null;
+                          const annualTl = getTrafficLightStyle(subjAnnualAvg);
+
+                          return (
+                            <tr key={subj.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '0.65rem', fontWeight: 900 }}>{subj.titleHe}</td>
+                              {ASSESSMENT_PERIODS.map((p, pIdx) => {
+                                const sc = stScores[pIdx];
+                                const tl = getTrafficLightStyle(sc);
+                                return (
+                                  <td key={p.id} style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        minWidth: '46px',
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '8px',
+                                        background: tl.bg,
+                                        color: tl.text,
+                                        border: `1.5px solid ${tl.border}`,
+                                        fontWeight: 900
+                                      }}
+                                    >
+                                      {sc !== null ? sc : '—'}
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                              <td style={{ padding: '0.5rem', textAlign: 'center', background: '#f8fafc' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    minWidth: '50px',
+                                    padding: '0.28rem 0.6rem',
+                                    borderRadius: '999px',
+                                    background: annualTl.bg,
+                                    color: annualTl.text,
+                                    border: `2px solid ${annualTl.border}`,
+                                    fontWeight: 900
+                                  }}
+                                >
+                                  {subjAnnualAvg !== null ? subjAnnualAvg : '—'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Multi-Year Longitudinal History across Years */}
+                  {/* Detailed Skills Breakdown for the Student in the Active Station */}
                   <div
                     style={{
                       background: '#ffffff',
                       borderRadius: '22px',
                       padding: '1.5rem',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid #fde68a',
                       boxShadow: '0 8px 25px rgba(0,0,0,0.04)'
                     }}
                   >
-                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '1.1rem', fontWeight: 900, color: '#1e3a8a' }}>
-                      🕰️ רצף רב-שנתי — היסטוריית המיפוי של התלמיד לאורך השנים
+                    <h4 style={{ margin: '0 0 0.85rem 0', fontSize: '1.08rem', fontWeight: 900, color: '#92400e' }}>
+                      🎯 تفصيل مهارات الطالب ونسبها المئوية — {ASSESSMENT_PERIODS.find((p) => p.id === selectedPeriod)?.labelAr}
                     </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                      {academicYears.map((yr) => {
-                        // Look for this student across classes in that year
-                        let foundRecord = null;
-                        let foundClass = null;
-                        for (const cls of SCHOOL_19_CLASSES) {
-                          const list = classStudentsMap[`${yr.id}_${cls.id}`] || [];
-                          const match = list.find(
-                            (s) => s.id === selectedStudentForCard.id || s.studentName === selectedStudentForCard.studentName
-                          );
-                          if (match) {
-                            foundRecord = match;
-                            foundClass = cls;
-                            break;
-                          }
-                        }
-                        const yrAvg = foundRecord ? getStudentAverageScore(foundRecord, 'sem_1') ?? getStudentAverageScore(foundRecord, 'stage_a') : null;
-                        const yrTl = getTrafficLightStyle(yrAvg);
-
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {gradeSubjects.map((subj) => {
+                        const skills = getSkillsForSubject(subj);
+                        const wScore = computeWeightedSubjectScore(selectedStudentForCard, selectedPeriod, subj.id, skills);
+                        const wTl = getTrafficLightStyle(wScore);
                         return (
                           <div
-                            key={yr.id}
+                            key={subj.id}
                             style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              padding: '0.7rem 1rem',
-                              borderRadius: '12px',
-                              background: yr.id === selectedYear ? '#eff6ff' : '#f8fafc',
-                              border: yr.id === selectedYear ? '1.5px solid #60a5fa' : '1px solid #e2e8f0'
+                              background: '#f8fafc',
+                              padding: '0.75rem 1rem',
+                              borderRadius: '14px',
+                              border: '1px solid #e2e8f0'
                             }}
                           >
-                            <div>
-                              <strong style={{ color: '#0f172a', fontSize: '0.9rem' }}>{yr.labelHe}</strong>
-                              <span style={{ marginRight: '0.6rem', fontSize: '0.82rem', color: '#475569', fontWeight: 700 }}>
-                                {foundClass ? `כיתה ${foundClass.nameHe} | נוכחות: ${foundRecord.attendance_status || '—'}` : 'אין רשומה בארכיון לשנה זו'}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                              <strong style={{ color: '#0f172a', fontSize: '0.92rem' }}>{subj.titleHe}</strong>
+                              <span
+                                style={{
+                                  background: wTl.bg,
+                                  color: wTl.text,
+                                  border: `1.5px solid ${wTl.border}`,
+                                  padding: '0.15rem 0.6rem',
+                                  borderRadius: '999px',
+                                  fontWeight: 900,
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                العلامة الموزونة: {wScore ?? '—'}
                               </span>
                             </div>
-                            <span
-                              style={{
-                                background: yrTl.bg,
-                                color: yrTl.text,
-                                border: `1.5px solid ${yrTl.border}`,
-                                padding: '0.2rem 0.65rem',
-                                borderRadius: '999px',
-                                fontWeight: 900,
-                                fontSize: '0.82rem'
-                              }}
-                            >
-                              ממוצע: {yrAvg ?? '—'}
-                            </span>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {skills.map((sk) => {
+                                const sv = selectedStudentForCard?.skillGrades?.[selectedPeriod]?.[subj.id]?.[sk.id];
+                                const stl = getTrafficLightStyle(sv);
+                                return (
+                                  <span
+                                    key={sk.id}
+                                    style={{
+                                      background: stl.bg,
+                                      color: stl.text,
+                                      border: `1px solid ${stl.border}`,
+                                      padding: '0.2rem 0.6rem',
+                                      borderRadius: '8px',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 800
+                                    }}
+                                  >
+                                    {sk.titleAr || sk.titleHe} ({sk.weight}%): <strong>{sv !== undefined && sv !== '' ? sv : '—'}</strong>
+                                  </span>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })}
@@ -3384,7 +4262,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               </div>
             ) : (
               <div style={{ background: 'white', padding: '2rem', borderRadius: '18px', textAlign: 'center' }}>
-                בחר תלמיד מהרשימה להצגת הניתוח.
+                בחר תלמיד מהרשימה להצגת הפרופיל המשולב.
               </div>
             )}
           </div>
