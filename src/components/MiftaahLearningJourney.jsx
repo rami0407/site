@@ -9780,230 +9780,35 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         ) : (
           <section className="interface-canvas student-device-canvas animate-fade-in">
             <div className="student-device-container">
-              {/* Student Device Top Bar */}
-              <div className="student-device-header">
-                <div className="student-user-badge">
-                  <span className="user-avatar">{currentParticipant.avatar || '👤'}</span>
-                  <div>
-                    <strong>{currentParticipant.name}</strong>
-                    <small>
-                      {currentParticipant.mode === 'guest' ? '👋 مشارك كضيف' : '🔑 مشترك برمز المدرسة'} • {currentParticipant.groupName}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="student-header-right-tools">
-                  {/* Quick Teacher Controls if authenticated teacher or teacher preview mode */}
-                  {(authenticatedTeacher || currentParticipant?.mode === 'teacher_preview') && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-return-to-teacher-creator"
-                        style={{
-                          background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
-                          color: '#ffffff',
-                          border: 'none',
-                          padding: '6px 14px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)'
-                        }}
-                        onClick={() => setActiveInterface('creator')}
-                        title="العودة لشاشة إعداد وتعديل الحصة"
-                      >
-                        <i className="fas fa-edit"></i> تعديل الحصة ✏️
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    className="btn-exit-to-portal-student"
-                    onClick={() => {
-                      setStudentAuth(null);
-                      try {
-                        sessionStorage.removeItem('miftaah_student_participant');
-                        localStorage.removeItem('miftaah_student_participant');
-                      } catch (e) {}
-                      window.location.hash = '';
-                    }}
-                    title="العودة للصفحة الرئيسية لموقع المدرسة"
-                  >
-                    <i className="fas fa-home"></i> الرئيسية 🏫
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-student-switch-user"
-                    onClick={handleStudentLogout}
-                    title="تبديل الحساب أو تغيير الاسم / نمط الدخول"
-                  >
-                    <i className="fas fa-exchange-alt"></i> تبديل / خروج
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-student-fullscreen-toggle"
-                    onClick={toggleFullscreen}
-                    title="توسيع واجهة الطالب على كامل مساحة الشاشة (100%)"
-                  >
-                    <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
-                    <span>{isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة ⛶'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-student-refresh-sync"
-                    onClick={handleManualStudentSyncRefresh}
-                    disabled={isSyncingStudent}
-                    title="التحقق من وجود حتلنة وتعديلات جديدة للدرس من المعلم فوراً"
-                  >
-                    <i className={`fas fa-sync-alt ${isSyncingStudent ? 'fa-spin' : ''}`}></i>
-                    <span>حتلنة 🔄</span>
-                  </button>
-                  <div className="student-station-badge">
-                    محطة {studentCurrentStationIndex}: {studentCurrentStationData.name}
-                  </div>
-                </div>
-              </div>
-
-              {/* ===================================================================== */}
-              {/* PERSISTENT TOP BAR FOR STUDENT:                                       */}
-              {/* 1. الخريطة المكشوفة (המפה הגלויה) + شعار المحطة الحالية للطالب         */}
-              {/* 2. صندوق الهدف ومعيار النجاح (🎯 هدف التعلم + ✅ معيار النجاح)          */}
-              {/* 3. زر "⚡ وقت الانتعاش! (זמן להתרענן!)"                                */}
-              {/* ===================================================================== */}
-              <div className="student-stations-pacing-navbar" style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                border: '2px solid #cbd5e1',
-                borderRadius: '18px',
-                padding: '14px 18px',
-                marginBottom: '16px',
-                boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)'
+              {/* Student Device Top Bar - Clean & distraction-free: Student name only */}
+              <div className="student-device-header" style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                padding: "8px 18px",
+                marginBottom: "16px",
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)"
               }}>
-                {/* Row 1: Visible Map Header + Refresh Button */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                  <div className="pacing-navbar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <i className="fas fa-map-signs" style={{ color: '#4f46e5', fontSize: '1.1rem' }}></i>
-                    <strong style={{ color: '#0f172a', fontSize: '0.98rem' }}>
-                      الخريطة المكشوفة (המפה הגלויה) — محطات رحلة التعلّم:
-                    </strong>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleOpenRefreshModal}
-                    style={{
-                      background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '999px',
-                      padding: '7px 16px',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)'
-                    }}
-                    title="استراحة قصيرة لمدة ٦٠ ثانية لتجديد التركيز والنشاط"
-                  >
-                    <span>⚡ وقت الانتعاش! (זמן להתרענן!)</span>
-                  </button>
-                </div>
-
-                {/* Row 2: 5 Stations Steps */}
-                <div className="pacing-navbar-steps" style={{ marginBottom: '12px' }}>
-                  {[
-                    { idx: 1, letter: 'م', name: 'مشوّق ومحفّز', icon: '🔥' },
-                    { idx: 2, letter: 'ف', name: 'فهم وبناء المعنى', icon: '🧩' },
-                    { idx: 3, letter: 'ت', name: 'التطبيق والتدريب', icon: '🛠️' },
-                    { idx: 4, letter: 'ا', name: 'أدلة الفهم', icon: '🔎' },
-                    { idx: 5, letter: 'ح', name: 'حصاد ونقل الأثر', icon: '🎒' }
-                  ].map(st => {
-                    const isActive = st.idx === studentCurrentStationIndex;
-                    const isDone = st.idx < studentCurrentStationIndex;
-                    return (
-                      <button
-                        key={st.idx}
-                        type="button"
-                        className={`student-nav-step-pill ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
-                        onClick={() => handleStudentSelectStation(st.idx)}
-                        title={`الانتقال إلى المحطة ${st.idx}: ${st.name} [${st.letter}]`}
-                      >
-                        <span className="pill-letter">{st.letter}</span>
-                        <span className="pill-icon">{st.icon}</span>
-                        <span className="pill-name">{st.idx}. {st.name}</span>
-                        {isDone && <span className="pill-check">✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Row 3: Active Station Student Motto Banner */}
-                {(() => {
-                  const mottoObj = MIFTAAH_STATION_MOTTOS[studentCurrentStationIndex] || MIFTAAH_STATION_MOTTOS[1];
-                  return (
-                    <div style={{
-                      background: 'linear-gradient(90deg, #eff6ff 0%, #e0e7ff 100%)',
-                      border: '1.5px solid #93c5fd',
-                      borderRadius: '12px',
-                      padding: '8px 14px',
-                      marginBottom: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: '8px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e3a8a', fontWeight: 800, fontSize: '0.92rem' }}>
-                        <span>{mottoObj.icon}</span>
-                        <span>شعار المحطة {studentCurrentStationIndex} ({mottoObj.nameAr} / {mottoObj.nameHe}):</span>
-                        <span style={{ color: '#4338ca', background: '#ffffff', padding: '2px 10px', borderRadius: '999px', border: '1px solid #c7d2fe' }}>
-                          "{activeLesson?.language === 'hebrew' ? mottoObj.mottoHe : mottoObj.mottoAr}"
-                        </span>
-                      </div>
-                      <small style={{ color: '#475569', fontWeight: 700, fontSize: '0.8rem' }}>
-                        {activeLesson?.language === 'hebrew' ? mottoObj.mottoAr : mottoObj.mottoHe}
-                      </small>
-                    </div>
-                  );
-                })()}
-
-                {/* Row 4: Persistent Learning Goal & Success Criteria Box */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                  gap: '10px'
-                }}>
-                  <div style={{
-                    background: '#f0fdf4',
-                    border: '1.5px solid #86efac',
-                    borderRadius: '12px',
-                    padding: '8px 12px',
-                    fontSize: '0.88rem',
-                    color: '#14532d'
-                  }}>
-                    <strong style={{ color: '#15803d', display: 'block', marginBottom: '2px' }}>
-                      🎯 هدف التعلم (מטרת הלמידה):
-                    </strong>
-                    <span>{activeLesson?.objective || `إتقان المفاهيم والمهارات الأساسية في درس "${activeLesson?.title || ''}"`}</span>
-                  </div>
-                  <div style={{
-                    background: '#fefce8',
-                    border: '1.5px solid #fde047',
-                    borderRadius: '12px',
-                    padding: '8px 12px',
-                    fontSize: '0.88rem',
-                    color: '#713f12'
-                  }}>
-                    <strong style={{ color: '#a16207', display: 'block', marginBottom: '2px' }}>
-                      ✅ معيار النجاح (קריטריון הצלחה):
-                    </strong>
-                    <span>{activeLesson?.successCriteria || activeLesson?.stations?.['4_evidence']?.criterion || 'أستطيع تطبيق الفكرة بنجاح وتبرير إجابتي بدليل واضح.'}</span>
-                  </div>
+                <div
+                  className="student-user-badge"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    cursor: (authenticatedTeacher || currentParticipant?.mode === "teacher_preview") ? "pointer" : "default"
+                  }}
+                  onClick={() => {
+                    if (authenticatedTeacher || currentParticipant?.mode === "teacher_preview") {
+                      setActiveInterface("creator");
+                    }
+                  }}
+                  title={(authenticatedTeacher || currentParticipant?.mode === "teacher_preview") ? "العودة لشاشة إعداد وتعديل الحصة" : ""}
+                >
+                  <span className="user-avatar" style={{ fontSize: "1.6rem" }}>{currentParticipant.avatar || "🎓"}</span>
+                  <strong style={{ fontSize: "1.15rem", color: "#0f172a", fontWeight: 800 }}>{currentParticipant.name}</strong>
                 </div>
               </div>
 
