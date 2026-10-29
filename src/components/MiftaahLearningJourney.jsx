@@ -464,24 +464,46 @@ const normalizeMiftaahLesson = (lesson) => {
   // Station 2
   if (l.stations['2_understanding']) {
     const st2 = { ...l.stations['2_understanding'] };
-    if (!st2.studentPrompt || !st2.studentPrompt.trim()) {
-      st2.studentPrompt = lang === 'hebrew'
-        ? `מושגי יסוד והסבר לשיעור (${safeTitle}):\n• חקרו את המאפיינים המרכזיים של המושג.\n• התבוננו בדוגמאות ובמשפטים והשוו ביניהם.\n• רשמו את הכלל במחברת.`
-        : lang === 'english'
-        ? `Core Concepts and Meaning for (${safeTitle}):\n• Explore key concepts and structures.\n• Observe examples and compare them carefully.\n• Write down the main rule in your notebook.`
-        : `المفاهيم العلمية الأساسية لـ (${safeTitle}):\n• استكشف الخصائص الجوهرية التي تميز هذا المفهوم.\n• لاحظ النماذج والأمثلة الحية وقارن بينها بدقة.\n• دوّن القاعدة الأساسية في دفترك العلمي.`;
-    }
     if (!st2.selectedPath) {
-      st2.selectedPath = l.meaningPath || 'blended';
+      st2.selectedPath = l.meaningPath || 'discovery';
+    }
+    if (!st2.studentPrompt || !st2.studentPrompt.trim()) {
+      if (st2.selectedPath === 'discovery') {
+        st2.studentPrompt = lang === 'hebrew'
+          ? `תחקיר סוקרטי וגילוי מודרך (${safeTitle}):\n• התבוננו בדוגמאות ובמקרים שלפניכם ושאלו: מה מוזר או מסקרן כאן?\n• השוו בין המקרים השונים והעלו השערה ראשונית.\n• נסחו בעצמכם את הכלל שהתגלה והגיעו ליעד השיעור!`
+          : lang === 'english'
+          ? `Socratic Inquiry and Discovery for (${safeTitle}):\n• Observe the given cases and ask: What pattern or contradiction do you notice?\n• Compare the different scenarios and test your hypothesis.\n• Deduce the core concept and reach the lesson target on your own!`
+          : `استكشاف سقراطي موجّه لـ (${safeTitle}):\n• تأمل الأمثلة والحالات المعروضة أمامك، واسأل نفسك: ما الظاهرة أو النمط المشترك هنا؟\n• قارن بين النماذج وافحص فرضياتك خطوة بخطوة.\n• استنتج القاعدة الذهبية بنفسك وصغ المفهوم لتصل إلى هدف الدرس بجدارة!`;
+      } else {
+        st2.studentPrompt = lang === 'hebrew'
+          ? `הסבר פרונטלי מפורש וברור לשיעור (${safeTitle}):\n• קראו את הגדרת המושג המרכזי והבינו את מאפייניו.\n• עקבו אחר שלבי ההדגמה והדוגמאות הפתורות.\n• רשמו את הכלל המסודר במחברת.`
+          : lang === 'english'
+          ? `Explicit Direct Instruction for (${safeTitle}):\n• Read the core definition and understand its primary characteristics.\n• Follow the step-by-step teacher modeling and worked examples.\n• Note down the clear rule in your notebook.`
+          : `الشرح الوجاهي المنظم والمباشر لـ (${safeTitle}):\n• اقرأ التعريف الصريح للمفهوم الأساسي واستوعب عناصره.\n• تتبع خطوات النمذجة والأمثلة المحلولة خطوة بخطوة.\n• ثبّت القاعدة الواضحة في دفترك لتطبيقها بدقة.`;
+      }
     }
     if (!Array.isArray(st2.explanationCards) || st2.explanationCards.length === 0) {
-      st2.explanationCards = lang === 'hebrew' ? [
-        { step: 1, content: `היכרות עם מושג המפתח: הבנת המשמעות והמאפיינים של (${safeTitle}).`, example: `דוגמה מוחשית מתוך הטקסט או מחיי היומיום.` },
-        { step: 2, content: `ניסוח הכלל והקשרים: כיצד נזהה וניישם את הכלל שלב אחר שלב?`, example: `השוואה בין מקרים שונים והסקת מסקנה ברורה.` }
-      ] : [
-        { step: 1, content: `المفهوم الجوهري: التعرف على خصائص ودلالات (${safeTitle}) بأسلوب مبسط وواضح.`, example: `مثال حي وتوضيحي يربط الفكرة بواقعنا اليومي.` },
-        { step: 2, content: `القاعدة والاستنتاج: كيف نطبق المفهوم خطوة بخطوة ونتحقق من صحة الحل؟`, example: `تطبيق نموذجي محلول يوضح طريقة التفكير السليمة.` }
-      ];
+      if (st2.selectedPath === 'discovery') {
+        st2.explanationCards = lang === 'hebrew' ? [
+          { title: '🔍 1. התבוננות סוקרטית', step: 1, content: `שאילת שאלות ותצפית: מה אתם מזהים ומניחים לגבי (${safeTitle})?`, example: `בחנו את הנתונים והעלו השערות ראשוניות.` },
+          { title: '🧩 2. השוואה וניתוח', step: 2, content: `השוואה וניתוח סוקרטי: מה משותף ומה שונה בין המקרים השונים?`, example: `בדיקת ההשערה מול הראיות בשטח.` },
+          { title: '🎯 3. הסקת מסקנה והגעה ליעד', step: 3, content: `הסקת המסקנה: נסחו בעצמכם את הכלל שהתגלה והגיעו למטרת השיעור!`, example: `ניסוח החוק/העיקרון במילים שלכם.` }
+        ] : [
+          { title: '🔍 1. التساؤل والملاحظة السقراطية', step: 1, content: `تأمل وملاحظة سقراطية: ماذا تلحظ في الأمثلة المطروحة حول (${safeTitle})؟ وما هي فرضيتك الأولى؟`, example: `تأمل الحالات المعروضة وسجل ملاحظاتك الاستكشافية.` },
+          { title: '🧩 2. التحليل والمقارنة السقراطية', step: 2, content: `تحليل ومقارنة سقراطية: ما أوجه الشبه والاختلاف بين الأمثلة؟ وما الذي يفسر هذا التغيّر؟`, example: `قارن بين النموذجين وافحص كيف تترابط العناصر.` },
+          { title: '🎯 3. الاستنتاج وبلوغ الهدف المطلوب', step: 3, content: `استنتاج ذاتي وبلوغ الهدف: صِغ القاعدة والمفهوم بكلماتك بعد أن اكتشفت سرها بنفسك!`, example: `صياغة المفهوم المستخلص بوضوح وتطبيقه على حالة جديدة.` }
+        ];
+      } else {
+        st2.explanationCards = lang === 'hebrew' ? [
+          { title: '📖 1. הגדרת המושג', step: 1, content: `הסבר מפורש וברור של המושג המרכזי בשיעור (${safeTitle}).`, example: `דוגמה מוחשית וישירה להמחשת ההגדרה.` },
+          { title: '💡 2. הדגמה ושלבים', step: 2, content: `שלבי העבודה והיישום שלב אחר שלב עם המורה.`, example: `תרגיל לדוגמה עם פתרון מודרך ומפורט.` },
+          { title: '📌 3. הכלל המעשי', step: 3, content: `הכלל הסופי ליישום ועקרונות הביצוע הנכונים.`, example: `מודל מסודר לעבודה עצמאית בהמשך.` }
+        ] : [
+          { title: '📖 1. المفهوم والتعريف الصريح', step: 1, content: `الشرح الوجاهي المباشر: تعريف واضح وشامل لمفهوم (${safeTitle}) وعناصره الأساسية دون ألغاز.`, example: `مثال توضيحي مباشر يجسد المفهوم بوضوح.` },
+          { title: '💡 2. خطوات النمذجة والعمل', step: 2, content: `خطوات التطبيق النموذجية: كيف نطبق القاعدة خطوة بخطوة بالنمذجة الإجرائية الصريحة.`, example: `نموذج محلول ببيان خطوات التفكير السليم.` },
+          { title: '📌 3. القاعدة والمثال العملي', step: 3, content: `القاعدة المعيارية المكتملة: صياغة القاعدة النهائية للتطبيق السليم والمحكم.`, example: `تطبيق نموذجي يثبت القاعدة في الذهن.` }
+        ];
+      }
     }
     if (!Array.isArray(st2.conceptMapKeywords) || st2.conceptMapKeywords.length === 0) {
       st2.conceptMapKeywords = lang === 'hebrew'
@@ -6532,10 +6554,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       onChange={e => setCreatorMeaningPath(e.target.value)}
                       style={{ fontWeight: 700 }}
                     >
-                      <option value="blended">🔀 مسار مدمج (استكشاف + شرح صريح)</option>
-                      <option value="explicit">👨‍🏫 تعليم صريح ومباشر (Explicit)</option>
-                      <option value="discovery">🔍 اكتشاف وبحث موجه (Discovery)</option>
+                      <option value="discovery">🔍 تعلم استكشافي بالطريقة السقراطية (أسئلة وحوار استكشافي يقود للهدف)</option>
+                      <option value="explicit">👩‍🏫 أسلوب تدريس وجاهي (شرح عادي ومباشر ونمذجة للمفاهيم)</option>
+                      <option value="blended">🔄 مسار مدمج (استكشاف سقراطي + شرح وجاهي مباشر)</option>
                     </select>
+                    <small style={{ color: '#475569', fontSize: '0.8rem', marginTop: '5px', display: 'block', fontWeight: 600 }}>
+                      {creatorMeaningPath === 'discovery'
+                        ? '💡 مسار الاستكشاف السقراطي: يطرح الذكاء الاصطناعي تساؤلات سقراطية متدرجة ومحطات استكشاف تقود الطالب ذاتياً لاستنتاج المفاهيم والوصول إلى الهدف المطلوب دون تلقين مباشر.'
+                        : creatorMeaningPath === 'explicit'
+                        ? '📖 مسار التدريس الوجاهي: يولد الذكاء الاصطناعي الشرح العادي والمباشر للطالب مع تعريفات واضحة ونمذجة مفاهيم وأمثلة تطبيقية صريحة.'
+                        : '🔄 مسار مدمج: يجمع بين التساؤل الاستكشافي السقراطي والشرح الوجاهي الصريح والمباشر.'}
+                    </small>
                   </div>
 
                   <div className="input-group">
@@ -7655,9 +7684,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </label>
                       <div className="mode-options-group">
                         {[
-                          { id: 'guided_exploration', name: 'الاستكشاف الموجّه', desc: 'يتوصل الطلاب للفكرة من خلال الأنشطة والأسئلة' },
-                          { id: 'direct_instruction', name: 'الشرح الوجاهي المباشر', desc: 'نمذجة وشرح صريح من المعلم' },
-                          { id: 'blended', name: 'الجمع بين الاستكشاف والشرح', desc: 'استكشاف تمهيدي تليه نمذجة وتلخيص' }
+                          { id: 'guided_exploration', name: 'الاستكشاف السقراطي الموجّه', desc: 'تساؤلات سقراطية متدرجة تقود الطالب للهدف ذاتياً' },
+                          { id: 'direct_instruction', name: 'الشرح الوجاهي العادي المباشر', desc: 'شرح عادي ونمذجة صريحة من المعلم للمفاهيم والقواعد' },
+                          { id: 'blended', name: 'الجمع بين الاستكشاف والشرح', desc: 'استكشاف سقراطي يليه شرح وجاهي مباشر وتثبيت' }
                         ].map(m => (
                           <button
                             key={m.id}
@@ -10153,35 +10182,97 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               {/* STATION 2 INTERACTIVE WIDGETS: Explanation Cards, Concept Map Keywords, Check for Understanding */}
               {studentCurrentStationIndex === 2 && (
                 <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Explanation Cards */}
+                  {/* Distinctive Pedagogical Banner (Socratic Discovery vs Explicit Frontal) */}
+                  {studentCurrentStationData.selectedPath === 'discovery' ? (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)',
+                      border: '2px solid #3b82f6',
+                      borderRadius: '14px',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      boxShadow: '0 3px 12px rgba(59, 130, 246, 0.08)'
+                    }}>
+                      <span style={{ fontSize: '1.6rem' }}>🔍🏛️</span>
+                      <div>
+                        <strong style={{ color: '#1e3a8a', fontSize: '0.98rem', display: 'block', marginBottom: '2px' }}>
+                          مسار التعلم بالاستكشاف (الطريقة السقراطية):
+                        </strong>
+                        <span style={{ color: '#334155', fontSize: '0.86rem', lineHeight: 1.5 }}>
+                          أيها البطل، فكّر في التساؤلات السقراطية المتدرجة أدناه وافحص الأدلة؛ استنتج القاعدة واكتشف الهدف بنفسك دون إجابات مسبقة! 🎯
+                        </span>
+                      </div>
+                    </div>
+                  ) : studentCurrentStationData.selectedPath === 'explicit' ? (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      border: '2px solid #94a3b8',
+                      borderRadius: '14px',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                    }}>
+                      <span style={{ fontSize: '1.6rem' }}>👩‍🏫📖</span>
+                      <div>
+                        <strong style={{ color: '#0f172a', fontSize: '0.98rem', display: 'block', marginBottom: '2px' }}>
+                          مسار التدريس الوجاهي (الشرح العادي والمنظم):
+                        </strong>
+                        <span style={{ color: '#475569', fontSize: '0.86rem', lineHeight: 1.5 }}>
+                          تابع الشرح العادي والمباشر للمفاهيم والقواعد، وتأمل خطوات النمذجة والأمثلة المحلولة لتستوعب القاعدة وتثبتها.
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Explanation Cards / Socratic Stages */}
                   {Array.isArray(studentCurrentStationData.explanationCards) && studentCurrentStationData.explanationCards.length > 0 && (
                     <div style={{
-                      background: '#f8fafc',
-                      border: '1.5px solid #cbd5e1',
+                      background: studentCurrentStationData.selectedPath === 'discovery' ? '#f0fdf4' : '#f8fafc',
+                      border: studentCurrentStationData.selectedPath === 'discovery' ? '1.5px solid #86efac' : '1.5px solid #cbd5e1',
                       borderRadius: '16px',
                       padding: '16px'
                     }}>
                       <h4 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🧩 بطاقات بناء المعنى المتدرجة ({studentCurrentStationData.selectedPath === 'discovery' ? 'مسار الاكتشاف الموجه' : studentCurrentStationData.selectedPath === 'explicit' ? 'مسار التعليم الصريح' : 'المسار المدمج'}):</span>
+                        <span>
+                          {studentCurrentStationData.selectedPath === 'discovery'
+                            ? '🔍 خطوات الاستكشاف السقراطي (فكّر، حلل، واكتشف الهدف بنفسك):'
+                            : studentCurrentStationData.selectedPath === 'explicit'
+                            ? '👩‍🏫 الشرح الوجاهي المنظم وتوضيح المفاهيم والقواعد:'
+                            : '🔄 بطاقات بناء المعنى المتدرجة:'}
+                        </span>
                       </h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px' }}>
                         {studentCurrentStationData.explanationCards.map((card, cIdx) => (
                           <div key={cIdx} style={{
                             background: '#ffffff',
-                            border: '1.5px solid #bfdbfe',
+                            border: studentCurrentStationData.selectedPath === 'discovery' ? '1.5px solid #93c5fd' : '1.5px solid #bfdbfe',
                             borderRadius: '12px',
                             padding: '12px 14px',
                             boxShadow: '0 2px 8px rgba(30, 64, 175, 0.05)'
                           }}>
-                            <div style={{ fontWeight: 800, color: '#1d4ed8', fontSize: '0.92rem', marginBottom: '6px' }}>
-                              {cIdx + 1}. {card.title}
+                            <div style={{
+                              fontWeight: 800,
+                              color: studentCurrentStationData.selectedPath === 'discovery' ? '#0369a1' : '#1d4ed8',
+                              fontSize: '0.92rem',
+                              marginBottom: '6px'
+                            }}>
+                              {card.title || `${cIdx + 1}. خطوة`}
                             </div>
                             <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: '#334155', lineHeight: 1.6 }}>
                               {card.content}
                             </p>
                             {card.example && (
-                              <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '6px 10px', fontSize: '0.82rem', color: '#1e40af' }}>
-                                <strong>📌 مثال:</strong> {card.example}
+                              <div style={{
+                                background: studentCurrentStationData.selectedPath === 'discovery' ? '#ecfdf5' : '#eff6ff',
+                                borderRadius: '8px',
+                                padding: '6px 10px',
+                                fontSize: '0.82rem',
+                                color: studentCurrentStationData.selectedPath === 'discovery' ? '#065f46' : '#1e40af'
+                              }}>
+                                <strong>{studentCurrentStationData.selectedPath === 'discovery' ? '💡 مفتاح التفكير / مثال:' : '📌 مثال تطبيقي:'}</strong> {card.example}
                               </div>
                             )}
                           </div>

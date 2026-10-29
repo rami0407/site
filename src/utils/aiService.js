@@ -3030,6 +3030,114 @@ ${isTrainTopic ? `🚂 توجيه إلزامي حاسم: موضوع الدرس �
 - لغة الحصة ومحطاتها: اللغة العربية الفصيحة السليمة والواضحة والمحفزة المناسبة لطلاب المرحلة الابتدائية.`;
   }
 
+  // Socratic Discovery vs. Frontal Direct Instruction Directive (مبدأ حاسم في نموذج مِفتاح)
+  let meaningPathDirective = '';
+  if (safeMeaningPath === 'discovery') {
+    if (targetLang === 'hebrew') {
+      meaningPathDirective = `
+🔍🧠 הנחיה פדגוגית קריטית ומחייבת (למידה חוקרת בשיטה הסוקרטית - SOCRATIC DISCOVERY):
+המורה בחר/ה: "למידה חוקרת בשיטה הסוקרטית (Discovery)".
+כלל ברזל בל יעבור: בלמידה חוקרת, התוכן בתחנה 2 חייב להיות מועבר בשיטה הסוקרטית בלבד!
+הבינה המלאכותית אינה מספקת הסברים מוכנים או מגלה את התשובה מראש; אלא מנחה את התלמיד באמצעות שאלות סוקרטיות עמוקות, התבוננות מודרכת, השוואה והסקת מסקנות עצמאית כדי להגיע ליעד הלימודי בעצמו!
+1. בתחנה 2 (הבנת המשמעות):
+   - studentPrompt: ניסוח שאלת חקר סוקרטית מרכזית המעוררת פליאה וסקרנות, ולאחריה רצף שאלות מכוונות המובילות את התלמיד להבין ולהסיק בעצמו את הרעיון המרכזי.
+   - explanationCards (3 שלבי גילוי סוקרטיים עוקבים):
+     * כרטיס 1: "🔍 1. התבוננות ושאילת שאלות סוקרטית" (שאלת הנחיה לתצפית והשערה ראשונית).
+     * כרטיס 2: "🧩 2. חקירה והשוואה סוקרטית" (שאלת עומק להשוואה בין מקרים ופירוק הנתונים).
+     * כרטיס 3: "🎯 3. הסקת מסקנה והגעה ליעד" (שאלה המובילה לניסוח הכלל והגעה עצמאית למטרת השיעור).
+   - checkForUnderstanding: שאלת בדיקה סוקרטית המוודאת שהתלמיד מסוגל לנמק ולהוכיח את המסקנה שאליה הגיע.
+   - teacherGuidance: דגשים לניהול דיאלוג סוקרטי פורה מבלי לגלות תשובות.
+`;
+    } else if (targetLang === 'english') {
+      meaningPathDirective = `
+🔍🧠 CRITICAL PEDAGOGICAL DIRECTIVE (SOCRATIC DISCOVERY LEARNING):
+The teacher selected: "Discovery through the Socratic Method".
+Core Rule: Socratic inquiry guides students to the target objective through guided questioning, observation, hypothesis testing, and deduction! DO NOT provide direct lectures or ready answers in Station 2.
+1. In Station 2 (Understanding & Building Meaning):
+   - studentPrompt: A thought-provoking core Socratic inquiry question that creates curiosity and intellectual challenge, followed by step-by-step guidance enabling students to discover the central concept and reach the learning objective themselves.
+   - explanationCards (3 Progressive Socratic Discovery Steps):
+     * Card 1: "🔍 1. Socratic Observation & Wonder": Deep guiding question prompting observation and hypotheses.
+     * Card 2: "🧩 2. Analysis & Comparison": Socratic questioning comparing cases and testing patterns.
+     * Card 3: "🎯 3. Deduction & Reaching the Goal": Concluding Socratic question enabling the student to deduce the rule and reach the objective independently.
+   - checkForUnderstanding: Socratic verification question where the student justifies how they arrived at the conclusion.
+   - teacherGuidance: Guidance for the teacher to facilitate Socratic dialogue without revealing answers upfront.
+`;
+    } else {
+      meaningPathDirective = `
+🔍🧠 توجيه بيداغوجي إلزامي وصارم (التعلم بالاستكشاف بالطريقة السقراطية - SOCRATIC DISCOVERY):
+المعلم اختار: "التعلم بالاستكشاف (Discovery)".
+قاعدة ذهبية حاسمة ومحورية:
+التعلم بالاستكشاف يجب أن يكون حصراً بالطريقة السقراطية! الذكاء الاصطناعي لا يقدم الشرح أو النتيجة جاهزة للطالب، بل يقوده خطوة بخطوة من خلال الأسئلة السقراطية والتأمل والملاحظة والاستنتاج ليصل الطالب بنفسه إلى الهدف التعليمي المطلوب:
+1. في المحطة الثانية (فهم وبناء المعنى):
+   - studentPrompt: صياغة تساؤل استكشافي سقراطي مركزي (Central Socratic Inquiry) يثير الفضول ويطرح معضلة أو ظاهرة للتأمل، يليه خطوات توجيهية وأسئلة استكشافية متدرجة تقود الطالب للربط والاستنتاج والوصول لهدف الدرس بنفسه.
+   - explanationCards (بطاقات الحوار والاستكشاف السقراطي المتدرج - ٣ بطاقات إلزامية):
+     * البطاقة 1: "🔍 1. التساؤل والملاحظة السقراطية": سؤال استكشافي موجّه يدعو الطالب لتأمل نماذج أو أمثلة حية، وملاحظة العلاقات وطرح الفرضيات الأولى.
+     * البطاقة 2: "🧩 2. التحليل والمقارنة السقراطية": سؤال سقراطي عميق يوجه الطالب للمقارنة بين الحالات وفحص الاختلافات واختبار الفرضيات.
+     * البطاقة 3: "🎯 3. الاستنتاج وبلوغ الهدف المطلوب": تساؤل استدراجي ختامي يمكن الطالب من صياغة المفهوم النهائي وقاعدته بنفسه، وبلوغ هدف الدرس بجدارة.
+   - checkForUnderstanding: سؤال تحقق استدلالي سقراطي يطلب من الطالب إثبات كيفية توصله للاستنتاج وتقديم الدليل عليه.
+   - teacherGuidance: إرشادات دقيقة للمعلم حول فن إدارة الحوار السقراطي في الصف، وطرح الأسئلة السابرة (Probing Questions) دون التعجل بكشف الإجابة.
+`;
+    }
+  } else if (safeMeaningPath === 'explicit') {
+    if (targetLang === 'hebrew') {
+      meaningPathDirective = `
+👩‍🏫📖 הנחיה פדגוגית קריטית ומחייבת (הוראה פרונטלית והסבר מפורש ישיר - EXPLICIT DIRECT INSTRUCTION):
+המורה בחר/ה: "הוראה פרונטלית (Explicit)".
+כלל הברזל: הבינה המלאכותית יוצרת הסבר רגיל, ברור, ישיר ומובנה לתלמיד (הוראה ישירה ללא חידות חקר):
+1. בתחנה 2 (הבנת המשמעות):
+   - studentPrompt: הסבר פרונטלי רגיל, מפורש וברור לחלוטין של מושגי השיעור והכללים, בטון בהיר, מובנה ומסודר.
+   - explanationCards (3 כרטיסי הסבר פרונטלי):
+     * כרטיס 1: "📖 1. הגדרת המושג והסבר מפורש": הצגת המושג המרכזי ומשמעותו בלשון פשוטה ומדויקת.
+     * כרטיס 2: "💡 2. הדגמה ושלבי עבודה": שלבי ביצוע מפורטים ("אני המורה מדגים איך עושים זאת שלב אחר שלב").
+     * כרטיס 3: "📌 3. הכלל המעשי ודוגמה פתורה": דוגמה מוחשית פתורה וניסוח הכלל המעשי ליישום מידי.
+   - checkForUnderstanding: שאלת הבנה ישירה לבדיקת קליטת ההסבר והמושגים שנלמדו.
+   - teacherGuidance: הנחיות למורה להוראה פרונטלית מיטבית, דגשים ללוח והדגמה מול הכיתה.
+`;
+    } else if (targetLang === 'english') {
+      meaningPathDirective = `
+👩‍🏫📖 CRITICAL PEDAGOGICAL DIRECTIVE (EXPLICIT DIRECT INSTRUCTION):
+The teacher selected: "Frontal / Explicit Direct Instruction".
+Core Rule: The AI generates a standard, clear, structured, and direct explanation for the student without inquiry riddles.
+1. In Station 2 (Understanding & Building Meaning):
+   - studentPrompt: Clear, systematic direct instruction and explanation of the concepts, terms, and rules.
+   - explanationCards (3 Direct Explanation Cards):
+     * Card 1: "📖 1. Core Definition & Meaning": Clear explanation of the concept and its exact terms.
+     * Card 2: "💡 2. Modeling & Procedure": Step-by-step demonstration of how to work through the skill.
+     * Card 3: "📌 3. Rule & Worked Example": Direct worked example and clear application rules.
+   - checkForUnderstanding: Direct comprehension check verifying understanding of the explained concepts.
+   - teacherGuidance: Guidance for teacher direct modeling and whole-class structured teaching.
+`;
+    } else {
+      meaningPathDirective = `
+👩‍🏫📖 توجيه بيداغوجي إلزامي وصارم (الأسلوب التدريسي الوجاهي والشرح المباشر - EXPLICIT DIRECT INSTRUCTION):
+المعلم اختار: "الأسلوب الوجاهي (Explicit)".
+قاعدة ذهبية حاسمة:
+الذكاء الاصطناعي يولد الشرح العادي والمباشر للطالب:
+1. في المحطة الثانية (فهم وبناء المعنى):
+   - studentPrompt: تقديم شرح عادي وصريح ومنظم ومفصل لمفاهيم الدرس وقواعده بلغة واضحة وخطوات مرتبة (أسلوب الشرح الوجاهي الصريح والنمذجة المباشرة للأفكار).
+   - explanationCards (بطاقات الشرح والتوضيح الوجاهي - ٣ بطاقات مرتبة):
+     * البطاقة 1: "📖 1. التعريف الصريح والمفهوم": شرح واضح ومباشر للمفهوم الأساسي ومصطلحاته دون ألغاز.
+     * البطاقة 2: "💡 2. خطوات النمذجة والعمل": بيان إجرائي واضح يوضح للطالب كيفية تطبيق المفهوم خطوة بخطوة ("أنا المعلم أريكم كيف نعمل").
+     * البطاقة 3: "📌 3. القاعدة والمثال التوضيحي": مثال تطبيقي محلول وقاعدة محددة لتثبيت الفهم.
+   - checkForUnderstanding: سؤال فحص فهم مباشر وواضح للتأكد من استيعاب الشرح العادي المقدم.
+   - teacherGuidance: إرشادات للمعلم للتدريس الوجاهي، والنمذجة على اللوح، وتوضيح النقاط الدقيقة للطلاب.
+`;
+    }
+  } else {
+    // blended
+    if (targetLang === 'hebrew') {
+      meaningPathDirective = `
+🔄 מסלול משולב (שאלת חקר סוקרטית + הסבר פרונטלי ישיר):
+- שילוב הרמוני המתחיל בשאלת חקר סוקרטית מעוררת עניין, וממשיך מייד להסבר פרונטלי מפורש וברור לביסוס הכללים והיעד הלימודי.
+`;
+    } else {
+      meaningPathDirective = `
+🔄 مسار مدمج (استكشاف سقراطي + شرح وجاهي مباشر):
+- دمج متوازن يبدأ بتساؤل استكشافي سقراطي يوقظ تفكير الطالب، ويليه فوراً شرح وجاهي مباشر ومفصل ينظم المفاهيم ويثبت القاعدة التعليمية ويضمن بلوغ الهدف المطلوب.
+`;
+    }
+  }
+
   const prompt = `أنت المحرك التعليمي الذكي لمنصة "مفتاح" (מפתי"ח) التفاعلية في مدرسة مشيرفة الابتدائية. مهمتك ليست كتابة خطة نظرية للمعلم، بل بناء محتوى حصة تفاعلية كاملة موجهة للطالب مباشرة بضمير المخاطب ("أنت يا بطل / يا مبدع")، مع أدوات دعم للمعلم.
 التزم باللغتين العربية أو العبرية أو الإنجليزية حسب مدخلات المعلم، وطبق مبادئ التصميم الشامل للتعلم (UDL) والتقويم التكويني المستمر.
 
@@ -3049,6 +3157,8 @@ ${teacherCustomDirectives}
 ${languageDirective}
 
 ${genreDirective}
+
+${meaningPathDirective}
 
 المطلوب: توليد حصة تفاعلية متكاملة ومترابطة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
 1. مشوّق ومحفّز (م) — شعار الطالب: "أنا أسأل وأستعد / אני שואל ומתכונן"
@@ -3128,23 +3238,24 @@ ${genreDirective}
     "2_understanding": {
       "name": "${targetLang === 'hebrew' ? 'הבנת המשמעות' : 'فهم وبناء المعنى'}",
       "number": 2,
-      "icon": "🧩",
+      "icon": "${safeMeaningPath === 'discovery' ? '🔍' : safeMeaningPath === 'explicit' ? '👩‍🏫' : '🧩'}",
       "selectedPath": "${safeMeaningPath}",
-      "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'guided_exploration' : 'blended_interactive'}",
-      "pedagogicalModeName": "${targetLang === 'hebrew' ? 'הבנה ובניית משמעות' : 'بناء المعنى والاستكشاف'}",
-      "studentPrompt": "المحتوى الصريح: نص القراءة الكامل إن كان فهم المقروء، أو الشرح والقواعد والمفاهيم...",
+      "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive'}",
+      "pedagogicalModeName": "${safeMeaningPath === 'discovery' ? (targetLang === 'hebrew' ? 'למידה חוקרת בשיטה הסוקרטית' : 'تعلم استكشافي بالطريقة السقراطية') : safeMeaningPath === 'explicit' ? (targetLang === 'hebrew' ? 'הוראה פרונטלית והסבר מפורש' : 'تدريس وجاهي وشرح مباشر') : (targetLang === 'hebrew' ? 'מסלול משולב (סוקרטי ופרונטלי)' : 'مسار مدمج (سقراطي ووجاهي)')}",
+      "studentPrompt": "${safeMeaningPath === 'discovery' ? 'تساؤل استكشافي سقراطي مركزي ومحطات استكشافية متدرجة تقود الطالب للهدف ذاتياً...' : safeMeaningPath === 'explicit' ? 'شرح عادي وصريح ومباشر للمفاهيم والقواعد والخطوات الإجرائية...' : 'المحتوى الصريح: نص القراءة الكامل إن كان فهم المقروء، أو الشرح والقواعد والمفاهيم...'}",
       "explanationCards": [
-        { "step": 1, "content": "شرح الفكرة الأولى بلغة مبسطة...", "example": "مثال توضيحي..." },
-        { "step": 2, "content": "شرح الفكرة الثانية والربط بالمعرفة السابقة...", "example": "مثال توضيحي..." }
+        { "title": "${safeMeaningPath === 'discovery' ? '🔍 1. التساؤل والملاحظة السقراطية' : '📖 1. المفهوم والتعريف الصريح'}", "step": 1, "content": "المحتوى التوجيهي للخطوة الأولى...", "example": "مثال أو تساؤل ملاحظة..." },
+        { "title": "${safeMeaningPath === 'discovery' ? '🧩 2. التحليل والمقارنة السقراطية' : '💡 2. خطوات النمذجة والعمل'}", "step": 2, "content": "المحتوى التوجيهي للخطوة الثانية...", "example": "مثال أو تساؤل فحص العلاقات..." },
+        { "title": "${safeMeaningPath === 'discovery' ? '🎯 3. الاستنتاج وبلوغ الهدف المطلوب' : '📌 3. القاعدة والمثال التطبيقي'}", "step": 3, "content": "صياغة المفهوم النهائي وبلوغ الهدف...", "example": "مثال تأكيدي وبلوغ الهدف..." }
       ],
       "conceptMapKeywords": ["مفهوم 1", "مفهوم 2", "مفهوم 3"],
       "checkForUnderstanding": {
-        "question": "سؤال فحص فهم سريع للتأكد من استيعاب الشرح؟",
+        "question": "${safeMeaningPath === 'discovery' ? 'سؤال استدلالي سقراطي يطلب من الطالب إثبات الاستنتاج والوصول للهدف؟' : 'سؤال فحص فهم مباشر وسريع للتأكد من استيعاب الشرح الوجاهي؟'}",
         "options": ["خيار 1", "خيار 2", "خيار 3"],
         "correctAnswer": "خيار 1",
-        "feedback": "تغذية راجعة فورية تشرح لماذا الإجابة صحيحة"
+        "feedback": "تغذية راجعة فورية تشرح لماذا الإجابة صحيحة وتثبت الفهم"
       },
-      "teacherGuidance": "إرشادات النمذجة أو قيادة الاستكشاف...",
+      "teacherGuidance": "${safeMeaningPath === 'discovery' ? 'إرشادات المعلم لإدارة الحوار السقراطي وطرح الأسئلة السابرة دون إعطاء الإجابات الجاهزة...' : 'إرشادات النمذجة والشرح الوجاهي الصريح على اللوح...'}",
       "suggestedDuration": 12,
       "scaffold": "منظم بصري أو خطوة مساعدة..."
     },
