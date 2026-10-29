@@ -106,9 +106,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   // ==================== 4. STUDENTS DATA & CLOUD SECURITY STATE ====================
   const [classStudentsMap, setClassStudentsMap] = useState({});
   const [isSavingCloud, setIsSavingCloud] = useState(false);
-  const [cloudSyncStatus, setCloudSyncStatus] = useState('synced'); // 'synced' | 'saving' | 'local_vault'
-  const [lastSavedAt, setLastSavedAt] = useState(() => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }));
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('synced'); // 'synced' | 'saving' | 'local_vault' | 'unsaved'
+  const [lastSavedAt, setLastSavedAt] = useState(() => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const [lastUpdatedBy, setLastUpdatedBy] = useState('מערכת הסנכרון החי');
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveToast, setSaveToast] = useState('');
+  const dirtyClassKeysRef = useRef(new Set());
+  const cloudLoadedKeysRef = useRef(new Set());
+  const cloudUpdatedMsRef = useRef({});
 
   // Modals State
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -180,7 +186,23 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return () => unsub();
   }, []);
 
-  // Load Schema & Permissions Config from Encrypted Storage + Firestore Cloud Database
+  // Helper to apply incoming cloud config
+  const applyIncomingCloudConfig = (data) => {
+    if (!data || typeof data !== 'object') return;
+    if (data.academicYears) setAcademicYears(data.academicYears);
+    if (data.holisticColumns) setHolisticColumns(data.holisticColumns);
+    if (data.gradeSubjects) setGradeSubjects(data.gradeSubjects);
+    if (data.classPermissions) setClassPermissions(data.classPermissions);
+    if (data.coordinatorIds) setCoordinatorIds(data.coordinatorIds);
+    if (Array.isArray(data.customTeachers)) {
+      setCustomTeachers(data.customTeachers);
+      syncCustomTeachersList(data.customTeachers);
+    }
+    setSecureStorage('musherfe_holistic_config_v2', data);
+    setCloudSyncStatus('synced');
+  };
+
+  // Load Schema & Permissions Config from Encrypted Storage + Firestore Cloud Database (Dual-Channel Live Sync)
   useEffect(() => {
     const localConf = getSecureStorage('musherfe_holistic_config_v2', null);
     if (localConf && typeof localConf === 'object') {
@@ -196,53 +218,72 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       }
     }
 
+    const unsubs = [];
     try {
-      const confRef = doc(db, 'holistic_mapping_config', 'global_settings_v2');
-      const unsub = onSnapshot(confRef, (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.academicYears) setAcademicYears(data.academicYears);
-          if (data.holisticColumns) setHolisticColumns(data.holisticColumns);
-          if (data.gradeSubjects) setGradeSubjects(data.gradeSubjects);
-          if (data.classPermissions) setClassPermissions(data.classPermissions);
-          if (data.coordinatorIds) setCoordinatorIds(data.coordinatorIds);
-          if (Array.isArray(data.customTeachers)) {
-            setCustomTeachers(data.customTeachers);
-            syncCustomTeachersList(data.customTeachers);
-          }
-          setSecureStorage('musherfe_holistic_config_v2', data);
-          setCloudSyncStatus('synced');
-        }
-      }, () => {
-        setCloudSyncStatus('local_vault');
-      });
-      return () => unsub();
+      // Primary live channel in 'students' collection (open to all teachers & principal in live Firestore rules)
+      const sharedConfRef = doc(db, 'students', 'holistic_cfg_global_v2');
+      unsubs.push(
+        onSnapshot(
+          sharedConfRef,
+          (snap) => {
+            if (snap.exists()) {
+              applyIncomingCloudConfig(snap.data());
+            }
+          },
+          () => {}
+        )
+      );
+
+      // Secondary channel in 'holistic_mapping_config' (auto-bridges to sharedConfRef if newer)
+      const legacyConfRef = doc(db, 'holistic_mapping_config', 'global_settings_v2');
+      unsubs.push(
+        onSnapshot(
+          legacyConfRef,
+          (snap) => {
+            if (snap.exists()) {
+              const data = snap.data();
+              applyIncomingCloudConfig(data);
+              setDoc(sharedConfRef, data, { merge: true }).catch(() => {});
+            }
+          },
+          () => {}
+        )
+      );
     } catch {
       setCloudSyncStatus('local_vault');
     }
+    return () => unsubs.forEach((u) => u && u());
   }, []);
 
   const seededCloudKeysRef = useRef(new Set());
 
-  // Load All Classes Data for the Selected Academic Year (Encrypted IndexedDB Vault + Realtime Cloud DB)
+  // Load All Classes Data for the Selected Academic Year (Conflict-Free Realtime Cloud DB + Encrypted IndexedDB Vault)
   useEffect(() => {
     let isMounted = true;
-    const loadedMap = {};
+    const initialFallbackMap = {};
 
-    // 1. Instant synchronous fallback with official 469-student roster
+    // 1. Instant synchronous fallback with official 469-student roster for keys not loaded yet
     SCHOOL_19_CLASSES.forEach((cls) => {
       const key = `${selectedYear}_${cls.id}`;
       const saved = getSecureStorage(`holistic_students_v2_${key}`, null);
       if (saved && Array.isArray(saved) && saved.length > 0) {
         const isOldDemo = saved.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
-        loadedMap[key] = isOldDemo ? generateInitialDemoStudents(cls.id) : saved;
+        initialFallbackMap[key] = isOldDemo ? generateInitialDemoStudents(cls.id) : saved;
       } else {
-        loadedMap[key] = generateInitialDemoStudents(cls.id);
+        initialFallbackMap[key] = generateInitialDemoStudents(cls.id);
       }
     });
-    setClassStudentsMap((prev) => ({ ...prev, ...loadedMap }));
+    setClassStudentsMap((prev) => {
+      const next = { ...prev };
+      Object.keys(initialFallbackMap).forEach((k) => {
+        if (!cloudLoadedKeysRef.current.has(k) && !next[k]) {
+          next[k] = initialFallbackMap[k];
+        }
+      });
+      return next;
+    });
 
-    // 2. Hydrate from Encrypted IndexedDB Vault asynchronously
+    // 2. Hydrate from Encrypted IndexedDB Vault ONLY for classes that haven't arrived from Cloud DB yet!
     Promise.all(
       SCHOOL_19_CLASSES.map(async (cls) => {
         const key = `${selectedYear}_${cls.id}`;
@@ -250,70 +291,122 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         if (idbSaved && Array.isArray(idbSaved) && idbSaved.length > 0) {
           const isOldDemo = idbSaved.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
           if (!isOldDemo) {
-            loadedMap[key] = idbSaved;
+            return { key, students: idbSaved };
           }
-        } else {
-          await setEncryptedIDB(`holistic_students_v2_${key}`, loadedMap[key]);
         }
+        return null;
       })
-    ).then(() => {
-      if (isMounted) {
-        setClassStudentsMap((prev) => ({ ...prev, ...loadedMap }));
-      }
+    ).then((results) => {
+      if (!isMounted) return;
+      setClassStudentsMap((prev) => {
+        const next = { ...prev };
+        results.forEach((item) => {
+          // NEVER overwrite a class if Cloud DB already delivered live data for this class!
+          if (item && !cloudLoadedKeysRef.current.has(item.key)) {
+            next[item.key] = item.students;
+          }
+        });
+        return next;
+      });
     });
 
-    // 3. Subscribe to Firestore collection `holistic_mapping_classes` and seed missing classes ONCE
-    try {
-      const q = collection(db, 'holistic_mapping_classes');
-      const unsub = onSnapshot(q, (snap) => {
-        if (!isMounted) return;
-        const cloudUpdates = {};
-        const existingCloudKeys = new Set();
-        snap.forEach((docSnap) => {
-          const d = docSnap.data();
-          if (d && d.academicYear === selectedYear && Array.isArray(d.students) && d.students.length > 0) {
-            const isOldDemo = d.students.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
-            if (!isOldDemo) {
-              const key = `${d.academicYear}_${d.classId}`;
-              existingCloudKeys.add(key);
-              seededCloudKeysRef.current.add(key);
-              cloudUpdates[key] = d.students;
-              setEncryptedIDB(`holistic_students_v2_${key}`, d.students);
-            }
-          }
-        });
-        if (Object.keys(cloudUpdates).length > 0) {
-          setClassStudentsMap((prev) => ({ ...prev, ...cloudUpdates }));
-        }
+    // Helper to process incoming Cloud document for a class
+    const applyIncomingClassDoc = (d, sourceCollection) => {
+      if (!isMounted || !d || d.academicYear !== selectedYear || !Array.isArray(d.students) || d.students.length === 0) {
+        return;
+      }
+      const isOldDemo = d.students.some((s) => s.idNumber && s.idNumber.startsWith('32000010'));
+      if (isOldDemo) return;
+
+      const key = `${d.academicYear}_${d.classId}`;
+      const incomingMs = d.updatedMs || (d.updatedAt ? Date.parse(d.updatedAt) : 0) || 1;
+      const currentMs = cloudUpdatedMsRef.current[key] || 0;
+
+      // Accept if it's the first cloud load or at least as new as our current cloud revision
+      if (!cloudLoadedKeysRef.current.has(key) || incomingMs >= currentMs) {
+        cloudLoadedKeysRef.current.add(key);
+        seededCloudKeysRef.current.add(key);
+        cloudUpdatedMsRef.current[key] = incomingMs;
+
+        setClassStudentsMap((prev) => ({ ...prev, [key]: d.students }));
+        setEncryptedIDB(`holistic_students_v2_${key}`, d.students);
         setCloudSyncStatus('synced');
 
-        // Seed missing classes to Firestore Cloud DB at most ONCE per session
-        SCHOOL_19_CLASSES.forEach((cls) => {
-          const key = `${selectedYear}_${cls.id}`;
-          if (!existingCloudKeys.has(key) && !seededCloudKeysRef.current.has(key) && loadedMap[key] && loadedMap[key].length > 0) {
+        if (d.updatedBy) setLastUpdatedBy(d.updatedBy);
+        if (d.updatedAt) {
+          try {
+            setLastSavedAt(new Date(d.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+          } catch {}
+        }
+
+        // If this came from legacy 'holistic_mapping_classes', mirror it immediately to 'students/holistic_cls_...' so all teachers receive it live!
+        if (sourceCollection === 'legacy') {
+          setDoc(doc(db, 'students', `holistic_cls_${key}`), {
+            academicYear: d.academicYear,
+            classId: d.classId,
+            students: d.students,
+            updatedAt: d.updatedAt || new Date().toISOString(),
+            updatedMs: incomingMs,
+            updatedBy: d.updatedBy || 'מנהל'
+          }, { merge: true }).catch(() => {});
+        }
+      }
+    };
+
+    // 3. Subscribe in REAL TIME to all 19 class documents in 'students' collection (accessible to all teachers & principal!)
+    const unsubs = [];
+    SCHOOL_19_CLASSES.forEach((cls) => {
+      const key = `${selectedYear}_${cls.id}`;
+      const sharedDocRef = doc(db, 'students', `holistic_cls_${key}`);
+      const u = onSnapshot(
+        sharedDocRef,
+        (docSnap) => {
+          if (!isMounted) return;
+          if (docSnap.exists()) {
+            applyIncomingClassDoc(docSnap.data(), 'shared');
+          } else if (!seededCloudKeysRef.current.has(key)) {
+            // Seed initial class roster to shared cloud doc once if missing
             seededCloudKeysRef.current.add(key);
-            setDoc(doc(db, 'holistic_mapping_classes', key), {
-              academicYear: selectedYear,
-              classId: cls.id,
-              students: loadedMap[key],
-              updatedAt: new Date().toISOString(),
-              updatedBy: 'מערכת הגיבוי האוטומטי'
-            }, { merge: true }).catch(() => {});
+            const fallbackStudents = initialFallbackMap[key] || generateInitialDemoStudents(cls.id);
+            setDoc(
+              sharedDocRef,
+              {
+                academicYear: selectedYear,
+                classId: cls.id,
+                students: fallbackStudents,
+                updatedAt: new Date().toISOString(),
+                updatedMs: 1,
+                updatedBy: 'מערכת הסנכרון האוטומטי'
+              },
+              { merge: true }
+            ).catch(() => {});
           }
-        });
-      }, () => {
-        if (isMounted) setCloudSyncStatus('local_vault');
-      });
-      return () => {
-        isMounted = false;
-        unsub();
-      };
-    } catch {
-      setCloudSyncStatus('local_vault');
-      return () => {
-        isMounted = false;
-      };
-    }
+        },
+        () => {}
+      );
+      unsubs.push(u);
+    });
+
+    // 4. Also subscribe to 'holistic_mapping_classes' so any edits made while logged in as Firebase Admin are bridged live
+    try {
+      const qLegacy = collection(db, 'holistic_mapping_classes');
+      const uLegacy = onSnapshot(
+        qLegacy,
+        (snap) => {
+          if (!isMounted) return;
+          snap.forEach((docSnap) => {
+            applyIncomingClassDoc(docSnap.data(), 'legacy');
+          });
+        },
+        () => {}
+      );
+      unsubs.push(uLegacy);
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      unsubs.forEach((u) => u && u());
+    };
   }, [selectedYear]);
 
   // ==================== 6. COMPUTE PERMISSIONS FOR CURRENT USER ====================
@@ -440,13 +533,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
   }, [activeTeacher, userCapabilities.isSystemManager, visibleClasses, selectedClassId, activeMainTab]);
 
-  // ==================== 7. SAVE HELPERS ====================
+  // ==================== 7. SAVE HELPERS (AUTO-SAVE + MANUAL SAVE + REALTIME CLOUD SYNC) ====================
   const triggerToast = (msg) => {
     setSaveToast(msg);
-    setTimeout(() => setSaveToast(''), 3200);
+    setTimeout(() => setSaveToast(''), 3500);
   };
 
-  const saveGlobalConfig = async (updatedFields) => {
+  const saveGlobalConfig = async (updatedFields = {}) => {
+    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
     const nextConfig = {
       academicYears,
       selectedYear,
@@ -456,12 +551,16 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       coordinatorIds,
       customTeachers,
       ...updatedFields,
-      updatedAt: new Date().toISOString()
+      updatedAt: nowIso,
+      updatedMs: nowMs,
+      updatedBy: activeTeacher?.nameAr || activeTeacher?.nameHe || 'מנהל'
     };
     setSecureStorage('musherfe_holistic_config_v2', nextConfig);
     setCloudSyncStatus('saving');
     try {
-      await setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true });
+      // Save to shared 'students' collection (open to all teachers & principal) AND legacy config collection
+      await setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true });
+      setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true }).catch(() => {});
       setCloudSyncStatus('synced');
       setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
@@ -470,29 +569,130 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
   };
 
-  const saveClassStudents = async (classId, updatedStudents, yearToSave = selectedYear) => {
+  const pushClassToCloudNow = async (classId, studentsToPush, yearToSave = selectedYear) => {
     const key = `${yearToSave}_${classId}`;
-    setClassStudentsMap((prev) => ({ ...prev, [key]: updatedStudents }));
-    setEncryptedIDB(`holistic_students_v2_${key}`, updatedStudents);
+    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+    const authorName = activeTeacher?.nameAr || activeTeacher?.nameHe || 'מנהל המערכת';
+
+    cloudLoadedKeysRef.current.add(key);
+    cloudUpdatedMsRef.current[key] = nowMs;
+
+    const payload = {
+      academicYear: yearToSave,
+      classId,
+      students: studentsToPush,
+      updatedAt: nowIso,
+      updatedMs: nowMs,
+      updatedBy: authorName
+    };
 
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
     try {
-      await setDoc(
-        doc(db, 'holistic_mapping_classes', key),
-        {
-          academicYear: yearToSave,
-          classId,
-          students: updatedStudents,
-          updatedAt: new Date().toISOString(),
-          updatedBy: activeTeacher?.nameHe || activeTeacher?.nameAr || 'מנהל'
-        },
-        { merge: true }
-      );
+      // 1. Write to primary real-time document in 'students' (100% accessible to all homeroom teachers & principal)
+      await setDoc(doc(db, 'students', `holistic_cls_${key}`), payload, { merge: true });
+      // 2. Mirror to 'holistic_mapping_classes'
+      setDoc(doc(db, 'holistic_mapping_classes', key), payload, { merge: true }).catch(() => {});
+
+      dirtyClassKeysRef.current.delete(key);
+      if (dirtyClassKeysRef.current.size === 0) {
+        setHasUnsavedChanges(false);
+      }
       setCloudSyncStatus('synced');
+      setLastUpdatedBy(authorName);
       setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    } catch {
+      return true;
+    } catch (err) {
+      console.warn('Cloud save error:', err);
       setCloudSyncStatus('local_vault');
+      return false;
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
+  const saveClassStudents = async (classId, updatedStudents, yearToSave = selectedYear, forceImmediateCloud = false) => {
+    const key = `${yearToSave}_${classId}`;
+    cloudLoadedKeysRef.current.add(key);
+    setClassStudentsMap((prev) => ({ ...prev, [key]: updatedStudents }));
+    setEncryptedIDB(`holistic_students_v2_${key}`, updatedStudents);
+
+    if (autoSaveEnabled || forceImmediateCloud) {
+      await pushClassToCloudNow(classId, updatedStudents, yearToSave);
+    } else {
+      dirtyClassKeysRef.current.add(key);
+      setHasUnsavedChanges(true);
+      setCloudSyncStatus('unsaved');
+    }
+  };
+
+  // Explicit Manual Save Button Handler (שמירה ידנית / حفظ يدوي الآن)
+  const handleManualSaveNow = async () => {
+    setIsSavingCloud(true);
+    try {
+      const currentKey = `${selectedYear}_${selectedClassId}`;
+      const keysToSave = new Set([currentKey, ...Array.from(dirtyClassKeysRef.current)]);
+
+      for (const k of keysToSave) {
+        const [yr, ...clsParts] = k.split('_');
+        const cId = clsParts.join('_');
+        const stuList = classStudentsMap[k];
+        if (Array.isArray(stuList) && stuList.length > 0) {
+          await pushClassToCloudNow(cId, stuList, yr || selectedYear);
+        }
+      }
+
+      if (userCapabilities.canManageSchema) {
+        await saveGlobalConfig({});
+      }
+
+      setHasUnsavedChanges(false);
+      triggerToast('💾 تم الحفظ اليدوي والمزامنة السحابية الفورية بنجاح! جميع التعديلات محتدمة الآن عند مربية الصف والإدارة.');
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
+  // Explicit Force Live Refresh / Sync Button Handler (حتلنة فورية / סנכרון מיידי)
+  const handleForceLiveSync = async () => {
+    const key = `${selectedYear}_${selectedClassId}`;
+    setIsSavingCloud(true);
+    setCloudSyncStatus('saving');
+    try {
+      const [sharedSnap, legacySnap, confSnap] = await Promise.all([
+        getDoc(doc(db, 'students', `holistic_cls_${key}`)).catch(() => null),
+        getDoc(doc(db, 'holistic_mapping_classes', key)).catch(() => null),
+        getDoc(doc(db, 'students', 'holistic_cfg_global_v2')).catch(() => null)
+      ]);
+
+      if (confSnap && confSnap.exists()) {
+        applyIncomingCloudConfig(confSnap.data());
+      }
+
+      let bestDoc = null;
+      const d1 = sharedSnap && sharedSnap.exists() ? sharedSnap.data() : null;
+      const d2 = legacySnap && legacySnap.exists() ? legacySnap.data() : null;
+
+      if (d1 && d2) {
+        const ms1 = d1.updatedMs || (d1.updatedAt ? Date.parse(d1.updatedAt) : 0);
+        const ms2 = d2.updatedMs || (d2.updatedAt ? Date.parse(d2.updatedAt) : 0);
+        bestDoc = ms2 > ms1 ? d2 : d1;
+      } else {
+        bestDoc = d1 || d2;
+      }
+
+      if (bestDoc && Array.isArray(bestDoc.students) && bestDoc.students.length > 0) {
+        cloudLoadedKeysRef.current.add(key);
+        setClassStudentsMap((prev) => ({ ...prev, [key]: bestDoc.students }));
+        setEncryptedIDB(`holistic_students_v2_${key}`, bestDoc.students);
+        if (bestDoc.updatedBy) setLastUpdatedBy(bestDoc.updatedBy);
+        if (bestDoc.updatedAt) {
+          setLastSavedAt(new Date(bestDoc.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }
+      }
+      setCloudSyncStatus('synced');
+      triggerToast('🔄 تمت الحتلنة الفورية بنجاح! جميع المعطيات محدّثة الآن لأحدث لحظة بينك وبين مربية الصف.');
     } finally {
       setIsSavingCloud(false);
     }
@@ -1820,11 +2020,18 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           </div>
 
           <div className="holistic-top-controls">
-            {/* Cloud Database & Encryption Security Status Badge */}
+            {/* Live Cloud Sync Badge + Auto-Save Toggle + Manual Save Button */}
             <div
               style={{
-                background: cloudSyncStatus === 'synced' ? 'rgba(16, 185, 129, 0.22)' : 'rgba(245, 158, 11, 0.25)',
-                border: `1.5px solid ${cloudSyncStatus === 'synced' ? '#34d399' : '#fbbf24'}` ,
+                background:
+                  cloudSyncStatus === 'synced'
+                    ? 'rgba(16, 185, 129, 0.24)'
+                    : cloudSyncStatus === 'unsaved'
+                    ? 'rgba(239, 68, 68, 0.28)'
+                    : 'rgba(245, 158, 11, 0.28)',
+                border: `1.5px solid ${
+                  cloudSyncStatus === 'synced' ? '#34d399' : cloudSyncStatus === 'unsaved' ? '#f87171' : '#fbbf24'
+                }`,
                 padding: '0.45rem 0.85rem',
                 borderRadius: '14px',
                 display: 'flex',
@@ -1834,15 +2041,100 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                 fontSize: '0.8rem',
                 fontWeight: 900
               }}
-              title="כל הנתונים נשמרים אוטומטית במסד הנתונים בענן (Firebase Firestore) ובכספת מוצפנת AES-256"
+              title="מزامنة حية ومباشرة بين المدير والمركزة ومربيات الصفوف"
             >
-              <span>{cloudSyncStatus === 'saving' ? '⏳' : '🛡️'}</span>
+              <span>{cloudSyncStatus === 'saving' ? '⏳' : cloudSyncStatus === 'unsaved' ? '⚠️' : '🟢'}</span>
               <span>
                 {cloudSyncStatus === 'saving'
-                  ? 'שומר ומצפין במסד הנתונים...'
-                  : `נשמר ומוצפן במסד הנתונים (${lastSavedAt})`}
+                  ? 'جاري الحفظ والحتلنة المباشرة...'
+                  : cloudSyncStatus === 'unsaved'
+                  ? 'تغييرات بانتظار الحفظ اليدوي'
+                  : `محتلن مباشر (${lastSavedAt}) — ${lastUpdatedBy}`}
               </span>
             </div>
+
+            <button
+              type="button"
+              onClick={handleManualSaveNow}
+              disabled={isSavingCloud}
+              style={{
+                background: hasUnsavedChanges
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: '2px solid #a7f3d0',
+                padding: '0.52rem 1rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+              }}
+              title="حفظ يدوي فوري ومزامنة مع مربية الصف والإدارة / שמירה ידנית כעת"
+            >
+              <span>💾</span>
+              <span>{isSavingCloud ? 'جاري الحفظ...' : 'حفظ يدوي الآن (שמירה ידנית)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const nextState = !autoSaveEnabled;
+                setAutoSaveEnabled(nextState);
+                if (nextState && hasUnsavedChanges) {
+                  handleManualSaveNow();
+                } else {
+                  triggerToast(
+                    nextState
+                      ? '⚡ تم تفعيل الحفظ التلقائي الفوري! كل تعديل يُحفظ ويظهر مباشرة.'
+                      : '✋ تم التحويل لوضع الحفظ اليدوي. اضغط "حفظ يدوي الآن" بعد الانتهاء من التعبئة.'
+                  );
+                }
+              }}
+              style={{
+                background: autoSaveEnabled ? 'rgba(59, 130, 246, 0.28)' : 'rgba(100, 116, 139, 0.35)',
+                color: '#ffffff',
+                border: `1.5px solid ${autoSaveEnabled ? '#60a5fa' : '#94a3b8'}`,
+                padding: '0.5rem 0.85rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="تبديل بين الحفظ التلقائي الفوري والحفظ اليدوي"
+            >
+              <span>{autoSaveEnabled ? '⚡' : '✋'}</span>
+              <span>{autoSaveEnabled ? 'حفظ تلقائي: مفعل' : 'حفظ تلقائي: متوقف'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleForceLiveSync}
+              disabled={isSavingCloud}
+              style={{
+                background: 'rgba(255, 255, 255, 0.16)',
+                color: '#fef08a',
+                border: '1.5px solid rgba(254, 240, 138, 0.6)',
+                padding: '0.5rem 0.85rem',
+                borderRadius: '12px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="جلب أحدث التعديلات من مربية الصف أو الإدارة فوراً"
+            >
+              <span>🔄</span>
+              <span>حتلنة فورية</span>
+            </button>
 
             {userCapabilities.canManageSchema && (
               <button
@@ -2241,6 +2533,54 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleManualSaveNow}
+                  disabled={isSavingCloud}
+                  style={{
+                    background: hasUnsavedChanges
+                      ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                      : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#ffffff',
+                    border: '2px solid #6ee7b7',
+                    padding: '0.6rem 1.15rem',
+                    borderRadius: '10px',
+                    fontWeight: 900,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <span>💾</span>
+                  <span>{isSavingCloud ? 'שומר...' : 'حفظ يدوي الآن (שמירה ידנית)'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleForceLiveSync}
+                  disabled={isSavingCloud}
+                  style={{
+                    background: '#eff6ff',
+                    color: '#1e3a8a',
+                    border: '1.5px solid #60a5fa',
+                    padding: '0.58rem 0.95rem',
+                    borderRadius: '10px',
+                    fontWeight: 900,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  title="حتلنة المعطيات الفورية بين المربية والإدارة"
+                >
+                  <span>🔄</span>
+                  <span>حتلنة فورية (סנכרון חי)</span>
+                </button>
+
                 <input
                   type="text"
                   placeholder="🔍 חיפוש תלמיד בכיתה..."
