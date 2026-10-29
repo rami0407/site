@@ -601,6 +601,46 @@ const normalizeMiftaahLesson = (lesson) => {
     if (!st3.scaffold || !st3.scaffold.trim()) {
       st3.scaffold = lang === 'hebrew' ? 'רמז מסייע: חזרו לכלל מהתחנה הקודמת.' : lang === 'english' ? 'Scaffold hint: Check the rule from Station 2.' : 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
     }
+
+    // Normalize Multi-Group Sub-stations for Station 3 (4 or 5 Stations on iPads/Phones)
+    const grpCount = l.practiceGroupsCount || (Array.isArray(st3.practiceStations) && st3.practiceStations.length >= 4 ? String(st3.practiceStations.length) : '4');
+    if (grpCount === '4' || grpCount === '5') {
+      const num = parseInt(grpCount, 10);
+      const existing = Array.isArray(st3.practiceStations) ? st3.practiceStations : [];
+      const defaultGroupTitles = lang === 'hebrew' ? [
+        { title: 'תחנה 1: חקר וגילוי 🔬', badge: '🔬 צוות חקר וגילוי', role: 'חקירת נתונים ומציאת ראיות', desc: `חקרו את הנתונים והטקסט בנושא (${safeTitle}) ומצאו שתי ראיות מרכזיות המאמתות את ההשערה.`, chall: 'מהו הדפוס המפתיע ביותר שגיליתם במקורות?', deliv: 'רשמו את ממצאי החקר של הקבוצה:' },
+        { title: 'תחנה 2: יישום ופתרון ⚙️', badge: '⚙️ צוות יישום מעשי', role: 'פתרון בעיות מעשיות ותרגול', desc: `פתרו באופן מעשי תרגילים ישירים ויישמו את הכללים שנלמדו על מקרי בוחן חדשים.`, chall: 'כיצד תפתרו את המקרה המורכב תוך הנמקת כל שלב?', deliv: 'הציגו את שלבי הפתרון והתוצאה המנומקת:' },
+        { title: 'תחנה 3: יצירתיות והדמיה 🎨', badge: '🎨 צוות יצירה וסימולציה', role: 'תכנון מודל או תרחיש חיים', desc: `צרו תרחיש, דיאלוג או מארגן חזותי הממחיש את מושג (${safeTitle}) בצורה מקורית.`, chall: 'איזה ייצוג חזותי או סיפורי מסביר את המושג בדרך הטובה ביותר?', deliv: 'שתפו את התוצר היצירתי של קבוצתכם:' },
+        { title: 'תחנה 4: חשיבה ביקורתית 🧠', badge: '🧠 צוות ביקורת ואיתור שגיאות', role: 'איתור כשלים לוגיים והנמקה', desc: `בחנו טענה שגויה או פתרון שגוי נפוץ בנושא (${safeTitle}), אתרו את הכשל ונמקו את התיקון.`, chall: 'היכן בדיוק מסתתרת הטעות בהנחה הרווחת? וכיצד נוכיח זאת?', deliv: 'כתבו את ניתוח הטעות ואת הטיעון המתקן:' },
+        { title: 'תחנה 5: השפעה וחיבור לחיים 🌟', badge: '🌟 צוות מנהיגות והשפעה', role: 'העברה לחיים האמיתיים ויוזמה', desc: `הציעו פתרון או יוזמה קהילתית המיישמת את עקרונות השיעור בסביבת בית הספר או היישוב.`, chall: 'כיצד ידע זה יכול לשפר בעיה אמיתית בסביבתנו?', deliv: 'נסחו את הצעת היוזמה והאפקט המעשי:' }
+      ] : [
+        { title: 'المحطة 1: الاستقصاء والبحث 🔬', badge: '🔬 فريق البحث والاستقصاء', role: 'استخراج الأدلة وتحليل العلاقات', desc: `استقصوا المعطيات والنصوص حول (${safeTitle})، واستخرجوا دليلين قاطعين يثبتان صحة القاعدة والنتائج.`, chall: 'ما النمط أو الظاهرة غير المتوقعة التي اكتشفتموها في المعطيات؟', deliv: 'اكتبوا ناتج بحث مجموعتكم مع الأدلة المستخرجة:' },
+        { title: 'المحطة 2: التطبيق والحل العملي ⚙️', badge: '⚙️ فريق التطبيق والتمكن', role: 'حل المسائل والتمارين الإجرائية', desc: `طبّقوا القواعد والخطوات العملية لحل مسائل وتدريبات متنوعة حول (${safeTitle}) بدقة عالية.`, chall: 'حلّوا المسألة التطبيقية مع كتابة تعليل علمي خطوة بخطوة:', deliv: 'اكتبوا خطوات الحل والنتيجة المبررة:' },
+        { title: 'المحطة 3: الإبداع والتمثيل والمحاكاة 🎨', badge: '🎨 فريق الإبداع والمحاكاة', role: 'تصميم مشهد أو ملخص بصري', desc: `صمموا مشهداً حوارياً أو رسماً تخطيطياً أو محاكاة واقعية تجسد مفهوم (${safeTitle}) بأسلوب مشوق.`, chall: 'كيف تمثلون الفكرة في سيناريو واقعي يشرح المفهوم لزملائكم؟', deliv: 'اكتبوا نص المشهد أو وصف المخطط البصري الذي ابتكرتموه:' },
+        { title: 'المحطة 4: التفكير الناقد واكتشاف الأخطاء 🧠', badge: '🧠 فريق التفكير الناقد والتحليل', role: 'فحص المغالطات وتصويب المفاهيم', desc: `افحصوا ادعاءً مغلوطاً شائعاً في درس (${safeTitle})، واكتشفوا مكمن الخطأ وصوّبوه بالبراهين المنطقية.`, chall: 'ادعى أحدهم فهماً خاطئاً للقاعدة، حددوا أين زلّ وكيف تثبتون الصواب؟', deliv: 'اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل المنطقي:' },
+        { title: 'المحطة 5: صناعة الأثر والربط بالواقع 🌟', badge: '🌟 فريق صناعة الأثر والمبادرة', role: 'ربط المعرفة بالحياة وصنع حلول', desc: `ابتكروا فكرة مبادرة مجتمعية أو مدرسية توظفون فيها ما تعلمتموه في (${safeTitle}) لحل مشكلة واقعية.`, chall: 'كيف نُحدث أثراً إيجابياً في بيئتنا اليوم باستخدام هذا المفهوم؟', deliv: 'اكتبوا فكرة مبادرتكم وكيف ستطبقونها على أرض الواقع:' }
+      ];
+
+      const mergedPracticeStations = [];
+      for (let i = 0; i < num; i++) {
+        const fallback = defaultGroupTitles[i];
+        const ex = existing[i] || {};
+        mergedPracticeStations.push({
+          id: i + 1,
+          groupNumber: i + 1,
+          title: ex.title || fallback.title,
+          badge: ex.badge || fallback.badge,
+          targetDevice: ex.targetDevice || (lang === 'hebrew' ? `אייפד קבוצתי ${i + 1} או טלפון אישי 📱` : `آيباد المجموعة ${i + 1} أو هاتف الطالب 📱`),
+          role: ex.role || fallback.role,
+          description: ex.description || fallback.desc,
+          challenge: ex.challenge || fallback.chall,
+          deliverablePrompt: ex.deliverablePrompt || fallback.deliv
+        });
+      }
+      st3.practiceStations = mergedPracticeStations;
+      l.practiceGroupsCount = String(num);
+    }
+
     l.stations['3_practice'] = st3;
   }
 
@@ -2171,6 +2211,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [creatorLearningGoal, setCreatorLearningGoal] = useState(''); // Optional: AI auto-generates if empty
   const [creatorSuccessCriteria, setCreatorSuccessCriteria] = useState(''); // Optional: AI auto-generates if empty
   const [creatorMeaningPath, setCreatorMeaningPath] = useState('blended'); // 'explicit' | 'discovery' | 'blended'
+  const [creatorPracticeGroupsCount, setCreatorPracticeGroupsCount] = useState('4'); // 'none' | '4' | '5' (Multi-group stations)
   const [creatorUdlOptions, setCreatorUdlOptions] = useState(['دعم قراءة', 'تبسيط لغوي', 'أمثلة بصرية']);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   const [selectedStationToEdit, setSelectedStationToEdit] = useState('1_hook');
@@ -2197,6 +2238,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [isSt3ScaffoldOpen, setIsSt3ScaffoldOpen] = useState(false);
   const [isSt3DeepChallengeOpen, setIsSt3DeepChallengeOpen] = useState(false);
   const [st3DeepChallengeAnswer, setSt3DeepChallengeAnswer] = useState('');
+  const [studentSelectedPracticeGroup, setStudentSelectedPracticeGroup] = useState(1);
+  const [st3GroupAnswer, setSt3GroupAnswer] = useState('');
   const [isEvaluatingExitTicket, setIsEvaluatingExitTicket] = useState(false);
   const [lastStation4AiEvaluation, setLastStation4AiEvaluation] = useState(null);
 
@@ -2783,6 +2826,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         customObjective: creatorLearningGoal,
         customSuccessCriteria: creatorSuccessCriteria,
         meaningPath: creatorMeaningPath,
+        practiceGroupsCount: creatorPracticeGroupsCount,
         udlOptions: creatorUdlOptions,
         includePassage: creatorIncludePassage,
         passageLength: creatorPassageLength,
@@ -2808,6 +2852,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           language: res.language || detectedLang,
           grade: res.grade || creatorGrade,
           specialRequests: creatorSpecialRequests,
+          practiceGroupsCount: creatorPracticeGroupsCount,
           authorId: authenticatedTeacher?.id || 'admin',
           authorName: authenticatedTeacher?.nameAr || 'المعلم',
           authorEmail: authenticatedTeacher?.email || '',
@@ -3458,6 +3503,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       formativeScore: null,
       aiEvalStatus: null,
       teacherFeedback: '',
+      aiTeacherNotes: '',
+      reviewStatus: Number(stationNum) === 5 ? 'pending_teacher_review' : 'reviewed',
       timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -3477,9 +3524,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     broadcastSession(next);
     setStudentInputText('');
     setStudentActiveHelpResponse(null);
-    showToast('تم إرسال إجابتك بنجاح لمعلم الصف! 🚀 ستظهر له فوراً.');
+    if (Number(stationNum) === 5) {
+      showToast('تم تسليم بطاقة الحصاد بنجاح! 🌾 سيقوم المعلم بمراجعتها في الوقت الملائم له.');
+    } else {
+      showToast('تم إرسال إجابتك بنجاح لمعلم الصف! 🚀 ستظهر له فوراً.');
+    }
 
-    // Station 4: Automatic AI Formative Evaluation & Sorting into 3 Categories
+    // Station 4: Automatic AI Formative Evaluation & Sorting into 3 Categories + Teacher Diagnostic Notes
     if (Number(stationNum) === 4) {
       setIsEvaluatingExitTicket(true);
       try {
@@ -3500,7 +3551,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     ...s,
                     formativeScore: evalRes.evalTag || (evalRes.status === 'achieved' ? 'mastered' : evalRes.status === 'partial' ? 'partial' : 'needs_support'),
                     aiEvalStatus: evalRes.status,
-                    teacherFeedback: evalRes.studentFeedback
+                    teacherFeedback: evalRes.studentFeedback,
+                    aiTeacherNotes: evalRes.teacherNotes || ''
                   }
                 : s
             );
@@ -6568,6 +6620,26 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
 
                   <div className="input-group">
+                    <label>٧.ب. نظام مجموعات محطة التمرين (التطبيق والتدريب — محطات تفاعلية على الأجهزة):</label>
+                    <select
+                      value={creatorPracticeGroupsCount}
+                      onChange={e => setCreatorPracticeGroupsCount(e.target.value)}
+                      style={{ fontWeight: 700 }}
+                    >
+                      <option value="4">👥 ٤ محطات فرعية (تقسيم الصف إلى ٤ مجموعات بأنشطة وفعاليات مختلفة على الآيباد/الهواتف)</option>
+                      <option value="5">👥 ٥ محطات فرعية (تقسيم الصف إلى ٥ مجموعات بأنشطة وفعاليات مختلفة على الآيباد/الهواتف)</option>
+                      <option value="none">⚙️ مسار تمايز مستويات موحد (انطلاق، ممارسة، تحدي دون محطات فرعية)</option>
+                    </select>
+                    <small style={{ color: '#0369a1', fontSize: '0.8rem', marginTop: '5px', display: 'block', fontWeight: 600 }}>
+                      {creatorPracticeGroupsCount === '4'
+                        ? '📱 ٤ محطات فرعية: يولد الذكاء الاصطناعي ٤ فعاليات مختلفة تماماً تغطي جوانب الدرس (استقصاء، تطبيق، إبداع، تفكير ناقد). لكل مجموعة آيباد على الأقل أو لكل طالب هاتف، وتتيح للمعلم مراقبة الجميع لحظياً.'
+                        : creatorPracticeGroupsCount === '5'
+                        ? '📱 ٥ محطات فرعية: يولد الذكاء الاصطناعي ٥ فعاليات متنوعة ومتكاملة (استقصاء، تطبيق، إبداع، تفكير ناقد، ونقل أثر للواقع) لمتابعة ومراقبة المجموعات باحترافية.'
+                        : '⚙️ مسار المستويات الموحد: يعمل جميع الطلاب على مسار المستويات الثلاثة المتدرجة (انطلاق، ممارسة، تحدي).'}
+                    </small>
+                  </div>
+
+                  <div className="input-group">
                     <label>٨. ملاحظات الاحتواء والتصميم الشامل (UDL):</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
                       {['دعم قراءة', 'تبسيط لغوي', 'أمثلة بصرية'].map(udlItem => {
@@ -9214,6 +9286,92 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
             {/* Center Column: Live Submissions & Formative Assessment */}
             <main className="dashboard-center-feed">
+              {/* Station 3 Multi-Group Live Monitoring Grid (٤ أو ٥ محطات فرعية على أجهزة الآيباد/الهواتف) */}
+              {Array.isArray(activeLesson?.stations?.['3_practice']?.practiceStations) && activeLesson.stations['3_practice'].practiceStations.length > 0 && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%)',
+                  border: '2px solid #5eead4',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  marginBottom: '18px',
+                  boxShadow: '0 4px 14px rgba(20, 184, 166, 0.08)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0, color: '#0f766e', fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>👥📱 لوحة المراقبة الحية لمحطات المجموعات (المحطة 3: التطبيق والتدريب)</span>
+                    </h4>
+                    <span style={{ fontSize: '0.78rem', background: '#ccfbf1', color: '#0d9488', padding: '4px 10px', borderRadius: '999px', fontWeight: 700 }}>
+                      {activeLesson.stations['3_practice'].practiceStations.length} محطات فرعية • متابعة مباشرة لأجهزة الطلاب
+                    </span>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                    gap: '12px'
+                  }}>
+                    {activeLesson.stations['3_practice'].practiceStations.map((station, sIdx) => {
+                      const groupSubs = (sessionState.submissions || []).filter(
+                        s => Number(s.stationNumber) === 3 && (
+                          (s.tier && String(s.tier).includes(`group_${station.groupNumber}`)) ||
+                          (s.text && s.text.includes(station.title)) ||
+                          (s.groupName && s.groupName.includes(String(station.groupNumber)))
+                        )
+                      );
+
+                      return (
+                        <div key={station.id || sIdx} style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #99f6e4',
+                          borderRadius: '14px',
+                          padding: '12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between'
+                        }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <span style={{ fontWeight: 800, color: '#0f766e', fontSize: '0.88rem' }}>{station.badge}</span>
+                              <span style={{ fontSize: '0.75rem', background: groupSubs.length > 0 ? '#dcfce7' : '#f1f5f9', color: groupSubs.length > 0 ? '#15803d' : '#64748b', padding: '2px 7px', borderRadius: '999px', fontWeight: 700 }}>
+                                {groupSubs.length} ناتج مرسل
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, marginBottom: '4px' }}>
+                              📱 {station.targetDevice || 'آيباد أو هاتف'}
+                            </div>
+                            <p style={{ margin: '0 0 8px 0', fontSize: '0.8rem', color: '#334155', lineHeight: 1.5, maxHeight: '60px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {station.challenge}
+                            </p>
+                          </div>
+
+                          {/* Live Submissions Snippet */}
+                          <div style={{
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '6px 8px',
+                            fontSize: '0.78rem'
+                          }}>
+                            {groupSubs.length === 0 ? (
+                              <span style={{ color: '#94a3b8' }}>بانتظار إرسال ناتج المحطة من الآيباد...</span>
+                            ) : (
+                              <div>
+                                <strong style={{ color: '#0f766e', display: 'block', fontSize: '0.76rem' }}>
+                                  آخر ناتج ({groupSubs[0].participantName}):
+                                </strong>
+                                <span style={{ color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                  {groupSubs[0].text.replace(/\[.*?\]:\s*/, '')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Station 4 Automated & Manual 3-Group Sorting Board + Support Group Kit */}
               {(() => {
                 const st4Data = activeLesson?.stations?.['4_evidence'] || {};
@@ -9431,6 +9589,72 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           </div>
                         </div>
 
+                        {/* Station 4: AI Formative Evaluation & Diagnostic Teacher Notes */}
+                        {sub.aiTeacherNotes && (
+                          <div style={{
+                            marginTop: '10px',
+                            padding: '10px 14px',
+                            borderRadius: '12px',
+                            background: '#eff6ff',
+                            border: '1.5px solid #60a5fa',
+                            color: '#1e3a8a',
+                            fontSize: '0.86rem',
+                            lineHeight: 1.6
+                          }}>
+                            <div style={{ fontWeight: 800, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>🤖 ملاحظات وفحص الذكاء الاصطناعي للمعلم:</span>
+                              <span style={{ fontSize: '0.74rem', background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '999px' }}>تشخيص سريري وتوصية</span>
+                            </div>
+                            <div style={{ color: '#1e40af' }}>{sub.aiTeacherNotes}</div>
+                          </div>
+                        )}
+
+                        {/* Station 5: Asynchronous Harvest Review Indicator */}
+                        {Number(sub.stationNumber) === 5 && (
+                          <div style={{
+                            marginTop: '10px',
+                            padding: '8px 12px',
+                            borderRadius: '10px',
+                            background: sub.reviewStatus === 'reviewed' ? '#f0fdf4' : '#fffbeb',
+                            border: `1.5px solid ${sub.reviewStatus === 'reviewed' ? '#86efac' : '#fde68a'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '8px'
+                          }}>
+                            <div style={{ fontSize: '0.84rem', fontWeight: 800, color: sub.reviewStatus === 'reviewed' ? '#166534' : '#b45309' }}>
+                              {sub.reviewStatus === 'reviewed' ? '✅ تمت مراجعة إجابة الحصاد واعتمادها' : '⏳ حصاد ونقل الأثر: بانتظار مراجعة المعلم في الوقت الملائم'}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextStatus = sub.reviewStatus === 'reviewed' ? 'pending_teacher_review' : 'reviewed';
+                                setSessionState(prev => {
+                                  const updatedSubs = (prev.submissions || []).map(s => s.id === sub.id ? { ...s, reviewStatus: nextStatus } : s);
+                                  const nextSession = { ...prev, submissions: updatedSubs };
+                                  try { localStorage.setItem(STORAGE_KEY_SESSION_DATA, JSON.stringify(nextSession)); } catch (e) {}
+                                  try { saveMiftaahLiveSession(nextSession); } catch (e) {}
+                                  return nextSession;
+                                });
+                                showToast(nextStatus === 'reviewed' ? 'تم اعتماد مراجعة بطاقة الحصاد بنجاح ✓' : 'تمت إعادة الإجابة لقائمة المراجعة اللاحقة');
+                              }}
+                              style={{
+                                background: sub.reviewStatus === 'reviewed' ? '#dcfce7' : '#fef3c7',
+                                color: sub.reviewStatus === 'reviewed' ? '#15803d' : '#92400e',
+                                border: `1px solid ${sub.reviewStatus === 'reviewed' ? '#86efac' : '#fcd34d'}`,
+                                borderRadius: '8px',
+                                padding: '4px 10px',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {sub.reviewStatus === 'reviewed' ? 'تعديل حالة المراجعة ↩' : 'اعتماد واكتمال المراجعة ✓'}
+                            </button>
+                          </div>
+                        )}
+
                         {/* Card Actions: Showcase & Quick Feedback */}
                         <div className="sub-card-footer-actions">
                           <button
@@ -9633,8 +9857,41 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       getStationByIndex(sessionState.activeStationIndex)?.stationMedia) && 
                      renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
 
+                    {/* In Station 3: Multi-Group Sub-stations (4 or 5 Stations on iPads/Phones) */}
+                    {sessionState.activeStationIndex === 3 && Array.isArray(activeLesson.stations['3_practice']?.practiceStations) && activeLesson.stations['3_practice'].practiceStations.length > 0 && (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                        gap: '12px',
+                        marginBottom: '18px'
+                      }}>
+                        {activeLesson.stations['3_practice'].practiceStations.map((stn, idx) => (
+                          <div key={idx} style={{
+                            background: '#ffffff',
+                            border: '2px solid #38bdf8',
+                            borderRadius: '14px',
+                            padding: '14px',
+                            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.08)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <strong style={{ color: '#0369a1', fontSize: '0.94rem' }}>{stn.badge}</strong>
+                              <span style={{ fontSize: '0.74rem', background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                                محطة {stn.groupNumber}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#0f766e', fontWeight: 700, marginBottom: '6px' }}>
+                              📱 {stn.targetDevice || 'آيباد أو هاتف'}
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.86rem', color: '#1e293b', lineHeight: 1.5 }}>
+                              {stn.challenge}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* In Station 3: Show Group Tiers Showcase */}
-                        {sessionState.activeStationIndex === 3 && activeLesson.stations['3_practice']?.tasks && (
+                    {sessionState.activeStationIndex === 3 && (!activeLesson.stations['3_practice']?.practiceStations || activeLesson.stations['3_practice'].practiceStations.length === 0) && activeLesson.stations['3_practice']?.tasks && (
                           <div className="projector-tiered-tasks-row">
                             {activeLesson.stations['3_practice'].tasks.map((task, idx) => (
                               <div key={idx} className={`proj-tier-card tier-${task.tier}`}>
@@ -10374,6 +10631,161 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               {/* STATION 3 Specific: Tier Selector + Interactive Exercises + Collapsible Scaffolding & Deep Challenge */}
               {studentCurrentStationIndex === 3 && (
                 <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Multi-Group Stations Selector & Active Group Hub (4 or 5 Stations on iPads/Phones) */}
+                  {Array.isArray(activeLesson.stations['3_practice']?.practiceStations) && activeLesson.stations['3_practice'].practiceStations.length > 0 && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%)',
+                      border: '2px solid #67e8f9',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      boxShadow: '0 4px 14px rgba(6, 182, 212, 0.08)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ fontWeight: 800, color: '#0e7490', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>👥📱 محطات المجموعات التفاعلية (على آيباد المجموعة أو هاتفك)</span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', background: '#cffafe', color: '#0891b2', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
+                          {activeLesson.stations['3_practice'].practiceStations.length} محطات فرعية • لكل مجموعة فعالية مستقلة
+                        </span>
+                      </div>
+
+                      {/* Group Tabs */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                        {activeLesson.stations['3_practice'].practiceStations.map((station, sIdx) => {
+                          const isCurrentActive = studentSelectedPracticeGroup === station.groupNumber;
+                          return (
+                            <button
+                              key={station.id || sIdx}
+                              type="button"
+                              onClick={() => setStudentSelectedPracticeGroup(station.groupNumber)}
+                              style={{
+                                flex: '1 1 120px',
+                                padding: '8px 12px',
+                                borderRadius: '12px',
+                                border: isCurrentActive ? '2px solid #0891b2' : '1.5px solid #a5f3fc',
+                                background: isCurrentActive ? '#0891b2' : '#ffffff',
+                                color: isCurrentActive ? '#ffffff' : '#0e7490',
+                                fontWeight: 800,
+                                fontSize: '0.86rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '2px',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <span>{station.badge}</span>
+                              <small style={{ fontSize: '0.72rem', opacity: isCurrentActive ? 0.95 : 0.75 }}>
+                                محطة {station.groupNumber}
+                              </small>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Active Sub-Station Card */}
+                      {(() => {
+                        const activeGrp = activeLesson.stations['3_practice'].practiceStations.find(
+                          st => st.groupNumber === studentSelectedPracticeGroup
+                        ) || activeLesson.stations['3_practice'].practiceStations[0];
+                        if (!activeGrp) return null;
+
+                        return (
+                          <div className="animate-fade-in" style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #bae6fd',
+                            borderRadius: '14px',
+                            padding: '14px 16px'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                              <h4 style={{ margin: 0, color: '#0369a1', fontSize: '1rem', fontWeight: 800 }}>
+                                {activeGrp.title}
+                              </h4>
+                              <span style={{ fontSize: '0.76rem', background: '#e0f2fe', color: '#0284c7', padding: '3px 9px', borderRadius: '999px', fontWeight: 700 }}>
+                                📱 {activeGrp.targetDevice || 'آيباد المجموعة أو هاتف الطالب'}
+                              </span>
+                            </div>
+
+                            <p style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                              {activeGrp.description}
+                            </p>
+
+                            <div style={{
+                              background: '#f8fafc',
+                              border: '1.5px dashed #38bdf8',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              marginBottom: '12px'
+                            }}>
+                              <strong style={{ display: 'block', color: '#0284c7', fontSize: '0.88rem', marginBottom: '4px' }}>
+                                🎯 تحدي ومهمة المحطة:
+                              </strong>
+                              <p style={{ margin: 0, color: '#0f172a', fontSize: '0.92rem', fontWeight: 700 }}>
+                                {activeGrp.challenge}
+                              </p>
+                            </div>
+
+                            {/* Group Deliverable Submission */}
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 800, color: '#0369a1', fontSize: '0.86rem', marginBottom: '6px' }}>
+                                {activeGrp.deliverablePrompt || 'اكتبوا ناتج وحل مجموعتكم هنا:'}
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={st3GroupAnswer}
+                                onChange={e => setSt3GroupAnswer(e.target.value)}
+                                placeholder="اكتبوا ناتج العمل المشترك للمجموعة على الآيباد أو جهازكم..."
+                                style={{
+                                  width: '100%',
+                                  padding: '10px 12px',
+                                  borderRadius: '10px',
+                                  border: '1.5px solid #7dd3fc',
+                                  fontSize: '0.9rem',
+                                  fontFamily: 'inherit',
+                                  boxSizing: 'border-box',
+                                  resize: 'vertical',
+                                  marginBottom: '8px'
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!st3GroupAnswer.trim()) {
+                                    showToast('يرجى كتابة ناتج عمل المجموعة أولاً ✍️');
+                                    return;
+                                  }
+                                  handleStudentSubmitAnswer(
+                                    3,
+                                    `[${activeGrp.title}]: ${st3GroupAnswer.trim()}`,
+                                    `group_${activeGrp.groupNumber}`
+                                  );
+                                  setSt3GroupAnswer('');
+                                  showToast(`تم إرسال ناتج ${activeGrp.badge} بنجاح إلى شاشة المعلم! 🚀`);
+                                }}
+                                style={{
+                                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '10px',
+                                  padding: '9px 18px',
+                                  fontWeight: 800,
+                                  fontSize: '0.88rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '8px'
+                                }}
+                              >
+                                <i className="fas fa-paper-plane"></i> إرسال ناتج محطة المجموعة للمعلم 📤
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {activeLesson.stations['3_practice']?.tasks && (
                     <div className="student-tier-choice-section">
                       <span className="choice-label">اختر مستوى التحدي الذي ستبدأ به:</span>

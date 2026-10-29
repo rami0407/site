@@ -2647,12 +2647,27 @@ export const evaluateMiftaahExitTicketAI = async ({
       evalTag: 'needs_support',
       studentFeedback: isHe
         ? 'נראה שהתשובה קצרה מדי. נסה להיעזר בפתיחי המשפטים שלמעלה ולכתוב הסבר או דוגמה קצרה משלך! 💡'
-        : 'تبدو إجابتك قصيرة جداً يا بطل! استعن ببدايات الجمل المساعدة أعلاه واكتب الفكرة مع سبب قصير أو مثال من الدرس 💡'
+        : 'تبدو إجابتك قصيرة جداً يا بطل! استعن ببدايات الجمل المساعدة أعلاه واكتب الفكرة مع سبب قصير أو مثال من الدرس 💡',
+      teacherNotes: isHe
+        ? 'התלמיד שלח תשובה ריקה או קצרה מאוד. מומלץ לגשת אליו בקבוצת התמיכה עם שאלה מנחה ישירה.'
+        : 'أرسل الطالب إجابة مقتضبة جداً أو غير مكتملة — يُنصح بإدراجه في مجموعة الدعم المؤقتة وتوجيهه بسؤال ملموس خطوة بخطوة.'
     };
   }
 
-  const systemPrompt = `أنت معلم خبير ومقيّم تكويني داعم في نموذج مفتاح (מפתי"ח). قارن إجابة الطالب بمعيار النجاح للسؤال الموضوع. صنف الإجابة إلى: (achieved / partial / not_yet). اكتب تغذية راجعة مباشرة للطالب تشجعه، وإذا كان جزئياً أو لم يحقق، أعطه تلميحاً ذكياً ليكمل الفكرة دون إعطائه الجواب المباشر. أخرج النتيجة بصيغة JSON فقط:
-{ "status": "achieved | partial | not_yet", "studentFeedback": "..." }`;
+  const systemPrompt = `أنت مقيّم تكويني ذكي خبير ومساعد فوري للمعلم في نموذج مِفتاح (מפתי"ח).
+مهمتك فحص إجابة الطالب في محطة "أدلة الفهم" بدقة ومقارنتها بمعيار النجاح وسؤال المحطة، والقيام بالآتي:
+1. تصنيف الإجابة: (achieved = حقق المعيار كاملاً / partial = حقق المعيار جزئياً / not_yet = بحاجة لدعم ومساندة).
+2. كتابة studentFeedback: تغذية راجعة مباشرة مشجعة ومحفزة للطالب (توضح له نقطة قوته، وتعطيه تلميحاً ذكياً لإكمال الفكرة دون إعطائه الجواب الجاهز).
+3. كتابة teacherNotes: ملاحظات نوعية سريرية موجهة للمعلم تكشف بدقة:
+   - ماذا أتقن الطالب في إجابته؟
+   - ما مكمن اللبس أو الخطأ إن وجد؟
+   - توصية سريعة ومقترحة للمعلم للتدخل والدعم الفوري في الصف (تستغرق دقيقة واحدة).
+أخرج النتيجة بصيغة JSON فقط:
+{
+  "status": "achieved | partial | not_yet",
+  "studentFeedback": "تغذية راجعة للطالب...",
+  "teacherNotes": "ملاحظات تشخيصية وتوصية للمعلم..."
+}`;
 
   const userPrompt = `عنوان الدرس: ${lessonTitle || 'درس تفاعلي'}
 معيار النجاح: ${successCriteria || 'تطبيق مفهوم الدرس بدقة مع التبرير أو الدليل'}
@@ -2669,7 +2684,8 @@ export const evaluateMiftaahExitTicketAI = async ({
         return {
           status: parsed.status,
           evalTag: parsed.status === 'achieved' ? 'mastered' : parsed.status === 'partial' ? 'partial' : 'needs_support',
-          studentFeedback: parsed.studentFeedback
+          studentFeedback: parsed.studentFeedback,
+          teacherNotes: parsed.teacherNotes || ''
         };
       }
     } catch (e) {
@@ -2740,7 +2756,10 @@ export const evaluateMiftaahExitTicketAI = async ({
       evalTag: 'mastered',
       studentFeedback: isHe
         ? 'כל הכבוד! 🌟 תשובתך מנומקת ומדויקת ועומדת בקריטריון ההצלחה של השיעור. אתה מוכן להתקדם לתחנת הקציר!'
-        : 'أحسنت يا بطل! 🌟 إجابتك وافية ومعللة بدقة وتحقق معيار النجاح بامتياز. يمكنك الآن الانطلاق بثقة إلى محطة الحصاد!'
+        : 'أحسنت يا بطل! 🌟 إجابتك وافية ومعللة بدقة وتحقق معيار النجاح بامتياز. يمكنك الآن الانطلاق بثقة إلى محطة الحصاد!',
+      teacherNotes: isHe
+        ? 'התלמיד הפגין שליטה מלאה במושג עם נימוק ענייני. מוכן למשימות העמקה ומנהיגות.'
+        : 'أظهر الطالب استيعاباً مكتملاً للمفهوم مع تعليل واستشهاد سليم. متمكن وجاهز لمهام التحدي والمبادرة.'
     };
   }
   if (wordCount >= 5) {
@@ -2749,7 +2768,10 @@ export const evaluateMiftaahExitTicketAI = async ({
       evalTag: 'partial',
       studentFeedback: isHe
         ? 'התחלה מצוינת! 🌱 זיהית את הכיוון הנכון. כדי להגיע לשליטה מלאה, הוסף נימוק קצר ("מפני ש...") או דוגמה מתוך השיעור.'
-        : 'بداية رائعة وفكرة جميلة! 🌱 لقد اقتربت كثيراً من تحقيق المعيار كاملاً؛ حاول إضافة تعليل بسيط ("لأن...") أو مثال يدعم إجابتك.'
+        : 'بداية رائعة وفكرة جميلة! 🌱 لقد اقتربت كثيراً من تحقيق المعيار كاملاً؛ حاول إضافة تعليل بسيط ("لأن...") أو مثال يدعم إجابتك.',
+      teacherNotes: isHe
+        ? 'התלמיד הבין את הרעיון חלקית, אך חסר נימוק מפורש או דוגמה. מומלץ לתזכר אותו לקשר לראיה מתוך הטקסט.'
+        : 'أدرك الطالب الفكرة جزئياً لكنه يفتقر للتعليل الوافي أو ضرب مثال. يُنصح بتذكيره بالربط بين الفكرة والدليل.'
     };
   }
   return {
@@ -2757,7 +2779,10 @@ export const evaluateMiftaahExitTicketAI = async ({
     evalTag: 'needs_support',
     studentFeedback: isHe
       ? 'תודה על הניסיון! 💡 כדאי להיעזר בפתיחי המשפטים שלמעלה ולהסביר את הכלל שלמדנו בתחנה השנייה במשפט שלם.'
-      : 'شكراً لمحاولتك يا بطل! 💡 فكّر مرة أخرى في القاعدة التي اكتشفناها في المحطة الثانية، واستعن ببدايات الجمل أعلاه لصياغة إجابة كاملة.'
+      : 'شكراً لمحاولتك يا بطل! 💡 فكّر مرة أخرى في القاعدة التي اكتشفناها في المحطة الثانية، واستعن ببدايات الجمل أعلاه لصياغة إجابة كاملة.',
+    teacherNotes: isHe
+      ? 'התלמיד מתקשה בניסוח הרעיון המרכזי. מומלץ לשלב אותו בקבוצת התמיכה הגמישה ולשאול שאלה מקבילה מוחשית.'
+      : 'يواجه الطالب صعوبة في صياغة الفكرة وتطبيق المعيار. يُنصح بإشراكه في مجموعة الدعم المؤقتة وطرح سؤال موازٍ مبسط عليه.'
   };
 };
 
@@ -2782,7 +2807,8 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   customPassageText = '',   // Custom text provided by the teacher
   questionsDensity = 'tiered_full', // 'tiered_full' | 'intensive' | 'concise'
   hookActivityType = 'riddle',      // 'riddle' | 'puzzle' | 'video'
-  primarySkill = 'auto'             // 'reading_comprehension' | 'grammar' | 'science' | 'math' | 'values' | 'general' | 'auto'
+  primarySkill = 'auto',            // 'reading_comprehension' | 'grammar' | 'science' | 'math' | 'values' | 'general' | 'auto'
+  practiceGroupsCount = '4'         // 'none' | '4' | '5'
 }) => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
   const safeTitle = title.trim() || 'مهارة مركزية تفاعلية';
@@ -2793,6 +2819,7 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   const safeCustomCriteria = (customSuccessCriteria || '').trim();
   const safeMeaningPath = ['explicit', 'discovery', 'blended'].includes(meaningPath) ? meaningPath : 'blended';
   const safeUdlList = Array.isArray(udlOptions) ? udlOptions : [];
+  const safePracticeGroups = ['4', '5'].includes(String(practiceGroupsCount)) ? String(practiceGroupsCount) : (practiceGroupsCount === 'none' ? 'none' : '4');
 
   // Smart Language Detection: Auto-detect Hebrew, English, or Arabic from Subject, Title, Requests, or explicit Language
   let targetLang = language;
@@ -3138,6 +3165,22 @@ Core Rule: The AI generates a standard, clear, structured, and direct explanatio
     }
   }
 
+  // Multi-group Stations Directive for Practice Station (المحطة الثالثة: التطبيق والتدريب)
+  let practiceGroupsDirective = '';
+  if (safePracticeGroups === '4' || safePracticeGroups === '5') {
+    practiceGroupsDirective = `
+👥📱 توجيه إلزامي حاسم لمحطة التمرين (المحطة 3: التطبيق والتدريب - بنظام محطات المجموعات التفاعلية):
+المعلم اختار وقت التخطيط تقسيم الصف في مرحلة التمرين إلى (${safePracticeGroups}) مجموعات / محطات فرعية بفعاليات مختلفة!
+(القاعدة الصفية: لكل مجموعة سيكون على الأقل جهاز آيباد واحد أو لكل طالب هاتف يعمل عليه، والمعلم يراقب جميع المجموعات في آن واحد).
+يجب إلزامياً داخل كائن "3_practice" تضمين مصفوفة "practiceStations" تحتوي بدقة على (${safePracticeGroups}) محطات/مجموعات فرعية بفعاليات وأنشطة مختلفة تماماً تغطي جوانب الدرس:
+- المحطة الفرعية 1: مهمة استقصاء وبحث علمي/أدبي لاستخراج أدلة واكتشاف علاقات (Inquiry & Discovery).
+- المحطة الفرعية 2: مهمة تطبيقية مباشرة وحل مسائل وتمارين تدريبية عملية (Application & Hands-on).
+- المحطة الفرعية 3: مهمة إبداع وتصميم رقمي أو تمثيل ومحاكاة لموقف حياتي (Creative & Simulation).
+- المحطة الفرعية 4: مهمة تفكير ناقد واكتشاف الأخطاء وتصويبها والمقارنة المنطقية (Critical Thinking & Analysis).
+${safePracticeGroups === '5' ? '- المحطة الفرعية 5: مهمة ربط بالواقع وصناعة أثر أو مبادرة حياتية (Real-World Impact).' : ''}
+`;
+  }
+
   const prompt = `أنت المحرك التعليمي الذكي لمنصة "مفتاح" (מפתי"ח) التفاعلية في مدرسة مشيرفة الابتدائية. مهمتك ليست كتابة خطة نظرية للمعلم، بل بناء محتوى حصة تفاعلية كاملة موجهة للطالب مباشرة بضمير المخاطب ("أنت يا بطل / يا مبدع")، مع أدوات دعم للمعلم.
 التزم باللغتين العربية أو العبرية أو الإنجليزية حسب مدخلات المعلم، وطبق مبادئ التصميم الشامل للتعلم (UDL) والتقويم التكويني المستمر.
 
@@ -3149,6 +3192,7 @@ Core Rule: The AI generates a standard, clear, structured, and direct explanatio
 ${safeCustomObjective ? `- هدف التعلم المعتمد من المعلم: "${safeCustomObjective}"` : '- هدف التعلم: ولّده تلقائياً بدقة ووضوح.'}
 ${safeCustomCriteria ? `- معيار النجاح المعتمد من المعلم: "${safeCustomCriteria}"` : '- معيار النجاح: ولّده تلقائياً بحيث يكون قابلاً للقياس.'}
 - مسار بناء المعنى المفضل للمحطة الثانية: ${safeMeaningPath === 'explicit' ? 'تعليم صريح ومباشر (explicit)' : safeMeaningPath === 'discovery' ? 'اكتشاف وبحث موجه (discovery)' : 'مدمج (blended)'}
+- نظام مجموعات محطة التمرين (المحطة 3): ${safePracticeGroups !== 'none' ? `تقسيم الصف إلى ${safePracticeGroups} محطات فرعية بفعاليات مختلفة على أجهزة الآيباد/الهواتف` : 'نمط تمايز مستويات موحد'}
 ${safeUdlList.length > 0 ? `- ملاحظات الاحتواء والتصميم الشامل (UDL): ${safeUdlList.join('، ')}` : ''}
 ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
 
@@ -3159,6 +3203,8 @@ ${languageDirective}
 ${genreDirective}
 
 ${meaningPathDirective}
+
+${practiceGroupsDirective}
 
 المطلوب: توليد حصة تفاعلية متكاملة ومترابطة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
 1. مشوّق ومحفّز (م) — شعار الطالب: "أنا أسأل وأستعد / אני שואל ומתכונן"
@@ -3282,6 +3328,48 @@ ${meaningPathDirective}
         "errorScenario": "ادعى سامي أن [خطأ شائع في الدرس]... اكتشف الخطأ الذي وقع فيه!",
         "correctionPrompt": "صوب الخطأ مع التعليل العلمي الدقيق:"
       },
+      "practiceStations": [
+        {
+          "id": 1,
+          "groupNumber": 1,
+          "title": "المحطة 1: الاستقصاء والبحث 🔬",
+          "badge": "🔬 فريق البحث والاستقصاء",
+          "targetDevice": "آيباد المجموعة 1 أو هاتف الطالب",
+          "description": "فحص المعطيات والنصوص لاستخراج أدلة واكتشاف العلاقات الرياضية/العلمية...",
+          "challenge": "سؤال أو تحدي البحث الاستقصائي الخاص بالمجموعة...",
+          "deliverablePrompt": "ما الذي ستقدمه مجموعتكم كناتج للبحث؟"
+        },
+        {
+          "id": 2,
+          "groupNumber": 2,
+          "title": "المحطة 2: التطبيق والحل ⚙️",
+          "badge": "⚙️ فريق التطبيق العملي",
+          "targetDevice": "آيباد المجموعة 2 أو هاتف الطالب",
+          "description": "حل مسائل تطبيقية مباشرة وتمارين تدريبية لتعميق الإتقان...",
+          "challenge": "مسألة أو تمرين تطبيقي عملي خاص بالمجموعة...",
+          "deliverablePrompt": "اكتبوا خطوات الحل والنتيجة المبررة:"
+        },
+        {
+          "id": 3,
+          "groupNumber": 3,
+          "title": "المحطة 3: الإبداع والتمثيل 🎨",
+          "badge": "🎨 فريق الإبداع والمحاكاة",
+          "targetDevice": "آيباد المجموعة 3 أو هاتف الطالب",
+          "description": "تمثيل المشهد أو تصميم ملخص بصري أو صياغة سيناريو واقعي للمفهوم...",
+          "challenge": "مهمة إبداعية أو سيناريو محاكاة يجسد مفهوم الدرس...",
+          "deliverablePrompt": "شاركوا إنتاجكم الإبداعي أو نص السيناريو هنا:"
+        },
+        {
+          "id": 4,
+          "groupNumber": 4,
+          "title": "المحطة 4: التفكير الناقد واكتشاف الأخطاء 🧠",
+          "badge": "🧠 فريق التفكير الناقد والتحليل",
+          "targetDevice": "آيباد المجموعة 4 أو هاتف الطالب",
+          "description": "فحص مغالطات وفرضيات غير دقيقة وتصويبها مع تقديم البراهين المنطقية...",
+          "challenge": "تحدي نقدي: ادعى شخص ما فكرة مغلوطة، حدد مكمن الخطأ وصوبه بدقة...",
+          "deliverablePrompt": "اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل:"
+        }
+      ],
       "teacherGuidance": "إرشادات المعلم لإدارة المحطة...",
       "suggestedDuration": 15,
       "workMode": "groups",
@@ -3594,6 +3682,7 @@ ${meaningPathDirective}
     lesson.subject = lesson.subject || safeSubject;
     lesson.language = targetLang;
     lesson.meaningPath = safeMeaningPath;
+    lesson.practiceGroupsCount = safePracticeGroups;
     lesson.udlOptions = safeUdlList;
 
     if (safeCustomObjective) {
@@ -3890,6 +3979,43 @@ ${meaningPathDirective}
               : (t.tier === 'support' ? 'مهمة الانطلاق والتمكن' : t.tier === 'core' ? 'مهمة الممارسة والإتقان' : 'مهمة الرواد والتحدي')
           )
         }));
+      }
+
+      // Guarantee Multi-Group Stations (4 or 5 Sub-stations with distinct activities)
+      if (safePracticeGroups === '4' || safePracticeGroups === '5') {
+        const count = parseInt(safePracticeGroups, 10);
+        const existingStations = Array.isArray(st3.practiceStations) ? st3.practiceStations : [];
+        const defaultGroupTitles = targetLang === 'hebrew' ? [
+          { title: 'תחנה 1: חקר וגילוי 🔬', badge: '🔬 צוות חקר וגילוי', role: 'חקירת נתונים ומציאת ראיות', desc: `חקרו את הנתונים והטקסט בנושא (${safeTitle}) ומצאו שתי ראיות מרכזיות המאמתות את ההשערה.`, chall: 'מהו הדפוס המפתיע ביותר שגיליתם במקורות?', deliv: 'רשמו את ממצאי החקר של הקבוצה:' },
+          { title: 'תחנה 2: יישום ופתרון ⚙️', badge: '⚙️ צוות יישום מעשי', role: 'פתרון בעיות מעשיות ותרגול', desc: `פתרו באופן מעשי תרגילים ישירים ויישמו את הכללים שנלמדו על מקרי בוחן חדשים.`, chall: 'כיצד תפתרו את המקרה המורכב תוך הנמקת כל שלב?', deliv: 'הציגו את שלבי הפתרון והתוצאה המנומקת:' },
+          { title: 'תחנה 3: יצירתיות והדמיה 🎨', badge: '🎨 צוות יצירה וסימולציה', role: 'תכנון מודל או תרחיש חיים', desc: `צרו תרחיש, דיאלוג או מארגן חזותי הממחיש את מושג (${safeTitle}) בצורה מקורית.`, chall: 'איזה ייצוג חזותי או סיפורי מסביר את המושג בדרך הטובה ביותר?', deliv: 'שתפו את התוצר היצירתי של קבוצתכם:' },
+          { title: 'תחנה 4: חשיבה ביקורתית 🧠', badge: '🧠 צוות ביקורת ואיתור שגיאות', role: 'איתור כשלים לוגיים והנמקה', desc: `בחנו טענה שגויה או פתרון שגוי נפוץ בנושא (${safeTitle}), אתרו את הכשל ונמקו את התיקון.`, chall: 'היכן בדיוק מסתתרת הטעות בהנחה הרווחת? וכיצד נוכיח זאת?', deliv: 'כתבו את ניתוח הטעות ואת הטיעון המתקן:' },
+          { title: 'תחנה 5: השפעה וחיבור לחיים 🌟', badge: '🌟 צוות מנהיגות והשפעה', role: 'העברה לחיים האמיתיים ויוזמה', desc: `הציעו פתרון או יוזמה קהילתית המיישמת את עקרונות השיעור בסביבת בית הספר או היישוב.`, chall: 'כיצד ידע זה יכול לשפר בעיה אמיתית בסביבתנו?', deliv: 'נסחו את הצעת היוזמה והאפקט המעשי:' }
+        ] : [
+          { title: 'المحطة 1: الاستقصاء والبحث 🔬', badge: '🔬 فريق البحث والاستقصاء', role: 'استخراج الأدلة وتحليل العلاقات', desc: `استقصوا المعطيات والنصوص حول (${safeTitle})، واستخرجوا دليلين قاطعين يثبتان صحة القاعدة والنتائج.`, chall: 'ما النمط أو الظاهرة غير المتوقعة التي اكتشفتموها في المعطيات؟', deliv: 'اكتبوا ناتج بحث مجموعتكم مع الأدلة المستخرجة:' },
+          { title: 'المحطة 2: التطبيق والحل العملي ⚙️', badge: '⚙️ فريق التطبيق والتمكن', role: 'حل المسائل والتمارين الإجرائية', desc: `طبّقوا القواعد والخطوات العملية لحل مسائل وتدريبات متنوعة حول (${safeTitle}) بدقة عالية.`, chall: 'حلّوا المسألة التطبيقية مع كتابة تعليل علمي خطوة بخطوة:', deliv: 'اكتبوا خطوات الحل والنتيجة المبررة:' },
+          { title: 'المحطة 3: الإبداع والتمثيل والمحاكاة 🎨', badge: '🎨 فريق الإبداع والمحاكاة', role: 'تصميم مشهد أو ملخص بصري', desc: `صمموا مشهداً حوارياً أو رسماً تخطيطياً أو محاكاة واقعية تجسد مفهوم (${safeTitle}) بأسلوب مشوق.`, chall: 'كيف تمثلون الفكرة في سيناريو واقعي يشرح المفهوم لزملائكم؟', deliv: 'اكتبوا نص المشهد أو وصف المخطط البصري الذي ابتكرتموه:' },
+          { title: 'المحطة 4: التفكير الناقد واكتشاف الأخطاء 🧠', badge: '🧠 فريق التفكير الناقد والتحليل', role: 'فحص المغالطات وتصويب المفاهيم', desc: `افحصوا ادعاءً مغلوطاً شائعاً في درس (${safeTitle})، واكتشفوا مكمن الخطأ وصوّبوه بالبراهين المنطقية.`, chall: 'ادعى أحدهم فهماً خاطئاً للقاعدة، حددوا أين زلّ وكيف تثبتون الصواب؟', deliv: 'اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل المنطقي:' },
+          { title: 'المحطة 5: صناعة الأثر والربط بالواقع 🌟', badge: '🌟 فريق صناعة الأثر والمبادرة', role: 'ربط المعرفة بالحياة وصنع حلول', desc: `ابتكروا فكرة مبادرة مجتمعية أو مدرسية توظفون فيها ما تعلمتموه في (${safeTitle}) لحل مشكلة واقعية.`, chall: 'كيف نُحدث أثراً إيجابياً في بيئتنا اليوم باستخدام هذا المفهوم؟', deliv: 'اكتبوا فكرة مبادرتكم وكيف ستطبقونها على أرض الواقع:' }
+        ];
+
+        const mergedPracticeStations = [];
+        for (let i = 0; i < count; i++) {
+          const fallback = defaultGroupTitles[i];
+          const existing = existingStations[i] || {};
+          mergedPracticeStations.push({
+            id: i + 1,
+            groupNumber: i + 1,
+            title: existing.title || fallback.title,
+            badge: existing.badge || fallback.badge,
+            targetDevice: existing.targetDevice || (targetLang === 'hebrew' ? `אייפד קבוצתי ${i + 1} או טלפון אישי 📱` : `آيباد المجموعة ${i + 1} أو هاتف الطالب 📱`),
+            role: existing.role || fallback.role,
+            description: existing.description || fallback.desc,
+            challenge: existing.challenge || fallback.chall,
+            deliverablePrompt: existing.deliverablePrompt || fallback.deliv
+          });
+        }
+        st3.practiceStations = mergedPracticeStations;
       }
     }
 
