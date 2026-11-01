@@ -2498,6 +2498,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       ],
       submissions: [],
       helpRequests: [],
+      spotlightFlash: { isActive: false, title: '', instruction: '', duration: 60 },
       showcasedItem: null,
       showcaseShowNames: true,
       station2Mode: 'guided_exploration',
@@ -2511,6 +2512,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [studentInputText, setStudentInputText] = useState('');
   const [studentChosenTier, setStudentChosenTier] = useState('core'); // 'support' | 'core' | 'advanced'
   const [studentExitTicket, setStudentExitTicket] = useState({ q1: '', q2: '', q3: '', q4: '' });
+  const [isSpotlightModalOpen, setIsSpotlightModalOpen] = useState(false);
+  const [spotlightPreset, setSpotlightPreset] = useState('attention');
+  const [spotlightCustomText, setSpotlightCustomText] = useState('');
   const [isHelpKeyModalOpen, setIsHelpKeyModalOpen] = useState(false);
   const [studentActiveHelpResponse, setStudentActiveHelpResponse] = useState(null);
   const [studentChallengeAnswer, setStudentChallengeAnswer] = useState('');
@@ -3493,6 +3497,91 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       syncLessonLive(updatedLesson, false);
       return updatedLesson;
     });
+  };
+
+  // Launch Miftaah Spotlight Flash to All Students
+  const handleBroadcastSpotlight = (title, instruction) => {
+    const finalTitle = title || '⚡ ومضة مِفتاح من المعلم 🗝️';
+    const finalInstruction = instruction || (
+      spotlightPreset === 'attention' ? 'أيها الأبطال، توقفوا جميعاً وضعوا الأجهزة، وانظروا إلى الشاشة الرئيسية لمناقشة فكرة هامة معاً!' :
+      spotlightPreset === 'refresh' ? '⚡ وقت الانتعاش وتنشيط الذهن (٦٠ ثانية)! قف مكانك، خذ نفساً عميقاً، ومد ذراعيك للأعلى بنشاط! 🌟' :
+      spotlightPreset === 'challenge' ? '💡 تحدي ومضة سريع! فكروا في السؤال المطروح الآن واستعدوا للمشاركة الشفوية.' :
+      (spotlightCustomText || 'انتبهوا جميعاً إلى توجيهات المعلم!')
+    );
+    const nextSession = {
+      ...sessionState,
+      spotlightFlash: {
+        isActive: true,
+        title: finalTitle,
+        instruction: finalInstruction,
+        timestamp: Date.now()
+      }
+    };
+    setSessionState(nextSession);
+    broadcastSession(nextSession);
+    try { saveMiftaahLiveSession(nextSession); } catch(e) {}
+    setIsSpotlightModalOpen(false);
+    showToast('تم إطلاق ومضة مِفتاح لمنتصف شاشات الطلاب بنجاح! ⚡📢');
+  };
+
+  const handleDismissSpotlight = () => {
+    const nextSession = {
+      ...sessionState,
+      spotlightFlash: {
+        isActive: false,
+        title: '',
+        instruction: '',
+        timestamp: Date.now()
+      }
+    };
+    setSessionState(nextSession);
+    broadcastSession(nextSession);
+    try { saveMiftaahLiveSession(nextSession); } catch(e) {}
+    showToast('تم إيقاف ومضة مِفتاح وعاد الطلاب لمحطاتهم 👍');
+  };
+
+  // Station Visibility mutator
+  const updateStationVisibility = (stationKey, visibilityKey, value) => {
+    setActiveLesson(prev => {
+      if (!prev || !prev.stations) return prev;
+      const curSt = prev.stations[stationKey] || {};
+      const visibility = { ...(curSt.visibility || {}), [visibilityKey]: value };
+      const updatedLesson = {
+        ...prev,
+        stations: {
+          ...prev.stations,
+          [stationKey]: { ...curSt, visibility }
+        },
+        updatedAt: new Date().toISOString()
+      };
+      syncLessonLive(updatedLesson, false);
+      return updatedLesson;
+    });
+  };
+
+  // Station Media mutator
+  const updateStationMediaField = (stationKey, mediaKey, value) => {
+    setActiveLesson(prev => {
+      if (!prev || !prev.stations) return prev;
+      const curSt = prev.stations[stationKey] || {};
+      const attachedMedia = { ...(curSt.attachedMedia || {}), [mediaKey]: value };
+      const updatedLesson = {
+        ...prev,
+        stations: {
+          ...prev.stations,
+          [stationKey]: { ...curSt, attachedMedia }
+        },
+        updatedAt: new Date().toISOString()
+      };
+      syncLessonLive(updatedLesson, false);
+      return updatedLesson;
+    });
+  };
+
+  const handleSaveStationExplicit = (stationKey) => {
+    syncLessonLive(activeLesson, true);
+    const stName = activeLesson.stations?.[stationKey]?.name || stationKey;
+    showToast(`تم حفظ المحطة [${stName}] ومزامنتها للطلاب بنجاح! 💾✨`);
   };
 
   const handleSaveActiveLessonExplicit = () => {
@@ -5640,7 +5729,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             onClick={() => setActiveInterface('teacher')}
             title="لوحة متابعة تقدم الطلاب الحية وفرز المحطة الرابعة ومجموعة الدعم المؤقتة والمرنة"
           >
-            <i className="fas fa-chalkboard-teacher"></i> 📊 لوحة المتابعة ومجموعة الدعم
+            <i className="fas fa-chalkboard-teacher"></i> 👨‍🏫 شاشة المعلم والمتابعة الحية
             <span className="tab-pill-badge active" style={{ background: '#10b981', color: '#fff' }}>حي 🔴</span>
           </button>
           <button
@@ -5648,7 +5737,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             className={`nav-tab-btn ${activeInterface === 'student' ? 'active' : ''}`}
             onClick={() => setActiveInterface('student')}
           >
-            <i className="fas fa-mobile-alt"></i> واجهة الطالب / المجموعة
+            <i className="fas fa-mobile-alt"></i> 📱 شاشة الطالب (ما يشاهده الطالب)
             {studentAuth && (
               <span className="tab-pill-badge student-badge">
                 {studentAuth.mode === 'guest' ? 'ضيف' : 'بالرمز'}
@@ -7377,9 +7466,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               </div>
             );
           })()}
+</>
+          )}
+
 
             {/* ================================================================= */}
-            {/* SUBVIEW: STUDENT-VIEW LIVE INTERACTIVE LESSON EDITOR             */}
+            {/* SUBVIEW: COMPLETE 5-STATIONS LESSON EDITOR & VISIBILITY MANAGER   */}
             {/* ================================================================= */}
             {teacherSubView === 'student_edit_view' && (() => {
               const currentStationKey = STATION_KEYS_ORDER[teacherEditStationIndex - 1] || '1_hook';
@@ -7396,26 +7488,34 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 ))
               );
 
+              const attached = curStation.attachedMedia || {};
+              const vis = curStation.visibility || {
+                showPrompt: true,
+                showMedia: true,
+                showScaffold: true,
+                allowSubmission: true
+              };
+
               return (
-                <div className="student-edit-view-container animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '40px' }}>
-                  {/* Top Lesson Meta Strip */}
+                <div className="student-edit-view-container animate-fade-in" style={{ maxWidth: '1240px', margin: '0 auto', paddingBottom: '50px' }}>
+                  {/* Top Meta Strip */}
                   <div className="student-edit-header-card" style={{
                     background: '#ffffff',
                     border: '2px solid #bae6fd',
-                    borderRadius: '18px',
-                    padding: '22px 26px',
+                    borderRadius: '20px',
+                    padding: '24px 28px',
                     marginBottom: '20px',
-                    boxShadow: '0 4px 20px rgba(2, 132, 199, 0.08)'
+                    boxShadow: '0 4px 24px rgba(2, 132, 199, 0.08)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '16px', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1.8rem' }}>📱✏️</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '2.2rem' }}>📱✏️</span>
                         <div>
-                          <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0369a1' }}>
-                            معاينة وتعديل الحصة بنمط شاشة التلميذ التفاعلية
+                          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#0369a1' }}>
+                            تعديل خطة الحصة ومحطاتها الخمس (معاينة كشاشة الطالب الحية)
                           </h2>
                           <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
-                            يظهر الدرس أدناه كشاشة الطالب الحية تماماً — يمكنك تعديل أي نص، قراءة، سؤال أو سقالة مساندة مباشرة
+                            يمكنك تعديل أي محطة، إرفاق أفلام وصور وملفات، والتحكم بما يظهر للطالب فورياً
                           </span>
                         </div>
                       </div>
@@ -7425,7 +7525,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           type="button"
                           onClick={() => setTeacherSubView('my_lessons')}
                           style={{
-                            padding: '8px 16px',
+                            padding: '9px 16px',
                             borderRadius: '10px',
                             border: '1.5px solid #cbd5e1',
                             background: '#f8fafc',
@@ -7444,7 +7544,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           type="button"
                           onClick={handleSaveActiveLessonExplicit}
                           style={{
-                            padding: '8px 18px',
+                            padding: '9px 18px',
                             borderRadius: '10px',
                             border: 'none',
                             background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
@@ -7458,13 +7558,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
                           }}
                         >
-                          <i className="fas fa-save"></i> 💾 حفظ التعديلات سحابياً
+                          <i className="fas fa-save"></i> 💾 حفظ الخطة كاملة سحابياً
                         </button>
                         <button
                           type="button"
                           onClick={() => handleStartSessionWithLesson(activeLesson)}
                           style={{
-                            padding: '8px 18px',
+                            padding: '9px 18px',
                             borderRadius: '10px',
                             border: 'none',
                             background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
@@ -7478,15 +7578,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
                           }}
                         >
-                          <i className="fas fa-rocket"></i> 🚀 بدء الحصة للطلاب
+                          <i className="fas fa-rocket"></i> 🚀 بدء وبث الحصة للطلاب
                         </button>
                       </div>
                     </div>
 
-                    {/* Lesson Core Meta Inputs (Title, Grade, Subject, Code) */}
+                    {/* Lesson Core Meta Inputs */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
                           <i className="fas fa-pen"></i> عنوان الدرس والمحور (قابل للتعديل):
                         </label>
                         <input
@@ -7496,7 +7596,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           placeholder="عنوان الحصة..."
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             borderRadius: '8px',
                             border: '1.5px solid #cbd5e1',
                             fontSize: '0.95rem',
@@ -7508,7 +7608,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
                           <i className="fas fa-graduation-cap"></i> الصف والمستوى الدراسي:
                         </label>
                         <select
@@ -7516,7 +7616,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           onChange={e => updateActiveLessonField('grade', e.target.value)}
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             borderRadius: '8px',
                             border: '1.5px solid #cbd5e1',
                             fontSize: '0.92rem',
@@ -7537,7 +7637,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
                           <i className="fas fa-book"></i> المادة التعليمية / الموضوع:
                         </label>
                         <input
@@ -7547,7 +7647,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           placeholder="الموضوع التعليمي..."
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             borderRadius: '8px',
                             border: '1.5px solid #cbd5e1',
                             fontSize: '0.92rem',
@@ -7559,13 +7659,13 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
                           <i className="fas fa-key"></i> كود دخول الطلاب (PIN):
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{
                             flex: 1,
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             background: '#f0f9ff',
                             border: '1.5px solid #7dd3fc',
                             borderRadius: '8px',
@@ -7587,7 +7687,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             }}
                             title="توليد كود دخول جديد"
                             style={{
-                              padding: '8px 12px',
+                              padding: '9px 12px',
                               borderRadius: '8px',
                               border: '1.5px solid #cbd5e1',
                               background: '#ffffff',
@@ -7601,10 +7701,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
                     </div>
 
-                    {/* Central Goal & Success Criteria Inputs */}
+                    {/* Central Goal & Success Criteria */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', paddingTop: '10px', borderTop: '1px dashed #e2e8f0' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0369a1', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0369a1', marginBottom: '4px' }}>
                           🎯 هدف التعلم المركزي (قابل للتعديل المباشر):
                         </label>
                         <input
@@ -7614,7 +7714,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           placeholder="هدف التعلم المركزي..."
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             borderRadius: '8px',
                             border: '1.5px solid #bae6fd',
                             background: '#f0f9ff',
@@ -7626,7 +7726,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#047857', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#047857', marginBottom: '4px' }}>
                           ✅ معيار النجاح الصريح (قابل للتعديل المباشر):
                         </label>
                         <input
@@ -7636,7 +7736,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           placeholder="معيار النجاح الصريح..."
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             borderRadius: '8px',
                             border: '1.5px solid #a7f3d0',
                             background: '#ecfdf5',
@@ -7649,7 +7749,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </div>
                   </div>
 
-                  {/* 5-Station Navigation Ribbon (Spine tabs mirroring student key bar) */}
+                  {/* The 5 Stations Selector Tabs */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -7673,9 +7773,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           onClick={() => setTeacherEditStationIndex(st.idx)}
                           style={{
                             flex: '1 1 0',
-                            minWidth: '150px',
-                            padding: '12px 14px',
-                            borderRadius: '14px',
+                            minWidth: '160px',
+                            padding: '14px 16px',
+                            borderRadius: '16px',
                             border: isActive ? `2.5px solid ${st.color}` : '1.5px solid #e2e8f0',
                             background: isActive ? '#ffffff' : '#f8fafc',
                             boxShadow: isActive ? `0 4px 16px ${st.color}25` : 'none',
@@ -7690,20 +7790,20 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           <span style={{
                             background: st.color,
                             color: '#ffffff',
-                            borderRadius: '6px',
-                            width: '24px',
-                            height: '24px',
+                            borderRadius: '8px',
+                            width: '26px',
+                            height: '26px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: 900,
-                            fontSize: '0.85rem'
+                            fontSize: '0.88rem'
                           }}>
                             {st.symbol}
                           </span>
-                          <span style={{ fontSize: '1.2rem' }}>{st.icon}</span>
+                          <span style={{ fontSize: '1.25rem' }}>{st.icon}</span>
                           <strong style={{
-                            fontSize: '0.92rem',
+                            fontSize: '0.94rem',
                             color: isActive ? st.color : '#334155',
                             fontWeight: isActive ? 800 : 600
                           }}>
@@ -7718,7 +7818,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               padding: '2px 6px',
                               borderRadius: '6px'
                             }}>
-                              تعديل ✏️
+                              نشط ✏️
                             </span>
                           )}
                         </button>
@@ -7726,17 +7826,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     })}
                   </div>
 
-                  {/* ============================================================= */}
-                  {/* ACTIVE STATION CARD (Exact Student Presentation + Live Editor) */}
-                  {/* ============================================================= */}
+                  {/* ACTIVE STATION WORKSPACE CARD */}
                   <div className="student-station-task-card" style={{
                     background: '#ffffff',
                     border: '2px solid #e2e8f0',
-                    borderRadius: '18px',
-                    padding: '24px 28px',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)'
+                    borderRadius: '20px',
+                    padding: '26px 30px',
+                    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)'
                   }}>
-                    {/* Station Card Header */}
+                    {/* Station Card Header with Individual Save & AI Buttons */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -7744,22 +7842,43 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       flexWrap: 'wrap',
                       gap: '12px',
                       borderBottom: '2px solid #f1f5f9',
-                      paddingBottom: '14px',
+                      paddingBottom: '16px',
                       marginBottom: '18px'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '2rem' }}>{curStation.icon || '📍'}</span>
+                        <span style={{ fontSize: '2.2rem' }}>{curStation.icon || '📍'}</span>
                         <div>
-                          <h3 style={{ margin: 0, fontSize: '1.28rem', fontWeight: 800, color: '#0f172a' }}>
-                            مهمتك في المحطة [{curStation.name || `المحطة ${teacherEditStationIndex}`}]:
+                          <h3 style={{ margin: 0, fontSize: '1.32rem', fontWeight: 900, color: '#0f172a' }}>
+                            المحطة {teacherEditStationIndex}: [{curStation.name || `المحطة ${teacherEditStationIndex}`}]:
                           </h3>
-                          <small style={{ color: '#0284c7', fontWeight: 700 }}>
-                            📱 المعاينة الحية كما تظهر للطالب في جهازه — يمكنك النقر والتعديل المباشر
+                          <small style={{ color: '#0284c7', fontWeight: 700, fontSize: '0.84rem' }}>
+                            📱 شاشة المعاينة والتعديل — يمكنك تعديل المحتوى وإرفاق الوسائط والتحكم بما يشاهده الطالب
                           </small>
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveStationExplicit(currentStationKey)}
+                          style={{
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '9px 16px',
+                            borderRadius: '10px',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 3px 10px rgba(5, 150, 105, 0.25)'
+                          }}
+                        >
+                          <i className="fas fa-save"></i> 💾 حفظ هذه المحطة سحابياً
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -7775,7 +7894,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
                             color: '#ffffff',
                             border: 'none',
-                            padding: '8px 14px',
+                            padding: '9px 14px',
                             borderRadius: '10px',
                             fontWeight: 800,
                             fontSize: '0.85rem',
@@ -7786,9 +7905,177 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             boxShadow: '0 3px 10px rgba(124, 58, 237, 0.25)'
                           }}
                         >
-                          <i className="fas fa-wand-magic-sparkles"></i> اطلب تعديلاً مخصصاً (AI) ✨
+                          <i className="fas fa-wand-magic-sparkles"></i> تعديل مخصص بالذكاء (AI) ✨
                         </button>
                       </div>
+                    </div>
+
+                    {/* 1. STUDENT VISIBILITY CONTROLS (التحكم بما يشاهده الطالب في هذه المحطة) */}
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '14px',
+                      padding: '14px 18px',
+                      marginBottom: '18px'
+                    }}>
+                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="fas fa-eye text-blue-600"></i>
+                        <span>التحكم بما يشاهده الطالب في هذه المحطة (تفعيل / إخفاء العناصر فوراً):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px' }}>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={vis.showPrompt !== false}
+                            onChange={e => updateStationVisibility(currentStationKey, 'showPrompt', e.target.checked)}
+                          />
+                          <span>[✓] إظهار نص ومهمة المحطة</span>
+                        </label>
+
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={vis.showMedia !== false}
+                            onChange={e => updateStationVisibility(currentStationKey, 'showMedia', e.target.checked)}
+                          />
+                          <span>[✓] إظهار الوسائط والمرفقات (الفيديو/الصور/الملفات)</span>
+                        </label>
+
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={vis.showScaffold !== false}
+                            onChange={e => updateStationVisibility(currentStationKey, 'showScaffold', e.target.checked)}
+                          />
+                          <span>[✓] إظهار مفتاح المساندة والتلميح (السقالة)</span>
+                        </label>
+
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={vis.allowSubmission !== false}
+                            onChange={e => updateStationVisibility(currentStationKey, 'allowSubmission', e.target.checked)}
+                          />
+                          <span>[✓] السماح للطلاب بكتابة وإرسال الإجابة</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* 2. ATTACHED MEDIA & RESOURCES IN EVERY STATION (إرفاق أفلام، صور، ملفات، روابط) */}
+                    <div style={{
+                      background: '#f0f9ff',
+                      border: '1.5px solid #bae6fd',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      marginBottom: '20px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <strong style={{ fontSize: '0.98rem', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <i className="fas fa-paperclip"></i> 📎 إرفاق وسائط ومصادر المحطة {teacherEditStationIndex} (أفلام، صور، أوراق عمل، روابط):
+                        </strong>
+                        <span style={{ fontSize: '0.78rem', background: '#e0f2fe', color: '#0284c7', padding: '3px 10px', borderRadius: '12px', fontWeight: 700 }}>
+                          تظهر مباشرة للطالب في جهازه
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                        {/* 1. YouTube Video */}
+                        <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px' }}>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#dc2626', marginBottom: '4px' }}>
+                            <i className="fab fa-youtube"></i> ١. رابط فيلم / فيديو يوتيوب:
+                          </label>
+                          <input
+                            type="text"
+                            value={attached.videoUrl || curStation.interactiveActivity?.video?.youtubeUrl || ''}
+                            onChange={e => {
+                              updateStationMediaField(currentStationKey, 'videoUrl', e.target.value);
+                              // Sync to interactiveActivity if station 1
+                              if (currentStationKey === '1_hook') {
+                                const currentAct = curStation.interactiveActivity || {};
+                                const curVid = currentAct.video || {};
+                                updateStationField('1_hook', 'interactiveActivity', {
+                                  ...currentAct,
+                                  type: 'video',
+                                  video: { ...curVid, youtubeUrl: e.target.value }
+                                });
+                              }
+                            }}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.86rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+
+                        {/* 2. Image URL */}
+                        <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px' }}>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#059669', marginBottom: '4px' }}>
+                            <i className="fas fa-image"></i> ٢. رابط صورة توضيحية:
+                          </label>
+                          <input
+                            type="text"
+                            value={attached.imageUrl || ''}
+                            onChange={e => updateStationMediaField(currentStationKey, 'imageUrl', e.target.value)}
+                            placeholder="https://... رابط صورة مباشرة"
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.86rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+
+                        {/* 3. Document / Worksheet URL */}
+                        <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px' }}>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#2563eb', marginBottom: '4px' }}>
+                            <i className="fas fa-file-alt"></i> ٣. رابط ملف / ورقة عمل (PDF أو Word):
+                          </label>
+                          <input
+                            type="text"
+                            value={attached.fileUrl || ''}
+                            onChange={e => updateStationMediaField(currentStationKey, 'fileUrl', e.target.value)}
+                            placeholder="رابط ملف ورقة عمل..."
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.86rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+
+                        {/* 4. External Site / Book Link */}
+                        <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px' }}>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#7c3aed', marginBottom: '4px' }}>
+                            <i className="fas fa-link"></i> ٤. رابط موقع أو نشاط تفاعلي:
+                          </label>
+                          <input
+                            type="text"
+                            value={attached.externalLink || ''}
+                            onChange={e => updateStationMediaField(currentStationKey, 'externalLink', e.target.value)}
+                            placeholder="https://... رابط موقع أو مصدر رقمي"
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.86rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Attached Media Live Preview */}
+                      {(attached.videoUrl || attached.imageUrl || attached.fileUrl || attached.externalLink || curStation.interactiveActivity) && (
+                        <div style={{ marginTop: '10px', padding: '10px 14px', background: '#ffffff', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+                          <strong style={{ fontSize: '0.82rem', color: '#0369a1', display: 'block', marginBottom: '6px' }}>
+                            معاينة الوسيط المرفق حالياً للطلاب:
+                          </strong>
+                          {attached.imageUrl && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <img src={attached.imageUrl} alt="صورة المحطة" style={{ maxHeight: '180px', borderRadius: '8px', maxWidth: '100%' }} />
+                            </div>
+                          )}
+                          {attached.fileUrl && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <a href={attached.fileUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 700, fontSize: '0.85rem' }}>
+                                📄 فتح ملف ورقة العمل المرفقة
+                              </a>
+                            </div>
+                          )}
+                          {attached.externalLink && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <a href={attached.externalLink} target="_blank" rel="noreferrer" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '0.85rem' }}>
+                                🌐 الانتقال إلى الرابط الخارجي المرفق
+                              </a>
+                            </div>
+                          )}
+                          {renderStationMedia(curStation, false)}
+                        </div>
+                      )}
                     </div>
 
                     {/* ========================================================= */}
@@ -7962,14 +8249,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                               + إضافة
                             </button>
                           </div>
-                        </div>
-
-                        {/* Interactive Media (Video / Riddle Preview) */}
-                        <div>
-                          <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.9rem', marginBottom: '8px' }}>
-                            🎬 نشاط / فيديو المحطة التفاعلي المعروض للطلاب:
-                          </div>
-                          {renderStationMedia(curStation, false)}
                         </div>
                       </div>
                     )}
@@ -8217,7 +8496,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           </div>
                         </div>
 
-                        {/* Deep Challenge (اكتشف الخطأ) */}
+                        {/* Deep Challenge */}
                         {curStation.deepChallenge && (
                           <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '12px 16px' }}>
                             <strong style={{ color: '#334155', fontSize: '0.88rem', display: 'block', marginBottom: '6px' }}>
@@ -8407,9 +8686,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
                     )}
 
-                    {/* ========================================================= */}
-                    {/* UNIVERSAL SCAFFOLD BOX (مفتاح المساندة للطالب פיגום)      */}
-                    {/* ========================================================= */}
+                    {/* UNIVERSAL SCAFFOLD BOX */}
                     <div style={{ marginTop: '20px', background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '12px', padding: '14px 18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ fontWeight: 800, color: '#854d0e', fontSize: '0.92rem' }}>
@@ -8436,9 +8713,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       />
                     </div>
 
-                    {/* ========================================================= */}
-                    {/* TEACHER GUIDANCE (كواليس التدريس وإرشادات المعلم)         */}
-                    {/* ========================================================= */}
+                    {/* TEACHER GUIDANCE */}
                     <div style={{ marginTop: '16px', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '14px 18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <strong style={{ color: '#334155', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -8468,9 +8743,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       />
                     </div>
 
-                    {/* ========================================================= */}
-                    {/* STATION CARD FOOTER NAVIGATION                           */}
-                    {/* ========================================================= */}
+                    {/* STATION CARD FOOTER NAVIGATION */}
                     <div style={{
                       marginTop: '24px',
                       paddingTop: '16px',
@@ -8528,7 +8801,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <button
                           type="button"
-                          onClick={handleSaveActiveLessonExplicit}
+                          onClick={() => handleSaveStationExplicit(currentStationKey)}
                           style={{
                             background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                             color: '#ffffff',
@@ -8544,7 +8817,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
                           }}
                         >
-                          <i className="fas fa-save"></i> 💾 حفظ التعديلات سحابياً
+                          <i className="fas fa-save"></i> 💾 حفظ هذه المحطة سحابياً
                         </button>
 
                         <button
@@ -8574,8 +8847,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               );
             })()}
 
-</>
-          )}
         </section>
         )
       )}
@@ -8594,7 +8865,56 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               <span className="lesson-name-chip">{activeLesson.title}</span>
             </div>
 
-            <div className="session-timer-box">
+            
+            {/* ومضة مِفتاح (Spotlight Flash) */}
+            <div className="teacher-spotlight-flash-group" style={{ display: 'inline-flex', alignItems: 'center', margin: '0 8px' }}>
+              {sessionState.spotlightFlash?.isActive ? (
+                <button
+                  type="button"
+                  onClick={handleDismissSpotlight}
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontWeight: 900,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
+                  }}
+                  title="الومضة معروضة الآن في نصف شاشات الطلاب — اضغط لإنهائها"
+                >
+                  <i className="fas fa-stop-circle"></i> 🛑 إيقاف الومضة وإعادة شاشات الطلاب
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsSpotlightModalOpen(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontWeight: 900,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
+                  }}
+                  title="إطلاق ومضة مفتاح في منتصف شاشة جميع الطلاب مع تعليمات المعلم"
+                >
+                  <i className="fas fa-bolt"></i> ⚡ ومضة مِفتاح للطلاب
+                </button>
+              )}
+            </div>
+<div className="session-timer-box">
               <i className="fas fa-stopwatch"></i>
               <span className="timer-readout">{formatTime(sessionState.elapsedSeconds)}</span>
               <button
@@ -9709,7 +10029,82 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
 
                 {/* Active Station Task Card */}
-                <div className="student-station-task-card">
+                
+            {/* ⚡ MIFTAAH SPOTLIGHT FLASH (توجيه ومضة مفتاح في نصف شاشة الطالب) */}
+            {sessionState.spotlightFlash?.isActive && (
+              <div className="student-spotlight-overlay animate-fade-in" style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 999999,
+                background: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
+              }}>
+                <div className="animate-pop" style={{
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)',
+                  border: '4px solid #f59e0b',
+                  borderRadius: '26px',
+                  maxWidth: '560px',
+                  width: '100%',
+                  padding: '30px 26px',
+                  textAlign: 'center',
+                  boxShadow: '0 25px 60px rgba(245, 158, 11, 0.45)'
+                }}>
+                  <div style={{ fontSize: '3.6rem', marginBottom: '10px' }}>⚡🗝️</div>
+                  <span style={{
+                    background: '#fef3c7',
+                    color: '#b45309',
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    display: 'inline-block',
+                    marginBottom: '10px'
+                  }}>
+                    ومضة مِفتاح — توجيه فوري من المعلم
+                  </span>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#92400e', margin: '0 0 12px 0' }}>
+                    {sessionState.spotlightFlash.title || 'ومضة مِفتاح ⚡'}
+                  </h2>
+                  <div style={{
+                    fontSize: '1.25rem',
+                    lineHeight: 1.8,
+                    fontWeight: 800,
+                    color: '#1e293b',
+                    background: '#ffffff',
+                    border: '2px dashed #fde68a',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    marginBottom: '20px'
+                  }}>
+                    {sessionState.spotlightFlash.instruction}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast('تم استلام توجيه المعلم والالتزام به 👍');
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '12px 34px',
+                      borderRadius: '14px',
+                      fontWeight: 900,
+                      fontSize: '1.05rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 16px rgba(217, 119, 6, 0.35)'
+                    }}
+                  >
+                    فهمت ومستعد للتعليمات 👍
+                  </button>
+                </div>
+              </div>
+            )}
+<div className="student-station-task-card">
                   <div className="task-header-title">
                     <span className="st-icon">{studentCurrentStationData.icon}</span>
                     <h3>مهمتك في المحطة [{studentCurrentStationData.name}]:</h3>
@@ -11913,7 +12308,146 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         </div>
       )}
 
+      
       {/* ===================================================================== */}
+      {/* MODAL: MIFTAAH SPOTLIGHT FLASH LAUNCHER (ومضة مِفتاح للطلاب)          */}
+      {/* ===================================================================== */}
+      {isSpotlightModalOpen && (
+        <div
+          className="miftaah-modal-overlay animate-fade-in"
+          onClick={() => setIsSpotlightModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+        >
+          <div
+            className="animate-pop"
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              border: '3px solid #f59e0b',
+              borderRadius: '24px',
+              maxWidth: '560px',
+              width: '100%',
+              padding: '24px 22px',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.32)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1.5px solid #fed7aa', paddingBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.8rem' }}>⚡🗝️</span>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#9a3412' }}>
+                  إطلاق ومضة مِفتاح (توجيه لحظي لمنتصف شاشات الطلاب)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSpotlightModalOpen(false)}
+                style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: '#475569', marginBottom: '14px', lineHeight: 1.6 }}>
+              اختر نوع التوجيه أو اكتب تعليماتك المخصصة، وستظهر فوراً في منتصف شاشات جميع الطلاب المتصلين بالصف لإيقاف انشغالهم وتوجيه انتباههم:
+            </p>
+
+            {/* Presets */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {[
+                { id: 'attention', icon: '🔔', label: 'تنبيه وتوقف: ضعوا الأجهزة وانظروا للأمام', text: 'أيها الأبطال، توقفوا جميعاً وضعوا الأجهزة، وانظروا إلى الشاشة الرئيسية لمناقشة فكرة هامة معاً!' },
+                { id: 'refresh', icon: '🧘‍♂️', label: 'وقت الانتعاش: تنفس عميق وتمدد (٦٠ ثانية)', text: '⚡ وقت الانتعاش وتنشيط الذهن (٦٠ ثانية)! قف مكانك، خذ نفساً عميقاً، ومد ذراعيك للأعلى بنشاط! 🌟' },
+                { id: 'challenge', icon: '💡', label: 'تحدي مفاجئ: فكروا في السؤال المطروح', text: '💡 تحدي ومضة سريع! فكروا في السؤال المطروح الآن واستعدوا للمشاركة الشفوية مع الصف.' },
+                { id: 'custom', icon: '✍️', label: 'تعليمات وتوجيه مخصص من المعلم', text: '' }
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setSpotlightPreset(opt.id);
+                    if (opt.id !== 'custom') setSpotlightCustomText(opt.text);
+                  }}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: spotlightPreset === opt.id ? '2px solid #ea580c' : '1.5px solid #cbd5e1',
+                    background: spotlightPreset === opt.id ? '#fff7ed' : '#f8fafc',
+                    color: spotlightPreset === opt.id ? '#9a3412' : '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    textAlign: 'right',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
+                  <span>{opt.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom text input */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
+                نص التوجيه الذي سيظهر للطالب في نصف الشاشة:
+              </label>
+              <textarea
+                rows={3}
+                value={spotlightCustomText}
+                onChange={e => {
+                  setSpotlightCustomText(e.target.value);
+                  setSpotlightPreset('custom');
+                }}
+                placeholder="اكتب التوجيه أو السؤال الذي تريد أن يظهر في شاشات الطلاب..."
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #fed7aa', fontSize: '0.92rem', color: '#1e293b', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setIsSpotlightModalOpen(false)}
+                style={{ padding: '9px 16px', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBroadcastSpotlight('⚡ ومضة مِفتاح من المعلم 🗝️', spotlightCustomText)}
+                style={{
+                  padding: '9px 22px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                  color: '#ffffff',
+                  fontWeight: 900,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <i className="fas fa-bolt"></i> 🚀 إطلاق الومضة لشاشات الطلاب الآن
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* ===================================================================== */}
       {/* MODAL 3: 60-SECOND REFRESH TIME MODAL (⚡ وقت الانتعاش - זמן להתרענן) */}
       {/* ===================================================================== */}
       {isRefreshModalOpen && (() => {
