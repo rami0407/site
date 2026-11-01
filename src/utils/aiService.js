@@ -169,13 +169,11 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
   const strictSystem = (systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.') +
     '\nتعليمات صارمة: اكتب الرد النهائي المباشر باللغة العربية الفصحى الواضحة والجميلة. ممنوع منعاً باتاً كتابة أي خطوات تفكير أو مسودات مراجعة أو قوائم تحقق بالإنجليزية (مثل Check Against Guidelines أو I will output).';
 
-  // 1. Try Groq (Qwen 3.8, GPT-OSS 120B, ALLaM) - High speed, browser CORS
+  // 1. Try Groq (Llama 3.3 70B, Llama 3.1 8B) - High speed, browser CORS
   if (groqKey) {
     const groqModels = [
-      'openai/gpt-oss-120b',
-      'qwen/qwen3.8-27b',
-      'allam-2-7b',
-      'openai/gpt-oss-20b'
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant'
     ];
     for (const gm of groqModels) {
       try {
@@ -450,7 +448,7 @@ export const askSocraticStemMentor = async ({ message, history = [] }) => {
 
   // 1. Try Groq (Fastest & natively supports browser CORS)
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -555,7 +553,7 @@ export const askAiBookBuddy = async ({ bookTitle, author, message, history = [] 
 
   // 1. Try Groq
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -644,7 +642,7 @@ export const developStudentStory = async ({ storyGenre, heroName, studentInput, 
 
   // Try Groq
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b'];
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -717,7 +715,7 @@ export const askSocraticHomeworkHelper = async ({ subject = 'الرياضيات 
 4. اكتب بلغة فصحى مشجعة ومرحة للأطفال (جملتان أو ثلاث فقط)، واختم دائماً بسؤال توجيهي يقود خطوته التالية.`;
 
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -807,7 +805,7 @@ ${themePreference ? `المجال المطلوب التركيز عليه: ${them
 }`;
 
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -914,7 +912,7 @@ export const coachDebateArgument = async ({ topicTitle, studentName, studentGrad
           'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
-          model: 'qwen/qwen3.8-27b',
+          model: 'llama-3.1-8b-instant',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.5,
           max_tokens: 220
@@ -991,7 +989,7 @@ ${commentsSnippet || 'تناقش الطلاب حول أهمية الموضوع �
           'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
-          model: 'qwen/qwen3.8-27b',
+          model: 'llama-3.1-8b-instant',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.5,
           max_tokens: 600,
@@ -1091,7 +1089,7 @@ ${customTopic ? `الموضوع المحدد: ${customTopic}` : ''}
           'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
-          model: 'qwen/qwen3.8-27b',
+          model: 'llama-3.1-8b-instant',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 800,
@@ -1430,7 +1428,7 @@ ${isSEL ? `
 
   // 1. Try Groq (High-speed: Qwen 3.8 27B, GPT-OSS 120B, ALLaM)
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -1806,7 +1804,7 @@ ${notes ? `- ملاحظات وظروف التنفيذ: "${notes}"` : ''}
 
   // 1. Try Groq AI (models with high token limits & reasoning)
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2044,7 +2042,7 @@ ${customInstruction ? `- رغبة وتوجيه المعلم الخاص للبد�
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2209,7 +2207,7 @@ export const generateMiftaahLessonObjectivesAI = async ({
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2375,7 +2373,7 @@ ${langNote}
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2533,7 +2531,7 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2695,7 +2693,7 @@ export const evaluateMiftaahExitTicketAI = async ({
   };
 
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -3612,34 +3610,40 @@ ${practiceGroupsDirective}
         };
       }
       return {
-        hookPrompt: `ברוכים הבאים לשיעור הבנת הנקרא בנושא (${safeTitle})! 📖✨\nתארו לעצמכם שאתם מוצאים יומן מסתורי שבו כתוב משפט קצר ומעורר מחשבה: "מי שאינו מוכן להקשיב לפרטים הקטנים, מפספס את הסוד הגדול ביותר."\nאיזה סוד לדעתכם עשוי להתגלות בקטע שנקרא היום? שתפו את ההשערה שלכם!`,
-        riddle: null,
-        station2Prompt: `קטע קריאה מרכזי: סוד ההצלחה והמעשה המשותף 📖\n\nבבוקר יום סתווי נעים, התכנסו ילדי כיתה ד' בחצר בית הספר. המורה הודיעה כי בית הספר יוצא לפרויקט מיוחד: הקמת גינה קהילתית שתספק ירקות ופרחים לקשישי היישוב. בתחילה, היו תלמידים שחששו מן העבודה הקשה וטענו כי הקרקע יבשה וקשה לעיבוד.\n\nאך יונתן, תלמיד שקט הידוע בחריצותו, ניגש אל הפינה המוזנחת, לקח מעדר קטן והחל לסקל אבנים. אט-אט הצטרפו אליו שאר התלמידים. כל אחד ואחת תרמו את חלקם: מי בעודפי זרעים שהביאו מהבית, ומי בהשקיה סבלנית ועידוד. בתוך מספר שבועות הפכה החלקה המוזנחת לנווה מדבר ירוק ומרהיב.\n\nבטקס חנוכת הגינה אמרה המנהלת: "הגינה הזו איננה רק ערוגות של צמחים; היא הוכחה חיה לכך שכאשר כוונות טובות פוגשות התמדה ועבודה משותפת, גם אדמה קשה מצמיחה פירות מתוקים."\n\n📌 מילון מונחים וביאור מילים:\n• לסקל: להרים ולהרחיק אבנים מן האדמה כדי להכשירה לנטיעה.\n• נווה מדבר: מקום ירוק ופורח בתוך סביבה צחיחה.\n• התמדה: המשך עשייה ללא ויתור למרות הקשיים.`,
+        hookPrompt: `ברוכים הבאים לשיעור מעמיק בנושא (${safeTitle}) במקצוע (${safeSubject})! 📖✨\nתארו לעצמכם שאתם מוצאים יומן מסתורי שבו כתוב משפט קצר ומעורר מחשבה: "מי שאינו מוכן להעמיק בפרטים הקטנים, מפספס את הסוד הגדול ביותר."\nאיזה סוד לדעתכם עשוי להתגלות בקטע שנקרא היום על (${safeTitle})? שתפו את ההשערה שלכם!`,
+        riddle: {
+          riddleText: `אני המושג והציר המרכזי של שיעורנו היום בנושא (${safeTitle}); דרכי לומדים עקרונות חשובים ורוכשים תובנות עמוקות. מהו נושא השיעור שלנו?`,
+          clues: [`🔑 רמז 1: שייך למקצוע (${safeSubject}).`, `🔑 רמז 2: הנושא המרכזי הוא (${safeTitle}).`],
+          options: [`${safeTitle} 🎯`, 'נושא אחר', 'מושג כללי בלבד', 'רעיון שאינו קשור'],
+          solution: safeTitle,
+          explanation: `השיעור כולו עוסק בבירור מושג (${safeTitle}) ומשמעותו לחיים.`
+        },
+        station2Prompt: `קטע קריאה מרכזי: אופקים ותובנות בנושא (${safeTitle}) 📖\n\nהנושא (${safeTitle}) במקצוע (${safeSubject}) מהווה ציר מרכזי ומשמעותי המעורר מחשבה ומזמין אותנו להתבוננות מעמיקה. חשיבותו איננה מתמצה במידע יבש בלבד, אלא משקפת עקרונות יסוד, תכנון מוקדם וערכים המנחים את האדם והחברה בכל עת.\n\nכאשר מעמיקים בפרטי (${safeTitle}), מגלים מערכת שלמה של סיבות, תוצאות והשפעות הדדיות. כל שלב וכל מרכיב בו מלמדים אותנו כיצד לפעול באחריות, כיצד לנתח אתגרי מציאות בכלים מושכלים, וכיצד שיתוף פעולה ונחישות מובילים להשגת היעד הנכסף.\n\nהבנתנו את (${safeTitle}) כיום מעניקה לנו כלים מעשיים ותובנה ביקורתית. אנו שואבים מן הלמידה הזו מוסר השכל ברור: הצלחה אמיתית ועמידה ביעדים נשענות על הכנה ראויה, חשיבה הגיונית ומחויבות לערכים הנכונים.\n\n📌 מילון מונחים וביאור מילים:\n• ציר מרכזי: נושא מפתח שהכול סובב סביבו ומבוסס עליו.\n• תובנה ביקורתית: הבנה עמוקה המבחינה בין עיקר לטפל ומנתחת מניעים ותוצאות.\n• נחישות והתמדה: המשך עשייה ומיקוד במטרה גם מול אתגרים.`,
         station3Tasks: [
           {
             tier: "support",
             badge: "🌱 קבוצת זינוק והבנה",
-            title: "משימת איתור מידע מפורש בטקסט",
-            task: `ענו על השאלות על פי הכתוב בקטע:\n1. לשם מה החליטו להקים את הגינה הקהילתית?\n2. מה עשה יונתן שגרם לשאר הילדים להצטרף אליו?`,
+            title: `משימת איתור מידע מפורש בנושא (${safeTitle})`,
+            task: `ענו מתוך קטע הקריאה שלמעלה:\n1. מדוע נושא (${safeTitle}) נחשב לציר מרכזי ומשמעותי במקצוע (${safeSubject})?\n2. ציינו שני מאפיינים או עקרונות הבאים לידי ביטוי ב-(${safeTitle}) על פי הפסקה השנייה.`,
             scaffold: `רמז: חפשו בפסקה הראשונה והשנייה של הטקסט.`
           },
           {
             tier: "core",
             badge: "⭐ קבוצת שליטה ותרגול",
-            title: "משימת הסקה והבנת קשרים",
-            task: `1. מה היה השינוי שחל בעמדת התלמידים לאורך הסיפור, ומדוע חל שינוי זה?\n2. הסבירו במילים שלכם את כוונת המנהלת באומרה: "הגינה איננה רק ערוגות של צמחים".`,
-            scaffold: `רמז: השוו בין תחילת הסיפור לסופו והתבוננו במשמעות הפנימית של הפרויקט.`
+            title: `משימת הסקה והבנת קשרים בנושא (${safeTitle})`,
+            task: `1. כיצד הבנת (${safeTitle}) מסייעת לנו לקבל החלטות מושכלות בחיים האישיים?\n2. הסבירו במילים שלכם כיצד קשורים תכנון מוקדם ואחריות לתוצאות של (${safeTitle}).`,
+            scaffold: `רמז: קשרו בין העקרונות שבפסקה השנייה והשלישית לבין המציאות היומיומית.`
           },
           {
             tier: "advanced",
             badge: "🚀 קבוצת אתגר וחשיבה ביקורתית",
-            title: "משימת הערכה, ביקורת ויצירתיות",
-            task: `1. הביעו דעתכם: האם מעשהו של יונתן מעיד על מנהיגות? נמקו את עמדתכם בעזרת ראיה מהסיפור.\n2. הציעו כותרת מקורית אחרת לקטע הקריאה ונמקו מדוע היא מתאימה למסר המרכזי.`,
-            scaffold: `רמז: חשבו מה מאפיין מנהיג שאינו רק מדבר אלא פועל ראשון.`
+            title: `משימת הערכה, ביקורת והעמקה בנושא (${safeTitle})`,
+            task: `1. הביעו דעתכם: מהו הלקח הערכי או המעשי החשוב ביותר העולה מנושא (${safeTitle})? נמקו בעזרת טיעון מנומק מתוך הטקסט.\n2. נסחו מסר קצר בן שני משפטים המסביר לחבר מדוע כדאי ללמוד ולהכיר לעומק את (${safeTitle}).`,
+            scaffold: `רמז: התמקדו במשמעות הרחבה של המושג לחיי התלמיד.`
           }
         ],
-        station4Evidence: `דף משימה עצמאי — ראיות להבנת הנקרא ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח את הבנתכם:\n\n1. (איתור מידע): מה היה החשש הראשוני של הילדים לפני שהחלו בעבודה?\n2. (הסקה): מדוע לדעתכם זכה יונתן להערכה רבה, אף על פי שלא דיבר הרבה?\n3. (הוכחה מהטקסט): העתיקו משפט אחד מתוך הטקסט המעיד על הצלחת הפרויקט.\n4. (הבעת עמדה): איזה פרויקט התנדבותי הייתם מציעים להקים בבית ספרנו? נמקו את בחירתכם.\n\nכתבו את תשובתכם המלאה בתיבת המعנה למטה ולחצו על "שלח תשובה למורה" 📤`,
-        station5Prompt: `תחנת הקציר וסיכום הלמידה 🎒✨\nהגענו לסיום שיעור הבנת הנקרא!\n1. איזה לקח או תובנה מרכזית לקחתם מתוך קטע הקריאה היום?\n2. ענו על שאלות כרטיס היציאה בכנות ובעצמאות.\n3. שתפו פעולה והביאו את ערך העשייה וההתמדה אל הכיתה שלכם!`
+        station4Evidence: `דף משימה עצמאי — ראיות להבנת הנקרא [ ${safeTitle} ] ✍️\nענו על השאלות הבאות באופן עצמאי כדי להוכיח את הבנתכם המלאה:\n\n1. (איתור מידע): מה החשיבות המרכזית של (${safeTitle}) על פי קטע הקריאה?\n2. (הסקה): מהם הגורמים העיקריים המשפיעים על הצלחה בהקשר של (${safeTitle})?\n3. (הוכחה מתוך הטקסט): העתיקו משפט אחד המעיד על כך שלימוד (${safeTitle}) מעניק כלים מעשיים לחיים.\n4. (הבעת עמדה): כיצד תוכלו ליישם את עקרונות (${safeTitle}) בהתמודדות עם משימה מאתגרת בכיתה?\n\nכתבו את תשובתכם המלאה בתיבת המענה למטה ולחצו על "שלח תשובה למורה" 📤`,
+        station5Prompt: `תחנת הקציר וסיכום הלמידה — (${safeTitle}) 🎒✨\nהגענו לסיום שיעור הלמידה המשמעותי!\n1. מהו הרעיון המרכזי או הערך החשוב ביותר שלמדתם היום על (${safeTitle})?\n2. ענו על שאלות כרטיס היציאה בכנות ובעצמאות.\n3. שתפו את חבריכם ברעיון אחד שתיקחו עמכם הלאה!`
       };
     }
 
@@ -3684,34 +3688,48 @@ ${practiceGroupsDirective}
     }
 
     return {
-      hookPrompt: `لغز وتحدي المدخل لدرس (${safeTitle}):\nتأمل هذا الموقف المثير: حدثت مفارقة تجعلنا نتساءل: كيف يمكننا التفسير بدقة ودون غموض؟ ما الذي يثير فضولك وما أول فكرة تخطر ببالك؟`,
-      riddle: null,
-      station2Prompt: `نص القراءة المركزي: سرّ النجاح والعمل المشترك 📖\n\nفي صباح يوم خريفي مشرق، اجتمع طلاب الصف في فناء المدرسة، حيث أعلنت المعلمة عن انطلاق مبادرة نوعية: زراعة حديقة مدرسية بيئية تخدم المجتمع. في البداية، تردد بعض الطلاب ظانين أن التربة جافة وأن العمل شاق ويحتاج جهداً كبيراً.\n\nلكن سامر، وهو طالب عُرف بهدوئه ومثابرته، بادر فوراً وتقدم نحو الزاوية المهملة وبدأ يزيل الأحجار بروح العزيمة. وسرعان ما ألهم زملاءه فانضموا إليه واحداً تلو الآخر؛ هذا يحمل الشتلات، وتلك تسقي الماء بانتظام، والآخر ينظم الممرات. وخلال أسابيع قليلة، تحولت البقعة القاحلة إلى واحة خضراء مبهجة تبث الأمل.\n\nوفي يوم افتتاح الحديقة، قالت المديرة بابتسامة فخر: "إن هذه الحديقة ليست مجرد نباتات وأزهار، بل هي برهان حي على أن الإرادة الصادقة والتعاون المثمر يحولان أصعب التحديات إلى نجاحات باهرة."\n\n📌 معجم المفردات والتراكيب الجديدة:\n• يزيل الأحجار: ينظف الأرض ويهيئها للغرس.\n• واحة خضراء: مكان مفعم بالحياة والجمال.\n• مثابرة: الاستمرار في العمل دون كلل أو تراجع.`,
+      hookPrompt: `لغز وتحدي المدخل المشوّق لدرس (${safeTitle}) [${safeSubject}] 🔥:\nتأمل هذا الموقف الملهم: في أعماق موضوع (${safeTitle})، يكمن سرّ جوهري ونقطة تحول غيرت مجريات الأمور وعلمتنا درساً لا يُنسى في الحياة والقيم!\nما الحدث أو الفكرة المفتاحية التي تتوقع أن نكتشفها معاً اليوم؟ شاركنا أول تساؤل يدور في ذهنك!`,
+      riddle: {
+        riddleText: `أنا المفهوم والمحور المركزي لدرسنا اليوم حول (${safeTitle}) في مادة (${safeSubject})؛ في تفاصيلي حقائق وعِبر، وبفهمي تتضح الرؤية وتترسخ المعارف والقيم. فما هو هذا الموضوع؟`,
+        clues: [
+          `🔑 تلميح 1: مرتبط ارتباطاً وثيقاً بـ (${safeTitle}).`,
+          `🔑 تلميح 2: يقدم لنا نموذجاً خالداً في الفهم والاستيعاب والتطبيق.`
+        ],
+        options: [
+          `${safeTitle} 🎯`,
+          `موضوع جانبي غير مرتبط`,
+          `أمر عشوائي عام`,
+          `فكرة مختلفة تماماً`
+        ],
+        solution: safeTitle,
+        explanation: `يدور درسنا اليوم بالكامل حول (${safeTitle}) وما يحمله من حقائق وعبر وقيم جوهرية.`
+      },
+      station2Prompt: `نص القراءة المركزي: آفاق ومعالم (${safeTitle}) 📖\n\nتعدّ قضية وموضوع (${safeTitle}) في سياق مادة (${safeSubject}) من المحطات البارزة والمفصلية التي تستوقف كل متأمل وباحث عن المعرفة؛ إذ لا تقتصر أهميتها على المعرفة النظرية فقط، بل تمتد لتشكل نموذجاً فريداً في التخطيط، والوعي، والثبات على المبادئ، وفهم السنن والقوانين المنظمة للحياة والمجتمع.\n\nوعند التعمق في تفاصيل (${safeTitle})، نلحظ بوضوح تضافر مجموعة من العوامل والأسباب المؤثرة؛ فكل خطوة أو مرحلة فيها كانت مدروسة بعناية، حيث تجلت فيها روح المسؤولية، ومواجهة التحديات بالحكمة والشورى، والتكاتف من أجل تحقيق الهدف المنشود، مما جعلها علامة فارقة ونقطة انطلاق مضيئة للأجيال.\n\nإن استيعابنا اليوم لـ (${safeTitle}) يمنحنا رؤية ثاقبة وبصيرة نافذة؛ فنحن لا نقرأ مجرد معلومات تاريخية أو علمية مجردة، بل نستلهم منها منهجاً عملياً نطبقه في حياتنا اليومية وقراراتنا، مؤكدين أن النجاح والتميز إنما يتحققان بحسن الإعداد والتوكل الصادق والعمل الدؤوب.\n\n📌 معجم المفردات والتراكيب الجديدة:\n• محطة مفصلية: نقطة تحول حاسمة ومؤثرة في التاريخ أو الفهم.\n• تضافر العوامل: اجتماع الأسباب وتعاونها لتحقيق نتيجة قوية.\n• بصيرة نافذة: فهم عميق يتجاوز الظاهر إلى جوهر الأمور وحقيقتها.`,
       station3Tasks: [
         {
           tier: "support",
           badge: "🌱 فريق الانطلاق والتمكن",
-          title: "مهمة استخراج المعلومات الصريحة",
-          task: `أجب من واقع النص القرائي:\n١. ما المبادرة التي أعلنت عنها المعلمة في فناء المدرسة؟\n٢. ماذا فعل سامر في البداية حتى تشجع باقي الزملاء؟`,
-          scaffold: `تلميح: راجع الفقرة الأولى والثانية من النص.`
+          title: `مهمة استخراج المعلومات الصريحة حول (${safeTitle})`,
+          task: `أجب من واقع النص القرائي أعلاه:\n١. لماذا يعد موضوع (${safeTitle}) محطة بارزة ومفصلية في سياق (${safeSubject})؟\n٢. استخرج من النص صفتين أو عاملين تجليا في أحداث وتفاصيل (${safeTitle}).`,
+          scaffold: `تلميح: راجع الفقرة الأولى والثانية من النص القرائي.`
         },
         {
           tier: "core",
           badge: "⭐ فريق الممارسة والإتقان",
-          title: "مهمة الاستنتاج وتفسير العلاقات",
-          task: `١. كيف تغير موقف الطلاب من بداية القصة إلى نهايتها؟ وما سبب هذا التحول؟\n٢. فسر بأسلوبك قول المديرة: "إن هذه الحديقة ليست مجرد نباتات وأزهار".`,
-          scaffold: `تلميح: تأمل الأثر المعنوي والتربوي للمبادرة.`
+          title: `مهمة الاستنتاج وتفسير العلاقات في (${safeTitle})`,
+          task: `١. بيّن بالاعتماد على النص كيف يساهم فهم (${safeTitle}) في اتخاذ قرارات حكيمة في حياتنا اليومية.\n٢. فسر بأسلوبك قول الكاتب: "إن النجاح والتميز إنما يتحققان بحسن الإعداد والعمل الدؤوب" في ضوء موضوع (${safeTitle}).`,
+          scaffold: `تلميح: اربط بين الدروس المستفادة من النص وتطبيقاتها الواقعية.`
         },
         {
           tier: "advanced",
           badge: "🚀 فريق الرواد والتحدي",
-          title: "مهمة النقد والتقييم والإبداع",
-          task: `١. ما رأيك في تصرف سامر؟ وهل يعد تصرفه قدوة للمبادرة الذاتية؟ علل رأيك بدليل من النص.\n٢. اقترح عنواناً إبداعياً جديداً للنص القرائي مع بيان سبب اختيارك.`,
-          scaffold: `تلميح: ركز على سمات المبادرة والمثابرة.`
+          title: `مهمة النقد والتقييم والتحليل المعمق لـ (${safeTitle})`,
+          task: `١. ما العبرة أو القيمة المركزية الأهم التي تستخلصها من (${safeTitle})؟ علل اختيارك بحجة منطقية مبنية على النص.\n٢. لو أردت صياغة رسالة توجيهية لزملائك تلخص أهمية (${safeTitle})، كيف تصيغها في جملتين مؤثرتين؟`,
+          scaffold: `تلميح: ركز على الأثر الفكري والقيمي المستدام لـ (${safeTitle}).`
         }
       ],
-      station4Evidence: `ورقة الدليل الفردي المستقل — أدلة فهم المقروء [ ${safeTitle} ] ✍️\nأجب عن الأسئلة الآتية بمفردك لإثبات فهمك المستقل:\n\n١. (استخراج صريح): ما التحدي الذي كان يخشاه بعض الطلاب في بداية المبادرة؟\n٢. (استنتاج): ما الصفة الأبرز التي تميزت بها شخصية سامر؟\n٣. (الاستشهاد بدليل): استخرج جملة صريحة من النص تثبت نجاح المشروع في النهاية.\n٤. (إبداء الرأي): لو كنت مكان الطلاب، ما الإضافة التي ستقترحها لتطوير الحديقة؟ ولماذا؟\n\nاكتب إجاباتك بوضوح في صندوق الحل ثم اضغط "إرسال إجابتي للمعلم" 📤`,
-      station5Prompt: `محطة الحصاد ونقل الأثر 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية الرائعة! حان وقت رصد ثمار تعلمكم اليوم:\n١. ما الفكرة الجوهرية التي اكتسبتموها عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تستفيد مما تعلّمته في حياتك اليومية ومحيطك؟`
+      station4Evidence: `ورقة الدليل الفردي المستقل — أدلة فهم واستيعاب [ ${safeTitle} ] ✍️\nأجب عن الأسئلة الآتية بمفردك لتثبت فهمك المستقل والشامل لموضوع (${safeTitle}):\n\n١. (استخراج صريح): ما الأهمية الكبرى التي يمثلها (${safeTitle}) وفق ما ورد في النص؟\n٢. (استنتاج وعلاقات): كيف ترتبط أسباب ونتائج (${safeTitle}) بفكرة التخطيط والمسؤولية؟\n٣. (الاستشهاد بدليل): استخرج من النص جملة أو عبارة تدل على أثر (${safeTitle}) في بناء الوعي لدى الأجيال.\n٤. (إبداء الرأي ونقل الأثر): برأيك الشخصي، كيف يمكن لطالب في المدرسة أن يطبق دروس (${safeTitle}) في مواجهة الصعوبات المدرسية أو اليومية؟\n\nاكتب إجاباتك الواضحة في صندوق الحل ثم اضغط "إرسال إجابتي للمعلم" 📤`,
+      station5Prompt: `محطة الحصاد ونقل الأثر — ثمار تعلّم (${safeTitle}) 🎒✨\nوصلنا إلى ختام رحلتنا التعليمية في موضوع (${safeTitle})!\n١. ما الفكرة الجوهرية أو الأثر الأكبر الذي استقر في وجدانك وعقلك اليوم عن (${safeTitle})؟\n٢. أجب بصدق واستقلالية عن أسئلة بطاقة الخروج.\n٣. فكّر: كيف تترجم ما تعلمته من (${safeTitle}) إلى سلوك وممارسة عملية في بيتك ومدرستك ومجتمعك؟`
     };
   };
 
@@ -4269,10 +4287,8 @@ ${practiceGroupsDirective}
   // 1. Try Groq AI (Active high-speed models: GPT-OSS 120B, Qwen 3.8 27B, GPT-OSS 20B, ALLaM)
   if (groqKey) {
     const groqModels = [
-      'openai/gpt-oss-120b',
-      'qwen/qwen3.8-27b',
-      'openai/gpt-oss-20b',
-      'allam-2-7b'
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant'
     ];
     for (const m of groqModels) {
       try {
@@ -4310,9 +4326,9 @@ ${practiceGroupsDirective}
     }
   }
 
-  // 2. Try Gemini (only if a valid AIza key is configured)
+  // 2. Try Gemini (with fallback to multiple models)
   if (geminiKey && geminiKey.startsWith('AIza')) {
-    const geminiModels = ['gemini-2.5-flash'];
+    const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
     for (const gm of geminiModels) {
       try {
         const res = await fetchWithTimeout(
@@ -4893,7 +4909,7 @@ export const generateScientificGenieAI = async (question, chatHistory = [], stud
 
   // 1. Try Groq (High Speed Qwen 3.8 / GPT-OSS / ALLaM)
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout(
@@ -5153,7 +5169,7 @@ export const parseUploadedLessonPlanAI = async ({
 
   // 2. Try Groq (Ultra-fast for text)
   if (groqKey && rawText) {
-    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b', 'openai/gpt-oss-20b'];
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const gm of groqModels) {
       try {
         const res = await fetchWithTimeout(
@@ -5322,7 +5338,7 @@ export const guideSteamStationAI = async ({
 
   // 1. Try Groq
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -5513,7 +5529,7 @@ ${stationTask}`;
 
   // 1. Try Groq
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
