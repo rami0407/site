@@ -272,10 +272,10 @@ const StudentDismissalPage = () => {
         // Fallback failed
       }
 
-      setLoginError('❌ كلمة المرور أو الرمز السري غير صحيح. (الرمز الافتراضي: 318212)');
+      setLoginError('❌ كلمة المرور أو الرمز السري غير صحيح.');
     } catch (err) {
       console.error('Teacher login error:', err);
-      setLoginError('❌ حدث خطأ أثناء التحقق. (الرمز الافتراضي: 318212)');
+      setLoginError('❌ حدث خطأ أثناء التحقق.');
     } finally {
       setIsLoggingInTeacher(false);
     }
@@ -1039,7 +1039,7 @@ const StudentDismissalPage = () => {
                 ❓ نسيت الرمز السري؟
               </button>
               <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                الرمز الافتراضي: 318212
+                أدخل الرمز السري...
               </span>
             </div>
           </form>

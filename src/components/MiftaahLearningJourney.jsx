@@ -1127,7 +1127,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     } catch (err) {
       console.warn('Google sign-in notice:', err);
       if (err.code === 'auth/unauthorized-domain') {
-        setTeacherAuthError('⚠️ النطاق (rami0407.github.io) يحتاج إضافة إلى Authorized Domains في Firebase Console. لا داعي للقلق! تم تفعيل الدخول الفوري بضغطة زر أدناه بدون كلمة مرور أو باستخدام الكود الافتراضي 318212.');
+        setTeacherAuthError('⚠️ إذا تعذر الدخول عبر Google بسبب قيود المتصفح، يرجى إدخال البريد الإلكتروني والرمز السري الخاص بك أدناه.');
       } else if (err.code === 'auth/popup-blocked') {
         setTeacherAuthError('⚠️ المتصفح قام بحظر النافذة المنبثقة لـ Google. يمكنك السماح بالنوافذ أو استخدام زر الدخول السريع الفوري أدناه.');
       } else if (err.code === 'auth/popup-closed-by-user') {
@@ -1135,7 +1135,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       } else if (err.code === 'auth/operation-not-allowed') {
         setTeacherAuthError('⚠️ تسجيل الدخول عبر Google غير مفعّل حالياً في مشروع Firebase. يمكنك استخدام الدخول السريع الفوري أدناه.');
       } else {
-        setTeacherAuthError(`تعذر الدخول بحساب Google (${err.code || err.message}). يمكنك استخدام الدخول السريع أو الكود الافتراضي 318212 مباشرة.`);
+        setTeacherAuthError('تعذر الدخول بحساب Google. يرجى إدخال بريدك الإلكتروني والرمز السري للدخول.');
       }
     } finally {
       setIsSubmittingTeacherAuth(false);
@@ -5783,41 +5783,11 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </div>
                 )}
 
-                {/* FAST DIRECT ACCESS BUTTONS (Instant One-Click Login) */}
-                <div className="fast-direct-login-box">
-                  <div className="fast-direct-title">
-                    <i className="fas fa-bolt text-amber-500"></i>
-                    <span>دخول سريع فوري بضغطة زر (بدون كلمة مرور):</span>
-                  </div>
-                  <div className="fast-direct-chips">
-                    <button
-                      type="button"
-                      className="fast-chip chip-principal"
-                      onClick={() => {
-                        const principal = getAllTeachers().find(t => isPrincipalAdmin(t)) || { id: 'tch_36', nameAr: 'رامي غرة', email: 'teacher36@musheirifa.edu.hl', role: 'مدير المدرسة' };
-                        handleTeacherQuickLogin(principal);
-                      }}
-                      title="دخول فوري كمدير المدرسة والموقع"
-                    >
-                      👑 الأستاذ رامي غرة (المدير)
-                    </button>
-                    <button
-                      type="button"
-                      className="fast-chip chip-coord"
-                      onClick={() => {
-                        const jehan = getAllTeachers().find(t => t.nameAr && t.nameAr.includes('جيهان')) || { id: 'tch_2', nameAr: 'جيهان اغبارية', email: 'teacher2@musheirifa.edu.hl', role: 'معلمة ومربية صف' };
-                        handleTeacherQuickLogin(jehan);
-                      }}
-                      title="دخول فوري كمعلمة ومركزة"
-                    >
-                      👩‍🏫 المعلمة جيهان اغبارية
-                    </button>
-                  </div>
-                </div>
+                
 
                 <div className="auth-input-group">
                   <label>
-                    <i className="fas fa-user-check"></i> اختر المعلم/ة للدخول الفوري أو التعبئة السريعة:
+                    <i className="fas fa-user"></i> اختر المعلم/ة من القائمة (اختياري لتعبئة البريد سريعاً):
                   </label>
 
                   {/* Quick Teacher Suggestion / Selector */}
@@ -5827,7 +5797,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       onChange={(e) => {
                         if (e.target.value) {
                           setTeacherEmailInput(e.target.value);
-                          setTeacherPasswordInput(DEFAULT_TEACHER_PIN);
+                          setTeacherPasswordInput('');
                           setTeacherAuthError('');
                         }
                       }}
@@ -5842,22 +5812,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </select>
                   </div>
 
-                  {teacherEmailInput && (
-                    <button
-                      type="button"
-                      className="btn-instant-one-click-login animate-pop"
-                      onClick={() => {
-                        const t = getAllTeachers().find(x => x.email === teacherEmailInput) || findTeacherByEmail(teacherEmailInput);
-                        if (t) {
-                          handleTeacherQuickLogin(t);
-                        } else {
-                          handleTeacherLoginSubmit({ preventDefault: () => {} });
-                        }
-                      }}
-                    >
-                      <i className="fas fa-rocket"></i> دخول فوري مباشر الآن كـ ({getAllTeachers().find(x => x.email === teacherEmailInput)?.nameAr || 'المعلم'}) 🚀
-                    </button>
-                  )}
+                  
 
                   <label style={{ marginTop: '10px' }}>
                     <i className="fas fa-envelope"></i> البريد الإلكتروني:
@@ -5876,7 +5831,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
                 <div className="auth-input-group">
                   <label>
-                    <i className="fas fa-key"></i> الرقم السري (الكود الافتراضي: 318212):
+                    <i className="fas fa-key"></i> الرقم السري / كلمة المرور:
                   </label>
                   <div className="password-input-wrapper">
                     <input
@@ -5886,7 +5841,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         setTeacherPasswordInput(e.target.value);
                         setTeacherAuthError('');
                       }}
-                      placeholder="الكود الافتراضي: 318212"
+                      placeholder="أدخل الرقم السري الخاص بك..."
                       required
                     />
                     <button
@@ -5917,7 +5872,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <span>جاري التحقق من الحساب... ⏳</span>
                   ) : (
                     <>
-                      <i className="fas fa-sign-in-alt"></i> تسجيل الدخول بالبريد والرمز السري (318212) 🔐
+                      <i className="fas fa-sign-in-alt"></i> تسجيل الدخول بالبريد والرمز السري 🔐
                     </>
                   )}
                 </button>
@@ -5953,7 +5908,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <div className="auth-google-guidance-note">
                   <i className="fas fa-shield-alt text-amber-500"></i>
                   <span>
-                    إذا تعذر ربط Google بسبب قيود النطاق بالمتصفح، يمكنك استخدام <strong>الدخول السريع بضغطة زر</strong> أعلاه أو كود <strong>318212</strong> فوراً دون الحاجة لـ Google.
+                    يمكنك تسجيل الدخول بالبريد الإلكتروني والرمز السري الخاص بك، أو باستخدام حساب Google الرسمي.
                   </span>
                 </div>
 
