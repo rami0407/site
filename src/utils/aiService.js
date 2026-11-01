@@ -5699,4 +5699,235 @@ export const generateMiftaahExtraChallengeAI = async ({
   }
 };
 
+/**
+ * 15.H Interactive Socratic Discovery Dialogue AI ("حوار الاستكشاف السقراطي التفاعلي"):
+ * Poses sequential guiding questions dynamically tailored to the student's actual responses,
+ * guiding them to discover and deduce the learning objective on their own without pre-fed answers.
+ */
+export const generateSocraticNextStepAI = async ({
+  lessonTitle = '',
+  subject = '',
+  grade = '',
+  targetObjective = '',
+  currentStep = 1,
+  studentAnswer = '',
+  conversationHistory = [],
+  language = 'arabic'
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = lessonTitle.trim() || 'الدرس';
+  const safeSubject = subject.trim() || 'عام';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+  const safeGoal = targetObjective.trim() || `فهم واستيعاب (${safeTitle}) وتطبيق مبادئه بدقة`;
+  const isHebrew = language === 'hebrew';
+
+  // Format previous conversation for the prompt
+  let formattedHistory = '';
+  if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+    formattedHistory = conversationHistory.map(m => {
+      const roleName = m.role === 'student' ? (isHebrew ? 'תלמיד' : 'الطالب') : (isHebrew ? 'מורה סוקרטי' : 'المحاور السقراطي');
+      return `${roleName}: ${m.text}`;
+    }).join('\n');
+  }
+
+  const prompt = isHebrew
+    ? `אתה מורה ומנחה סוקרטי בכיר בבית ספר מושירפה.
+אתה מוביל חקר סוקרטי אינטראקטיבי בתחנה 2 (הבנת המשמעות) עבור תלמיד בכיתה ${safeGrade}.
+נושא השיעור: "${safeTitle}" (${safeSubject}).
+מטרת השיעור שהתלמיד צריך לגלות בעצמו: "${safeGoal}".
+השלב הנוכחי: שלב ${currentStep} מתוך 3.
+היסטוריית השיחה עד כה:
+${formattedHistory}
+
+תשובת התלמיד העדכנית: "${studentAnswer}".
+
+עליך לפעול בדיוק לפי העקרונות הסוקרטיים הבאים:
+1. אל תיתן לתלמיד את התשובה הסופית בשום אופן!
+2. התייחס ישירות למה שהתלמיד כתב, עודד אותו במשפט אחד חם ומדויק.
+3. אם השלב הנוכחי הוא 1 (תצפית): שאל את שאלת שלב 2 (השוואה וניתוח) הנבנית ישירות על תשובת התלמיד.
+4. אם השלב הנוכחי הוא 2 (השוואה): שאל את שאלת שלב 3 (הסקת מסקנה וניסוח היעד) כדי שהתלמיד ינסח את מטרת השיעור במילים שלו.
+5. אם השלב הנוכחי הוא 3 (הסקה): אשר לתלמיד שהוא גילה בעצמו את מטרת השיעור, סכם את התובנה המרכזית, וברך אותו בחום (isGoalReached: true).
+
+החזר JSON תקין בלבד:
+{
+  "feedback": "משוב סוקרטי מעודד וקצר על תשובת התלמיד",
+  "nextQuestion": "שאלת ההמשך המנחה (או ריק אם הושג היעד)",
+  "stageTitle": "כותרת השלב הבא",
+  "isGoalReached": ${currentStep >= 3},
+  "achievedGoalSummary": "סיכום קצר של מה שהתלמיד גילה",
+  "suggestedThoughtStarters": ["רעיון 1", "רעיון 2", "רעיון 3"]
+}`
+    : `أنت المعلم والمحاور السقراطي الذكي بنظام «مِفتاح التعلّم» بمدرسة مشيرفة الابتدائية.
+تقود حوار استكشاف سقراطي تفاعلي في محطة فهم وبناء المعنى لطالب في ${safeGrade}.
+- موضوع الدرس: "${safeTitle}" (مادة ${safeSubject}).
+- الهدف التعليمي الذي يجب أن يكتشفه الطالب بنفسه دون تلقين: "${safeGoal}".
+- الخطوة الحالية: الخطوة رقم ${currentStep} من 3.
+سجل الحوار السابق:
+${formattedHistory}
+
+إجابة الطالب الأخيرة الآن: "${studentAnswer}".
+
+تعليمات المنهج السقراطي الصارم:
+1. إياك أن تعطي الطالب الإجابة الجاهزة مسبقاً!
+2. قيّم إجابة الطالب بتغذية راجعة سقراطية دافئة وموجزة (سطر أو سطرين) تثمن ما فكّر به وتربطه بالملاحظة.
+3. إذا كانت الخطوة الحالية 1 (الملاحظة): ابنِ على إجابته واطرح عليه سؤال الخطوة 2 (التحليل والمقارنة بين حالتين أو نشاطين).
+4. إذا كانت الخطوة الحالية 2 (التحليل): ابنِ على إجابته واطرح عليه سؤال الخطوة 3 (الاستنتاج وصياغة القاعدة والهدف بكلماته الخاصة).
+5. إذا كانت الخطوة الحالية 3 (الاستنتاج): تابعه وأعلن له فوزه وبلوغه الهدف المطلوب بنفسه، وصغ له تتويجاً باهراً يؤكد ما استنتجه (isGoalReached: true).
+
+أخرج JSON فقط بالشكل التالي:
+{
+  "feedback": "تغذية راجعة سقراطية موجزة ودافئة تثمن ما قاله الطالب...",
+  "nextQuestion": "نص السؤال السقراطي التالي الموجه المبني على كلامه...",
+  "stageTitle": "٢. التحليل والمقارنة السقراطية 🧩",
+  "isGoalReached": ${currentStep >= 3},
+  "achievedGoalSummary": "صياغة الهدف والمفهوم المستنتج...",
+  "suggestedThoughtStarters": ["مفتاح تفكير أول...", "مفتاح تفكير ثانٍ...", "مفتاح تفكير ثالث..."]
+}`;
+
+  const parseSafeJson = (raw) => {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        try {
+          return JSON.parse(raw.substring(first, last + 1));
+        } catch (err) {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  // 1. Try Groq
+  if (groqKey) {
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    for (const m of groqModels) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${groqKey}`
+            },
+            body: JSON.stringify({
+              model: m,
+              messages: [{ role: 'user', content: `${prompt}\n\nStrict JSON response only matching schema:` }],
+              temperature: 0.4,
+              max_tokens: 650,
+              response_format: { type: 'json_object' }
+            })
+          },
+          6500
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = parseSafeJson(data.choices?.[0]?.message?.content);
+          if (parsed && (parsed.nextQuestion || parsed.feedback || parsed.isGoalReached)) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Groq socratic step (${m}) notice:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey && geminiKey.startsWith('AIza')) {
+    const geminiModels = ['gemini-2.5-flash'];
+    for (const gm of geminiModels) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only matching schema:` }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 650, responseMimeType: 'application/json' }
+            })
+          },
+          6500
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = parseSafeJson(data.candidates?.[0]?.content?.parts?.[0]?.text);
+          if (parsed && (parsed.nextQuestion || parsed.feedback || parsed.isGoalReached)) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(`Gemini socratic step (${gm}) notice:`, e);
+      }
+    }
+  }
+
+  // 3. Fallbacks (Dynamic and specific to step)
+  if (isHebrew) {
+    if (currentStep === 1) {
+      return {
+        feedback: `מחשבה מצוינת והבחנה מדויקת! התחלת לחשוב כמו חוקר אמיתי על (${safeTitle}).`,
+        nextQuestion: `כעת נעבור לשלב ההשוואה: אם נשווה בין (${safeTitle}) לבין פעילות רגילה אחרת, מהו הגורם המרכזי שמבדיל ביניהם ומסביר את החשיבות הייחודית של המושג?`,
+        stageTitle: '2. השוואה וניתוח קשרים 🧩',
+        isGoalReached: false,
+        achievedGoalSummary: '',
+        suggestedThoughtStarters: ['הקשר המיוחד והעמוק', 'המטרה הפנימית שמאחורי הפעולה', 'ההשפעה על התודעה וההרגשה']
+      };
+    } else if (currentStep === 2) {
+      return {
+        feedback: `ניתוח מעמיק ומשכנע! הצלחת לזהות את ההבדל המהותי ולא הסתפקת בהסתכלות שטחית.`,
+        nextQuestion: `וכעת הרגע המכריע: לאור מה שראינו והשווינו, נסח בעצמך במשפט אחד שלם את המסקנה או הכלל הסופי בנושא (${safeTitle})!`,
+        stageTitle: '3. הסקת מסקנה והגעה ליעד 🎯',
+        isGoalReached: false,
+        achievedGoalSummary: '',
+        suggestedThoughtStarters: [`המטרה העיקרית היא...`, `הבנתי שהעיקרון פועל כך ש...`, `הכלל המרכזי הוא...`]
+      };
+    } else {
+      return {
+        feedback: `כל הכבוד! 🎉 הגעת בעצמך ליעד השיעור בשיטה הסוקרטית המפוארת!`,
+        nextQuestion: '',
+        stageTitle: 'היעד הושג בהצלחה! 🌟',
+        isGoalReached: true,
+        achievedGoalSummary: `${safeGoal} — התלמיד ניסח בעצמו את העיקרון המדויק.`,
+        suggestedThoughtStarters: []
+      };
+    }
+  }
+
+  if (currentStep === 1) {
+    return {
+      feedback: `تفكير رائع وبداية استكشافية موفقة جداً! لقد وضعت يدك على خيط التفكير الأول في درس (${safeTitle}).`,
+      nextQuestion: `والآن لنتعمق في المقارنة والتحليل: إذا قارنا بين (${safeTitle}) وبين أي نشاط أو مفهوم آخر مشابه، ما الفارق الجوهري الذي يميز هذا المفهوم ويمنحه قيمته وأثره الخاص؟`,
+      stageTitle: '٢. التحليل والمقارنة السقراطية 🧩',
+      isGoalReached: false,
+      achievedGoalSummary: '',
+      suggestedThoughtStarters: ['الفارق يكمن في النية والهدف الداخلي 🤲', 'الصلة المباشرة والأثر المستمر في النفس 🕊️', 'الالتزام والنظام الذي يميزه عن غيره ⏰']
+    };
+  } else if (currentStep === 2) {
+    return {
+      feedback: `تحليل بارع وذكي للغاية! لقد تجاوزت السطح وتعمقت في جوهر المعنى وسر تميزه.`,
+      nextQuestion: `والآن حان موعد قطف ثمرة تفكيرك: بناءً على ما لاحظته في البداية وما قارنته للتو، كيف تصيغ بأسلوبك الخاص وبجملة واحدة الهدف الأساسي الذي نتعلمه اليوم من (${safeTitle})؟`,
+      stageTitle: '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯',
+      isGoalReached: false,
+      achievedGoalSummary: '',
+      suggestedThoughtStarters: [`الهدف الأساسي هو أن...`, `القاعدة الجوهرية التي اكتشفتها هي...`, `أهمية هذا المفهوم تتجلى في...`]
+    };
+  } else {
+    return {
+      feedback: `مبارك يا بطل! 🎉 لقد استنتجت بنفسك الهدف المنشود بالطريقة السقراطية دون أي تلقين مسبق!`,
+      nextQuestion: '',
+      stageTitle: 'تم بلوغ الهدف بنجاح 🌟',
+      isGoalReached: true,
+      achievedGoalSummary: `${safeGoal} — استنتجه الطالب باستقلالية وبرهن عليه بدقة.`,
+      suggestedThoughtStarters: []
+    };
+  }
+};
+
 

@@ -5,7 +5,8 @@ import {
   modifyMiftaahStationWithPromptAI,
   generateMiftaahGroupTasksAI,
   evaluateMiftaahExitTicketAI,
-  generateMiftaahExtraChallengeAI
+  generateMiftaahExtraChallengeAI,
+  generateSocraticNextStepAI
 } from '../utils/aiService';
 import {
   exportLessonPlanToWord,
@@ -2355,6 +2356,14 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [st2SocraticAnswers, setSt2SocraticAnswers] = useState({});
   const [st2SocraticCustomInput, setSt2SocraticCustomInput] = useState('');
   const [st2SocraticCompleted, setSt2SocraticCompleted] = useState(false);
+
+  // Live Socratic Interactive Conversational Dialogue States (حوار الاستكشاف السقراطي التفاعلي الحي)
+  const [socraticChatMessages, setSocraticChatMessages] = useState([]);
+  const [socraticCurrentInput, setSocraticCurrentInput] = useState('');
+  const [isSocraticAiThinking, setIsSocraticAiThinking] = useState(false);
+  const [socraticCurrentStepNum, setSocraticCurrentStepNum] = useState(1);
+  const [socraticThoughtStarters, setSocraticThoughtStarters] = useState([]);
+  const [socraticGoalReachedInfo, setSocraticGoalReachedInfo] = useState(null);
   const [st3ExerciseAnswers, setSt3ExerciseAnswers] = useState({});
   const [isSt3ScaffoldOpen, setIsSt3ScaffoldOpen] = useState(false);
   const [isSt3DeepChallengeOpen, setIsSt3DeepChallengeOpen] = useState(false);
@@ -2716,6 +2725,158 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Live Socratic Interactive Discovery Effect (تهيئة حوار الاستكشاف السقراطي التفاعلي)
+  useEffect(() => {
+    if (studentCurrentStationIndex === 2 && (studentCurrentStationData?.selectedPath === 'discovery' || studentCurrentStationData?.selectedPath === 'blended')) {
+      if (socraticChatMessages.length === 0) {
+        const title = activeLesson?.title || 'الدرس';
+        const isHebrew = (activeLesson?.language || '').toLowerCase() === 'hebrew';
+        const st2Data = studentCurrentStationData;
+        const initialPrompt = st2Data?.socraticDialogue?.steps?.[0]?.prompt
+          || (isHebrew
+            ? `שלום לך חוקר צעיר! ברוך הבא למסלול החקר הסוקרטי בנושא (${title}). התבונן במציאות היומיומית: מהו הדבר הראשון שמעורר את סקרנותך או מושך את תשומת ליבך בנושא זה? ומדוע?`
+            : `يا بطل الاستكشاف، مرحباً بك في حوار التفكير السقراطي لدرس (${title})! 🌟\nتأمل حياتك وما تلاحظه حول هذا الموضوع: ما أول تساؤل أو ظاهرة تلفت انتباهك هنا؟ وما سبب ذلك؟`);
+
+        const initialStarters = st2Data?.socraticDialogue?.steps?.[0]?.options || (isHebrew
+          ? ['זה משפיע על סדר היום שלנו', 'זה מחבר בין אנשים וערכים', 'יש בזה משמעות פנימית עמוקה']
+          : ['نلاحظ وجود رابط وثيق وتنظيم في حياتنا ⏰', 'لأنها تمنحنا الراحة والسكينة وتصلنا بالقيم 🤲', 'لأنها ركن أساسي وممارسة منتظمة ومهمة 💡']);
+
+        setSocraticChatMessages([
+          {
+            id: 'soc_init',
+            role: 'ai',
+            text: initialPrompt,
+            step: 1,
+            stageTitle: isHebrew ? '1. תצפית ושאילת שאלות 🔍' : '١. الملاحظة والتساؤل السقراطي 🔍',
+            timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setSocraticCurrentStepNum(1);
+        setSocraticThoughtStarters(initialStarters);
+      }
+    }
+  }, [studentCurrentStationIndex, studentCurrentStationData?.selectedPath, activeLesson?.title]);
+
+  const handleSendSocraticAnswer = async (presetText = null) => {
+    const textToSend = (presetText || socraticCurrentInput).trim();
+    if (!textToSend || isSocraticAiThinking) return;
+
+    const currentStep = socraticCurrentStepNum;
+    const userMsg = {
+      id: 'soc_user_' + Date.now(),
+      role: 'student',
+      text: textToSend,
+      step: currentStep,
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const updatedMessages = [...socraticChatMessages, userMsg];
+    setSocraticChatMessages(updatedMessages);
+    setSocraticCurrentInput('');
+    setIsSocraticAiThinking(true);
+
+    const currentParticipant = sessionState.participants.find(p => p.id === currentStudentId) || {
+      id: currentStudentId,
+      name: 'طالب مستكشف',
+      groupName: 'المجموعة 1'
+    };
+
+    try {
+      const res = await generateSocraticNextStepAI({
+        lessonTitle: activeLesson?.title || 'الدرس',
+        subject: activeLesson?.subject || 'عام',
+        grade: activeLesson?.grade || '',
+        targetObjective: studentCurrentStationData?.socraticDialogue?.targetGoalStatement || activeLesson?.objective || '',
+        currentStep: currentStep,
+        studentAnswer: textToSend,
+        conversationHistory: updatedMessages,
+        language: activeLesson?.language || 'arabic'
+      });
+
+      if (res) {
+        let aiBubbleText = '';
+        if (res.feedback) {
+          aiBubbleText += `💡 ${res.feedback}\n\n`;
+        }
+        if (res.isGoalReached) {
+          aiBubbleText += `🎯 ${res.achievedGoalSummary || 'مبارك! لقد استنتجت الهدف بنفسك!'}\n\n🎉 أحسنت صنعاً! لقد أثبتت فهمك العميق للمفهوم بالطريقة السقراطية دون تلقين جاهز. أنت الآن مؤهل تماماً للانتقال إلى محطة التطبيق والتدريب! 🌟`;
+          setSocraticGoalReachedInfo(res.achievedGoalSummary || 'تم استنتاج الهدف بنجاح');
+          setSt2SocraticCompleted(true);
+        } else if (res.nextQuestion) {
+          aiBubbleText += `❓ ${res.nextQuestion}`;
+          setSocraticCurrentStepNum(currentStep + 1);
+        }
+
+        const aiMsg = {
+          id: 'soc_ai_' + Date.now(),
+          role: 'ai',
+          text: aiBubbleText,
+          step: currentStep + 1,
+          stageTitle: res.stageTitle || (currentStep === 1 ? '٢. التحليل والمقارنة السقراطية 🧩' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯'),
+          isGoalReached: !!res.isGoalReached,
+          timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setSocraticChatMessages([...updatedMessages, aiMsg]);
+
+        if (Array.isArray(res.suggestedThoughtStarters) && res.suggestedThoughtStarters.length > 0) {
+          setSocraticThoughtStarters(res.suggestedThoughtStarters);
+        } else {
+          setSocraticThoughtStarters([]);
+        }
+
+        if (res.isGoalReached) {
+          showToast('🎉 رائع ومبهر! لقد استنتجت هدف المحطة بنفسك بالطريقة السقراطية!');
+          const newDiscoveryAlert = {
+            id: 'socratic_sub_' + Date.now(),
+            participantId: currentParticipant.id,
+            participantName: currentParticipant.name,
+            groupName: currentParticipant.groupName,
+            stationNumber: 2,
+            stationName: studentCurrentStationData.name,
+            text: `[💡 إنجاز الحوار السقراطي بنجاح]: استنتج الطالب الهدف بنفسه (${activeLesson.title})`,
+            tier: 'socratic_mastered',
+            scaffoldsUsed: ['حوار استكشاف سقراطي تفاعلي 🏛️'],
+            formativeScore: '100',
+            aiEvalStatus: 'mastered',
+            teacherFeedback: 'استنتاج سقراطي ذاتي ومستقل! 🌟👏',
+            aiTeacherNotes: 'وصل الطالب لهدف الحصة بنفسه عبر الحوار السقراطي المتدرج.',
+            reviewStatus: 'reviewed',
+            timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+          };
+          const next = {
+            ...sessionState,
+            submissions: [newDiscoveryAlert, ...sessionState.submissions]
+          };
+          broadcastSession(next);
+        }
+      }
+    } catch (err) {
+      console.warn('Socratic step error:', err);
+      const fallbackMsg = {
+        id: 'soc_ai_' + Date.now(),
+        role: 'ai',
+        text: `💡 أحسنت المحاولة والتفكير يا بطل! ملاحظتك تدل على تركيز رائع.\n\n❓ والآن قارن بين ما ذكرته وبين حالات أخرى: كيف يساعدنا هذا المفهوم على تحقيق أثره الحقيقي؟`,
+        step: currentStep + 1,
+        stageTitle: '٢. التحليل والمقارنة السقراطية 🧩',
+        isGoalReached: false,
+        timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+      };
+      setSocraticChatMessages([...updatedMessages, fallbackMsg]);
+      setSocraticCurrentStepNum(currentStep + 1);
+    } finally {
+      setIsSocraticAiThinking(false);
+    }
+  };
+
+  const handleResetSocraticDialogue = () => {
+    setSocraticChatMessages([]);
+    setSocraticCurrentStepNum(1);
+    setSocraticGoalReachedInfo(null);
+    setSt2SocraticCompleted(false);
+    setSocraticThoughtStarters([]);
   };
 
   // 60-Second Refresh Time Modal Countdown Effect
@@ -10866,9 +11027,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </div>
                   )}
 
-                  {/* Socratic Guided Inquiry Journey (الأسئلة السقراطية الموجهة التي يتفاعل معها الطالب ليصل للهدف) */}
-                  {(studentCurrentStationData.selectedPath === 'discovery' || studentCurrentStationData.selectedPath === 'blended') &&
-                    studentCurrentStationData.socraticDialogue?.steps && (
+                  {/* Socratic Conversational AI Journey (حوار الاستكشاف السقراطي التفاعلي الحي مع الذكاء الاصطناعي) */}
+                  {(studentCurrentStationData.selectedPath === 'discovery' || studentCurrentStationData.selectedPath === 'blended') && (
                     <div className="socratic-interactive-journey-box animate-fade-in" style={{
                       background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
                       border: '2px solid #22c55e',
@@ -10878,267 +11038,292 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '1.4rem' }}>🏛️💬</span>
-                          <strong style={{ color: '#15803d', fontSize: '1.05rem' }}>
-                            حوار الاستكشاف السقراطي التفاعلي:
-                          </strong>
-                        </div>
-                        <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 800 }}>
-                          {st2SocraticCompleted ? '🎉 تم بلوغ الهدف بنجاح!' : `الخطوة ${st2SocraticActiveStep + 1} من ${studentCurrentStationData.socraticDialogue.steps.length}`}
-                        </span>
-                      </div>
-
-                      {/* Target Goal Reminder */}
-                      {studentCurrentStationData.socraticDialogue.targetGoalStatement && (
-                        <div style={{
-                          background: '#ecfdf5',
-                          border: '1.5px dashed #86efac',
-                          borderRadius: '12px',
-                          padding: '10px 14px',
-                          marginBottom: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px'
-                        }}>
-                          <span style={{ fontSize: '1.2rem' }}>🎯</span>
-                          <div style={{ fontSize: '0.88rem', color: '#065f46' }}>
-                            <strong>الهدف التعليمي المطلوب الوصول إليه:</strong> {studentCurrentStationData.socraticDialogue.targetGoalStatement}
+                          <span style={{ fontSize: '1.5rem' }}>🏛️💬</span>
+                          <div>
+                            <strong style={{ color: '#15803d', fontSize: '1.02rem', display: 'block' }}>
+                              حوار الاستكشاف السقراطي التفاعلي مع الذكاء الاصطناعي
+                            </strong>
+                            <small style={{ color: '#047857', fontSize: '0.8rem', fontWeight: 600 }}>
+                              يجيب الطالب عن كل تساؤل، والذكاء يوجهه خطوة بخطوة حتى يصل إلى الهدف المطلوب بنفسه 🎯
+                            </small>
                           </div>
                         </div>
-                      )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ background: socraticGoalReachedInfo ? '#fef08a' : '#dcfce7', color: socraticGoalReachedInfo ? '#854d0e' : '#166534', padding: '4px 12px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 800 }}>
+                            {socraticGoalReachedInfo ? '🎉 تم بلوغ الهدف بنجاح!' : `الخطوة ${socraticCurrentStepNum} من 3`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleResetSocraticDialogue}
+                            style={{
+                              background: '#f1f5f9',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '8px',
+                              padding: '4px 10px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              color: '#475569',
+                              cursor: 'pointer'
+                            }}
+                            title="إعادة بدء الحوار الاستكشافي"
+                          >
+                            🔄 إعادة البدء
+                          </button>
+                        </div>
+                      </div>
 
-                      {/* Step Progress Tabs */}
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                        {studentCurrentStationData.socraticDialogue.steps.map((step, idx) => {
-                          const isDone = st2SocraticAnswers[idx] !== undefined;
-                          const isActive = st2SocraticActiveStep === idx;
+                      {/* Socratic Step Indicator Tabs */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                        {[
+                          { step: 1, label: '١. الملاحظة والتساؤل 🔍' },
+                          { step: 2, label: '٢. التحليل والمقارنة 🧩' },
+                          { step: 3, label: '٣. الاستنتاج وبلوغ الهدف 🎯' }
+                        ].map(stItem => {
+                          const isDone = socraticCurrentStepNum > stItem.step || (socraticCurrentStepNum === 3 && socraticGoalReachedInfo);
+                          const isActive = socraticCurrentStepNum === stItem.step && !socraticGoalReachedInfo;
                           return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setSt2SocraticActiveStep(idx)}
+                            <div
+                              key={stItem.step}
                               style={{
-                                flex: '1 1 140px',
-                                padding: '8px 12px',
+                                flex: '1 1 120px',
+                                padding: '7px 12px',
                                 borderRadius: '10px',
-                                border: isActive ? '2px solid #16a34a' : isDone ? '1.5px solid #86efac' : '1.5px solid #cbd5e1',
+                                border: isActive ? '2px solid #16a34a' : isDone ? '1.5px solid #86efac' : '1px solid #e2e8f0',
                                 background: isActive ? '#16a34a' : isDone ? '#dcfce7' : '#ffffff',
                                 color: isActive ? '#ffffff' : isDone ? '#15803d' : '#64748b',
                                 fontWeight: 800,
-                                fontSize: '0.84rem',
-                                cursor: 'pointer',
+                                fontSize: '0.82rem',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '6px'
                               }}
                             >
-                              <span>{isDone ? '✓' : idx + 1}.</span>
-                              <span>{step.stage || `الخطوة ${idx + 1}`}</span>
-                            </button>
+                              <span>{isDone ? '✓' : stItem.step}.</span>
+                              <span>{stItem.label}</span>
+                            </div>
                           );
                         })}
                       </div>
 
-                      {/* Active Socratic Question */}
-                      {(() => {
-                        const currentStep = studentCurrentStationData.socraticDialogue.steps[st2SocraticActiveStep] || studentCurrentStationData.socraticDialogue.steps[0];
-                        if (!currentStep) return null;
-                        const answered = st2SocraticAnswers[st2SocraticActiveStep];
-                        const isCorrect = answered && (answered === currentStep.correctOption || answered === currentStep.options?.[0]);
-
-                        return (
-                          <div className="socratic-active-card animate-fade-in" style={{
-                            background: '#ffffff',
-                            border: '1.5px solid #bbf7d0',
-                            borderRadius: '14px',
-                            padding: '16px',
-                            marginBottom: '10px'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span style={{ fontWeight: 800, color: '#166534', fontSize: '0.9rem' }}>
-                                {currentStep.stage}
-                              </span>
-                              <span style={{ fontSize: '0.78rem', color: '#65a30d', fontWeight: 700 }}>
-                                تساؤل موجه للاستنتاج 💡
+                      {/* Socratic Chat Stream (Live Q&A turns) */}
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        marginBottom: '14px',
+                        maxHeight: '420px',
+                        overflowY: 'auto',
+                        padding: '10px 4px'
+                      }}>
+                        {socraticChatMessages.map((msg, mIdx) => {
+                          const isAi = msg.role === 'ai';
+                          return (
+                            <div
+                              key={msg.id || mIdx}
+                              className="animate-fade-in"
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: isAi ? 'flex-start' : 'flex-end',
+                                width: '100%'
+                              }}
+                            >
+                              <div style={{
+                                maxWidth: '88%',
+                                background: isAi ? '#ffffff' : '#0284c7',
+                                color: isAi ? '#0f172a' : '#ffffff',
+                                border: isAi ? '1.5px solid #86efac' : 'none',
+                                borderRadius: isAi ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
+                                padding: '12px 16px',
+                                boxShadow: isAi ? '0 2px 8px rgba(34, 197, 94, 0.08)' : '0 2px 8px rgba(2, 132, 199, 0.15)',
+                                fontSize: '0.92rem',
+                                lineHeight: 1.6
+                              }}>
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  marginBottom: '6px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 800,
+                                  color: isAi ? '#166534' : '#bae6fd'
+                                }}>
+                                  <span>{isAi ? '🏛️ المحاور السقراطي الذكي:' : '🎒 إجابتك وفكرتك:'}</span>
+                                  {msg.stageTitle && (
+                                    <span style={{ background: isAi ? '#dcfce7' : '#0369a1', color: isAi ? '#14532d' : '#ffffff', padding: '1px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>
+                                      {msg.stageTitle}
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ whiteSpace: 'pre-line' }}>
+                                  {msg.text}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px', padding: '0 6px' }}>
+                                {msg.timestamp}
                               </span>
                             </div>
+                          );
+                        })}
 
-                            <h4 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '1rem', lineHeight: 1.6 }}>
-                              {currentStep.prompt}
-                            </h4>
+                        {/* AI Thinking Animation */}
+                        {isSocraticAiThinking && (
+                          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '12px', width: 'fit-content', border: '1px solid #86efac' }}>
+                            <span className="animate-spin" style={{ fontSize: '1.2rem' }}>💭</span>
+                            <span style={{ color: '#166534', fontSize: '0.84rem', fontWeight: 700 }}>
+                              المحاور السقراطي يحلل إجابتك بدقة ويصوغ السؤال السقراطي التالي...
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                            {/* Options */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                              {(currentStep.options || []).map((opt, oIdx) => {
-                                const isSelected = answered === opt;
-                                const isThisCorrect = opt === currentStep.correctOption || oIdx === 0;
-                                let btnBg = '#f8fafc';
-                                let btnBorder = '#e2e8f0';
-                                let btnColor = '#1e293b';
-
-                                if (isSelected) {
-                                  if (isThisCorrect) {
-                                    btnBg = '#dcfce7';
-                                    btnBorder = '#22c55e';
-                                    btnColor = '#14532d';
-                                  } else {
-                                    btnBg = '#fee2e2';
-                                    btnBorder = '#ef4444';
-                                    btnColor = '#7f1d1d';
-                                  }
-                                }
-
-                                return (
+                      {/* Interactive Answer Input Form (Active until goal reached) */}
+                      {!socraticGoalReachedInfo ? (
+                        <div style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #86efac',
+                          borderRadius: '12px',
+                          padding: '12px'
+                        }}>
+                          {/* Suggested Thought Starters Pills */}
+                          {Array.isArray(socraticThoughtStarters) && socraticThoughtStarters.length > 0 && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <span style={{ fontSize: '0.78rem', color: '#047857', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                                💡 مقترحات ومفاتيح تفكير مساعدة (اضغط للإضافة):
+                              </span>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {socraticThoughtStarters.map((starter, sIdx) => (
                                   <button
-                                    key={oIdx}
+                                    key={sIdx}
                                     type="button"
-                                    onClick={() => {
-                                      const nextAnswers = { ...st2SocraticAnswers, [st2SocraticActiveStep]: opt };
-                                      setSt2SocraticAnswers(nextAnswers);
-                                      if (isThisCorrect) {
-                                        showToast('إجابة سقراطية موفقة! 🌟 استمر في التفكير نحو الهدف.');
-                                        if (st2SocraticActiveStep === studentCurrentStationData.socraticDialogue.steps.length - 1) {
-                                          setSt2SocraticCompleted(true);
-                                        }
-                                      }
-                                    }}
+                                    onClick={() => setSocraticCurrentInput(prev => prev ? `${prev} • ${starter}` : starter)}
                                     style={{
-                                      padding: '11px 14px',
-                                      borderRadius: '10px',
-                                      border: `1.5px solid ${btnBorder}`,
-                                      background: btnBg,
-                                      color: btnColor,
-                                      fontWeight: 700,
-                                      fontSize: '0.9rem',
+                                      background: '#f0fdf4',
+                                      border: '1px solid #86efac',
+                                      borderRadius: '999px',
+                                      padding: '4px 10px',
+                                      fontSize: '0.78rem',
+                                      color: '#15803d',
                                       cursor: 'pointer',
-                                      textAlign: 'right',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
+                                      fontWeight: 600,
                                       transition: 'all 0.15s ease'
                                     }}
                                   >
-                                    <span>{opt}</span>
-                                    {isSelected && <span>{isThisCorrect ? '✅' : '❌'}</span>}
+                                    + {starter}
                                   </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Feedback & Guiding Hint */}
-                            {answered && (
-                              <div className="animate-fade-in" style={{
-                                padding: '12px 14px',
-                                borderRadius: '10px',
-                                background: isCorrect ? '#f0fdf4' : '#fffbeb',
-                                border: `1.5px solid ${isCorrect ? '#86efac' : '#fde68a'}`,
-                                marginTop: '10px'
-                              }}>
-                                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isCorrect ? '#166534' : '#92400e', marginBottom: '4px' }}>
-                                  {isCorrect ? '🌟 تغذية راجعة سقراطية موجهة:' : '💡 تلميح سقراطي لإعادة التفكير:'}
-                                </div>
-                                <p style={{ margin: 0, fontSize: '0.88rem', color: isCorrect ? '#14532d' : '#78350f', lineHeight: 1.6 }}>
-                                  {isCorrect ? (currentStep.socraticFeedback || 'أحسنت! هذا التحليل يقودنا مباشرة إلى الخطوة التالية.') : (currentStep.guidingHint || 'تأمل الأمثلة مرة أخرى وابحث عن النمط المشترك.')}
-                                </p>
+                                ))}
                               </div>
-                            )}
-
-                            {/* Step Navigation Controls */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', flexWrap: 'wrap', gap: '8px' }}>
-                              <button
-                                type="button"
-                                disabled={st2SocraticActiveStep === 0}
-                                onClick={() => setSt2SocraticActiveStep(prev => Math.max(0, prev - 1))}
-                                style={{
-                                  background: '#f1f5f9',
-                                  color: st2SocraticActiveStep === 0 ? '#cbd5e1' : '#475569',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  padding: '7px 14px',
-                                  fontWeight: 700,
-                                  fontSize: '0.82rem',
-                                  cursor: st2SocraticActiveStep === 0 ? 'not-allowed' : 'pointer'
-                                }}
-                              >
-                                ◀ الخطوة السابقة
-                              </button>
-
-                              {st2SocraticActiveStep < studentCurrentStationData.socraticDialogue.steps.length - 1 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setSt2SocraticActiveStep(prev => prev + 1)}
-                                  style={{
-                                    background: isCorrect ? '#16a34a' : '#0284c7',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '7px 16px',
-                                    fontWeight: 800,
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}
-                                >
-                                  <span>الانتقال إلى السؤال السقراطي التالي</span>
-                                  <span>▶</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSt2SocraticCompleted(true);
-                                    showToast('مبارك! لقد استنتجت المفهوم ووصلت للهدف بنفسك بالطريقة السقراطية! 🌟');
-                                  }}
-                                  style={{
-                                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '8px 18px',
-                                    fontWeight: 800,
-                                    fontSize: '0.88rem',
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  🎯 لقد بلغت هدف الدرس بنجاح! 🎉
-                                </button>
-                              )}
                             </div>
-                          </div>
-                        );
-                      })()}
+                          )}
 
-                      {/* Socratic Completion Banner */}
-                      {st2SocraticCompleted && (
+                          <label style={{ display: 'block', fontWeight: 800, color: '#166534', fontSize: '0.86rem', marginBottom: '6px' }}>
+                            ✍️ اكتب إجابتك وفكرتك للمحاور السقراطي:
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={socraticCurrentInput}
+                            onChange={e => setSocraticCurrentInput(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendSocraticAnswer();
+                              }
+                            }}
+                            placeholder="اكتب ما تلاحظه، تحلله، أو تستنتجه هنا، ودع الذكاء الاصطناعي يوجهك خطوة بخطوة..."
+                            disabled={isSocraticAiThinking}
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #86efac',
+                              fontSize: '0.9rem',
+                              fontFamily: 'inherit',
+                              boxSizing: 'border-box',
+                              resize: 'vertical',
+                              marginBottom: '8px'
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                              💡 أجب بحرية وبلغتك الخاصة، وسيقوم الذكاء بتحليل إجابتك وبناء السؤال التالي عليها!
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleSendSocraticAnswer()}
+                              disabled={!socraticCurrentInput.trim() || isSocraticAiThinking}
+                              style={{
+                                background: (!socraticCurrentInput.trim() || isSocraticAiThinking) ? '#94a3b8' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '9px 18px',
+                                fontWeight: 800,
+                                fontSize: '0.88rem',
+                                cursor: (!socraticCurrentInput.trim() || isSocraticAiThinking) ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 3px 10px rgba(22, 163, 74, 0.2)'
+                              }}
+                            >
+                              <span>إرسال الإجابة للذكاء السقراطي 💬</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Triumphant Socratic Goal Reached Card */
                         <div className="animate-fade-in" style={{
                           background: 'linear-gradient(135deg, #dcfce7 0%, #fef9c3 100%)',
                           border: '2px solid #22c55e',
-                          borderRadius: '12px',
-                          padding: '14px 18px',
-                          marginTop: '12px',
+                          borderRadius: '14px',
+                          padding: '16px 20px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '12px'
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '12px',
+                          boxShadow: '0 4px 14px rgba(34, 197, 94, 0.15)'
                         }}>
-                          <span style={{ fontSize: '2rem' }}>🏆</span>
-                          <div>
-                            <strong style={{ color: '#14532d', fontSize: '0.96rem', display: 'block', marginBottom: '2px' }}>
-                              رائع يا بطل! حققت معيار الفهم بالطريقة السقراطية:
-                            </strong>
-                            <span style={{ color: '#166534', fontSize: '0.88rem', lineHeight: 1.5 }}>
-                              لقد قادتك الأسئلة الموجهة إلى استنتاج القاعدة وبلوغ الهدف بنفسك دون تلقين! يمكنك الآن الانتقال بثقة إلى محطة التطبيق والتدريب.
-                            </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '2.2rem' }}>🏆🎉</span>
+                            <div>
+                              <strong style={{ color: '#14532d', fontSize: '1.02rem', display: 'block', marginBottom: '2px' }}>
+                                رائع ومبهر يا بطل! لقد استنتجت الهدف بنفسك:
+                              </strong>
+                              <span style={{ color: '#166534', fontSize: '0.9rem', lineHeight: 1.6, fontWeight: 600 }}>
+                                {socraticGoalReachedInfo}
+                              </span>
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => setStudentCurrentStationIndex(3)}
+                            style={{
+                              background: 'linear-gradient(135deg, #16a34a 0%, #0d9488 100%)',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '10px',
+                              padding: '10px 18px',
+                              fontWeight: 800,
+                              fontSize: '0.9rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)'
+                            }}
+                          >
+                            <span>الانتقال لمحطة التطبيق والتدريب 🛠️</span>
+                            <span>▶</span>
+                          </button>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Explanation Cards / Socratic Stages / Frontal Instruction */}
-                  {Array.isArray(studentCurrentStationData.explanationCards) && studentCurrentStationData.explanationCards.length > 0 && (
+                  {/* Explanation Cards / Frontal Instruction (Only shown for Explicit Frontal or Blended Consolidation) */}
+                  {studentCurrentStationData.selectedPath !== 'discovery' && Array.isArray(studentCurrentStationData.explanationCards) && studentCurrentStationData.explanationCards.length > 0 && (
                     <div style={{
                       background: studentCurrentStationData.selectedPath === 'discovery' ? '#f0fdf4' : '#f8fafc',
                       border: studentCurrentStationData.selectedPath === 'discovery' ? '1.5px solid #86efac' : '1.5px solid #cbd5e1',
