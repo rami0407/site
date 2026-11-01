@@ -3063,104 +3063,115 @@ ${isTrainTopic ? `🚂 توجيه إلزامي حاسم: موضوع الدرس �
     if (targetLang === 'hebrew') {
       meaningPathDirective = `
 🔍🧠 הנחיה פדגוגית קריטית ומחייבת (למידה חוקרת בשיטה הסוקרטית - SOCRATIC DISCOVERY):
-המורה בחר/ה: "למידה חוקרת בשיטה הסוקרטית (Discovery)".
-כלל ברזל בל יעבור: בלמידה חוקרת, התוכן בתחנה 2 חייב להיות מועבר בשיטה הסוקרטית בלבד!
-הבינה המלאכותית אינה מספקת הסברים מוכנים או מגלה את התשובה מראש; אלא מנחה את התלמיד באמצעות שאלות סוקרטיות עמוקות, התבוננות מודרכת, השוואה והסקת מסקנות עצמאית כדי להגיע ליעד הלימודי בעצמו!
+המורה בחר/ה בסעיף 7: "למידה חוקרת בשיטה הסוקרטית (Discovery)".
+כלל ברזל מחייב: בתחנה 2 (הבנת המשמעות), הבינה המלאכותית אינה מוסרת את התשובות או מסבירה ישירות, אלא שואלת את התלמיד סדרת שאלות סוקרטיות מכוונות (socraticDialogue). התלמיד עונה ומקיים אינטראקציה שלב אחר שלב עד שהוא מגיע בכוחות עצמו למטרת השיעור (היעד המבוקש)!
 1. בתחנה 2 (הבנת המשמעות):
-   - studentPrompt: ניסוח שאלת חקר סוקרטית מרכזית המעוררת פליאה וסקרנות, ולאחריה רצף שאלות מכוונות המובילות את התלמיד להבין ולהסיק בעצמו את הרעיון המרכזי.
-   - explanationCards (3 שלבי גילוי סוקרטיים עוקבים):
-     * כרטיס 1: "🔍 1. התבוננות ושאילת שאלות סוקרטית" (שאלת הנחיה לתצפית והשערה ראשונית).
-     * כרטיס 2: "🧩 2. חקירה והשוואה סוקרטית" (שאלת עומק להשוואה בין מקרים ופירוק הנתונים).
-     * כרטיס 3: "🎯 3. הסקת מסקנה והגעה ליעד" (שאלה המובילה לניסוח הכלל והגעה עצמאית למטרת השיעור).
-   - checkForUnderstanding: שאלת בדיקה סוקרטית המוודאת שהתלמיד מסוגל לנמק ולהוכיח את המסקנה שאליה הגיע.
-   - teacherGuidance: דגשים לניהול דיאלוג סוקרטי פורה מבלי לגלות תשובות.
+   - studentPrompt: ניסוח שאלת חקר סוקרטית מרכזית המעוררת פליאה ומציגה מקרה בוחן/דילמה המזמינה את התלמיד לצאת למסע שאלות מונחה.
+   - socraticDialogue (רצף שאלות סוקרטיות מונחות לתלמיד):
+     * שלב 1: "🔍 1. התבוננות ושאילת שאלות": שאלת הבחנה ודפוס ראשוני + אפשרויות בחירה + משוב מעודד ומכוון.
+     * שלב 2: "🧩 2. ניתוח והשוואת קשרים": שאלת חקר מעמיקה להבנת הקשר הסיבתי + אפשרויות בחירה + משוב סוקרטי.
+     * שלב 3: "🎯 3. הסקת מסקנה והגעה ליעד המבוקש": שאלה מסכמת המאפשרת לתלמיד לנסח את הכלל ולהגיע בעצמו ליעד הלימודי!
+   - explanationCards (3 כרטיסי שלבי גילוי סוקרטיים כמשענת):
+     * כרטיס 1: "🔍 1. התבוננות סוקרטית" (שאלת הנחיה לתצפית והשערה).
+     * כרטיס 2: "🧩 2. חקירה והשוואה סוקרטית" (שאלת עומק להשוואת מקרים).
+     * כרטיס 3: "🎯 3. הסקת מסקנה והגעה ליעד" (ניסוח הכלל והגעה ליעד).
+   - checkForUnderstanding: שאלת אימות שבה התלמיד מוכיח כיצד הגיע לתובנה.
+   - teacherGuidance: הנחיות למורה לניהול הדיאלוג הסוקרטי מבלי לגלות תשובות מראש.
 `;
     } else if (targetLang === 'english') {
       meaningPathDirective = `
 🔍🧠 CRITICAL PEDAGOGICAL DIRECTIVE (SOCRATIC DISCOVERY LEARNING):
-The teacher selected: "Discovery through the Socratic Method".
-Core Rule: Socratic inquiry guides students to the target objective through guided questioning, observation, hypothesis testing, and deduction! DO NOT provide direct lectures or ready answers in Station 2.
+The teacher selected in Field 7: "Discovery through the Socratic Method".
+Core Rule: In Station 2 (Understanding), the AI must NOT give ready explanations or lectures! Instead, the AI asks the student progressive guided Socratic questions (socraticDialogue). The student answers, interacts, and tests hypotheses step by step until the student reaches the target learning objective themselves!
 1. In Station 2 (Understanding & Building Meaning):
-   - studentPrompt: A thought-provoking core Socratic inquiry question that creates curiosity and intellectual challenge, followed by step-by-step guidance enabling students to discover the central concept and reach the learning objective themselves.
-   - explanationCards (3 Progressive Socratic Discovery Steps):
-     * Card 1: "🔍 1. Socratic Observation & Wonder": Deep guiding question prompting observation and hypotheses.
-     * Card 2: "🧩 2. Analysis & Comparison": Socratic questioning comparing cases and testing patterns.
-     * Card 3: "🎯 3. Deduction & Reaching the Goal": Concluding Socratic question enabling the student to deduce the rule and reach the objective independently.
-   - checkForUnderstanding: Socratic verification question where the student justifies how they arrived at the conclusion.
-   - teacherGuidance: Guidance for the teacher to facilitate Socratic dialogue without revealing answers upfront.
+   - studentPrompt: A thought-provoking core Socratic inquiry question introducing a phenomenon/case to investigate.
+   - socraticDialogue (3 Progressive Interactive Socratic Questions leading to the goal):
+     * Step 1: "🔍 1. Observation & Pattern Wonder": Guiding question observing the initial clues + options + Socratic feedback.
+     * Step 2: "🧩 2. Analysis & Relation Testing": Probing question comparing scenarios and causality + options + Socratic feedback.
+     * Step 3: "🎯 3. Deduction & Reaching the Target Goal": Final guiding question leading the student to formulate the rule and independently achieve the lesson objective!
+   - explanationCards (3 Socratic progression cards).
+   - checkForUnderstanding: Justification check proving how the student deduced the rule.
+   - teacherGuidance: Teacher facilitation notes for active Socratic questioning without giving away answers.
 `;
     } else {
       meaningPathDirective = `
 🔍🧠 توجيه بيداغوجي إلزامي وصارم (التعلم بالاستكشاف بالطريقة السقراطية - SOCRATIC DISCOVERY):
-المعلم اختار: "التعلم بالاستكشاف (Discovery)".
+المعلم اختار في البند 7: "التعلم بالاستكشاف بالطريقة السقراطية (Discovery)".
 قاعدة ذهبية حاسمة ومحورية:
-التعلم بالاستكشاف يجب أن يكون حصراً بالطريقة السقراطية! الذكاء الاصطناعي لا يقدم الشرح أو النتيجة جاهزة للطالب، بل يقوده خطوة بخطوة من خلال الأسئلة السقراطية والتأمل والملاحظة والاستنتاج ليصل الطالب بنفسه إلى الهدف التعليمي المطلوب:
+في محطة الفهم وبناء المعنى (المحطة 2)، لا يقدم الذكاء الاصطناعي الشرح الجاهز أو التلقين المباشر، بل يسأل الطالب أسئلة موجهة متدرجة (socraticDialogue)، ويجيب الطالب ويتفاعل مع الأسئلة خطوة بخطوة حتى يصل بنفسه إلى الهدف المطلوب!
 1. في المحطة الثانية (فهم وبناء المعنى):
-   - studentPrompt: صياغة تساؤل استكشافي سقراطي مركزي (Central Socratic Inquiry) يثير الفضول ويطرح معضلة أو ظاهرة للتأمل، يليه خطوات توجيهية وأسئلة استكشافية متدرجة تقود الطالب للربط والاستنتاج والوصول لهدف الدرس بنفسه.
-   - explanationCards (بطاقات الحوار والاستكشاف السقراطي المتدرج - ٣ بطاقات إلزامية):
-     * البطاقة 1: "🔍 1. التساؤل والملاحظة السقراطية": سؤال استكشافي موجّه يدعو الطالب لتأمل نماذج أو أمثلة حية، وملاحظة العلاقات وطرح الفرضيات الأولى.
-     * البطاقة 2: "🧩 2. التحليل والمقارنة السقراطية": سؤال سقراطي عميق يوجه الطالب للمقارنة بين الحالات وفحص الاختلافات واختبار الفرضيات.
-     * البطاقة 3: "🎯 3. الاستنتاج وبلوغ الهدف المطلوب": تساؤل استدراجي ختامي يمكن الطالب من صياغة المفهوم النهائي وقاعدته بنفسه، وبلوغ هدف الدرس بجدارة.
-   - checkForUnderstanding: سؤال تحقق استدلالي سقراطي يطلب من الطالب إثبات كيفية توصله للاستنتاج وتقديم الدليل عليه.
-   - teacherGuidance: إرشادات دقيقة للمعلم حول فن إدارة الحوار السقراطي في الصف، وطرح الأسئلة السابرة (Probing Questions) دون التعجل بكشف الإجابة.
+   - studentPrompt: صياغة تساؤل استكشافي سقراطي مركزي (Central Socratic Inquiry) يثير الفضول ويطرح موقفاً أو ظاهرة للتأمل والبحث.
+   - socraticDialogue (حوار الاستكشاف السقراطي التفاعلي المتسلسل - ٣ خطوات تقود للهدف):
+     * الخطوة 1: "🔍 1. الملاحظة والتساؤل السقراطي": سؤال موجه يدعو الطالب لملاحظة نمط أو ظاهرة لافتة + خيارات تفاعلية + تلميح + تغذية راجعة سقراطية تقوده للخطوة التالية.
+     * الخطوة 2: "🧩 2. التحليل وفحص العلاقات": سؤال سقراطي يوجه الطالب للربط بين المعطيات وفحص أسباب النتيجة + خيارات تفاعلية + تغذية راجعة سقراطية.
+     * الخطوة 3: "🎯 3. الاستنتاج وبلوغ الهدف المطلوب": سؤال استدراجي ختامي يمكّن الطالب من صياغة المفهوم النهائي وقاعدته بنفسه، وبلوغ هدف الدرس بجدارة تامة دون تلقين مسبق!
+   - explanationCards (بطاقات الاستكشاف السقراطي الثلاث - مرجع معزز).
+   - checkForUnderstanding: سؤال تحقق استدلالي يثبت به الطالب كيف توصل للاستنتاج.
+   - teacherGuidance: إرشادات للمعلم لإدارة الحوار السقراطي الصفي وطرح الأسئلة السابرة.
 `;
     }
   } else if (safeMeaningPath === 'explicit') {
     if (targetLang === 'hebrew') {
       meaningPathDirective = `
 👩‍🏫📖 הנחיה פדגוגית קריטית ומחייבת (הוראה פרונטלית והסבר מפורש ישיר - EXPLICIT DIRECT INSTRUCTION):
-המורה בחר/ה: "הוראה פרונטלית (Explicit)".
-כלל הברזל: הבינה המלאכותית יוצרת הסבר רגיל, ברור, ישיר ומובנה לתלמיד (הוראה ישירה ללא חידות חקר):
+המורה בחר/ה בסעיף 7: "הוראה פרונטלית (Explicit)".
+כלל הברזל: הבינה המלאכותית מסבירה את החומר הנדרש בצורה מפורשת, בהירה, מקיפה ויסודית ביותר (ללא חידות או שאלות עקיפות):
 1. בתחנה 2 (הבנת המשמעות):
-   - studentPrompt: הסבר פרונטלי רגיל, מפורש וברור לחלוטין של מושגי השיעור והכללים, בטון בהיר, מובנה ומסודר.
-   - explanationCards (3 כרטיסי הסבר פרונטלי):
-     * כרטיס 1: "📖 1. הגדרת המושג והסבר מפורש": הצגת המושג המרכזי ומשמעותו בלשון פשוטה ומדויקת.
-     * כרטיס 2: "💡 2. הדגמה ושלבי עבודה": שלבי ביצוע מפורטים ("אני המורה מדגים איך עושים זאת שלב אחר שלב").
-     * כרטיס 3: "📌 3. הכלל המעשי ודוגמה פתורה": דוגמה מוחשית פתורה וניסוח הכלל המעשי ליישום מידי.
-   - checkForUnderstanding: שאלת הבנה ישירה לבדיקת קליטת ההסבר והמושגים שנלמדו.
-   - teacherGuidance: הנחיות למורה להוראה פרונטלית מיטבית, דגשים ללוח והדגמה מול הכיתה.
+   - studentPrompt: הסבר פרונטלי שלם, מסודר ומעמיק של כל מושגי השיעור, הכללים ושלבי הביצוע (הסבר ישיר לתלמיד).
+   - explanationCards (3 כרטיסי הסבר פרונטלי מובנים):
+     * כרטיס 1: "📖 1. הגדרת המושג והסבר מפורש": מושג מרכזי ומשמעותו בלשון ישירה.
+     * כרטיס 2: "💡 2. הדגמה ושלבי עבודה": שלבי ביצוע מודגמים שלב אחר שלב.
+     * כרטיס 3: "📌 3. הכלל המעשי ודוגמה פתורה": דוגמה מוחשית פתורה והכלל המעשי המדויק.
+   - checkForUnderstanding: שאלת הבנה ישירה לבדיקת קליטת ההסבר והמושגים.
+   - teacherGuidance: דגשי הוראה פרונטלית על הלוח והדגמה מול הכיתה.
 `;
     } else if (targetLang === 'english') {
       meaningPathDirective = `
 👩‍🏫📖 CRITICAL PEDAGOGICAL DIRECTIVE (EXPLICIT DIRECT INSTRUCTION):
-The teacher selected: "Frontal / Explicit Direct Instruction".
-Core Rule: The AI generates a standard, clear, structured, and direct explanation for the student without inquiry riddles.
+The teacher selected in Field 7: "Frontal / Explicit Direct Instruction".
+Core Rule: The AI provides a comprehensive, thorough, direct, and structured explanation of the entire topic (without puzzles or indirect queries):
 1. In Station 2 (Understanding & Building Meaning):
-   - studentPrompt: Clear, systematic direct instruction and explanation of the concepts, terms, and rules.
+   - studentPrompt: Clear, systematic, and thorough direct instruction of the concepts, terms, rules, and procedures.
    - explanationCards (3 Direct Explanation Cards):
-     * Card 1: "📖 1. Core Definition & Meaning": Clear explanation of the concept and its exact terms.
-     * Card 2: "💡 2. Modeling & Procedure": Step-by-step demonstration of how to work through the skill.
-     * Card 3: "📌 3. Rule & Worked Example": Direct worked example and clear application rules.
-   - checkForUnderstanding: Direct comprehension check verifying understanding of the explained concepts.
-   - teacherGuidance: Guidance for teacher direct modeling and whole-class structured teaching.
+     * Card 1: "📖 1. Core Definition & Meaning": Explicit definition and structured breakdown.
+     * Card 2: "💡 2. Modeling & Procedure": Direct procedural modeling ("Here is how we do it step-by-step").
+     * Card 3: "📌 3. Rule & Worked Example": Complete worked example and clear application rules.
+   - checkForUnderstanding: Direct comprehension check verifying mastery of the explained concept.
+   - teacherGuidance: Direct modeling and whole-class lecture tips for the teacher.
 `;
     } else {
       meaningPathDirective = `
 👩‍🏫📖 توجيه بيداغوجي إلزامي وصارم (الأسلوب التدريسي الوجاهي والشرح المباشر - EXPLICIT DIRECT INSTRUCTION):
-المعلم اختار: "الأسلوب الوجاهي (Explicit)".
+المعلم اختار في البند 7: "الأسلوب الوجاهي (Explicit)".
 قاعدة ذهبية حاسمة:
-الذكاء الاصطناعي يولد الشرح العادي والمباشر للطالب:
+الذكاء الاصطناعي يشرح المادة المطلوبة شرحاً وافياً وشاملاً ومفصلاً ومباشراً للطالب دون ألغاز أو استفسارات غامضة:
 1. في المحطة الثانية (فهم وبناء المعنى):
-   - studentPrompt: تقديم شرح عادي وصريح ومنظم ومفصل لمفاهيم الدرس وقواعده بلغة واضحة وخطوات مرتبة (أسلوب الشرح الوجاهي الصريح والنمذجة المباشرة للأفكار).
-   - explanationCards (بطاقات الشرح والتوضيح الوجاهي - ٣ بطاقات مرتبة):
-     * البطاقة 1: "📖 1. التعريف الصريح والمفهوم": شرح واضح ومباشر للمفهوم الأساسي ومصطلحاته دون ألغاز.
-     * البطاقة 2: "💡 2. خطوات النمذجة والعمل": بيان إجرائي واضح يوضح للطالب كيفية تطبيق المفهوم خطوة بخطوة ("أنا المعلم أريكم كيف نعمل").
+   - studentPrompt: تقديم شرح وافٍ وصريح ومنظم ومفصل لمفاهيم الدرس وقواعده بلغة واضحة وبناء إجرائي متماسك (شرح المادة التعليمية شرحاً وافياً كاملاً ومباشراً للطالب).
+   - explanationCards (بطاقات الشرح والتوضيح الوجاهي الصريح):
+     * البطاقة 1: "📖 1. التعريف الصريح والمفهوم": شرح وافٍ ومباشر للمفهום وعناصره.
+     * البطاقة 2: "💡 2. خطوات النمذجة والعمل": خطوات عمل تطبيقية واضحة ("هكذا نطبق المفهوم خطوة بخطوة").
      * البطاقة 3: "📌 3. القاعدة والمثال التوضيحي": مثال تطبيقي محلول وقاعدة محددة لتثبيت الفهم.
-   - checkForUnderstanding: سؤال فحص فهم مباشر وواضح للتأكد من استيعاب الشرح العادي المقدم.
-   - teacherGuidance: إرشادات للمعلم للتدريس الوجاهي، والنمذجة على اللوح، وتوضيح النقاط الدقيقة للطلاب.
+   - checkForUnderstanding: سؤال فحص فهم مباشر وسريع للتأكد من استيعاب الشرح الوافي المقدم.
+   - teacherGuidance: إرشادات للتدريس الوجاهي والنمذجة الصريحة على اللوح.
 `;
     }
   } else {
     // blended
     if (targetLang === 'hebrew') {
       meaningPathDirective = `
-🔄 מסלול משולב (שאלת חקר סוקרטית + הסבר פרונטלי ישיר):
-- שילוב הרמוני המתחיל בשאלת חקר סוקרטית מעוררת עניין, וממשיך מייד להסבר פרונטלי מפורש וברור לביסוס הכללים והיעד הלימודי.
+🔄 מסלול משולב (שאלות חקר סוקרטיות + הסבר פרונטלי מפורש ומקיף):
+המורה בחר/ה בסעיף 7: "מסלול משולב (Blended)".
+הבינה המלאכותית מספקת את שתי השיטות יחד בהרמוניה מושלמת:
+1. פותחת בסדרת שאלות סוקרטיות מכוונות (socraticDialogue) להפעלת התלמיד, חידוד התבוננותו והובלתו לגילוי הרעיון.
+2. משלבת הסבר פרונטלי עשיר, מפורט ומפורש היטב המבסס את החומר, הכללים וההגדרות במלואם, כדי להבטיח הבנה מוחלטת והגעה ליעד!
 `;
     } else {
       meaningPathDirective = `
-🔄 مسار مدمج (استكشاف سقراطي + شرح وجاهي مباشر):
-- دمج متوازن يبدأ بتساؤل استكشافي سقراطي يوقظ تفكير الطالب، ويليه فوراً شرح وجاهي مباشر ومفصل ينظم المفاهيم ويثبت القاعدة التعليمية ويضمن بلوغ الهدف المطلوب.
+🔄 مسار مدمج (استكشاف سقراطي + شرح وجاهي وافٍ):
+المعلم اختار في البند 7: "المسار المدمج (Blended)".
+الذكاء الاصطناعي يوفر الطريقتين معاً بتكامل بيداغوجي رائع:
+1. يبدأ بأسئلة سقراطية موجهة متدرجة (socraticDialogue) يسأل فيها الطالب ويتفاعل ويجيب ليكتشف جوانب المفهوم بنفسه.
+2. يتبعها فوراً شرح وجاهي وافٍ ومفصل ينظم المادة العلمية، ويفصل القواعد والأمثلة المحلولة، ليضمن استيعاب المادة وبلوغ الهدف المطلوب باقتدار!
 `;
     }
   }
@@ -3289,6 +3300,38 @@ ${practiceGroupsDirective}
       "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive'}",
       "pedagogicalModeName": "${safeMeaningPath === 'discovery' ? (targetLang === 'hebrew' ? 'למידה חוקרת בשיטה הסוקרטית' : 'تعلم استكشافي بالطريقة السقراطية') : safeMeaningPath === 'explicit' ? (targetLang === 'hebrew' ? 'הוראה פרונטלית והסבר מפורש' : 'تدريس وجاهي وشرح مباشر') : (targetLang === 'hebrew' ? 'מסלול משולב (סוקרטי ופרונטלי)' : 'مسار مدمج (سقراطي ووجاهي)')}",
       "studentPrompt": "${safeMeaningPath === 'discovery' ? 'تساؤل استكشافي سقراطي مركزي ومحطات استكشافية متدرجة تقود الطالب للهدف ذاتياً...' : safeMeaningPath === 'explicit' ? 'شرح عادي وصريح ومباشر للمفاهيم والقواعد والخطوات الإجرائية...' : 'المحتوى الصريح: نص القراءة الكامل إن كان فهم المقروء، أو الشرح والقواعد والمفاهيم...'}",
+      "socraticDialogue": {
+        "targetGoalStatement": "${safeCustomObjective || (targetLang === 'hebrew' ? 'מטרת השיעור שהתלמיד יגיע אליה דרך שאלות החקר הסוקרטיות...' : 'هدف الدرس الذي سيصل إليه الطالب ذاتياً عبر الأسئلة السقراطية الموجهة...')}",
+        "steps": [
+          {
+            "stepNumber": 1,
+            "stage": "${targetLang === 'hebrew' ? '1. תצפית ושאילת שאלות 🔍' : '١. الملاحظة والتساؤل السقراطي 🔍'}",
+            "prompt": "${targetLang === 'hebrew' ? 'שאלת הנחיה סוקרטית ראשונית לבחינת דוגמה או מקרה בוחן...' : 'سؤال سقراطي موجّه يطرح حالة أو مثالاً ويسأل الطالب عما يلاحظه...'}",
+            "options": ["${targetLang === 'hebrew' ? 'מסקנת תצפית מדויקת' : 'الملاحظة الصائبة التي تكشف النمط والعلة'}", "${targetLang === 'hebrew' ? 'השערה לא מדויקת' : 'ملاحظة سطحية غير دقيقة'}", "${targetLang === 'hebrew' ? 'ניחוש אקראי' : 'افتراض عشوائي'}"],
+            "correctOption": "${targetLang === 'hebrew' ? 'מסקנת תצפית מדויקת' : 'الملاحظة الصائبة التي تكشف النمط والعلة'}",
+            "guidingHint": "${targetLang === 'hebrew' ? 'רמז סוקרטי לתצפית מעמיקה...' : 'تلميح سقراطي يساعد الطالب على التدقيق في التفاصيل...'}",
+            "socraticFeedback": "${targetLang === 'hebrew' ? 'מצוין! הבחנת בדפוס הנכון. כעת נעבור לשלב הניתוח...' : 'أحسنت الملاحظة! هذا يقودنا مباشرة إلى التساؤل التحليلي التالي...'}"
+          },
+          {
+            "stepNumber": 2,
+            "stage": "${targetLang === 'hebrew' ? '2. ניתוח והשוואת קשרים 🧩' : '٢. التحليل وفحص العلاقات 🧩'}",
+            "prompt": "${targetLang === 'hebrew' ? 'שאלת עומק סוקרטית להשוואת מקרים והבנת סיבתיות...' : 'سؤال سقراطي تحليلي يوجه الطالب للربط بين المعطيات وفحص أسباب النتيجة...'}",
+            "options": ["${targetLang === 'hebrew' ? 'ניתוח סיבתי מדויק' : 'تحليل صحيح يربط العلاقات بدقة'}", "${targetLang === 'hebrew' ? 'הסבר חלקי' : 'تحليل سطحي'}", "${targetLang === 'hebrew' ? 'הנחה מוטעית' : 'افتراض غير سليم'}"],
+            "correctOption": "${targetLang === 'hebrew' ? 'ניתוח סיבתי מדויק' : 'تحليل صحيح يربط العلاقات بدقة'}",
+            "guidingHint": "${targetLang === 'hebrew' ? 'רמז סוקרטי לבחינת ההבדל...' : 'تلميح سقراطي: قارن بين النماذج لتكتشف السبب...'}",
+            "socraticFeedback": "${targetLang === 'hebrew' ? 'ניתוח מבריק! כעת הדרך סלולה להסקת המסקנה ולהשגת היעד...' : 'تحليل عميق ورائع! والآن صرنا على بُعد خطوة واحدة من استنتاج القاعدة وبلوغ الهدف...'}"
+          },
+          {
+            "stepNumber": 3,
+            "stage": "${targetLang === 'hebrew' ? '3. הסקת מסקנה והגעה ליעד 🎯' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯'}",
+            "prompt": "${targetLang === 'hebrew' ? 'שאלה סוקרטית מסכמת: נסחו בעצמכם את הכלל שהתגלה והגיעו למטרת השיעור!' : 'السؤال السقراطي الختامي: استنتج الآن القاعدة الذهبية بنفسك لتصل إلى هدف الدرس!'}",
+            "options": ["${targetLang === 'hebrew' ? 'ניסוח הכלל המלא והשגת יעד השיעור 🌟' : 'صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟'}", "${targetLang === 'hebrew' ? 'כלל חלקי' : 'قاعدة منقوصة'}", "${targetLang === 'hebrew' ? 'מסקנה שגויה' : 'استنتاج خاطئ'}"],
+            "correctOption": "${targetLang === 'hebrew' ? 'ניסוח הכלל המלא והשגת יעד השיעור 🌟' : 'صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟'}",
+            "guidingHint": "${targetLang === 'hebrew' ? 'רמז סוקרטי: חברו את מה שגיליתם בשלבים הקודמים...' : 'تلميح سقراطي: اجمع ما لاحظته في الخطوة 1 والخطوة 2 لتصيغ النتيجة...'}",
+            "socraticFeedback": "${targetLang === 'hebrew' ? 'כל הכבוד! 🎉 הגעתם ליעד השיעור בעצמכם בשיטה הסוקרטית!' : 'أحسنت وأبدعت! 🌟 لقد وصلت إلى هدف الدرس واستنتجت القاعدة بنفسك بالطريقة السقراطية!'}"
+          }
+        ]
+      },
       "explanationCards": [
         { "title": "${safeMeaningPath === 'discovery' ? '🔍 1. التساؤل والملاحظة السقراطية' : '📖 1. المفهوم والتعريف الصريح'}", "step": 1, "content": "المحتوى التوجيهي للخطوة الأولى...", "example": "مثال أو تساؤل ملاحظة..." },
         { "title": "${safeMeaningPath === 'discovery' ? '🧩 2. التحليل والمقارنة السقراطية' : '💡 2. خطوات النمذجة والعمل'}", "step": 2, "content": "المحتوى التوجيهي للخطوة الثانية...", "example": "مثال أو تساؤل فحص العلاقات..." },
@@ -3905,6 +3948,108 @@ ${practiceGroupsDirective}
     const isTrainMissed = isTrainTopic && (!st2?.studentPrompt || !/قطار|القطار|רכבת|train/i.test(st2.studentPrompt));
 
     if (st2) {
+      st2.selectedPath = safeMeaningPath;
+      st2.pedagogicalMode = safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive';
+      st2.pedagogicalModeName = safeMeaningPath === 'discovery'
+        ? (targetLang === 'hebrew' ? 'למידה חוקרת בשיטה הסוקרטית' : 'تعلم استكشافي بالطريقة السقراطية')
+        : safeMeaningPath === 'explicit'
+        ? (targetLang === 'hebrew' ? 'הוראה פרונטלית והסבר מפורש' : 'تدريس وجاهي وشرح مباشر وافٍ')
+        : (targetLang === 'hebrew' ? 'מסלול משולב (סוקרטי ופרונטלי)' : 'مسار مدمج (سقراطي ووجاهي)');
+
+      // Socratic Dialogue Guarantee (الأسئلة السقراطية الموجهة التي يتفاعل معها الطالب ليصل للهدف)
+      if (safeMeaningPath === 'discovery' || safeMeaningPath === 'blended') {
+        const defaultGoal = lesson.objective || lesson.learningGoal || (targetLang === 'hebrew' ? `השגת היעד הלימודי של (${safeTitle}) בהצלחה` : `استيعاب المفهوم وتحقيق هدف درس (${safeTitle}) بدقة`);
+        const existingDia = st2.socraticDialogue;
+        const existingSteps = Array.isArray(existingDia?.steps) && existingDia.steps.length >= 3 ? existingDia.steps : [];
+
+        const defaultSocraticSteps = targetLang === 'hebrew' ? [
+          {
+            stepNumber: 1,
+            stage: '1. תצפית ושאילת שאלות 🔍',
+            prompt: `התבוננו בדוגמאות ובמקרים שלפניכם בנושא (${safeTitle}): מהו הדפוס המרכזי שאתם מזהים כאן?`,
+            options: [
+              `קיים דפוס קבוע ומשמעותי המקשר בין הנתונים`,
+              `הנתונים מקריים לחלוטין ואין ביניהם שום קשר`,
+              `התופעה משתנה ללא חוקיות או היגיון`
+            ],
+            correctOption: `קיים דפוס קבוע ומשמעותי המקשר בין הנתונים`,
+            guidingHint: 'רמז סוקרטי: חפשו את החוט המקשר החוזר על עצמו בדוגמאות.',
+            socraticFeedback: 'מצוין! הבחנתם בדפוס הנכון. כעת נתקדם לשלב הניתוח כדי להבין למה זה קורה.'
+          },
+          {
+            stepNumber: 2,
+            stage: '2. ניתוח והשוואת קשרים 🧩',
+            prompt: `אם נשווה בין שני מקרים שונים של (${safeTitle}), איזה גורם מביא לשינוי בתוצאה ומסביר אותה?`,
+            options: [
+              `העיקרון או הכלל המרכזי שמכוון את הפעולה`,
+              `מקריות בלבד ללא שום חוקיות`,
+              `הבדל חיצוני שאינו קשור לתוכן`
+            ],
+            correctOption: `העיקרון או הכלל המרכזי שמכוון את הפעולה`,
+            guidingHint: 'רמז סוקרטי: התבוננו בסיבה הישירה המובילה להבדל בין המקרים.',
+            socraticFeedback: 'מדויק ועמוק! הבנתם את הסיבה המרכזית. כעת אתם מוכנים לנסח את הכלל ולהגיע ליעד בעצמכם!'
+          },
+          {
+            stepNumber: 3,
+            stage: '3. הסקת מסקנה והגעה ליעד המבוקש 🎯',
+            prompt: `לאור הממצאים וההשוואה שערכתם: מהי המסקנה הסופית שהתגלתה? הגיעו בעצמכם למטרת השיעור!`,
+            options: [
+              `השגת יעד השיעור: הבנה ויישום של (${safeTitle}) עם נימוק מלא 🌟`,
+              `הכלל אינו מחייב וניתן לנחש`,
+              `אין דרך להסיק מסקנה ברורה`
+            ],
+            correctOption: `השגת יעד השיעור: הבנה ויישום של (${safeTitle}) עם נימוק מלא 🌟`,
+            guidingHint: 'רמז סוקרטי: חברו את מה שגיליתם בשני השלבים הקודמים למסקנה אחת שלמה.',
+            socraticFeedback: 'כל הכבוד! 🎉 הגעתם ליעד השיעור בעצמכם בשיטה הסוקרטית ללא צורך בהכתבה מראש!'
+          }
+        ] : [
+          {
+            stepNumber: 1,
+            stage: '١. الملاحظة والتساؤل السقراطي 🔍',
+            prompt: `تأمّل الحالات والأمثلة المعروضة أمامك في درس (${safeTitle}): ما النمط أو الظاهرة اللافتة التي تلاحظها في البداية؟`,
+            options: [
+              `وجود نمط منتظم وعلاقة سببية واضحة تربط بين المعطيات`,
+              `العناصر موزعة عشوائياً دون أي رابط منطقي`,
+              `النتائج تتغير بشكل عشوائي دون سبب محدد`
+            ],
+            correctOption: `وجود نمط منتظم وعلاقة سببية واضحة تربط بين المعطيات`,
+            guidingHint: 'تلميح سقراطي: ركز على ما يتكرر بدقة في كل مثال معروض.',
+            socraticFeedback: 'أحسنت الملاحظة! ملاحظتك في محلها الدقيق، وهذا يقودنا إلى السؤال التحليلي التالي.'
+          },
+          {
+            stepNumber: 2,
+            stage: '٢. التحليل ومقارنة العلاقات 🧩',
+            prompt: `إذا قارنا بين حالتين مختلفتين حول (${safeTitle})، ما العامل الحاسم الذي يفسر حدوث هذه النتيجة؟`,
+            options: [
+              `تطبيق المبدأ أو القاعدة الجوهرية للدرس بدقة وتناسق`,
+              `المصادفة البحتة دون أي قانون يحكمها`,
+              `تأثيرات جانبية غير مرتبطة بالموضوع`
+            ],
+            correctOption: `تطبيق المبدأ أو القاعدة الجوهرية للدرس بدقة وتناسق`,
+            guidingHint: 'تلميح سقراطي: ابحث عن السبب المباشر الذي يربط بين البداية والنهاية.',
+            socraticFeedback: 'تحليل بارع وذكي! لقد وضعت يدك على مكمن السبب، والآن حان وقت بلوغ الهدف المطلوب بنفسك!'
+          },
+          {
+            stepNumber: 3,
+            stage: '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯',
+            prompt: `والآن بعد أن اكتشفت الأدلة وفحصت العلاقات: صِغ بكلماتك القاعدة الذهبية لتصل إلى هدف الدرس المطلوب!`,
+            options: [
+              `بلوغ هدف الدرس: فهم واستيعاب (${safeTitle}) وتطبيق قاعدته بدليل وبرهان سليم 🌟`,
+              `القاعدة اختيارية ولا تنطبق على جميع الحالات`,
+              `الاعتماد على الحفظ الآلي دون الحاجة لفهم الدليل`
+            ],
+            correctOption: `بلوغ هدف الدرس: فهم واستيعاب (${safeTitle}) وتطبيق قاعدته بدليل وبرهان سليم 🌟`,
+            guidingHint: 'تلميح سقراطي: اربط الملاحظة الأولى بالتحليل الثاني لتصيغ النتيجة الكبرى.',
+            socraticFeedback: 'مبارك يا بطل! 🎉 لقد استنتجت القاعدة ووصلت إلى هدف الدرس بنفسك بالطريقة السقراطية دون تلقين مسبق!'
+          }
+        ];
+
+        st2.socraticDialogue = {
+          targetGoalStatement: existingDia?.targetGoalStatement || defaultGoal,
+          steps: existingSteps.length === 3 ? existingSteps : defaultSocraticSteps
+        };
+      }
+
       if (customPassageText && customPassageText.trim()) {
         st2.studentPrompt = customPassageText.trim();
         lesson.readingPassage = {

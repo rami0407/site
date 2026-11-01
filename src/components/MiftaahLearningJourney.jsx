@@ -505,6 +505,100 @@ const normalizeMiftaahLesson = (lesson) => {
         ];
       }
     }
+
+    // Guarantee Socratic Dialogue for Discovery or Blended path (الأسئلة السقراطية التفاعلية)
+    if (st2.selectedPath === 'discovery' || st2.selectedPath === 'blended') {
+      const defaultGoal = l.objective || l.learningGoal || (lang === 'hebrew' ? `השגת היעד הלימודי של (${safeTitle}) בהצלחה` : `استيعاب المفهوم وتحقيق هدف درس (${safeTitle}) بدقة`);
+      const existingDia = st2.socraticDialogue;
+      const existingSteps = Array.isArray(existingDia?.steps) && existingDia.steps.length >= 3 ? existingDia.steps : [];
+
+      const defaultSocraticSteps = lang === 'hebrew' ? [
+        {
+          stepNumber: 1,
+          stage: '1. תצפית ושאילת שאלות 🔍',
+          prompt: `התבוננו בדוגמאות ובמקרים שלפניכם בנושא (${safeTitle}): מהו הדפוס המרכזי שאתם מזהים כאן?`,
+          options: [
+            `קיים דפוס קבוע ומשמעותי המקשר בין הנתונים`,
+            `הנתונים מקריים לחלוטין ואין ביניהם שום קשר`,
+            `התופעה משתנה ללא חוקיות או היגיון`
+          ],
+          correctOption: `קיים דפוס קבוע ומשמעותי המקשר בין הנתונים`,
+          guidingHint: 'רמז סוקרטי: חפשו את החוט המקשר החוזר על עצמו בדוגמאות.',
+          socraticFeedback: 'מצוין! הבחנתם בדפוס הנכון. כעת נתקדם לשלב הניתוח כדי להבין למה זה קורה.'
+        },
+        {
+          stepNumber: 2,
+          stage: '2. ניתוח והשוואת קשרים 🧩',
+          prompt: `אם נשווה בין שני מקרים שונים של (${safeTitle}), איזה גורם מביא לשינוי בתוצאה ומסביר אותה?`,
+          options: [
+            `העיקרון או הכלל המרכזי שמכוון את הפעולה`,
+            `מקריות בלבד ללא שום חוקיות`,
+            `הבדל חיצוני שאינו קשור לתוכן`
+          ],
+          correctOption: `העיקרון או הכלל המרכזי שמכוון את הפעולה`,
+          guidingHint: 'רמז סוקרטי: התבוננו בסיבה הישירה המובילה להבדל בין המקרים.',
+          socraticFeedback: 'מדויק ועמוק! הבנתם את הסיבה המרכזית. כעת אתם מוכנים לנסח את הכלל ולהגיע ליעד בעצמכם!'
+        },
+        {
+          stepNumber: 3,
+          stage: '3. הסקת מסקנה והגעה ליעד המבוקש 🎯',
+          prompt: `לאור הממצאים וההשוואה שערכתם: מהי המסקנה הסופית שהתגלתה? הגיעו בעצמכם למטרת השיעור!`,
+          options: [
+            `השגת יעד השיעור: הבנה ויישום של (${safeTitle}) עם נימוק מלא 🌟`,
+            `הכלל אינו מחייב וניתן לנחש`,
+            `אין דרך להסיק מסקנה ברורה`
+          ],
+          correctOption: `השגת יעד השיעור: הבנה ויישום של (${safeTitle}) עם נימוק מלא 🌟`,
+          guidingHint: 'רמז סוקרטי: חברו את מה שגיליתם בשני השלבים הקודמים למסקנה אחת שלמה.',
+          socraticFeedback: 'כל הכבוד! 🎉 הגעתם ליעד השיעור בעצמכם בשיטה הסוקרטית ללא צורך בהכתבה מראש!'
+        }
+      ] : [
+        {
+          stepNumber: 1,
+          stage: '١. الملاحظة والتساؤل السقراطي 🔍',
+          prompt: `تأمّل الحالات والأمثلة المعروضة أمامك في درس (${safeTitle}): ما النمط أو الظاهرة اللافتة التي تلاحظها في البداية؟`,
+          options: [
+            `وجود نمط منتظم وعلاقة سببية واضحة تربط بين المعطيات`,
+            `العناصر موزعة عشوائياً دون أي رابط منطقي`,
+            `النتائج تتغير بشكل عشوائي دون سبب محدد`
+          ],
+          correctOption: `وجود نمط منتظم وعلاقة سببية واضحة تربط بين المعطيات`,
+          guidingHint: 'تلميح سقراطي: ركز على ما يتكرر بدقة في كل مثال معروض.',
+          socraticFeedback: 'أحسنت الملاحظة! ملاحظتك في محلها الدقيق، وهذا يقودنا مباشرة إلى السؤال التحليلي التالي.'
+        },
+        {
+          stepNumber: 2,
+          stage: '٢. التحليل ومقارنة العلاقات 🧩',
+          prompt: `إذا قارنا بين حالتين مختلفتين حول (${safeTitle})، ما العامل الحاسم الذي يفسر حدوث هذه النتيجة؟`,
+          options: [
+            `تطبيق المبدأ أو القاعدة الجوهرية للدرس بدقة وتناسق`,
+            `المصادفة البحتة دون أي قانون يحكمها`,
+            `تأثيرات جانبية غير مرتبطة بالموضوع`
+          ],
+          correctOption: `تطبيق المبدأ أو القاعدة الجوهرية للدرس بدقة وتناسق`,
+          guidingHint: 'تلميح سقراطي: ابحث عن السبب المباشر الذي يربط بين البداية والنهاية.',
+          socraticFeedback: 'تحليل بارع وذكي! لقد وضعت يدك على مكمن السبب، والآن حان وقت بلوغ الهدف المطلوب بنفسك!'
+        },
+        {
+          stepNumber: 3,
+          stage: '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯',
+          prompt: `والآن بعد أن اكتشفت الأدلة وفحصت العلاقات: صِغ بكلماتك القاعدة الذهبية لتصل إلى هدف الدرس المطلوب!`,
+          options: [
+            `بلوغ هدف الدرس: فهم واستيعاب (${safeTitle}) وتطبيق قاعدته بدليل وبرهان سليم 🌟`,
+            `القاعدة اختيارية ولا تنطبق على جميع الحالات`,
+            `الاعتماد على الحفظ الآلي دون الحاجة لفهم الدليل`
+          ],
+          correctOption: `بلوغ هدف الدرس: فهم واستيعاب (${safeTitle}) وتطبيق قاعدته بدليل وبرهان سليم 🌟`,
+          guidingHint: 'تلميح سقراطي: اربط الملاحظة الأولى بالتحليل الثاني لتصيغ النتيجة الكبرى.',
+          socraticFeedback: 'مبارك يا بطل! 🎉 لقد استنتجت القاعدة ووصلت إلى هدف الدرس بنفسك بالطريقة السقراطية دون تلقين مسبق!'
+        }
+      ];
+
+      st2.socraticDialogue = {
+        targetGoalStatement: existingDia?.targetGoalStatement || defaultGoal,
+        steps: existingSteps.length === 3 ? existingSteps : defaultSocraticSteps
+      };
+    }
     if (!Array.isArray(st2.conceptMapKeywords) || st2.conceptMapKeywords.length === 0) {
       st2.conceptMapKeywords = lang === 'hebrew'
         ? [safeTitle, 'מושג מרכזי', 'קשר סיבתי', 'יישום והוכחה']
@@ -2234,6 +2328,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
   // Interactive Student Station Widget States
   const [st2CfuSelected, setSt2CfuSelected] = useState(null);
+  const [st2SocraticActiveStep, setSt2SocraticActiveStep] = useState(0);
+  const [st2SocraticAnswers, setSt2SocraticAnswers] = useState({});
+  const [st2SocraticCustomInput, setSt2SocraticCustomInput] = useState('');
+  const [st2SocraticCompleted, setSt2SocraticCompleted] = useState(false);
   const [st3ExerciseAnswers, setSt3ExerciseAnswers] = useState({});
   const [isSt3ScaffoldOpen, setIsSt3ScaffoldOpen] = useState(false);
   const [isSt3DeepChallengeOpen, setIsSt3DeepChallengeOpen] = useState(false);
@@ -6606,16 +6704,16 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       onChange={e => setCreatorMeaningPath(e.target.value)}
                       style={{ fontWeight: 700 }}
                     >
-                      <option value="discovery">🔍 تعلم استكشافي بالطريقة السقراطية (أسئلة وحوار استكشافي يقود للهدف)</option>
-                      <option value="explicit">👩‍🏫 أسلوب تدريس وجاهي (شرح عادي ومباشر ونمذجة للمفاهيم)</option>
-                      <option value="blended">🔄 مسار مدمج (استكشاف سقراطي + شرح وجاهي مباشر)</option>
+                      <option value="discovery">🔍 تعلم استكشافي بالطريقة السقراطية (أسئلة موجهة يتفاعل معها الطالب حتى يصل للهدف المطلوب)</option>
+                      <option value="explicit">👩‍🏫 أسلوب تدريس وجاهي (يشرح المادة المطلوبة شرحاً وافياً ومباشراً)</option>
+                      <option value="blended">🔄 مسار مدمج (يوفر الطريقتين: استكشاف سقراطي موجه + شرح وجاهي وافٍ)</option>
                     </select>
                     <small style={{ color: '#475569', fontSize: '0.8rem', marginTop: '5px', display: 'block', fontWeight: 600 }}>
                       {creatorMeaningPath === 'discovery'
-                        ? '💡 مسار الاستكشاف السقراطي: يطرح الذكاء الاصطناعي تساؤلات سقراطية متدرجة ومحطات استكشاف تقود الطالب ذاتياً لاستنتاج المفاهيم والوصول إلى الهدف المطلوب دون تلقين مباشر.'
+                        ? '💡 مسار الاستكشاف السقراطي: يطرح الذكاء على الطالب أسئلة موجهة متدرجة، ويجيب الطالب ويتفاعل مع الأسئلة خطوة بخطوة حتى يصل إلى الهدف المطلوب بنفسه دون تلقين جاهز.'
                         : creatorMeaningPath === 'explicit'
-                        ? '📖 مسار التدريس الوجاهي: يولد الذكاء الاصطناعي الشرح العادي والمباشر للطالب مع تعريفات واضحة ونمذجة مفاهيم وأمثلة تطبيقية صريحة.'
-                        : '🔄 مسار مدمج: يجمع بين التساؤل الاستكشافي السقراطي والشرح الوجاهي الصريح والمباشر.'}
+                        ? '📖 مسار التدريس الوجاهي: يشرح الذكاء المادة المطلوبة للطالب شرحاً وافياً وشاملاً مع مفاهيم ونمذجة وخطوات واضحة وأمثلة محلولة.'
+                        : '🔄 مسار مدمج: يوفر الذكاء الطريقتين معاً؛ يبدأ بأسئلة سقراطية موجهة لاستثارة التفكير، ويتبعها بشرح وجاهي وافٍ يثبت المفاهيم ويضمن بلوغ الهدف.'}
                     </small>
                   </div>
 
@@ -9857,6 +9955,41 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       getStationByIndex(sessionState.activeStationIndex)?.stationMedia) && 
                      renderStationMedia(getStationByIndex(sessionState.activeStationIndex), true)}
 
+                    {/* In Station 2: Socratic Discovery Progression or Frontal Instruction Banner on Projector */}
+                    {sessionState.activeStationIndex === 2 && activeLesson.stations['2_understanding'] && (
+                      <div className="projector-st2-path-banner animate-fade-in" style={{
+                        background: activeLesson.stations['2_understanding'].selectedPath === 'discovery' ? 'linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)' : activeLesson.stations['2_understanding'].selectedPath === 'explicit' ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' : 'linear-gradient(135deg, #faf5ff 0%, #f0fdf4 100%)',
+                        border: `2px solid ${activeLesson.stations['2_understanding'].selectedPath === 'discovery' ? '#3b82f6' : activeLesson.stations['2_understanding'].selectedPath === 'explicit' ? '#94a3b8' : '#a855f7'}`,
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        marginBottom: '18px',
+                        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.05)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>
+                            {activeLesson.stations['2_understanding'].selectedPath === 'discovery'
+                              ? '🔍 مسار التعلم بالاستكشاف بالطريقة السقراطية (أسئلة موجهة يتفاعل معها الطلاب للوصول إلى الهدف)'
+                              : activeLesson.stations['2_understanding'].selectedPath === 'explicit'
+                              ? '👩‍🏫 مسار التدريس الوجاهي (شرح وافٍ ومباشر للمفاهيم ونمذجة إجرائية)'
+                              : '🔄 مسار مدمج (حوار استكشاف سقراطي + شرح وجاهي وافٍ)'}
+                          </strong>
+                          <span style={{ fontSize: '0.8rem', background: '#dbeafe', color: '#1d4ed8', padding: '3px 10px', borderRadius: '999px', fontWeight: 800 }}>
+                            {activeLesson.stations['2_understanding'].selectedPath === 'discovery' ? 'حوار سقراطي تفاعلي' : activeLesson.stations['2_understanding'].selectedPath === 'explicit' ? 'شرح وجاهي وافٍ' : 'استكشاف وشرح مدمج'}
+                          </span>
+                        </div>
+                        {Array.isArray(activeLesson.stations['2_understanding'].socraticDialogue?.steps) && activeLesson.stations['2_understanding'].selectedPath !== 'explicit' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                            {activeLesson.stations['2_understanding'].socraticDialogue.steps.map((st, sIdx) => (
+                              <div key={sIdx} style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #bfdbfe', fontSize: '0.85rem' }}>
+                                <strong style={{ color: '#0369a1', display: 'block', marginBottom: '4px' }}>{st.stage}</strong>
+                                <span style={{ color: '#334155' }}>{st.prompt}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* In Station 3: Multi-Group Sub-stations (4 or 5 Stations on iPads/Phones) */}
                     {sessionState.activeStationIndex === 3 && Array.isArray(activeLesson.stations['3_practice']?.practiceStations) && activeLesson.stations['3_practice'].practiceStations.length > 0 && (
                       <div style={{
@@ -10436,28 +10569,28 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               )}
 
-              {/* STATION 2 INTERACTIVE WIDGETS: Explanation Cards, Concept Map Keywords, Check for Understanding */}
+              {/* STATION 2 INTERACTIVE WIDGETS: Socratic Dialogue, Explanation Cards, Concept Map Keywords, Check for Understanding */}
               {studentCurrentStationIndex === 2 && (
                 <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Distinctive Pedagogical Banner (Socratic Discovery vs Explicit Frontal) */}
+                  {/* Distinctive Pedagogical Banner (Socratic Discovery vs Explicit Frontal vs Blended) */}
                   {studentCurrentStationData.selectedPath === 'discovery' ? (
                     <div style={{
                       background: 'linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)',
                       border: '2px solid #3b82f6',
                       borderRadius: '14px',
-                      padding: '12px 16px',
+                      padding: '14px 18px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '14px',
                       boxShadow: '0 3px 12px rgba(59, 130, 246, 0.08)'
                     }}>
-                      <span style={{ fontSize: '1.6rem' }}>🔍🏛️</span>
+                      <span style={{ fontSize: '1.8rem' }}>🔍🏛️</span>
                       <div>
-                        <strong style={{ color: '#1e3a8a', fontSize: '0.98rem', display: 'block', marginBottom: '2px' }}>
-                          مسار التعلم بالاستكشاف (الطريقة السقراطية):
+                        <strong style={{ color: '#1e3a8a', fontSize: '1.02rem', display: 'block', marginBottom: '3px' }}>
+                          مسار التعلم بالاستكشاف (الطريقة السقراطية — الحوار التفاعلي):
                         </strong>
-                        <span style={{ color: '#334155', fontSize: '0.86rem', lineHeight: 1.5 }}>
-                          أيها البطل، فكّر في التساؤلات السقراطية المتدرجة أدناه وافحص الأدلة؛ استنتج القاعدة واكتشف الهدف بنفسك دون إجابات مسبقة! 🎯
+                        <span style={{ color: '#334155', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                          أيها البطل، في هذا المسار لن يلقنك الذكاء الاصطناعي الإجابة الجاهزة! تفاعل مع الأسئلة السقراطية الموجهة أدناه خطوة بخطوة حتى تستنتج القاعدة وتصل إلى هدف الدرس بنفسك! 🎯
                         </span>
                       </div>
                     </div>
@@ -10466,25 +10599,317 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                       border: '2px solid #94a3b8',
                       borderRadius: '14px',
-                      padding: '12px 16px',
+                      padding: '14px 18px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '14px',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                     }}>
-                      <span style={{ fontSize: '1.6rem' }}>👩‍🏫📖</span>
+                      <span style={{ fontSize: '1.8rem' }}>👩‍🏫📖</span>
                       <div>
-                        <strong style={{ color: '#0f172a', fontSize: '0.98rem', display: 'block', marginBottom: '2px' }}>
-                          مسار التدريس الوجاهي (الشرح العادي والمنظم):
+                        <strong style={{ color: '#0f172a', fontSize: '1.02rem', display: 'block', marginBottom: '3px' }}>
+                          مسار التدريس الوجاهي (الشرح العادي والوافي للمادة):
                         </strong>
-                        <span style={{ color: '#475569', fontSize: '0.86rem', lineHeight: 1.5 }}>
-                          تابع الشرح العادي والمباشر للمفاهيم والقواعد، وتأمل خطوات النمذجة والأمثلة المحلولة لتستوعب القاعدة وتثبتها.
+                        <span style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                          تابع الشرح الوافي والمفصل للمفاهيم والقواعد، وتأمل خطوات النمذجة والأمثلة المحلولة لتستوعب المادة وتثبت القاعدة بدقة.
                         </span>
                       </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #faf5ff 0%, #f0fdf4 100%)',
+                      border: '2px solid #a855f7',
+                      borderRadius: '14px',
+                      padding: '14px 18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      boxShadow: '0 3px 12px rgba(168, 85, 247, 0.08)'
+                    }}>
+                      <span style={{ fontSize: '1.8rem' }}>🔄✨</span>
+                      <div>
+                        <strong style={{ color: '#581c87', fontSize: '1.02rem', display: 'block', marginBottom: '3px' }}>
+                          المسار المدمج (تساؤل استكشافي سقراطي + شرح وجاهي وافٍ):
+                        </strong>
+                        <span style={{ color: '#3b0764', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                          يبدأ المسار بأسئلة سقراطية موجهة لاستثارة تفكيرك، ويتبعه شرح وجاهي وافٍ ومنظم للمفاهيم لترسيخ الفهم الكامل للمادة.
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Explanation Cards / Socratic Stages */}
+                  {/* Socratic Guided Inquiry Journey (الأسئلة السقراطية الموجهة التي يتفاعل معها الطالب ليصل للهدف) */}
+                  {(studentCurrentStationData.selectedPath === 'discovery' || studentCurrentStationData.selectedPath === 'blended') &&
+                    studentCurrentStationData.socraticDialogue?.steps && (
+                    <div className="socratic-interactive-journey-box animate-fade-in" style={{
+                      background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+                      border: '2px solid #22c55e',
+                      borderRadius: '16px',
+                      padding: '18px 20px',
+                      boxShadow: '0 4px 16px rgba(34, 197, 94, 0.1)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1.4rem' }}>🏛️💬</span>
+                          <strong style={{ color: '#15803d', fontSize: '1.05rem' }}>
+                            حوار الاستكشاف السقراطي التفاعلي:
+                          </strong>
+                        </div>
+                        <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 800 }}>
+                          {st2SocraticCompleted ? '🎉 تم بلوغ الهدف بنجاح!' : `الخطوة ${st2SocraticActiveStep + 1} من ${studentCurrentStationData.socraticDialogue.steps.length}`}
+                        </span>
+                      </div>
+
+                      {/* Target Goal Reminder */}
+                      {studentCurrentStationData.socraticDialogue.targetGoalStatement && (
+                        <div style={{
+                          background: '#ecfdf5',
+                          border: '1.5px dashed #86efac',
+                          borderRadius: '12px',
+                          padding: '10px 14px',
+                          marginBottom: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <span style={{ fontSize: '1.2rem' }}>🎯</span>
+                          <div style={{ fontSize: '0.88rem', color: '#065f46' }}>
+                            <strong>الهدف التعليمي المطلوب الوصول إليه:</strong> {studentCurrentStationData.socraticDialogue.targetGoalStatement}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step Progress Tabs */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                        {studentCurrentStationData.socraticDialogue.steps.map((step, idx) => {
+                          const isDone = st2SocraticAnswers[idx] !== undefined;
+                          const isActive = st2SocraticActiveStep === idx;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setSt2SocraticActiveStep(idx)}
+                              style={{
+                                flex: '1 1 140px',
+                                padding: '8px 12px',
+                                borderRadius: '10px',
+                                border: isActive ? '2px solid #16a34a' : isDone ? '1.5px solid #86efac' : '1.5px solid #cbd5e1',
+                                background: isActive ? '#16a34a' : isDone ? '#dcfce7' : '#ffffff',
+                                color: isActive ? '#ffffff' : isDone ? '#15803d' : '#64748b',
+                                fontWeight: 800,
+                                fontSize: '0.84rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <span>{isDone ? '✓' : idx + 1}.</span>
+                              <span>{step.stage || `الخطوة ${idx + 1}`}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Active Socratic Question */}
+                      {(() => {
+                        const currentStep = studentCurrentStationData.socraticDialogue.steps[st2SocraticActiveStep] || studentCurrentStationData.socraticDialogue.steps[0];
+                        if (!currentStep) return null;
+                        const answered = st2SocraticAnswers[st2SocraticActiveStep];
+                        const isCorrect = answered && (answered === currentStep.correctOption || answered === currentStep.options?.[0]);
+
+                        return (
+                          <div className="socratic-active-card animate-fade-in" style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #bbf7d0',
+                            borderRadius: '14px',
+                            padding: '16px',
+                            marginBottom: '10px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span style={{ fontWeight: 800, color: '#166534', fontSize: '0.9rem' }}>
+                                {currentStep.stage}
+                              </span>
+                              <span style={{ fontSize: '0.78rem', color: '#65a30d', fontWeight: 700 }}>
+                                تساؤل موجه للاستنتاج 💡
+                              </span>
+                            </div>
+
+                            <h4 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '1rem', lineHeight: 1.6 }}>
+                              {currentStep.prompt}
+                            </h4>
+
+                            {/* Options */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                              {(currentStep.options || []).map((opt, oIdx) => {
+                                const isSelected = answered === opt;
+                                const isThisCorrect = opt === currentStep.correctOption || oIdx === 0;
+                                let btnBg = '#f8fafc';
+                                let btnBorder = '#e2e8f0';
+                                let btnColor = '#1e293b';
+
+                                if (isSelected) {
+                                  if (isThisCorrect) {
+                                    btnBg = '#dcfce7';
+                                    btnBorder = '#22c55e';
+                                    btnColor = '#14532d';
+                                  } else {
+                                    btnBg = '#fee2e2';
+                                    btnBorder = '#ef4444';
+                                    btnColor = '#7f1d1d';
+                                  }
+                                }
+
+                                return (
+                                  <button
+                                    key={oIdx}
+                                    type="button"
+                                    onClick={() => {
+                                      const nextAnswers = { ...st2SocraticAnswers, [st2SocraticActiveStep]: opt };
+                                      setSt2SocraticAnswers(nextAnswers);
+                                      if (isThisCorrect) {
+                                        showToast('إجابة سقراطية موفقة! 🌟 استمر في التفكير نحو الهدف.');
+                                        if (st2SocraticActiveStep === studentCurrentStationData.socraticDialogue.steps.length - 1) {
+                                          setSt2SocraticCompleted(true);
+                                        }
+                                      }
+                                    }}
+                                    style={{
+                                      padding: '11px 14px',
+                                      borderRadius: '10px',
+                                      border: `1.5px solid ${btnBorder}`,
+                                      background: btnBg,
+                                      color: btnColor,
+                                      fontWeight: 700,
+                                      fontSize: '0.9rem',
+                                      cursor: 'pointer',
+                                      textAlign: 'right',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                  >
+                                    <span>{opt}</span>
+                                    {isSelected && <span>{isThisCorrect ? '✅' : '❌'}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Feedback & Guiding Hint */}
+                            {answered && (
+                              <div className="animate-fade-in" style={{
+                                padding: '12px 14px',
+                                borderRadius: '10px',
+                                background: isCorrect ? '#f0fdf4' : '#fffbeb',
+                                border: `1.5px solid ${isCorrect ? '#86efac' : '#fde68a'}`,
+                                marginTop: '10px'
+                              }}>
+                                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isCorrect ? '#166534' : '#92400e', marginBottom: '4px' }}>
+                                  {isCorrect ? '🌟 تغذية راجعة سقراطية موجهة:' : '💡 تلميح سقراطي لإعادة التفكير:'}
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.88rem', color: isCorrect ? '#14532d' : '#78350f', lineHeight: 1.6 }}>
+                                  {isCorrect ? (currentStep.socraticFeedback || 'أحسنت! هذا التحليل يقودنا مباشرة إلى الخطوة التالية.') : (currentStep.guidingHint || 'تأمل الأمثلة مرة أخرى وابحث عن النمط المشترك.')}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Step Navigation Controls */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                              <button
+                                type="button"
+                                disabled={st2SocraticActiveStep === 0}
+                                onClick={() => setSt2SocraticActiveStep(prev => Math.max(0, prev - 1))}
+                                style={{
+                                  background: '#f1f5f9',
+                                  color: st2SocraticActiveStep === 0 ? '#cbd5e1' : '#475569',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '7px 14px',
+                                  fontWeight: 700,
+                                  fontSize: '0.82rem',
+                                  cursor: st2SocraticActiveStep === 0 ? 'not-allowed' : 'pointer'
+                                }}
+                              >
+                                ◀ الخطوة السابقة
+                              </button>
+
+                              {st2SocraticActiveStep < studentCurrentStationData.socraticDialogue.steps.length - 1 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSt2SocraticActiveStep(prev => prev + 1)}
+                                  style={{
+                                    background: isCorrect ? '#16a34a' : '#0284c7',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '7px 16px',
+                                    fontWeight: 800,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}
+                                >
+                                  <span>الانتقال إلى السؤال السقراطي التالي</span>
+                                  <span>▶</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSt2SocraticCompleted(true);
+                                    showToast('مبارك! لقد استنتجت المفهوم ووصلت للهدف بنفسك بالطريقة السقراطية! 🌟');
+                                  }}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '8px 18px',
+                                    fontWeight: 800,
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  🎯 لقد بلغت هدف الدرس بنجاح! 🎉
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Socratic Completion Banner */}
+                      {st2SocraticCompleted && (
+                        <div className="animate-fade-in" style={{
+                          background: 'linear-gradient(135deg, #dcfce7 0%, #fef9c3 100%)',
+                          border: '2px solid #22c55e',
+                          borderRadius: '12px',
+                          padding: '14px 18px',
+                          marginTop: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px'
+                        }}>
+                          <span style={{ fontSize: '2rem' }}>🏆</span>
+                          <div>
+                            <strong style={{ color: '#14532d', fontSize: '0.96rem', display: 'block', marginBottom: '2px' }}>
+                              رائع يا بطل! حققت معيار الفهم بالطريقة السقراطية:
+                            </strong>
+                            <span style={{ color: '#166534', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                              لقد قادتك الأسئلة الموجهة إلى استنتاج القاعدة وبلوغ الهدف بنفسك دون تلقين! يمكنك الآن الانتقال بثقة إلى محطة التطبيق والتدريب.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Explanation Cards / Socratic Stages / Frontal Instruction */}
                   {Array.isArray(studentCurrentStationData.explanationCards) && studentCurrentStationData.explanationCards.length > 0 && (
                     <div style={{
                       background: studentCurrentStationData.selectedPath === 'discovery' ? '#f0fdf4' : '#f8fafc',
@@ -10495,10 +10920,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <h4 style={{ margin: '0 0 12px 0', color: '#0f172a', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span>
                           {studentCurrentStationData.selectedPath === 'discovery'
-                            ? '🔍 خطوات الاستكشاف السقراطي (فكّر، حلل، واكتشف الهدف بنفسك):'
+                            ? '🔍 محطات الاستكشاف السقراطي المعززة (فكّر، قارن، واستنتج):'
                             : studentCurrentStationData.selectedPath === 'explicit'
-                            ? '👩‍🏫 الشرح الوجاهي المنظم وتوضيح المفاهيم والقواعد:'
-                            : '🔄 بطاقات بناء المعنى المتدرجة:'}
+                            ? '👩‍🏫 الشرح الوجاهي المنظم وتوضيح المفاهيم والقواعد والخطوات المحلولة:'
+                            : '🔄 بطاقات بناء المعنى (الاستكشاف + الشرح الوجاهي):'}
                         </span>
                       </h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px' }}>
@@ -10572,8 +10997,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </div>
                   )}
 
-                  {/* Interactive Check For Understanding (CFU) */}
-                  {studentCurrentStationData.checkForUnderstanding && studentCurrentStationData.checkForUnderstanding.question && (
+                  {/* Interactive Check For Understanding (CFU) for Frontal and Blended */}
+                  {studentCurrentStationData.selectedPath !== 'discovery' && studentCurrentStationData.checkForUnderstanding && studentCurrentStationData.checkForUnderstanding.question && (
                     <div style={{
                       background: '#eef2ff',
                       border: '2px solid #a5b4fc',
@@ -10581,7 +11006,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       padding: '16px'
                     }}>
                       <div style={{ fontWeight: 800, color: '#312e81', fontSize: '0.96rem', marginBottom: '10px' }}>
-                        ⚡ فحص فهم سريع وتفاعلي: {studentCurrentStationData.checkForUnderstanding.question}
+                        ⚡ فحص استيعاب الشرح الوجاهي: {studentCurrentStationData.checkForUnderstanding.question}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
                         {(studentCurrentStationData.checkForUnderstanding.options || []).map((opt, oIdx) => {
