@@ -2727,158 +2727,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Live Socratic Interactive Discovery Effect (تهيئة حوار الاستكشاف السقراطي التفاعلي)
-  useEffect(() => {
-    if (studentCurrentStationIndex === 2 && (studentCurrentStationData?.selectedPath === 'discovery' || studentCurrentStationData?.selectedPath === 'blended')) {
-      if (socraticChatMessages.length === 0) {
-        const title = activeLesson?.title || 'الدرس';
-        const isHebrew = (activeLesson?.language || '').toLowerCase() === 'hebrew';
-        const st2Data = studentCurrentStationData;
-        const initialPrompt = st2Data?.socraticDialogue?.steps?.[0]?.prompt
-          || (isHebrew
-            ? `שלום לך חוקר צעיר! ברוך הבא למסלול החקר הסוקרטי בנושא (${title}). התבונן במציאות היומיומית: מהו הדבר הראשון שמעורר את סקרנותך או מושך את תשומת ליבך בנושא זה? ומדוע?`
-            : `يا بطل الاستكشاف، مرحباً بك في حوار التفكير السقراطي لدرس (${title})! 🌟\nتأمل حياتك وما تلاحظه حول هذا الموضوع: ما أول تساؤل أو ظاهرة تلفت انتباهك هنا؟ وما سبب ذلك؟`);
-
-        const initialStarters = st2Data?.socraticDialogue?.steps?.[0]?.options || (isHebrew
-          ? ['זה משפיע על סדר היום שלנו', 'זה מחבר בין אנשים וערכים', 'יש בזה משמעות פנימית עמוקה']
-          : ['نلاحظ وجود رابط وثيق وتنظيم في حياتنا ⏰', 'لأنها تمنحنا الراحة والسكينة وتصلنا بالقيم 🤲', 'لأنها ركن أساسي وممارسة منتظمة ومهمة 💡']);
-
-        setSocraticChatMessages([
-          {
-            id: 'soc_init',
-            role: 'ai',
-            text: initialPrompt,
-            step: 1,
-            stageTitle: isHebrew ? '1. תצפית ושאילת שאלות 🔍' : '١. الملاحظة والتساؤل السقراطي 🔍',
-            timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
-        setSocraticCurrentStepNum(1);
-        setSocraticThoughtStarters(initialStarters);
-      }
-    }
-  }, [studentCurrentStationIndex, studentCurrentStationData?.selectedPath, activeLesson?.title]);
-
-  const handleSendSocraticAnswer = async (presetText = null) => {
-    const textToSend = (presetText || socraticCurrentInput).trim();
-    if (!textToSend || isSocraticAiThinking) return;
-
-    const currentStep = socraticCurrentStepNum;
-    const userMsg = {
-      id: 'soc_user_' + Date.now(),
-      role: 'student',
-      text: textToSend,
-      step: currentStep,
-      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    const updatedMessages = [...socraticChatMessages, userMsg];
-    setSocraticChatMessages(updatedMessages);
-    setSocraticCurrentInput('');
-    setIsSocraticAiThinking(true);
-
-    const currentParticipant = sessionState.participants.find(p => p.id === currentStudentId) || {
-      id: currentStudentId,
-      name: 'طالب مستكشف',
-      groupName: 'المجموعة 1'
-    };
-
-    try {
-      const res = await generateSocraticNextStepAI({
-        lessonTitle: activeLesson?.title || 'الدرس',
-        subject: activeLesson?.subject || 'عام',
-        grade: activeLesson?.grade || '',
-        targetObjective: studentCurrentStationData?.socraticDialogue?.targetGoalStatement || activeLesson?.objective || '',
-        currentStep: currentStep,
-        studentAnswer: textToSend,
-        conversationHistory: updatedMessages,
-        language: activeLesson?.language || 'arabic'
-      });
-
-      if (res) {
-        let aiBubbleText = '';
-        if (res.feedback) {
-          aiBubbleText += `💡 ${res.feedback}\n\n`;
-        }
-        if (res.isGoalReached) {
-          aiBubbleText += `🎯 ${res.achievedGoalSummary || 'مبارك! لقد استنتجت الهدف بنفسك!'}\n\n🎉 أحسنت صنعاً! لقد أثبتت فهمك العميق للمفهوم بالطريقة السقراطية دون تلقين جاهز. أنت الآن مؤهل تماماً للانتقال إلى محطة التطبيق والتدريب! 🌟`;
-          setSocraticGoalReachedInfo(res.achievedGoalSummary || 'تم استنتاج الهدف بنجاح');
-          setSt2SocraticCompleted(true);
-        } else if (res.nextQuestion) {
-          aiBubbleText += `❓ ${res.nextQuestion}`;
-          setSocraticCurrentStepNum(currentStep + 1);
-        }
-
-        const aiMsg = {
-          id: 'soc_ai_' + Date.now(),
-          role: 'ai',
-          text: aiBubbleText,
-          step: currentStep + 1,
-          stageTitle: res.stageTitle || (currentStep === 1 ? '٢. التحليل والمقارنة السقراطية 🧩' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯'),
-          isGoalReached: !!res.isGoalReached,
-          timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setSocraticChatMessages([...updatedMessages, aiMsg]);
-
-        if (Array.isArray(res.suggestedThoughtStarters) && res.suggestedThoughtStarters.length > 0) {
-          setSocraticThoughtStarters(res.suggestedThoughtStarters);
-        } else {
-          setSocraticThoughtStarters([]);
-        }
-
-        if (res.isGoalReached) {
-          showToast('🎉 رائع ومبهر! لقد استنتجت هدف المحطة بنفسك بالطريقة السقراطية!');
-          const newDiscoveryAlert = {
-            id: 'socratic_sub_' + Date.now(),
-            participantId: currentParticipant.id,
-            participantName: currentParticipant.name,
-            groupName: currentParticipant.groupName,
-            stationNumber: 2,
-            stationName: studentCurrentStationData.name,
-            text: `[💡 إنجاز الحوار السقراطي بنجاح]: استنتج الطالب الهدف بنفسه (${activeLesson.title})`,
-            tier: 'socratic_mastered',
-            scaffoldsUsed: ['حوار استكشاف سقراطي تفاعلي 🏛️'],
-            formativeScore: '100',
-            aiEvalStatus: 'mastered',
-            teacherFeedback: 'استنتاج سقراطي ذاتي ومستقل! 🌟👏',
-            aiTeacherNotes: 'وصل الطالب لهدف الحصة بنفسه عبر الحوار السقراطي المتدرج.',
-            reviewStatus: 'reviewed',
-            timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
-          };
-          const next = {
-            ...sessionState,
-            submissions: [newDiscoveryAlert, ...sessionState.submissions]
-          };
-          broadcastSession(next);
-        }
-      }
-    } catch (err) {
-      console.warn('Socratic step error:', err);
-      const fallbackMsg = {
-        id: 'soc_ai_' + Date.now(),
-        role: 'ai',
-        text: `💡 أحسنت المحاولة والتفكير يا بطل! ملاحظتك تدل على تركيز رائع.\n\n❓ والآن قارن بين ما ذكرته وبين حالات أخرى: كيف يساعدنا هذا المفهوم على تحقيق أثره الحقيقي؟`,
-        step: currentStep + 1,
-        stageTitle: '٢. التحليل والمقارنة السقراطية 🧩',
-        isGoalReached: false,
-        timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
-      };
-      setSocraticChatMessages([...updatedMessages, fallbackMsg]);
-      setSocraticCurrentStepNum(currentStep + 1);
-    } finally {
-      setIsSocraticAiThinking(false);
-    }
-  };
-
-  const handleResetSocraticDialogue = () => {
-    setSocraticChatMessages([]);
-    setSocraticCurrentStepNum(1);
-    setSocraticGoalReachedInfo(null);
-    setSt2SocraticCompleted(false);
-    setSocraticThoughtStarters([]);
-  };
-
   // 60-Second Refresh Time Modal Countdown Effect
   useEffect(() => {
     if (!isRefreshModalOpen) return;
@@ -3743,6 +3591,158 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const studentCurrentStationIndex = studentSelfPacedStation || (currentParticipant?.currentStation || 1);
 
   const studentCurrentStationData = getStationByIndex(studentCurrentStationIndex);
+
+  // Live Socratic Interactive Discovery Effect (تهيئة حوار الاستكشاف السقراطي التفاعلي)
+  useEffect(() => {
+    if (studentCurrentStationIndex === 2 && (studentCurrentStationData?.selectedPath === 'discovery' || studentCurrentStationData?.selectedPath === 'blended')) {
+      if (socraticChatMessages.length === 0) {
+        const title = activeLesson?.title || 'الدرس';
+        const isHebrew = (activeLesson?.language || '').toLowerCase() === 'hebrew';
+        const st2Data = studentCurrentStationData;
+        const initialPrompt = st2Data?.socraticDialogue?.steps?.[0]?.prompt
+          || (isHebrew
+            ? `שלום לך חוקר צעיר! ברוך הבא למסלול החקר הסוקרטי בנושא (${title}). התבונן במציאות היומיומית: מהו הדבר הראשון שמעורר את סקרנותך או מושך את תשומת ליבך בנושא זה? ומדוע?`
+            : `يا بطل الاستكشاف، مرحباً بك في حوار التفكير السقراطي لدرس (${title})! 🌟\nتأمل حياتك وما تلاحظه حول هذا الموضوع: ما أول تساؤل أو ظاهرة تلفت انتباهك هنا؟ وما سبب ذلك؟`);
+
+        const initialStarters = st2Data?.socraticDialogue?.steps?.[0]?.options || (isHebrew
+          ? ['זה משפיע על סדר היום שלנו', 'זה מחבר בין אנשים וערכים', 'יש בזה משמעות פנימית עמוקה']
+          : ['نلاحظ وجود رابط وثيق وتنظيم في حياتنا ⏰', 'لأنها تمنحنا الراحة والسكينة وتصلنا بالقيم 🤲', 'لأنها ركن أساسي وممارسة منتظمة ومهمة 💡']);
+
+        setSocraticChatMessages([
+          {
+            id: 'soc_init',
+            role: 'ai',
+            text: initialPrompt,
+            step: 1,
+            stageTitle: isHebrew ? '1. תצפית ושאילת שאלות 🔍' : '١. الملاحظة والتساؤل السقراطي 🔍',
+            timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setSocraticCurrentStepNum(1);
+        setSocraticThoughtStarters(initialStarters);
+      }
+    }
+  }, [studentCurrentStationIndex, studentCurrentStationData?.selectedPath, activeLesson?.title]);
+
+  const handleSendSocraticAnswer = async (presetText = null) => {
+    const textToSend = (presetText || socraticCurrentInput).trim();
+    if (!textToSend || isSocraticAiThinking) return;
+
+    const currentStep = socraticCurrentStepNum;
+    const userMsg = {
+      id: 'soc_user_' + Date.now(),
+      role: 'student',
+      text: textToSend,
+      step: currentStep,
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const updatedMessages = [...socraticChatMessages, userMsg];
+    setSocraticChatMessages(updatedMessages);
+    setSocraticCurrentInput('');
+    setIsSocraticAiThinking(true);
+
+    const activeParticipant = (studentAuth ? (sessionState.participants.find(p => p.id === studentAuth.id) || studentAuth) : null) || sessionState.participants.find(p => p.id === currentStudentId) || {
+      id: currentStudentId,
+      name: 'طالب مستكشف',
+      groupName: 'المجموعة 1'
+    };
+
+    try {
+      const res = await generateSocraticNextStepAI({
+        lessonTitle: activeLesson?.title || 'الدرس',
+        subject: activeLesson?.subject || 'عام',
+        grade: activeLesson?.grade || '',
+        targetObjective: studentCurrentStationData?.socraticDialogue?.targetGoalStatement || activeLesson?.objective || '',
+        currentStep: currentStep,
+        studentAnswer: textToSend,
+        conversationHistory: updatedMessages,
+        language: activeLesson?.language || 'arabic'
+      });
+
+      if (res) {
+        let aiBubbleText = '';
+        if (res.feedback) {
+          aiBubbleText += `💡 ${res.feedback}\n\n`;
+        }
+        if (res.isGoalReached) {
+          aiBubbleText += `🎯 ${res.achievedGoalSummary || 'مبارك! لقد استنتجت الهدف بنفسك!'}\n\n🎉 أحسنت صنعاً! لقد أثبتت فهمك العميق للمفهوم بالطريقة السقراطية دون تلقين جاهز. أنت الآن مؤهل تماماً للانتقال إلى محطة التطبيق والتدريب! 🌟`;
+          setSocraticGoalReachedInfo(res.achievedGoalSummary || 'تم استنتاج الهدف بنجاح');
+          setSt2SocraticCompleted(true);
+        } else if (res.nextQuestion) {
+          aiBubbleText += `❓ ${res.nextQuestion}`;
+          setSocraticCurrentStepNum(currentStep + 1);
+        }
+
+        const aiMsg = {
+          id: 'soc_ai_' + Date.now(),
+          role: 'ai',
+          text: aiBubbleText,
+          step: currentStep + 1,
+          stageTitle: res.stageTitle || (currentStep === 1 ? '٢. التحليل والمقارنة السقراطية 🧩' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯'),
+          isGoalReached: !!res.isGoalReached,
+          timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setSocraticChatMessages([...updatedMessages, aiMsg]);
+
+        if (Array.isArray(res.suggestedThoughtStarters) && res.suggestedThoughtStarters.length > 0) {
+          setSocraticThoughtStarters(res.suggestedThoughtStarters);
+        } else {
+          setSocraticThoughtStarters([]);
+        }
+
+        if (res.isGoalReached) {
+          showToast('🎉 رائع ومبهر! لقد استنتجت هدف المحطة بنفسك بالطريقة السقراطية!');
+          const newDiscoveryAlert = {
+            id: 'socratic_sub_' + Date.now(),
+            participantId: activeParticipant.id,
+            participantName: activeParticipant.name,
+            groupName: activeParticipant.groupName,
+            stationNumber: 2,
+            stationName: studentCurrentStationData.name,
+            text: `[💡 إنجاز الحوار السقراطي بنجاح]: استنتج الطالب الهدف بنفسه (${activeLesson?.title || 'الدرس'})`,
+            tier: 'socratic_mastered',
+            scaffoldsUsed: ['حوار استكشاف سقراطي تفاعلي 🏛️'],
+            formativeScore: '100',
+            aiEvalStatus: 'mastered',
+            teacherFeedback: 'استنتاج سقراطي ذاتي ومستقل! 🌟👏',
+            aiTeacherNotes: 'وصل الطالب لهدف الحصة بنفسه عبر الحوار السقراطي المتدرج.',
+            reviewStatus: 'reviewed',
+            timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+          };
+          const next = {
+            ...sessionState,
+            submissions: [newDiscoveryAlert, ...sessionState.submissions]
+          };
+          broadcastSession(next);
+        }
+      }
+    } catch (err) {
+      console.warn('Socratic step error:', err);
+      const fallbackMsg = {
+        id: 'soc_ai_' + Date.now(),
+        role: 'ai',
+        text: `💡 أحسنت المحاولة والتفكير يا بطل! ملاحظتك تدل على تركيز رائع.\n\n❓ والآن قارن بين ما ذكرته وبين حالات أخرى: كيف يساعدنا هذا المفهوم على تحقيق أثره الحقيقي؟`,
+        step: currentStep + 1,
+        stageTitle: '٢. التحليل والمقارنة السقراطية 🧩',
+        isGoalReached: false,
+        timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+      };
+      setSocraticChatMessages([...updatedMessages, fallbackMsg]);
+      setSocraticCurrentStepNum(currentStep + 1);
+    } finally {
+      setIsSocraticAiThinking(false);
+    }
+  };
+
+  const handleResetSocraticDialogue = () => {
+    setSocraticChatMessages([]);
+    setSocraticCurrentStepNum(1);
+    setSocraticGoalReachedInfo(null);
+    setSt2SocraticCompleted(false);
+    setSocraticThoughtStarters([]);
+  };
 
   // Student Station Navigation Handler (التنقل بين المحطات بحسب وتيرة وقدرات الطالب)
   const handleStudentSelectStation = (newIdx) => {
