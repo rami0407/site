@@ -944,6 +944,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   // 'all_school_lessons' ➔ جميع دروس معلمي المدرسة (خاص بالأستاذ رامي — مدير الموقع)
   // 'permissions'        ➔ إدارة التصاريح والأذونات لمعلمي المدرسة (خاص بالأستاذ رامي — مدير الموقع)
   const [teacherSubView, setTeacherSubView] = useState('my_lessons');
+  const [teacherEditStationIndex, setTeacherEditStationIndex] = useState(1);
 
   // Teacher Permissions and Filters
   const [permissionsMap, setPermissionsMap] = useState(() => getCachedPermissions());
@@ -3095,7 +3096,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           ? `English lesson generated successfully! Student join code: [${autoCode}] 🇬🇧🔑`
           : `تم توليد الحصة ومحطاتها بنجاح! كود الحصة للطلاب: [${autoCode}] 🔑🚀`;
         showToast(successMsg);
-        setTeacherSubView('my_lessons');
+        setTeacherEditStationIndex(1);
+        setTeacherSubView('student_edit_view');
       }
     } catch (err) {
       console.warn('AI full generation failed:', err);
@@ -3409,8 +3411,93 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     };
     broadcastSession(nextSession);
     try { saveMiftaahLiveSession(nextSession); } catch (e) {}
-    setTeacherSubView('creator');
-    showToast(`تم فتح درس [${chosen.title}] في شاشة التعديل والتحضير ومزامنته للطلاب ✏️`);
+    setTeacherEditStationIndex(1);
+    setTeacherSubView('student_edit_view');
+    showToast(`تم فتح درس [${chosen.title}] في شاشة التعديل والمعاينة الحية للطلاب ✏️`);
+  };
+
+  // -------------------------------------------------------------------------
+  // STUDENT-VIEW LIVE EDITOR ACTIONS & FIELD MUTATORS
+  // -------------------------------------------------------------------------
+  const updateStationField = (stationKey, field, value) => {
+    setActiveLesson(prev => {
+      if (!prev || !prev.stations) return prev;
+      const curSt = prev.stations[stationKey] || {};
+      const updatedSt = {
+        ...curSt,
+        [field]: value
+      };
+      const updatedLesson = {
+        ...prev,
+        stations: {
+          ...prev.stations,
+          [stationKey]: updatedSt
+        },
+        updatedAt: new Date().toISOString()
+      };
+      syncLessonLive(updatedLesson, false);
+      return updatedLesson;
+    });
+  };
+
+  const updateStationTaskTier = (stationKey, taskIndex, newValue) => {
+    setActiveLesson(prev => {
+      if (!prev || !prev.stations) return prev;
+      const curSt = prev.stations[stationKey] || {};
+      const existingTasks = Array.isArray(curSt.tasks) ? [...curSt.tasks] : [];
+      if (existingTasks[taskIndex]) {
+        existingTasks[taskIndex] = { ...existingTasks[taskIndex], task: newValue };
+      }
+      const updatedLesson = {
+        ...prev,
+        stations: {
+          ...prev.stations,
+          [stationKey]: { ...curSt, tasks: existingTasks }
+        },
+        updatedAt: new Date().toISOString()
+      };
+      syncLessonLive(updatedLesson, false);
+      return updatedLesson;
+    });
+  };
+
+  const updateStationExitTicketField = (stationKey, qKey, newValue) => {
+    setActiveLesson(prev => {
+      if (!prev || !prev.stations) return prev;
+      const curSt = prev.stations[stationKey] || {};
+      const exitTicket = { ...(curSt.exitTicket || {}), [qKey]: newValue };
+      const updatedLesson = {
+        ...prev,
+        stations: {
+          ...prev.stations,
+          [stationKey]: { ...curSt, exitTicket }
+        },
+        updatedAt: new Date().toISOString()
+      };
+      syncLessonLive(updatedLesson, false);
+      return updatedLesson;
+    });
+  };
+
+  const updateActiveLessonField = (field, value) => {
+    setActiveLesson(prev => {
+      if (!prev) return prev;
+      const updatedLesson = {
+        ...prev,
+        [field]: value,
+        updatedAt: new Date().toISOString()
+      };
+      if (field === 'title') setCreatorTitle(value);
+      if (field === 'grade') setCreatorGrade(value);
+      if (field === 'subject') setCreatorSubject(value);
+      syncLessonLive(updatedLesson, false);
+      return updatedLesson;
+    });
+  };
+
+  const handleSaveActiveLessonExplicit = () => {
+    syncLessonLive(activeLesson, true);
+    showToast(`تم حفظ كافة تعديلات درس [${activeLesson.title}] ومزامنتها سحابياً بنجاح! 💾✨`);
   };
 
   // Prepare a fresh new lesson draft with an automatic unique PIN
@@ -5968,6 +6055,109 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               );
             })()}
 
+            {teacherSubView === 'student_edit_view' && (
+              <div className="teacher-editing-status-banner animate-fade-in" style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: '#ffffff',
+                padding: '14px 20px',
+                borderRadius: '16px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                boxShadow: '0 4px 16px rgba(2, 132, 199, 0.2)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{
+                    background: '#ffffff',
+                    color: '#0369a1',
+                    borderRadius: '50%',
+                    width: '38px',
+                    height: '38px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.2rem',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                  }}>
+                    ✏️
+                  </span>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>
+                      أنت الآن في وضع: تعديل ومعاينة الحصة بنمط شاشة التلميذ التفاعلية
+                    </div>
+                    <div style={{ fontSize: '0.86rem', opacity: 0.9 }}>
+                      الدرس المعروض: <strong>{activeLesson.title}</strong> — كود الطلاب: <strong>{activeLesson.code || activeLesson.pin}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setTeacherSubView('my_lessons')}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: '#ffffff',
+                      border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <i className="fas fa-archive"></i> 📂 العودة للأرشيف
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveActiveLessonExplicit}
+                    style={{
+                      background: '#22c55e',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                    }}
+                  >
+                    <i className="fas fa-save"></i> 💾 حفظ التعديلات سحابياً
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStartSessionWithLesson(activeLesson)}
+                    style={{
+                      background: '#f97316',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(249, 115, 22, 0.3)'
+                    }}
+                  >
+                    <i className="fas fa-play"></i> 🚀 بدء وبث الحصة للطلاب
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* ================================================================= */}
             {/* SUBVIEW 1: MY PREVIOUS LESSONS (مكتبة الدروس السابقة للمعلم)       */}
             {/* ================================================================= */}
@@ -6103,9 +6293,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 type="button"
                                 className="btn-action-edit"
                                 onClick={() => handleOpenLessonForEditing(lesson)}
-                                title="فتح الحصة وتعديل المحطات في شاشة التحضير"
+                                title="فتح الحصة وتعديل محطاتها في شاشة الطالب التفاعلية"
                               >
-                                <i className="fas fa-pen-to-square"></i> تعديل واستكمال
+                                <i className="fas fa-pen-to-square"></i> تعديل ومعاينة الحصة ✏️
                               </button>
 
                               <button
@@ -7232,6 +7422,1203 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               </div>
             );
           })()}
+
+            {/* ================================================================= */}
+            {/* SUBVIEW: STUDENT-VIEW LIVE INTERACTIVE LESSON EDITOR             */}
+            {/* ================================================================= */}
+            {teacherSubView === 'student_edit_view' && (() => {
+              const currentStationKey = STATION_KEYS_ORDER[teacherEditStationIndex - 1] || '1_hook';
+              const curStation = activeLesson.stations?.[currentStationKey] || {};
+
+              const isReadingStation2 = teacherEditStationIndex === 2 && (
+                activeLesson?.readingPassage?.hasPassage ||
+                (curStation.studentPrompt && (
+                  curStation.studentPrompt.includes('קטע קריאה') ||
+                  curStation.studentPrompt.includes('نص القراءة') ||
+                  curStation.studentPrompt.includes('قطعة') ||
+                  curStation.studentPrompt.includes('Reading') ||
+                  curStation.studentPrompt.length > 200
+                ))
+              );
+
+              return (
+                <div className="student-edit-view-container animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '40px' }}>
+                  {/* Top Lesson Meta Strip */}
+                  <div className="student-edit-header-card" style={{
+                    background: '#ffffff',
+                    border: '2px solid #bae6fd',
+                    borderRadius: '18px',
+                    padding: '22px 26px',
+                    marginBottom: '20px',
+                    boxShadow: '0 4px 20px rgba(2, 132, 199, 0.08)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '16px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.8rem' }}>📱✏️</span>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0369a1' }}>
+                            معاينة وتعديل الحصة بنمط شاشة التلميذ التفاعلية
+                          </h2>
+                          <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+                            يظهر الدرس أدناه كشاشة الطالب الحية تماماً — يمكنك تعديل أي نص، قراءة، سؤال أو سقالة مساندة مباشرة
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => setTeacherSubView('my_lessons')}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '10px',
+                            border: '1.5px solid #cbd5e1',
+                            background: '#f8fafc',
+                            color: '#334155',
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <i className="fas fa-archive"></i> 📂 العودة للأرشيف
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveActiveLessonExplicit}
+                          style={{
+                            padding: '8px 18px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
+                          }}
+                        >
+                          <i className="fas fa-save"></i> 💾 حفظ التعديلات سحابياً
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartSessionWithLesson(activeLesson)}
+                          style={{
+                            padding: '8px 18px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
+                          }}
+                        >
+                          <i className="fas fa-rocket"></i> 🚀 بدء الحصة للطلاب
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lesson Core Meta Inputs (Title, Grade, Subject, Code) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                          <i className="fas fa-pen"></i> عنوان الدرس والمحور (قابل للتعديل):
+                        </label>
+                        <input
+                          type="text"
+                          value={activeLesson.title || ''}
+                          onChange={e => updateActiveLessonField('title', e.target.value)}
+                          placeholder="عنوان الحصة..."
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.95rem',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                          <i className="fas fa-graduation-cap"></i> الصف والمستوى الدراسي:
+                        </label>
+                        <select
+                          value={activeLesson.grade || 'الصف الرابع'}
+                          onChange={e => updateActiveLessonField('grade', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.92rem',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            background: '#ffffff',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <option value="الصف الأول">الصف الأول الابتدائي</option>
+                          <option value="الصف الثاني">الصف الثاني الابتدائي</option>
+                          <option value="الصف الثالث">الصف الثالث الابتدائي</option>
+                          <option value="الصف الرابع">الصف الرابع الابتدائي</option>
+                          <option value="الصف الخامس">الصف الخامس الابتدائي</option>
+                          <option value="الصف السادس">الصف السادس الابتدائي</option>
+                          <option value="شريحة مخصصة">شريحة مخصصة...</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                          <i className="fas fa-book"></i> المادة التعليمية / الموضوع:
+                        </label>
+                        <input
+                          type="text"
+                          value={activeLesson.subject || ''}
+                          onChange={e => updateActiveLessonField('subject', e.target.value)}
+                          placeholder="الموضوع التعليمي..."
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.92rem',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                          <i className="fas fa-key"></i> كود دخول الطلاب (PIN):
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            background: '#f0f9ff',
+                            border: '1.5px solid #7dd3fc',
+                            borderRadius: '8px',
+                            color: '#0369a1',
+                            fontWeight: 800,
+                            fontSize: '1rem',
+                            textAlign: 'center',
+                            letterSpacing: '1px'
+                          }}>
+                            {activeLesson.code || activeLesson.pin || 'MFT-924'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const freshPin = generateUniqueLessonPin(lessonsList);
+                              updateActiveLessonField('code', freshPin);
+                              updateActiveLessonField('pin', freshPin);
+                              showToast(`تم توليد كود دخول جديد فوراً: [${freshPin}] 🔄✨`);
+                            }}
+                            title="توليد كود دخول جديد"
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: '1.5px solid #cbd5e1',
+                              background: '#ffffff',
+                              color: '#334155',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <i className="fas fa-sync-alt"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Central Goal & Success Criteria Inputs */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', paddingTop: '10px', borderTop: '1px dashed #e2e8f0' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0369a1', marginBottom: '4px' }}>
+                          🎯 هدف التعلم المركزي (قابل للتعديل المباشر):
+                        </label>
+                        <input
+                          type="text"
+                          value={activeLesson.objective || activeLesson.learningGoal || ''}
+                          onChange={e => updateActiveLessonField('objective', e.target.value)}
+                          placeholder="هدف التعلم المركزي..."
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #bae6fd',
+                            background: '#f0f9ff',
+                            fontSize: '0.9rem',
+                            color: '#0c4a6e',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#047857', marginBottom: '4px' }}>
+                          ✅ معيار النجاح الصريح (قابل للتعديل المباشر):
+                        </label>
+                        <input
+                          type="text"
+                          value={activeLesson.successCriteria || ''}
+                          onChange={e => updateActiveLessonField('successCriteria', e.target.value)}
+                          placeholder="معيار النجاح الصريح..."
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #a7f3d0',
+                            background: '#ecfdf5',
+                            fontSize: '0.9rem',
+                            color: '#064e3b',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5-Station Navigation Ribbon (Spine tabs mirroring student key bar) */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    overflowX: 'auto',
+                    paddingBottom: '8px',
+                    marginBottom: '16px'
+                  }}>
+                    {[
+                      { idx: 1, key: '1_hook', name: 'مشوّق ومحفّز', icon: '🔥', symbol: 'م', color: '#ea580c' },
+                      { idx: 2, key: '2_understanding', name: 'فهم وبناء المعنى', icon: '📖', symbol: 'ف', color: '#0284c7' },
+                      { idx: 3, key: '3_practice', name: 'التطبيق والتدريب', icon: '🛠️', symbol: 'ت', color: '#059669' },
+                      { idx: 4, key: '4_evidence', name: 'أدلة الفهم', icon: '📝', symbol: 'ا', color: '#7c3aed' },
+                      { idx: 5, key: '5_harvest', name: 'حصاد ونقل الأثر', icon: '🎒', symbol: 'ح', color: '#db2777' }
+                    ].map(st => {
+                      const isActive = teacherEditStationIndex === st.idx;
+                      return (
+                        <button
+                          key={st.idx}
+                          type="button"
+                          onClick={() => setTeacherEditStationIndex(st.idx)}
+                          style={{
+                            flex: '1 1 0',
+                            minWidth: '150px',
+                            padding: '12px 14px',
+                            borderRadius: '14px',
+                            border: isActive ? `2.5px solid ${st.color}` : '1.5px solid #e2e8f0',
+                            background: isActive ? '#ffffff' : '#f8fafc',
+                            boxShadow: isActive ? `0 4px 16px ${st.color}25` : 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <span style={{
+                            background: st.color,
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 900,
+                            fontSize: '0.85rem'
+                          }}>
+                            {st.symbol}
+                          </span>
+                          <span style={{ fontSize: '1.2rem' }}>{st.icon}</span>
+                          <strong style={{
+                            fontSize: '0.92rem',
+                            color: isActive ? st.color : '#334155',
+                            fontWeight: isActive ? 800 : 600
+                          }}>
+                            {st.idx}. {st.name}
+                          </strong>
+                          {isActive && (
+                            <span style={{
+                              background: `${st.color}15`,
+                              color: st.color,
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              padding: '2px 6px',
+                              borderRadius: '6px'
+                            }}>
+                              تعديل ✏️
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* ============================================================= */}
+                  {/* ACTIVE STATION CARD (Exact Student Presentation + Live Editor) */}
+                  {/* ============================================================= */}
+                  <div className="student-station-task-card" style={{
+                    background: '#ffffff',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '18px',
+                    padding: '24px 28px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)'
+                  }}>
+                    {/* Station Card Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      borderBottom: '2px solid #f1f5f9',
+                      paddingBottom: '14px',
+                      marginBottom: '18px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '2rem' }}>{curStation.icon || '📍'}</span>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '1.28rem', fontWeight: 800, color: '#0f172a' }}>
+                            مهمتك في المحطة [{curStation.name || `المحطة ${teacherEditStationIndex}`}]:
+                          </h3>
+                          <small style={{ color: '#0284c7', fontWeight: 700 }}>
+                            📱 المعاينة الحية كما تظهر للطالب في جهازه — يمكنك النقر والتعديل المباشر
+                          </small>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStationPromptModal({
+                              isOpen: true,
+                              stationKey: currentStationKey,
+                              stationName: curStation.name || currentStationKey,
+                              promptText: '',
+                              loading: false
+                            });
+                          }}
+                          style={{
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            fontWeight: 800,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 3px 10px rgba(124, 58, 237, 0.25)'
+                          }}
+                        >
+                          <i className="fas fa-wand-magic-sparkles"></i> اطلب تعديلاً مخصصاً (AI) ✨
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ========================================================= */}
+                    {/* STATION 1 SPECIFIC SECTIONS                              */}
+                    {/* ========================================================= */}
+                    {teacherEditStationIndex === 1 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '18px' }}>
+                        {/* Student Prompt */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#ea580c', marginBottom: '6px' }}>
+                            🎯 نص ومهمة المحطة المعروضة للطلاب (اضغط للتعديل):
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={curStation.studentPrompt || ''}
+                            onChange={e => updateStationField('1_hook', 'studentPrompt', e.target.value)}
+                            placeholder="نص وتكليف المحطة للطلاب..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #fdba74',
+                              background: '#fffaf5',
+                              fontSize: '0.98rem',
+                              lineHeight: 1.7,
+                              color: '#1e293b',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Curiosity Question */}
+                        <div style={{ background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '12px', padding: '14px 16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#854d0e', marginBottom: '6px' }}>
+                            ❓ سؤال الفضول الموجه للتفكير (Curiosity Question):
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={curStation.curiosityQuestion || ''}
+                            onChange={e => updateStationField('1_hook', 'curiosityQuestion', e.target.value)}
+                            placeholder="سؤال الفضول الذي يثير تفكير الطلاب..."
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #facc15',
+                              background: '#ffffff',
+                              fontSize: '0.95rem',
+                              color: '#713f12',
+                              lineHeight: 1.6,
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Hook Story or Scenario */}
+                        <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '14px 16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#1e40af', marginBottom: '6px' }}>
+                            📖 القصة أو الظاهرة المشوّقة (مدخل الدرس):
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={curStation.hookStoryOrScenario || ''}
+                            onChange={e => updateStationField('1_hook', 'hookStoryOrScenario', e.target.value)}
+                            placeholder="قصة أو ظاهرة واقعية مشوقة ترتبط بموضوع الدرس..."
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #93c5fd',
+                              background: '#ffffff',
+                              fontSize: '0.95rem',
+                              color: '#1e3a8a',
+                              lineHeight: 1.6,
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Helper Words Chips */}
+                        <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: '12px', padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontWeight: 800, color: '#9a3412', fontSize: '0.88rem' }}>
+                              💡 كلمات ومفاهيم مساعدة (تظهر كأزرار للطالب لإضافتها لإجابته):
+                            </span>
+                            <small style={{ color: '#c2410c' }}>اضغط × لحذف أي كلمة</small>
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                            {(curStation.helperWords || []).map((word, wIdx) => (
+                              <span
+                                key={wIdx}
+                                style={{
+                                  background: '#ffffff',
+                                  border: '1.5px solid #fb923c',
+                                  color: '#c2410c',
+                                  borderRadius: '999px',
+                                  padding: '4px 12px',
+                                  fontWeight: 700,
+                                  fontSize: '0.85rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                {word}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = (curStation.helperWords || []).filter((_, idx) => idx !== wIdx);
+                                    updateStationField('1_hook', 'helperWords', next);
+                                  }}
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#ea580c',
+                                    fontWeight: 900,
+                                    cursor: 'pointer',
+                                    padding: '0 2px'
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                              type="text"
+                              id="input-new-helper-word"
+                              placeholder="أدخل كلمة أو عبارة مساعدة جديدة..."
+                              style={{
+                                flex: 1,
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                border: '1.5px solid #cbd5e1',
+                                fontSize: '0.85rem'
+                              }}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const val = e.target.value.trim();
+                                  if (val) {
+                                    const next = [...(curStation.helperWords || []), val];
+                                    updateStationField('1_hook', 'helperWords', next);
+                                    e.target.value = '';
+                                  }
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const el = document.getElementById('input-new-helper-word');
+                                if (el && el.value.trim()) {
+                                  const next = [...(curStation.helperWords || []), el.value.trim()];
+                                  updateStationField('1_hook', 'helperWords', next);
+                                  el.value = '';
+                                }
+                              }}
+                              style={{
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: '#ea580c',
+                                color: '#ffffff',
+                                fontWeight: 700,
+                                fontSize: '0.85rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              + إضافة
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Interactive Media (Video / Riddle Preview) */}
+                        <div>
+                          <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.9rem', marginBottom: '8px' }}>
+                            🎬 نشاط / فيديو المحطة التفاعلي المعروض للطلاب:
+                          </div>
+                          {renderStationMedia(curStation, false)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ========================================================= */}
+                    {/* STATION 2 SPECIFIC SECTIONS                              */}
+                    {/* ========================================================= */}
+                    {teacherEditStationIndex === 2 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '18px' }}>
+                        {isReadingStation2 ? (
+                          <div className="student-reading-theater" style={{
+                            background: '#ffffff',
+                            border: '2px solid #bae6fd',
+                            borderRadius: '16px',
+                            padding: '20px 24px',
+                            boxShadow: '0 4px 20px rgba(2, 132, 199, 0.08)'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: '12px',
+                              borderBottom: '2px solid #e0f2fe',
+                              paddingBottom: '12px',
+                              marginBottom: '16px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '1.6rem' }}>📖</span>
+                                <div>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    background: '#e0f2fe',
+                                    color: '#0369a1',
+                                    fontWeight: 800,
+                                    fontSize: '0.78rem',
+                                    padding: '3px 10px',
+                                    borderRadius: '12px',
+                                    marginBottom: '2px'
+                                  }}>
+                                    نص القراءة والمطالعة الموجهة — مِفتاح الفهم (قابل للتعديل المباشر)
+                                  </span>
+                                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#0f172a' }}>
+                                    {activeLesson.title}
+                                  </h3>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if ('speechSynthesis' in window) {
+                                      window.speechSynthesis.cancel();
+                                      const textToRead = (curStation.studentPrompt || '').replace(/📌.*$/s, '');
+                                      const utter = new SpeechSynthesisUtterance(textToRead);
+                                      utter.lang = activeLesson.language === 'hebrew' ? 'he-IL' : activeLesson.language === 'english' ? 'en-US' : 'ar-SA';
+                                      window.speechSynthesis.speak(utter);
+                                      showToast('جاري تجربة قراءة النص صوتياً للطالب... 🔊');
+                                    } else {
+                                      showToast('ميزة القراءة الصوتية غير مدعومة.');
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '10px',
+                                    border: '1.5px solid #0284c7',
+                                    background: '#f0f9ff',
+                                    color: '#0284c7',
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}
+                                >
+                                  <i className="fas fa-volume-up"></i> تجربة القراءة الصوتية 🔊
+                                </button>
+                              </div>
+                            </div>
+
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0369a1', marginBottom: '6px' }}>
+                              النص القرائي الكامل (يمكنك تعديل أي فقرة أو كلمة وسيتغير فوراً لدى الطلاب):
+                            </label>
+                            <textarea
+                              rows={10}
+                              value={curStation.studentPrompt || ''}
+                              onChange={e => updateStationField('2_understanding', 'studentPrompt', e.target.value)}
+                              placeholder="اكتب أو ألصق نص القراءة كاملاً هنا..."
+                              style={{
+                                width: '100%',
+                                padding: '14px 18px',
+                                borderRadius: '10px',
+                                border: '1.5px solid #7dd3fc',
+                                background: '#f8fafc',
+                                fontSize: '1.12rem',
+                                lineHeight: 1.9,
+                                color: '#0f172a',
+                                textAlign: 'justify',
+                                boxSizing: 'border-box'
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0284c7', marginBottom: '6px' }}>
+                              📖 محتوى الشرح وبناء المعنى المعروض للطالب (اضغط للتعديل):
+                            </label>
+                            <textarea
+                              rows={7}
+                              value={curStation.studentPrompt || ''}
+                              onChange={e => updateStationField('2_understanding', 'studentPrompt', e.target.value)}
+                              placeholder="محتوى الشرح، المفهوم، والقواعد التعليمية..."
+                              style={{
+                                width: '100%',
+                                padding: '14px 16px',
+                                borderRadius: '10px',
+                                border: '1.5px solid #7dd3fc',
+                                background: '#f8fafc',
+                                fontSize: '1.02rem',
+                                lineHeight: 1.8,
+                                color: '#0f172a',
+                                boxSizing: 'border-box'
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Explanation Cards / Socratic Steps if present */}
+                        {Array.isArray(curStation.explanationCards) && curStation.explanationCards.length > 0 && (
+                          <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '12px', padding: '14px 18px' }}>
+                            <div style={{ fontWeight: 800, color: '#0369a1', fontSize: '0.92rem', marginBottom: '10px' }}>
+                              🧩 بطاقات بناء المعنى المتدرجة (تظهر للطلاب كخطوات متسلسلة):
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                              {curStation.explanationCards.map((card, cIdx) => (
+                                <div key={cIdx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
+                                  <input
+                                    type="text"
+                                    value={card.title || ''}
+                                    onChange={e => {
+                                      const next = [...curStation.explanationCards];
+                                      next[cIdx] = { ...card, title: e.target.value };
+                                      updateStationField('2_understanding', 'explanationCards', next);
+                                    }}
+                                    placeholder="عنوان البطاقة..."
+                                    style={{ width: '100%', fontWeight: 800, fontSize: '0.9rem', color: '#0369a1', marginBottom: '6px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 8px', boxSizing: 'border-box' }}
+                                  />
+                                  <textarea
+                                    rows={3}
+                                    value={card.content || ''}
+                                    onChange={e => {
+                                      const next = [...curStation.explanationCards];
+                                      next[cIdx] = { ...card, content: e.target.value };
+                                      updateStationField('2_understanding', 'explanationCards', next);
+                                    }}
+                                    placeholder="محتوى الخطوة أو الشرح..."
+                                    style={{ width: '100%', fontSize: '0.85rem', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px 8px', boxSizing: 'border-box' }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ========================================================= */}
+                    {/* STATION 3 SPECIFIC SECTIONS                              */}
+                    {/* ========================================================= */}
+                    {teacherEditStationIndex === 3 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '18px' }}>
+                        {/* Student Prompt */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#059669', marginBottom: '6px' }}>
+                            🛠️ المهمة الأساسية والتمهيد للطلاب (اضغط للتعديل):
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={curStation.studentPrompt || ''}
+                            onChange={e => updateStationField('3_practice', 'studentPrompt', e.target.value)}
+                            placeholder="مهمة التدريب الأساسية المشتركة..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #6ee7b7',
+                              background: '#f0fdf4',
+                              fontSize: '0.98rem',
+                              lineHeight: 1.7,
+                              color: '#064e3b',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* 3 Differentiated Tiers */}
+                        <div>
+                          <div style={{ fontWeight: 800, color: '#065f46', fontSize: '0.92rem', marginBottom: '10px' }}>
+                            ⚖️ المهام المتمايزة للمستويات الثلاثة (تظهر للطلاب حسب مسارهم):
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+                            {/* Tier 1 */}
+                            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '12px', padding: '14px' }}>
+                              <strong style={{ color: '#15803d', display: 'block', marginBottom: '6px', fontSize: '0.88rem' }}>
+                                🟢 المستوى الأول (انطلاق وتثبيت المفاهيم):
+                              </strong>
+                              <textarea
+                                rows={4}
+                                value={curStation.tasks?.[0]?.task || ''}
+                                onChange={e => updateStationTaskTier('3_practice', 0, e.target.value)}
+                                placeholder="مهمة المستوى الميسر للطلاب..."
+                                style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #86efac', background: '#ffffff', fontSize: '0.88rem', color: '#14532d', lineHeight: 1.5, boxSizing: 'border-box' }}
+                              />
+                            </div>
+
+                            {/* Tier 2 */}
+                            <div style={{ background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '12px', padding: '14px' }}>
+                              <strong style={{ color: '#854d0e', display: 'block', marginBottom: '6px', fontSize: '0.88rem' }}>
+                                🟡 المستوى الثاني (ممارسة وتمكن - المهمة المعيارية):
+                              </strong>
+                              <textarea
+                                rows={4}
+                                value={curStation.tasks?.[1]?.task || ''}
+                                onChange={e => updateStationTaskTier('3_practice', 1, e.target.value)}
+                                placeholder="مهمة المستوى المتوسط..."
+                                style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #facc15', background: '#ffffff', fontSize: '0.88rem', color: '#713f12', lineHeight: 1.5, boxSizing: 'border-box' }}
+                              />
+                            </div>
+
+                            {/* Tier 3 */}
+                            <div style={{ background: '#fdf2f8', border: '1.5px solid #fbcfe8', borderRadius: '12px', padding: '14px' }}>
+                              <strong style={{ color: '#9d174d', display: 'block', marginBottom: '6px', fontSize: '0.88rem' }}>
+                                🔴 المستوى الثالث (رواد وتحدٍ وتعمق):
+                              </strong>
+                              <textarea
+                                rows={4}
+                                value={curStation.tasks?.[2]?.task || ''}
+                                onChange={e => updateStationTaskTier('3_practice', 2, e.target.value)}
+                                placeholder="مهمة التحدي والتفكير العليا..."
+                                style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f472b6', background: '#ffffff', fontSize: '0.88rem', color: '#831843', lineHeight: 1.5, boxSizing: 'border-box' }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Deep Challenge (اكتشف الخطأ) */}
+                        {curStation.deepChallenge && (
+                          <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '12px 16px' }}>
+                            <strong style={{ color: '#334155', fontSize: '0.88rem', display: 'block', marginBottom: '6px' }}>
+                              🚀 تحدي الفهم العميق (اكتشف الخطأ والبرهان):
+                            </strong>
+                            <textarea
+                              rows={2}
+                              value={curStation.deepChallenge?.scenario || ''}
+                              onChange={e => {
+                                const next = { ...(curStation.deepChallenge || {}), scenario: e.target.value };
+                                updateStationField('3_practice', 'deepChallenge', next);
+                              }}
+                              placeholder="سيناريو تحدي اكتشف الخطأ..."
+                              style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ========================================================= */}
+                    {/* STATION 4 SPECIFIC SECTIONS                              */}
+                    {/* ========================================================= */}
+                    {teacherEditStationIndex === 4 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '18px' }}>
+                        {/* Success Criterion */}
+                        <div style={{ background: '#f5f3ff', border: '1.5px solid #ddd6fe', borderRadius: '12px', padding: '14px 16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#6d28d9', marginBottom: '6px' }}>
+                            ✅ معيار التحقق والنجاح الصريح (دليل الفهم):
+                          </label>
+                          <input
+                            type="text"
+                            value={curStation.criterion || ''}
+                            onChange={e => updateStationField('4_evidence', 'criterion', e.target.value)}
+                            placeholder="المعيار الصريح للتحقق من بلوغ الهدف..."
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              border: '1.5px solid #c4b5fd',
+                              background: '#ffffff',
+                              fontSize: '0.92rem',
+                              color: '#5b21b6',
+                              fontWeight: 700,
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Individual Exit Ticket Question */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#7c3aed', marginBottom: '6px' }}>
+                            🔎 سؤال بطاقة الخروج التكوينية الفردية (يحله كل طالب بمفرده في جهازه):
+                          </label>
+                          <textarea
+                            rows={4}
+                            value={curStation.exitTicketQuestion || curStation.studentPrompt || ''}
+                            onChange={e => {
+                              updateStationField('4_evidence', 'exitTicketQuestion', e.target.value);
+                              updateStationField('4_evidence', 'studentPrompt', e.target.value);
+                            }}
+                            placeholder="سؤال أو مسألة التحقق الفردي المستقل..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #c4b5fd',
+                              background: '#fbfaff',
+                              fontSize: '0.98rem',
+                              lineHeight: 1.7,
+                              color: '#1e293b',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* UDL Sentence Starters */}
+                        <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '12px 16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
+                            ✍️ بدايات جمل مساعدة للطلاب المتعثرين (UDL - افصل بينها بـ |):
+                          </label>
+                          <input
+                            type="text"
+                            value={Array.isArray(curStation.sentenceStartersForUDL) ? curStation.sentenceStartersForUDL.join(' | ') : (curStation.sentenceStartersForUDL || '')}
+                            onChange={e => {
+                              const arr = e.target.value.split('|').map(s => s.trim()).filter(Boolean);
+                              updateStationField('4_evidence', 'sentenceStartersForUDL', arr);
+                            }}
+                            placeholder="مثال: أصنف المادة بـ... لأن... | الدليل هو..."
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ========================================================= */}
+                    {/* STATION 5 SPECIFIC SECTIONS                              */}
+                    {/* ========================================================= */}
+                    {teacherEditStationIndex === 5 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '18px' }}>
+                        {/* Student Harvest Prompt */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#db2777', marginBottom: '6px' }}>
+                            🎒 مهمة الحصاد والتأمل الفردي المعروضة للطلاب:
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={curStation.studentPrompt || ''}
+                            onChange={e => updateStationField('5_harvest', 'studentPrompt', e.target.value)}
+                            placeholder="مهمة ختام الحصة والتأمل الذاتي..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #f472b6',
+                              background: '#fdf2f8',
+                              fontSize: '0.98rem',
+                              lineHeight: 1.7,
+                              color: '#831843',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Exit Ticket 4 Questions */}
+                        <div style={{ background: '#fdf2f8', border: '1.5px solid #fbcfe8', borderRadius: '12px', padding: '16px' }}>
+                          <div style={{ fontWeight: 800, color: '#9d174d', fontSize: '0.92rem', marginBottom: '12px' }}>
+                            🎫 أسئلة بطاقة الخروج ونقل الأثر الختامية (قابلة للتعديل):
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#831843', marginBottom: '3px' }}>
+                                السؤال ١: ماذا تعلمنا اليوم؟
+                              </label>
+                              <input
+                                type="text"
+                                value={curStation.exitTicket?.q1 || ''}
+                                onChange={e => updateStationExitTicketField('5_harvest', 'q1', e.target.value)}
+                                placeholder="ما أهم فكرة تعلمتها اليوم؟"
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #f472b6', background: '#ffffff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#831843', marginBottom: '3px' }}>
+                                السؤال ٢: ما الاستراتيجية التي ساعدتك؟
+                              </label>
+                              <input
+                                type="text"
+                                value={curStation.exitTicket?.q2 || ''}
+                                onChange={e => updateStationExitTicketField('5_harvest', 'q2', e.target.value)}
+                                placeholder="ما الذي ساعدك أكثر على الفهم؟"
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #f472b6', background: '#ffffff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#831843', marginBottom: '3px' }}>
+                                السؤال ٣: التقييم الذاتي والتحدي المتبقي:
+                              </label>
+                              <input
+                                type="text"
+                                value={curStation.exitTicket?.q3 || ''}
+                                onChange={e => updateStationExitTicketField('5_harvest', 'q3', e.target.value)}
+                                placeholder="ما الذي ما زلت تشعر أنك بحاجة لتوضيح إضافي فيه؟"
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #f472b6', background: '#ffffff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#831843', marginBottom: '3px' }}>
+                                السؤال ٤: نقل الأثر إلى الحياة اليومية (Transfer Task):
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={curStation.exitTicket?.q4_transfer || curStation.transferTask || ''}
+                                onChange={e => {
+                                  updateStationExitTicketField('5_harvest', 'q4_transfer', e.target.value);
+                                  updateStationField('5_harvest', 'transferTask', e.target.value);
+                                }}
+                                placeholder="كيف توظف ما تعلمته اليوم خارج المدرسة وفي حياتك اليومية؟"
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #f472b6', background: '#ffffff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ========================================================= */}
+                    {/* UNIVERSAL SCAFFOLD BOX (مفتاح المساندة للطالب פיגום)      */}
+                    {/* ========================================================= */}
+                    <div style={{ marginTop: '20px', background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '12px', padding: '14px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: 800, color: '#854d0e', fontSize: '0.92rem' }}>
+                          🗝️ مفتاح مساندة للطالب (פיגום / Scaffold — يظهر للطالب عند الحاجة لمساعدته):
+                        </span>
+                        <small style={{ color: '#a16207', fontWeight: 700 }}>قابل للتعديل المباشر</small>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={curStation.scaffold || ''}
+                        onChange={e => updateStationField(currentStationKey, 'scaffold', e.target.value)}
+                        placeholder="تلميح أو خطة عمل مساندة تظهر للطالب في هذه المحطة..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid #fde047',
+                          background: '#ffffff',
+                          fontSize: '0.92rem',
+                          color: '#713f12',
+                          lineHeight: 1.6,
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* ========================================================= */}
+                    {/* TEACHER GUIDANCE (كواليس التدريس وإرشادات المعلم)         */}
+                    {/* ========================================================= */}
+                    <div style={{ marginTop: '16px', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '14px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <strong style={{ color: '#334155', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <i className="fas fa-chalkboard-user"></i> 👨‍🏫 إرشادات وتوجيهات المعلم (كواليس التدريس للمحطة):
+                        </strong>
+                        <small style={{ color: '#64748b' }}>خاصة بالمعلم ولا تظهر للطلاب</small>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={curStation.teacherGuidance || curStation.teacherScript || ''}
+                        onChange={e => {
+                          updateStationField(currentStationKey, 'teacherGuidance', e.target.value);
+                          updateStationField(currentStationKey, 'teacherScript', e.target.value);
+                        }}
+                        placeholder="توجيهات المعلم لكيفية إدارة هذه المحطة وتوجيه الطلاب..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          fontSize: '0.88rem',
+                          color: '#1e293b',
+                          lineHeight: 1.6,
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* ========================================================= */}
+                    {/* STATION CARD FOOTER NAVIGATION                           */}
+                    {/* ========================================================= */}
+                    <div style={{
+                      marginTop: '24px',
+                      paddingTop: '16px',
+                      borderTop: '2px solid #f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px'
+                    }}>
+                      <button
+                        type="button"
+                        disabled={teacherEditStationIndex === 1}
+                        onClick={() => setTeacherEditStationIndex(prev => Math.max(1, prev - 1))}
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: '10px',
+                          border: '1.5px solid #cbd5e1',
+                          background: teacherEditStationIndex === 1 ? '#f1f5f9' : '#ffffff',
+                          color: teacherEditStationIndex === 1 ? '#94a3b8' : '#334155',
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          cursor: teacherEditStationIndex === 1 ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <i className="fas fa-arrow-right"></i> المحطة السابقة
+                      </button>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {[1, 2, 3, 4, 5].map(dot => (
+                          <button
+                            key={dot}
+                            type="button"
+                            onClick={() => setTeacherEditStationIndex(dot)}
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              border: 'none',
+                              background: teacherEditStationIndex === dot ? '#0284c7' : '#e2e8f0',
+                              color: teacherEditStationIndex === dot ? '#ffffff' : '#475569',
+                              fontWeight: 800,
+                              fontSize: '0.92rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {dot}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={handleSaveActiveLessonExplicit}
+                          style={{
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            fontWeight: 800,
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
+                          }}
+                        >
+                          <i className="fas fa-save"></i> 💾 حفظ التعديلات سحابياً
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={teacherEditStationIndex === 5}
+                          onClick={() => setTeacherEditStationIndex(prev => Math.min(5, prev + 1))}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            border: '1.5px solid #0284c7',
+                            background: teacherEditStationIndex === 5 ? '#f1f5f9' : '#0284c7',
+                            color: teacherEditStationIndex === 5 ? '#94a3b8' : '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.9rem',
+                            cursor: teacherEditStationIndex === 5 ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          المحطة التالية <i className="fas fa-arrow-left"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
 </>
           )}
         </section>
