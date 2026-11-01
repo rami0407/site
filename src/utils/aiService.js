@@ -2811,7 +2811,22 @@ export const generateMiftaahFullJourneyLessonAI = async ({
 }) => {
   const { geminiKey, groqKey } = await getActiveAiKeys();
   const safeTitle = title.trim() || 'مهارة مركزية تفاعلية';
-  const safeSubject = subject.trim() || 'عام';
+  let safeSubject = subject.trim() || 'عام';
+
+  // Smart Domain & Subject Disambiguation to avoid catastrophic cross-domain confusion:
+  const titleLower = safeTitle.toLowerCase();
+  const isIslamicOrHistory = /معركة|غزوة|الجمل|بدر|أحد|اليرموك|القادسية|حنين|الخندق|مكة|الصحابة|الخلفاء|الإسلام|الاسلام|صلاة|الصلاة|صوم|الصوم|زكاة|حج|وضوء|قرآن|حديث|سيرة|نبي|رسول|علي بن أبي طالب|عائشة|عثمان|عمر بن الخطاب|أبو بكر/i.test(titleLower);
+  const isGrammarOrLang = /فاعل|مفعول|مبتدأ|خبر|إعراب|كان وأخواتها|إن وأخواتها|همزة|أسماء الإشارة|الضمائر|حروف الجر|نحو|قواعد اللغة|تعبير|فهم المقروء/i.test(titleLower);
+  const isMathDomain = /كسور|ضرب|قسمة|معادلة|مثلث|مساحة|محيط|أعداد عشرية|نسبة مئوية|هندسة|جمع وطرح/i.test(titleLower);
+
+  if (isIslamicOrHistory && (safeSubject.includes('علوم') || safeSubject === 'عام' || !safeSubject)) {
+    safeSubject = 'تربية إسلامية وتاريخ إسلامي';
+  } else if (isGrammarOrLang && (safeSubject.includes('علوم') || safeSubject === 'عام')) {
+    safeSubject = 'لغة عربية';
+  } else if (isMathDomain && (safeSubject.includes('علوم') || safeSubject === 'عام')) {
+    safeSubject = 'رياضيات';
+  }
+
   const safeGrade = grade.trim() || 'المرحلة الابتدائية';
   const safeRequests = specialRequests.trim();
   const safeCustomObjective = (customObjective || '').trim();
@@ -3217,6 +3232,13 @@ ${safeUdlList.length > 0 ? `- ملاحظات الاحتواء والتصميم �
 ${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
 
 ${teacherCustomDirectives}
+
+⚠️⚠️ توجيه قاطع وصارم جداً لفهم السياق الدلالي والتاريخي لعنوان الدرس بدقة مطلقة (CRITICAL DOMAIN & SEMANTIC ACCURACY):
+1. الالتزام المطلق بالدلالة الحقيقية والتاريخية لعنوان ومحور الدرس ("${safeTitle}") في مادة ("${safeSubject}"):
+   - إذا كان العنوان يعبر عن حدث تاريخي أو إسلامي (مثل: "معركة الجمل في الإسلام"، "غزوة بدر"، "فتح مكة"، "صلح الحديبية"، "الهجرة النبوية"):
+     * موضوع الحصة بالكامل بجميع محطاتها الخمس هو: الحدث التاريخي والإسلامي وسياقه في عهد الصحابة، والدروس والعِبر العظيمة، وحكمة إدارة الخلاف والشورى، والوحدة والتآلف!
+     * يُمنع منعاً باتاً وقطعياً تفسير كلمة "الجمل" كحيوان بيولوجي أو الحديث عن سنام الجمل أو الرمال أو البيئة الصحراوية كحيوانات! إن أي ذكر لحيوان الجمل أو رمال الصحراء يُعد خطأً علمياً وبيداغوجياً فادحاً وغير مقبول إطلاقاً!
+   - وبالمثل لأي موضوع في العلوم أو الرياضيات أو اللغة العربية أو التربية الإسلامية: التزم بدقة متناهية بالمفهوم الحقيقي المقصود دون أي انحراف أو خلط بين المعاني المشتركة.
 
 ${languageDirective}
 

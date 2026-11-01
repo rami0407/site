@@ -2938,7 +2938,27 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       showToast('يرجى إدخال عنوان وموضوع الدرس أولاً ✍️');
       return;
     }
-    const detectedLang = detectLanguage(creatorSubject, creatorTitle, creatorLanguage);
+
+    let effectiveSubject = creatorSubject.trim() || 'عام';
+    const tLow = creatorTitle.toLowerCase();
+    if (/معركة|غزوة|الجمل|بدر|أحد|اليرموك|القادسية|حنين|الخندق|مكة|الصحابة|الخلفاء|الإسلام|الاسلام|صلاة|الصلاة|صوم|الصوم|زكاة|حج|وضوء|قرآن|حديث|سيرة|نبي|رسول/i.test(tLow)) {
+      if (effectiveSubject.includes('علوم') || effectiveSubject === 'عام') {
+        effectiveSubject = 'تربية إسلامية';
+        setCreatorSubject('تربية إسلامية');
+      }
+    } else if (/فاعل|مفعول|مبتدأ|خبر|إعراب|كان وأخواتها|إن وأخواتها|همزة|أسماء الإشارة|الضمائر|حروف الجر|نحو|قواعد/i.test(tLow)) {
+      if (effectiveSubject.includes('علوم') || effectiveSubject === 'عام') {
+        effectiveSubject = 'لغة عربية';
+        setCreatorSubject('لغة عربية');
+      }
+    } else if (/كسور|ضرب|قسمة|معادلة|مثلث|مساحة|محيط|أعداد|نسبة مئوية|هندسة/i.test(tLow)) {
+      if (effectiveSubject.includes('علوم') || effectiveSubject === 'عام') {
+        effectiveSubject = 'رياضيات';
+        setCreatorSubject('رياضيات');
+      }
+    }
+
+    const detectedLang = detectLanguage(effectiveSubject, creatorTitle, creatorLanguage);
     setIsGeneratingLesson(true);
 
     if (detectedLang === 'hebrew') {
@@ -2952,7 +2972,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     try {
       const res = await generateMiftaahFullJourneyLessonAI({
         title: creatorTitle,
-        subject: creatorSubject,
+        subject: effectiveSubject,
         grade: creatorGrade,
         language: detectedLang,
         specialRequests: creatorSpecialRequests,
@@ -6957,7 +6977,24 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <input
                       type="text"
                       value={creatorTitle}
-                      onChange={e => setCreatorTitle(e.target.value)}
+                      onChange={e => {
+                        const newTitle = e.target.value;
+                        setCreatorTitle(newTitle);
+                        const tLow = newTitle.toLowerCase();
+                        if (/معركة|غزوة|الجمل|بدر|أحد|اليرموك|القادسية|حنين|الخندق|مكة|الصحابة|الخلفاء|الإسلام|الاسلام|صلاة|الصلاة|صوم|الصوم|زكاة|حج|وضوء|قرآن|حديث|سيرة|نبي|رسول/i.test(tLow)) {
+                          if (creatorSubject.includes('علوم') || !creatorSubject || creatorSubject === 'عام') {
+                            setCreatorSubject('تربية إسلامية');
+                          }
+                        } else if (/فاعل|مفعول|مبتدأ|خبر|إعراب|كان وأخواتها|إن وأخواتها|همزة|أسماء الإشارة|الضمائر|حروف الجر|نحو|قواعد/i.test(tLow)) {
+                          if (creatorSubject.includes('علوم') || !creatorSubject || creatorSubject === 'عام') {
+                            setCreatorSubject('لغة عربية');
+                          }
+                        } else if (/كسور|ضرب|قسمة|معادلة|مثلث|مساحة|محيط|أعداد|نسبة مئوية|هندسة/i.test(tLow)) {
+                          if (creatorSubject.includes('علوم') || !creatorSubject || creatorSubject === 'عام') {
+                            setCreatorSubject('رياضيات');
+                          }
+                        }
+                      }}
                       placeholder={dynamicTitlePlaceholder}
                       dir={isHebrew || isEnglish ? 'auto' : 'rtl'}
                     />
