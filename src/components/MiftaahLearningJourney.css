@@ -180,6 +180,18 @@
   transform: translateY(-1px);
 }
 
+.btn-header-logout {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+.btn-header-logout:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+
 /* ========================================================================= */
 /* THE PHYSICAL KEY MAP (خريطة فعلية على شكل مفتاح مقسّم إلى ٥ قطع)          */
 /* ========================================================================= */

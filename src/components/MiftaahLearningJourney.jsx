@@ -5601,16 +5601,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           {/* Active Teacher or Student Chip */}
           {authenticatedTeacher ? (
             <div className="header-active-user-chip teacher-chip">
-              <span className="chip-icon">👨‍🏫</span>
+              <span className="chip-icon">{isPrincipalAdmin(authenticatedTeacher) ? '👑' : '👨‍🏫'}</span>
               <span className="chip-name">{authenticatedTeacher.nameAr}</span>
-              <button
-                type="button"
-                className="btn-chip-logout"
-                onClick={handleTeacherLogout}
-                title="تسجيل خروج المعلم"
-              >
-                خروج
-              </button>
             </div>
           ) : studentAuth ? (
             <div className="header-active-user-chip student-chip">
@@ -5639,6 +5631,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           <span className="session-pin-chip" title="رمز الجلسة الصفية">
             رمز الصف: <strong>{sessionState.pin}</strong>
           </span>
+
+          {authenticatedTeacher && (
+            <button
+              type="button"
+              className="btn-exit-to-portal btn-header-logout"
+              onClick={handleTeacherLogout}
+              title="تسجيل الخروج من حساب المعلم"
+            >
+              <i className="fas fa-sign-out-alt"></i> تسجيل خروج
+            </button>
+          )}
 
           <button
             type="button"
@@ -5880,45 +5883,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </section>
         ) : (
           <section className="interface-canvas creator-canvas animate-fade-in">
-            {/* Teacher Logged-In Identity Banner */}
-            <div className={`teacher-logged-header-banner ${isPrincipalAdmin(authenticatedTeacher) ? 'is-admin-banner' : ''}`}>
-              <div className="teacher-info-group">
-                <span className="teacher-avatar-icon">
-                  {isPrincipalAdmin(authenticatedTeacher) ? '👑' : '👨‍🏫'}
-                </span>
-                <div>
-                  <div className="teacher-status-line">
-                    <span className="teacher-status-label">
-                      {isPrincipalAdmin(authenticatedTeacher) ? 'حساب الإدارة العامة لمنصة مِفتاح وموقع المدرسة:' : 'حساب المعلم المعتمد لغرفة التحضير:'}
-                    </span>
-                    {isPrincipalAdmin(authenticatedTeacher) && (
-                      <span className="admin-status-pill">👑 مدير المدرسة والموقع</span>
-                    )}
-                  </div>
-                  <strong className="teacher-name-title">{authenticatedTeacher.nameAr}</strong>
-                  <span className="teacher-email-chip">{authenticatedTeacher.email}</span>
-                </div>
-              </div>
-              <div className="teacher-header-actions-group">
-                <button
-                  type="button"
-                  className="btn-return-student-gate"
-                  onClick={() => setActiveInterface('student')}
-                  title="العودة لشاشة الدخول والطلاب"
-                >
-                  <i className="fas fa-arrow-right"></i> شاشة الطلاب
-                </button>
-                <button
-                  type="button"
-                  className="btn-teacher-signout"
-                  onClick={handleTeacherLogout}
-                  title="تسجيل الخروج من حساب المعلم"
-                >
-                  <i className="fas fa-sign-out-alt"></i> تسجيل خروج المعلم
-                </button>
-              </div>
-            </div>
-
             {/* ================================================================= */}
             {/* PRIMARY TWO BUTTONS: 1. توليد حصص جديدة  |  2. الدخول للأرشيف     */}
             {/* ================================================================= */}
