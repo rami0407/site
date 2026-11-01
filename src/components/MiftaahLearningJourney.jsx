@@ -5867,120 +5867,173 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             </div>
 
             {/* ================================================================= */}
-            {/* MASTER TWO HUB BOXES: 1. أرشيف المواد والدروس  |  2. إنشاء حصة جديدة */}
+            {/* PRIMARY TWO BUTTONS: 1. توليد حصص جديدة  |  2. الدخول للأرشيف     */}
             {/* ================================================================= */}
-            <div className="teacher-two-hub-boxes-grid animate-fade-in">
-              {/* Box 1: Archive of Materials & Lessons */}
-              <div 
-                className={`hub-master-card hub-archive-card ${teacherSubView === 'my_lessons' ? 'active-hub-border' : ''}`}
-                onClick={() => setTeacherSubView('my_lessons')}
-              >
-                <div className="hub-card-header-badge">
-                  <span className="badge-step-pill"><i className="fas fa-folder-open"></i> المربع الأول</span>
-                  <span className="badge-count-chip">
-                    {lessonsList.filter(l => l.authorId === authenticatedTeacher?.id || (l.authorEmail && l.authorEmail.toLowerCase() === authenticatedTeacher?.email.toLowerCase())).length || 1} حصص محفوظة
-                  </span>
-                </div>
-                <div className="hub-card-body">
-                  <div className="hub-card-icon-wrap">📚</div>
-                  <div className="hub-card-info">
-                    <h3>أرشيف المواد والدروس المحضّرة</h3>
-                    <p>استعراض كافة الحصص السابقة: تعديل المحطات، تغيير كود الحصة، نسخ رابط الفعالية، بدء البث الصفي، أو حذف الحصة.</p>
-                  </div>
-                </div>
-                <div className="hub-card-footer-action">
-                  <button 
-                    type="button" 
-                    className="btn-hub-action-trigger primary"
-                    onClick={(e) => { e.stopPropagation(); setTeacherSubView('my_lessons'); }}
-                  >
-                    <i className="fas fa-layer-group"></i> استعراض أرشيف الحصص والتحكم بها 📂
-                  </button>
-                </div>
-              </div>
-
-              {/* Box 2: Create New Lesson with AI */}
-              <div 
-                className={`hub-master-card hub-create-card ${teacherSubView === 'creator' ? 'active-hub-border' : ''}`}
-                onClick={() => handleStartNewLessonPrep()}
-              >
-                <div className="hub-card-header-badge">
-                  <span className="badge-step-pill gold"><i className="fas fa-wand-magic-sparkles"></i> المربع الثاني</span>
-                  <span className="badge-count-chip gold">نموذج مِفتاح (5 محطات)</span>
-                </div>
-                <div className="hub-card-body">
-                  <div className="hub-card-icon-wrap gold">✨</div>
-                  <div className="hub-card-info">
-                    <h3>إنشاء وبناء حصة جديدة بالذكاء</h3>
-                    <p>أجب عن ٣ أسئلة أساسية (الموضوع، الصف، والتعليمات الخاصة) ليولّد الذكاء الاصطناعي مسار الحصة كاملاً بمحطاته الخمس.</p>
-                  </div>
-                </div>
-                <div className="hub-card-footer-action">
-                  <button 
-                    type="button" 
-                    className="btn-hub-action-trigger gold"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartNewLessonPrep();
-                    }}
-                  >
-                    <i className="fas fa-plus-circle"></i> بدء إنشاء حصة جديدة الآن ✍️
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Teacher Workspace Sub-Navigation Tabs */}
-            <div className="teacher-workspace-subnav">
-              <button
-                type="button"
-                className={`subnav-pill-btn ${teacherSubView === 'my_lessons' ? 'active' : ''}`}
-                onClick={() => setTeacherSubView('my_lessons')}
-              >
-                <i className="fas fa-book-reader"></i>
-                <span>مكتبة دروسي السابقة</span>
-                <span className="subnav-count-badge">
-                  {lessonsList.filter(l => l.authorId === authenticatedTeacher.id || (l.authorEmail && l.authorEmail.toLowerCase() === authenticatedTeacher.email.toLowerCase())).length || 1}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className={`subnav-pill-btn ${teacherSubView === 'creator' ? 'active' : ''}`}
-                onClick={() => setTeacherSubView('creator')}
-              >
-                <i className="fas fa-plus-circle"></i>
-                <span>تحضير وبناء حصة جديدة</span>
-              </button>
-
-              {isPrincipalAdmin(authenticatedTeacher) && (
+            {(() => {
+              const myLessonsCount = lessonsList.filter(l => l.authorId === authenticatedTeacher?.id || (l.authorEmail && l.authorEmail.toLowerCase() === authenticatedTeacher?.email.toLowerCase())).length || 1;
+              return (
                 <>
-                  <button
-                    type="button"
-                    className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'all_school_lessons' ? 'active' : ''}`}
-                    onClick={() => setTeacherSubView('all_school_lessons')}
-                  >
-                    <i className="fas fa-school"></i>
-                    <span>جميع دروس معلمي المدرسة 👑</span>
-                    <span className="subnav-count-badge gold">
-                      {lessonsList.length}
-                    </span>
-                  </button>
+                  <div className="teacher-primary-two-buttons-bar animate-fade-in">
+                    {/* BUTTON 1: توليد حصص جديدة */}
+                    <button
+                      type="button"
+                      className={`teacher-master-nav-btn create-btn ${teacherSubView === 'creator' ? 'active' : ''}`}
+                      onClick={() => {
+                        handleStartNewLessonPrep();
+                      }}
+                      title="الزر الأول: الانتقال إلى منشئ الحصص وتوليد مسار درس جديد بالذكاء الاصطناعي"
+                    >
+                      <div className="btn-icon-circle">
+                        <i className="fas fa-wand-magic-sparkles"></i>
+                      </div>
+                      <div className="btn-text-content">
+                        <span className="btn-order-tag">الزر الأول</span>
+                        <strong className="btn-title-main">⚡ توليد حصص جديدة</strong>
+                        <span className="btn-desc-sub">بناء وتوليد مسار الحصة بمحطاته الخمس بالذكاء الاصطناعي وموديل مِفتاح</span>
+                      </div>
+                      {teacherSubView === 'creator' && (
+                        <span className="btn-active-check">نشط الآن ✓</span>
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'permissions' ? 'active' : ''}`}
-                    onClick={() => setTeacherSubView('permissions')}
-                  >
-                    <i className="fas fa-user-shield"></i>
-                    <span>إدارة التصاريح والأذونات 🛡️</span>
-                    <span className="subnav-count-badge gold">
-                      {getAllTeachers().length}
-                    </span>
-                  </button>
+                    {/* BUTTON 2: الدخول للأرشيف */}
+                    <button
+                      type="button"
+                      className={`teacher-master-nav-btn archive-btn ${teacherSubView === 'my_lessons' ? 'active' : ''}`}
+                      onClick={() => setTeacherSubView('my_lessons')}
+                      title="الزر الثاني: الدخول للأرشيف واستعراض كافة الدروس المحفوظة"
+                    >
+                      <div className="btn-icon-circle">
+                        <i className="fas fa-archive"></i>
+                      </div>
+                      <div className="btn-text-content">
+                        <span className="btn-order-tag">الزر الثاني</span>
+                        <strong className="btn-title-main">📂 الدخول للأرشيف</strong>
+                        <span className="btn-desc-sub">استعراض كافة الدروس المحفوظة وتعديلها وإطلاقها للطلاب</span>
+                      </div>
+                      <span className="btn-count-pill">{myLessonsCount} دروس محفوظة</span>
+                      {teacherSubView === 'my_lessons' && (
+                        <span className="btn-active-check">نشط الآن ✓</span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* MASTER TWO HUB CARDS IN EXACT SAME ORDER: 1. توليد حصص جديدة | 2. الدخول للأرشيف */}
+                  <div className="teacher-two-hub-boxes-grid animate-fade-in">
+                    {/* Card 1: توليد حصص جديدة */}
+                    <div 
+                      className={`hub-master-card hub-create-card ${teacherSubView === 'creator' ? 'active-hub-border' : ''}`}
+                      onClick={() => handleStartNewLessonPrep()}
+                    >
+                      <div className="hub-card-header-badge">
+                        <span className="badge-step-pill gold"><i className="fas fa-wand-magic-sparkles"></i> الزر الأول • توليد بالذكاء الاصطناعي</span>
+                        <span className="badge-count-chip gold">موديل مِفتاح (5 محطات)</span>
+                      </div>
+                      <div className="hub-card-body">
+                        <div className="hub-card-icon-wrap gold">✨</div>
+                        <div className="hub-card-info">
+                          <h3>توليد وبناء حصة جديدة بالذكاء</h3>
+                          <p>أجب عن ٣ معطيات أساسية (الموضوع، الصف، والتعليمات الخاصة) ليولّد الذكاء الاصطناعي مسار الحصة كاملاً بمحطاته الخمس ومستويات تمايز مرنة.</p>
+                        </div>
+                      </div>
+                      <div className="hub-card-footer-action">
+                        <button 
+                          type="button" 
+                          className="btn-hub-action-trigger gold"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartNewLessonPrep();
+                          }}
+                        >
+                          <i className="fas fa-plus-circle"></i> ⚡ ابدأ توليد حصة جديدة الآن
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card 2: الدخول للأرشيف */}
+                    <div 
+                      className={`hub-master-card hub-archive-card ${teacherSubView === 'my_lessons' ? 'active-hub-border' : ''}`}
+                      onClick={() => setTeacherSubView('my_lessons')}
+                    >
+                      <div className="hub-card-header-badge">
+                        <span className="badge-step-pill"><i className="fas fa-folder-open"></i> الزر الثاني • أرشيف المعلم</span>
+                        <span className="badge-count-chip">
+                          {myLessonsCount} دروس محفوظة
+                        </span>
+                      </div>
+                      <div className="hub-card-body">
+                        <div className="hub-card-icon-wrap">📚</div>
+                        <div className="hub-card-info">
+                          <h3>أرشيف الدروس والخطط المحفوظة</h3>
+                          <p>استعراض كافة الحصص والدروس السابقة: تعديل المحطات، كود دخول الطلاب، نسخ رابط الحصة، بدء البث الصفي، تصدير Word/PDF، أو حذف الدرس.</p>
+                        </div>
+                      </div>
+                      <div className="hub-card-footer-action">
+                        <button 
+                          type="button" 
+                          className="btn-hub-action-trigger primary"
+                          onClick={(e) => { e.stopPropagation(); setTeacherSubView('my_lessons'); }}
+                        >
+                          <i className="fas fa-archive"></i> 📂 الدخول للأرشيف واستعراض الدروس ({myLessonsCount})
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Teacher Workspace Sub-Navigation Tabs */}
+                  <div className="teacher-workspace-subnav">
+                    <button
+                      type="button"
+                      className={`subnav-pill-btn ${teacherSubView === 'creator' ? 'active' : ''}`}
+                      onClick={() => setTeacherSubView('creator')}
+                    >
+                      <i className="fas fa-wand-magic-sparkles"></i>
+                      <span>⚡ توليد وبناء حصة جديدة</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`subnav-pill-btn ${teacherSubView === 'my_lessons' ? 'active' : ''}`}
+                      onClick={() => setTeacherSubView('my_lessons')}
+                    >
+                      <i className="fas fa-archive"></i>
+                      <span>📂 أرشيف الدروس المحفوظة</span>
+                      <span className="subnav-count-badge">
+                        {myLessonsCount}
+                      </span>
+                    </button>
+
+                    {isPrincipalAdmin(authenticatedTeacher) && (
+                      <>
+                        <button
+                          type="button"
+                          className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'all_school_lessons' ? 'active' : ''}`}
+                          onClick={() => setTeacherSubView('all_school_lessons')}
+                        >
+                          <i className="fas fa-school"></i>
+                          <span>جميع دروس معلمي المدرسة 👑</span>
+                          <span className="subnav-count-badge gold">
+                            {lessonsList.length}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'permissions' ? 'active' : ''}`}
+                          onClick={() => setTeacherSubView('permissions')}
+                        >
+                          <i className="fas fa-user-shield"></i>
+                          <span>إدارة التصاريح والأذونات 🛡️</span>
+                          <span className="subnav-count-badge gold">
+                            {getAllTeachers().length}
+                          </span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </>
-              )}
-            </div>
+              );
+            })()}
 
             {/* ================================================================= */}
             {/* SUBVIEW 1: MY PREVIOUS LESSONS (مكتبة الدروس السابقة للمعلم)       */}
@@ -6006,9 +6059,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 <div className="teacher-library-view animate-fade-in">
                   <div className="library-hero-card">
                     <div className="hero-content">
-                      <h2><i className="fas fa-book-reader"></i> مكتبة دروسي السابقة — مِفتاح</h2>
+                      <h2><i className="fas fa-archive"></i> أرشيف الدروس المحفوظة 📂</h2>
                       <p>
-                        هنا تجد كافة الحصص والمسارات التي قمت بإعدادها مسبقاً. يمكنك تعديلها، استكمال أهدافها، أو إطلاقها مباشرةً في الصف للطلاب.
+                        هنا تظهر كافة الدروس والخطط المحفوظة الخاصة بك في مدرسة مشيرفة الابتدائية. يمكنك استعراض أي درس، تعديل محطاته، استكمال أهدافه، تنزيله بصيغة Word أو PDF، أو إطلاقه مباشرةً وبثه في الصف للطلاب!
                       </p>
                     </div>
                     <div className="hero-actions">
@@ -6017,7 +6070,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         className="btn-create-new-lesson-cta"
                         onClick={() => handleStartNewLessonPrep()}
                       >
-                        <i className="fas fa-plus-circle"></i> تحضير وبناء حصة جديدة ✍️
+                        <i className="fas fa-magic"></i> ⚡ توليد حصة جديدة بالذكاء
                       </button>
                     </div>
                   </div>
@@ -6598,6 +6651,28 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     <p>ابدأ بثلاث خانات أساسية فقط، وسيولّد الذكاء الاصطناعي مسودة متكاملة لمسار مِفتاح بالمحطات الخمس مع أهداف واضحة ومهام متمايزة.</p>
                   </div>
                   <div className="hero-actions">
+                    <button
+                      type="button"
+                      className="btn-archive-return-shortcut"
+                      onClick={() => setTeacherSubView('my_lessons')}
+                      style={{
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
+                      }}
+                      title="الزر الثاني: الدخول للأرشيف واستعراض الدروس المحفوظة"
+                    >
+                      <i className="fas fa-archive"></i> 📂 الدخول للأرشيف (الدروس المحفوظة)
+                    </button>
                     <button
                       type="button"
                       className="btn-live-sync-now"

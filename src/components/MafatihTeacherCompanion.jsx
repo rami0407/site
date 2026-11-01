@@ -1242,14 +1242,82 @@ export const MafatihTeacherCompanion = ({ onSwitchTab }) => {
       </header>
 
       {/* =================================================================== */}
-      {/* SCREEN 1: MY LESSONS (الشاشة ١: حصصي)                                */}
+      {/* PRIMARY TWO BUTTONS: 1. توليد حصص جديدة  |  2. الدخول للأرشيف     */}
+      {/* =================================================================== */}
+      <div className="teacher-primary-two-buttons-bar" style={{ margin: '16px 24px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            handleCreateNewLesson();
+            setCurrentScreen('screen2_prep_context');
+          }}
+          style={{
+            border: '2.5px solid',
+            borderColor: currentScreen === 'screen2_prep_context' ? '#f59e0b' : '#fde68a',
+            background: currentScreen === 'screen2_prep_context' ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' : '#ffffff',
+            padding: '16px 20px',
+            borderRadius: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            cursor: 'pointer',
+            textAlign: 'right',
+            boxShadow: currentScreen === 'screen2_prep_context' ? '0 8px 24px rgba(245, 158, 11, 0.2)' : '0 4px 14px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', flexShrink: 0 }}>
+            <i className="fas fa-wand-magic-sparkles"></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '0.74rem', color: '#b45309', fontWeight: 800, display: 'block' }}>الزر الأول</span>
+            <strong style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 900 }}>⚡ توليد حصص جديدة</strong>
+            <span style={{ fontSize: '0.82rem', color: '#64748b', display: 'block' }}>تجهيز وهندسة الحصة بالمحطات الخمس بالذكاء الاصطناعي</span>
+          </div>
+          {currentScreen === 'screen2_prep_context' && (
+            <span style={{ background: '#ffffff', color: '#0f172a', padding: '4px 10px', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 800 }}>نشط الآن ✓</span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setCurrentScreen('screen1_my_lessons')}
+          style={{
+            border: '2.5px solid',
+            borderColor: currentScreen === 'screen1_my_lessons' ? '#0284c7' : '#bae6fd',
+            background: currentScreen === 'screen1_my_lessons' ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' : '#ffffff',
+            padding: '16px 20px',
+            borderRadius: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            cursor: 'pointer',
+            textAlign: 'right',
+            boxShadow: currentScreen === 'screen1_my_lessons' ? '0 8px 24px rgba(2, 132, 199, 0.2)' : '0 4px 14px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', flexShrink: 0 }}>
+            <i className="fas fa-archive"></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '0.74rem', color: '#0369a1', fontWeight: 800, display: 'block' }}>الزر الثاني</span>
+            <strong style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 900 }}>📂 الدخول للأرشيف</strong>
+            <span style={{ fontSize: '0.82rem', color: '#64748b', display: 'block' }}>استعراض كافة الدروس المحفوظة وتعديلها وبدء البث</span>
+          </div>
+          <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '999px', fontSize: '0.82rem', fontWeight: 800 }}>{lessons.length} محفوظ</span>
+        </button>
+      </div>
+
+      {/* =================================================================== */}
+      {/* SCREEN 1: ARCHIVE / SAVED LESSONS (الشاشة ١: أرشيف الدروس المحفوظة)  */}
       {/* =================================================================== */}
       {currentScreen === 'screen1_my_lessons' && (
         <section className="screen-container screen1-my-lessons animate-fade-in">
           <div className="screen-header-banner">
             <div>
-              <h3><i className="fas fa-layer-group"></i> حصصي المجهزة والمعتمدة</h3>
-              <p>الوصول السريع إلى حصصك، إكمال التحضير، أو بدء التدريس وعرض الشاشة فوراً.</p>
+              <h3><i className="fas fa-archive"></i> أرشيف الدروس المحفوظة 📂</h3>
+              <p>هنا تظهر الدروس المحفوظة والمعتمدة، يمكنك استعراضها، إكمال التحضير، أو بدء التدريس وعرض الشاشة فوراً.</p>
             </div>
             <button 
               type="button" 

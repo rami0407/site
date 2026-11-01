@@ -1479,6 +1479,43 @@ ${p.stations?.h || ''}
 
             <button 
               className="action-btn primary"
+              onClick={() => {
+                setActiveTab('planner');
+                window.scrollTo({ top: 380, behavior: 'smooth' });
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: 'white',
+                border: '2px solid rgba(255,255,255,0.4)',
+                boxShadow: '0 4px 18px rgba(245, 158, 11, 0.45)',
+                fontWeight: 900
+              }}
+              title="الزر الأول: توليد حصص وخطط دروس جديدة بموديل مِفتاح والذكاء الاصطناعي"
+            >
+              <i className="fas fa-wand-magic-sparkles"></i>
+              <span>⚡ توليد حصص جديدة (الزر الأول)</span>
+            </button>
+            <button 
+              className="action-btn library-hero-btn"
+              onClick={() => {
+                setActiveTab('library');
+                window.scrollTo({ top: 380, behavior: 'smooth' });
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: 'white',
+                border: '2px solid rgba(255,255,255,0.4)',
+                boxShadow: '0 4px 18px rgba(2, 132, 199, 0.45)',
+                fontWeight: 900
+              }}
+              title="الزر الثاني: الدخول للأرشيف واستعراض الدروس المحفوظة"
+            >
+              <i className="fas fa-archive"></i>
+              <span>📂 الدخول للأرشيف (الدروس المحفوظة)</span>
+              {libraryPlans.length > 0 && <span style={{ background: '#ffffff', color: '#0369a1', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 900 }}>{libraryPlans.length}</span>}
+            </button>
+            <button 
+              className="action-btn primary"
               onClick={() => setActiveTab('stations')}
             >
               <i className="fas fa-route"></i> استكشف المحطات الخمس
