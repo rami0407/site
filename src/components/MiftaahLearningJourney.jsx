@@ -5548,20 +5548,6 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         <nav className="header-interfaces-nav">
           <button
             type="button"
-            className={`nav-tab-btn ${activeInterface === 'creator' ? 'active' : ''} ${!authenticatedTeacher ? 'tab-locked-btn' : 'tab-auth-btn'}`}
-            onClick={() => setActiveInterface('creator')}
-            title={authenticatedTeacher ? `شاشة تحضير الحصص (المعلم: ${authenticatedTeacher.nameAr})` : 'شاشة تحضير الحصص (صفحة خاصة بالمعلم - تتطلب تسجيل الدخول بالايميل والرقم السري)'}
-          >
-            <i className={`fas ${authenticatedTeacher ? 'fa-edit' : 'fa-lock'}`}></i>
-            <span>١. إعداد وتعديل الحصة</span>
-            {authenticatedTeacher ? (
-              <span className="tab-pill-badge active">معتمد ✓</span>
-            ) : (
-              <span className="tab-pill-badge locked">خاص بالمعلم 🔒</span>
-            )}
-          </button>
-          <button
-            type="button"
             className={`nav-tab-btn ${activeInterface === 'teacher' ? 'active' : ''}`}
             onClick={() => setActiveInterface('teacher')}
             title="لوحة متابعة تقدم الطلاب الحية وفرز المحطة الرابعة ومجموعة الدعم المؤقتة والمرنة"
@@ -5571,17 +5557,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </button>
           <button
             type="button"
-            className={`nav-tab-btn ${activeInterface === 'projector' ? 'active' : ''}`}
-            onClick={() => setActiveInterface('projector')}
-          >
-            <i className="fas fa-desktop"></i> ٢. شاشة الصف (البروجكتور)
-          </button>
-          <button
-            type="button"
             className={`nav-tab-btn ${activeInterface === 'student' ? 'active' : ''}`}
             onClick={() => setActiveInterface('student')}
           >
-            <i className="fas fa-mobile-alt"></i> ٣. واجهة الطالب / المجموعة
+            <i className="fas fa-mobile-alt"></i> واجهة الطالب / المجموعة
             {studentAuth && (
               <span className="tab-pill-badge student-badge">
                 {studentAuth.mode === 'guest' ? 'ضيف' : 'بالرمز'}
@@ -5590,18 +5569,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           </button>
           <button
             type="button"
-            className={`nav-tab-btn sandbox-btn ${activeInterface === 'sandbox' ? 'active' : ''}`}
-            onClick={() => setActiveInterface('sandbox')}
-            title="تجربة تفاعلية للصف كاملاً في شاشة واحدة: المعلم والبروجكتور والطلاب والفرق"
-          >
-            <i className="fas fa-vial"></i> 🧪 محاكي الصف المتكامل
-          </button>
-          <button
-            type="button"
             className={`nav-tab-btn ${activeInterface === 'summary' ? 'active' : ''}`}
             onClick={() => setActiveInterface('summary')}
           >
-            <i className="fas fa-chart-pie"></i> ٤. ملخص الحصة والإنهاء
+            <i className="fas fa-chart-pie"></i> ملخص الحصة والإنهاء
           </button>
           <button
             type="button"
@@ -5622,7 +5593,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             }}
             title="نشاط تنشيط الدماغ والحركة لمدة 60 ثانية"
           >
-            <span>⚡ وقت الانتعاش! (זמן להתרענן!)</span>
+            <span>⚡ وقت الانتعاش! (זמן להתרعנן!)</span>
           </button>
         </nav>
 
@@ -5668,36 +5639,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           <span className="session-pin-chip" title="رمز الجلسة الصفية">
             رمز الصف: <strong>{sessionState.pin}</strong>
           </span>
-          <button
-            type="button"
-            className="btn-exit-to-portal"
-            onClick={() => {
-              window.location.hash = '#/whiteboard';
-            }}
-            title="مشاهدة سيموليشن اللوح الأبيض التفاعلي لمحطات مِفتاح الخمس"
-            style={{
-              background: 'linear-gradient(135deg, #e8590c 0%, #d9480f 100%)',
-              color: '#ffffff',
-              border: 'none',
-              fontWeight: 800
-            }}
-          >
-            <i className="fas fa-play-circle"></i> لوح مِفتاح 🎬
-          </button>
-          <button
-            type="button"
-            className="btn-exit-to-portal"
-            onClick={() => {
-              if (onSwitchTab) {
-                onSwitchTab('stations');
-              } else {
-                window.location.hash = '#/mafatih';
-              }
-            }}
-            title="الانتقال إلى دليل وبنك خطط نموذج مِفتاح"
-          >
-            <i className="fas fa-book-open"></i> دليل مِفتاح
-          </button>
+
           <button
             type="button"
             className="btn-exit-to-portal"
@@ -6029,119 +5971,34 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                     </button>
                   </div>
 
-                  {/* MASTER TWO HUB CARDS IN EXACT SAME ORDER: 1. توليد حصص جديدة | 2. الدخول للأرشيف */}
-                  <div className="teacher-two-hub-boxes-grid animate-fade-in">
-                    {/* Card 1: توليد حصص جديدة */}
-                    <div 
-                      className={`hub-master-card hub-create-card ${teacherSubView === 'creator' ? 'active-hub-border' : ''}`}
-                      onClick={() => handleStartNewLessonPrep()}
-                    >
-                      <div className="hub-card-header-badge">
-                        <span className="badge-step-pill gold"><i className="fas fa-wand-magic-sparkles"></i> الزر الأول • توليد بالذكاء الاصطناعي</span>
-                        <span className="badge-count-chip gold">موديل مِفتاح (5 محطات)</span>
-                      </div>
-                      <div className="hub-card-body">
-                        <div className="hub-card-icon-wrap gold">✨</div>
-                        <div className="hub-card-info">
-                          <h3>توليد وبناء حصة جديدة بالذكاء</h3>
-                          <p>أجب عن ٣ معطيات أساسية (الموضوع، الصف، والتعليمات الخاصة) ليولّد الذكاء الاصطناعي مسار الحصة كاملاً بمحطاته الخمس ومستويات تمايز مرنة.</p>
-                        </div>
-                      </div>
-                      <div className="hub-card-footer-action">
-                        <button 
-                          type="button" 
-                          className="btn-hub-action-trigger gold"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartNewLessonPrep();
-                          }}
-                        >
-                          <i className="fas fa-plus-circle"></i> ⚡ ابدأ توليد حصة جديدة الآن
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Card 2: الدخول للأرشيف */}
-                    <div 
-                      className={`hub-master-card hub-archive-card ${teacherSubView === 'my_lessons' ? 'active-hub-border' : ''}`}
-                      onClick={() => setTeacherSubView('my_lessons')}
-                    >
-                      <div className="hub-card-header-badge">
-                        <span className="badge-step-pill"><i className="fas fa-folder-open"></i> الزر الثاني • أرشيف المعلم</span>
-                        <span className="badge-count-chip">
-                          {myLessonsCount} دروس محفوظة
+                  {/* Admin Controls (Only visible to Principal Rami) */}
+                  {isPrincipalAdmin(authenticatedTeacher) && (
+                    <div className="teacher-workspace-subnav admin-only-subnav animate-fade-in">
+                      <button
+                        type="button"
+                        className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'all_school_lessons' ? 'active' : ''}`}
+                        onClick={() => setTeacherSubView('all_school_lessons')}
+                      >
+                        <i className="fas fa-school"></i>
+                        <span>جميع دروس معلمي المدرسة 👑</span>
+                        <span className="subnav-count-badge gold">
+                          {lessonsList.length}
                         </span>
-                      </div>
-                      <div className="hub-card-body">
-                        <div className="hub-card-icon-wrap">📚</div>
-                        <div className="hub-card-info">
-                          <h3>أرشيف الدروس والخطط المحفوظة</h3>
-                          <p>استعراض كافة الحصص والدروس السابقة: تعديل المحطات، كود دخول الطلاب، نسخ رابط الحصة، بدء البث الصفي، تصدير Word/PDF، أو حذف الدرس.</p>
-                        </div>
-                      </div>
-                      <div className="hub-card-footer-action">
-                        <button 
-                          type="button" 
-                          className="btn-hub-action-trigger primary"
-                          onClick={(e) => { e.stopPropagation(); setTeacherSubView('my_lessons'); }}
-                        >
-                          <i className="fas fa-archive"></i> 📂 الدخول للأرشيف واستعراض الدروس ({myLessonsCount})
-                        </button>
-                      </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'permissions' ? 'active' : ''}`}
+                        onClick={() => setTeacherSubView('permissions')}
+                      >
+                        <i className="fas fa-user-shield"></i>
+                        <span>إدارة التصاريح والأذونات 🛡️</span>
+                        <span className="subnav-count-badge gold">
+                          {getAllTeachers().length}
+                        </span>
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Teacher Workspace Sub-Navigation Tabs */}
-                  <div className="teacher-workspace-subnav">
-                    <button
-                      type="button"
-                      className={`subnav-pill-btn ${teacherSubView === 'creator' ? 'active' : ''}`}
-                      onClick={() => setTeacherSubView('creator')}
-                    >
-                      <i className="fas fa-wand-magic-sparkles"></i>
-                      <span>⚡ توليد وبناء حصة جديدة</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`subnav-pill-btn ${teacherSubView === 'my_lessons' ? 'active' : ''}`}
-                      onClick={() => setTeacherSubView('my_lessons')}
-                    >
-                      <i className="fas fa-archive"></i>
-                      <span>📂 أرشيف الدروس المحفوظة</span>
-                      <span className="subnav-count-badge">
-                        {myLessonsCount}
-                      </span>
-                    </button>
-
-                    {isPrincipalAdmin(authenticatedTeacher) && (
-                      <>
-                        <button
-                          type="button"
-                          className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'all_school_lessons' ? 'active' : ''}`}
-                          onClick={() => setTeacherSubView('all_school_lessons')}
-                        >
-                          <i className="fas fa-school"></i>
-                          <span>جميع دروس معلمي المدرسة 👑</span>
-                          <span className="subnav-count-badge gold">
-                            {lessonsList.length}
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={`subnav-pill-btn admin-subnav-btn ${teacherSubView === 'permissions' ? 'active' : ''}`}
-                          onClick={() => setTeacherSubView('permissions')}
-                        >
-                          <i className="fas fa-user-shield"></i>
-                          <span>إدارة التصاريح والأذونات 🛡️</span>
-                          <span className="subnav-count-badge gold">
-                            {getAllTeachers().length}
-                          </span>
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  )}
                 </>
               );
             })()}
