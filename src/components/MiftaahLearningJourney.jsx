@@ -4,7 +4,8 @@ import {
   generateMiftaahFullJourneyLessonAI,
   modifyMiftaahStationWithPromptAI,
   generateMiftaahGroupTasksAI,
-  evaluateMiftaahExitTicketAI
+  evaluateMiftaahExitTicketAI,
+  generateMiftaahExtraChallengeAI
 } from '../utils/aiService';
 import {
   exportLessonPlanToWord,
@@ -2452,6 +2453,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [studentExitTicket, setStudentExitTicket] = useState({ q1: '', q2: '', q3: '', q4: '' });
   const [isHelpKeyModalOpen, setIsHelpKeyModalOpen] = useState(false);
   const [studentActiveHelpResponse, setStudentActiveHelpResponse] = useState(null);
+  const [studentChallengeAnswer, setStudentChallengeAnswer] = useState('');
+  const [isGeneratingChallengeAI, setIsGeneratingChallengeAI] = useState(false);
+  const [isChallengeSubmitted, setIsChallengeSubmitted] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [isVideoPickerOpen, setIsVideoPickerOpen] = useState(false);
   const [customVideoUrl, setCustomVideoUrl] = useState('');
@@ -3701,8 +3705,69 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       hint: 'تلميح مساند',
       explain_diff: 'شرح بطريقة أخرى',
       example: 'مثال مشابه',
-      teacher: 'طلب مساعدة المعلم'
+      teacher: 'طلب مساعدة المعلم',
+      challenge: 'أريد تحدياً! 🚀🏆'
     };
+
+    if (helpOptionKey === 'challenge') {
+      setIsChallengeSubmitted(false);
+      setStudentChallengeAnswer('');
+      const title = activeLesson.title || 'الدرس';
+      const isHebrew = (activeLesson.language || '').toLowerCase() === 'hebrew';
+      const stIndex = Number(studentCurrentStationIndex);
+      let challengeText = '';
+
+      if (st.deepChallenge?.errorScenario) {
+        challengeText = isHebrew
+          ? `🚀 אתגר איתור שגיאות למצטיינים:\n${st.deepChallenge.errorScenario}\n\n🎯 משימה: ${st.deepChallenge.correctionPrompt || 'תקנו את השגיאה ונמקו באופן מדעי!'}`
+          : `🚀 اكتشاف الخطأ وتصويبه للمتفوقين:\n${st.deepChallenge.errorScenario}\n\n🎯 المهمة: ${st.deepChallenge.correctionPrompt || 'صوّب الخطأ بدقة وبرهن على إجابتك علمياً!'}`;
+      } else {
+        if (isHebrew) {
+          switch (stIndex) {
+            case 1:
+              challengeText = `🚀🏆 אתגר הסקרנות והחקר המורחב:\nתארו לעצמכם שאתם מפיקים סרטון מדעי קצר על (${title}). מהי החידה המסתורית או השאלה המפתיעה ביותר שתציגו בפתיח כדי לעורר את סקרנותם של מאות צופים? נסחו את הפתיח שלכם ושלחו למורה!`;
+              break;
+            case 2:
+              challengeText = `🚀🏆 אתגר החשיבה המופשטת והכללת מושגים:\nאילו חוק או תנאי מרכזי בנושא (${title}) היה משתנה פתאום, אילו שתי השפעות שרשרת בלתי צפויות היו מתרחשות? נמקו את הטיעון המדעי שלכם והציגו הוכחה לוגית!`;
+              break;
+            case 4:
+              challengeText = `🚀🏆 אתגר השיפוט והביקורת המדעית:\nחוקר טען כי הכלל של (${title}) נכון רק במקרים מסוימים והציע פתרון חלופי שנוי במחלוקת. בתור שופטים ומדענים צעירים, אתרו את נקודת התורפה בטענתו ונמקו בעזרת שתי ראיות מוצקות!`;
+              break;
+            case 5:
+              challengeText = `🚀🏆 אתגר המנהיגות וההשפעה הקהילתית:\nתכננו יוזמה בית-ספרית או אפליקציה חכמה המיישמת את מה שלמדתם ב-(${title}) לפתרון בעיה אמיתית בבית הספר או ביישוב. רשמו שלוש פעולות מעשיות להגשמת היוזמה!`;
+              break;
+            case 3:
+            default:
+              challengeText = `🚀🏆 אתגר היישום היצירתי והפתרון המורכב:\nהמציאו בעיה או מקרה מבחן חדש ומורכב בן שני שלבים המשלב את עקרונות (${title}) עם אתגר מהחיים האמיתיים, וכתבו את מודל הפתרון המנומק והמושלם שיוצג בפני הכיתה!`;
+              break;
+          }
+        } else {
+          switch (stIndex) {
+            case 1:
+              challengeText = `🚀🏆 تحدي الفضول العلمي والاستكشاف الموسع:\nتخيلوا أنكم تقدمون فيلماً وثائقياً عالمياً حول موضوع (${title}). ما المفارقة المدهشة أو اللغز الغامض الذي ستبدؤون به لجذب عقول الملايين؟ اكتبوا نص المشهد الافتتاحي بأسلوب استقصائي مشوق!`;
+              break;
+            case 2:
+              challengeText = `🚀🏆 تحدي التفكير التجريدي وتوليد القواعد:\nلو تغيرت إحدى الخصائص الجوهرية لمفهوم (${title})، ما التأثيرات المتسلسلة غير المتوقعة التي ستحدث في نظامنا وبيئتنا؟ صوغوا برهاناً علمياً مدعماً بحجتين منطقيتين!`;
+            case 4:
+              challengeText = `🚀🏆 تحدي التحكيم والنقد العلمي الدقيق:\nادعى باحث افتراضي أن قاعدة (${title}) تحتوي ثغرة وقدم تفسيراً بديلاً. بصفتكم علماء ونقاداً بارعين، حللوا موطن الخلل في حجته واكتبوا الرد العلمي المفحم بالأدلة القاطعة!`;
+            case 5:
+              challengeText = `🚀🏆 تحدي صناعة الأثر والمبادرة المجتمعية:\nابتكروا فكرة مبادرة طلابية رائدة أو تطبيقاً رقمياً ذكياً يوظف مبادئ (${title}) لإحداث نقلة نوعية في مدرستنا مشيرفة أو مجتمعكم. دوّنوا خطة التنفيذ في ٣ خطوات عملية!`;
+            case 3:
+            default:
+              challengeText = `🚀🏆 تحدي الابتكار وصياغة المسائل المركبة:\nألّفوا مسألة تطبيقية استثنائية من خطوتين أو ثلاث خطوات تدمج مفهوم (${title}) مع موقف واقعي غير مألوف، ثم اكتبوا نموذج الإجابة المثالي والمبرر تبريراً رياضياً وعلمياً كاملاً!`;
+              break;
+          }
+        }
+      }
+
+      setStudentActiveHelpResponse({
+        type: optionLabels.challenge,
+        isChallenge: true,
+        text: challengeText
+      });
+      setIsHelpKeyModalOpen(false);
+      return;
+    }
 
     if (helpOptionKey === 'clarify') {
       explanation = 'المطلوب في هذه المحطة قراءة المهمة جيداً وتدوين استنتاجك مدعوماً بالسبب.';
@@ -3735,9 +3800,78 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
     setStudentActiveHelpResponse({
       type: optionLabels[helpOptionKey] || helpOptionKey,
+      isChallenge: false,
       text: explanation
     });
     setIsHelpKeyModalOpen(false);
+  };
+
+  // Generate dynamic AI Extra Challenge for early finishers
+  const handleGenerateAIChallenge = async () => {
+    setIsGeneratingChallengeAI(true);
+    try {
+      const res = await generateMiftaahExtraChallengeAI({
+        stationNumber: studentCurrentStationIndex,
+        stationName: studentCurrentStationData.name,
+        lessonTitle: activeLesson.title,
+        subject: activeLesson.subject,
+        grade: activeLesson.grade,
+        language: activeLesson.language || 'arabic'
+      });
+      if (res && res.trim()) {
+        setStudentActiveHelpResponse(prev => ({
+          ...prev,
+          text: res.trim()
+        }));
+        showToast('تم توليد تحدٍّ جديد بنجاح بالذكاء الاصطناعي! 🚀');
+      }
+    } catch (e) {
+      console.warn('AI Challenge gen error:', e);
+      showToast('تعذر توليد التحدي بالذكاء الاصطناعي حالياً، تم الإبقاء على التحدي الحالي.');
+    } finally {
+      setIsGeneratingChallengeAI(false);
+    }
+  };
+
+  // Submit Extra Challenge to Teacher Dashboard
+  const handleSubmitExtraChallenge = () => {
+    if (!studentChallengeAnswer.trim()) {
+      showToast('يرجى كتابة إجابة أو فكرة حل التحدي أولاً ✍️');
+      return;
+    }
+
+    const currentParticipant = sessionState.participants.find(p => p.id === currentStudentId) || {
+      id: currentStudentId,
+      name: 'طالب متميز',
+      groupName: 'المجموعة 1'
+    };
+
+    const newSub = {
+      id: 'challenge_sub_' + Date.now(),
+      participantId: currentParticipant.id,
+      participantName: currentParticipant.name,
+      groupName: currentParticipant.groupName,
+      stationNumber: studentCurrentStationIndex,
+      stationName: studentCurrentStationData.name,
+      text: `[🚀 إنجاز تحدي المتفوقين — ${studentCurrentStationData.name}]: ${studentChallengeAnswer.trim()}`,
+      tier: 'challenge_super',
+      isExtraChallenge: true,
+      scaffoldsUsed: ['أريد تحدياً! 🚀🏆'],
+      formativeScore: '100',
+      aiEvalStatus: 'mastered',
+      teacherFeedback: 'إنجاز استثنائي في تحدي المتفوقين! 🌟👏',
+      aiTeacherNotes: 'قام الطالب/الفريق بحل التحدي الإضافي للمتفوقين بنجاح بعد الإنهاء المبكر.',
+      reviewStatus: 'reviewed',
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const next = {
+      ...sessionState,
+      submissions: [newSub, ...sessionState.submissions]
+    };
+    broadcastSession(next);
+    setIsChallengeSubmitted(true);
+    showToast('🎉 ما شاء الله! تم إرسال إجابتك لتحدي المتفوقين إلى لوحة المعلم!');
   };
 
   // =========================================================================
@@ -9729,6 +9863,22 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                             <strong>{sub.participantName}</strong>
                             <span className="author-group-tag">({sub.groupName})</span>
                             <span className="station-tag">محطة {sub.stationNumber}</span>
+                            {(sub.isExtraChallenge || sub.tier === 'challenge_super') && (
+                              <span style={{
+                                fontSize: '0.74rem',
+                                background: 'linear-gradient(135deg, #fef3c7 0%, #fae8ff 100%)',
+                                color: '#b45309',
+                                border: '1px solid #f59e0b',
+                                padding: '2px 9px',
+                                borderRadius: '999px',
+                                fontWeight: 800,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <span>🚀🏆 تحدي المتفوقين</span>
+                              </span>
+                            )}
                           </div>
                           <div className="sub-time">{sub.timestamp}</div>
                         </div>
@@ -11547,15 +11697,170 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                 </div>
               )}
 
-              {/* Active Help Scaffold Banner (if student used help key) */}
+              {/* Active Help Scaffold or Challenge Arena Banner (when student clicks the Key 🔑) */}
               {studentActiveHelpResponse && (
-                <div className="student-help-result-card animate-pop">
-                  <div className="help-result-head">
-                    <span>🗝️ ما طلبته من مساعدة ({studentActiveHelpResponse.type}):</span>
-                    <button type="button" onClick={() => setStudentActiveHelpResponse(null)}>&times;</button>
+                studentActiveHelpResponse.isChallenge ? (
+                  <div className="student-challenge-arena-card animate-pop" style={{
+                    background: 'linear-gradient(135deg, #fffbeb 0%, #faf5ff 100%)',
+                    border: '2.5px solid #f59e0b',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    margin: '16px 0',
+                    boxShadow: '0 8px 24px rgba(245, 158, 11, 0.15)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.6rem' }}>🚀🏆</span>
+                        <div>
+                          <h4 style={{ margin: 0, color: '#b45309', fontSize: '1.05rem', fontWeight: 900 }}>
+                            ساحة تحدي الأبطال والمتفوقين — محطة [{studentCurrentStationData.name}]
+                          </h4>
+                          <span style={{ fontSize: '0.78rem', color: '#7c3aed', fontWeight: 700 }}>
+                            ✨ مخصص للطلاب والمجموعات التي أنهت مبكراً وتبحث عن تعميق الفهم ورفع سقف التفكير
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStudentActiveHelpResponse(null)}
+                        style={{ background: 'transparent', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#92400e', fontWeight: 700 }}
+                        title="إغلاق التحدي"
+                      >
+                        &times;
+                      </button>
+                    </div>
+
+                    <div style={{
+                      background: '#ffffff',
+                      border: '1.5px dashed #f59e0b',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      marginBottom: '14px',
+                      whiteSpace: 'pre-line',
+                      lineHeight: 1.7,
+                      color: '#1e293b',
+                      fontSize: '0.94rem',
+                      fontWeight: 600
+                    }}>
+                      {studentActiveHelpResponse.text}
+                    </div>
+
+                    {/* Actions Row: Generate another AI Challenge & Solution Submission */}
+                    {!isChallengeSubmitted ? (
+                      <div>
+                        <label style={{ display: 'block', fontWeight: 800, color: '#92400e', fontSize: '0.88rem', marginBottom: '6px' }}>
+                          ✍️ اكتب حل أو فكرة مجموعتك للتحدي الاستثنائي هنا:
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={studentChallengeAnswer}
+                          onChange={e => setStudentChallengeAnswer(e.target.value)}
+                          placeholder="اكتب التحليل، الحل المبتكر، أو البرهان العلمي الخاص بكم للتحدي..."
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: '10px',
+                            border: '1.5px solid #fbbf24',
+                            fontSize: '0.92rem',
+                            fontFamily: 'inherit',
+                            boxSizing: 'border-box',
+                            resize: 'vertical',
+                            marginBottom: '10px'
+                          }}
+                        />
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <button
+                            type="button"
+                            onClick={handleSubmitExtraChallenge}
+                            style={{
+                              background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '10px',
+                              padding: '10px 18px',
+                              fontWeight: 800,
+                              fontSize: '0.92rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 4px 12px rgba(217, 119, 6, 0.25)'
+                            }}
+                          >
+                            <span>🏆 إرسال حل التحدي إلى لوحة المعلم</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleGenerateAIChallenge}
+                            disabled={isGeneratingChallengeAI}
+                            style={{
+                              background: '#f3e8ff',
+                              color: '#7c3aed',
+                              border: '1.5px solid #d8b4fe',
+                              borderRadius: '10px',
+                              padding: '8px 14px',
+                              fontWeight: 700,
+                              fontSize: '0.84rem',
+                              cursor: isGeneratingChallengeAI ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <span>{isGeneratingChallengeAI ? 'جاري توليد التحدي بالذكاء الاصطناعي... ⏳' : '✨ توليد تحدٍّ بديل بالذكاء الاصطناعي'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="animate-fade-in" style={{
+                        background: '#dcfce7',
+                        border: '1.5px solid #86efac',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        color: '#15803d',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '0.94rem' }}>
+                          <span>🎉🏆</span>
+                          <span>رائع ومبدع! تم إرسال إجابة التحدي بنجاح إلى المعلم لتكريمك وعرض حلك المتميز!</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsChallengeSubmitted(false);
+                            setStudentChallengeAnswer('');
+                            handleGenerateAIChallenge();
+                          }}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #16a34a',
+                            color: '#15803d',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            fontWeight: 700,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          خوض تحدٍّ إضافي آخر 🚀
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <p>{studentActiveHelpResponse.text}</p>
-                </div>
+                ) : (
+                  <div className="student-help-result-card animate-pop">
+                    <div className="help-result-head">
+                      <span>🗝️ ما طلبته من مساعدة ({studentActiveHelpResponse.type}):</span>
+                      <button type="button" onClick={() => setStudentActiveHelpResponse(null)}>&times;</button>
+                    </div>
+                    <p>{studentActiveHelpResponse.text}</p>
+                  </div>
+                )
               )}
 
               {/* Station 5 Specific: Exit Ticket Form + Interactive Metacognition Choices */}
@@ -12035,6 +12340,31 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               </p>
 
               <div className="help-options-grid">
+                {/* 🚀 Feature: "أريد تحدياً!" للطلاب أو المجموعات المتفوقة التي أنهت مبكراً */}
+                <button
+                  type="button"
+                  className="help-option-card challenge-hero"
+                  onClick={() => handleRequestHelpOption('challenge')}
+                  style={{
+                    gridColumn: '1 / -1',
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fae8ff 100%)',
+                    border: '2px solid #f59e0b',
+                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.15)',
+                    padding: '14px 18px'
+                  }}
+                >
+                  <span className="opt-icon" style={{ fontSize: '1.8rem' }}>🚀🏆</span>
+                  <div className="opt-info">
+                    <strong style={{ color: '#b45309', fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>أريد تحدياً! (للطلاب والفرق المتفوقة)</span>
+                      <span style={{ fontSize: '0.74rem', background: '#f59e0b', color: '#ffffff', padding: '2px 9px', borderRadius: '999px', fontWeight: 800 }}>إنهاء مبكر ✨</span>
+                    </strong>
+                    <small style={{ color: '#92400e', fontSize: '0.84rem', fontWeight: 600 }}>
+                      أنهيت المهمة مبكراً؟ خض تحدياً معرفياً استثنائياً وسؤال تفكير عليا لتعميق الإبداع والتميز!
+                    </small>
+                  </div>
+                </button>
+
                 <button
                   type="button"
                   className="help-option-card clarify"

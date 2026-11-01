@@ -5573,4 +5573,130 @@ ${stationTask}`;
     : 'خطوة ممتازة نحو التفكير العلمي! 🌟 احرص على أن تميز بين ما رأيته كدليل مؤكد وما تتوقعه، واجعل سؤالك محدداً بدقة. 🎯🔬';
 };
 
+/**
+ * 15.G Miftaah On-Demand Extra Challenge Generator (أريد تحدياً للمتفوقين ومن أنهى مبكراً):
+ * Generates an inspiring, high-order thinking challenge for advanced students/groups who finished early.
+ */
+export const generateMiftaahExtraChallengeAI = async ({
+  stationNumber = 3,
+  stationName = 'التطبيق والتدريب',
+  lessonTitle = '',
+  subject = '',
+  grade = '',
+  language = 'arabic'
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = lessonTitle.trim() || 'الدرس';
+  const isHebrew = language === 'hebrew';
+
+  const prompt = isHebrew
+    ? `אתה מומחה פדגוגי להוראה מותאמת ואתגור תלמידים מצטיינים במודל "מפתח הלמידה" בבית ספר מושירפה.
+תלמידים או קבוצות מצטיינות סיימו את תחנה ${stationNumber} (${stationName}) בשיעור "${safeTitle}" (${subject}, כיתה ${grade}) מוקדם יותר, ולחצו על המפתח ובחרו "רוצה אתגר!" כדי להעמיק את החשיבה.
+נסח עבורם שאלת אתגר חשיבה מסדר גבוה (ניתוח עמוק, ביקורת, יצירתיות, או יישום מורכב מהחיים) הכוללת:
+1. כותרת מושכת ומעצימה (עם אימוג'י 🚀🏆).
+2. שאלת אתגר או בעיית חקר מאתגרת.
+3. הנחיה קצרה לניסוח התוצר ושליחתו למורה.
+החזר טקסט בלבד בעברית רהוטה וברורה ללא הקדמות טכניות.`
+    : `أنت خبير تربوي في تمايز التدريس ورعاية المتفوقين بنظام «مِفتاح التعلّم» بمدرسة مشيرفة الابتدائية.
+طلاب أو مجموعات متفوقة أنهت مبكراً المحطة رقم ${stationNumber} (${stationName}) في درس "${safeTitle}" (مادة ${subject}، الصف ${grade})، وضغطوا على المفتاح واختاروا: «أريد تحدياً!» للحصول على تحدٍّ إضافي أقوى وأعمق لرفع سقف التفكير.
+المطلوب صياغة تحدٍّ معرفي حقيقي من مهارات التفكير العليا (تحليل مركب، نقد علمي واكتشاف أخطاء، تأليف موقف واقعي جديد، أو ابتكار حل استثنائي):
+1. عنوان ملهم للتحدي (مع رمز تعبيري 🚀🏆).
+2. نص التحدي أو المشكلة الاستقصائية العميقة بنبرة محفزة للأبطال.
+3. التوجيه المطلوب لكتابة الحل المبرر وإرساله فوراً للمعلم.
+أخرج نص التحدي فقط بالعربية الفصيحة المشرقة دون مقدمات تقنية.`;
+
+  // 1. Try Groq
+  if (groqKey) {
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    for (const m of groqModels) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${groqKey}`
+            },
+            body: JSON.stringify({
+              model: m,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.5,
+              max_tokens: 650
+            })
+          },
+          6500
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Groq extra challenge (${m}) notice:`, e);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiKey && geminiKey.startsWith('AIza')) {
+    const geminiModels = ['gemini-2.5-flash'];
+    for (const gm of geminiModels) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.5, maxOutputTokens: 650 }
+            })
+          },
+          6500
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Gemini extra challenge (${gm}) notice:`, e);
+      }
+    }
+  }
+
+  // 3. Fallbacks by Station
+  const stNum = Number(stationNumber);
+  if (isHebrew) {
+    switch (stNum) {
+      case 1:
+        return `🚀🏆 אתגר הסקרנות והחקר המורחב:\nתארו לעצמכם שאתם מפיקים סרטון מדעי קצר על (${safeTitle}). מהי החידה המסתורית או השאלה המפתיעה ביותר שתציגו בפתיח כדי לעורר את סקרנותם של מאות צופים? נסחו את הפתיח שלכם ושלחו למורה!`;
+      case 2:
+        return `🚀🏆 אתגר החשיבה המופשטת והכללת מושגים:\nאילו חוק או תנאי מרכזי בנושא (${safeTitle}) היה משתנה פתאום, אילו שתי השפעות שרשרת בלתי צפויות היו מתרחשות? נמקו את הטיעון המדעי שלכם והציגו הוכחה לוגית!`;
+      case 4:
+        return `🚀🏆 אתגר השיפוט והביקורת המדעית:\nחוקר טען כי הכלל של (${safeTitle}) נכון רק במקרים מסוימים והציע פתרון חלופי שנוי במחלוקת. בתור שופטים ומדענים צעירים, אתרו את נקודת התורפה בטענתו ונמקו בעזרת שתי ראיות מוצקות!`;
+      case 5:
+        return `🚀🏆 אתגר המנהיגות וההשפעה הקהילתית:\nתכננו יוזמה בית-ספרית או אפליקציה חכמה המיישמת את מה שלמדתם ב-(${safeTitle}) לפתרון בעיה אמיתית בבית הספר או ביישוב. רשמו שלוש פעולות מעשיות להגשמת היוזמה!`;
+      case 3:
+      default:
+        return `🚀🏆 אתגר היישום היצירתי והפתרון המורכב:\nהמציאו בעיה או מקרה מבחן חדש ומורכב בן שני שלבים המשלב את עקרונות (${safeTitle}) עם אתגר מהחיים האמיתיים, וכתבו את מודל הפתרון המנומק והמושלם שיוצג בפני הכיתה!`;
+    }
+  }
+
+  switch (stNum) {
+    case 1:
+      return `🚀🏆 تحدي الفضول العلمي والاستكشاف الموسع:\nتخيلوا أنكم تقدمون فيلماً وثائقياً عالمياً حول موضوع (${safeTitle}). ما المفارقة المدهشة أو اللغز الغامض الذي ستبدؤون به لجذب عقول الملايين؟ اكتبوا نص المشهد الافتتاحي بأسلوب استقصائي مشوق!`;
+    case 2:
+      return `🚀🏆 تحدي التفكير التجريدي وتوليد القواعد:\nلو تغيرت إحدى الخصائص الجوهرية لمفهوم (${safeTitle})، ما التأثيرات المتسلسلة غير المتوقعة التي ستحدث في نظامنا وبيئتنا؟ صوغوا برهاناً علمياً مدعماً بحجتين منطقيتين!`;
+    case 4:
+      return `🚀🏆 تحدي التحكيم والنقد العلمي الدقيق:\nادعى باحث افتراضي أن قاعدة (${safeTitle}) تحتوي ثغرة وقدم تفسيراً بديلاً. بصفتكم علماء ونقاداً بارعين، حللوا موطن الخلل في حجته واكتبوا الرد العلمي المفحم بالأدلة القاطعة!`;
+    case 5:
+      return `🚀🏆 تحدي صناعة الأثر والمبادرة المجتمعية:\nابتكروا فكرة مبادرة طلابية رائدة أو اختراعاً ذكياً يوظف مبادئ (${safeTitle}) لإحداث نقلة نوعية في مدرستنا مشيرفة أو في مجتمعكم. دوّنوا خطة التنفيذ في ٣ خطوات عملية!`;
+    case 3:
+    default:
+      return `🚀🏆 تحدي الابتكار وصياغة المسائل المركبة:\nألّفوا مسألة تطبيقية استثنائية من خطوتين أو ثلاث خطوات تدمج مفهوم (${safeTitle}) مع موقف واقعي غير مألوف، ثم اكتبوا نموذج الإجابة المثالي والمبرر تبريراً رياضياً وعلمياً كاملاً!`;
+  }
+};
+
 
