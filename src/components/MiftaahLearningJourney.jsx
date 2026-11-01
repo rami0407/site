@@ -696,28 +696,49 @@ const normalizeMiftaahLesson = (lesson) => {
       st3.scaffold = lang === 'hebrew' ? 'רמז מסייע: חזרו לכלל מהתחנה הקודמת.' : lang === 'english' ? 'Scaffold hint: Check the rule from Station 2.' : 'تلميح مساند: ارجع إلى القاعدة المركزية للمحطة السابقة واستند إليها في كل تمرين.';
     }
 
-    // Normalize Multi-Group Sub-stations for Station 3 (4 or 5 Stations on iPads/Phones)
+    // Normalize Multi-Group Sub-stations for Station 3 (4, 5, or 6 Stations on iPads/Phones)
     const grpCount = l.practiceGroupsCount || (Array.isArray(st3.practiceStations) && st3.practiceStations.length >= 4 ? String(st3.practiceStations.length) : '4');
-    if (grpCount === '4' || grpCount === '5') {
+    const taskMode = l.practiceTaskMode || st3.practiceTaskMode || 'differentiated';
+    l.practiceTaskMode = taskMode;
+    st3.practiceTaskMode = taskMode;
+    if (grpCount === '4' || grpCount === '5' || grpCount === '6') {
       const num = parseInt(grpCount, 10);
+      const isUnified = taskMode === 'unified';
       const existing = Array.isArray(st3.practiceStations) ? st3.practiceStations : [];
       const defaultGroupTitles = lang === 'hebrew' ? [
         { title: 'תחנה 1: חקר וגילוי 🔬', badge: '🔬 צוות חקר וגילוי', role: 'חקירת נתונים ומציאת ראיות', desc: `חקרו את הנתונים והטקסט בנושא (${safeTitle}) ומצאו שתי ראיות מרכזיות המאמתות את ההשערה.`, chall: 'מהו הדפוס המפתיע ביותר שגיליתם במקורות?', deliv: 'רשמו את ממצאי החקר של הקבוצה:' },
         { title: 'תחנה 2: יישום ופתרון ⚙️', badge: '⚙️ צוות יישום מעשי', role: 'פתרון בעיות מעשיות ותרגול', desc: `פתרו באופן מעשי תרגילים ישירים ויישמו את הכללים שנלמדו על מקרי בוחן חדשים.`, chall: 'כיצד תפתרו את המקרה המורכב תוך הנמקת כל שלב?', deliv: 'הציגו את שלבי הפתרון והתוצאה המנומקת:' },
         { title: 'תחנה 3: יצירתיות והדמיה 🎨', badge: '🎨 צוות יצירה וסימולציה', role: 'תכנון מודל או תרחיש חיים', desc: `צרו תרחיש, דיאלוג או מארגן חזותי הממחיש את מושג (${safeTitle}) בצורה מקורית.`, chall: 'איזה ייצוג חזותי או סיפורי מסביר את המושג בדרך הטובה ביותר?', deliv: 'שתפו את התוצר היצירתי של קבוצתכם:' },
         { title: 'תחנה 4: חשיבה ביקורתית 🧠', badge: '🧠 צוות ביקורת ואיתור שגיאות', role: 'איתור כשלים לוגיים והנמקה', desc: `בחנו טענה שגויה או פתרון שגוי נפוץ בנושא (${safeTitle}), אתרו את הכשל ונמקו את התיקון.`, chall: 'היכן בדיוק מסתתרת הטעות בהנחה הרווחת? וכיצד נוכיח זאת?', deliv: 'כתבו את ניתוח הטעות ואת הטיעון המתקן:' },
-        { title: 'תחנה 5: השפעה וחיבור לחיים 🌟', badge: '🌟 צוות מנהיגות והשפעה', role: 'העברה לחיים האמיתיים ויוזמה', desc: `הציעו פתרון או יוזמה קהילתית המיישמת את עקרונות השיעור בסביבת בית הספר או היישוב.`, chall: 'כיצד ידע זה יכול לשפר בעיה אמיתית בסביבתנו?', deliv: 'נסחו את הצעת היוזמה והאפקט המעשי:' }
+        { title: 'תחנה 5: השפעה וחיבור לחיים 🌟', badge: '🌟 צוות מנהיגות והשפעה', role: 'העברה לחיים האמיתיים ויוזמה', desc: `הציעו פתרון או יוזמה קהילתית המיישמת את עקרונות השיעור בסביבת בית הספר או היישוב.`, chall: 'כיצד ידע זה יכול לשפר בעיה אמיתית בסביבתנו?', deliv: 'נסחו את הצעת היוזמה והאפקט המעשי:' },
+        { title: 'תחנה 6: חדשנות ואתגר עתידני 🚀', badge: '🚀 צוות חדשנות ואתגר', role: 'חשיבה יזמית ופתרונות פורצי דרך', desc: `תכננו פתרון טכנולוגי או יזמי עתידני המבוסס על עקרונות (${safeTitle}) לפתרון אתגר גלובלי.`, chall: 'איזה רעיון מהפכני יכול לצמוח מהנושא שנלמד היום?', deliv: 'הציגו את הפתרון החדשני והחזון של הצוות:' }
       ] : [
         { title: 'المحطة 1: الاستقصاء والبحث 🔬', badge: '🔬 فريق البحث والاستقصاء', role: 'استخراج الأدلة وتحليل العلاقات', desc: `استقصوا المعطيات والنصوص حول (${safeTitle})، واستخرجوا دليلين قاطعين يثبتان صحة القاعدة والنتائج.`, chall: 'ما النمط أو الظاهرة غير المتوقعة التي اكتشفتموها في المعطيات؟', deliv: 'اكتبوا ناتج بحث مجموعتكم مع الأدلة المستخرجة:' },
         { title: 'المحطة 2: التطبيق والحل العملي ⚙️', badge: '⚙️ فريق التطبيق والتمكن', role: 'حل المسائل والتمارين الإجرائية', desc: `طبّقوا القواعد والخطوات العملية لحل مسائل وتدريبات متنوعة حول (${safeTitle}) بدقة عالية.`, chall: 'حلّوا المسألة التطبيقية مع كتابة تعليل علمي خطوة بخطوة:', deliv: 'اكتبوا خطوات الحل والنتيجة المبررة:' },
         { title: 'المحطة 3: الإبداع والتمثيل والمحاكاة 🎨', badge: '🎨 فريق الإبداع والمحاكاة', role: 'تصميم مشهد أو ملخص بصري', desc: `صمموا مشهداً حوارياً أو رسماً تخطيطياً أو محاكاة واقعية تجسد مفهوم (${safeTitle}) بأسلوب مشوق.`, chall: 'كيف تمثلون الفكرة في سيناريو واقعي يشرح المفهوم لزملائكم؟', deliv: 'اكتبوا نص المشهد أو وصف المخطط البصري الذي ابتكرتموه:' },
         { title: 'المحطة 4: التفكير الناقد واكتشاف الأخطاء 🧠', badge: '🧠 فريق التفكير الناقد والتحليل', role: 'فحص المغالطات وتصويب المفاهيم', desc: `افحصوا ادعاءً مغلوطاً شائعاً في درس (${safeTitle})، واكتشفوا مكمن الخطأ وصوّبوه بالبراهين المنطقية.`, chall: 'ادعى أحدهم فهماً خاطئاً للقاعدة، حددوا أين زلّ وكيف تثبتون الصواب؟', deliv: 'اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل المنطقي:' },
-        { title: 'المحطة 5: صناعة الأثر والربط بالواقع 🌟', badge: '🌟 فريق صناعة الأثر والمبادرة', role: 'ربط المعرفة بالحياة وصنع حلول', desc: `ابتكروا فكرة مبادرة مجتمعية أو مدرسية توظفون فيها ما تعلمتموه في (${safeTitle}) لحل مشكلة واقعية.`, chall: 'كيف نُحدث أثراً إيجابياً في بيئتنا اليوم باستخدام هذا المفهوم؟', deliv: 'اكتبوا فكرة مبادرتكم وكيف ستطبقونها على أرض الواقع:' }
+        { title: 'المحطة 5: صناعة الأثر والربط بالواقع 🌟', badge: '🌟 فريق صناعة الأثر والمبادرة', role: 'ربط المعرفة بالحياة وصنع حلول', desc: `ابتكروا فكرة مبادرة مجتمعية أو مدرسية توظفون فيها ما تعلمتموه في (${safeTitle}) لحل مشكلة واقعية.`, chall: 'كيف نُحدث أثراً إيجابياً في بيئتنا اليوم باستخدام هذا المفهوم؟', deliv: 'اكتبوا فكرة مبادرتكم وكيف ستطبقونها على أرض الواقع:' },
+        { title: 'المحطة 6: الابتكار والتحدي المستقبلي 🚀', badge: '🚀 فريق الابتكار والتحدي', role: 'توليد أفكار رائدة وتصميم حلول غير مألوفة', desc: `ابتكروا فكرة غير تقليدية أو حلاً مستقبلياً يوظف مفاهيم (${safeTitle}) لمواجهة تحديات الغد.`, chall: 'كيف يمكن تطوير هذا المفهوم لخدمة تكنولوجيا المستقبل وحياة الناس؟', deliv: 'اكتبوا رؤية فريقكم الابتكارية والحل المقترح بالتفصيل:' }
       ];
 
       const mergedPracticeStations = [];
       for (let i = 0; i < num; i++) {
-        const fallback = defaultGroupTitles[i];
+        const unifiedFallback = lang === 'hebrew' ? {
+          title: `תחנה ${i + 1}: משימת האתגר המשותפת 🤝`,
+          badge: `🤝 קבוצה ${i + 1} (משימה מאוחדת)`,
+          role: 'שיתוף פעולה, ניתוח ופתרון משותף',
+          desc: st3.studentPrompt || `משימה קבוצתית משותפת ליישום (${safeTitle}) בהסכמה מלאה.`,
+          chall: `פתרו את האתגר הכיתתי המשותף בנושא (${safeTitle}) יחד והציגו את הנמקת הקבוצה:`,
+          deliv: 'רשמו את הפתרון המנומק והתוצר הסופי של הקבוצה:'
+        } : {
+          title: `المحطة ${i + 1}: مهمة التحدي الموحد 🤝`,
+          badge: `🤝 الفريق ${i + 1} (تحدٍّ صفي موحد)`,
+          role: 'التعاون الجماعي والتحليل وصياغة الحل المشترك',
+          desc: st3.studentPrompt || `المهمة الصفية الموحدة لجميع المجموعات لتطبيق (${safeTitle}) بروح الفريق الواحد.`,
+          chall: `حل التحدي الصفي الموحد حول (${safeTitle}) بمشاركة جميع أعضاء الفريق وتقديم التبرير المنطقي الكامل:`,
+          deliv: 'سجلوا صياغة مجموعتكم النهائية للحل المشترك والأدلة الداعمة:'
+        };
+        const fallback = isUnified ? unifiedFallback : defaultGroupTitles[i];
         const ex = existing[i] || {};
         mergedPracticeStations.push({
           id: i + 1,
@@ -2305,7 +2326,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [creatorLearningGoal, setCreatorLearningGoal] = useState(''); // Optional: AI auto-generates if empty
   const [creatorSuccessCriteria, setCreatorSuccessCriteria] = useState(''); // Optional: AI auto-generates if empty
   const [creatorMeaningPath, setCreatorMeaningPath] = useState('blended'); // 'explicit' | 'discovery' | 'blended'
-  const [creatorPracticeGroupsCount, setCreatorPracticeGroupsCount] = useState('4'); // 'none' | '4' | '5' (Multi-group stations)
+  const [creatorPracticeGroupsCount, setCreatorPracticeGroupsCount] = useState('4'); // 'none' | '4' | '5' | '6' (Multi-group stations)
+  const [creatorPracticeTaskMode, setCreatorPracticeTaskMode] = useState('differentiated'); // 'differentiated' | 'unified'
   const [creatorUdlOptions, setCreatorUdlOptions] = useState(['دعم قراءة', 'تبسيط لغوي', 'أمثلة بصرية']);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   const [selectedStationToEdit, setSelectedStationToEdit] = useState('1_hook');
@@ -2925,6 +2947,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         customSuccessCriteria: creatorSuccessCriteria,
         meaningPath: creatorMeaningPath,
         practiceGroupsCount: creatorPracticeGroupsCount,
+        practiceTaskMode: creatorPracticeTaskMode,
         udlOptions: creatorUdlOptions,
         includePassage: creatorIncludePassage,
         passageLength: creatorPassageLength,
@@ -2951,6 +2974,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
           grade: res.grade || creatorGrade,
           specialRequests: creatorSpecialRequests,
           practiceGroupsCount: creatorPracticeGroupsCount,
+          practiceTaskMode: creatorPracticeTaskMode,
           authorId: authenticatedTeacher?.id || 'admin',
           authorName: authenticatedTeacher?.nameAr || 'المعلم',
           authorEmail: authenticatedTeacher?.email || '',
@@ -6724,15 +6748,69 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       onChange={e => setCreatorPracticeGroupsCount(e.target.value)}
                       style={{ fontWeight: 700 }}
                     >
-                      <option value="4">👥 ٤ محطات فرعية (تقسيم الصف إلى ٤ مجموعات بأنشطة وفعاليات مختلفة على الآيباد/الهواتف)</option>
-                      <option value="5">👥 ٥ محطات فرعية (تقسيم الصف إلى ٥ مجموعات بأنشطة وفعاليات مختلفة على الآيباد/الهواتف)</option>
-                      <option value="none">⚙️ مسار تمايز مستويات موحد (انطلاق، ممارسة، تحدي دون محطات فرعية)</option>
+                      <option value="4">👥 ٤ محطات فرعية (تقسيم الصف إلى ٤ مجموعات تفاعلية)</option>
+                      <option value="5">👥 ٥ محطات فرعية (تقسيم الصف إلى ٥ مجموعات تفاعلية)</option>
+                      <option value="6">👥 ٦ محطات فرعية (تقسيم الصف إلى ٦ مجموعات تفاعلية)</option>
+                      <option value="none">⚙️ مسار مستويات موحد (انطلاق، ممارسة، تحدي دون محطات فرعية)</option>
                     </select>
-                    <small style={{ color: '#0369a1', fontSize: '0.8rem', marginTop: '5px', display: 'block', fontWeight: 600 }}>
-                      {creatorPracticeGroupsCount === '4'
-                        ? '📱 ٤ محطات فرعية: يولد الذكاء الاصطناعي ٤ فعاليات مختلفة تماماً تغطي جوانب الدرس (استقصاء، تطبيق، إبداع، تفكير ناقد). لكل مجموعة آيباد على الأقل أو لكل طالب هاتف، وتتيح للمعلم مراقبة الجميع لحظياً.'
-                        : creatorPracticeGroupsCount === '5'
-                        ? '📱 ٥ محطات فرعية: يولد الذكاء الاصطناعي ٥ فعاليات متنوعة ومتكاملة (استقصاء، تطبيق، إبداع، تفكير ناقد، ونقل أثر للواقع) لمتابعة ومراقبة المجموعات باحترافية.'
+
+                    {creatorPracticeGroupsCount !== 'none' && (
+                      <div style={{ marginTop: '8px', padding: '10px 12px', background: '#f0fdfa', border: '1.5px solid #99f6e4', borderRadius: '10px' }}>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f766e', marginBottom: '6px' }}>
+                          🎯 نمط توزيع المهام والفعاليات على المجموعات الـ ({creatorPracticeGroupsCount}):
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => setCreatorPracticeTaskMode('differentiated')}
+                            style={{
+                              flex: '1 1 180px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: creatorPracticeTaskMode === 'differentiated' ? '2px solid #0d9488' : '1.5px solid #cbd5e1',
+                              background: creatorPracticeTaskMode === 'differentiated' ? '#0d9488' : '#ffffff',
+                              color: creatorPracticeTaskMode === 'differentiated' ? '#ffffff' : '#334155',
+                              fontWeight: 700,
+                              fontSize: '0.84rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <span>🎯 لكل مجموعة مهمة وفعالية مختلفة</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreatorPracticeTaskMode('unified')}
+                            style={{
+                              flex: '1 1 180px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: creatorPracticeTaskMode === 'unified' ? '2px solid #0284c7' : '1.5px solid #cbd5e1',
+                              background: creatorPracticeTaskMode === 'unified' ? '#0284c7' : '#ffffff',
+                              color: creatorPracticeTaskMode === 'unified' ? '#ffffff' : '#334155',
+                              fontWeight: 700,
+                              fontSize: '0.84rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <span>🤝 توحيد المهمة لجميع المجموعات</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <small style={{ color: '#0369a1', fontSize: '0.8rem', marginTop: '6px', display: 'block', fontWeight: 600 }}>
+                      {creatorPracticeGroupsCount !== 'none'
+                        ? (creatorPracticeTaskMode === 'differentiated'
+                          ? `📱 تقسيم إلى ${creatorPracticeGroupsCount} مجموعات بمهام مختلفة: يولد الذكاء الاصطناعي ${creatorPracticeGroupsCount} فعاليات متباينة تماماً ومتكاملة (استقصاء، تطبيق، إبداع، تفكير ناقد${creatorPracticeGroupsCount >= '5' ? '، ربط بالواقع' : ''}${creatorPracticeGroupsCount === '6' ? '، ابتكار مستقبلي' : ''}). لكل مجموعة آيباد أو لكل طالب هاتف، وتتيح للمعلم مراقبة الجميع لحظياً.`
+                          : `🤝 تقسيم إلى ${creatorPracticeGroupsCount} مجموعات بمهمة موحدة: يولد الذكاء الاصطناعي مهمة وتحدياً صفياً موحداً تشارك فيه الفرق جميعاً بروح التنافس والتعاون، مع تخصيص مساحة لكل جهاز/آيباد لإرسال ومقارنة النواتج.`)
                         : '⚙️ مسار المستويات الموحد: يعمل جميع الطلاب على مسار المستويات الثلاثة المتدرجة (انطلاق، ممارسة، تحدي).'}
                     </small>
                   </div>
@@ -9384,7 +9462,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
             {/* Center Column: Live Submissions & Formative Assessment */}
             <main className="dashboard-center-feed">
-              {/* Station 3 Multi-Group Live Monitoring Grid (٤ أو ٥ محطات فرعية على أجهزة الآيباد/الهواتف) */}
+              {/* Station 3 Multi-Group Live Monitoring Grid (من ٤ إلى ٦ محطات فرعية على أجهزة الآيباد/الهواتف) */}
               {Array.isArray(activeLesson?.stations?.['3_practice']?.practiceStations) && activeLesson.stations['3_practice'].practiceStations.length > 0 && (
                 <div style={{
                   background: 'linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%)',
@@ -9399,7 +9477,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       <span>👥📱 لوحة المراقبة الحية لمحطات المجموعات (المحطة 3: التطبيق والتدريب)</span>
                     </h4>
                     <span style={{ fontSize: '0.78rem', background: '#ccfbf1', color: '#0d9488', padding: '4px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                      {activeLesson.stations['3_practice'].practiceStations.length} محطات فرعية • متابعة مباشرة لأجهزة الطلاب
+                      {activeLesson.stations['3_practice'].practiceStations.length} مجموعات فرعية • {(activeLesson.stations['3_practice'].practiceTaskMode === 'unified' || activeLesson.practiceTaskMode === 'unified') ? '🤝 مهمة موحدة لجميع الفرق' : '🎯 فعاليات متمايزة لكل مجموعة'} • متابعة مباشرة لأجهزة الطلاب
                     </span>
                   </div>
 
@@ -9990,7 +10068,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       </div>
                     )}
 
-                    {/* In Station 3: Multi-Group Sub-stations (4 or 5 Stations on iPads/Phones) */}
+                    {/* In Station 3: Multi-Group Sub-stations (من ٤ إلى ٦ محطات فرعية على أجهزة الآيباد/الهواتف) */}
                     {sessionState.activeStationIndex === 3 && Array.isArray(activeLesson.stations['3_practice']?.practiceStations) && activeLesson.stations['3_practice'].practiceStations.length > 0 && (
                       <div style={{
                         display: 'grid',
@@ -11070,7 +11148,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                           <span>👥📱 محطات المجموعات التفاعلية (على آيباد المجموعة أو هاتفك)</span>
                         </div>
                         <span style={{ fontSize: '0.78rem', background: '#cffafe', color: '#0891b2', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                          {activeLesson.stations['3_practice'].practiceStations.length} محطات فرعية • لكل مجموعة فعالية مستقلة
+                          {activeLesson.stations['3_practice'].practiceStations.length} مجموعات فرعية • {(activeLesson.stations['3_practice'].practiceTaskMode === 'unified' || activeLesson.practiceTaskMode === 'unified') ? '🤝 مهمة وتحدي الفرق الموحد' : '🎯 لكل مجموعة فعالية متمايزة'}
                         </span>
                       </div>
 
