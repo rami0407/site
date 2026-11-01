@@ -6032,15 +6032,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         هنا تظهر كافة الدروس والخطط المحفوظة الخاصة بك في مدرسة مشيرفة الابتدائية. يمكنك استعراض أي درس، تعديل محطاته، استكمال أهدافه، تنزيله بصيغة Word أو PDF، أو إطلاقه مباشرةً وبثه في الصف للطلاب!
                       </p>
                     </div>
-                    <div className="hero-actions">
-                      <button
-                        type="button"
-                        className="btn-create-new-lesson-cta"
-                        onClick={() => handleStartNewLessonPrep()}
-                      >
-                        <i className="fas fa-magic"></i> ⚡ توليد حصة جديدة بالذكاء
-                      </button>
-                    </div>
+
                   </div>
 
                   {/* Filter and Search Bar */}
