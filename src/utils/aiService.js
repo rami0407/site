@@ -1,6 +1,6 @@
-import { db } from '../firebase';
+import { db } from '../firebase.js';
 import { doc, getDoc } from 'firebase/firestore';
-import { normalizeLessonStations, normalizeStationText } from './lessonPlansLibraryService';
+import { normalizeLessonStations, normalizeStationText } from './lessonPlansLibraryService.js';
 
 // In-memory key caches
 let cachedGeminiKey = '';
@@ -169,11 +169,11 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
   const strictSystem = (systemContext || 'أنت المساعد الذكي لمدرسة مشيرفة الابتدائية.') +
     '\nتعليمات صارمة: اكتب الرد النهائي المباشر باللغة العربية الفصحى الواضحة والجميلة. ممنوع منعاً باتاً كتابة أي خطوات تفكير أو مسودات مراجعة أو قوائم تحقق بالإنجليزية (مثل Check Against Guidelines أو I will output).';
 
-  // 1. Try Groq (Llama 3.3 70B, Llama 3.1 8B) - High speed, browser CORS
+  // 1. Try Groq (Qwen 3.8 27B, ALLaM 2 7B) - High speed, browser CORS
   if (groqKey) {
     const groqModels = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant'
+      'qwen/qwen3.8-27b',
+      'allam-2-7b'
     ];
     for (const gm of groqModels) {
       try {
@@ -448,7 +448,7 @@ export const askSocraticStemMentor = async ({ message, history = [] }) => {
 
   // 1. Try Groq (Fastest & natively supports browser CORS)
   if (groqKey) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -553,7 +553,7 @@ export const askAiBookBuddy = async ({ bookTitle, author, message, history = [] 
 
   // 1. Try Groq
   if (groqKey) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -642,7 +642,7 @@ export const developStudentStory = async ({ storyGenre, heroName, studentInput, 
 
   // Try Groq
   if (groqKey) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -715,7 +715,7 @@ export const askSocraticHomeworkHelper = async ({ subject = 'الرياضيات 
 4. اكتب بلغة فصحى مشجعة ومرحة للأطفال (جملتان أو ثلاث فقط)، واختم دائماً بسؤال توجيهي يقود خطوته التالية.`;
 
   if (groqKey) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -805,7 +805,7 @@ ${themePreference ? `المجال المطلوب التركيز عليه: ${them
 }`;
 
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -912,7 +912,7 @@ export const coachDebateArgument = async ({ topicTitle, studentName, studentGrad
           'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
+          model: 'qwen/qwen3.8-27b',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.5,
           max_tokens: 220
@@ -989,7 +989,7 @@ ${commentsSnippet || 'تناقش الطلاب حول أهمية الموضوع �
           'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
+          model: 'qwen/qwen3.8-27b',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.5,
           max_tokens: 600,
@@ -1089,7 +1089,7 @@ ${customTopic ? `الموضوع المحدد: ${customTopic}` : ''}
           'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
+          model: 'qwen/qwen3.8-27b',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 800,
@@ -1428,7 +1428,7 @@ ${isSEL ? `
 
   // 1. Try Groq (High-speed: Qwen 3.8 27B, GPT-OSS 120B, ALLaM)
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -1804,7 +1804,7 @@ ${notes ? `- ملاحظات وظروف التنفيذ: "${notes}"` : ''}
 
   // 1. Try Groq AI (models with high token limits & reasoning)
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2042,7 +2042,7 @@ ${customInstruction ? `- رغبة وتوجيه المعلم الخاص للبد�
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2207,7 +2207,7 @@ export const generateMiftaahLessonObjectivesAI = async ({
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2373,7 +2373,7 @@ ${langNote}
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2531,7 +2531,7 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2693,7 +2693,7 @@ export const evaluateMiftaahExitTicketAI = async ({
   };
 
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -4309,8 +4309,8 @@ ${practiceGroupsDirective}
   // 1. Try Groq AI (Active high-speed models: GPT-OSS 120B, Qwen 3.8 27B, GPT-OSS 20B, ALLaM)
   if (groqKey) {
     const groqModels = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant'
+      'qwen/qwen3.8-27b',
+      'allam-2-7b'
     ];
     for (const m of groqModels) {
       try {
@@ -4931,7 +4931,7 @@ export const generateScientificGenieAI = async (question, chatHistory = [], stud
 
   // 1. Try Groq (High Speed Qwen 3.8 / GPT-OSS / ALLaM)
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout(
@@ -5191,7 +5191,7 @@ export const parseUploadedLessonPlanAI = async ({
 
   // 2. Try Groq (Ultra-fast for text)
   if (groqKey && rawText) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const gm of groqModels) {
       try {
         const res = await fetchWithTimeout(
@@ -5360,7 +5360,7 @@ export const guideSteamStationAI = async ({
 
   // 1. Try Groq
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -5551,7 +5551,7 @@ ${stationTask}`;
 
   // 1. Try Groq
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -5645,7 +5645,7 @@ export const generateMiftaahExtraChallengeAI = async ({
 
   // 1. Try Groq
   if (groqKey) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of groqModels) {
       try {
         const res = await fetchWithTimeout(
@@ -5842,7 +5842,7 @@ ${formattedHistory}
 
   // 1. Try Groq
   if (groqKey) {
-    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of groqModels) {
       try {
         const res = await fetchWithTimeout(
