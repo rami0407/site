@@ -66,12 +66,32 @@ const DEFAULT_EXEMPLAR_LESSON = {
       icon: '🔥',
       symbol: 'م',
       suggestedDuration: 6,
-      studentPrompt: 'لغز المشهد المحيّر 🧪\nإذا نقلنا نفس كمية الماء من كأس عريض إلى أنبوب ضيق، ماذا يحدث للشكل وماذا يحدث للحجم؟ وهل يتغير حجر الصوان إذا وضعناه في الكأس أو الأنبوب؟ فكر وشارك توقعك!',
-      teacherGuidance: 'اعرض كأسين مختلفين وحجراً. استمع لفضول الطلاب دون إعلان الحل. اكتب الهدف المركزي ومعيار النجاح بخط بارز على اللوح وناقشه بعد لحظة الفضول.',
+      studentPrompt: 'المشهد الاستكشافي المحيّر 🧪\nتأمل التجربة: إذا نقلنا نفس كمية الماء من كأس عريض إلى أنبوب ضيق، ماذا يحدث للشكل وماذا يحدث للحجم؟ وهل يتغير حجر الصوان إذا وضعناه في الكأس أو الأنبوب؟ فكر وشارك توقعك العلمي!',
+      teacherGuidance: 'اعرض كأسين مختلفين وحجراً. استمع لفضول الطلاب وتوقعاتهم دون إعلان الحل مسبقاً. اكتب الهدف المركزي ومعيار النجاح بخط بارز على اللوح وناقشه بعد لحظة الفضول.',
       scaffold: 'لاحظ: هل ينسكب الحجر؟ وهل يأخذ الماء شكل كل إناء يوضع فيه؟',
+      hookStoryOrScenario: 'تخيل أنك باحث في المختبر تجري تجربة ممتعة: سكبت نفس كمية الماء في أوانٍ مختلفة الأشكال، ثم وضعت حجر صوان صلباً في كل إناء... فلاحظت مفارقة مدهشة في الشكل والحجم تفتح لنا باباً لاكتشاف حالات المادة!',
+      curiosityQuestion: 'ما السر العلمي والخاصية الأساسية التي تجعل الماء يتشكل بحسب الإناء مع ثبات حجمه، بينما يحتفظ حجر الصوان بشكله وحجمه دون أي تغيير؟',
+      helperWords: ['حجم ثابت', 'شكل متغير', 'صلب', 'سائل', 'ينسكب', 'انسيابية'],
       interactiveActivity: {
-        type: 'riddle',
-        title: 'لغز المشهد المحيّر: نقل الماء وحجر الصوان',
+        type: 'curiosity',
+        title: 'المشهد الاستكشافي المحيّر: تجربة نقل الماء وحجر الصوان',
+        curiosity: {
+          title: 'المشهد الاستكشافي المحيّر: تجربة نقل الماء وحجر الصوان',
+          scenario: 'تخيل أنك باحث في المختبر تجري تجربة ممتعة: سكبت نفس كمية الماء في أوانٍ مختلفة الأشكال، ثم وضعت حجر صوان صلباً في كل إناء... فلاحظت مفارقة مدهشة في الشكل والحجم تفتح لنا باباً لاكتشاف حالات المادة!',
+          curiosityQuestion: 'ما السر العلمي والخاصية الأساسية التي تجعل الماء يتشكل بحسب الإناء مع ثبات حجمه، بينما يحتفظ حجر الصوان بشكله وحجمه دون أي تغيير؟',
+          clues: [
+            '🔑 تلميح 1: هل سكب الماء يغير كميته وحجمه، أم يغير فقط شكله وارتفاعه في الأنبوب؟',
+            '🔑 تلميح 2: تأمل حجر الصوان: هل انسكب أو تغير شكله عند نقله؟ ما الفرق الجوهري بين المادة السائلة والمادة الصلبة؟'
+          ],
+          options: [
+            'يتغير شكل الماء وحجمه معاً، ويتغير شكل حجر الصوان وحجمه',
+            'يتغير شكل الماء فقط مع ثبات حجمه، بينما لا يتغير شكل حجر الصوان ولا حجمه 🎯',
+            'يزيد حجم الماء في الأنبوب الضيق ويقل حجم الحجر',
+            'لا يتغير شكل الماء ولا شكل حجر الصوان'
+          ],
+          solution: 'يتغير شكل الماء فقط مع ثبات حجمه، بينما لا يتغير شكل حجر الصوان ولا حجمه 🎯',
+          explanation: 'الماء مادة سائلة تأخذ شكل الإناء الذي توضع فيه مع بقاء حجمها ثابتاً، بينما حجر الصوان مادة صلبة تحتفظ بشكل ثابت وحجم ثابت في كل الأحوال!'
+        },
         riddle: {
           title: 'لغز المشهد المحيّر: نقل الماء وحجر الصوان',
           riddleText: 'إذا نقلنا نفس كمية الماء من كأس عريض إلى أنبوب ضيق، ماذا يحدث للشكل وماذا يحدث للحجم؟ وهل يتغير حجر الصوان إذا وضعناه في الكأس أو الأنبوب؟ فكر وشارك توقعك! 🧪',
@@ -2429,7 +2449,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
   const [creatorPassageLength, setCreatorPassageLength] = useState('long'); // 'long' (3-4 فقرات) | 'medium' (فقرتان) | 'short' (فقرة واحدة)
   const [creatorCustomPassage, setCreatorCustomPassage] = useState(''); // Teacher's own custom text
   const [creatorQuestionsDensity, setCreatorQuestionsDensity] = useState('tiered_full'); // 'tiered_full' | 'intensive' | 'concise'
-  const [creatorHookType, setCreatorHookType] = useState('riddle'); // 'riddle' | 'puzzle' | 'video'
+  const [creatorHookType, setCreatorHookType] = useState('curiosity'); // 'curiosity' (مدخل مشوّق ومتكيف بحسب نوع الدرس) | 'video' | 'puzzle' | 'riddle'
   const [creatorPrimarySkill, setCreatorPrimarySkill] = useState('reading_comprehension'); // 'reading_comprehension' | 'grammar' | 'science' | 'math' | 'values'
   const [studentReadingFontSize, setStudentReadingFontSize] = useState('normal'); // 'normal' | 'large' | 'xlarge'
   const [isReadingReferenceOpenInPractice, setIsReadingReferenceOpenInPractice] = useState(false);
@@ -3047,7 +3067,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
 
       if (res && res.stations && res.stations['1_hook']) {
         const hook = res.stations['1_hook'];
-        let derivedType = creatorHookType || hook.interactiveActivity?.type || 'riddle';
+        let derivedType = hook.interactiveActivity?.type || creatorHookType || 'curiosity';
         if (hook.interactiveActivity) {
           hook.interactiveActivity.type = derivedType;
         }
@@ -3601,7 +3621,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     setCreatorPassageLength('long');
     setCreatorCustomPassage('');
     setCreatorQuestionsDensity('tiered_full');
-    setCreatorHookType('riddle');
+    setCreatorHookType('curiosity');
     setCreatorPrimarySkill('reading_comprehension');
 
     // Fresh draft lesson instance with its own unique PIN
@@ -4622,6 +4642,55 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       }
     }
 
+    // 4. Resolve Curiosity / Adaptive Hook (Tailored dynamically to lesson discipline & theme)
+    const subjCombined = `${lesson?.subject || ''} ${safeTitle} ${combined}`.toLowerCase();
+    const isScienceDomain = subjCombined.includes('علوم') || subjCombined.includes('طبيعة') || subjCombined.includes('تجربة') || subjCombined.includes('مادة') || subjCombined.includes('كيمياء') || subjCombined.includes('فيزياء') || subjCombined.includes('أحياء');
+    const isMathDomain = subjCombined.includes('حساب') || subjCombined.includes('رياضيات') || subjCombined.includes('كسور') || subjCombined.includes('هندسة') || subjCombined.includes('ضرب') || subjCombined.includes('قسمة');
+    const isReadingDomain = subjCombined.includes('فهم المقروء') || subjCombined.includes('قراءة') || subjCombined.includes('نص') || subjCombined.includes('قصة') || subjCombined.includes('لغة عربية') || subjCombined.includes('עברית') || subjCombined.includes('english');
+    const isValuesDomain = subjCombined.includes('قيم') || subjCombined.includes('أخلاق') || subjCombined.includes('إسلامية') || subjCombined.includes('تسامح') || subjCombined.includes('احترام') || subjCombined.includes('عطاء') || subjCombined.includes('مواطنة');
+
+    const curiosityData = {
+      title: act.curiosity?.title || act.title || (
+        isScienceDomain ? `ظاهرة استكشافية مدهشة: ${safeTitle}`
+        : isReadingDomain ? `مدخل الحكاية المشوّقة: ${safeTitle}`
+        : isMathDomain ? `تحدٍّ منطقي وحياتي: ${safeTitle}`
+        : isValuesDomain ? `موقف وتأمل قيمي: ${safeTitle}`
+        : `مدخل مشوّق: ${safeTitle}`
+      ),
+      scenario: act.curiosity?.scenario || station?.hookStoryOrScenario || resolvedVid.hookStoryOrScenario || (
+        isScienceDomain
+          ? `تخيّل أنك باحث في المختبر تجري تجربة استكشافية ترتبط بـ (${safeTitle}). فجأة، لاحظت حدوث تغير مدهش في المشهد لا يتطابق مع التوقعات السريعة، مما كشف عن سر علمي وقانون خفي يحكم هذه الظاهرة! 🔬✨`
+          : isReadingDomain
+          ? `في صباح هادئ، وجد أبطال قصتنا أنفسهم في مواجهة موقف مثير وتحدٍّ غير مألوف يرتبط بـ (${safeTitle}). كانت كل لحظة تمر تفتح باباً لمزيد من التساؤلات والترقب حول ما سيحدث تالياً في هذا النص الشيق! 📖✨`
+          : isMathDomain
+          ? `واجه ثلاثة أصدقاء معضلة عملية وتحدياً ذكياً في الحياة اليومية يرتبط بـ (${safeTitle})، حيث طرح كل منهم طريقة مختلفة لحل المسألة والوصول إلى النتيجة الصحيحة في أسرع وقت! 💡🔢`
+          : isValuesDomain
+          ? `في يوم دراسي عادي، وقع موقف مؤثر في ساحة المدرسة يمس قيمة (${safeTitle})، مما وضع الطلاب أمام اختيار حاسم يتطلب شجاعة أدبية ووعياً بالمسؤولية المشتركة. 🌟❤️`
+          : `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة وقصة واقعية ترتبط بـ (${safeTitle}). للوهلة الأولى يبدو الأمر مألوفاً وعادياً، لكن حين نقترب أكثر نكتشف سرّاً مذهلاً يربط بين ما نراه في حياتنا اليومية وبين المعارف التي سنتعلمها اليوم! 🌟🔍`
+      ),
+      curiosityQuestion: act.curiosity?.curiosityQuestion || act.curiosity?.question || station?.curiosityQuestion || resolvedVid.curiosityQuestion || `ما السر أو المبدأ الأساسي الذي يفسر هذا الموقف في موضوع (${safeTitle})؟ وكيف نكتشفه معاً؟`,
+      options: (act.curiosity?.options && act.curiosity.options.length > 0)
+        ? act.curiosity.options
+        : (act.riddle?.options && act.riddle.options.length > 0)
+        ? act.riddle.options
+        : [
+            `الفرضية الأولى: تأمل أولي مبني على الملاحظة المباشرة`,
+            `السر والتفسير الأساسي الأنسب لـ (${safeTitle}) 🎯`,
+            `فرضية بديلة تتطلب فحصاً وتجريباً في محطات الدرس`,
+            `فكرة إبداعية تبحث عن برهان وتطبيق عملي`
+          ],
+      clues: (act.curiosity?.clues && act.curiosity.clues.length > 0)
+        ? act.curiosity.clues
+        : (act.riddle?.clues && act.riddle.clues.length > 0)
+        ? act.riddle.clues
+        : [
+            station?.scaffold ? `🔑 مفتاح تفكير: ${station.scaffold}` : `🔑 مفتاح تفكير 1: تأمل العلاقة بين تفاصيل هذا الموقف وما نشاهده في واقعنا.`,
+            `🔑 مفتاح تفكير 2: اربط بين الملاحظة والهدف المركزي لدرس (${safeTitle}).`
+          ],
+      solution: act.curiosity?.solution || act.riddle?.solution || `السر والتفسير الأساسي الأنسب لـ (${safeTitle}) 🎯`,
+      explanation: act.curiosity?.explanation || act.riddle?.explanation || `هذا المدخل المشوق يمهد مباشرة لتحقيق الهدف المركزي لدرس (${safeTitle}) واستيعاب محطاته.`
+    };
+
     // Determine Active Type to strictly match the Planning Content (فحوى التخطيط)
     const stNum = station.number || 1;
     const sessionOverride = sessionState.activityTypeByStation?.[stNum];
@@ -4632,16 +4701,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       const reqLower = (lesson?.specialRequests || '').toLowerCase();
       const actType = act.type;
 
-      if (promptLower.match(/لغز|أحجية|احجية|فزورة|غموض|مشهد محير|توقعك/) || reqLower.match(/أحجية|احجية|لغز/)) {
+      if (promptLower.match(/لغز|أحجية|احجية|فزورة|غموض|riddle/) || reqLower.match(/أحجية|احجية|لغز/)) {
         activeType = 'riddle';
       } else if (promptLower.match(/بازل|puzzle|ترتيب|تركيب|رتب/) || reqLower.match(/بازل|puzzle/)) {
         activeType = 'puzzle';
       } else if (promptLower.match(/فيلم|فيديو|video|شاهد|مقطع/) || reqLower.match(/فيلم|فيديو/) || actType === 'video' || station?.media?.embedUrl || station?.media?.youtubeUrl) {
         activeType = 'video';
-      } else if (actType && ['video', 'riddle', 'puzzle'].includes(actType)) {
+      } else if (actType && ['curiosity', 'video', 'riddle', 'puzzle'].includes(actType)) {
         activeType = actType;
       } else {
-        activeType = 'riddle';
+        // Default is now curiosity (adaptive hook tailored to lesson type), NEVER default riddle!
+        activeType = 'curiosity';
       }
     }
 
@@ -4649,7 +4719,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       activeType,
       video: videoData,
       riddle: riddleData,
-      puzzle: puzzleData
+      puzzle: puzzleData,
+      curiosity: curiosityData
     };
   };
 
@@ -4681,7 +4752,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     };
     broadcastSession(nextSession);
 
-    const typeLabels = { video: 'فيلم ومقطع فيديو 🎬', riddle: 'أحجية ولغز تفاعلي 🔮', puzzle: 'بازل تفاعلي 🧩' };
+    const typeLabels = { curiosity: 'مدخل مشوّق وظاهرة تفاعلية 🌟', video: 'فيلم ومقطع فيديو 🎬', riddle: 'أحجية ولغز تفاعلي 🔮', puzzle: 'بازل تفاعلي 🧩' };
     showToast(`تم التبديل إلى ${typeLabels[newType] || newType} وعرضه للجميع! ✨`);
   };
 
@@ -4845,19 +4916,19 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
             <div className="switcher-buttons-group">
               <button
                 type="button"
+                className={`btn-act-tab ${activeType === 'curiosity' ? 'active' : ''}`}
+                onClick={() => handleSwitchStationActivityType(stNum, 'curiosity')}
+                title="عرض مدخل مشوّق وظاهرة استكشافية واقعية مصممة بحسب نوع الدرس"
+              >
+                🌟 مدخل مشوّق وظاهرة
+              </button>
+              <button
+                type="button"
                 className={`btn-act-tab ${activeType === 'video' ? 'active' : ''}`}
                 onClick={() => handleSwitchStationActivityType(stNum, 'video')}
                 title="عرض فيلم أو مقطع فيديو تعليمي مشوّق"
               >
                 🎬 فيلم ومقطع
-              </button>
-              <button
-                type="button"
-                className={`btn-act-tab ${activeType === 'riddle' ? 'active' : ''}`}
-                onClick={() => handleSwitchStationActivityType(stNum, 'riddle')}
-                title="عرض أحجية ولغز استنتاجي مع سقالات"
-              >
-                🔮 أحجية ولغز
               </button>
               <button
                 type="button"
@@ -4867,7 +4938,294 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
               >
                 🧩 بازل تفاعلي
               </button>
+              <button
+                type="button"
+                className={`btn-act-tab ${activeType === 'riddle' ? 'active' : ''}`}
+                onClick={() => handleSwitchStationActivityType(stNum, 'riddle')}
+                title="عرض أحجية ولغز استنتاجي مع سقالات"
+              >
+                🔮 أحجية ولغز
+              </button>
             </div>
+          </div>
+        )}
+
+        {/* 0. Adaptive Engaging Hook / Curiosity Mode (المدخل المشوّق والظاهرة المدهشة بحسب نوع الدرس) */}
+        {activeType === 'curiosity' && (
+          <div className="activity-subview-curiosity animate-fade-in" style={{ padding: '4px 0' }}>
+            {/* Top Badge & Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px',
+              marginBottom: '14px',
+              paddingBottom: '10px',
+              borderBottom: '1.5px solid #fed7aa'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{
+                  fontSize: '1.5rem',
+                  background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                  color: '#fff',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)'
+                }}>🌟</span>
+                <div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#c2410c', display: 'block' }}>
+                    {activeLesson.language === 'hebrew' ? 'פתיחה מרתקת ומעוררת סקרנות:' : 'المدخل المشوّق والمحفّز (بحسب نوع الدرس وموضوعه):'}
+                  </span>
+                  <strong style={{ fontSize: '1.12rem', color: '#1e293b' }}>
+                    {resolvedActivity.curiosity?.title || `مدخل مشوّق: ${activeLesson.title}`}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Reveal Insight / Clues Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  background: '#ffedd5',
+                  color: '#9a3412',
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.82rem'
+                }}>
+                  🔑 المفاتيح: {revealedCluesMap[stNum] || 0} من {resolvedActivity.curiosity?.clues?.length || 2}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleSolution(stNum)}
+                  style={{
+                    background: isSolutionRevealedMap[stNum] ? '#64748b' : 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontWeight: 800,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.2)'
+                  }}
+                  title={isSolutionRevealedMap[stNum] ? 'إخفاء التفسير والربط' : 'كشف سر الموقف والربط بهدف الدرس'}
+                >
+                  <i className={`fas ${isSolutionRevealedMap[stNum] ? 'fa-eye-slash' : 'fa-lightbulb'}`}></i>
+                  <span>{isSolutionRevealedMap[stNum] ? 'إخفاء التفسير ✖' : 'كشف سر الموقف والربط بالدرس ✨'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Hook Scenario / Story Card */}
+            <div style={{
+              background: 'linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%)',
+              border: '2px solid #fb923c',
+              borderRadius: '16px',
+              padding: '18px 22px',
+              marginBottom: '14px',
+              boxShadow: '0 6px 20px rgba(249, 115, 22, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#ea580c', fontWeight: 800, fontSize: '0.92rem' }}>
+                <i className="fas fa-book-open"></i>
+                <span>📖 الموقف الافتتاحي المشوّق (القصة أو الظاهرة الاستكشافية):</span>
+              </div>
+              <p style={{
+                margin: 0,
+                fontSize: '1.05rem',
+                lineHeight: 1.85,
+                color: '#1e293b',
+                fontWeight: 600,
+                whiteSpace: 'pre-wrap'
+              }}>
+                {resolvedActivity.curiosity?.scenario || stationData.hookStoryOrScenario || stationData.studentPrompt}
+              </p>
+            </div>
+
+            {/* Curiosity Question Box */}
+            {(resolvedActivity.curiosity?.curiosityQuestion || stationData.curiosityQuestion) && (
+              <div style={{
+                background: '#ecfdf5',
+                border: '1.5px solid #34d399',
+                borderRadius: '14px',
+                padding: '14px 18px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px'
+              }}>
+                <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>❓</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, color: '#065f46', fontSize: '0.88rem', marginBottom: '4px' }}>
+                    سؤال الفضول والتفكير الموجه:
+                  </div>
+                  <div style={{ fontSize: '1.02rem', fontWeight: 700, color: '#047857', lineHeight: 1.6 }}>
+                    {resolvedActivity.curiosity?.curiosityQuestion || stationData.curiosityQuestion}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* In-screen Reveal Insight (كشف السر والربط بالدرس) */}
+            {isSolutionRevealedMap[stNum] && (
+              <div className="animate-pop" style={{
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                border: '2px solid #10b981',
+                borderRadius: '16px',
+                padding: '18px 22px',
+                marginBottom: '16px',
+                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.15)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '1.4rem' }}>🌟</span>
+                  <span style={{ fontWeight: 800, color: '#065f46', fontSize: '0.92rem' }}>
+                    سر الموقف والتفسير الأساسي المعتمد:
+                  </span>
+                  <strong style={{ color: '#047857', fontSize: '1.05rem', marginRight: '6px' }}>
+                    {resolvedActivity.curiosity?.solution}
+                  </strong>
+                </div>
+                {resolvedActivity.curiosity?.explanation && (
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #a7f3d0',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    fontSize: '0.95rem',
+                    color: '#065f46',
+                    lineHeight: 1.6
+                  }}>
+                    <strong>💡 الربط بالهدف التعليمي للدرس: </strong>
+                    {resolvedActivity.curiosity?.explanation}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Interactive Thinking Options (Hypotheses) */}
+            {resolvedActivity.curiosity?.options && resolvedActivity.curiosity.options.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.88rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fas fa-check-circle" style={{ color: '#f97316' }}></i>
+                  <span>توقعات وفرضيات مطروحة للنقاش (اضغط لتحديد توقعك ومشاركته):</span>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '10px'
+                }}>
+                  {resolvedActivity.curiosity.options.map((opt, oIdx) => {
+                    const isSelected = studentCurrentStationIndex === 1 && studentInputText.includes(opt);
+                    return (
+                      <button
+                        key={oIdx}
+                        type="button"
+                        onClick={() => {
+                          if (!isProjector) {
+                            setStudentInputText(prev => prev ? `${prev}\n- ${opt}` : `توقعي وفرضيتي: ${opt}`);
+                            showToast(`تم اختيار التوقع وإضافته لإجابتك: ${opt}`);
+                          }
+                        }}
+                        style={{
+                          background: isSelected ? '#ffedd5' : '#ffffff',
+                          border: isSelected ? '2px solid #ea580c' : '1.5px solid #fed7aa',
+                          borderRadius: '12px',
+                          padding: '12px 14px',
+                          textAlign: 'right',
+                          cursor: 'pointer',
+                          fontSize: '0.92rem',
+                          fontWeight: 700,
+                          color: isSelected ? '#9a3412' : '#334155',
+                          lineHeight: 1.5,
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}
+                      >
+                        <span style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '50%',
+                          background: isSelected ? '#ea580c' : '#fff7ed',
+                          color: isSelected ? '#fff' : '#ea580c',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.8rem',
+                          flexShrink: 0
+                        }}>
+                          {String.fromCharCode(65 + oIdx)}
+                        </span>
+                        <span style={{ flex: 1 }}>{opt}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Thinking Keys / Scaffolds (Clues) */}
+            {resolvedActivity.curiosity?.clues && resolvedActivity.curiosity.clues.length > 0 && (
+              <div style={{
+                background: '#faf5ff',
+                border: '1.5px solid #e9d5ff',
+                borderRadius: '14px',
+                padding: '12px 16px',
+                marginBottom: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 800, color: '#6b21a8', fontSize: '0.88rem' }}>
+                    <i className="fas fa-key"></i> مفاتيح التفكير والاستكشاف (سقالات مساندة):
+                  </span>
+                  {(revealedCluesMap[stNum] || 0) < resolvedActivity.curiosity.clues.length && (
+                    <button
+                      type="button"
+                      onClick={() => handleRevealClue(stNum, resolvedActivity.curiosity.clues.length)}
+                      style={{
+                        background: '#9333ea',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '4px 10px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      افتح مفتاح تفكير ({((revealedCluesMap[stNum] || 0) + 1)}) 💡
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {resolvedActivity.curiosity.clues.slice(0, revealedCluesMap[stNum] || 0).map((clue, cIdx) => (
+                    <div key={cIdx} style={{
+                      background: '#ffffff',
+                      border: '1px solid #d8b4fe',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.9rem',
+                      color: '#581c87',
+                      fontWeight: 600
+                    }}>
+                      {clue}
+                    </div>
+                  ))}
+                  {(revealedCluesMap[stNum] || 0) === 0 && (
+                    <div style={{ color: '#7e22ce', fontSize: '0.84rem', fontStyle: 'italic' }}>
+                      اضغط على زر المفاتيح لفتح تلميحات تفكير موجهة دون كشف التفسير المباشر.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -5627,9 +5985,9 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     const resolvedAct = resolveStationActivity(activeLesson, stationData);
     // Render interactive activity if:
     // - videoEnabled is true (when activeType === 'video' or teacher enabled video)
-    // - OR activeType is 'riddle'/'puzzle' and showInteractiveActivity is true
+    // - OR activeType is 'curiosity'/'riddle'/'puzzle' and showInteractiveActivity is true
     const shouldRenderInteractiveActivity = cfg.showInteractiveActivity !== false && (
-      cfg.videoEnabled || resolvedAct.activeType === 'riddle' || resolvedAct.activeType === 'puzzle'
+      cfg.videoEnabled || resolvedAct.activeType === 'curiosity' || resolvedAct.activeType === 'riddle' || resolvedAct.activeType === 'puzzle'
     );
 
     const attachedMediaNode = renderAttachedStationMedia(stationData, isProjector);

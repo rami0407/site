@@ -2804,7 +2804,7 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   passageLength = 'long',   // 'long' | 'medium' | 'short'
   customPassageText = '',   // Custom text provided by the teacher
   questionsDensity = 'tiered_full', // 'tiered_full' | 'intensive' | 'concise'
-  hookActivityType = 'riddle',      // 'riddle' | 'puzzle' | 'video'
+  hookActivityType = 'curiosity',   // 'curiosity' (default adaptive hook) | 'video' | 'puzzle' | 'riddle'
   primarySkill = 'auto',            // 'reading_comprehension' | 'grammar' | 'science' | 'math' | 'values' | 'general' | 'auto'
   practiceGroupsCount = '4',        // 'none' | '4' | '5' | '6'
   practiceTaskMode = 'differentiated' // 'differentiated' | 'unified'
@@ -2968,8 +2968,27 @@ ${customPassageText.trim()}
 `;
   }
 
+  let hookDirective = '';
+  if (hookActivityType === 'puzzle' || /بازل|puzzle|ترتيب/i.test(safeRequests)) {
+    hookDirective = 'بازل وترتيب منطقي للأفكار والخطوات (puzzle).';
+  } else if (hookActivityType === 'video' || /فيلم|فيديو|video/i.test(safeRequests)) {
+    hookDirective = 'فيلم / فيديو تعليمي قصير مع سؤال تأمل ومناقشة (video).';
+  } else if (hookActivityType === 'riddle' || /حزورة|لغز|أحجية|فزورة/i.test(safeRequests)) {
+    hookDirective = 'لغز وتحدٍّ استنتاجي مع خيارات وسقالات (riddle).';
+  } else {
+    // Default: Dynamic engaging hook strictly tailored to the lesson discipline & theme
+    hookDirective = `مدخل مشوّق وجذاب ومثير للفضول مصمم خصيصاً ومباشرة بحسب نوع وطبيعة موضوع الدرس (${safeSubject} - ${safeTitle}):
+⚠️ تحذير حاسم ومؤكد: إياك أن تجعل المقدمة حزورة نمطية ("أنا شيء لا يباع بالمال فمن أكون؟")!
+المعلم يطلب صراحة مقدمة مشوقة وجذابة وماتعة ومصممة خصيصاً بحسب نوع وموضوع الدرس:
+- في دروس العلوم والطبيعة: صغ (hookStoryOrScenario) كظاهرة علمية واقعية مدهشة أو تجربة وملاحظة استكشافية مثيرة للدهشة والفضول تدفع الطلاب للتساؤل والبحث عن السر، مع (curiosityQuestion) علمي عميق.
+- في دروس فهم المقروء واللغة والنصوص والقصص: صغ (hookStoryOrScenario) كمدخل قصصي درامي مشوق أو مشهد حواري واقعي يشد انتباه الطلاب ويجعلهم متشوقين لمعرفة تفاصيل النص ومسار أبطاله، مع (curiosityQuestion) استنتاجي.
+- في دروس الرياضيات والحساب والمنطق: صغ (hookStoryOrScenario) كمفارقة حياتية واقعية أو تحدٍّ ذكي من بيئة الطالب اليومية (مسألة توزيع، مفارقة سرعة وأرقام)، مع (curiosityQuestion) رياضي ذكي.
+- في دروس القيم والأخلاق والتربية والمواطنة: صغ (hookStoryOrScenario) كمعضلة قيمية أو موقف إنساني حقيقي ومؤثر يلامس مشاعر الطلاب، مع (curiosityQuestion) وجداني تفاعلي.
+- وفر في (interactiveActivity): type = "curiosity" مع كائن curiosity يحتوي على سيناريو الموقف (scenario)، سؤال الفضول (curiosityQuestion)، 4 فرضيات وتوقعات ذكية (options)، مفتاحي تفكير (clues)، التفسير الأنسب (solution)، والربط بهدف الدرس (explanation).`;
+  }
+
   teacherCustomDirectives += `
-🔥 النشاط التفاعلي الإلزامي للمحطة الأولى (مشوّق ومحفز): ${hookActivityType === 'puzzle' ? 'بازل وترتيب منطقي للأفكار (puzzle)' : hookActivityType === 'video' ? 'فيلم / فيديو تعليمي قصير مع سؤال تأمل (video)' : 'أحجية أو لغز تفاعلي مع خيارات وتلميحات وحل (riddle)'}.
+🔥 النشاط والمدخل الإلزامي للمحطة الأولى (مشوّق ومحفز): ${hookDirective}
 `;
 
   // Pedagogical Directives for AI Model based on Genre & Language
@@ -3292,10 +3311,19 @@ ${practiceGroupsDirective}
       "curiosityQuestion": "سؤال الفضول المثير للتفكير حول القصة أو الظاهرة...",
       "helperWords": ["كلمة مساعدة 1", "كلمة مساعدة 2", "كلمة مساعدة 3"],
       "interactiveActivity": {
-        "type": "riddle",
-        "title": "عنوان النشاط",
+        "type": "curiosity",
+        "title": "عنوان المدخل المشوق بحسب نوع الدرس",
+        "curiosity": {
+          "title": "عنوان الموقف الاستكشافي أو الظاهرة",
+          "scenario": "نص القصة المشوقة أو الظاهرة الواقعية المدهشة المرتبطة بموضوع الدرس بالتفصيل وبأسلوب شيق وجذاب...",
+          "curiosityQuestion": "سؤال الفضول والتفكير الاستكشافي...",
+          "options": ["فرضية 1 للتأمل", "فرضية 2 (التفسير والاتجاه الأنسب 🎯)", "فرضية 3", "فرضية 4"],
+          "clues": ["🔑 مفتاح تفكير 1", "🔑 مفتاح تفكير 2"],
+          "solution": "التفسير الأنسب أو سر الموقف 🎯",
+          "explanation": "الربط بهدف الدرس والتعلم..."
+        },
         "riddle": {
-          "riddleText": "نص الأحجية أو اللغز...",
+          "riddleText": "نص التحدي أو اللغز إن كان الدرس يتطلب ذلك...",
           "clues": ["רמז 1 / تلميح 1", "רמז 2 / تلميح 2"],
           "options": ["אופציה 1", "אופציה 2", "אופציה 3", "אופציה 4"],
           "solution": "פתרון החידה / حل الأحجية",
@@ -3710,20 +3738,37 @@ ${practiceGroupsDirective}
     }
 
     return {
-      hookPrompt: `لغز وتحدي المدخل المشوّق لدرس (${safeTitle}) [${safeSubject}] 🔥:\nتأمل هذا الموقف الملهم: في أعماق موضوع (${safeTitle})، يكمن سرّ جوهري ونقطة تحول غيرت مجريات الأمور وعلمتنا درساً لا يُنسى في الحياة والقيم!\nما الحدث أو الفكرة المفتاحية التي تتوقع أن نكتشفها معاً اليوم؟ شاركنا أول تساؤل يدور في ذهنك!`,
+      hookPrompt: `المدخل القصصي والموقف المشوّق لدرس (${safeTitle}) [${safeSubject}] 📖✨:\nتخيّل هذا المشهد الملهم: في أعماق أحداث وموضوع (${safeTitle})، واجه الأبطال موقفاً مصيرياً وتحدياً غير متوقع غيّر مجريات الأمور وقدّم درساً حقيقياً يمس حياتنا اليومية!\nبرأيكم، ما السر الدفين الذي يحرك أحداث هذا النص؟ وكيف يواجه الأبطال هذا التحدي بحكمة وشجاعة؟ شاركنا أول تساؤل يدور في ذهنك!`,
+      curiosity: {
+        title: `الموقف المشوق: سرّ وأبعاد (${safeTitle})`,
+        scenario: `في مستهل رحلتنا مع موضوع (${safeTitle})، تخيل أنك تقف أمام مشهد درامي تتشابك فيه الأحداث وتتطلب من الجميع وقفة تأمل واستخلاصاً للحكمة قبل اتخاذ أي قرار... كانت الأجواء مفعمة بالترقب لاكتشاف المغزى الحقيقي!`,
+        curiosityQuestion: `لو كنت مكان الشخصيات أمام هذا الموقف في (${safeTitle})، ما أول خطوة واعية ستتخذها ولماذا؟`,
+        options: [
+          `التحري والتأمل الواعي في المعطيات بدقة 🎯`,
+          `استشارة أصحاب الخبرة والحكمة المشتركة`,
+          `التسرع في الحكم دون استيعاب الصورة الكاملة`,
+          `تجاهل الموقف والانتظار دون مبادرة`
+        ],
+        clues: [
+          `🔑 مفتاح التفكير 1: الحكمة تبدأ بالتأمل الهادئ والربط بين الأسباب والنتائج.`,
+          `🔑 مفتاح التفكير 2: موضوع (${safeTitle}) يركز على الوعي والمسؤولية وصناعة الأثر الإيجابي.`
+        ],
+        solution: `التحري والتأمل الواعي واستخلاص الحكمة 🎯`,
+        explanation: `هذا المدخل يضعنا في قلب الرسالة التربوية لدرس (${safeTitle}) تمهيداً لتحليل تفاصيله واستيعاب أبعاده في المحطات التالية.`
+      },
       riddle: {
-        riddleText: `أنا المفهوم والمحور المركزي لدرسنا اليوم حول (${safeTitle}) في مادة (${safeSubject})؛ في تفاصيلي حقائق وعِبر، وبفهمي تتضح الرؤية وتترسخ المعارف والقيم. فما هو هذا الموضوع؟`,
+        riddleText: `موقف استكشافي مشوّق: ما المفهوم الأعمق الذي يعكس حقيقة (${safeTitle}) وأثره الإيجابي في مسار حياتنا وقراراتنا؟`,
         clues: [
           `🔑 تلميح 1: مرتبط ارتباطاً وثيقاً بـ (${safeTitle}).`,
-          `🔑 تلميح 2: يقدم لنا نموذجاً خالداً في الفهم والاستيعاب والتطبيق.`
+          `🔑 تلميح 2: يقدم لنا نموذجاً فريداً في الفهم والاستيعاب والتطبيق.`
         ],
         options: [
-          `${safeTitle} 🎯`,
-          `موضوع جانبي غير مرتبط`,
-          `أمر عشوائي عام`,
-          `فكرة مختلفة تماماً`
+          `الوعي والتطبيق السليم لـ (${safeTitle}) 🎯`,
+          `أمر سطحي غير مؤثر`,
+          `تجاهل المسؤولية والعمل العشوائي`,
+          `فكرة مختلفة لا علاقة لها بالواقع`
         ],
-        solution: safeTitle,
+        solution: `الوعي والتطبيق السليم لـ (${safeTitle}) 🎯`,
         explanation: `يدور درسنا اليوم بالكامل حول (${safeTitle}) وما يحمله من حقائق وعبر وقيم جوهرية.`
       },
       station2Prompt: `نص القراءة المركزي: آفاق ومعالم (${safeTitle}) 📖\n\nتعدّ قضية وموضوع (${safeTitle}) في سياق مادة (${safeSubject}) من المحطات البارزة والمفصلية التي تستوقف كل متأمل وباحث عن المعرفة؛ إذ لا تقتصر أهميتها على المعرفة النظرية فقط، بل تمتد لتشكل نموذجاً فريداً في التخطيط، والوعي، والثبات على المبادئ، وفهم السنن والقوانين المنظمة للحياة والمجتمع.\n\nوعند التعمق في تفاصيل (${safeTitle})، نلحظ بوضوح تضافر مجموعة من العوامل والأسباب المؤثرة؛ فكل خطوة أو مرحلة فيها كانت مدروسة بعناية، حيث تجلت فيها روح المسؤولية، ومواجهة التحديات بالحكمة والشورى، والتكاتف من أجل تحقيق الهدف المنشود، مما جعلها علامة فارقة ونقطة انطلاق مضيئة للأجيال.\n\nإن استيعابنا اليوم لـ (${safeTitle}) يمنحنا رؤية ثاقبة وبصيرة نافذة؛ فنحن لا نقرأ مجرد معلومات تاريخية أو علمية مجردة، بل نستلهم منها منهجاً عملياً نطبقه في حياتنا اليومية وقراراتنا، مؤكدين أن النجاح والتميز إنما يتحققان بحسن الإعداد والتوكل الصادق والعمل الدؤوب.\n\n📌 معجم المفردات والتراكيب الجديدة:\n• محطة مفصلية: نقطة تحول حاسمة ومؤثرة في التاريخ أو الفهم.\n• تضافر العوامل: اجتماع الأسباب وتعاونها لتحقيق نتيجة قوية.\n• بصيرة نافذة: فهم عميق يتجاوز الظاهر إلى جوهر الأمور وحقيقتها.`,
@@ -3834,12 +3879,22 @@ ${practiceGroupsDirective}
       const defaultHookStory = targetLang === 'hebrew'
         ? (isTrainTopic
            ? `בוקר אחד בתחנת הרכבת, הבחינו התלמידים ברכבת חדשה המחליקה על המסילה בשקט מופתי ובמהירות אדירה של מאות קילומטרים בשעה, מבלי לפלוט עשן כלל ומבלי שהגלגלים שלה כמעט נוגעים בפסים! 🚆✨`
+           : isReadingComprehension
+           ? `בבוקר יום בהיר, ניצבו התלמידים מול תעלומה מרתקת הקשורה לקטע הקריאה (${safeTitle}). במבט ראשון נראה שהאירועים ברורים, אך בין השורות מסתתר סוד עמוק המשנה את כל התמונה! 📖✨`
            : `דמיינו שאתם חוקרים צעירים הניצבים מול תופעה מפתיעה הקשורה ל-(${safeTitle}). במבט ראשון נראה שהכול פועל מעצמו, אך מתחת לפני השטח מסתתר סוד מרתק שמשנה את כל מה שחשבנו שאנחנו יודעים! 🌟🔍`)
         : targetLang === 'english'
         ? `Imagine standing before a fascinating real-world phenomenon connected to (${safeTitle}). At first glance it seems simple, yet beneath the surface lies an amazing scientific and logical secret waiting to be discovered! 🌟🔍`
         : (isTrainTopic
            ? `في صباح يوم مشرق بمحطة القطارات الحديثة، وقف الطلاب بدهشة أمام قطار فائق السرعة ينطلق كالسهم فوق السكة الحديدية بهدوء تام ودون أي دخان، بل يكاد يطفو في الهواء بفضل قوة خفية مذهلة! 🚆✨`
-           : `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة وقصة واقعية ترتبط بـ (${safeTitle}). للوهلة الأولى يبدو الأمر مألوفاً وعادياً، لكن حين نقترب أكثر نكتشف سرّاً مذهلاً يربط بين ما نراه في حياتنا اليومية وبين القوانين والمعارف التي سنتعلمها اليوم! 🌟🔍`);
+           : isReadingComprehension
+           ? `في صباح هادئ، وجد أبطال قصتنا أنفسهم في مواجهة موقف مثير وتحدٍّ غير مألوف يرتبط بـ (${safeTitle}). كانت كل لحظة تمر تفتح باباً لمزيد من التساؤلات والترقب حول ما سيحدث تالياً في هذا النص الشيق! 📖✨`
+           : isScience
+           ? `تخيّل أنك باحث في المختبر تجري تجربة استكشافية ترتبط بـ (${safeTitle}). فجأة، لاحظت حدوث تغير مدهش في المشهد لا يتطابق مع التوقعات السريعة، مما كشف عن سر علمي وقانون خفي يحكم هذه الظاهرة! 🔬✨`
+           : isMath || isMathDomain
+           ? `واجه ثلاثة أصدقاء معضلة عملية وتحدياً ذكياً في الحياة اليومية يرتبط بـ (${safeTitle})، حيث طرح كل منهم طريقة مختلفة لحل المسألة والوصول إلى النتيجة الصحيحة في أسرع وقت! 💡🔢`
+           : isValuesEducation
+           ? `في يوم دراسي عادي، وقع موقف مؤثر في ساحة المدرسة يمس قيمة (${safeTitle})، مما وضع الطلاب أمام اختيار حاسم يتطلب شجاعة أدبية ووعياً بالمسؤولية المشتركة. 🌟❤️`
+           : `تخيّل أنك باحث مستكشف يقف أمام ظاهرة مدهشة وقصة واقعية ترتبط بـ (${safeTitle}). للوهلة الأولى يبدو الأمر مألوفاً وعادياً، لكن حين نقترب أكثر نكتشف سرّاً مذهلاً يربط بين ما نراه في حياتنا اليومية وبين المعارف التي سنتعلمها اليوم! 🌟🔍`);
 
       const defaultCuriosityQuestion = targetLang === 'hebrew'
         ? (isTrainTopic
@@ -3849,6 +3904,14 @@ ${practiceGroupsDirective}
         ? `What hidden rule or secret explains how (${safeTitle}) works in our daily lives?`
         : (isTrainTopic
            ? `كيف يستطيع هذا القطار العملاق الانطلاق بهذه السرعة الهائلة بأمان تام ودون تلوث؟ وما السر الهندسي المختبئ في السكة الحديدية؟`
+           : isScience
+           ? `ما السر العلمي والخاصية الأساسية التي تفسر هذه الظاهرة المدهشة في موضوع (${safeTitle})؟`
+           : isReadingComprehension
+           ? `برأيكم، ما هو الدافع الخفي وراء تصرف الشخصيات في هذا الموقف في نص (${safeTitle})؟ وماذا تتوقعون أن يحدث؟`
+           : isMath || isMathDomain
+           ? `كيف نصل إلى الحل الرياضي الأدق والأعدل في هذا التحدي الذكي لـ (${safeTitle})؟`
+           : isValuesEducation
+           ? `لو كنت مكان صاحب الموقف، كيف كنت ستتصرف بصدق وشجاعة لتعزيز قيمة (${safeTitle})؟`
            : `برأيكم، ما هو السر أو المبدأ الأساسي الذي يفسر هذه الظاهرة في موضوع (${safeTitle})؟ وكيف نكتشفه معاً؟`);
 
       const resolvedSearchQuery = hook.youtubeSearchQuery || hook.interactiveActivity?.video?.youtubeSearchQuery || hook.interactiveActivity?.video?.searchQuery || defaultSearchQuery || curatedVid.searchQuery;
@@ -3944,12 +4007,69 @@ ${practiceGroupsDirective}
         successMessage: `🎉 ممتاز! اكتمل بازل المعرفة بنجاح وحصلتم على المفتاح الذهبي للمحطة!`
       };
 
-      // Determine active activity type
-      let activeType = 'riddle';
+      // 4. Build rich curiosity data tailored strictly to the lesson domain
+      const defaultCuriosity = targetLang === 'hebrew' ? {
+        title: `פתיחה מרתקת: ${safeTitle}`,
+        scenario: resolvedHookStory,
+        curiosityQuestion: resolvedCuriosityQ,
+        options: [
+          `השערה ראשונית הבוחנת את המצב`,
+          `ההסבר המדויק והגיוני של (${safeTitle}) 🎯`,
+          `השערה הדורשת בדיקה נוספת במחקר`,
+          `רעיון יצירתי מחוץ לקופסה`
+        ],
+        clues: [
+          '🔑 רמז חשיבה 1: התבוננו בקשר בין התופעה למטרת השיעור.',
+          '🔑 רמז חשיבה 2: חפשו את הרעיון המרכזי שמחבר בין החלקים.'
+        ],
+        solution: `ההסבר המדויק והגיוני של (${safeTitle}) 🎯`,
+        explanation: `הפתיחה מובילה ישירות לבירור המושג המרכזי בשיעור (${safeTitle}) והבנתו לעומק.`
+      } : targetLang === 'english' ? {
+        title: `Engaging Hook: ${safeTitle}`,
+        scenario: resolvedHookStory,
+        curiosityQuestion: resolvedCuriosityQ,
+        options: [
+          `Initial intuitive hypothesis`,
+          `The core logical explanation of (${safeTitle}) 🎯`,
+          `Alternative perspective requiring testing`,
+          `Creative out-of-the-box observation`
+        ],
+        clues: [
+          '🔑 Clue 1: Connect the observed phenomenon with real-world principles.',
+          '🔑 Clue 2: Focus on the central learning objective of today.'
+        ],
+        solution: `The core logical explanation of (${safeTitle}) 🎯`,
+        explanation: `This scenario directly primes students to understand the principles of (${safeTitle}).`
+      } : {
+        title: isScience ? `ظاهرة استكشافية مدهشة: ${safeTitle}`
+             : isReadingComprehension ? `مدخل الحكاية المشوّقة: ${safeTitle}`
+             : isMath || isMathDomain ? `تحدٍّ منطقي وحياتي: ${safeTitle}`
+             : isValuesEducation ? `موقف وتأمل قيمي: ${safeTitle}`
+             : `مدخل مشوّق واستكشافي: ${safeTitle}`,
+        scenario: resolvedHookStory,
+        curiosityQuestion: resolvedCuriosityQ,
+        options: [
+          `الفرضية الأولى: تأمل أولي مبني على الملاحظة المباشرة`,
+          `السر والتفسير الأساسي الأنسب لـ (${safeTitle}) 🎯`,
+          `فرضية بديلة تتطلب فحصاً وتجريباً في محطات الدرس`,
+          `فكرة إبداعية تبحث عن برهان وتطبيق عملي`
+        ],
+        clues: [
+          '🔑 مفتاح التفكير الأول: تأمل العلاقة بين تفاصيل هذا الموقف وما نشاهده في واقعنا.',
+          `🔑 مفتاح التفكير الثاني: اربط بين الملاحظة والهدف المركزي لدرس (${safeTitle}).`
+        ],
+        solution: `السر والتفسير الأساسي الأنسب لـ (${safeTitle}) 🎯`,
+        explanation: `هذا المدخل المشوق يمهد مباشرة لتحقيق الهدف المركزي لدرس (${safeTitle}) واستيعاب محطاته.`
+      };
+
+      // Determine active activity type: Default to 'curiosity' (Adaptive Hook tailored to the lesson), NEVER default riddle!
+      let activeType = 'curiosity';
       if (isRiddleRequested) activeType = 'riddle';
       else if (isPuzzleRequested) activeType = 'puzzle';
       else if (isVideoRequested) activeType = 'video';
-      else if (hook.interactiveActivity?.type) activeType = hook.interactiveActivity.type;
+      else if (hook.interactiveActivity?.type && ['curiosity', 'video', 'puzzle', 'riddle'].includes(hook.interactiveActivity.type)) {
+        activeType = hook.interactiveActivity.type;
+      }
 
       hook.youtubeSearchQuery = resolvedSearchQuery;
       hook.hookStoryOrScenario = resolvedHookStory;
@@ -3958,9 +4078,14 @@ ${practiceGroupsDirective}
       // Merge into interactiveActivity
       hook.interactiveActivity = {
         type: activeType,
-        title: activeType === 'riddle' ? (targetLang === 'hebrew' ? `חידת הפתיחה: ${safeTitle}` : targetLang === 'english' ? `Opening Riddle: ${safeTitle}` : `أحجية ولغز: ${safeTitle}`)
+        title: activeType === 'curiosity' ? (hook.interactiveActivity?.curiosity?.title || defaultCuriosity.title)
+             : activeType === 'riddle' ? (targetLang === 'hebrew' ? `חידת הפתיחה: ${safeTitle}` : targetLang === 'english' ? `Opening Riddle: ${safeTitle}` : `أحجية ولغز: ${safeTitle}`)
              : activeType === 'puzzle' ? (targetLang === 'hebrew' ? `פאזל האתגר: ${safeTitle}` : targetLang === 'english' ? `Challenge Puzzle: ${safeTitle}` : `بازل التحدي: ${safeTitle}`)
              : defaultVideo.title,
+        curiosity: {
+          ...defaultCuriosity,
+          ...(hook.interactiveActivity?.curiosity || {})
+        },
         riddle: {
           ...defaultRiddle,
           ...(hook.interactiveActivity?.riddle || {})
