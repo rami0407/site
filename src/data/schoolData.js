@@ -128,6 +128,13 @@ export const newsData = [
 
 export const importantLinks = [
   {
+    title: 'تعلّم وتمتّع — القناة الرقمية (أفلام تعليمية واختبارات)',
+    icon: 'fa-play-circle',
+    url: '#/qanat',
+    desc: 'منصة القناة الرقمية التعليمية التفاعلية: باقة أفلام وثائقية وقصص هادفة واختبارات ذكية ممتعة تدمج التعلم بالترفيه.',
+    badge: 'تعلّم وتمتّع 🎬'
+  },
+  {
     title: 'منصة نموذج مفتاح التفاعلية الحية (شاشة مستقلة)',
     icon: 'fa-chalkboard-teacher',
     url: '/miftaah-whiteboard.html',

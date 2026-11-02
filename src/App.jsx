@@ -68,6 +68,7 @@ const MiftaahLearningJourney = lazyWithRetry(() => import('./components/MiftaahL
 const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChampionshipArena'));
 const HebrewPage = lazyWithRetry(() => import('./components/HebrewPage'));
 const EnglishPage = lazyWithRetry(() => import('./components/EnglishPage'));
+const QanatPage = lazyWithRetry(() => import('./components/QanatPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const HolisticMappingPage = lazyWithRetry(() => import('./components/HolisticMappingPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
@@ -467,6 +468,22 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <HebrewPage />
+      </Suspense>
+    );
+  }
+
+  const isQanatView = currentHash.includes('qanat') || 
+    currentHash.includes('ta3allam') || 
+    currentHash.includes('taallam') || 
+    currentHash.includes('tamatta') || 
+    currentHash.includes('tamata3') || 
+    currentHash.includes('channel') || 
+    currentHash.includes('digital-channel');
+
+  if (isQanatView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <QanatPage />
       </Suspense>
     );
   }

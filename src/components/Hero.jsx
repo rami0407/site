@@ -250,6 +250,28 @@ const Hero = () => {
               🚀 شارِك أفكارك للعالم
             </button>
 
+            <button 
+              onClick={() => window.location.hash = '#/qanat'} 
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                color: 'white',
+                border: '1.5px solid #fecaca',
+                fontWeight: 900,
+                padding: '0.85rem 1.4rem',
+                borderRadius: '16px',
+                boxShadow: '0 8px 25px rgba(239, 68, 68, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+              title="تعلّم وتمتّع — القناة الرقمية: أفلام تعليمية واختبارات تفاعلية"
+            >
+              <i className="fas fa-play-circle" style={{ fontSize: '1.25rem', color: '#fef08a' }}></i>
+              🎬 تعلّم وتمتّع (القناة الرقمية) ✨
+            </button>
+
             <button onClick={() => window.location.hash = '#/learning-corner'} className="btn btn-space-outline">
               <i className="fas fa-gamepad"></i>
               ركن التعلم
