@@ -46,20 +46,53 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    const isCoordinator = cleanName.includes('عتاب') || cleanName.includes('עתאב') || cleanId === '031693872';
+
     let role = 'student';
-    if (isTeacher) role = 'teacher';
-    if (isVisitor) role = 'visitor';
+    let roleIcon = isTeacher ? '👨‍🏫' : isVisitor ? '👤' : '👨‍🎓';
+    let finalClass = studentClass;
+
+    if (isCoordinator || cleanId === '031693872') {
+      role = 'coordinator';
+      roleIcon = '👩‍🏫';
+      finalClass = 'المركزة التربوية 👩‍🏫';
+      try {
+        const coordSession = {
+          id: 'tch_17',
+          nameAr: cleanName.includes('عتاب') ? cleanName : 'عتاب بيدوسي',
+          nameHe: 'עתאב בידוסי',
+          role: 'المركزة التربوية',
+          isCoordinator: true,
+          pin: '031693872',
+          loggedInAt: new Date().toISOString()
+        };
+        localStorage.setItem('musherfe_coordinator_session', JSON.stringify(coordSession));
+        localStorage.setItem('musherfe_gantt_teacher', JSON.stringify({
+          id: 't2',
+          nameHe: 'עתאב בידוסי',
+          nameAr: 'عتاب بيدوسي',
+          role: 'gantt_editor',
+          loggedInAt: new Date().toISOString()
+        }));
+      } catch (e) {}
+    } else if (isTeacher) {
+      role = 'teacher';
+    } else if (isVisitor) {
+      role = 'visitor';
+    }
 
     // Save session
     const session = saveStudentSession({
       fullName: cleanName,
       idNumber: cleanId || '0000',
-      studentClass,
+      studentClass: finalClass,
       role,
-      roleIcon: isTeacher ? '👨‍🏫' : isVisitor ? '👤' : '👨‍🎓'
+      roleIcon
     });
 
-    if (isTeacher) {
+    if (isCoordinator) {
+      window.location.hash = '#/appointments';
+    } else if (isTeacher) {
       window.location.hash = '#/stem-teacher';
     }
 

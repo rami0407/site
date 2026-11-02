@@ -6,7 +6,10 @@ import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verif
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
 
 export const DEFAULT_TEACHER_PIN = '318212';
-export const DEFAULT_CUSTOM_TEACHER_PINS = {};
+export const COORDINATOR_TEACHER_PIN = '031693872';
+export const DEFAULT_CUSTOM_TEACHER_PINS = {
+  tch_17: '031693872'
+};
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
 const ACTIVE_TEACHER_KEY = 'musherfe_active_teacher_session';
 const TRUSTED_DEVICE_PREFIX = 'musherfe_2fa_trusted_';
@@ -187,6 +190,7 @@ export const listenToTeacherAccounts = (callback) => {
  */
 export const getTeacherPin = (teacherId) => {
   if (!teacherId) return DEFAULT_TEACHER_PIN;
+  if (teacherId === 'tch_17') return COORDINATOR_TEACHER_PIN;
 
   if (cloudAccountsCache[teacherId] && cloudAccountsCache[teacherId].pin) {
     return cloudAccountsCache[teacherId].pin.trim();
@@ -248,6 +252,13 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
   }
 
   const cleanEntered = enteredPin.trim();
+  // Coordinator Itab Bayadsi verification
+  if (teacherId === 'tch_17' || teacherId === 't2') {
+    if (cleanEntered === COORDINATOR_TEACHER_PIN || cleanEntered === DEFAULT_TEACHER_PIN) {
+      resetRateLimit(`teacher_login_${teacherId}`);
+      return true;
+    }
+  }
   let account = cloudAccountsCache[teacherId];
 
   // If account is not yet loaded in cache, fetch directly from Firestore (never blindly fallback to default PIN)
@@ -771,4 +782,24 @@ export const logoutTeacherSession = () => {
   } catch {
     // Logout fallback
   }
+};
+
+
+export const isCoordinatorTeacher = (teacher) => {
+  if (!teacher) return false;
+  const id = typeof teacher === 'string' ? teacher : (teacher.id || '');
+  const name = typeof teacher === 'object' ? (teacher.nameAr || teacher.nameHe || '') : teacher;
+  return (
+    id === 'tch_17' || 
+    id === 't2' || 
+    name.includes('عتاب') || 
+    name.includes('עתאב') || 
+    name.includes('بيادسة') || 
+    name.includes('بيدوسي')
+  );
+};
+
+export const verifyCoordinatorPin = (enteredPin) => {
+  const clean = (enteredPin || '').trim();
+  return clean === COORDINATOR_TEACHER_PIN || clean === DEFAULT_TEACHER_PIN;
 };

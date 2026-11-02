@@ -1,3 +1,4 @@
+import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { 
@@ -167,6 +168,58 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 
     fetchTeachers();
   }, []);
+
+  // Coordinator State (Itab Bayadsi)
+  const [isCoordinator, setIsCoordinator] = useState(false);
+  const [showCoordinatorEditor, setShowCoordinatorEditor] = useState(false);
+  const [showCoordAuthModal, setShowCoordAuthModal] = useState(false);
+  const [coordAuthPin, setCoordAuthPin] = useState('');
+  const [coordAuthError, setCoordAuthError] = useState('');
+
+  useEffect(() => {
+    try {
+      const sess = localStorage.getItem('musherfe_coordinator_session');
+      if (sess) {
+        const parsed = JSON.parse(sess);
+        if (parsed && (parsed.isCoordinator || parsed.pin === '031693872')) {
+          setIsCoordinator(true);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleVerifyCoordinator = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setCoordAuthError('');
+    const clean = coordAuthPin.trim();
+    if (clean === '031693872' || clean === '318212') {
+      try {
+        localStorage.setItem('musherfe_coordinator_session', JSON.stringify({
+          id: 'tch_17',
+          nameAr: 'عتاب بيدوسي',
+          nameHe: 'עתאב בידוסי',
+          role: 'المركزة التربوية',
+          isCoordinator: true,
+          pin: '031693872',
+          loggedInAt: new Date().toISOString()
+        }));
+      } catch (err) {}
+      setIsCoordinator(true);
+      setShowCoordinatorEditor(true);
+      setShowCoordAuthModal(false);
+      setCoordAuthPin('');
+    } else {
+      setCoordAuthError('❌ الرمز السري غير صحيح. يرجى التأكد من الرمز والمحاولة ثانية.');
+    }
+  };
+
+  const handleCoordinatorLogout = () => {
+    try {
+      localStorage.removeItem('musherfe_coordinator_session');
+    } catch (err) {}
+    setIsCoordinator(false);
+    setShowCoordinatorEditor(false);
+  };
 
   // Dynamic Categories based on live admin settings
   const dynamicStaffCategories = [
@@ -463,8 +516,282 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               <i className="fas fa-cog"></i>
               <span>لوحة التحكم وتعديل المواعيد ⚙️</span>
             </a>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (isCoordinator) {
+                  setShowCoordinatorEditor(!showCoordinatorEditor);
+                } else {
+                  setShowCoordAuthModal(true);
+                }
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                padding: '0.45rem 1.15rem',
+                borderRadius: '50px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 15px rgba(124, 58, 237, 0.35)',
+                transition: 'all 0.2s ease'
+              }}
+              title="دخول المركزة التربوية لإضافة وتعديل مواعيد استقبال المعلمين"
+            >
+              <i className="fas fa-user-edit"></i>
+              <span>{isCoordinator ? (showCoordinatorEditor ? '👁️ إخفاء لوحة التعديل' : '👩‍🏫 لوحة المركزة التربوية: تعديل المواعيد ✏️') : '👩‍🏫 دخول المركزة التربوية (إضافة وتعديل مواعيد المعلمين)'}</span>
+            </button>
           </div>
         </div>
+
+        {/* Coordinator Active Bar */}
+        {isCoordinator && (
+          <div style={{
+            background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+            borderRadius: '20px',
+            padding: '1.25rem 1.75rem',
+            color: 'white',
+            marginBottom: '2rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            border: '2px solid #818cf8',
+            boxShadow: '0 8px 25px rgba(49, 46, 129, 0.25)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ background: '#4f46e5', width: '45px', height: '45px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                👩‍🏫
+              </div>
+              <div>
+                <div style={{ fontSize: '0.82rem', color: '#a5b4fc', fontWeight: 700 }}>صلاحية الإدارة مفعلة ✓</div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
+                  أهلاً بكِ أ. عتاب بيدوسي (المركزة التربوية)
+                </h3>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setShowCoordinatorEditor(!showCoordinatorEditor)}
+                style={{
+                  background: showCoordinatorEditor ? '#f59e0b' : '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <i className={showCoordinatorEditor ? 'fas fa-eye' : 'fas fa-edit'}></i>
+                <span>{showCoordinatorEditor ? 'عرض نموذج حجز المواعيد' : 'تعديل وإضافة مواعيد استقبال المعلمين ✏️'}</span>
+              </button>
+
+              <a
+                href="#admin"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  padding: '0.6rem 1.1rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <i className="fas fa-cog"></i>
+                <span>لوحة التحكم الرئيسية ⚙️</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleCoordinatorLogout}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.85)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.6rem 1rem',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                خروج 🚪
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Embedded Coordinator Editor View */}
+        {showCoordinatorEditor && isCoordinator && (
+          <div style={{ background: '#ffffff', borderRadius: '28px', padding: '1.5rem', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#4f46e5' }}>
+                👩‍🏫 لوحة المركزة التربوية — إضافة وتعديل مواعيد استقبال المعلمين
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowCoordinatorEditor(false)}
+                style={{ background: '#f1f5f9', border: 'none', padding: '0.4rem 1rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', color: '#475569' }}
+              >
+                ✕ إغلاق والعودة لصفحة الحجز
+              </button>
+            </div>
+            <AppointmentStaffAdminTab />
+          </div>
+        )}
+
+        {/* Coordinator Login Modal */}
+        {showCoordAuthModal && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 99999,
+              padding: '1rem'
+            }}
+            onClick={() => setShowCoordAuthModal(false)}
+          >
+            <div 
+              style={{
+                background: 'white',
+                borderRadius: '24px',
+                padding: '2rem',
+                maxWidth: '440px',
+                width: '100%',
+                boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+                textAlign: 'right',
+                direction: 'rtl'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ width: '65px', height: '65px', background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 0.8rem auto' }}>
+                  👩‍🏫
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#0f172a' }}>
+                  دخول المركزة التربوية
+                </h3>
+                <p style={{ margin: '0.3rem 0 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                  إدارة وتعديل مواعيد استقبال المعلمين والكوادر
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyCoordinator}>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+                    اسم المعلمة / المركزة التربوية:
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value="عتاب بيدوسي (المركزة التربوية)"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '2px solid #e2e8f0',
+                      background: '#f8fafc',
+                      fontWeight: 800,
+                      color: '#1e293b'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+                    الرمز السري المعتمد *:
+                  </label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    required
+                    autoFocus
+                    placeholder="أدخل الرمز السري الخاص بكِ"
+                    value={coordAuthPin}
+                    onChange={(e) => setCoordAuthPin(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '2px solid #cbd5e1',
+                      fontWeight: 800,
+                      fontSize: '1.1rem',
+                      letterSpacing: '2px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {coordAuthError && (
+                  <div style={{ color: '#dc2626', background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.6rem 0.8rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1.25rem' }}>
+                    {coordAuthError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.85rem',
+                      borderRadius: '14px',
+                      fontWeight: 900,
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(124, 58, 237, 0.35)'
+                    }}
+                  >
+                    دخول وفتح لوحة المواعيد 🚀
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCoordAuthModal(false)}
+                    style={{
+                      padding: '0.85rem 1.25rem',
+                      background: '#f1f5f9',
+                      border: 'none',
+                      borderRadius: '14px',
+                      color: '#64748b',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {staffConfig.systemSettings?.isOpen === false && (
           <div style={{

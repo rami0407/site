@@ -354,11 +354,12 @@ export const defaultSchoolTeachers = [
   },
   {
     "id": "tch_17",
-    "nameHe": "ביידוסי עתאב",
+    "nameHe": "עתאב בידוסי",
     "nameAr": "عتاب بيدوسي",
-    "role": "معلمة ومربية صف",
+    "role": "المركزة التربوية ومعلمة ومربية صف",
     "phone": "050-1234567",
     "email": "teacher17@musheirifa.edu.hl",
+    "isCoordinator": true,
     "receptionSchedule": [
       {
         "day": "Sunday",

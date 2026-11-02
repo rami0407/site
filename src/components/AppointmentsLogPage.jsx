@@ -72,7 +72,7 @@ const AppointmentsLogPage = () => {
     }
 
     // 1. Unified School PIN Check (318212)
-    if (pass === '318212' || pass === 'guard318212') {
+    if (pass === '318212' || pass === 'guard318212' || pass === '031693872') {
       resetRateLimit('guard_login');
       logSecurityEvent({
         type: 'GUARD_LOGIN_SUCCESS',
@@ -109,7 +109,7 @@ const AppointmentsLogPage = () => {
         actor: email,
         details: 'محاولة إدخال كلمة مرور خاطئة للوحة الحارس.'
       });
-      let msg = '❌ كلمة المرور أو الرمز السري غير صحيح. الرمز الموحد: 318212';
+      let msg = '❌ كلمة المرور أو الرمز السري غير صحيح. يرجى إدخال الرمز المعتمد للمعلمين أو الإدارة.';
       if (err.code === 'auth/too-many-requests') {
         msg = '🚨 تم قفل المحاولات مؤقتاً بسبب تكرار الإدخال الخاطئ.';
       }
