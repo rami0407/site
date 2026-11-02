@@ -363,7 +363,7 @@ button, input, textarea, select {
   top: auto;
   left: auto;
   width: 100%;
-  background: rgba(255, 255, 255, 0.92);
+  background: #ffffff;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
@@ -499,7 +499,7 @@ button, input, textarea, select {
    COSMIC SPACE HERO SECTION & ROCKET LAUNCH ANIMATION
    ========================================================================== */
 .cosmic-hero {
-  margin-top: 76px;
+  margin-top: 105px;
   min-height: 650px;
   background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
   position: relative;

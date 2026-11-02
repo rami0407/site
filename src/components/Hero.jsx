@@ -163,10 +163,6 @@ const Hero = () => {
             />
           </div>
 
-          <h1 className="hero-title-main">
-            مدرسة مشيرفة الابتدائية
-          </h1>
-
           <h2 className="hero-subtitle-excellence">
             <span className="gold-gradient-text">عام التميز والابتكار</span> 🌟
           </h2>
