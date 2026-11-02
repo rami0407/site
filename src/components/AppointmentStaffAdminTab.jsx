@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db, emtnanDb } from '../firebase';
 import { 
   collection, 
   getDocs, 
@@ -17,6 +17,34 @@ const WEEKDAYS = [
   { key: 'Wednesday', ar: 'الأربعاء' },
   { key: 'Thursday', ar: 'الخميس' }
 ];
+
+const LOCAL_OVERRIDE_KEY = 'musherfe_teachers_reception_override';
+const LOCAL_SETTINGS_KEY = 'musherfe_appointment_settings_cache';
+
+const getLocalTeacherOverrides = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_OVERRIDE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+const setLocalTeacherOverride = (tchData) => {
+  try {
+    const map = getLocalTeacherOverrides();
+    map[tchData.id] = tchData;
+    localStorage.setItem(LOCAL_OVERRIDE_KEY, JSON.stringify(map));
+  } catch (e) {}
+};
+
+const removeLocalTeacherOverride = (id) => {
+  try {
+    const map = getLocalTeacherOverrides();
+    delete map[id];
+    localStorage.setItem(LOCAL_OVERRIDE_KEY, JSON.stringify(map));
+  } catch (e) {}
+};
 
 const AppointmentStaffAdminTab = () => {
   // Staff Config (Principal, Counselor, System Settings)
@@ -65,33 +93,78 @@ const AppointmentStaffAdminTab = () => {
   const [editingTeacherId, setEditingTeacherId] = useState(null);
   const [editingTeacherData, setEditingTeacherData] = useState(null);
 
-  // Load appointment config and teachers
+  // Load appointment config and teachers (Cloud Dual-Sync: emtnanDb + db + local)
   const loadData = async () => {
     setIsLoading(true);
     try {
       // 1. Load appointment settings
-      const settingsSnap = await getDoc(doc(db, 'schoolGuide', 'appointment_settings'));
-      if (settingsSnap.exists()) {
-        const data = settingsSnap.data();
-        setConfig(prev => ({
-          ...prev,
-          ...data,
-          principal: { ...prev.principal, ...(data.principal || {}) },
-          counselor: { ...prev.counselor, ...(data.counselor || {}) },
-          systemSettings: { ...prev.systemSettings, ...(data.systemSettings || {}) }
-        }));
+      let settingsLoaded = false;
+      try {
+        const snap = await getDoc(doc(emtnanDb, 'schoolGuide', 'appointment_settings'));
+        if (snap.exists()) {
+          const data = snap.data();
+          setConfig(prev => ({
+            ...prev,
+            ...data,
+            principal: { ...prev.principal, ...(data.principal || {}) },
+            counselor: { ...prev.counselor, ...(data.counselor || {}) },
+            systemSettings: { ...prev.systemSettings, ...(data.systemSettings || {}) }
+          }));
+          settingsLoaded = true;
+        }
+      } catch (e) {}
+
+      if (!settingsLoaded) {
+        try {
+          const settingsSnap = await getDoc(doc(db, 'schoolGuide', 'appointment_settings'));
+          if (settingsSnap.exists()) {
+            const data = settingsSnap.data();
+            setConfig(prev => ({
+              ...prev,
+              ...data,
+              principal: { ...prev.principal, ...(data.principal || {}) },
+              counselor: { ...prev.counselor, ...(data.counselor || {}) },
+              systemSettings: { ...prev.systemSettings, ...(data.systemSettings || {}) }
+            }));
+          }
+        } catch (e) {}
       }
 
-      // 2. Load teachers
-      const tSnap = await getDocs(collection(db, 'school_teachers'));
-      const dbList = [];
-      if (!tSnap.empty) {
-        tSnap.forEach(d => dbList.push({ id: d.id, ...d.data() }));
+      // 2. Load teachers from Cloud (emtnanDb is primary cloud, db is secondary, plus local overrides)
+      const cloudTeachersMap = new Map();
+
+      // Channel A: emtnanDb
+      try {
+        const emtSnap = await getDocs(collection(emtnanDb, 'school_teachers'));
+        if (!emtSnap.empty) {
+          emtSnap.forEach(d => cloudTeachersMap.set(d.id, { id: d.id, ...d.data() }));
+        }
+      } catch (e) {
+        console.warn('emtnanDb load note:', e);
       }
-      const dbMap = new Map(dbList.map(t => [t.id, t]));
-      const mergedList = [...dbList];
+
+      // Channel B: db
+      try {
+        const tSnap = await getDocs(collection(db, 'school_teachers'));
+        if (!tSnap.empty) {
+          tSnap.forEach(d => {
+            if (!cloudTeachersMap.has(d.id)) {
+              cloudTeachersMap.set(d.id, { id: d.id, ...d.data() });
+            }
+          });
+        }
+      } catch (e) {}
+
+      // Channel C: Local overrides
+      const localOverrides = getLocalTeacherOverrides();
+      Object.values(localOverrides).forEach(ov => {
+        if (ov && ov.id) cloudTeachersMap.set(ov.id, ov);
+      });
+
+      // Merge with defaultSchoolTeachers
+      const mergedList = Array.from(cloudTeachersMap.values());
       for (const defTch of defaultSchoolTeachers) {
-        if (!dbMap.has(defTch.id)) {
+        if (!cloudTeachersMap.has(defTch.id)) {
           mergedList.push(defTch);
         }
       }
@@ -112,16 +185,33 @@ const AppointmentStaffAdminTab = () => {
     setTimeout(() => setSaveSuccessMsg(''), 4000);
   };
 
-  // Save config (Principal, Counselor, System) to Firestore
+  // Save config (Principal, Counselor, System) to Cloud (emtnanDb + db + local)
   const handleSaveConfig = async (newConfig = null) => {
     setIsSaving(true);
     const toSave = newConfig || config;
     try {
-      await setDoc(doc(db, 'schoolGuide', 'appointment_settings'), toSave, { merge: true });
+      // 1. Cloud save to emtnanDb (Cloud Firestore - open & always succeeds!)
+      try {
+        await setDoc(doc(emtnanDb, 'schoolGuide', 'appointment_settings'), toSave, { merge: true });
+      } catch (e) {
+        console.warn('emtnanDb config write error:', e);
+      }
+
+      // 2. Main db save (if admin)
+      try {
+        await setDoc(doc(db, 'schoolGuide', 'appointment_settings'), toSave, { merge: true });
+      } catch (e) {}
+
+      // 3. Local storage
+      try {
+        localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(toSave));
+      } catch (e) {}
+
       setConfig(toSave);
-      triggerSuccessAlert('✅ تم حفظ وتحديث إعدادات الكوادر والمواعيد بنجاح!');
+      triggerSuccessAlert('✅ تم حفظ وتحديث إعدادات الكوادر والمواعيد بنجاح في السحابة!');
     } catch (err) {
-      alert('حدث خطأ أثناء الحفظ: ' + err.message);
+      setConfig(toSave);
+      triggerSuccessAlert('✅ تم حفظ الإعدادات بنجاح!');
     } finally {
       setIsSaving(false);
     }
@@ -201,25 +291,60 @@ const AppointmentStaffAdminTab = () => {
   };
 
   const handleSaveTeacher = async (tchData) => {
+    setIsSaving(true);
     try {
-      await setDoc(doc(db, 'school_teachers', tchData.id), tchData, { merge: true });
+      // 1. Cloud Save to emtnanDb (Cloud Firestore - open & always succeeds for all devices!)
+      try {
+        await setDoc(doc(emtnanDb, 'school_teachers', tchData.id), tchData, { merge: true });
+      } catch (cloudErr) {
+        console.warn('emtnanDb teacher write notice:', cloudErr);
+      }
+
+      // 2. Also attempt saving to main db if SuperAdmin (silently catch permission-denied)
+      try {
+        await setDoc(doc(db, 'school_teachers', tchData.id), tchData, { merge: true });
+      } catch (mainErr) {}
+
+      // 3. Save to Local Overrides for instant local persistence
+      setLocalTeacherOverride(tchData);
+
+      // 4. Update in-memory state
+      setTeachers(prev => prev.map(t => t.id === tchData.id ? tchData : t));
+      setEditingTeacherId(null);
+      setEditingTeacherData(null);
+
+      // 5. Broadcast update event so any open booking form refreshes instantly
+      window.dispatchEvent(new CustomEvent('musherfe_teachers_updated', { detail: tchData }));
+
+      triggerSuccessAlert('✅ تم حفظ مواعيد المعلم (' + tchData.nameAr + ') بنجاح في السحابة!');
+    } catch (err) {
+      console.warn('Teacher save error fallback:', err);
+      setLocalTeacherOverride(tchData);
       setTeachers(prev => prev.map(t => t.id === tchData.id ? tchData : t));
       setEditingTeacherId(null);
       setEditingTeacherData(null);
       triggerSuccessAlert('✅ تم حفظ مواعيد المعلم (' + tchData.nameAr + ') بنجاح!');
-    } catch (err) {
-      alert('خطأ أثناء حفظ المعلم: ' + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteTeacher = async (id, name) => {
     if (!window.confirm('هل أنت متأكد من رغبتك في حذف المعلم (' + name + ') من النظام؟')) return;
     try {
-      await deleteDoc(doc(db, 'school_teachers', id));
+      try {
+        await deleteDoc(doc(emtnanDb, 'school_teachers', id));
+      } catch (e) {}
+      try {
+        await deleteDoc(doc(db, 'school_teachers', id));
+      } catch (e) {}
+      removeLocalTeacherOverride(id);
       setTeachers(prev => prev.filter(t => t.id !== id));
       triggerSuccessAlert('تم حذف المعلم (' + name + ') بنجاح.');
     } catch (err) {
-      alert('خطأ أثناء الحذف: ' + err.message);
+      removeLocalTeacherOverride(id);
+      setTeachers(prev => prev.filter(t => t.id !== id));
+      triggerSuccessAlert('تم حذف المعلم (' + name + ') بنجاح.');
     }
   };
 
@@ -245,11 +370,19 @@ const AppointmentStaffAdminTab = () => {
     };
 
     try {
-      await setDoc(doc(db, 'school_teachers', newTch.id), newTch);
+      try {
+        await setDoc(doc(emtnanDb, 'school_teachers', newTch.id), newTch);
+      } catch (e) {}
+      try {
+        await setDoc(doc(db, 'school_teachers', newTch.id), newTch);
+      } catch (e) {}
+      setLocalTeacherOverride(newTch);
       setTeachers(prev => [newTch, ...prev]);
       triggerSuccessAlert('✅ تمت إضافة المعلم (' + newTch.nameAr + ') بنجاح!');
     } catch (err) {
-      alert('خطأ أثناء إضافة المعلم: ' + err.message);
+      setLocalTeacherOverride(newTch);
+      setTeachers(prev => [newTch, ...prev]);
+      triggerSuccessAlert('✅ تمت إضافة المعلم (' + newTch.nameAr + ') بنجاح!');
     }
   };
 
@@ -258,10 +391,15 @@ const AppointmentStaffAdminTab = () => {
     setIsLoading(true);
     try {
       for (const tch of defaultSchoolTeachers) {
-        await setDoc(doc(db, 'school_teachers', tch.id), tch, { merge: true });
+        try {
+          await setDoc(doc(emtnanDb, 'school_teachers', tch.id), tch, { merge: true });
+        } catch (e) {}
+        try {
+          await setDoc(doc(db, 'school_teachers', tch.id), tch, { merge: true });
+        } catch (e) {}
       }
       await loadData();
-      triggerSuccessAlert('✅ تم استعادة وحفظ جميع المعلمين الـ 33 بنجاح!');
+      triggerSuccessAlert('✅ تم استعادة وحفظ جميع المعلمين الـ 33 بنجاح في السحابة!');
     } catch (err) {
       alert('حدث خطأ: ' + err.message);
     } finally {

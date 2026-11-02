@@ -1,6 +1,6 @@
 import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db, emtnanDb } from '../firebase';
 import { 
   collection, 
   addDoc, 
@@ -130,34 +130,87 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   const [bookingTicket, setBookingTicket] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Real-time listener for appointment settings from Firestore
+  // Real-time listener for appointment settings from Firestore (emtnanDb + db)
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'schoolGuide', 'appointment_settings'), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setStaffConfig(prev => ({
-          ...prev,
-          ...data,
-          principal: { ...prev.principal, ...(data.principal || {}) },
-          counselor: { ...prev.counselor, ...(data.counselor || {}) },
-          systemSettings: { ...prev.systemSettings, ...(data.systemSettings || {}) }
-        }));
-      }
-    }, (err) => console.warn('Appointment settings listener notice:', err));
+    let unsub = () => {};
+    try {
+      unsub = onSnapshot(doc(emtnanDb, 'schoolGuide', 'appointment_settings'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setStaffConfig(prev => ({
+            ...prev,
+            ...data,
+            principal: { ...prev.principal, ...(data.principal || {}) },
+            counselor: { ...prev.counselor, ...(data.counselor || {}) },
+            systemSettings: { ...prev.systemSettings, ...(data.systemSettings || {}) }
+          }));
+        }
+      }, (err) => {
+        try {
+          onSnapshot(doc(db, 'schoolGuide', 'appointment_settings'), (snap2) => {
+            if (snap2.exists()) {
+              const data2 = snap2.data();
+              setStaffConfig(prev => ({
+                ...prev,
+                ...data2,
+                principal: { ...prev.principal, ...(data2.principal || {}) },
+                counselor: { ...prev.counselor, ...(data2.counselor || {}) },
+                systemSettings: { ...prev.systemSettings, ...(data2.systemSettings || {}) }
+              }));
+            }
+          });
+        } catch (e) {}
+      });
+    } catch (e) {}
 
     return () => unsub();
   }, []);
 
-  // Fetch live teachers list from Firestore
+  // Fetch live teachers list from Cloud (emtnanDb + db + local overrides + defaults)
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
-        const snap = await getDocs(collection(db, 'school_teachers'));
-        if (!snap.empty) {
-          const list = [];
-          snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        const teachersMap = new Map();
+
+        // 1. Primary Cloud Store (emtnanDb)
+        try {
+          const emtSnap = await getDocs(collection(emtnanDb, 'school_teachers'));
+          if (!emtSnap.empty) {
+            emtSnap.forEach(d => teachersMap.set(d.id, { id: d.id, ...d.data() }));
+          }
+        } catch (e) {}
+
+        // 2. Secondary Cloud Store (db)
+        try {
+          const snap = await getDocs(collection(db, 'school_teachers'));
+          if (!snap.empty) {
+            snap.forEach(d => {
+              if (!teachersMap.has(d.id)) {
+                teachersMap.set(d.id, { id: d.id, ...d.data() });
+              }
+            });
+          }
+        } catch (e) {}
+
+        // 3. Local overrides
+        try {
+          const localOverrides = JSON.parse(localStorage.getItem('musherfe_teachers_reception_override') || '{}');
+          Object.values(localOverrides).forEach(ov => {
+            if (ov && ov.id) teachersMap.set(ov.id, ov);
+          });
+        } catch (e) {}
+
+        // 4. Default fallback list
+        for (const defTch of defaultSchoolTeachers) {
+          if (!teachersMap.has(defTch.id)) {
+            teachersMap.set(defTch.id, defTch);
+          }
+        }
+
+        const list = Array.from(teachersMap.values());
+        if (list.length > 0) {
           setTeachersList(list);
-          if (!selectedTeacherId && list.length > 0) {
+          if (!selectedTeacherId) {
             setSelectedTeacherId(list[0].id);
           }
         }
@@ -167,6 +220,17 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     };
 
     fetchTeachers();
+
+    // Listen for live update broadcast from AppointmentStaffAdminTab
+    const handleUpdate = (e) => {
+      if (e.detail && e.detail.id) {
+        setTeachersList(prev => prev.map(t => t.id === e.detail.id ? e.detail : t));
+      } else {
+        fetchTeachers();
+      }
+    };
+    window.addEventListener('musherfe_teachers_updated', handleUpdate);
+    return () => window.removeEventListener('musherfe_teachers_updated', handleUpdate);
   }, []);
 
   // Coordinator State (Itab Bayadsi)
