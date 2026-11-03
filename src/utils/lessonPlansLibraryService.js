@@ -1,4 +1,4 @@
-import { db } from '../firebase';
+import { db } from '../firebase.js';
 import { collection, getDocs, addDoc, updateDoc, setDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 
 const LOCAL_STORAGE_KEY = 'musheirifa_mafatih_library_plans_v1';

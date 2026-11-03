@@ -36,16 +36,24 @@ export const getActiveAiKeys = async () => {
     lastKeyFetchTime = now;
   }
 
-  let rawLocalGemini = (localStorage.getItem('db_gemini_key') || '').trim();
+  const safeStorageGet = (key) => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) return window.localStorage.getItem(key) || '';
+      if (typeof localStorage !== 'undefined') return localStorage.getItem(key) || '';
+    } catch (e) {}
+    return '';
+  };
+
+  let rawLocalGemini = (safeStorageGet('db_gemini_key') || '').trim();
   if (rawLocalGemini && !rawLocalGemini.startsWith('AIza')) {
     rawLocalGemini = '';
   }
   let geminiKey = cachedGeminiKey || rawLocalGemini || '';
-  let groqKey = cachedGroqKey || localStorage.getItem('db_groq_key') || '';
-  let xaiKey = cachedXaiKey || localStorage.getItem('db_xai_key') || '';
+  let groqKey = cachedGroqKey || safeStorageGet('db_groq_key') || '';
+  let xaiKey = cachedXaiKey || safeStorageGet('db_xai_key') || '';
 
   // Auto-detect from localStorage items too
-  [geminiKey, groqKey, xaiKey, localStorage.getItem('db_gemini_key') || '', localStorage.getItem('db_groq_key') || '', localStorage.getItem('db_xai_key') || ''].forEach(k => {
+  [geminiKey, groqKey, xaiKey, safeStorageGet('db_gemini_key'), safeStorageGet('db_groq_key'), safeStorageGet('db_xai_key')].forEach(k => {
     if (!k) return;
     const trimmed = k.trim();
     if (trimmed.startsWith('gsk_') && !groqKey) groqKey = trimmed;
@@ -172,8 +180,10 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
   // 1. Try Groq (Qwen 3.8 27B, ALLaM 2 7B) - High speed, browser CORS
   if (groqKey) {
     const groqModels = [
-      'qwen/qwen3.8-27b',
-      'allam-2-7b'
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
+      'allam-2-7b',
+      'qwen/qwen3.8-27b'
     ];
     for (const gm of groqModels) {
       try {
@@ -448,7 +458,7 @@ export const askSocraticStemMentor = async ({ message, history = [] }) => {
 
   // 1. Try Groq (Fastest & natively supports browser CORS)
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -553,7 +563,7 @@ export const askAiBookBuddy = async ({ bookTitle, author, message, history = [] 
 
   // 1. Try Groq
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const gm of groqModels) {
       try {
         const groqMessages = [{ role: 'system', content: SYSTEM_INSTRUCTION }];
@@ -805,7 +815,7 @@ ${themePreference ? `المجال المطلوب التركيز عليه: ${them
 }`;
 
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -1428,7 +1438,7 @@ ${isSEL ? `
 
   // 1. Try Groq (High-speed: Qwen 3.8 27B, GPT-OSS 120B, ALLaM)
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -1444,7 +1454,7 @@ ${isSEL ? `
               { role: 'user', content: prompt }
             ],
             temperature: 0.6,
-            max_tokens: 3800,
+            max_tokens: 3000,
             response_format: { type: "json_object" }
           })
         }, 11000);
@@ -1804,7 +1814,7 @@ ${notes ? `- ملاحظات وظروف التنفيذ: "${notes}"` : ''}
 
   // 1. Try Groq AI (models with high token limits & reasoning)
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2042,7 +2052,7 @@ ${customInstruction ? `- رغبة وتوجيه المعلم الخاص للبد�
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2207,7 +2217,7 @@ export const generateMiftaahLessonObjectivesAI = async ({
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2373,7 +2383,7 @@ ${langNote}
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2531,7 +2541,7 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
 
   // 1. Try Groq AI
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2693,7 +2703,7 @@ export const evaluateMiftaahExitTicketAI = async ({
   };
 
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -2852,677 +2862,313 @@ export const generateMiftaahFullJourneyLessonAI = async ({
   // Detect Specific Requested Topics (e.g. Train / רכבת / قطار)
   const isTrainTopic = /قطار|القطار|قطارات|قطارا|سكة حديد|רכבת|רכבות|train/i.test(combinedContext);
 
-  // Detect Pedagogical Genre / Discipline Type (honoring explicit teacher selection)
-  let isReadingComprehension = includePassage === 'ai_passage' || 
-    includePassage === 'custom_passage' || 
-    primarySkill === 'reading_comprehension' ||
-    isTrainTopic ||
-    combinedContext.includes('הבנת הנקרא') ||
-    combinedContext.includes('فهم المقروء') ||
-    combinedContext.includes('reading comprehension') ||
-    combinedContext.includes('טקסט') ||
-    combinedContext.includes('קריאה') ||
-    combinedContext.includes('نص قرائي') ||
-    combinedContext.includes('قطعة فهم') ||
-    combinedContext.includes('قطعة') ||
-    combinedContext.includes('סיפור') ||
-    combinedContext.includes('قصة');
+  // Concise Pedagogical Directives
+  const isLanguageSubject = safeSubject.includes('لغة') || safeSubject.includes('عربي') || safeSubject.includes('עברית') || safeSubject.includes('english') || safeSubject.includes('שפה');
+  const isReadingComprehension = (primarySkill === 'reading_comprehension' && isLanguageSubject) ||
+    (includePassage === 'custom_passage' && customPassageText.trim()) ||
+    (includePassage === 'ai_passage' && isLanguageSubject) ||
+    combinedContext.includes('הבנת הנקרא') || combinedContext.includes('فهم المقروء') || isTrainTopic;
+  const isScience = safeSubject.includes('علوم') || safeSubject.includes('تكنولوجيا') || safeSubject.includes('מדע') || /طاقة|كهرباء|مغناطيس|نبات|خلية|مادة|حرارة|جاذبية|بيئة|تنفس|هضم/i.test(combinedContext);
+  const isMath = isMathDomain || safeSubject.includes('رياضيات') || safeSubject.includes('חשבון') || safeSubject.includes('מתמטיקה') || safeSubject.includes('math');
+  const isValuesEducation = safeSubject.includes('قيم') || safeSubject.includes('مواطنة') || safeSubject.includes('חינוך') || /ערכים|נתינה|סובלנות|تعاون|تسامح|عطاء/i.test(combinedContext);
 
-  if (includePassage === 'none' && !customPassageText.trim()) {
-    isReadingComprehension = false;
+  let customDirectivesText = '';
+  if (customPassageText && customPassageText.trim()) {
+    customDirectivesText += targetLang === 'hebrew'
+      ? `\n- טקסט קריאה ספציפי של המורה חובה לשלב במלואו בתחנה 2 ולבסס עליו את כל השאלות: """${customPassageText.trim()}"""`
+      : `\n- نص قرائي محدد من المعلم يجب إدراجه كاملاً في المحطة 2 وصياغة جميع الأسئلة منه: """${customPassageText.trim()}"""`;
+  }
+  if (safeRequests) {
+    customDirectivesText += `\n- طلبات وتوجيهات خاصة من المعلم: ${safeRequests}`;
+  }
+  if (safeUdlList.length > 0) {
+    customDirectivesText += `\n- مراعاة التصميم الشامل للتعلم (UDL): ${safeUdlList.join(', ')}`;
   }
 
-  const isValuesEducation = primarySkill === 'values' ||
-    combinedContext.includes('ערך') ||
-    combinedContext.includes('ערכים') ||
-    combinedContext.includes('נתינה') ||
-    combinedContext.includes('סובלנות') ||
-    combinedContext.includes('כבוד') ||
-    combinedContext.includes('אחריות') ||
-    combinedContext.includes('חברות') ||
-    combinedContext.includes('עזרה') ||
-    combinedContext.includes('قيم') ||
-    combinedContext.includes('أخلاق') ||
-    combinedContext.includes('تسامح') ||
-    combinedContext.includes('عطاء') ||
-    combinedContext.includes('مواطنة') ||
-    combinedContext.includes('values');
+  const pathDesc = safeMeaningPath === 'discovery'
+    ? (targetLang === 'hebrew' ? 'למידה חוקרת בשיטה הסוקרטית (שאלות מנחות שהתלמיד משיב עליהן ומגיע ליעד בעצמו)' : 'مسار استكشاف سقراطي تفاعلي (أسئلة موجهة يسألها الذكاء ويجيب الطالب خطوة بخطوة حتى يصل للهدف بنفسه دون تلقين)')
+    : safeMeaningPath === 'explicit'
+    ? (targetLang === 'hebrew' ? 'הוראה פרונטלית והסבר מפורש (הסבר מלא ומובנה של המושגים והשלבים)' : 'مسار تدريس وجاهي (شرح وافٍ ومباشر ومنظم للمفاهيم والقواعد والخطوات الإجرائية والأمثلة المحلولة دون ألغاز)')
+    : (targetLang === 'hebrew' ? 'מסלול משולב (שאלות חקר סוקרטיות + הסבר מפורש)' : 'مسار مدمج (تساؤل استكشاف سقراطي + شرح وجاهي وافٍ منظم)');
 
-  const isGrammarOrLanguage = primarySkill === 'grammar' ||
-    combinedContext.includes('לשון') ||
-    combinedContext.includes('דקדוק') ||
-    combinedContext.includes('פעלים') ||
-    combinedContext.includes('פועל') ||
-    combinedContext.includes('שם עצם') ||
-    combinedContext.includes('בניין') ||
-    combinedContext.includes('قواعد') ||
-    combinedContext.includes('نحو') ||
-    combinedContext.includes('إملاء') ||
-    combinedContext.includes('همزة') ||
-    combinedContext.includes('أفعال') ||
-    combinedContext.includes('grammar');
+  const groupsDesc = safePracticeGroups === 'none'
+    ? (targetLang === 'hebrew' ? 'עבודה כיתתית מאוחדת' : 'عمل صفي موحد')
+    : `${safePracticeGroups} ${targetLang === 'hebrew' ? 'תחנות/קבוצות במכשירים' : 'محطات فرعية تفاعلية على الأجهزة'} (${safePracticeTaskMode === 'unified' ? (targetLang === 'hebrew' ? 'משימה מאוחדת' : 'مهمة موحدة لجميع الفرق') : (targetLang === 'hebrew' ? 'משימות ופעילויות מגוונות לכל קבוצה' : 'فعاليات ومهام مختلفة تماماً لكل مجموعة')})`;
 
-  const isMath = primarySkill === 'math' ||
-    combinedContext.includes('חשבון') ||
-    combinedContext.includes('מתמטיקה') ||
-    combinedContext.includes('שברים') ||
-    combinedContext.includes('כפל') ||
-    combinedContext.includes('חילוק') ||
-    combinedContext.includes('رياضيات') ||
-    combinedContext.includes('حساب') ||
-    combinedContext.includes('كسور') ||
-    combinedContext.includes('math');
+  const prompt = targetLang === 'hebrew'
+    ? `אתה מומחה פדגוגי בכיר לתכנון שיעורים על פי מודל מִפתח בבית ספר מושירפה היסודי.
+תכנן שיעור עשיר, מוכן להעברה מיידית בכיתה (Turnkey Classroom Ready) בעברית תקנית, עשירה ומדויקת בלבד (ללא ערבית):
+- נושא השיעור: ${safeTitle}
+- מקצוע: ${safeSubject}
+- שכבת גיל / כיתה: ${safeGrade}
+- מסלול פדגוגי לתחנה 2 (הבנת המשמעות): ${pathDesc}
+- מערך תחנה 3 (יישום ותרגול): ${groupsDesc}
+${customDirectivesText}
 
-  const isScience = primarySkill === 'science' ||
-    combinedContext.includes('מדע') ||
-    combinedContext.includes('טבע') ||
-    combinedContext.includes('ניסוי') ||
-    combinedContext.includes('חומר') ||
-    combinedContext.includes('علوم') ||
-    combinedContext.includes('طبيعة') ||
-    combinedContext.includes('تجربة') ||
-    combinedContext.includes('science');
-
-  // Teacher Custom Questions Directives
-  let teacherCustomDirectives = '';
-  if (includePassage === 'custom_passage' && customPassageText.trim()) {
-    teacherCustomDirectives = `
-⚠️⚠️ توجيه إلزامي حاسم (نص قراءة معتمد من المعلم):
-المعلم قام بإدخال النص القرائي التالي لاعتماده كاملاً في الحصة:
-"""
-${customPassageText.trim()}
-"""
-1. يجب وضع هذا النص كاملاً كما هو دون أي اختصار أو تبديل في المحطة 2 (studentPrompt)!
-2. يجب أن تصاغ جميع أسئلة المحطة 3 (التطبيق والتدريب) وأسئلة المحطة 4 (أدلة الفهم) بناءً على هذا النص تحديداً!
-`;
-  } else if (includePassage === 'ai_passage' || isReadingComprehension) {
-    const lengthDetail = passageLength === 'short'
-      ? (targetLang === 'hebrew' ? 'פסקה ממוקדת אחת (כ-60-80 מילים)' : 'فقرة واحدة مركزة وموجزة (٦٠-٨٠ كلمة)')
-      : passageLength === 'medium'
-      ? (targetLang === 'hebrew' ? 'שתי פסקאות ברורות ומובנות (כ-120-160 מילים)' : 'فقرتان واضحتان متكاملتان (١٢٠-١٦٠ كلمة)')
-      : (targetLang === 'hebrew' ? 'קטע קריאה עשיר ומלא של 3-4 פסקאות (כ-200-280 מילים) עם כותרת ומילון מילים' : 'نص قرائي متكامل وغني من ٣ إلى ٤ فقرات وافية (٢٠٠-٢٨٠ كلمة) مع عنوان بارز ومعجم للمفردات');
-
-    teacherCustomDirectives = `
-📖 توجيه إلزامي لقطعة القراءة في المحطة 2:
-- المطلوب إرفاق قطعة قرائية كاملة (${lengthDetail}) حول موضوع (${safeTitle})!
-- لغة النص: سليمة وفصيحة تماماً (${targetLang === 'hebrew' ? 'עברית תקנית ועשירה בלבד' : targetLang === 'english' ? 'Clear, natural English' : 'لغة عربية فصيحة ومشكولة وسليمة'}).
-- يتم وضع النص كاملاً داخل studentPrompt مع عنوانه وفقراته المرتبة ومعجم للمفردات الجديدة.
-`;
-  } else if (includePassage === 'none') {
-    teacherCustomDirectives = `
-🧪 تنبيه: هذه الحصة لا تتضمن نصاً قرائياً؛ بل ترتكز المحطة 2 على النمذجة والاستكشاف والتجارب أو القواعد والمفاهيم العلمية/الرياضية المباشرة.
-`;
-  }
-
-  if (questionsDensity === 'intensive') {
-    teacherCustomDirectives += `
-🎯 متطلب كثافة الأسئلة: توفير أسئلة مكثفة ومتنوعة في المحطة 3 والمحطة 4 تشمل كافة أبعاد الفهم (استخراج صريح، استنتاج وعلاقات سببية، أسلوب ولغة وتراكيب، ونقد وإبداء رأي وتقييم).
-`;
-  } else if (questionsDensity === 'concise') {
-    teacherCustomDirectives += `
-⚡ متطلب كثافة الأسئلة: أسئلة سريعة وموجزة ومركزة تختبر الهدف الأساسي للحصة دون إطالة.
-`;
-  } else {
-    teacherCustomDirectives += `
-🎯 متطلب تدرج الأسئلة: الالتزام الصارم بنموذج مِفتاح المتمايز (٣ مستويات: الانطلاق والتمكن، الممارسة والإتقان، الرواد والتحدي) بأسئلة ومهمات محددة وصريحة.
-`;
-  }
-
-  let hookDirective = '';
-  if (hookActivityType === 'puzzle' || /بازل|puzzle|ترتيب/i.test(safeRequests)) {
-    hookDirective = 'بازل وترتيب منطقي للأفكار والخطوات (puzzle).';
-  } else if (hookActivityType === 'video' || /فيلم|فيديو|video/i.test(safeRequests)) {
-    hookDirective = 'فيلم / فيديو تعليمي قصير مع سؤال تأمل ومناقشة (video).';
-  } else if (hookActivityType === 'riddle' || /حزورة|لغز|أحجية|فزورة/i.test(safeRequests)) {
-    hookDirective = 'لغز وتحدٍّ استنتاجي مع خيارات وسقالات (riddle).';
-  } else {
-    // Default: Dynamic engaging hook strictly tailored to the lesson discipline & theme
-    hookDirective = `مدخل مشوّق وجذاب ومثير للفضول مصمم خصيصاً ومباشرة بحسب نوع وطبيعة موضوع الدرس (${safeSubject} - ${safeTitle}):
-⚠️ تحذير حاسم ومؤكد: إياك أن تجعل المقدمة حزورة نمطية ("أنا شيء لا يباع بالمال فمن أكون؟")!
-المعلم يطلب صراحة مقدمة مشوقة وجذابة وماتعة ومصممة خصيصاً بحسب نوع وموضوع الدرس:
-- في دروس العلوم والطبيعة: صغ (hookStoryOrScenario) كظاهرة علمية واقعية مدهشة أو تجربة وملاحظة استكشافية مثيرة للدهشة والفضول تدفع الطلاب للتساؤل والبحث عن السر، مع (curiosityQuestion) علمي عميق.
-- في دروس فهم المقروء واللغة والنصوص والقصص: صغ (hookStoryOrScenario) كمدخل قصصي درامي مشوق أو مشهد حواري واقعي يشد انتباه الطلاب ويجعلهم متشوقين لمعرفة تفاصيل النص ومسار أبطاله، مع (curiosityQuestion) استنتاجي.
-- في دروس الرياضيات والحساب والمنطق: صغ (hookStoryOrScenario) كمفارقة حياتية واقعية أو تحدٍّ ذكي من بيئة الطالب اليومية (مسألة توزيع، مفارقة سرعة وأرقام)، مع (curiosityQuestion) رياضي ذكي.
-- في دروس القيم والأخلاق والتربية والمواطنة: صغ (hookStoryOrScenario) كمعضلة قيمية أو موقف إنساني حقيقي ومؤثر يلامس مشاعر الطلاب، مع (curiosityQuestion) وجداني تفاعلي.
-- وفر في (interactiveActivity): type = "curiosity" مع كائن curiosity يحتوي على سيناريو الموقف (scenario)، سؤال الفضول (curiosityQuestion)، 4 فرضيات وتوقعات ذكية (options)، مفتاحي تفكير (clues)، التفسير الأنسب (solution)، والربط بهدف الدرس (explanation).`;
-  }
-
-  teacherCustomDirectives += `
-🔥 النشاط والمدخل الإلزامي للمحطة الأولى (مشوّق ومحفز): ${hookDirective}
-`;
-
-  // Pedagogical Directives for AI Model based on Genre & Language
-  let genreDirective = '';
-  if (isReadingComprehension) {
-    if (targetLang === 'hebrew') {
-      genreDirective = `
-📖 הנחיות פדגוגיות קריטיות לשיעור הבנת הנקרא בעברית (טקסט קריאה מלא ושאלות הבנה רב-ממדיות):
-- נושא השיעור הוא הבנת הנקרא (${safeTitle}).
-${customPassageText.trim() ? `📄 טקסט קריאה ספציפי של המורה מצורף בהוראות לעיל וחובה להשתמש בו במלואו בתחנה 2!` : ''}
-${isTrainTopic ? `🚂 נושא ממוקד ומפורש: רכבות / הרכבת המהירה (TRAIN)! כל טקסט הקריאה והשאלות חייבים לעסוק ברכבות בלבד!` : ''}
-- בתחנה 2 (הבנת המשמעות):
-  * ${customPassageText.trim() ? 'שלב את הטקסט המלא של המורה ללא קיצור' : `חובה לחבר קטע קריאה שלם, מרתק, עשיר ועמוק (${passageLength === 'short' ? 'פסקה אחת' : passageLength === 'medium' ? 'שתי פסקאות' : '3-4 פסקאות'}) המתאים לשכבת הגיל (${safeGrade}) העוסק בדיוק בנושא המבוקש (${isTrainTopic ? 'רכבות, התפתחות הרכבת מקיטור לרכבת מגנטית' : safeTitle})!`}
-  * כל קטע הקריאה המלא חייב להיות כתוב כולו במפורש בתוך studentPrompt, ולאחריו "מילון מושגים וביאור מילים קשות".
-- בתחנה 3 (יישום ותרגול):
-  * חובה לנסח שאלות הבנה מעמיקות על קטע הקריאה שבתחנה 2 לפי שלוש רמות חשיבה:
-    1. קבוצת זינוק (support): שאלות איתור מידע מפורש וגלוי מתוך הטקסט עם הפניה לפסקה המתאימה.
-    2. קבוצת שליטה (core): שאלות הסקה, משמעויות נסתרות, קשרי סיבה ותוצאה, והבנת רגשות הדמויות.
-    3. קבוצת אתגר (advanced): שאלות ביקורת והערכה, הבעת עמדה מנומקת מתוך הטקסט והצעת סיום חלופי.
-- בתחנה 4 (דף ראיות הבנה):
-  * חובה לנסח דף משימה עצמאי עם 4 שאלות הבנה מעמיקות הדורשות ציטוט וראיה מהטקסט (הוכחה מתוך הטקסט)!
-- בתחנה 5 (קציר והעברה לחיים):
-  * לחבר את המסר של קטע הקריאה לחיים האישיים ולקהילה.`;
-    } else if (targetLang === 'english') {
-      genreDirective = `
-📖 PEDAGOGICAL DIRECTIVES FOR READING COMPREHENSION (Full Reading Passage & Questions):
-${customPassageText.trim() ? `📄 The teacher provided a specific text above — you MUST include it in full in Station 2!` : ''}
-${isTrainTopic ? `🚂 SPECIFIC FOCUS: THE TRAIN / HIGH-SPEED TRAINS! The entire reading text and questions must be strictly about trains!` : ''}
-- Station 2 (Meaning): You MUST compose a complete, rich, engaging reading passage directly inside studentPrompt on (${isTrainTopic ? 'Trains & their technological evolution' : safeTitle}), followed by vocabulary words in context.
-- Station 3 (Practice): You MUST provide tiered reading comprehension questions based on the text.
-- Station 4 (Evidence): Independent worksheet with text-dependent comprehension questions requiring text citations.`;
-    } else {
-      genreDirective = `
-📖 توجيهات بيداغوجية إلزامية لدرس فهم المقروء (نص قرائي كامل وأسئلة فهم متعددة الأبعاد):
-- موضوع الدرس هو فهم المقروء (${safeTitle}).
-${customPassageText.trim() ? `📄 ملاحظة هامة: قام المعلم بإرفاق نص قرائي محدد في التوجيهات أعلاه، ويجب وضعه كاملاً في المحطة 2 وصياغة الأسئلة منه!` : ''}
-${isTrainTopic ? `🚂 توجيه إلزامي حاسم: موضوع الدرس المطلوب صراحة هو "القطار" (القطار السريع، تاريخ وتطور القطارات، رحلة عبر السكة الحديدية)!
-- يجب أن يكون النص القرائي كاملاً في المحطة 2 عن "القطار" وتطوره من البخار إلى القطار المغناطيسي السريع!
-- يجب أن تكون جميع الأسئلة والمهام المتمايزة في المحطة 3 عن نص القطار حصراً!
-- يجب أن تكون ورقة أدلة الفهم في المحطة 4 مستخرجة من نص القطار وتتطلب إثبات الفهم منه!` : ''}
-- في المحطة الثانية (فهم وبناء المعنى):
-  * ${customPassageText.trim() ? 'إدراج النص الكامل للمعلم دون تعديل أو اختصار' : `يجب كتابة نص قرائي كامل، شائق وماتع (${passageLength === 'short' ? 'فقرة واحدة مركزة' : passageLength === 'medium' ? 'فقرتان واضحتان' : '٣-٤ فقرات كاملة'}) ملائم تماماً لصف (${safeGrade}) حول موضوع (${isTrainTopic ? 'القطار وتاريخه وتقنياته الحديثة' : safeTitle})!`}
-  * يُكتب النص القرائي كاملاً بحروفه وعنوانه داخل studentPrompt مع جدول لشرح المفردات والتراكيب اللغوية الجديدة.
-- في المحطة الثالثة (التطبيق والتدريب):
-  * صياغة أسئلة فهم وتحليل مبنية تماماً على النص القرائي وفق أبعاد الفهم الثلاثة:
-    ١. فريق الانطلاق: استخراج معلومات صريحة وواضحة من النص.
-    ٢. فريق الإتقان: الاستنتاج، العلاقات السببية، ودلالات تصرفات الشخصيات ومغازيها.
-    ٣. فريق الرواد: التفكير الناقد والتقييم وإبداء الرأي الشخصي مع التعليل واقتراح عنوان أو نهاية بديلة.
-- في المحطة الرابعة (أدلة الفهم):
-  * ورقة دليل فردي مستقل تحتوي على ٤ أسئلة صريحة تتطلب الاستشهاد المباشر بدليل من النص القرائي!`;
-    }
-  } else if (isValuesEducation) {
-    if (targetLang === 'hebrew') {
-      genreDirective = `
-❤️ הנחיות פדגוגיות לשיעור חינוך לערכים ומנהיגות (${safeTitle}):
-- בתחנה 1: דילמה חברתית מעוררת מחשבה או מקרה בוחן מרגש מחיי בית הספר.
-- בתחנה 2: בירור עמוק של המושג הערכי, סיפור קצר ממחיש (כגון מעשה של חסד ונתינה), ומשמעותו לקהילה.
-- בתחנה 3: משימות קבוצתיות לניתוח 3 תרחישים חברתיים מגוונים וגיבוש פתרון ערכי משותף.
-- בתחנה 4: דף ראיות אישי: דילמה מוסרית שבה התלמיד מקבל החלטה עצמאית ומנמק אותה.
-- בתחנה 5: התחייבות אישית למעשה טוב (קבלת החלטה ומעשה יישומי בשבוע הקרוב).`;
-    } else {
-      genreDirective = `
-❤️ توجيهات بيداغوجية لدروس القيم والأخلاق والمواطنة (${safeTitle}):
-- المحطة 1: معضلة أخلاقية واقعية أو قصة قصيرة مشوقة تمس حياة الطلاب.
-- المحطة 2: تفكيك القيمة ونماذج حية ملهمة من واقع المدرسة والأسرة والمجتمع.
-- المحطة 3: مهمات جماعية متمايزة لتحليل ٣ مواقف اجتماعية واقتراح مبادرات إيجابية.
-- المحطة 4: ورقة دليل فردي تتضمن موقفاً يتخذ فيه الطالب قراراً سلوكياً مستقلاً مع التعليل.
-- المحطة 5: التزام وعهد شخصي بتطبيق القيمة عملياً في المدرسة والبيت.`;
-    }
-  } else if (isGrammarOrLanguage) {
-    if (targetLang === 'hebrew') {
-      genreDirective = `
-📝 הנחיות פדגוגיות לשיעור לשון ודקדוק (${safeTitle}):
-- בתחנה 1: חידה לשונית או משחק מילים מפעיל.
-- בתחנה 2: משפטים לניתוח פעיל, ניסוח הכלל הלשוני בבירור עם טבלת דוגמאות.
-- בתחנה 3: שלוש רמות תרגול מדורגות (זיהוי, המרה, כתיבת משפטים מקוריים).
-- בתחנה 4: דף משימה עצמאי לתיקון שגיאות, ניתוח משפטים ונימוק הכלל.`;
-    }
-  }
-
-  // Language Directives for AI Model
-  let languageDirective = '';
-  if (targetLang === 'hebrew') {
-    languageDirective = `
-⚠️⚠️ تعليمات لغة المحتوى الإלزامية الصارمة (STRICT HEBREW LANGUAGE REQUIREMENT - שפת השיעור: עברית):
-- שפת ההוראה והתוכן של השיעור היא עברית תקנית ועשירה בלבד!
-- אסור בהחלט לשלב טקסטים בערבית בתוך שדות התלמידים (title, objective, successCriteria, studentPrompt, tasks, individualTask, exitTicket)!
-- כל הטקסטים, ההסברים, קטעי הקריאה, החידות, דפי המשימה והשאלות חייבים להיות בעברית מלאה ואיכותית המותאמת לגיל בית ספר יסודי!
-- כותרת השיעור (title): בעברית מלאה (לדוגמה: "הבנת הנקרא: סוד שיתוף הפעולה" או "ערך הנתינה והמעשה הטוב").
-- מטרת השיעור (objective): בעברית מלאה.
-- קריטריון הצלחה (successCriteria): בעברית מלאה.`;
-  } else if (targetLang === 'english') {
-    languageDirective = `
-⚠️⚠️ STRICT ENGLISH LANGUAGE REQUIREMENT (The entire lesson content must be in ENGLISH):
-- The teaching language is 100% ENGLISH.
-- ALL fields (title, objective, successCriteria, studentPrompt, tasks, individualTask, exitTicket) MUST be written in natural, age-appropriate ENGLISH!
-- Do not include any Arabic or Hebrew text in the student-facing fields.`;
-  } else {
-    languageDirective = `
-- لغة الحصة ومحطاتها: اللغة العربية الفصيحة السليمة والواضحة والمحفزة المناسبة لطلاب المرحلة الابتدائية.`;
-  }
-
-  // Socratic Discovery vs. Frontal Direct Instruction Directive (مبدأ حاسم في نموذج مِفتاح)
-  let meaningPathDirective = '';
-  if (safeMeaningPath === 'discovery') {
-    if (targetLang === 'hebrew') {
-      meaningPathDirective = `
-🔍🧠 הנחיה פדגוגית קריטית ומחייבת (למידה חוקרת בשיטה הסוקרטית - SOCRATIC DISCOVERY):
-המורה בחר/ה בסעיף 7: "למידה חוקרת בשיטה הסוקרטית (Discovery)".
-כלל ברזל מחייב: בתחנה 2 (הבנת המשמעות), הבינה המלאכותית אינה מוסרת את התשובות או מסבירה ישירות, אלא שואלת את התלמיד סדרת שאלות סוקרטיות מכוונות (socraticDialogue). התלמיד עונה ומקיים אינטראקציה שלב אחר שלב עד שהוא מגיע בכוחות עצמו למטרת השיעור (היעד המבוקש)!
-1. בתחנה 2 (הבנת המשמעות):
-   - studentPrompt: ניסוח שאלת חקר סוקרטית מרכזית המעוררת פליאה ומציגה מקרה בוחן/דילמה המזמינה את התלמיד לצאת למסע שאלות מונחה.
-   - socraticDialogue (רצף שאלות סוקרטיות מונחות לתלמיד):
-     * שלב 1: "🔍 1. התבוננות ושאילת שאלות": שאלת הבחנה ודפוס ראשוני + אפשרויות בחירה + משוב מעודד ומכוון.
-     * שלב 2: "🧩 2. ניתוח והשוואת קשרים": שאלת חקר מעמיקה להבנת הקשר הסיבתי + אפשרויות בחירה + משוב סוקרטי.
-     * שלב 3: "🎯 3. הסקת מסקנה והגעה ליעד המבוקש": שאלה מסכמת המאפשרת לתלמיד לנסח את הכלל ולהגיע בעצמו ליעד הלימודי!
-   - explanationCards (3 כרטיסי שלבי גילוי סוקרטיים כמשענת):
-     * כרטיס 1: "🔍 1. התבוננות סוקרטית" (שאלת הנחיה לתצפית והשערה).
-     * כרטיס 2: "🧩 2. חקירה והשוואה סוקרטית" (שאלת עומק להשוואת מקרים).
-     * כרטיס 3: "🎯 3. הסקת מסקנה והגעה ליעד" (ניסוח הכלל והגעה ליעד).
-   - checkForUnderstanding: שאלת אימות שבה התלמיד מוכיח כיצד הגיע לתובנה.
-   - teacherGuidance: הנחיות למורה לניהול הדיאלוג הסוקרטי מבלי לגלות תשובות מראש.
-`;
-    } else if (targetLang === 'english') {
-      meaningPathDirective = `
-🔍🧠 CRITICAL PEDAGOGICAL DIRECTIVE (SOCRATIC DISCOVERY LEARNING):
-The teacher selected in Field 7: "Discovery through the Socratic Method".
-Core Rule: In Station 2 (Understanding), the AI must NOT give ready explanations or lectures! Instead, the AI asks the student progressive guided Socratic questions (socraticDialogue). The student answers, interacts, and tests hypotheses step by step until the student reaches the target learning objective themselves!
-1. In Station 2 (Understanding & Building Meaning):
-   - studentPrompt: A thought-provoking core Socratic inquiry question introducing a phenomenon/case to investigate.
-   - socraticDialogue (3 Progressive Interactive Socratic Questions leading to the goal):
-     * Step 1: "🔍 1. Observation & Pattern Wonder": Guiding question observing the initial clues + options + Socratic feedback.
-     * Step 2: "🧩 2. Analysis & Relation Testing": Probing question comparing scenarios and causality + options + Socratic feedback.
-     * Step 3: "🎯 3. Deduction & Reaching the Target Goal": Final guiding question leading the student to formulate the rule and independently achieve the lesson objective!
-   - explanationCards (3 Socratic progression cards).
-   - checkForUnderstanding: Justification check proving how the student deduced the rule.
-   - teacherGuidance: Teacher facilitation notes for active Socratic questioning without giving away answers.
-`;
-    } else {
-      meaningPathDirective = `
-🔍🧠 توجيه بيداغوجي إلزامي وصارم (التعلم بالاستكشاف بالطريقة السقراطية - SOCRATIC DISCOVERY):
-المعلم اختار في البند 7: "التعلم بالاستكشاف بالطريقة السقراطية (Discovery)".
-قاعدة ذهبية حاسمة ومحورية:
-في محطة الفهم وبناء المعنى (المحطة 2)، لا يقدم الذكاء الاصطناعي الشرح الجاهز أو التلقين المباشر، بل يسأل الطالب أسئلة موجهة متدرجة (socraticDialogue)، ويجيب الطالب ويتفاعل مع الأسئلة خطوة بخطوة حتى يصل بنفسه إلى الهدف المطلوب!
-1. في المحطة الثانية (فهم وبناء المعنى):
-   - studentPrompt: صياغة تساؤل استكشافي سقراطي مركزي (Central Socratic Inquiry) يثير الفضول ويطرح موقفاً أو ظاهرة للتأمل والبحث.
-   - socraticDialogue (حوار الاستكشاف السقراطي التفاعلي المتسلسل - ٣ خطوات تقود للهدف):
-     * الخطوة 1: "🔍 1. الملاحظة والتساؤل السقراطي": سؤال موجه يدعو الطالب لملاحظة نمط أو ظاهرة لافتة + خيارات تفاعلية + تلميح + تغذية راجعة سقراطية تقوده للخطوة التالية.
-     * الخطوة 2: "🧩 2. التحليل وفحص العلاقات": سؤال سقراطي يوجه الطالب للربط بين المعطيات وفحص أسباب النتيجة + خيارات تفاعلية + تغذية راجعة سقراطية.
-     * الخطوة 3: "🎯 3. الاستنتاج وبلوغ الهدف المطلوب": سؤال استدراجي ختامي يمكّن الطالب من صياغة المفهوم النهائي وقاعدته بنفسه، وبلوغ هدف الدرس بجدارة تامة دون تلقين مسبق!
-   - explanationCards (بطاقات الاستكشاف السقراطي الثلاث - مرجع معزز).
-   - checkForUnderstanding: سؤال تحقق استدلالي يثبت به الطالب كيف توصل للاستنتاج.
-   - teacherGuidance: إرشادات للمعلم لإدارة الحوار السقراطي الصفي وطرح الأسئلة السابرة.
-`;
-    }
-  } else if (safeMeaningPath === 'explicit') {
-    if (targetLang === 'hebrew') {
-      meaningPathDirective = `
-👩‍🏫📖 הנחיה פדגוגית קריטית ומחייבת (הוראה פרונטלית והסבר מפורש ישיר - EXPLICIT DIRECT INSTRUCTION):
-המורה בחר/ה בסעיף 7: "הוראה פרונטלית (Explicit)".
-כלל הברזל: הבינה המלאכותית מסבירה את החומר הנדרש בצורה מפורשת, בהירה, מקיפה ויסודית ביותר (ללא חידות או שאלות עקיפות):
-1. בתחנה 2 (הבנת המשמעות):
-   - studentPrompt: הסבר פרונטלי שלם, מסודר ומעמיק של כל מושגי השיעור, הכללים ושלבי הביצוע (הסבר ישיר לתלמיד).
-   - explanationCards (3 כרטיסי הסבר פרונטלי מובנים):
-     * כרטיס 1: "📖 1. הגדרת המושג והסבר מפורש": מושג מרכזי ומשמעותו בלשון ישירה.
-     * כרטיס 2: "💡 2. הדגמה ושלבי עבודה": שלבי ביצוע מודגמים שלב אחר שלב.
-     * כרטיס 3: "📌 3. הכלל המעשי ודוגמה פתורה": דוגמה מוחשית פתורה והכלל המעשי המדויק.
-   - checkForUnderstanding: שאלת הבנה ישירה לבדיקת קליטת ההסבר והמושגים.
-   - teacherGuidance: דגשי הוראה פרונטלית על הלוח והדגמה מול הכיתה.
-`;
-    } else if (targetLang === 'english') {
-      meaningPathDirective = `
-👩‍🏫📖 CRITICAL PEDAGOGICAL DIRECTIVE (EXPLICIT DIRECT INSTRUCTION):
-The teacher selected in Field 7: "Frontal / Explicit Direct Instruction".
-Core Rule: The AI provides a comprehensive, thorough, direct, and structured explanation of the entire topic (without puzzles or indirect queries):
-1. In Station 2 (Understanding & Building Meaning):
-   - studentPrompt: Clear, systematic, and thorough direct instruction of the concepts, terms, rules, and procedures.
-   - explanationCards (3 Direct Explanation Cards):
-     * Card 1: "📖 1. Core Definition & Meaning": Explicit definition and structured breakdown.
-     * Card 2: "💡 2. Modeling & Procedure": Direct procedural modeling ("Here is how we do it step-by-step").
-     * Card 3: "📌 3. Rule & Worked Example": Complete worked example and clear application rules.
-   - checkForUnderstanding: Direct comprehension check verifying mastery of the explained concept.
-   - teacherGuidance: Direct modeling and whole-class lecture tips for the teacher.
-`;
-    } else {
-      meaningPathDirective = `
-👩‍🏫📖 توجيه بيداغوجي إلزامي وصارم (الأسلوب التدريسي الوجاهي والشرح المباشر - EXPLICIT DIRECT INSTRUCTION):
-المعلم اختار في البند 7: "الأسلوب الوجاهي (Explicit)".
-قاعدة ذهبية حاسمة:
-الذكاء الاصطناعي يشرح المادة المطلوبة شرحاً وافياً وشاملاً ومفصلاً ومباشراً للطالب دون ألغاز أو استفسارات غامضة:
-1. في المحطة الثانية (فهم وبناء المعنى):
-   - studentPrompt: تقديم شرح وافٍ وصريح ومنظم ومفصل لمفاهيم الدرس وقواعده بلغة واضحة وبناء إجرائي متماسك (شرح المادة التعليمية شرحاً وافياً كاملاً ومباشراً للطالب).
-   - explanationCards (بطاقات الشرح والتوضيح الوجاهي الصريح):
-     * البطاقة 1: "📖 1. التعريف الصريح والمفهوم": شرح وافٍ ومباشر للمفهום وعناصره.
-     * البطاقة 2: "💡 2. خطوات النمذجة والعمل": خطوات عمل تطبيقية واضحة ("هكذا نطبق المفهوم خطوة بخطوة").
-     * البطاقة 3: "📌 3. القاعدة والمثال التوضيحي": مثال تطبيقي محلول وقاعدة محددة لتثبيت الفهم.
-   - checkForUnderstanding: سؤال فحص فهم مباشر وسريع للتأكد من استيعاب الشرح الوافي المقدم.
-   - teacherGuidance: إرشادات للتدريس الوجاهي والنمذجة الصريحة على اللوح.
-`;
-    }
-  } else {
-    // blended
-    if (targetLang === 'hebrew') {
-      meaningPathDirective = `
-🔄 מסלול משולב (שאלות חקר סוקרטיות + הסבר פרונטלי מפורש ומקיף):
-המורה בחר/ה בסעיף 7: "מסלול משולב (Blended)".
-הבינה המלאכותית מספקת את שתי השיטות יחד בהרמוניה מושלמת:
-1. פותחת בסדרת שאלות סוקרטיות מכוונות (socraticDialogue) להפעלת התלמיד, חידוד התבוננותו והובלתו לגילוי הרעיון.
-2. משלבת הסבר פרונטלי עשיר, מפורט ומפורש היטב המבסס את החומר, הכללים וההגדרות במלואם, כדי להבטיח הבנה מוחלטת והגעה ליעד!
-`;
-    } else {
-      meaningPathDirective = `
-🔄 مسار مدمج (استكشاف سقراطي + شرح وجاهي وافٍ):
-المعلم اختار في البند 7: "المسار المدمج (Blended)".
-الذكاء الاصطناعي يوفر الطريقتين معاً بتكامل بيداغوجي رائع:
-1. يبدأ بأسئلة سقراطية موجهة متدرجة (socraticDialogue) يسأل فيها الطالب ويتفاعل ويجيب ليكتشف جوانب المفهوم بنفسه.
-2. يتبعها فوراً شرح وجاهي وافٍ ومفصل ينظم المادة العلمية، ويفصل القواعد والأمثلة المحلولة، ليضمن استيعاب المادة وبلوغ الهدف المطلوب باقتدار!
-`;
-    }
-  }
-
-  // Multi-group Stations Directive for Practice Station (المحطة الثالثة: التطبيق والتدريب - من 4 إلى 6 مجموعات)
-  let practiceGroupsDirective = '';
-  if (safePracticeGroups === '4' || safePracticeGroups === '5' || safePracticeGroups === '6') {
-    if (safePracticeTaskMode === 'differentiated') {
-      practiceGroupsDirective = `
-👥📱 توجيه إلزامي لمحطة التمرين (المحطة 3: التطبيق والتدريب - بنظام محطات المجموعات التفاعلية المختلفة):
-المعلم اختار وقت التخطيط تقسيم الصف في مرحلة التمرين إلى (${safePracticeGroups}) مجموعات (من 4 إلى 6 مجموعات) بمهام وأنشطة وفعاليات مختلفة تماماً لكل مجموعة!
-(القاعدة الصفية: لكل مجموعة سيكون على الأقل جهاز آيباد واحد أو لكل طالب هاتف يعمل عليه، والمعلم يراقب جميع المجموعات في آن واحد).
-يجب إلزامياً داخل كائن "3_practice" تضمين مصفوفة "practiceStations" تحتوي بدقة على (${safePracticeGroups}) محطات/مجموعات فرعية بفعاليات وأنشطة وتحديات مختلفة تماماً تغطي جوانب الدرس:
-- المحطة الفرعية 1: مهمة استقصاء وبحث علمي/أدبي لاستخراج أدلة واكتشاف علاقات (Inquiry & Discovery).
-- المحطة الفرعية 2: مهمة تطبيقية مباشرة وحل مسائل وتمارين تدريبية عملية (Application & Hands-on).
-- المحطة الفرعية 3: مهمة إبداع وتصميم رقمي أو تمثيل ومحاكاة لموقف حياتي (Creative & Simulation).
-- المحطة الفرعية 4: مهمة تفكير ناقد واكتشاف الأخطاء وتصويبها والمقارنة المنطقية (Critical Thinking & Analysis).
-${safePracticeGroups === '5' || safePracticeGroups === '6' ? '- المحطة الفرعية 5: مهمة ربط بالواقع وصناعة أثر أو مبادرة حياتية (Real-World Impact).' : ''}
-${safePracticeGroups === '6' ? '- المحطة الفرعية 6: مهمة الابتكار والتحدي الهندسي/المستقبلي وتوليد حلول غير مألوفة (Innovation & Future Challenge).' : ''}
-`;
-    } else {
-      practiceGroupsDirective = `
-👥🤝 توجيه إلزامي لمحطة التمرين (المحطة 3: التطبيق والتدريب - بنظام مجموعات بمهمة موحدة):
-المعلم اختار وقت التخطيط تقسيم الصف في مرحلة التمرين إلى (${safePracticeGroups}) مجموعات (من 4 إلى 6 مجموعات) ولكن مع توحيد المهمة الأساسية والتحدي لجميع المجموعات!
-يجب داخل كائن "3_practice" تضمين مصفوفة "practiceStations" تحتوي بدقة على (${safePracticeGroups}) مجموعات تشترك جميعها في نفس التحدي والمهمة الموحدة مع منح كل مجموعة رقماً وشارة وجهاز آيباد/هاتف وبطاقة تسليم مستقلة لإنتاجها الخاص، لتعمل الفرق بالتوازي في جو تنافسي وتعاوني رائع.
-`;
-    }
-  }
-
-  const prompt = `أنت المحرك التعليمي الذكي لمنصة "مفتاح" (מפתי"ח) التفاعلية في مدرسة مشيرفة الابتدائية. مهمتك ليست كتابة خطة نظرية للمعلم، بل بناء محتوى حصة تفاعلية كاملة موجهة للطالب مباشرة بضمير المخاطب ("أنت يا بطل / يا مبدع")، مع أدوات دعم للمعلم.
-التزم باللغتين العربية أو العبرية أو الإنجليزية حسب مدخلات المعلم، وطبق مبادئ التصميم الشامل للتعلم (UDL) والتقويم التكويني المستمر.
-
-المعطيات المدخلة لإنشاء الحصة:
-- موضوع الدرس / المادة التعليمية: ${safeSubject}
-- عنوان الدرس ومحوره: ${safeTitle}
-- الصف والمستوى الدراسي: ${safeGrade}
-- لغة تدريس ومحتوى الحصة المطلوبة: ${targetLang === 'hebrew' ? 'العبرية (עברית בלבד)' : targetLang === 'english' ? 'الإنجليزية (English 100%)' : 'العربية'}
-${safeCustomObjective ? `- هدف التعلم المعتمد من المعلم: "${safeCustomObjective}"` : '- هدف التعلم: ولّده تلقائياً بدقة ووضوح.'}
-${safeCustomCriteria ? `- معيار النجاح المعتمد من المعلم: "${safeCustomCriteria}"` : '- معيار النجاح: ولّده تلقائياً بحيث يكون قابلاً للقياس.'}
-- مسار بناء المعنى المفضل للمحطة الثانية: ${safeMeaningPath === 'explicit' ? 'تعليم صريح ومباشر (explicit)' : safeMeaningPath === 'discovery' ? 'اكتشاف وبحث موجه (discovery)' : 'مدمج (blended)'}
-- نظام مجموعات محطة التمرين (المحطة 3): ${safePracticeGroups !== 'none' ? `تقسيم الصف إلى ${safePracticeGroups} محطات فرعية بفعاليات مختلفة على أجهزة الآيباد/الهواتف` : 'نمط تمايز مستويات موحد'}
-${safeUdlList.length > 0 ? `- ملاحظات الاحتواء والتصميم الشامل (UDL): ${safeUdlList.join('، ')}` : ''}
-${safeRequests ? `- طلبات وتوجيهات خاصة للمعلم: "${safeRequests}"` : ''}
-
-${teacherCustomDirectives}
-
-⚠️⚠️ توجيه قاطع وصارم جداً لفهم السياق الدلالي والتاريخي لعنوان الدرس بدقة مطلقة (CRITICAL DOMAIN & SEMANTIC ACCURACY):
-1. الالتزام المطلق بالدلالة الحقيقية والتاريخية لعنوان ومحور الدرس ("${safeTitle}") في مادة ("${safeSubject}"):
-   - إذا كان العنوان يعبر عن حدث تاريخي أو إسلامي (مثل: "معركة الجمل في الإسلام"، "غزوة بدر"، "فتح مكة"، "صلح الحديبية"، "الهجرة النبوية"):
-     * موضوع الحصة بالكامل بجميع محطاتها الخمس هو: الحدث التاريخي والإسلامي وسياقه في عهد الصحابة، والدروس والعِبر العظيمة، وحكمة إدارة الخلاف والشورى، والوحدة والتآلف!
-     * يُمنع منعاً باتاً وقطعياً تفسير كلمة "الجمل" كحيوان بيولوجي أو الحديث عن سنام الجمل أو الرمال أو البيئة الصحراوية كحيوانات! إن أي ذكر لحيوان الجمل أو رمال الصحراء يُعد خطأً علمياً وبيداغوجياً فادحاً وغير مقبول إطلاقاً!
-   - وبالمثل لأي موضوع في العلوم أو الرياضيات أو اللغة العربية أو التربية الإسلامية: التزم بدقة متناهية بالمفهوم الحقيقي المقصود دون أي انحراف أو خلط بين المعاني المشتركة.
-
-${languageDirective}
-
-${genreDirective}
-
-${meaningPathDirective}
-
-${practiceGroupsDirective}
-
-المطلوب: توليد حصة تفاعلية متكاملة ومترابطة وفق محطات مِفتاح الخمس بالترتيب الإلزامي:
-1. مشوّق ومحفّز (م) — شعار الطالب: "أنا أسأل وأستعد / אני שואל ומתכונן"
-2. فهم وبناء المعنى (ف) — شعار الطالب: "أنا أفهم وأربط / אני מבין ומקשר"
-3. التطبيق والتدريب (ت) — شعار الطالب: "أنا أجرب وأتدرب / אני מתנסה ומתרגל"
-4. أدلة الفهم (ا) — شعار الطالب: "أنا أُظهر ما فهمته / אני מראה מה הבנתי"
-5. حصاد ونقل الأثر (ح) — شعار الطالب: "أنا ألخص وأستخدم ما تعلمته في سياق جديد / אני מסכם ומשתמש במה שלמדתי"
-
-القواعد البيداغوجية الصارمة (כללי הברזל של מודל מִפתח):
-1. שיעור עשיר, מוכן להעברה מיידית בכיתה ומותאם ישירות למסך התלמיד (Turnkey Classroom Ready):
-   - אין לכתוב סיכומים קצרים או הפניות כלליות; יש לכתוב את כל התוכן במלואו על גבי המסך!
-   - אם מתוכנן קטע קריאה: כתוב את הטקסט המלא (3-4 פסקאות עשירות) בתחנה 2 (studentPrompt), כולל כותרת ומילון מושגים!
-   - אם יש חידה או סיפור: כתוב את הטקסט המלא, הרמזים והפתרון בתוך interactiveActivity.riddle.
-   - אם יש סרטון: כלול כותרת סרטון, משפט חיפוש מדויק מאוד ב-youtubeSearchQuery המותאם לנושא השיעור ולכיתה, סיפור מרתק או תופעה מדהימה ב-hookStoryOrScenario, שאלת סקרנות ב-curiosityQuestion ושאלת רפלקציה מעמיקה (אל תמציא קישורי יוטיוב פיקטיביים - השאר youtubeUrl ריק "").
-2. דיפרנציאציה אמיתית בתחנה 3 (יישום ותרגול): חובה לכלול משימת ליבה אחידה (coreTaskDescription), תרגילים אינטראקטיביים (interactiveExercises), כרטיס פיגום וסיוע (scaffoldingCard), אתגר העמקה וגילוי טעות (deepChallenge), וכן 3 משימות מלאות לשלוש רמות (tasks).
-3. תחנה 4 (ראיות הבנה): שאלות בדיקה עצמאיות מפורשות + exitTicketQuestion + sentenceStartersForUDL + ערכת קבוצת תמיכה גמישה למורה (supportGroupKitForTeacher).
-4. תחנה 5 (סיכום, קציר והעברה לחיים): summaryTask + metacognitionReflection + transferTask.
-5. שפת השיעור: ${targetLang === 'hebrew' ? 'עברית תקנית, עשירה ומדויקת בלבד (ללא ערבית)' : targetLang === 'english' ? '100% natural, polished English' : 'لغة عربية فصيحة وسليمة ومشكولة'}.
-
-أخرج JSON صالحاً فقط بالهيكل التالي (بدون أي نصوص خارج الـ JSON):
+כללים פדגוגיים מחייבים:
+1. כל תוכן השיעור, השאלות והמשימות חייב לעסוק באופן ממוקד, מדויק ועמוק בנושא (${safeTitle}) במקצוע (${safeSubject}).
+2. החזר אך ורק אובייקט JSON תקין ומלא (RFC8259) לפי המבנה שלהלן, ללא שום טקסט או בלוקי קוד מרקדאון מחוץ ל-JSON:
 {
   "title": "${safeTitle}",
   "lessonTitle": "${safeTitle}",
   "subject": "${safeSubject}",
-  "language": "${targetLang}",
+  "language": "hebrew",
   "grade": "${safeGrade}",
-  "objective": "${safeCustomObjective || (targetLang === 'hebrew' ? 'מטרת השיעור בעברית מדויקת...' : targetLang === 'english' ? 'Learning objective in English...' : 'هدف التعلّم الصريح المحدد...')}",
-  "learningGoal": "${safeCustomObjective || (targetLang === 'hebrew' ? 'מטרת השיעור בעברית מדויקת...' : targetLang === 'english' ? 'Learning objective in English...' : 'هدف التعلّم الصريح المحدد...')}",
-  "successCriteria": "${safeCustomCriteria || (targetLang === 'hebrew' ? 'קריטריון הצלחה מדיד בעברית...' : targetLang === 'english' ? 'Measurable success criteria in English...' : 'معيار النجاح القابل للقياس...')}",
-  "refreshActivity": "نشاط حركي أو تركيزي ممتع لمدة 60 ثانية مرتبط بموضوع الدرس لكسر الجمود وتنشيط الدماغ...",
+  "objective": "${safeCustomObjective || 'מטרת השיעור המפורשת בעברית מדויקת בנושא (' + safeTitle + ')...'}",
+  "learningGoal": "${safeCustomObjective || 'יעד השיעור המרכזי...'}",
+  "successCriteria": "${safeCustomCriteria || 'קריטריון הצלחה מדיד המעיד על השגת היעד...'}",
+  "refreshActivity": "פעילות ריענון של 60 שניות הקשורה לנושא השיעור...",
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
-      "name": "${targetLang === 'hebrew' ? 'משיכה וסקרנות' : 'مشوّق ومحفّز'}",
+      "name": "משיכה וסקרנות",
       "number": 1,
       "icon": "🔥",
-      "studentPrompt": "نص الموقف المحفز المعروض للطلاب...",
-      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المحفز...",
+      "studentPrompt": "אתגר הפתיחה והסקרנות בנושא (${safeTitle})...",
+      "teacherGuidance": "הנחיות למורה לפתיחה מסקרנת...",
       "suggestedDuration": 6,
-      "scaffold": "تلميح للبدء...",
-      "youtubeSearchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف...",
-      "hookStoryOrScenario": "القصة المشوقة أو الظاهرة المدهشة المرتبطة بالدرس كبديل آمن ومتكامل...",
-      "curiosityQuestion": "سؤال الفضول المثير للتفكير حول القصة أو الظاهرة...",
-      "helperWords": ["كلمة مساعدة 1", "كلمة مساعدة 2", "كلمة مساعدة 3"],
+      "scaffold": "רמז מסייע להתבוננות...",
       "interactiveActivity": {
         "type": "curiosity",
-        "title": "عنوان المدخل المشوق بحسب نوع الدرس",
-        "curiosity": {
-          "title": "عنوان الموقف الاستكشافي أو الظاهرة",
-          "scenario": "نص القصة المشوقة أو الظاهرة الواقعية المدهشة المرتبطة بموضوع الدرس بالتفصيل وبأسلوب شيق وجذاب...",
-          "curiosityQuestion": "سؤال الفضول والتفكير الاستكشافي...",
-          "options": ["فرضية 1 للتأمل", "فرضية 2 (التفسير والاتجاه الأنسب 🎯)", "فرضية 3", "فرضية 4"],
-          "clues": ["🔑 مفتاح تفكير 1", "🔑 مفتاح تفكير 2"],
-          "solution": "التفسير الأنسب أو سر الموقف 🎯",
-          "explanation": "الربط بهدف الدرس والتعلم..."
-        },
-        "riddle": {
-          "riddleText": "نص التحدي أو اللغز إن كان الدرس يتطلب ذلك...",
-          "clues": ["רמז 1 / تلميح 1", "רמז 2 / تلميح 2"],
-          "options": ["אופציה 1", "אופציה 2", "אופציה 3", "אופציה 4"],
-          "solution": "פתרון החידה / حل الأحجية",
-          "explanation": "הסבר וקישור לשיעור / ربط الحل بالدرس"
-        },
-        "puzzle": {
-          "instruction": "הוראות / تعليمات الترتيب",
-          "pieces": [
-            { "id": "p1", "text": "חלק 1", "order": 1 },
-            { "id": "p2", "text": "חלק 2", "order": 2 },
-            { "id": "p3", "text": "חלק 3", "order": 3 },
-            { "id": "p4", "text": "חלק 4", "order": 4 }
-          ],
-          "targetConcept": "מושג המפתח / المفهوم النهائي",
-          "successMessage": "כל הכבוד! / أحسنت!"
-        },
-        "video": {
-          "title": "عنوان المقطع المقترح",
-          "youtubeSearchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف",
-          "searchQuery": "جملة بحث دقيقة جداً في يوتيوب مرتبطة بموضوع الدرس والصف",
-          "youtubeUrl": "",
-          "hookStoryOrScenario": "القصة المشوقة أو الظاهرة المدهشة المرتبطة بالدرس...",
-          "curiosityQuestion": "سؤال الفضول المثير للتفكير...",
-          "reflectionQuestion": "سؤال التأمل"
-        }
+        "title": "אתגר פתיחה: ${safeTitle}",
+        "scenario": "תיאור תופעה או אירוע מסקרן ומעורר מחשבה סביב ${safeTitle}...",
+        "curiosityQuestion": "שאלת סקרנות מעוררת מחשבה?",
+        "options": ["השערה 1", "הסבר מדויק 🎯", "השערה 3", "השערה 4"],
+        "solution": "הסבר מדויק 🎯",
+        "explanation": "הסבר קצר המקשר למטרת השיעור..."
       }
     },
     "2_understanding": {
-      "name": "${targetLang === 'hebrew' ? 'הבנת המשמעות' : 'فهم وبناء المعنى'}",
+      "name": "הבנת המשמעות",
       "number": 2,
       "icon": "${safeMeaningPath === 'discovery' ? '🔍' : safeMeaningPath === 'explicit' ? '👩‍🏫' : '🧩'}",
       "selectedPath": "${safeMeaningPath}",
       "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive'}",
-      "pedagogicalModeName": "${safeMeaningPath === 'discovery' ? (targetLang === 'hebrew' ? 'למידה חוקרת בשיטה הסוקרטית' : 'تعلم استكشافي بالطريقة السقراطية') : safeMeaningPath === 'explicit' ? (targetLang === 'hebrew' ? 'הוראה פרונטלית והסבר מפורש' : 'تدريس وجاهي وشرح مباشر') : (targetLang === 'hebrew' ? 'מסלול משולב (סוקרטי ופרונטלי)' : 'مسار مدمج (سقراطي ووجاهي)')}",
-      "studentPrompt": "${safeMeaningPath === 'discovery' ? 'تساؤل استكشافي سقراطي مركزي ومحطات استكشافية متدرجة تقود الطالب للهدف ذاتياً...' : safeMeaningPath === 'explicit' ? 'شرح عادي وصريح ومباشر للمفاهيم والقواعد والخطوات الإجرائية...' : 'المحتوى الصريح: نص القراءة الكامل إن كان فهم المقروء، أو الشرح والقواعد والمفاهيم...'}",
+      "pedagogicalModeName": "${pathDesc}",
+      "studentPrompt": "${safeMeaningPath === 'discovery' ? 'שאלות חקר סוקרטיות המובילות את התלמיד לגילוי הרעיון המרכזי בעצמו...' : 'הסבר פרונטלי מפורש ומובנה של המושגים והכללים בשיעור (' + safeTitle + ')...'}",
       "socraticDialogue": {
-        "targetGoalStatement": "${safeCustomObjective || (targetLang === 'hebrew' ? 'מטרת השיעור שהתלמיד יגיע אליה דרך שאלות החקר הסוקרטיות...' : 'هدف الدرس الذي سيصل إليه الطالب ذاتياً عبر الأسئلة السقراطية الموجهة...')}",
+        "targetGoalStatement": "${safeCustomObjective || 'יעד השיעור שהתלמיד יגלה בעצמו...'}",
         "steps": [
-          {
-            "stepNumber": 1,
-            "stage": "${targetLang === 'hebrew' ? '1. תצפית ושאילת שאלות 🔍' : '١. الملاحظة والتساؤل السقراطي 🔍'}",
-            "prompt": "${targetLang === 'hebrew' ? 'שאלת הנחיה סוקרטית ראשונית לבחינת דוגמה או מקרה בוחן...' : 'سؤال سقراطي موجّه يطرح حالة أو مثالاً ويسأل الطالب عما يلاحظه...'}",
-            "options": ["${targetLang === 'hebrew' ? 'מסקנת תצפית מדויקת' : 'الملاحظة الصائبة التي تكشف النمط والعلة'}", "${targetLang === 'hebrew' ? 'השערה לא מדויקת' : 'ملاحظة سطحية غير دقيقة'}", "${targetLang === 'hebrew' ? 'ניחוש אקראי' : 'افتراض عشوائي'}"],
-            "correctOption": "${targetLang === 'hebrew' ? 'מסקנת תצפית מדויקת' : 'الملاحظة الصائبة التي تكشف النمط والعلة'}",
-            "guidingHint": "${targetLang === 'hebrew' ? 'רמז סוקרטי לתצפית מעמיקה...' : 'تلميح سقراطي يساعد الطالب على التدقيق في التفاصيل...'}",
-            "socraticFeedback": "${targetLang === 'hebrew' ? 'מצוין! הבחנת בדפוס הנכון. כעת נעבור לשלב הניתוח...' : 'أحسنت الملاحظة! هذا يقودنا مباشرة إلى التساؤل التحليلي التالي...'}"
-          },
-          {
-            "stepNumber": 2,
-            "stage": "${targetLang === 'hebrew' ? '2. ניתוח והשוואת קשרים 🧩' : '٢. التحليل وفحص العلاقات 🧩'}",
-            "prompt": "${targetLang === 'hebrew' ? 'שאלת עומק סוקרטית להשוואת מקרים והבנת סיבתיות...' : 'سؤال سقراطي تحليلي يوجه الطالب للربط بين المعطيات وفحص أسباب النتيجة...'}",
-            "options": ["${targetLang === 'hebrew' ? 'ניתוח סיבתי מדויק' : 'تحليل صحيح يربط العلاقات بدقة'}", "${targetLang === 'hebrew' ? 'הסבר חלקי' : 'تحليل سطحي'}", "${targetLang === 'hebrew' ? 'הנחה מוטעית' : 'افتراض غير سليم'}"],
-            "correctOption": "${targetLang === 'hebrew' ? 'ניתוח סיבתי מדויק' : 'تحليل صحيح يربط العلاقات بدقة'}",
-            "guidingHint": "${targetLang === 'hebrew' ? 'רמז סוקרטי לבחינת ההבדל...' : 'تلميح سقراطي: قارن بين النماذج لتكتشف السبب...'}",
-            "socraticFeedback": "${targetLang === 'hebrew' ? 'ניתוח מבריק! כעת הדרך סלולה להסקת המסקנה ולהשגת היעד...' : 'تحليل عميق ورائع! والآن صرنا على بُعد خطوة واحدة من استنتاج القاعدة وبلوغ الهدف...'}"
-          },
-          {
-            "stepNumber": 3,
-            "stage": "${targetLang === 'hebrew' ? '3. הסקת מסקנה והגעה ליעד 🎯' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯'}",
-            "prompt": "${targetLang === 'hebrew' ? 'שאלה סוקרטית מסכמת: נסחו בעצמכם את הכלל שהתגלה והגיעו למטרת השיעור!' : 'السؤال السقراطي الختامي: استنتج الآن القاعدة الذهبية بنفسك لتصل إلى هدف الدرس!'}",
-            "options": ["${targetLang === 'hebrew' ? 'ניסוח הכלל המלא והשגת יעד השיעור 🌟' : 'صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟'}", "${targetLang === 'hebrew' ? 'כלל חלקי' : 'قاعدة منقوصة'}", "${targetLang === 'hebrew' ? 'מסקנה שגויה' : 'استنتاج خاطئ'}"],
-            "correctOption": "${targetLang === 'hebrew' ? 'ניסוח הכלל המלא והשגת יעד השיעור 🌟' : 'صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟'}",
-            "guidingHint": "${targetLang === 'hebrew' ? 'רמז סוקרטי: חברו את מה שגיליתם בשלבים הקודמים...' : 'تلميح سقراطي: اجمع ما لاحظته في الخطوة 1 والخطوة 2 لتصيغ النتيجة...'}",
-            "socraticFeedback": "${targetLang === 'hebrew' ? 'כל הכבוד! 🎉 הגעתם ליעד השיעור בעצמכם בשיטה הסוקרטית!' : 'أحسنت وأبدعت! 🌟 لقد وصلت إلى هدف الدرس واستنتجت القاعدة بنفسك بالطريقة السقراطية!'}"
-          }
+          { "stepNumber": 1, "stage": "1. תצפית ושאילת שאלות 🔍", "prompt": "שאלת הנחיה סוקרטית ראשונית לבחינת דוגמה או מקרה בוחן...", "options": ["תצפית נכונה ומדויקת", "השערה חלקית", "ניחוש אקראי"], "correctOption": "תצפית נכונה ומדויקת", "guidingHint": "רמז סוקרטי...", "socraticFeedback": "מצוין! הבחנת בדפוס הנכון." },
+          { "stepNumber": 2, "stage": "2. ניתוח והשוואת קשרים 🧩", "prompt": "שאלת עומק סוקרטית להשוואת מקרים והבנת סיבתיות...", "options": ["ניתוח סיבתי מדויק", "הסבר שטחי", "מסקנה שגויה"], "correctOption": "ניתוח סיבתי מדויק", "guidingHint": "רמז סוקרטי להשוואה...", "socraticFeedback": "ניתוח מבריק! כעת הדרך סלולה ליעד." },
+          { "stepNumber": 3, "stage": "3. הסקת מסקנה והגעה ליעד 🎯", "prompt": "שאלת סיכום סוקרטית: נסחו בעצמכם את הכלל שהתגלה והגיעו למטרת השיעור!", "options": ["ניסוח הכלל המלא והשגת היעד 🌟", "כלל חלקי", "מסקנה שגויה"], "correctOption": "ניסוח הכלל המלא והשגת היעד 🌟", "guidingHint": "רמז מסכם...", "socraticFeedback": "כל הכבוד! 🎉 הגעתם ליעד בעצמכם!" }
         ]
       },
       "explanationCards": [
-        { "title": "${safeMeaningPath === 'discovery' ? '🔍 1. التساؤل والملاحظة السقراطية' : '📖 1. المفهوم والتعريف الصريح'}", "step": 1, "content": "المحتوى التوجيهي للخطوة الأولى...", "example": "مثال أو تساؤل ملاحظة..." },
-        { "title": "${safeMeaningPath === 'discovery' ? '🧩 2. التحليل والمقارنة السقراطية' : '💡 2. خطوات النمذجة والعمل'}", "step": 2, "content": "المحتوى التوجيهي للخطوة الثانية...", "example": "مثال أو تساؤل فحص العلاقات..." },
-        { "title": "${safeMeaningPath === 'discovery' ? '🎯 3. الاستنتاج وبلوغ الهدف المطلوب' : '📌 3. القاعدة والمثال التطبيقي'}", "step": 3, "content": "صياغة المفهوم النهائي وبلوغ الهدف...", "example": "مثال تأكيدي وبلوغ الهدف..." }
+        { "title": "1. הגדרת המושג המרכזי", "content": "הסבר מפורש וברור של המושג בשיעור (${safeTitle})...", "example": "דוגמה ישירה להמחשה..." },
+        { "title": "2. שלבי היישום וההדגמה", "content": "שלבי העבודה והיישום שלב אחר שלב...", "example": "דוגמה פתורה עם הסבר מודרך..." },
+        { "title": "3. הכלל המעשי", "content": "הכלל הסופי ליישום ועקרונות הביצוע הנכונים...", "example": "יישום מעשי של הכלל..." }
       ],
-      "conceptMapKeywords": ["مفهوم 1", "مفهوم 2", "مفهوم 3"],
+      "conceptMapKeywords": ["${safeTitle}", "${safeSubject}", "עיקרון מרכזי", "יישום מעשי"],
       "checkForUnderstanding": {
-        "question": "${safeMeaningPath === 'discovery' ? 'سؤال استدلالي سقراطي يطلب من الطالب إثبات الاستنتاج والوصول للهدف؟' : 'سؤال فحص فهم مباشر وسريع للتأكد من استيعاب الشرح الوجاهي؟'}",
-        "options": ["خيار 1", "خيار 2", "خيار 3"],
-        "correctAnswer": "خيار 1",
-        "feedback": "تغذية راجعة فورية تشرح لماذا الإجابة صحيحة وتثبت الفهم"
+        "question": "שאלת בדיקת הבנה קצרה וישירה בנושא (${safeTitle})?",
+        "options": ["תשובה נכונה ומדויקת 🎯", "מסיח 1", "מסיח 2"],
+        "correctAnswer": "תשובה נכונה ומדויקת 🎯",
+        "feedback": "כל הכבוד! תשובה מדויקת המעידה על הבנה."
       },
-      "teacherGuidance": "${safeMeaningPath === 'discovery' ? 'إرشادات المعلم لإدارة الحوار السقراطي وطرح الأسئلة السابرة دون إعطاء الإجابات الجاهزة...' : 'إرشادات النمذجة والشرح الوجاهي الصريح على اللوح...'}",
+      "teacherGuidance": "הנחיות למורה להנחיית הבנת המשמעות...",
       "suggestedDuration": 12,
-      "scaffold": "منظم بصري أو خطوة مساعدة..."
+      "scaffold": "רמז מסייע: היעזרו בדוגמאות שבכרטיסיות."
     },
     "3_practice": {
-      "name": "${targetLang === 'hebrew' ? 'יישום ותרגול' : 'التطبيق والتدريب'}",
+      "name": "יישום ותרגול",
       "number": 3,
       "icon": "🛠️",
-      "studentPrompt": "شرح توجيهي للمهمة وقواعد العمل الجماعي...",
-      "coreTaskDescription": "وصف المهمة الأساسية الموحدة لجميع الطلاب...",
-      "interactiveExercises": [
-        {
-          "question": "سؤال تطبيقي أول...",
-          "type": "mcq",
-          "options": ["خيار أ", "خيار ب", "خيار ج"],
-          "correctAnswer": "خيار أ",
-          "reasoningPrompt": "اشرح بكلماتك لماذا اخترت هذه الإجابة؟"
-        }
+      "studentPrompt": "ברוכים הבאים לתחנת היישום והתרגול בנושא (${safeTitle})! עבדו במחטות המכשירים לפי ההנחיות.",
+      "practiceStations": [
+        { "id": 1, "groupNumber": 1, "title": "תחנה 1: חקר וגילוי 🔬", "badge": "🔬 צוות חקר", "targetDevice": "אייפד קבוצה 1", "description": "חקר נתונים ומקורות בנושא (${safeTitle})...", "challenge": "אתגר חקר: חקרו ומצאו שתי ראיות מרכזיות המאמתות את ההשערה.", "deliverablePrompt": "רשמו את ממצאי החקר של הצוות:" },
+        { "id": 2, "groupNumber": 2, "title": "תחנה 2: יישום ופתרון ⚙️", "badge": "⚙️ צוות יישום", "targetDevice": "אייפד קבוצה 2", "description": "פתרון בעיות מעשיות ותרגול של (${safeTitle})...", "challenge": "אתגר יישום: פתרו תרגיל מעשי ישיר תוך הנמקת כל שלב.", "deliverablePrompt": "הציגו את שלבי הפתרון והתוצאה המנומקת:" },
+        { "id": 3, "groupNumber": 3, "title": "תחנה 3: יצירתיות והדמיה 🎨", "badge": "🎨 צוות יצירה", "targetDevice": "אייפד קבוצה 3", "description": "תכנון מודל או תרחיש הממחיש את (${safeTitle})...", "challenge": "אתגר יצירתי: צרו דיאלוג או מארגן חזותי הממחיש את המושג.", "deliverablePrompt": "שתפו את התוצר היצירתי של קבוצתכם:" },
+        { "id": 4, "groupNumber": 4, "title": "תחנה 4: חשיבה ביקורתית 🧠", "badge": "🧠 צוות ביקורת", "targetDevice": "אייפד קבוצה 4", "description": "איתור כשלים לוגיים והנמקה בנושא (${safeTitle})...", "challenge": "אתגר ביקורתי: אתרו את הטעות בטענה שגויה נפוצה ונמקו את התיקון.", "deliverablePrompt": "כתבו את ניתוח הטעות ואת הטיעון המתקן:" }
       ],
-      "scaffoldingCard": {
-        "hints": ["تلميح أول لمساعدة الطالب المتعثر...", "تلميح ثانٍ يبسط السؤال..."],
-        "sentenceStarter": "أعتقد أن الحل يبدأ بـ... لأن..."
+      "tasks": [
+        { "tier": "support", "badge": "🌱 קבוצת זינוק", "title": "משימת זינוק והבנה", "task": "משימה מודרכת לתרגול יסודות המושג (${safeTitle})...", "scaffold": "רמז מסייע לביצוע המשימה..." },
+        { "tier": "core", "badge": "⭐ קבוצת שליטה", "title": "משימת שליטה ותרגול", "task": "משימת הסקה ויישום מורכב בנושא (${safeTitle})...", "scaffold": "רמז מקשר בין שלבי הפתרון..." },
+        { "tier": "advanced", "badge": "🚀 קבוצת אתגר", "title": "משימת אתגר וחשיבה", "task": "אתגר חשיבה ביקורתית והערכה בנושא (${safeTitle})...", "scaffold": "רמז להעמקה מעבר לחומר הבסיסי..." }
+      ],
+      "teacherGuidance": "הנחיות למורה למעקב אחר הקבוצות והמכשירים...",
+      "suggestedDuration": 15,
+      "workMode": "groups"
+    },
+    "4_evidence": {
+      "name": "ראיות הבנה",
+      "number": 4,
+      "icon": "🔎",
+      "studentPrompt": "דף משימה עצמאי — ראיות להבנת [ ${safeTitle} ] ✍️",
+      "individualTask": "1. הסבירו את המושג המרכזי של (${safeTitle}) במילים שלכם.\n2. נמקו מדוע הכלל שנלמד הוא מדויק בעזרת דוגמה.\n3. תנו דוגמה מקורית משלכם המיישמת את הכלל.\n4. כיצד תוכלו להסביר מושג זה לחבר שמתקשה?",
+      "teacherGuidance": "הנחיות להערכת דף הראיות האישי...",
+      "suggestedDuration": 7,
+      "criterion": "מענה עצמאי מנומק על שאלות הראיות."
+    },
+    "5_harvest": {
+      "name": "קציר והעברה לחיים",
+      "number": 5,
+      "icon": "🎒",
+      "studentPrompt": "תחנת הקציר וסיכום הלמידה — [ ${safeTitle} ] 🎒✨",
+      "exitTicket": {
+        "q1": "מה הרעיון המרכזי שלמדתי היום על (${safeTitle})?",
+        "q2": "מה עזר לי להבין בצורה הטובה ביותר?",
+        "q3": "מה עדיין דורש הסבר נוסף מבחינתי?",
+        "q4_transfer": "איפה אוכל להשתמש במה שלמדתי בחיי היומיום?"
       },
-      "deepChallenge": {
-        "errorScenario": "ادعى سامي أن [خطأ شائع في الدرس]... اكتشف الخطأ الذي وقع فيه!",
-        "correctionPrompt": "صوب الخطأ مع التعليل العلمي الدقيق:"
+      "teacherGuidance": "הנחיות למורה לאיסוף כרטיסי היציאה וסיכום השיעור...",
+      "suggestedDuration": 5
+    }
+  }
+}`
+    : `أنت خبير تربوي متقدم في تصميم خطط الدروس وفق نموذج «مفتاح التعلم» الخماسي بمدرسة مشيرفة الابتدائية.
+صمم درساً كاملاً، غنياً، ومكتملاً بنسبة 100% وجاهزاً للتطبيق الصفي الفوري وفق المعطيات:
+- الموضوع: ${safeTitle}
+- المادة: ${safeSubject}
+- الصف: ${safeGrade}
+- المسار البيداغوجي للمحطة الثانية: ${pathDesc}
+- نظام العمل لمحطة التمرين (المحطة 3): ${groupsDesc}
+${customDirectivesText}
+
+قواعد بيداغوجية إلزامية صارمة:
+1. يجب أن يكون كامل محتوى الدرس والأنشطة والأسئلة متمحوراً بدقة تامة حول موضوع (${safeTitle}) في سياق مادة (${safeSubject})، مع استبعاد أي خلط مع مواد أخرى.
+2. أخرج كائن JSON صالحاً ومكتملاً فقط (RFC8259) دون أي نصوص أو كتل ماركداون خارجه:
+{
+  "title": "${safeTitle}",
+  "lessonTitle": "${safeTitle}",
+  "subject": "${safeSubject}",
+  "language": "arabic",
+  "grade": "${safeGrade}",
+  "objective": "${safeCustomObjective || 'أن يتعرف الطالب على أسباب ومعالم ومهارات (' + safeTitle + ') ويستنتج تطبيقاتها العملية في حياته.'}",
+  "learningGoal": "${safeCustomObjective || 'الهدف التعليمي الجوهري لدرس (' + safeTitle + ')...'}",
+  "successCriteria": "${safeCustomCriteria || 'معيار النجاح القابل للقياس والتحقق لدرس (' + safeTitle + ')...'}",
+  "refreshActivity": "نشاط تنشيط ذهني أو حركي ممتع لمدة 60 ثانية يرتبط بـ (${safeTitle})...",
+  "suggestedDuration": 45,
+  "stations": {
+    "1_hook": {
+      "name": "مشوّق ومحفّز",
+      "number": 1,
+      "icon": "🔥",
+      "studentPrompt": "الموقف القصصي أو التساؤل المثير للفضول حول (${safeTitle})...",
+      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المشوق وجذب الانتباه...",
+      "suggestedDuration": 6,
+      "scaffold": "تلميح استكشافي للبدء بالتفكير...",
+      "interactiveActivity": {
+        "type": "curiosity",
+        "title": "تحدي الفضول: ${safeTitle}",
+        "scenario": "تفاصيل الموقف المشوق والظاهرة الواقعية المرتبطة بـ (${safeTitle}) بالتفصيل وبأسلوب جذاب...",
+        "curiosityQuestion": "سؤال الفضول المثير للتفكير والبحث حول الموقف؟",
+        "options": ["فرضية أولى للتأمل", "التفسير الأنسب والأدق 🎯", "فرضية ثالثة", "فرضية رابعة"],
+        "solution": "التفسير الأنسب والأدق 🎯",
+        "explanation": "ربط التفسير بمفهوم وهدف الدرس..."
+      }
+    },
+    "2_understanding": {
+      "name": "فهم وبناء المعنى",
+      "number": 2,
+      "icon": "${safeMeaningPath === 'discovery' ? '🔍' : safeMeaningPath === 'explicit' ? '👩‍🏫' : '🧩'}",
+      "selectedPath": "${safeMeaningPath}",
+      "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive'}",
+      "pedagogicalModeName": "${pathDesc}",
+      "studentPrompt": "${safeMeaningPath === 'discovery' ? 'تساؤل استكشافي سقراطي يقود الطالب لاكتشاف القاعدة والهدف ذاتياً دون تلقين...' : 'الشرح الوجاهي المنظم والوافي لدرس (' + safeTitle + ') ببيان المفاهيم والخطوات الإجرائية والقواعد والأمثلة المحلولة...'}",
+      "socraticDialogue": {
+        "targetGoalStatement": "${safeCustomObjective || 'الهدف التعليمي الذي سيستنتجه الطالب بنفسه لدرس (' + safeTitle + ')...'}",
+        "steps": [
+          { "stepNumber": 1, "stage": "١. الملاحظة والتساؤل السقراطي 🔍", "prompt": "سؤال سقراطي أول يلاحظ فيه الطالب معطيات وحالات حول (${safeTitle}) ويسأل عما يلحظه...", "options": ["الملاحظة الصائبة التي تكشف النمط والعلة", "ملاحظة سطحية غير دقيقة", "افتراض عشوائي"], "correctOption": "الملاحظة الصائبة التي تكشف النمط والعلة", "guidingHint": "تلميح سقراطي للتدقيق في التفاصيل...", "socraticFeedback": "أحسنت الملاحظة بدقة! وهذا يقودنا إلى التحليل التالي." },
+          { "stepNumber": 2, "stage": "٢. التحليل ومقارنة العلاقات 🧩", "prompt": "سؤال سقراطي تحليلي يوجه الطالب للربط بين أسباب ونتائج (${safeTitle}) ومقارنة الحالات...", "options": ["تحليل صحيح يربط العلاقات بدقة", "تحليل سطحي", "افتراض غير سليم"], "correctOption": "تحليل صحيح يربط العلاقات بدقة", "guidingHint": "تلميح سقراطي: قارن بين النماذج لتكتشف السبب...", "socraticFeedback": "تحليل رائع وذكي! والآن إلى الخطوة الختامية لبلوغ الهدف." },
+          { "stepNumber": 3, "stage": "٣. الاستنتاج وبلوغ الهدف المطلوب 🎯", "prompt": "السؤال السقراطي الختامي: استنتج الآن بنفسك القاعدة الذهبية والهدف المطلوب لدرس (${safeTitle})!", "options": ["صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟", "قاعدة منقوصة", "استنتاج خاطئ"], "correctOption": "صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟", "guidingHint": "تلميح سقراطي: اجمع ما لاحظته في الخطوتين السابقتين...", "socraticFeedback": "مبارك يا بطل! 🎉 لقد استنتجت الهدف بنفسك بالطريقة السقراطية دون تلقين!" }
+        ]
       },
+      "explanationCards": [
+        { "title": "${safeMeaningPath === 'discovery' ? '🔍 1. التساؤل والملاحظة' : '📖 1. المفهوم والتعريف الصريح'}", "step": 1, "content": "شرح وافٍ ومباشر للمفهوم الأساسي وعناصره في درس (${safeTitle})...", "example": "مثال توضيحي مباشر يجسد المفهوم بوضوح..." },
+        { "title": "${safeMeaningPath === 'discovery' ? '🧩 2. التحليل والمقارنة' : '💡 2. خطوات النمذجة والعمل'}", "step": 2, "content": "خطوات التطبيق النموذجية الإجرائية السليمة في (${safeTitle})...", "example": "نموذج محلول ببيان خطوات التفكير السليم..." },
+        { "title": "${safeMeaningPath === 'discovery' ? '🎯 3. الاستنتاج وبلوغ الهدف' : '📌 3. القاعدة والمثال التطبيقي'}", "step": 3, "content": "القاعدة النهائية المعيارية للتطبيق السليم والمحكم في (${safeTitle})...", "example": "تطبيق نموذجي يثبت القاعدة في الذهن..." }
+      ],
+      "conceptMapKeywords": ["${safeTitle}", "${safeSubject}", "القاعدة المركزية", "التطبيق السليم"],
+      "checkForUnderstanding": {
+        "question": "سؤال فحص فهم مباشر وسريع للتأكد من استيعاب المفاهيم الأساسية لـ (${safeTitle})؟",
+        "options": ["الإجابة الصائبة الدقيقة 🎯", "خيار غير دقيق", "خيار خاطئ"],
+        "correctAnswer": "الإجابة الصائبة الدقيقة 🎯",
+        "feedback": "أحسنت! إجابة دقيقة تدل على استيعابك السليم للمفهوم."
+      },
+      "teacherGuidance": "إرشادات المعلم لمحطة بناء المعنى والشرح المباشر وتثبيت المفاهيم...",
+      "suggestedDuration": 12,
+      "scaffold": "تلميح مساند: استند إلى القاعدة والأمثلة المحلولة لتأكيد الفهم."
+    },
+    "3_practice": {
+      "name": "التطبيق والتدريب",
+      "number": 3,
+      "icon": "🛠️",
+      "studentPrompt": "مرحباً بكم في محطة التطبيق والتدريب لدرس (${safeTitle})! ستعمل المجموعات عبر أجهزة الآيباد/الهواتف لإنجاز المهام المتمايزة.",
       "practiceStations": [
         {
           "id": 1,
           "groupNumber": 1,
           "title": "المحطة 1: الاستقصاء والبحث 🔬",
           "badge": "🔬 فريق البحث والاستقصاء",
-          "targetDevice": "آيباد المجموعة 1 أو هاتف الطالب",
-          "description": "فحص المعطيات والنصوص لاستخراج أدلة واكتشاف العلاقات الرياضية/العلمية...",
-          "challenge": "سؤال أو تحدي البحث الاستقصائي الخاص بالمجموعة...",
-          "deliverablePrompt": "ما الذي ستقدمه مجموعتكم كناتج للبحث؟"
+          "targetDevice": "آيباد المجموعة 1",
+          "description": "استقصاء وبحث في معطيات (${safeTitle}) لاستخراج أدلة واكتشاف العلاقات...",
+          "challenge": "تحدي استقصائي: ابحثوا في معطيات (${safeTitle}) واستخرجوا دليلين يثبتان صحة الاستنتاج:",
+          "deliverablePrompt": "سجلوا ناتج بحث مجموعتكم مع الأدلة المستخرجة:"
         },
         {
           "id": 2,
           "groupNumber": 2,
-          "title": "المحطة 2: التطبيق والحل ⚙️",
-          "badge": "⚙️ فريق التطبيق العملي",
-          "targetDevice": "آيباد المجموعة 2 أو هاتف الطالب",
-          "description": "حل مسائل تطبيقية مباشرة وتمارين تدريبية لتعميق الإتقان...",
-          "challenge": "مسألة أو تمرين تطبيقي عملي خاص بالمجموعة...",
+          "title": "المحطة 2: التطبيق والحل العملي ⚙️",
+          "badge": "⚙️ فريق التطبيق والتمكن",
+          "targetDevice": "آيباد المجموعة 2",
+          "description": "تطبيق عملي لحل تدريبات ومسائل إجرائية حول (${safeTitle}) بدقة...",
+          "challenge": "تحدي تطبيقي: حلوا المسألة التطبيقية حول (${safeTitle}) مع كتابة تعليل خطوة بخطوة:",
           "deliverablePrompt": "اكتبوا خطوات الحل والنتيجة المبررة:"
         },
         {
           "id": 3,
           "groupNumber": 3,
-          "title": "المحطة 3: الإبداع والتمثيل 🎨",
+          "title": "المحطة 3: الإبداع والتمثيل والمحاكاة 🎨",
           "badge": "🎨 فريق الإبداع والمحاكاة",
-          "targetDevice": "آيباد المجموعة 3 أو هاتف الطالب",
-          "description": "تمثيل المشهد أو تصميم ملخص بصري أو صياغة سيناريو واقعي للمفهوم...",
-          "challenge": "مهمة إبداعية أو سيناريو محاكاة يجسد مفهوم الدرس...",
-          "deliverablePrompt": "شاركوا إنتاجكم الإبداعي أو نص السيناريو هنا:"
+          "targetDevice": "آيباد المجموعة 3",
+          "description": "تصميم مشهد حواري أو ملخص بصري يجسد مفهوم (${safeTitle}) بأسلوب مشوق...",
+          "challenge": "تحدي إبداعي: صمموا سيناريو محاكاة واقعياً أو رسماً توضيحياً يشرح فكرة (${safeTitle}):",
+          "deliverablePrompt": "اكتبوا نص المشهد الحواري أو وصف التمثيل المبتكر:"
         },
         {
           "id": 4,
           "groupNumber": 4,
           "title": "المحطة 4: التفكير الناقد واكتشاف الأخطاء 🧠",
           "badge": "🧠 فريق التفكير الناقد والتحليل",
-          "targetDevice": "آيباد المجموعة 4 أو هاتف الطالب",
-          "description": "فحص مغالطات وفرضيات غير دقيقة وتصويبها مع تقديم البراهين المنطقية...",
-          "challenge": "تحدي نقدي: ادعى شخص ما فكرة مغلوطة، حدد مكمن الخطأ وصوبه بدقة...",
-          "deliverablePrompt": "اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل:"
+          "targetDevice": "آيباد المجموعة 4",
+          "description": "فحص ادعاء مغلوط شائع في درس (${safeTitle}) وتصويبه بالبراهين...",
+          "challenge": "تحدي نقدي: ادعى أحدهم فهماً خاطئاً لـ (${safeTitle})، حددوا مكمن الخطأ وصوبوه بالدليل:",
+          "deliverablePrompt": "اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل المنطقي:"
         }
       ],
-      "teacherGuidance": "إرشادات المعلم لإدارة المحطة...",
-      "suggestedDuration": 15,
-      "workMode": "groups",
       "tasks": [
-        { "tier": "support", "badge": "${targetLang === 'hebrew' ? '🌱 קבוצת זינוק' : '🌱 فريق الانطلاق والتمكن'}", "title": "مهمة الانطلاق", "task": "المهمة وأسئلتها...", "scaffold": "تلميح..." },
-        { "tier": "core", "badge": "${targetLang === 'hebrew' ? '⭐ קבוצת שליטה' : '⭐ فريق الممارسة والإتقان'}", "title": "مهمة الإتقان", "task": "المهمة وأسئلتها...", "scaffold": "تلميح..." },
-        { "tier": "advanced", "badge": "${targetLang === 'hebrew' ? '🚀 קבוצת אתגר' : '🚀 فريق الرواد والتحدي'}", "title": "مهمة التحدي", "task": "المهمة وأسئلتها...", "scaffold": "تلميح..." }
-      ]
+        { "tier": "support", "badge": "🌱 فريق الانطلاق والتمكن", "title": "مهمة الانطلاق والتمكن", "task": "مهمة تطبيقية مباشرة تركز على المفاهيم الأساسية لـ (${safeTitle})...", "scaffold": "تلميح مساند للبدء بالحل..." },
+        { "tier": "core", "badge": "⭐ فريق الممارسة والإتقان", "title": "مهمة الممارسة والإتقان", "task": "مهمة تحليلية وتطبيقية تتطلب تفسير العلاقات في (${safeTitle})...", "scaffold": "تلميح: اربط بين القواعد والنتائج..." },
+        { "tier": "advanced", "badge": "🚀 فريق الرواد والتحدي", "title": "مهمة الرواد والتحدي", "task": "مهمة تفكير ناقد ومقارنة معمقة وحل مشكلات مركبة في (${safeTitle})...", "scaffold": "تلميح: فكر في الأثر المستقبلي والقيمي..." }
+      ],
+      "teacherGuidance": "إرشادات المعلم للتنقل بين محطات المجموعات ومتابعة شاشات الأجهزة...",
+      "suggestedDuration": 15,
+      "workMode": "groups"
     },
     "4_evidence": {
-      "name": "${targetLang === 'hebrew' ? 'ראיות הבנה' : 'أدلة الفهم'}",
+      "name": "أدلة الفهم",
       "number": 4,
       "icon": "🔎",
-      "studentPrompt": "ورقة الدليل الفردي المستقل مع الأسئلة الصريحة (سؤال 1، 2، 3، 4)...",
-      "exitTicketQuestion": "سؤال التقييم الفردي المباشر الذي يقيس معيار النجاح بدقة...",
-      "sentenceStartersForUDL": ["الإجابة هي... والدليل على ذلك...", "أستنتج أن... لأن..."],
-      "supportGroupKitForTeacher": {
-        "alternativeExplanation": "شرح بديل مبسط جداً وبزاوية مختلفة (مثال حسي/قصصي) يشرحه المعلم لمجموعة الدعم المؤقتة...",
-        "parallelFollowUpQuestion": "سؤال موازٍ قصير ومباشر يتأكد به المعلم أن طلاب مجموعة الدعم قد فهموا الفكرة الآن..."
-      },
-      "teacherGuidance": "إرشادات تقييم الدليل الفردي...",
+      "studentPrompt": "ورقة الدليل الفردي المستقل — إثبات فهم [ ${safeTitle} ] ✍️",
+      "individualTask": "١. (تطبيق مباشر): اشرح المفهوم الأساسي لـ (${safeTitle}) بأسلوبك مع مثال.\n٢. (تحليل واستدلال): بيّن بالدليل المنطقي سبب صحة هذا المبدأ وأهميته.\n٣. (مهارة وحل مسألة): قدم حلاً لمسألة أو موقف يرتبط مباشرة بـ (${safeTitle}).\n٤. (نقل الأثر والتطبيق): كيف توظف ما تعلمته في موقف واقعي بحياتك اليومية؟",
+      "teacherGuidance": "إرشادات المعلم لتقييم إجابات الطلاب وفحص مستوى تمكن كل طالب واستقلاليته...",
       "suggestedDuration": 7,
-      "criterion": "معيار التحقق الصريح...",
-      "individualTask": "نص أسئلة ورقة الدليل الفردي...",
-      "allowedHelp": ["تلميح خفيف", "توضيح التعليمات"],
-      "evalLevels": {
-        "mastered": "${targetLang === 'hebrew' ? 'השיג את היעד' : 'حقق الهدف'}",
-        "partial": "${targetLang === 'hebrew' ? 'השיג חלקית' : 'حققه جزئياً'}",
-        "needs_support": "${targetLang === 'hebrew' ? 'זקוק לתמיכה' : 'يحتاج دعماً'}",
-        "insufficient_data": "${targetLang === 'hebrew' ? 'אין מספיק ראיות' : 'الدليل غير كافٍ'}"
-      }
+      "criterion": "إجابة مستقلة ومبررة تثبت تحقق معيار النجاح."
     },
     "5_harvest": {
-      "name": "${targetLang === 'hebrew' ? 'סיכום וקציר' : 'حصاد ونقل الأثر'}",
+      "name": "حصاد ونقل الأثر",
       "number": 5,
       "icon": "🎒",
-      "studentPrompt": "توجيهات الحصاد الصريحة للطلاب...",
-      "summaryTask": "لخص أهم فكرة تعلمتها اليوم في جملة واحدة أو ثلاث كلمات مفتاحية.",
-      "metacognitionReflection": {
-        "question": "ما أكثر شيء ساعدك على الفهم اليوم؟",
-        "choices": ["الأمثلة والشرح المبسط", "التدريب وحل التمارين", "السقالات والتلميحات المساعدة", "النقاش ومقارنة الأفكار"]
-      },
-      "transferTask": "سؤال نقل الأثر: كيف يمكنك استخدام ما تعلمته اليوم في موقف حقيقي خارج المدرسة؟",
-      "teacherGuidance": "إرشادات المعلم لختام الحصة...",
-      "suggestedDuration": 5,
+      "studentPrompt": "محطة الحصاد ونقل الأثر — ثمار تعلم [ ${safeTitle} ] 🎒✨",
       "exitTicket": {
-        "q1": "${targetLang === 'hebrew' ? 'מה הרעיון המרכזי שלמדתי היום?' : 'ما أهم فكرة تعلمتها اليوم؟'}",
-        "q2": "${targetLang === 'hebrew' ? 'מה עזר לי להבין?' : 'ما الذي ساعدني على الفهم؟'}",
-        "q3": "${targetLang === 'hebrew' ? 'מה עדיין דורש הסבר?' : 'ما الذي ما زلت أحتاج إلى توضيحه؟'}",
-        "q4_transfer": "${targetLang === 'hebrew' ? 'איפה אוכל להשתמש במה שלמדתי?' : 'أين أستطيع استخدام ما تعلمته؟'}"
-      }
+        "q1": "ما أهم فكرة أو مهارة تعلمتها اليوم حول (${safeTitle})؟",
+        "q2": "ما الذي ساعدني أكثر على الفهم؟",
+        "q3": "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
+        "q4_transfer": "أين وكيف تستطيع تطبيق ما تعلمته في حياتك اليومية ومدرستك؟"
+      },
+      "teacherGuidance": "إرشادات المعلم لجمع بطاقات الخروج ومراجعتها ورصد نقل الأثر وإغلاق الحصة...",
+      "suggestedDuration": 5
     }
   }
 }`;
@@ -4431,11 +4077,13 @@ ${practiceGroupsDirective}
     return lesson;
   };
 
-  // 1. Try Groq AI (Active high-speed models: GPT-OSS 120B, Qwen 3.8 27B, GPT-OSS 20B, ALLaM)
+  // 1. Try Groq AI (Active high-speed models: GPT-OSS 120B, GPT-OSS 20B, ALLaM, Qwen 3.8 27B)
   if (groqKey) {
     const groqModels = [
-      'qwen/qwen3.8-27b',
-      'allam-2-7b'
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
+      'allam-2-7b',
+      'qwen/qwen3.8-27b'
     ];
     for (const m of groqModels) {
       try {
@@ -4455,7 +4103,7 @@ ${practiceGroupsDirective}
               { role: 'user', content: prompt }
             ],
             temperature: 0.35,
-            max_tokens: 3800
+            max_tokens: 4200
           })
         }, 28000);
 
@@ -5056,7 +4704,7 @@ export const generateScientificGenieAI = async (question, chatHistory = [], stud
 
   // 1. Try Groq (High Speed Qwen 3.8 / GPT-OSS / ALLaM)
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout(
@@ -5485,7 +5133,7 @@ export const guideSteamStationAI = async ({
 
   // 1. Try Groq
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -5676,7 +5324,7 @@ ${stationTask}`;
 
   // 1. Try Groq
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b', 'qwen/qwen3.8-27b'];
     for (const m of models) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {

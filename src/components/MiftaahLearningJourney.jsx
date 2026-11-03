@@ -3044,6 +3044,15 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       showToast('جاري توليد الحصة بمحطات مِفتاح الخمس بالذكاء الاصطناعي... ⏳');
     }
 
+    const isLangSubj = effectiveSubject.includes('لغة') || effectiveSubject.includes('عربي') || effectiveSubject.includes('עברית') || effectiveSubject.includes('English') || effectiveSubject.includes('שפה');
+    const hasReadingKeywords = /فهم المقروء|قراءة|טקסט|הבנת הנקרא|reading/i.test(creatorTitle);
+    const resolvedIncludePassage = (isLangSubj || hasReadingKeywords || creatorCustomPassage.trim()) 
+      ? creatorIncludePassage 
+      : 'none';
+    const resolvedPrimarySkill = (isLangSubj || hasReadingKeywords)
+      ? creatorPrimarySkill
+      : 'general_concept';
+
     try {
       const res = await generateMiftaahFullJourneyLessonAI({
         title: creatorTitle,
@@ -3057,12 +3066,12 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         practiceGroupsCount: creatorPracticeGroupsCount,
         practiceTaskMode: creatorPracticeTaskMode,
         udlOptions: creatorUdlOptions,
-        includePassage: creatorIncludePassage,
+        includePassage: resolvedIncludePassage,
         passageLength: creatorPassageLength,
         customPassageText: creatorCustomPassage,
         questionsDensity: creatorQuestionsDensity,
         hookActivityType: creatorHookType,
-        primarySkill: creatorPrimarySkill
+        primarySkill: resolvedPrimarySkill
       });
 
       if (res && res.stations && res.stations['1_hook']) {
