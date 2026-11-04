@@ -4104,22 +4104,27 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         if (res.feedback) {
           aiBubbleText += `💡 ${res.feedback}\n\n`;
         }
-        if (res.isGoalReached) {
+        const shouldAdvance = res.advanceStep !== false && !res.needsClarification;
+        if (res.isGoalReached && shouldAdvance) {
           aiBubbleText += `🎯 ${res.achievedGoalSummary || 'مبارك! لقد استنتجت الهدف بنفسك!'}\n\n🎉 أحسنت صنعاً! لقد أثبتت فهمك العميق للمفهوم بالطريقة السقراطية دون تلقين جاهز. أنت الآن مؤهل تماماً للانتقال إلى محطة التطبيق والتدريب! 🌟`;
           setSocraticGoalReachedInfo(res.achievedGoalSummary || 'تم استنتاج الهدف بنجاح');
           setSt2SocraticCompleted(true);
         } else if (res.nextQuestion) {
           aiBubbleText += `❓ ${res.nextQuestion}`;
-          setSocraticCurrentStepNum(currentStep + 1);
+          if (shouldAdvance) {
+            setSocraticCurrentStepNum(Math.min(currentStep + 1, 3));
+          }
         }
 
+        const nextStepNum = shouldAdvance ? Math.min(currentStep + 1, 3) : currentStep;
+        const defaultStage = currentStep === 1 ? '٢. التحليل والمقارنة السقراطية 🧩' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯';
         const aiMsg = {
           id: 'soc_ai_' + Date.now(),
           role: 'ai',
           text: aiBubbleText,
-          step: currentStep + 1,
-          stageTitle: res.stageTitle || (currentStep === 1 ? '٢. التحليل والمقارنة السقراطية 🧩' : '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯'),
-          isGoalReached: !!res.isGoalReached,
+          step: nextStepNum,
+          stageTitle: res.stageTitle || (shouldAdvance ? defaultStage : `الخطوة ${currentStep}: استيضاح وتعميق 💬`),
+          isGoalReached: !!(res.isGoalReached && shouldAdvance),
           timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
         };
 

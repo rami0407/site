@@ -5542,8 +5542,8 @@ export const generateSocraticNextStepAI = async ({
   }
 
   const prompt = isHebrew
-    ? `אתה מורה ומנחה סוקרטי בכיר בבית ספר מושירפה.
-אתה מוביל חקר סוקרטי אינטראקטיבי בתחנה 2 (הבנת המשמעות) עבור תלמיד בכיתה ${safeGrade}.
+    ? `אתה מורה ומנחה סוקרטי בכיר, חכם וקשוב במיוחד בבית ספר מושירפה.
+אתה מוביל דיאלוג חקר סוקרטי אמיתי וחי בתחנה 2 (הבנת המשמעות) עבור תלמיד בכיתה ${safeGrade}.
 נושא השיעור: "${safeTitle}" (${safeSubject}).
 מטרת השיעור שהתלמיד צריך לגלות בעצמו: "${safeGoal}".
 השלב הנוכחי: שלב ${currentStep} מתוך 3.
@@ -5552,46 +5552,61 @@ ${formattedHistory}
 
 תשובת התלמיד העדכנית: "${studentAnswer}".
 
-עליך לפעול בדיוק לפי העקרונות הסוקרטיים הבאים:
-1. אל תיתן לתלמיד את התשובה הסופית בשום אופן!
-2. התייחס ישירות למה שהתלמיד כתב, עודד אותו במשפט אחד חם ומדויק.
-3. אם השלב הנוכחי הוא 1 (תצפית): שאל את שאלת שלב 2 (השוואה וניתוח) הנבנית ישירות על תשובת התלמיד.
-4. אם השלב הנוכחי הוא 2 (השוואה): שאל את שאלת שלב 3 (הסקת מסקנה וניסוח היעד) כדי שהתלמיד ינסח את מטרת השיעור במילים שלו.
-5. אם השלב הנוכחי הוא 3 (הסקה): אשר לתלמיד שהוא גילה בעצמו את מטרת השיעור, סכם את התובנה המרכזית, וברך אותו בחום (isGoalReached: true).
+עקרונות פדגוגיים סוקרטיים מהותיים לתגובה אמיתית וקשובה:
+1. התייחסות אותנטית וכנה לתשובת התלמיד (בלי להמציא כוונות שלא נאמרו!):
+   - אם תשובת התלמיד היא מילה מקוטעת, אותיות אקראיות, או חסרת פשר (כמו: "${studentAnswer}", "סתם", "לא יודע", ג'יבריש):
+     * אל תמציא פירוש או כוונה שלא קיימת!
+     * פנה אליו ישירות ובחום: ציין שלא הבנת למה התכוון במילה "${studentAnswer}", שאל האם נקטע לו המשפט או שהתכוון למילה אחרת, ובקש שיסביר את כוונתו.
+     * במצב כזה: "advanceStep": false, "needsClarification": true, "isGoalReached": false, והשאר את התלמיד באותו שלב!
+   - אם התשובה לא קשורה לנושא כלל: החזר אותו בעדינות לנושא השיעור ללא התקדמות שלב ("advanceStep": false).
+   - אם התשובה הגיונית ומתייחסת לשאלה: התייחס עניינית למה שאמר. אם שלב 1 -> שאל שאלת שלב 2 (השוואה), אם שלב 2 -> שאל שאלת שלב 3 (הסקה וניסוח היעד), אם שלב 3 -> אשר את הגילוי בהצלחה (isGoalReached: true, advanceStep: true).
+2. אל תיתן לתלמיד את התשובה הסופית בשום אופן.
 
 החזר JSON תקין בלבד:
 {
-  "feedback": "משוב סוקרטי מעודד וקצר על תשובת התלמיד",
-  "nextQuestion": "שאלת ההמשך המנחה (או ריק אם הושג היעד)",
-  "stageTitle": "כותרת השלב הבא",
+  "feedback": "משוב ענייני, כנה ואותנטי המתייחס ישירות למה שהתלמיד כתב...",
+  "nextQuestion": "שאלת ההמשך או שאלת בירור והסבר באותו שלב...",
+  "stageTitle": "כותרת השלב",
+  "advanceStep": true,
+  "needsClarification": false,
   "isGoalReached": ${currentStep >= 3},
-  "achievedGoalSummary": "סיכום קצר של מה שהתלמיד גילה",
+  "achievedGoalSummary": "סיכום מה שהתלמיד גילה אם הושג היעד",
   "suggestedThoughtStarters": ["רעיון 1", "רעיון 2", "רעיון 3"]
 }`
     : `أنت المعلم والمحاور السقراطي الذكي بنظام «مِفتاح التعلّم» بمدرسة مشيرفة الابتدائية.
-تقود حوار استكشاف سقراطي تفاعلي في محطة فهم وبناء المعنى لطالب في ${safeGrade}.
-- موضوع الدرس: "${safeTitle}" (مادة ${safeSubject}).
-- الهدف التعليمي الذي يجب أن يكتشفه الطالب بنفسه دون تلقين: "${safeGoal}".
+تقود حوار استكشاف سقراطي حي وتفاعلي حقيقي في محطة فهم وبناء المعنى لطالب في ${safeGrade}.
+- موضوع الدرس: "${safeTitle}" (${safeSubject}).
+- الهدف التعليمي المركزي الذي يقود الحوار الطالب لاكتشافه ذاتياً: "${safeGoal}".
 - الخطوة الحالية: الخطوة رقم ${currentStep} من 3.
 سجل الحوار السابق:
 ${formattedHistory}
 
-إجابة الطالب الأخيرة الآن: "${studentAnswer}".
+إجابة أو مدخل الطالب الأخير الآن: "${studentAnswer}".
 
-تعليمات المنهج السقراطي الصارم:
-1. إياك أن تعطي الطالب الإجابة الجاهزة مسبقاً!
-2. قيّم إجابة الطالب بتغذية راجعة سقراطية دافئة وموجزة (سطر أو سطرين) تثمن ما فكّر به وتربطه بالملاحظة.
-3. إذا كانت الخطوة الحالية 1 (الملاحظة): ابنِ على إجابته واطرح عليه سؤال الخطوة 2 (التحليل والمقارنة بين حالتين أو نشاطين).
-4. إذا كانت الخطوة الحالية 2 (التحليل): ابنِ على إجابته واطرح عليه سؤال الخطوة 3 (الاستنتاج وصياغة القاعدة والهدف بكلماته الخاصة).
-5. إذا كانت الخطوة الحالية 3 (الاستنتاج): تابعه وأعلن له فوزه وبلوغه الهدف المطلوب بنفسه، وصغ له تتويجاً باهراً يؤكد ما استنتجه (isGoalReached: true).
+قواعد التفاعل السقراطي الحي واليقظ (اقرأها بدقة وافهمها):
+١. الصدق والتفاعل الواقعي مع مدخلات الطالب (ممنوع تأليف معانٍ وهمية من نسج الخيال):
+- إذا كانت إجابة الطالب:
+  * كلمة مبتورة، أو أحرفاً عشوائية، أو مبهمة غير مفهومة في السياق (مثل: "${studentAnswer}"، أو حروف عشوائية، أو "ما بعرف"، أو "اي اشي"):
+  * ⚠️ يُحظر تماماً أن تفترض أو تخترع لها معنى وهمياً لم يقصده الطالب (مثل افتراض أن كلمة غامضة مثل "ثبا" تعني ثابتاً أو مستقراً، فهذا ضعف في الحوار)!
+  * تفاعل بصدق وذكاء كما يفعل المعلم الحقيقي في الصف: قل له بلطف: "لم يتضح لي قصدك بكلمة «${studentAnswer}»؛ هل انقطعت حروف الكلمة؟ أم قصدت كلمة أخرى؟ شاركني توضيحاً لما يدور في ذهنك لنواصل الاستكشاف معاً!"
+  * في هذه الحالة: ضع حتماً "advanceStep": false و "needsClarification": true و "isGoalReached": false، واجعله يبقى في نفس الخطوة دون تقدم حتى يوضح قصده.
+- إذا كانت إجابة الطالب خارجة تماماً عن موضوع الدرس (Off-topic):
+  * نبهه بلطف إلى أننا نناقش موضوع (${safeTitle})، وأعد تركيزه على سؤال الخطوة الحالية وضع "advanceStep": false.
+- إذا كانت إجابة الطالب منطقية وفي السياق (حتى لو كانت فكرة بسيطة أو عفوية):
+  * ثَمّن الفكرة الحقيقية التي طرحها تحديداً دون مبالغة، واربطها بالمفهوم.
+  * إذا كنا في خطوة 1: اطرح سؤال المقارنة والتحليل (خطوة 2)، واجعل "advanceStep": true.
+  * إذا كنا في خطوة 2: اطرح سؤال استنتاج القاعدة والهدف (خطوة 3)، واجعل "advanceStep": true.
+  * إذا كنا في خطوة 3: أعلن فوزه وبلوغ الهدف المطلوب بكلماته، واجعل "isGoalReached": true و "advanceStep": true.
 
 أخرج JSON فقط بالشكل التالي:
 {
-  "feedback": "تغذية راجعة سقراطية موجزة ودافئة تثمن ما قاله الطالب...",
-  "nextQuestion": "نص السؤال السقراطي التالي الموجه المبني على كلامه...",
-  "stageTitle": "٢. التحليل والمقارنة السقراطية 🧩",
+  "feedback": "تعليق سقراطي واقعي وذكي يرتبط حرفياً بما قاله الطالب دون اختلاق معانٍ غائبة...",
+  "nextQuestion": "السؤال التالي الموجه أو سؤال الاستيضاح...",
+  "stageTitle": "عنوان المرحلة",
+  "advanceStep": true,
+  "needsClarification": false,
   "isGoalReached": ${currentStep >= 3},
-  "achievedGoalSummary": "صياغة الهدف والمفهوم المستنتج...",
+  "achievedGoalSummary": "",
   "suggestedThoughtStarters": ["مفتاح تفكير أول...", "مفتاح تفكير ثانٍ...", "مفتاح تفكير ثالث..."]
 }`;
 
@@ -5613,9 +5628,9 @@ ${formattedHistory}
     }
   };
 
-  // 1. Try Groq
+  // 1. Try Groq (High-Tier LLMs first)
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of groqModels) {
       try {
         const res = await fetchWithTimeout(
@@ -5629,7 +5644,7 @@ ${formattedHistory}
             body: JSON.stringify({
               model: m,
               messages: [{ role: 'user', content: `${prompt}\n\nStrict JSON response only matching schema:` }],
-              temperature: 0.4,
+              temperature: 0.3,
               max_tokens: 650,
               response_format: { type: 'json_object' }
             })
@@ -5639,7 +5654,7 @@ ${formattedHistory}
         if (res.ok) {
           const data = await res.json();
           const parsed = parseSafeJson(data.choices?.[0]?.message?.content);
-          if (parsed && (parsed.nextQuestion || parsed.feedback || parsed.isGoalReached)) {
+          if (parsed && (parsed.nextQuestion || parsed.feedback || parsed.isGoalReached !== undefined)) {
             return parsed;
           }
         }
@@ -5651,7 +5666,7 @@ ${formattedHistory}
 
   // 2. Try Gemini
   if (geminiKey && geminiKey.startsWith('AIza')) {
-    const geminiModels = ['gemini-2.5-flash'];
+    const geminiModels = ['gemini-2.5-flash', 'gemini-1.5-flash'];
     for (const gm of geminiModels) {
       try {
         const res = await fetchWithTimeout(
@@ -5661,7 +5676,7 @@ ${formattedHistory}
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only matching schema:` }] }],
-              generationConfig: { temperature: 0.4, maxOutputTokens: 650, responseMimeType: 'application/json' }
+              generationConfig: { temperature: 0.3, maxOutputTokens: 650, responseMimeType: 'application/json' }
             })
           },
           6500
@@ -5669,7 +5684,7 @@ ${formattedHistory}
         if (res.ok) {
           const data = await res.json();
           const parsed = parseSafeJson(data.candidates?.[0]?.content?.parts?.[0]?.text);
-          if (parsed && (parsed.nextQuestion || parsed.feedback || parsed.isGoalReached)) {
+          if (parsed && (parsed.nextQuestion || parsed.feedback || parsed.isGoalReached !== undefined)) {
             return parsed;
           }
         }
@@ -5679,13 +5694,37 @@ ${formattedHistory}
     }
   }
 
-  // 3. Fallbacks (Dynamic and specific to step)
+  // 3. Smart Fallbacks (Dynamic and specific to input clarity and step)
+  const trimmedAns = studentAnswer.trim();
+  const isSuspiciousGibberish = trimmedAns.length < 4 && !/^(نعم|لا|صح|ماء|فم|دم|حر|برد|نار|عين|يد|سن|هضم|طعام|غذاء|خير|علم)$/i.test(trimmedAns);
+
+  if (isSuspiciousGibberish) {
+    return {
+      feedback: isHebrew
+        ? `לא לגמרי הבנתי את כוונתך במילה "${trimmedAns}". האם נקטעו אותיות, או שהתכוונת למילה אחרת? שתף אותי בהסבר קצר כדי שנמשיך יחד!`
+        : `لم يتضح لي قصدك بكلمة «${trimmedAns}»؛ هل انقطعت حروف كلمتك، أم قصدت فكرة أخرى؟ وضح لي ما الذي تقصده تحديداً لنواصل استكشافنا معاً! 💡`,
+      nextQuestion: isHebrew
+        ? `כיצד היית מנסח מחדש את תשובתך לגבי (${safeTitle})?`
+        : `كيف يمكنك توضيح فكرتك بكلمات أخرى حول (${safeTitle})؟ ما الذي قصدته بالتحديد؟`,
+      stageTitle: isHebrew ? `שלב ${currentStep}: בירור והעמקה 💬` : `الخطوة ${currentStep}: استيضاح وتعميق 💬`,
+      advanceStep: false,
+      needsClarification: true,
+      isGoalReached: false,
+      achievedGoalSummary: '',
+      suggestedThoughtStarters: isHebrew
+        ? ['אני מתכוון ש...', 'הרעיון שעלה לי הוא...', 'אני זוכר ש...']
+        : ['قصدي هو أن...', 'الفكرة التي خطرت لي هي...', 'ألاحظ أن...']
+    };
+  }
+
   if (isHebrew) {
     if (currentStep === 1) {
       return {
         feedback: `מחשבה מצוינת והבחנה מדויקת! התחלת לחשוב כמו חוקר אמיתי על (${safeTitle}).`,
         nextQuestion: `כעת נעבור לשלב ההשוואה: אם נשווה בין (${safeTitle}) לבין פעילות רגילה אחרת, מהו הגורם המרכזי שמבדיל ביניהם ומסביר את החשיבות הייחודית של המושג?`,
         stageTitle: '2. השוואה וניתוח קשרים 🧩',
+        advanceStep: true,
+        needsClarification: false,
         isGoalReached: false,
         achievedGoalSummary: '',
         suggestedThoughtStarters: ['הקשר המיוחד והעמוק', 'המטרה הפנימית שמאחורי הפעולה', 'ההשפעה על התודעה וההרגשה']
@@ -5695,6 +5734,8 @@ ${formattedHistory}
         feedback: `ניתוח מעמיק ומשכנע! הצלחת לזהות את ההבדל המהותי ולא הסתפקת בהסתכלות שטחית.`,
         nextQuestion: `וכעת הרגע המכריע: לאור מה שראינו והשווינו, נסח בעצמך במשפט אחד שלם את המסקנה או הכלל הסופי בנושא (${safeTitle})!`,
         stageTitle: '3. הסקת מסקנה והגעה ליעד 🎯',
+        advanceStep: true,
+        needsClarification: false,
         isGoalReached: false,
         achievedGoalSummary: '',
         suggestedThoughtStarters: [`המטרה העיקרית היא...`, `הבנתי שהעיקרון פועל כך ש...`, `הכלל המרכזי הוא...`]
@@ -5704,6 +5745,8 @@ ${formattedHistory}
         feedback: `כל הכבוד! 🎉 הגעת בעצמך ליעד השיעור בשיטה הסוקרטית המפוארת!`,
         nextQuestion: '',
         stageTitle: 'היעד הושג בהצלחה! 🌟',
+        advanceStep: true,
+        needsClarification: false,
         isGoalReached: true,
         achievedGoalSummary: `${safeGoal} — התלמיד ניסח בעצמו את העיקרון המדויק.`,
         suggestedThoughtStarters: []
@@ -5716,6 +5759,8 @@ ${formattedHistory}
       feedback: `تفكير رائع وبداية استكشافية موفقة جداً! لقد وضعت يدك على خيط التفكير الأول في درس (${safeTitle}).`,
       nextQuestion: `والآن لنتعمق في المقارنة والتحليل: إذا قارنا بين (${safeTitle}) وبين أي نشاط أو مفهوم آخر مشابه، ما الفارق الجوهري الذي يميز هذا المفهوم ويمنحه قيمته وأثره الخاص؟`,
       stageTitle: '٢. التحليل والمقارنة السقراطية 🧩',
+      advanceStep: true,
+      needsClarification: false,
       isGoalReached: false,
       achievedGoalSummary: '',
       suggestedThoughtStarters: ['الفارق يكمن في النية والهدف الداخلي 🤲', 'الصلة المباشرة والأثر المستمر في النفس 🕊️', 'الالتزام والنظام الذي يميزه عن غيره ⏰']
@@ -5725,6 +5770,8 @@ ${formattedHistory}
       feedback: `تحليل بارع وذكي للغاية! لقد تجاوزت السطح وتعمقت في جوهر المعنى وسر تميزه.`,
       nextQuestion: `والآن حان موعد قطف ثمرة تفكيرك: بناءً على ما لاحظته في البداية وما قارنته للتو، كيف تصيغ بأسلوبك الخاص وبجملة واحدة الهدف الأساسي الذي نتعلمه اليوم من (${safeTitle})؟`,
       stageTitle: '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯',
+      advanceStep: true,
+      needsClarification: false,
       isGoalReached: false,
       achievedGoalSummary: '',
       suggestedThoughtStarters: [`الهدف الأساسي هو أن...`, `القاعدة الجوهرية التي اكتشفتها هي...`, `أهمية هذا المفهوم تتجلى في...`]
@@ -5734,11 +5781,11 @@ ${formattedHistory}
       feedback: `مبارك يا بطل! 🎉 لقد استنتجت بنفسك الهدف المنشود بالطريقة السقراطية دون أي تلقين مسبق!`,
       nextQuestion: '',
       stageTitle: 'تم بلوغ الهدف بنجاح 🌟',
+      advanceStep: true,
+      needsClarification: false,
       isGoalReached: true,
       achievedGoalSummary: `${safeGoal} — استنتجه الطالب باستقلالية وبرهن عليه بدقة.`,
       suggestedThoughtStarters: []
     };
   }
 };
-
-
