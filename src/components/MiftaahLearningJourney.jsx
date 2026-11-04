@@ -3303,83 +3303,246 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
     showToast('تم حذف الحصة بنجاح 🗑️');
   };
 
-  // Build rich export payload for Word (.doc) and PDF from any Miftaah lesson
+  // Build rich export payload for Word (.doc) and PDF from any Miftaah lesson strictly matching Musheirifa Model
   const buildMiftaahExportPayload = (targetLesson = activeLesson) => {
     const lesson = normalizeMiftaahLesson(targetLesson || activeLesson);
+    const isHeb = lesson.language === 'hebrew' || /[\u0590-\u05FF]/.test(lesson.title || '') || /[\u0590-\u05FF]/.test(lesson.subject || '');
     const st1 = lesson.stations?.['1_hook'] || {};
     const st2 = lesson.stations?.['2_understanding'] || {};
     const st3 = lesson.stations?.['3_practice'] || {};
     const st4 = lesson.stations?.['4_evidence'] || {};
     const st5 = lesson.stations?.['5_harvest'] || {};
 
+    // 1. Station 1: Hook (מ / م)
+    const mCuriosityScenario = st1.interactiveActivity?.scenario || st1.hookStoryOrScenario || '';
+    const mCuriosityQ = st1.interactiveActivity?.curiosityQuestion || st1.curiosityQuestion || '';
+    const mCuriosityOpts = Array.isArray(st1.interactiveActivity?.options) && st1.interactiveActivity.options.length
+      ? (isHeb ? 'אפשרויות לתצפית ולהשערה:\n' : 'خيارات للتأمل وصياغة الفرضيات:\n') + st1.interactiveActivity.options.map((opt, i) => `  ${String.fromCharCode(isHeb ? 1488 + i : 1571 + i)}. ${opt}`).join('\n')
+      : '';
+    const mCuriositySol = st1.interactiveActivity?.solution || '';
+    const mCuriosityExp = st1.interactiveActivity?.explanation || '';
+
     const mText = [
-      st1.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st1.teacherScript}` : '',
-      st1.studentPrompt ? `🎯 مهمة الطالب:\n${st1.studentPrompt}` : '',
-      st1.hookStoryOrScenario ? `📖 القصة / الظاهرة المشوّقة:\n${st1.hookStoryOrScenario}` : '',
-      st1.curiosityQuestion ? `❓ سؤال الفضول:\n${st1.curiosityQuestion}` : '',
-      Array.isArray(st1.helperWords) && st1.helperWords.length ? `💡 كلمات مفتاحية مساعدة: ${st1.helperWords.join(' ، ')}` : '',
-      st1.scaffold ? `🗝️ سقالة المساندة (UDL): ${st1.scaffold}` : ''
+      isHeb
+        ? `❓ שאלת התלמיד: מה מסקרן אותי, ולמה אנחנו לומדים זאת?\n🏷️ הניסוח הקצר לתלמיד: "אני שואל ומתכונן"`
+        : `❓ سؤال التلميذ التوجيهي: ما الذي يثير فضولي، ولماذا نتعلم هذا؟\n🏷️ الشعار القصير للتلميذ: "أنا أتساءل وأستعد"`,
+      isHeb
+        ? `🎯 מטרת הלמידה (נכתבת על הלוח מתחילת השיעור):\n${lesson.objective || lesson.learningGoal || ''}\n🏆 קריטריון להצלחה (איזה ביצוע יראה שהושגה המטרה):\n${lesson.successCriteria || ''}`
+        : `🎯 هدف التعلم المركزي (يُكتب على اللوح منذ بداية الحصة بخط بارز):\n${lesson.objective || lesson.learningGoal || ''}\n🏆 معيار النجاح (أي أداء ومخرج يثبت تحقيق الهدف):\n${lesson.successCriteria || ''}`,
+      st1.teacherGuidance || st1.teacherScript
+        ? (isHeb ? `👨‍🏫 הנחיות למורה לעירור סקרנות והפעלת ידע קודם:\n${st1.teacherGuidance || st1.teacherScript}` : `👨‍🏫 إرشادات المعلم لإدارة الفضول وتنشيط المعرفة السابقة:\n${st1.teacherGuidance || st1.teacherScript}`)
+        : '',
+      st1.studentPrompt
+        ? (isHeb ? `🎯 משימת הפתיחה לתלמידים:\n${st1.studentPrompt}` : `🎯 مهمة الانطلاق والفضول للطلاب:\n${st1.studentPrompt}`)
+        : '',
+      mCuriosityScenario
+        ? (isHeb ? `📖 הגירוי המוחשי / תופעה מסקרנת / סיפור הפתיחה:\n${mCuriosityScenario}` : `📖 الموقف / الظاهرة الواقعية المثيرة للفضول:\n${mCuriosityScenario}`)
+        : '',
+      mCuriosityQ
+        ? (isHeb ? `❓ שאלת הסקרנות והחיבור למטרה:\n${mCuriosityQ}` : `❓ سؤال الفضول والبحث:\n${mCuriosityQ}`)
+        : '',
+      mCuriosityOpts,
+      mCuriositySol
+        ? (isHeb ? `🎯 הסבר מדויק ופתרון:\n${mCuriositySol}${mCuriosityExp ? ` — ${mCuriosityExp}` : ''}` : `🎯 التفسير الأنسب والأدق:\n${mCuriositySol}${mCuriosityExp ? ` — ${mCuriosityExp}` : ''}`)
+        : '',
+      Array.isArray(st1.helperWords) && st1.helperWords.length
+        ? (isHeb ? `💡 מילות מפתח להפעלת ידע קודם: ${st1.helperWords.join(' ، ')}` : `💡 مفاهيم وكلمات مفتاحية لتنشيط المعرفة السابقة: ${st1.helperWords.join(' ، ')}`)
+        : '',
+      st1.scaffold
+        ? (isHeb ? `🗝️ פיגום תמיכה והכלה (UDL): ${st1.scaffold}` : `🗝️ سقالة المساندة والتصميم الشامل (UDL): ${st1.scaffold}`)
+        : '',
+      isHeb
+        ? `👥 צורות עבודה (עמוד 3 במסמך): חשיבה אישית קצרה ⬅️ שיתוף בזוגות ⬅️ הצגת רעיונות במליאה וחיבור למטרת השיעור.`
+        : `👥 أنماط العمل الصفي (الصفحة 3 بالوثيقة): تأمل فردي سريع ⬅️ مشاركة ثنائية مع الزميل ⬅️ طرح موسع في الجلسة العامة الكلية وربط التعلم بالهدف والمعيار.`
     ].filter(Boolean).join('\n\n');
+
+    // 2. Station 2: Understanding (פ / ف)
+    const socraticSteps = Array.isArray(st2.socraticDialogue?.steps) && st2.socraticDialogue.steps.length
+      ? (isHeb ? '🏛️ שלבי החקר הסוקרטי והגילוי המונחה (צעד אחר צעד לגילוי המטרה בעצמו):\n' : '🏛️ خطوات حوار الاستكشاف السقراطي الموجه (خطوة بخطوة للوصول إلى الهدف بنفسه دون تلقين):\n') +
+        st2.socraticDialogue.steps.map(s => {
+          let str = `• ${s.stage || `שלב ${s.stepNumber}`}:\n  - ${isHeb ? 'שאלה מנחה' : 'السؤال الموجه'}: ${s.prompt || ''}`;
+          if (Array.isArray(s.options) && s.options.length) {
+            str += `\n  - ${isHeb ? 'אפשרויות לבחינה' : 'خيارات للتفكير'}: ${s.options.join(' | ')}`;
+          }
+          if (s.guidingHint) {
+            str += `\n  - ${isHeb ? 'רמז סוקרטי' : 'تلميح سقراطي مساند'}: ${s.guidingHint}`;
+          }
+          if (s.socraticFeedback) {
+            str += `\n  - ${isHeb ? 'משוב סוקרטי' : 'التغذية الراجعة لتعزيز الفهم'}: ${s.socraticFeedback}`;
+          }
+          return str;
+        }).join('\n\n')
+      : '';
 
     const fCardsText = Array.isArray(st2.explanationCards) && st2.explanationCards.length
-      ? '🧩 بطاقات بناء المعنى المتدرجة:\n' + st2.explanationCards.map((c, i) => `${i + 1}. ${c.title}: ${c.content}${c.example ? ` (مثال: ${c.example})` : ''}`).join('\n')
+      ? (isHeb ? '🧩 כרטיסיות המשגה והסבר מפורש (מידול וחשיבה בקול I Do):\n' : '🧩 بطاقات بناء المعنى والشرح الوجاهي المنظم والنمذجة الإجرائية:\n') +
+        st2.explanationCards.map((c, i) => `• ${c.title || `${i + 1}. שלב`}:\n  ${c.content}${c.example ? `\n  📌 ${isHeb ? 'דוגמה מודגמת' : 'مثال تطبيقي إجرائي'}: ${c.example}` : ''}`).join('\n\n')
       : '';
+
     const fCfuText = st2.checkForUnderstanding?.question
-      ? `⚡ فحص فهم سريع: ${st2.checkForUnderstanding.question}\nالخيارات: ${(st2.checkForUnderstanding.options || []).join(' | ')}`
+      ? (isHeb ? `⚡ בדיקת הבנה מהירה (CFU):\n• השאלה: ${st2.checkForUnderstanding.question}\n• אפשרויות: ${(st2.checkForUnderstanding.options || []).join(' | ')}\n• תשובה נכונה: ${st2.checkForUnderstanding.correctAnswer || ''}${st2.checkForUnderstanding.feedback ? `\n• משוב: ${st2.checkForUnderstanding.feedback}` : ''}`
+              : `⚡ فحص استيعاب سريع وتفاعلي (CFU):\n• السؤال: ${st2.checkForUnderstanding.question}\n• الخيارات: ${(st2.checkForUnderstanding.options || []).join(' | ')}\n• الإجابة الصائبة: ${st2.checkForUnderstanding.correctAnswer || ''}${st2.checkForUnderstanding.feedback ? `\n• التغذية الراجعة الفورية: ${st2.checkForUnderstanding.feedback}` : ''}`)
       : '';
+
+    const fPathName = st2.selectedPath === 'discovery'
+      ? (isHeb ? 'גילוי וחקר סוקרטי (התבוננות בדוגמאות, שאלות מנחות והסקת מסקנה עצמאית)' : 'مسار الاستكشاف السقراطي (تساؤل موجه وبناء المفهوم ذاتياً)')
+      : st2.selectedPath === 'explicit'
+      ? (isHeb ? 'הוראה מפורשת ומונחית (הסבר מאורגן, מידול בחשיבה בקול, דוגמאות ודוגמאות נגדיות)' : 'مسار التدريس الوجاهي الصريح والنمذجة المعرفية الإجرائية')
+      : (isHeb ? 'מסלול משולב (שאלות חקר סוקרטיות + הסבר ומידול מפורש)' : 'المسار المدمج (تساؤل استكشاف سقراطي + شرح وجاهي وافٍ ونمذجة)');
 
     const fText = [
-      st2.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st2.teacherScript}` : '',
-      st2.studentPrompt ? `📖 العرض ومحتوى الفهم:\n${st2.studentPrompt}` : '',
+      isHeb
+        ? `❓ שאלת התלמיד: כיצד אני מבין את הרעיון?\n🏷️ הניסוח הקצר לתלמיד: "אני מבין ומקשר"`
+        : `❓ سؤال التلميذ التوجيهي: كيف أفهم الفكرة وأبني المعنى؟\n🏷️ الشعار القصير للتلميذ: "أنا أفهم وأربط"`,
+      isHeb ? `🛣️ דרך ההוראה שנבחרה בתחנה: ${fPathName}` : `🛣️ المسار البيداغوجي المعتمد في المحطة: ${fPathName}`,
+      st2.teacherGuidance || st2.teacherScript
+        ? (isHeb ? `👨‍🏫 הנחיות למורה לבניית ההבנה, שאילת שאלות ומידול:\n${st2.teacherGuidance || st2.teacherScript}` : `👨‍🏫 إرشادات المعلم لإدارة بناء المعنى والنمذجة:\n${st2.teacherGuidance || st2.teacherScript}`)
+        : '',
+      st2.studentPrompt
+        ? (isHeb ? `📖 תוכן הלמידה המרכזי לתלמיד:\n${st2.studentPrompt}` : `📖 المحتوى المركزي ومهمة استيعاب المفهوم:\n${st2.studentPrompt}`)
+        : '',
+      socraticSteps,
       fCardsText,
-      Array.isArray(st2.conceptMapKeywords) && st2.conceptMapKeywords.length ? `🗺️ خارطة المفاهيم: ${st2.conceptMapKeywords.join(' ⟷ ')}` : '',
+      Array.isArray(st2.conceptMapKeywords) && st2.conceptMapKeywords.length
+        ? (isHeb ? `🗺️ מפת מושגים ומילות מפתח: ${st2.conceptMapKeywords.join(' ⟷ ')}` : `🗺️ خارطة المفاهيم والمصطلحات الأساسية: ${st2.conceptMapKeywords.join(' ⟷ ')}`)
+        : '',
       fCfuText,
-      st2.scaffold ? `🗝️ سقالة المساندة (UDL): ${st2.scaffold}` : ''
+      st2.scaffold
+        ? (isHeb ? `🗝️ פיגומי תמיכה והכלה (כרטיס הנחיה / UDL): ${st2.scaffold}` : `🗝️ سقالة المساندة والتصميم الشامل (بطاقة توجيهية / UDL): ${st2.scaffold}`)
+        : '',
+      isHeb
+        ? `👥 צורות עבודה (עמוד 4 במסמך): קריאה והתבוננות אישית ⬅️ עבודה בזוגות להשוואת רעיונות ⬅️ ניתוח נתונים ⬅️ דיון במליאה להבהרת מושג משותף.`
+        : `👥 أنماط العمل الصفي (الصفحة 4 بالوثيقة): قراءة وتأمل فردي ⬅️ حوار ثنائي لشرح الظاهرة ومقارنة النماذج ⬅️ عمل مجموعات للتحليل ⬅️ مراجعة عامة لتثبيت المفهوم والقاعدة.`
     ].filter(Boolean).join('\n\n');
+
+    // 3. Station 3: Practice (ת / ت)
+    const practiceStationsText = Array.isArray(st3.practiceStations) && st3.practiceStations.length
+      ? (isHeb ? '📱 תחנות חלוקת הכיתה לקבוצות במכשירים (אייפדים/טלפונים):\n' : '📱 محطات المجموعات الفرعية التفاعلية على الأجهزة (آيباد/هاتف لكل مجموعة):\n') +
+        st3.practiceStations.map(stn => {
+          let s = `• [${isHeb ? 'תחנה' : 'محطة'} ${stn.groupNumber}]: ${stn.title || ''} (${stn.badge || ''})\n  📱 ${isHeb ? 'מכשיר מיועד' : 'الجهاز المخصص'}: ${stn.targetDevice || (isHeb ? 'אייפד או טלפון' : 'آيباد أو هاتف')}\n  🎯 ${isHeb ? 'אתגר הקבוצה' : 'التحدي الموجه للفريق'}: ${stn.challenge || stn.description || ''}`;
+          if (stn.deliverablePrompt) {
+            s += `\n  📤 ${isHeb ? 'תוצר נדרש' : 'المخرج المطلوب تسليمه'}: ${stn.deliverablePrompt}`;
+          }
+          return s;
+        }).join('\n\n')
+      : '';
 
     const tTasksText = Array.isArray(st3.tasks) && st3.tasks.length
-      ? '⚖️ المهام المتمايزة حسب المستويات:\n' + st3.tasks.map(t => `• [${t.badge || t.tier}]: ${t.task}`).join('\n')
+      ? (isHeb ? '⚖️ משימות תרגול מדורגות ומותאמות לפי רמות (הוראה דיפרנציאלית):\n' : '⚖️ المهام المتمايزة والأنشطة المتدرجة حسب مستويات الجاهزية:\n') +
+        st3.tasks.map(t => `• [${t.badge || t.title || t.tier}]: ${t.task}${t.scaffold ? `\n  🗝️ ${isHeb ? 'פיגום' : 'السقالة المساندة'}: ${t.scaffold}` : ''}`).join('\n\n')
       : '';
-    const tDeepText = st3.deepChallenge?.scenario
-      ? `🚀 تحدي التعمق (اكتشف الخطأ): ${st3.deepChallenge.scenario}`
-      : '';
+
+    const tDeepText = st3.deepChallenge?.scenario || st3.challengeText
+      ? (isHeb ? `🚀 אתגר עומק ומצוינות ("אני רוצה אתגר!"):\n${st3.deepChallenge?.scenario || st3.challengeText}` : `🚀 تحدي التعمق والتميز الإضافي ("أريد تحدياً 🚀" للفرق التي أنهت مبكراً):\n${st3.deepChallenge?.scenario || st3.challengeText}`)
+      : (isHeb ? `🚀 אפשרות "אני רוצה אתגר!" מופעלת: תלמידים או קבוצות המסיימים מוקדם מקבלים שאלת אתגר וחקר מעמיקה לפתרון שגיאה מוצעת.` : `🚀 إمكانية "أريد تحدياً 🚀" مفعلة: للفرق أو الطلاب الذين أنهوا مبكراً لرفع سقف التحدي وشغل الجميع بالتعلم المنتج.`);
+
+    const tImmediateSupportText = isHeb
+      ? `👥 קבוצת תמיכה מיידית וגמישה (עמוד 5 במסמך מפתי"ח):\nהמורה אוסף קבוצה קטנה הזקוקה לעזרה ממוקדת בעוד שאר התלמידים ממשיכים בעבודתם העצמאית. הקבוצה זמנית וגמישה והרכבה משתנה לפי הצורך. לאחר התמיכה, התלמידים חוזרים למשימתם ומקבלים הזדמנות לנסות שוב בהצלחה.`
+      : `👥 بروتوكول مجموعة الدعم الفوري المؤقتة والمرنة (الصفحة 5 في وثيقة مِفتاح):\nيجمع المعلم مجموعة صغيرة تحتاج دعماً ومساندة ممركزة، بينما تواصل باقي الفرق عملها باستقلالية على أجهزتها. المجموعة مرنة ومؤقتة تتغير حسب الحاجة. بعد تقديم الدعم والنمذجة، يعود الطلاب لمهمتهم ليجربوا وينجحوا بأنفسهم.`;
 
     const tText = [
-      st3.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st3.teacherScript}` : '',
-      st3.studentPrompt ? `🛠️ المهمة الأساسية المشتركة:\n${st3.studentPrompt}` : '',
+      isHeb
+        ? `❓ שאלת התלמיד: כיצד אני משתמש במה שלמדתי?\n🏷️ הניסוח הקצר לתלמיד: "אני מתנסה ומתרגל"`
+        : `❓ سؤال التلميذ التوجيهي: كيف أستخدم ما تعلمته وأطبقه؟\n🏷️ الشعار القصير للتلميذ: "أنا أتدرب وأمارس"`,
+      st3.teacherGuidance || st3.teacherScript
+        ? (isHeb ? `👨‍🏫 הנחיות למורה למעקב, זיהוי שגיאות ומתן משוב:\n${st3.teacherGuidance || st3.teacherScript}` : `👨‍🏫 إرشادات المعلم لمتابعة الفرق عبر الشاشات وتصويب الأخطاء فورياً:\n${st3.teacherGuidance || st3.teacherScript}`)
+        : '',
+      st3.studentPrompt
+        ? (isHeb ? `🛠️ משימת הבסיס המשותפת לכלל התלמידים:\n${st3.studentPrompt}` : `🛠️ مهمة التدريب الأساسية المشتركة לכל הכיתה:\n${st3.studentPrompt}`)
+        : '',
+      practiceStationsText,
       tTasksText,
+      tImmediateSupportText,
       tDeepText,
-      st3.scaffold ? `🗝️ سقالة المساندة (פיגום): ${st3.scaffold}` : ''
+      st3.scaffold
+        ? (isHeb ? `🗝️ פיגומי תמיכה והכלה (UDL): ${st3.scaffold}` : `🗝️ سقالة المساندة والتصميم الشامل (UDL): ${st3.scaffold}`)
+        : '',
+      isHeb
+        ? `👥 צורות עבודה (עמוד 5 במסמך): עבודה אישית לזיהוי ביצוע ⬅️ עבודה בזוגות להשוואת פתרונות ומתן משוב ⬅️ עבודה בקבוצות לפתרון מורכב ותוצר משותף.`
+        : `👥 أنماط العمل الصفي (الصفحة 5 بالوثيقة): تدريب فردي لتثبيت المهارة ⬅️ عمل ثنائي لمقارنة الحلول وتبادل التغذية الراجعة ⬅️ عمل مجموعي لإنتاج مخرج مشترك.`
     ].filter(Boolean).join('\n\n');
 
+    // 4. Station 4: Evidence (י / ا)
+    const aDecisionTable = isHeb
+      ? `📊 החלטת ההוראה בעקבות העדות (טבלת קבלת החלטות מעמוד 6 במסמך מפתי"ח):\n` +
+        `• מה שהתלמיד הראה: השיג את הקריטריון להצלחה במלואו ⬅️ מה עושים בהמשך: עובר למשימה חדשה או לאתגר מעמיק יותר.\n` +
+        `• מה שהתלמיד הראה: השיג את הקריטריון באופן חלקי ⬅️ מה עושים בהמשך: מקבל משוב ממוקד ותרגול מותאם לקושי שזוהה.\n` +
+        `• מה שהתלמיד הראה: עדיין לא הראה את ההבנה הנדרשת ⬅️ מה עושים בהמשך: מקבל הסבר ותמיכה בדרך אחרת, קבוצת תמיכה קטנה וזמנית, ולאחריה הזדמנות נוספת במשימה מקבילה קצרה.`
+      : `📊 طاولة اتخاذ القرار التعليمي בעקבות الأدلة (من الصفحة 6 في وثيقة مِفتاح):\n` +
+        `• ما أظهره الطالب: حقق معيار النجاح الكامل بنجاح ⬅️ الخطوة التالية: ينتقل لمهمة جديدة متقدمة أو لتحدٍّ أعمق وأكثر ثراءً.\n` +
+        `• ما أظهره الطالب: حقق المعيار بشكل جزئي ⬅️ الخطوة التالية: يتلقى تغذية راجعة تكوينية وتدريباً ممركزاً في موطن الضعف.\n` +
+        `• ما أظهره الطالب: لم يظهر الفهم المطلوب بعد ⬅️ الخطوة التالية: يتلقى شرحاً وتدخلاً بطريقة أخرى عبر مجموعة دعم صغيرة ومهمة موازية قصيرة للتأكد من التمكن.`;
+
+    const aTaskText = st4.individualTask || st4.studentPrompt || '';
     const supportKitText = st4.supportGroupKitForTeacher?.alternativeExplanation
-      ? `🛠️ حقيبة مجموعة الدعم المؤقتة والمرنة (للمعلم):\n• شرح بديل مبسط: ${st4.supportGroupKitForTeacher.alternativeExplanation}\n• سؤال تحقق موازٍ: ${st4.supportGroupKitForTeacher.parallelFollowUpQuestion || ''}`
+      ? (isHeb ? `🛠️ ערכת קבוצת תמיכה ממוקדת:\n• הסבר חלופי: ${st4.supportGroupKitForTeacher.alternativeExplanation}\n• שאלת בדיקה מקבילה: ${st4.supportGroupKitForTeacher.parallelFollowUpQuestion || ''}`
+              : `🛠️ حقيبة التدخل السريع لمجموعة الدعم:\n• شرح بديل مبسط: ${st4.supportGroupKitForTeacher.alternativeExplanation}\n• سؤال تحقق موازٍ: ${st4.supportGroupKitForTeacher.parallelFollowUpQuestion || ''}`)
       : '';
 
     const aText = [
-      st4.criterion ? `✅ معيار التحقق من الفهم: ${st4.criterion}` : '',
-      st4.exitTicketQuestion || st4.studentPrompt ? `🔎 سؤال بطاقة الخروج التكوينية الفردية:\n${st4.exitTicketQuestion || st4.studentPrompt}` : '',
-      Array.isArray(st4.sentenceStartersForUDL) && st4.sentenceStartersForUDL.length ? `✍️ بدايات جمل مساعدة (UDL): ${st4.sentenceStartersForUDL.join(' | ')}` : '',
-      supportKitText
+      isHeb
+        ? `❓ שאלת המורה: מהי העדות לכך שכל תלמיד השיג את מטרת הלמידה?\n❓ שאלת התלמיד: כיצד אראה מה הבנתי?\n🏷️ הניסוח הקצר לתלמיד: "אני מראה מה הבנתי"`
+        : `❓ سؤال المعلم الاستراتيجي: ما هو الدليل على أن كل طالب حقق هدف التعلم؟\n❓ سؤال التلميذ: كيف سأُظهر ما فهمته بشكل مستقل؟\n🏷️ الشعار القصير للتلميذ: "أنا أُظهر ما فهمته"`,
+      st4.criterion
+        ? (isHeb ? `✅ קריטריון ההצלחה להערכת העדות: ${st4.criterion}` : `✅ معيار التحقق والتقييم المستقل: ${st4.criterion}`)
+        : '',
+      st4.teacherGuidance || st4.teacherScript
+        ? (isHeb ? `👨‍🏫 הנחיות למורה לאיסוף עדות אישית מכל תלמיד:\n${st4.teacherGuidance || st4.teacherScript}` : `👨‍🏫 إرشادات المعلم لجمع وفحص الأدلة الفردية:\n${st4.teacherGuidance || st4.teacherScript}`)
+        : '',
+      aTaskText
+        ? (isHeb ? `✍️ משימת הראיות העצמאית (כרטיס יציאה / משימה אישית ללא עזרה):\n${aTaskText}` : `✍️ ورقة الدليل الفردي المستقل (مهام قياس الفهم لكل طالب على حدة بدون مساعدة):\n${aTaskText}`)
+        : '',
+      aDecisionTable,
+      Array.isArray(st4.sentenceStartersForUDL) && st4.sentenceStartersForUDL.length
+        ? (isHeb ? `✍️ התחלות משפטים מסייעות (UDL): ${st4.sentenceStartersForUDL.join(' | ')}` : `✍️ بدايات جمل مساندة للتعبير والتمثيل (UDL): ${st4.sentenceStartersForUDL.join(' | ')}`)
+        : '',
+      supportKitText,
+      isHeb
+        ? `⚠️ דגש פדגוגי מהמסמך: תשובות של כמה משתתפים או השאלה "האם הבנתם?" אינן מספקות עדות אישית. העדות נאספת מכל תלמיד בנפרד.`
+        : `⚠️ تأكيد تربوي من الوثيقة: إجابات بعض الطلاب أو مجرد سؤال "هل فهمتم؟" لا تشكل دليلاً على التعلم. الدليل يُجمع من كل طالب على حدة لضمان التمكن المستقل.`
     ].filter(Boolean).join('\n\n');
 
+    // 5. Station 5: Harvest (ח / ح)
     const hExitText = st5.exitTicket
-      ? `🎫 أسئلة الحصاد ونقل الأثر:\n١. ${st5.exitTicket.q1 || ''}\n٢. ${st5.exitTicket.q2 || ''}\n٣. ${st5.exitTicket.q3 || ''}\n٤. ${st5.exitTicket.q4_transfer || ''}`
+      ? (isHeb ? `🎫 כרטיס יציאה ושלושת ממדי החתימה (עמוד 7 במסמך):\n` +
+                 `  1. סיכום הלמידה (מהו הרעיון החשוב ביותר שלמדתי היום?): ${st5.exitTicket.q1 || ''}\n` +
+                 `  2. התבוננות בתהליך (מה עזר לי להבין?): ${st5.exitTicket.q2 || ''}\n` +
+                 `  3. התבוננות בתהליך (מה עדיין דורש הבהרה?): ${st5.exitTicket.q3 || ''}\n` +
+                 `  4. העברת הלמידה להקשר חדש (היכן אוכל להשתמש במה שלמדתי?): ${st5.exitTicket.q4_transfer || ''}`
+              : `🎫 بطاقة الخروج والأبعاد الثلاثة التكاملية للحصاد (الصفحة 7 في الوثيقة):\n` +
+                 `  ١. البعد الأول — تلخيص التعلم (ما الفكرة الأهم التي تعلمتها اليوم؟): ${st5.exitTicket.q1 || ''}\n` +
+                 `  ٢. البعد الثاني — التأمل والميتامعرفة (ما الذي ساعدني على الفهم؟): ${st5.exitTicket.q2 || ''}\n` +
+                 `  ٣. البعد الثاني — التأمل والميتامعرفة (ما الذي ما زلت أحتاج إلى توضيحه؟): ${st5.exitTicket.q3 || ''}\n` +
+                 `  ٤. البعد الثالث — نقل الأثر إلى سياق جديد (أين وكيف أستخدم ما تعلمته في حياتي؟): ${st5.exitTicket.q4_transfer || ''}`)
       : '';
 
     const hText = [
-      st5.teacherScript ? `👨‍🏫 توجيه المعلم:\n${st5.teacherScript}` : '',
-      st5.studentPrompt ? `🎒 مهمة الحصاد والتأمل:\n${st5.studentPrompt}` : '',
+      isHeb
+        ? `❓ שאלת התלמיד: מה אני לוקח איתי, והיכן אשתמש בו?\n🏷️ הניסוח הקצר לתלמיד: "אני מסכם ומשתמש במה שלמדתי בהקשר חדש"`
+        : `❓ سؤال التلميذ التوجيهي: ماذا آخذ معي، وأين سأستخدمه؟\n🏷️ الشعار القصير للتلميذ: "أنا ألخص وأوظف ما تعلمته في سياق جديد"`,
+      st5.teacherGuidance || st5.teacherScript
+        ? (isHeb ? `👨‍🏫 הנחיות למורה לחתימה, איסוף כרטיסי יציאה וקישור לשיעור הבא:\n${st5.teacherGuidance || st5.teacherScript}` : `👨‍🏫 إرشادات المعلم لجمع بطاقات الخروج وربط التعلم بالحصة القادمة:\n${st5.teacherGuidance || st5.teacherScript}`)
+        : '',
+      st5.studentPrompt
+        ? (isHeb ? `🎒 משימת הסיכום והחתימה לתלמידים:\n${st5.studentPrompt}` : `🎒 مهمة الحصاد والتأمل الختامية للطلاب:\n${st5.studentPrompt}`)
+        : '',
       hExitText,
-      st5.transferTask ? `🌱 مهمة نقل الأثر للحياة اليومية: ${st5.transferTask}` : ''
+      st5.transferTask
+        ? (isHeb ? `🌱 משימת העברת הלמידה למצב חיים חדש: ${st5.transferTask}` : `🌱 مهمة نقل الأثر لسياق حياتي جديد: ${st5.transferTask}`)
+        : '',
+      isHeb
+        ? `⚡ תוספת מפתי"ח 2 — רגע התרעננות בשיעור ("זמן להתרענן! / חוזרים למסע שלנו!"):\nפעילות קצרה של 60 שניות המאפשרת הפוגה והתרעננות במידת הצורך: ${lesson.refreshActivity || 'פעילות תנועה וקשב קלילה להחזרת הריכוז.'}`
+        : `⚡ إضافة مِفتاح المرافقة 2 — استراحة التنشيط ("حان وقت التنشيط! / نعود لرحلتنا!"):\nنشاط منعش لمدة دقيقة إلى دقيقتين لتجديد النشاط والتركيز: ${lesson.refreshActivity || 'نشاط حركي وذهني خفيف لتجديد الطاقة والحيوية.'}`,
+      isHeb
+        ? `🌐 תוספת מפתי"ח 1 — יישומון לתכנון והוראה: https://musherfe.com/#/mafatih`
+        : `🌐 إضافة مِفتاح المرافقة 1 — تطبيق مِفتاح لمساندة المعلم في التخطيط: https://musherfe.com/#/mafatih`
     ].filter(Boolean).join('\n\n');
 
-    const isHeb = lesson.language === 'hebrew' || /[\u0590-\u05FF]/.test(lesson.title || '');
     const combinedObjective = [
       lesson.objective || '',
-      lesson.successCriteria ? `معيار النجاح: ${lesson.successCriteria}` : '',
-      lesson.refreshActivity ? `⚡ نشاط وقت الانتعاش (60 ثانية): ${lesson.refreshActivity}` : '',
-      lesson.code || lesson.pin ? `🔑 كود دخول الطلاب (PIN): ${lesson.code || lesson.pin}` : ''
+      lesson.successCriteria ? (isHeb ? `קריטריון להצלחה: ${lesson.successCriteria}` : `معيار النجاح: ${lesson.successCriteria}`) : '',
+      lesson.refreshActivity ? (isHeb ? `⚡ פעילות ריענון (זמן להתרענן!): ${lesson.refreshActivity}` : `⚡ استراحة التنشيط (حان وقت التنشيط!): ${lesson.refreshActivity}`) : '',
+      lesson.code || lesson.pin ? (isHeb ? `🔑 קוד כניסה (PIN): ${lesson.code || lesson.pin}` : `🔑 كود دخول الطلاب (PIN): ${lesson.code || lesson.pin}`) : ''
     ].filter(Boolean).join(' | ');
 
     return {
@@ -3396,8 +3559,8 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
         y: aText,
         h: hText
       },
-      teacherName: lesson.authorName || authenticatedTeacher?.nameAr || 'معلم/ة المدرسة',
-      date: new Date().toLocaleDateString('ar-EG'),
+      teacherName: lesson.authorName || authenticatedTeacher?.nameAr || (isHeb ? 'מורה בית הספר' : 'معلم/ة المدرسة'),
+      date: new Date().toLocaleDateString(isHeb ? 'he-IL' : 'ar-EG'),
       language: isHeb ? 'he' : 'ar'
     };
   };
@@ -11210,7 +11373,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                                 fontSize: '0.82rem',
                                 color: studentCurrentStationData.selectedPath === 'discovery' ? '#065f46' : '#1e40af'
                               }}>
-                                <strong>{studentCurrentStationData.selectedPath === 'discovery' ? '💡 مفتاح التفكير / مثال:' : '📌 مثال تطبيقي:'}</strong> {card.example}
+                                <strong>{studentCurrentStationData.selectedPath === 'discovery' ? '💡 مفتاح التفكير / مثال:' : '📌 مثال تطبيقي:'}</strong> {String(card.example || '').replace(/^(مثال\s*:\s*|دוגמה\s*:\s*|Example\s*:\s*)+/i, '')}
                               </div>
                             )}
                           </div>
@@ -11265,7 +11428,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                         ⚡ فحص استيعاب الشرح الوجاهي: {studentCurrentStationData.checkForUnderstanding.question}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                        {(studentCurrentStationData.checkForUnderstanding.options || []).map((opt, oIdx) => {
+                        {Array.from(new Set((studentCurrentStationData.checkForUnderstanding.options || []).map(o => String(o || '').trim()).filter(Boolean))).map((opt, oIdx) => {
                           const isSelected = st2CfuSelected === opt;
                           const isCorrect = opt === studentCurrentStationData.checkForUnderstanding.correctAnswer || oIdx === 0;
                           return (
