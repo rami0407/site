@@ -6,7 +6,8 @@ import {
   generateMiftaahGroupTasksAI,
   evaluateMiftaahExitTicketAI,
   generateMiftaahExtraChallengeAI,
-  generateSocraticNextStepAI
+  generateSocraticNextStepAI,
+  generateMiftaahStudentHelpAI
 } from '../utils/aiService';
 import {
   exportLessonPlanToWord,
@@ -4374,15 +4375,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       return;
     }
 
-    if (helpOptionKey === 'clarify') {
-      explanation = 'المطلوب في هذه المحطة قراءة المهمة جيداً وتدوين استنتاجك مدعوماً بالسبب.';
-    } else if (helpOptionKey === 'hint') {
-      explanation = st.scaffold || 'فكر في الخاصية المركزية التي تعلمناها في بداية الدرس، ولا تستعجل الإجابة!';
-    } else if (helpOptionKey === 'explain_diff') {
-      explanation = 'تخيل الموقف كأنك تشرحه لطفل أصغر سناً: ماذا يتغير بالعين المجردة وماذا يبقى ثابتاً؟';
-    } else if (helpOptionKey === 'example') {
-      explanation = 'مثال مشابه: قارن بين عصير في علبة وبين مكعب ثلج في صحن: أيهما غيّر شكله عند النقل؟';
-    } else if (helpOptionKey === 'teacher') {
+    if (helpOptionKey === 'teacher') {
       // Send private alert to teacher
       const newHelpAlert = {
         id: 'help_' + Date.now(),
@@ -4401,14 +4394,47 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
       };
       broadcastSession(next);
       explanation = 'تم إرسال إشعار فوري وخاص لمعلمك! سينضم إليك المعلم لمساعدتك فوراً. 👨‍🏫';
+      setStudentActiveHelpResponse({
+        type: optionLabels[helpOptionKey] || helpOptionKey,
+        isChallenge: false,
+        text: explanation
+      });
+      setIsHelpKeyModalOpen(false);
+      return;
     }
 
+    // Real AI Teacher Explanation for clarify, hint, explain_diff, example
+    setIsHelpKeyModalOpen(false);
     setStudentActiveHelpResponse({
       type: optionLabels[helpOptionKey] || helpOptionKey,
       isChallenge: false,
-      text: explanation
+      text: '⏳ يقوم المعلم الذكي الآن بإعداد شرح وافٍ ومفصل خصيصاً لك...'
     });
-    setIsHelpKeyModalOpen(false);
+
+    generateMiftaahStudentHelpAI({
+      helpType: helpOptionKey,
+      stationNumber: studentCurrentStationIndex,
+      stationName: st.name || '',
+      lessonTitle: activeLesson?.title || '',
+      subject: activeLesson?.subject || '',
+      grade: activeLesson?.grade || '',
+      stationTaskPrompt: st.studentPrompt || st.individualTask || '',
+      language: activeLesson?.language || 'arabic'
+    }).then(aiText => {
+      if (aiText && aiText.trim()) {
+        setStudentActiveHelpResponse({
+          type: optionLabels[helpOptionKey] || helpOptionKey,
+          isChallenge: false,
+          text: aiText.trim()
+        });
+      }
+    }).catch(() => {
+      setStudentActiveHelpResponse({
+        type: optionLabels[helpOptionKey] || helpOptionKey,
+        isChallenge: false,
+        text: st.scaffold || 'تأمل الفكرة الأساسية للدرس واربط بين المعطيات والهدف المطلوب خطوة بخطوة.'
+      });
+    });
   };
 
   // Generate dynamic AI Extra Challenge for early finishers

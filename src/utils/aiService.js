@@ -197,12 +197,13 @@ export const generateAiResponse = async (promptText, systemContext = '') => {
             },
             body: JSON.stringify({
               model: gm,
+              ...(gm.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
               messages: [
                 { role: 'system', content: strictSystem },
                 { role: 'user', content: promptText }
               ],
               temperature: 0.7,
-              max_tokens: 1000
+              max_tokens: 1400
             })
           },
           7000
@@ -2394,6 +2395,7 @@ ${langNote}
           },
           body: JSON.stringify({
             model: m,
+            ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.5,
             max_tokens: 2800,
@@ -2552,6 +2554,7 @@ ${coreTask ? `- نص المهمة الأساسية للصف: "${coreTask}"` : ''
           },
           body: JSON.stringify({
             model: m,
+            ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.5,
             max_tokens: 2800,
@@ -2711,12 +2714,14 @@ export const evaluateMiftaahExitTicketAI = async ({
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
           body: JSON.stringify({
             model: m,
+            ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
             temperature: 0.3,
-            max_tokens: 500
+            max_tokens: 1200,
+            response_format: { type: 'json_object' }
           })
         }, 9000);
         if (res.ok) {
@@ -2905,37 +2910,38 @@ export const generateMiftaahFullJourneyLessonAI = async ({
 - מערך תחנה 3 (יישום ותרגול): ${groupsDesc}
 ${customDirectivesText}
 
-כללים פדגוגיים מחייבים:
-1. כל תוכן השיעור, השאלות והמשימות חייב לעסוק באופן ממוקד, מדויק ועמוק בנושא (${safeTitle}) במקצוע (${safeSubject}).
-2. החזר אך ורק אובייקט JSON תקין ומלא (RFC8259) לפי המבנה שלהלן, ללא שום טקסט או בלוקי קוד מרקדאון מחוץ ל-JSON:
+כללים פדגוגיים מחייבים (חשוב ביותר!):
+1. כל תוכן השיעור, ההסברים, השאלות והמשימות חייב לעסוק באופן ממוקד, מדויק, מפורט ועמוק בנושא (${safeTitle}) במקצוע (${safeSubject}).
+2. ⚠️ איסור מוחלט להעתיק את הטקסטים שבתוך סוגריים משולשים <...>! הטקסט שבתוך <...> הוא הוראה עבורך מה לכתוב. עליך להחליף כל שדה בתוכן לימודי אמיתי, מפורט, עשיר ומלא בעברית תקנית המוכן להצגה מיידית לתלמידים!
+3. החזר אך ורק אובייקט JSON תקין ומלא (RFC8259) לפי המבנה שלהלן, ללא שום טקסט מחוץ ל-JSON:
 {
   "title": "${safeTitle}",
   "lessonTitle": "${safeTitle}",
   "subject": "${safeSubject}",
   "language": "hebrew",
   "grade": "${safeGrade}",
-  "objective": "${safeCustomObjective || 'מטרת השיעור המפורשת בעברית מדויקת בנושא (' + safeTitle + ')...'}",
-  "learningGoal": "${safeCustomObjective || 'יעד השיעור המרכזי...'}",
-  "successCriteria": "${safeCustomCriteria || 'קריטריון הצלחה מדיד המעיד על השגת היעד...'}",
-  "refreshActivity": "פעילות ריענון של 60 שניות הקשורה לנושא השיעור...",
+  "objective": "${safeCustomObjective || '<כתוב כאן את מטרת השיעור המפורשת והמדויקת בנושא ' + safeTitle + '>' }",
+  "learningGoal": "${safeCustomObjective || '<כתוב כאן את יעד הלמידה בשפת התלמידים בנושא ' + safeTitle + '>' }",
+  "successCriteria": "${safeCustomCriteria || '<כתוב כאן קריטריון הצלחה מדיד וברור לשיעור ' + safeTitle + '>' }",
+  "refreshActivity": "<כתוב כאן פעילות ריענון קצרה ומהנה של 60 שניות הקשורה לנושא ${safeTitle}>",
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
       "name": "משיכה וסקרנות",
       "number": 1,
       "icon": "🔥",
-      "studentPrompt": "אתגר הפתיחה והסקרנות בנושא (${safeTitle})...",
-      "teacherGuidance": "הנחיות למורה לפתיחה מסקרנת...",
+      "studentPrompt": "<כתוב כאן סיפור פתיחה מסקרן או דילמה אמיתית באורך 3-4 משפטים בנושא ${safeTitle} המעוררת סקרנות ומובילה לשאלת הפתיחה>",
+      "teacherGuidance": "<כתוב כאן הנחיות מעשיות למורה להצגת הפתיח וחיבור התלמידים ליעד>",
       "suggestedDuration": 6,
-      "scaffold": "רמז מסייע להתבוננות...",
+      "scaffold": "<כתוב כאן רמז מכוון לתלמידים מתקשים בתחנת הפתיחה>",
       "interactiveActivity": {
         "type": "curiosity",
         "title": "אתגר פתיחה: ${safeTitle}",
-        "scenario": "תיאור תופעה או אירוע מסקרן ומעורר מחשבה סביב ${safeTitle}...",
-        "curiosityQuestion": "שאלת סקרנות מעוררת מחשבה?",
-        "options": ["השערה 1", "הסבר מדויק 🎯", "השערה 3", "השערה 4"],
-        "solution": "הסבר מדויק 🎯",
-        "explanation": "הסבר קצר המקשר למטרת השיעור..."
+        "scenario": "<כתוב כאן תיאור מקרה מוחשי ומרתק מחיי היומיום או מהמדע סביב ${safeTitle}>",
+        "curiosityQuestion": "<כתוב כאן שאלת חקר וסקרנות מעוררת מחשבה על המקרה?>",
+        "options": ["<השערה מוטעית נפוצה 1>", "<ההסבר המדויק והנכון לנושא ${safeTitle} 🎯>", "<השערה חלקית 3>", "<השערה לא מדויקת 4>"],
+        "solution": "<ההסבר המדויק והנכון לנושא ${safeTitle} 🎯>",
+        "explanation": "<כתוב כאן הסבר מפורט ומאיר עיניים מדוע זו התשובה הנכונה וכיצד היא מתקשרת לשיעור>"
       }
     },
     "2_understanding": {
@@ -2945,48 +2951,48 @@ ${customDirectivesText}
       "selectedPath": "${safeMeaningPath}",
       "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive'}",
       "pedagogicalModeName": "${pathDesc}",
-      "studentPrompt": "${safeMeaningPath === 'discovery' ? 'שאלות חקר סוקרטיות המובילות את התלמיד לגילוי הרעיון המרכזי בעצמו...' : 'הסבר פרונטלי מפורש ומובנה של המושגים והכללים בשיעור (' + safeTitle + ')...'}",
+      "studentPrompt": "<כתוב כאן הסבר לימודי מלא, מפורט, עשיר ובהיר (לפחות 6-8 משפטים) של מושגי היסוד, החוקיות והדוגמאות של ${safeTitle}>",
       "socraticDialogue": {
-        "targetGoalStatement": "${safeCustomObjective || 'יעד השיעור שהתלמיד יגלה בעצמו...'}",
+        "targetGoalStatement": "${safeCustomObjective || '<כתוב כאן את כלל הזהב והיעד שהתלמיד יגלה בעצמו בשיעור ' + safeTitle + '>' }",
         "steps": [
-          { "stepNumber": 1, "stage": "1. תצפית ושאילת שאלות 🔍", "prompt": "שאלת הנחיה סוקרטית ראשונית לבחינת דוגמה או מקרה בוחן...", "options": ["תצפית נכונה ומדויקת", "השערה חלקית", "ניחוש אקראי"], "correctOption": "תצפית נכונה ומדויקת", "guidingHint": "רמז סוקרטי...", "socraticFeedback": "מצוין! הבחנת בדפוס הנכון." },
-          { "stepNumber": 2, "stage": "2. ניתוח והשוואת קשרים 🧩", "prompt": "שאלת עומק סוקרטית להשוואת מקרים והבנת סיבתיות...", "options": ["ניתוח סיבתי מדויק", "הסבר שטחי", "מסקנה שגויה"], "correctOption": "ניתוח סיבתי מדויק", "guidingHint": "רמז סוקרטי להשוואה...", "socraticFeedback": "ניתוח מבריק! כעת הדרך סלולה ליעד." },
-          { "stepNumber": 3, "stage": "3. הסקת מסקנה והגעה ליעד 🎯", "prompt": "שאלת סיכום סוקרטית: נסחו בעצמכם את הכלל שהתגלה והגיעו למטרת השיעור!", "options": ["ניסוח הכלל המלא והשגת היעד 🌟", "כלל חלקי", "מסקנה שגויה"], "correctOption": "ניסוח הכלל המלא והשגת היעד 🌟", "guidingHint": "רמז מסכם...", "socraticFeedback": "כל הכבוד! 🎉 הגעתם ליעד בעצמכם!" }
+          { "stepNumber": 1, "stage": "1. תצפית ושאילת שאלות 🔍", "prompt": "<כתוב כאן שאלה סוקרטית ראשונה המציגה דוגמה מוחשית בנושא ${safeTitle} ושואלת את התלמיד מה הוא מבחין בה>", "options": ["<תשובה נכונה המזהה את הדפוס בנושא ${safeTitle}>", "<תשובה חלקית>", "<ניחוש שגוי>"], "correctOption": "<תשובה נכונה המזהה את הדפוס בנושא ${safeTitle}>", "guidingHint": "<כתוב רמז סוקרטי ספציפי לשלב 1>", "socraticFeedback": "<כתוב משוב מפורט שמאשר את התצפית ומסביר אותה>" },
+          { "stepNumber": 2, "stage": "2. ניתוח והשוואת קשרים 🧩", "prompt": "<כתוב כאן שאלה סוקרטית שנייה המשווה בין שני מקרים בנושא ${safeTitle} כדי להבין את הסיבה והחוקיות>", "options": ["<ניתוח מדויק של הקשר והסיבה בנושא ${safeTitle}>", "<הסבר שטחי>", "<מסקנה שגויה>"], "correctOption": "<ניתוח מדויק של הקשר והסיבה בנושא ${safeTitle}>", "guidingHint": "<כתוב רמז סוקרטי ספציפי להשוואה בשלב 2>", "socraticFeedback": "<כתוב משוב מפורט שמעמיק את ההבנה לקראת המסקנה>" },
+          { "stepNumber": 3, "stage": "3. הסקת מסקנה והגעה ליעד 🎯", "prompt": "<כתוב כאן שאלה סוקרטית שלישית המנחה את התלמיד לנסח בעצמו את הכלל המרכזי של ${safeTitle}>", "options": ["<ניסוח הכלל המלא והמדויק של ${safeTitle} 🌟>", "<כלל חלקי בלבד>", "<מסקנה שגויה>"], "correctOption": "<ניסוח הכלל המלא והמדויק של ${safeTitle} 🌟>", "guidingHint": "<כתוב רמז מסכם המחבר בין שלב 1 ושלב 2>", "socraticFeedback": "<כתוב משוב מסכם חם ומפורט המאשר הגעה ליעד השיעור>" }
         ]
       },
       "explanationCards": [
-        { "title": "1. הגדרת המושג המרכזי", "content": "הסבר מפורש וברור של המושג בשיעור (${safeTitle})...", "example": "דוגמה ישירה להמחשה..." },
-        { "title": "2. שלבי היישום וההדגמה", "content": "שלבי העבודה והיישום שלב אחר שלב...", "example": "דוגמה פתורה עם הסבר מודרך..." },
-        { "title": "3. הכלל המעשי", "content": "הכלל הסופי ליישום ועקרונות הביצוע הנכונים...", "example": "יישום מעשי של הכלל..." }
+        { "title": "1. הגדרת המושג המרכזי", "content": "<כתוב כאן הסבר מפורט ומדויק (3-4 משפטים) של המושג המרכזי בשיעור ${safeTitle}>", "example": "<כתוב כאן דוגמה מוחשית ומלאה המדגימה את המושג>" },
+        { "title": "2. שלבי היישום וההדגמה", "content": "<כתוב כאן בפירוט שלב אחר שלב כיצד מיישמים או פותרים בנושא ${safeTitle}>", "example": "<כתוב כאן דוגמה פתורה במלואה עם הסבר לכל שלב>" },
+        { "title": "3. הכלל המעשי", "content": "<כתוב כאן את כלל הזהב המסכם ואת הדגשים החשובים בנושא ${safeTitle}>", "example": "<כתוב כאן דוגמה מעשית נוספת ליישום הכלל>" }
       ],
-      "conceptMapKeywords": ["${safeTitle}", "${safeSubject}", "עיקרון מרכזי", "יישום מעשי"],
+      "conceptMapKeywords": ["${safeTitle}", "<מושג מפתח 1>", "<מושג מפתח 2>", "<מושג מפתח 3>"],
       "checkForUnderstanding": {
-        "question": "שאלת בדיקת הבנה קצרה וישירה בנושא (${safeTitle})?",
-        "options": ["תשובה נכונה ומדויקת 🎯", "מסיח 1", "מסיח 2"],
-        "correctAnswer": "תשובה נכונה ומדויקת 🎯",
-        "feedback": "כל הכבוד! תשובה מדויקת המעידה על הבנה."
+        "question": "<כתוב כאן שאלת בדיקת הבנה ספציפית וממוקדת על ${safeTitle}?>",
+        "options": ["<התשובה הנכונה והמדויקת 🎯>", "<מסיח סביר 1>", "<מסיח סביר 2>"],
+        "correctAnswer": "<התשובה הנכונה והמדויקת 🎯>",
+        "feedback": "<כתוב כאן הסבר קצר מדוע תשובה זו נכונה>"
       },
-      "teacherGuidance": "הנחיות למורה להנחיית הבנת המשמעות...",
+      "teacherGuidance": "<כתוב כאן הנחיות למורה להוראת תחנת הבנת המשמעות>",
       "suggestedDuration": 12,
-      "scaffold": "רמז מסייע: היעזרו בדוגמאות שבכרטיסיות."
+      "scaffold": "<כתוב כאן תמיכה ופיגום לתלמידים בתחנה 2>"
     },
     "3_practice": {
       "name": "יישום ותרגול",
       "number": 3,
       "icon": "🛠️",
-      "studentPrompt": "ברוכים הבאים לתחנת היישום והתרגול בנושא (${safeTitle})! עבדו במחטות המכשירים לפי ההנחיות.",
+      "studentPrompt": "<כתוב כאן הנחיה ברורה ומעצימה לעבודה בתחנות התרגול הקבוצתיות בנושא ${safeTitle}>",
       "practiceStations": [
-        { "id": 1, "groupNumber": 1, "title": "תחנה 1: חקר וגילוי 🔬", "badge": "🔬 צוות חקר", "targetDevice": "אייפד קבוצה 1", "description": "חקר נתונים ומקורות בנושא (${safeTitle})...", "challenge": "אתגר חקר: חקרו ומצאו שתי ראיות מרכזיות המאמתות את ההשערה.", "deliverablePrompt": "רשמו את ממצאי החקר של הצוות:" },
-        { "id": 2, "groupNumber": 2, "title": "תחנה 2: יישום ופתרון ⚙️", "badge": "⚙️ צוות יישום", "targetDevice": "אייפד קבוצה 2", "description": "פתרון בעיות מעשיות ותרגול של (${safeTitle})...", "challenge": "אתגר יישום: פתרו תרגיל מעשי ישיר תוך הנמקת כל שלב.", "deliverablePrompt": "הציגו את שלבי הפתרון והתוצאה המנומקת:" },
-        { "id": 3, "groupNumber": 3, "title": "תחנה 3: יצירתיות והדמיה 🎨", "badge": "🎨 צוות יצירה", "targetDevice": "אייפד קבוצה 3", "description": "תכנון מודל או תרחיש הממחיש את (${safeTitle})...", "challenge": "אתגר יצירתי: צרו דיאלוג או מארגן חזותי הממחיש את המושג.", "deliverablePrompt": "שתפו את התוצר היצירתי של קבוצתכם:" },
-        { "id": 4, "groupNumber": 4, "title": "תחנה 4: חשיבה ביקורתית 🧠", "badge": "🧠 צוות ביקורת", "targetDevice": "אייפד קבוצה 4", "description": "איתור כשלים לוגיים והנמקה בנושא (${safeTitle})...", "challenge": "אתגר ביקורתי: אתרו את הטעות בטענה שגויה נפוצה ונמקו את התיקון.", "deliverablePrompt": "כתבו את ניתוח הטעות ואת הטיעון המתקן:" }
+        { "id": 1, "groupNumber": 1, "title": "תחנה 1: חקר וגילוי 🔬", "badge": "🔬 צוות חקר", "targetDevice": "אייפד קבוצה 1", "description": "<תיאור משימת החקר של קבוצה 1 בנושא ${safeTitle}>", "challenge": "<כתוב כאן שאלת חקר או משימת ניתוח קונקרטית ומלאה עבור קבוצה 1 בנושא ${safeTitle}>", "deliverablePrompt": "רשמו את ממצאי החקר והראיות שמצאתם:" },
+        { "id": 2, "groupNumber": 2, "title": "תחנה 2: יישום ופתרון ⚙️", "badge": "⚙️ צוות יישום", "targetDevice": "אייפד קבוצה 2", "description": "<תיאור משימת היישום של קבוצה 2 בנושא ${safeTitle}>", "challenge": "<כתוב כאן תרגיל או בעיה מעשית מלאה לפתרון עבור קבוצה 2 בנושא ${safeTitle}>", "deliverablePrompt": "הציגו את שלבי הפתרון והתוצאה המנומקת:" },
+        { "id": 3, "groupNumber": 3, "title": "תחנה 3: יצירתיות והדמיה 🎨", "badge": "🎨 צוות יצירה", "targetDevice": "אייפד קבוצה 3", "description": "<תיאור משימת היצירה של קבוצה 3 בנושא ${safeTitle}>", "challenge": "<כתוב כאן משימה יצירתית מפורטת (כתיבת דיאלוג / תרחיש / מודל) הממחישה את ${safeTitle}>", "deliverablePrompt": "שתפו את התוצר היצירתי של קבוצתכם:" },
+        { "id": 4, "groupNumber": 4, "title": "תחנה 4: חשיבה ביקורתית 🧠", "badge": "🧠 צוות ביקורת", "targetDevice": "אייפד קבוצה 4", "description": "<תיאור משימת החשיבה הביקורתית של קבוצה 4 בנושא ${safeTitle}>", "challenge": "<כתוב כאן טענה שגויה ספציפית בנושא ${safeTitle} ובקש מהקבוצה לאתר את הטעות ולתקן אותה עם נימוק>", "deliverablePrompt": "כתבו את ניתוח הטעות ואת הטיעון המתקן:" }
       ],
       "tasks": [
-        { "tier": "support", "badge": "🌱 קבוצת זינוק", "title": "משימת זינוק והבנה", "task": "משימה מודרכת לתרגול יסודות המושג (${safeTitle})...", "scaffold": "רמז מסייע לביצוע המשימה..." },
-        { "tier": "core", "badge": "⭐ קבוצת שליטה", "title": "משימת שליטה ותרגול", "task": "משימת הסקה ויישום מורכב בנושא (${safeTitle})...", "scaffold": "רמז מקשר בין שלבי הפתרון..." },
-        { "tier": "advanced", "badge": "🚀 קבוצת אתגר", "title": "משימת אתגר וחשיבה", "task": "אתגר חשיבה ביקורתית והערכה בנושא (${safeTitle})...", "scaffold": "רמז להעמקה מעבר לחומר הבסיסי..." }
+        { "tier": "support", "badge": "🌱 קבוצת זינוק", "title": "משימת זינוק והבנה", "task": "<כתוב כאן משימה מונחית ופשוטה עם שאלות ברורות לתרגול יסודות ${safeTitle}>", "scaffold": "<כתוב רמז מסייע לקבוצת הזינוק>" },
+        { "tier": "core", "badge": "⭐ קבוצת שליטה", "title": "משימת שליטה ותרגול", "task": "<כתוב כאן משימת יישום והסקה מלאה בנושא ${safeTitle}>", "scaffold": "<כתוב רמז מכוון לקבוצת השליטה>" },
+        { "tier": "advanced", "badge": "🚀 קבוצת אתגר", "title": "משימת אתגר וחשיבה", "task": "<כתוב כאן משימת אתגר ברמת חשיבה גבוהה בנושא ${safeTitle}>", "scaffold": "<כתוב רמז מעמיק לקבוצת האתגר>" }
       ],
-      "teacherGuidance": "הנחיות למורה למעקב אחר הקבוצות והמכשירים...",
+      "teacherGuidance": "<כתוב כאן הנחיות למורה למעקב אחר הקבוצות ומתן משוב>",
       "suggestedDuration": 15,
       "workMode": "groups"
     },
@@ -2995,29 +3001,29 @@ ${customDirectivesText}
       "number": 4,
       "icon": "🔎",
       "studentPrompt": "דף משימה עצמאי — ראיות להבנת [ ${safeTitle} ] ✍️",
-      "individualTask": "1. הסבירו את המושג המרכזי של (${safeTitle}) במילים שלכם.\n2. נמקו מדוע הכלל שנלמד הוא מדויק בעזרת דוגמה.\n3. תנו דוגמה מקורית משלכם המיישמת את הכלל.\n4. כיצד תוכלו להסביר מושג זה לחבר שמתקשה?",
-      "teacherGuidance": "הנחיות להערכת דף הראיות האישי...",
+      "individualTask": "<כתוב כאן 4 שאלות קונקרטיות ומדורגות לעבודה עצמאית של התלמיד בנושא ${safeTitle}: 1. שאלת הבנה ויישום ישיר, 2. שאלת נימוק והוכחה, 3. שאלת פתרון מקרה ספציפי, 4. שאלת העברה לחיי היומיום>",
+      "teacherGuidance": "<כתוב כאן הנחיות למורה לבדיקת דף הראיות וזיהוי תלמידים הזקוקים לתמיכה>",
       "suggestedDuration": 7,
-      "criterion": "מענה עצמאי מנומק על שאלות הראיות."
+      "criterion": "<כתוב כאן את הקריטריון המדויק להצלחה במשימה האישית>"
     },
     "5_harvest": {
       "name": "קציר והעברה לחיים",
       "number": 5,
       "icon": "🎒",
-      "studentPrompt": "תחנת הקציר וסיכום הלמידה — [ ${safeTitle} ] 🎒✨",
+      "studentPrompt": "<כתוב כאן דברי סיכום מעוררי השראה לתחנת הקציר בשיעור ${safeTitle}>",
       "exitTicket": {
-        "q1": "מה הרעיון המרכזי שלמדתי היום על (${safeTitle})?",
-        "q2": "מה עזר לי להבין בצורה הטובה ביותר?",
-        "q3": "מה עדיין דורש הסבר נוסף מבחינתי?",
-        "q4_transfer": "איפה אוכל להשתמש במה שלמדתי בחיי היומיום?"
+        "q1": "<שאלת סיכום קוגניטיבית ספציפית על מה שלמדנו היום ב-${safeTitle}?>",
+        "q2": "מה בשיעור עזר לי להבין את הנושא בצורה הטובה ביותר?",
+        "q3": "מה עדיין דורש הסבר או תרגול נוסף מבחינתי?",
+        "q4_transfer": "<שאלת העברה מעשית: כיצד ואיפה ניישם את ${safeTitle} בחיי היומיום שלנו?>"
       },
-      "teacherGuidance": "הנחיות למורה לאיסוף כרטיסי היציאה וסיכום השיעור...",
+      "teacherGuidance": "<כתוב כאן הנחיות למורה לאיסוף כרטיסי היציאה וסיכום השיעור>",
       "suggestedDuration": 5
     }
   }
 }`
-    : `أنت خبير تربوي متقدم في تصميم خطط الدروس وفق نموذج «مفتاح التعلم» الخماسي بمدرسة مشيرفة الابتدائية.
-صمم درساً كاملاً، غنياً، ومكتملاً بنسبة 100% وجاهزاً للتطبيق الصفي الفوري وفق المعطيات:
+    : `أنت خبير تربوي متقدم ومؤلف مناهج قدير في تصميم خطط الدروس وفق نموذج «مفتاح التعلم» الخماسي بمدرسة مشيرفة الابتدائية.
+صمم درساً كاملاً، غنياً، مفصلاً، ومكتملاً بنسبة 100% وجاهزاً للتطبيق الصفي الفوري وفق المعطيات:
 - الموضوع: ${safeTitle}
 - المادة: ${safeSubject}
 - الصف: ${safeGrade}
@@ -3025,37 +3031,38 @@ ${customDirectivesText}
 - نظام العمل لمحطة التمرين (المحطة 3): ${groupsDesc}
 ${customDirectivesText}
 
-قواعد بيداغوجية إلزامية صارمة:
-1. يجب أن يكون كامل محتوى الدرس والأنشطة والأسئلة متمحوراً بدقة تامة حول موضوع (${safeTitle}) في سياق مادة (${safeSubject})، مع استبعاد أي خلط مع مواد أخرى.
-2. أخرج كائن JSON صالحاً ومكتملاً فقط (RFC8259) دون أي نصوص أو كتل ماركداون خارجه:
+قواعد بيداغوجية إلزامية صارمة جداً (انتبه جيداً!):
+1. يجب أن يكون كامل محتوى الدرس والشرح والأنشطة والأسئلة متمحوراً بدقة تامة وعمق علمي وتربوي حول موضوع (${safeTitle}) في سياق مادة (${safeSubject})، مع استبعاد أي خلط مع مواد أخرى.
+2. ⚠️ تحذير صارم: النصوص الموضوعة بين قوسين زاويين <...> داخل قالب الـ JSON أدناه هي تعليمات لك لتكتب محتوى حقيقياً مكانها؛ يُمنع منعاً باتاً نسخ عبارات القالب أو ترك نقاط (...)! يجب عليك استبدال كل حقل بمحتوى تعليمي حقيقي، مفصل، غني، ومكتمل خاص بدرس (${safeTitle}).
+3. أخرج كائن JSON صالحاً ومكتملاً فقط (RFC8259) دون أي نصوص أو كتل ماركداون خارجه:
 {
   "title": "${safeTitle}",
   "lessonTitle": "${safeTitle}",
   "subject": "${safeSubject}",
   "language": "arabic",
   "grade": "${safeGrade}",
-  "objective": "${safeCustomObjective || 'أن يتعرف الطالب على أسباب ومعالم ومهارات (' + safeTitle + ') ويستنتج تطبيقاتها العملية في حياته.'}",
-  "learningGoal": "${safeCustomObjective || 'الهدف التعليمي الجوهري لدرس (' + safeTitle + ')...'}",
-  "successCriteria": "${safeCustomCriteria || 'معيار النجاح القابل للقياس والتحقق لدرس (' + safeTitle + ')...'}",
-  "refreshActivity": "نشاط تنشيط ذهني أو حركي ممتع لمدة 60 ثانية يرتبط بـ (${safeTitle})...",
+  "objective": "${safeCustomObjective || '<اكتب هنا الهدف التعليمي التفصيلي والدقيق لدرس ' + safeTitle + ' في مادة ' + safeSubject + '>' }",
+  "learningGoal": "${safeCustomObjective || '<اكتب هنا هدف التعلم بصياغة واضحة ومباشرة للطالب حول ' + safeTitle + '>' }",
+  "successCriteria": "${safeCustomCriteria || '<اكتب هنا معيار النجاح الدقيق والقابل للقياس والتحقق لدرس ' + safeTitle + '>' }",
+  "refreshActivity": "<اكتب هنا نشاط تنشيط ذهني وحركي ممتع ومبتكر لمدة 60 ثانية يرتبط بمفهوم ${safeTitle}>",
   "suggestedDuration": 45,
   "stations": {
     "1_hook": {
       "name": "مشوّق ومحفّز",
       "number": 1,
       "icon": "🔥",
-      "studentPrompt": "الموقف القصصي أو التساؤل المثير للفضول حول (${safeTitle})...",
-      "teacherGuidance": "إرشادات المعلم لإدارة المدخل المشوق وجذب الانتباه...",
+      "studentPrompt": "<اكتب هنا قصة مشوقة قصيرة أو موقفاً واقعياً محيراً من 3-4 جمل يرتبط بـ (${safeTitle}) ويثير دهشة الطلاب وفضولهم المعرفي>",
+      "teacherGuidance": "<اكتب هنا إرشادات عملية مفصلة للمعلم لإدارة المدخل المشوق وربط الطلاب بهدف الحصة>",
       "suggestedDuration": 6,
-      "scaffold": "تلميح استكشافي للبدء بالتفكير...",
+      "scaffold": "<اكتب هنا تلميحاً ذكياً يساعد الطالب على تأمل الموقف الافتتاحي>",
       "interactiveActivity": {
         "type": "curiosity",
         "title": "تحدي الفضول: ${safeTitle}",
-        "scenario": "تفاصيل الموقف المشوق والظاهرة الواقعية المرتبطة بـ (${safeTitle}) بالتفصيل وبأسلوب جذاب...",
-        "curiosityQuestion": "سؤال الفضول المثير للتفكير والبحث حول الموقف؟",
-        "options": ["فرضية أولى للتأمل", "التفسير الأنسب والأدق 🎯", "فرضية ثالثة", "فرضية رابعة"],
-        "solution": "التفسير الأنسب والأدق 🎯",
-        "explanation": "ربط التفسير بمفهوم وهدف الدرس..."
+        "scenario": "<اكتب هنا تفاصيل الموقف القصصي المشوق أو الظاهرة الواقعية المرتبطة بـ (${safeTitle}) بأسلوب سردي جذاب ومفصل>",
+        "curiosityQuestion": "<اكتب هنا سؤال الفضول المحوري المثير للتفكير والبحث حول هذا الموقف؟>",
+        "options": ["<فرضية أولى شائعة ولكن غير دقيقة>", "<التفسير العلمي/التربوي الصحيح والدقيق لـ ${safeTitle} 🎯>", "<فرضية جزئية غير مكتملة>", "<تخمين سطحي غير صحيح>"],
+        "solution": "<التفسير العلمي/التربوي الصحيح والدقيق لـ ${safeTitle} 🎯>",
+        "explanation": "<اكتب هنا شرحاً وافياً ومبسطاً يوضح لماذا هذا التفسير هو الصحيح وكيف يمهد لدرس ${safeTitle}>"
       }
     },
     "2_understanding": {
@@ -3065,36 +3072,36 @@ ${customDirectivesText}
       "selectedPath": "${safeMeaningPath}",
       "pedagogicalMode": "${safeMeaningPath === 'explicit' ? 'direct_instruction' : safeMeaningPath === 'discovery' ? 'socratic_exploration' : 'blended_interactive'}",
       "pedagogicalModeName": "${pathDesc}",
-      "studentPrompt": "${safeMeaningPath === 'discovery' ? 'تساؤل استكشافي سقراطي يقود الطالب لاكتشاف القاعدة والهدف ذاتياً دون تلقين...' : 'الشرح الوجاهي المنظم والوافي لدرس (' + safeTitle + ') ببيان المفاهيم والخطوات الإجرائية والقواعد والأمثلة المحلولة...'}",
+      "studentPrompt": "<اكتب هنا شرحاً تعليمياً وافياً، موسعاً، ومفصلاً (6-10 جمل منظمة) يشرح مفاهيم وقواعد وأركان (${safeTitle}) مع أمثلة تطبيقية واضحة كما يشرحها المعلم القدير في الصف>",
       "socraticDialogue": {
-        "targetGoalStatement": "${safeCustomObjective || 'الهدف التعليمي الذي سيستنتجه الطالب بنفسه لدرس (' + safeTitle + ')...'}",
+        "targetGoalStatement": "${safeCustomObjective || '<اكتب هنا القاعدة الذهبية والخلاصة الكبرى التي سيكتشفها الطالب بنفسه عن ' + safeTitle + '>' }",
         "steps": [
-          { "stepNumber": 1, "stage": "١. الملاحظة والتساؤل السقراطي 🔍", "prompt": "سؤال سقراطي أول يلاحظ فيه الطالب معطيات وحالات حول (${safeTitle}) ويسأل عما يلحظه...", "options": ["الملاحظة الصائبة التي تكشف النمط والعلة", "ملاحظة سطحية غير دقيقة", "افتراض عشوائي"], "correctOption": "الملاحظة الصائبة التي تكشف النمط والعلة", "guidingHint": "تلميح سقراطي للتدقيق في التفاصيل...", "socraticFeedback": "أحسنت الملاحظة بدقة! وهذا يقودنا إلى التحليل التالي." },
-          { "stepNumber": 2, "stage": "٢. التحليل ومقارنة العلاقات 🧩", "prompt": "سؤال سقراطي تحليلي يوجه الطالب للربط بين أسباب ونتائج (${safeTitle}) ومقارنة الحالات...", "options": ["تحليل صحيح يربط العلاقات بدقة", "تحليل سطحي", "افتراض غير سليم"], "correctOption": "تحليل صحيح يربط العلاقات بدقة", "guidingHint": "تلميح سقراطي: قارن بين النماذج لتكتشف السبب...", "socraticFeedback": "تحليل رائع وذكي! والآن إلى الخطوة الختامية لبلوغ الهدف." },
-          { "stepNumber": 3, "stage": "٣. الاستنتاج وبلوغ الهدف المطلوب 🎯", "prompt": "السؤال السقراطي الختامي: استنتج الآن بنفسك القاعدة الذهبية والهدف المطلوب لدرس (${safeTitle})!", "options": ["صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟", "قاعدة منقوصة", "استنتاج خاطئ"], "correctOption": "صياغة القاعدة وبلوغ هدف الدرس الكامل بجدارة 🌟", "guidingHint": "تلميح سقراطي: اجمع ما لاحظته في الخطوتين السابقتين...", "socraticFeedback": "مبارك يا بطل! 🎉 لقد استنتجت الهدف بنفسك بالطريقة السقراطية دون تلقين!" }
+          { "stepNumber": 1, "stage": "١. الملاحظة والتساؤل السقراطي 🔍", "prompt": "<اكتب هنا سؤالاً سقراطياً أول يعرض مثالاً أو شاهداً حقيقياً من درس (${safeTitle}) ويسأل الطالب عما يلاحظه فيه بدقة>", "options": ["<الملاحظة الدقيقة الصائبة حول مثال ${safeTitle}>", "<ملاحظة سطحية غير مكتملة>", "<تخمين خاطئ>"], "correctOption": "<الملاحظة الدقيقة الصائبة حول مثال ${safeTitle}>", "guidingHint": "<اكتب هنا تلميحاً سقراطياً ذكياً يوجه انتباه الطالب للنمط في المثال>", "socraticFeedback": "<اكتب هنا تغذية راجعة مفصلة تشيد بملاحظة الطالب وتوضح دلالتها العلمية/التربوية>" },
+          { "stepNumber": 2, "stage": "٢. التحليل ومقارنة العلاقات 🧩", "prompt": "<اكتب هنا سؤالاً سقراطياً ثانياً يقارن بين حالتين أو يبحث في العلاقة السببية والحكمة/القانون في (${safeTitle})>", "options": ["<التحليل السليم الذي يربط السبب بالنتيجة في ${safeTitle}>", "<تحليل جزئي غير كافٍ>", "<ربط غير صحيح>"], "correctOption": "<التحليل السليم الذي يربط السبب بالنتيجة في ${safeTitle}>", "guidingHint": "<اكتب هنا تلميحاً سقراطياً يساعد الطالب على المقارنة واكتشاف العلة>", "socraticFeedback": "<اكتب هنا تغذية راجعة غنية تعمق فهم الطالب وتمهد لاستنتاج القاعدة>" },
+          { "stepNumber": 3, "stage": "٣. الاستنتاج وبلوغ الهدف المطلوب 🎯", "prompt": "<اكتب هنا السؤال السقراطي الثالث الختامي الذي يدعو الطالب لصياغة القاعدة الكاملة والخلاصة الجوهرية لدرس (${safeTitle})>", "options": ["<صياغة القاعدة الكاملة والدقيقة لدرس ${safeTitle} 🌟>", "<قاعدة ناقصة>", "<استنتاج غير سليم>"], "correctOption": "<صياغة القاعدة الكاملة والدقيقة لدرس ${safeTitle} 🌟>", "guidingHint": "<اكتب هنا تلميحاً يربط بين ملاحظة الخطوة 1 وتحليل الخطوة 2>", "socraticFeedback": "<اكتب هنا تهنئة حارة وتلخيصاً وافياً للقاعدة التي اكتشفها الطالب بنفسه>" }
         ]
       },
       "explanationCards": [
-        { "title": "${safeMeaningPath === 'discovery' ? '🔍 1. التساؤل والملاحظة' : '📖 1. المفهوم والتعريف الصريح'}", "step": 1, "content": "شرح وافٍ ومباشر للمفهوم الأساسي وعناصره في درس (${safeTitle})...", "example": "مثال توضيحي مباشر يجسد المفهوم بوضوح..." },
-        { "title": "${safeMeaningPath === 'discovery' ? '🧩 2. التحليل والمقارنة' : '💡 2. خطوات النمذجة والعمل'}", "step": 2, "content": "خطوات التطبيق النموذجية الإجرائية السليمة في (${safeTitle})...", "example": "نموذج محلول ببيان خطوات التفكير السليم..." },
-        { "title": "${safeMeaningPath === 'discovery' ? '🎯 3. الاستنتاج وبلوغ الهدف' : '📌 3. القاعدة والمثال التطبيقي'}", "step": 3, "content": "القاعدة النهائية المعيارية للتطبيق السليم والمحكم في (${safeTitle})...", "example": "تطبيق نموذجي يثبت القاعدة في الذهن..." }
+        { "title": "${safeMeaningPath === 'discovery' ? '🔍 1. التساؤل والملاحظة' : '📖 1. المفهوم والتعريف الصريح'}", "step": 1, "content": "<اكتب هنا شرحاً مفصلاً وواضحاً (3-4 جمل) للمفهوم الأساسي وتعريفه وأركانه في درس (${safeTitle})>", "example": "<اكتب هنا مثالاً واقعياً أو نصياً مفصلاً يوضح المفهوم>" },
+        { "title": "${safeMeaningPath === 'discovery' ? '🧩 2. التحليل والمقارنة' : '💡 2. خطوات النمذجة والعمل'}", "step": 2, "content": "<اكتب هنا بالتفصيل الخطوات العملية أو التحليلية المتسلسلة لفهم وتطبيق (${safeTitle})>", "example": "<اكتب هنا نموذجاً محلولاً خطوة بخطوة مع التعليل>" },
+        { "title": "${safeMeaningPath === 'discovery' ? '🎯 3. الاستنتاج وبلوغ الهدف' : '📌 3. القاعدة والمثال التطبيقي'}", "step": 3, "content": "<اكتب هنا القاعدة الذهبية النهائية والضوابط المهمة لإتقان (${safeTitle})>", "example": "<اكتب هنا تطبيقاً عملياً إضافياً يثبت القاعدة في ذهن الطالب>" }
       ],
-      "conceptMapKeywords": ["${safeTitle}", "${safeSubject}", "القاعدة المركزية", "التطبيق السليم"],
+      "conceptMapKeywords": ["${safeTitle}", "<مفهوم فرعي 1>", "<مفهوم فرعي 2>", "<مفهوم فرعي 3>"],
       "checkForUnderstanding": {
-        "question": "سؤال فحص فهم مباشر وسريع للتأكد من استيعاب المفاهيم الأساسية لـ (${safeTitle})؟",
-        "options": ["الإجابة الصائبة الدقيقة 🎯", "خيار غير دقيق", "خيار خاطئ"],
-        "correctAnswer": "الإجابة الصائبة الدقيقة 🎯",
-        "feedback": "أحسنت! إجابة دقيقة تدل على استيعابك السليم للمفهوم."
+        "question": "<اكتب هنا سؤال فحص فهم سريع ومحدد حول أهم نقطة في درس (${safeTitle})؟>",
+        "options": ["<الإجابة الصحيحة والدقيقة 🎯>", "<مشتت أول قريب>", "<مشتت ثانٍ خاطئ>"],
+        "correctAnswer": "<الإجابة الصحيحة والدقيقة 🎯>",
+        "feedback": "<اكتب هنا تعليلاً واضحاً يشرح للطالب لماذا هذه الإجابة هي الصحيحة>"
       },
-      "teacherGuidance": "إرشادات المعلم لمحطة بناء المعنى والشرح المباشر وتثبيت المفاهيم...",
+      "teacherGuidance": "<اكتب هنا إرشادات المعلم التفصيلية لإدارة محطة بناء المعنى والنمذجة وفحص الفهم>",
       "suggestedDuration": 12,
-      "scaffold": "تلميح مساند: استند إلى القاعدة والأمثلة المحلولة لتأكيد الفهم."
+      "scaffold": "<اكتب هنا وسيلة دعم ومساندة بصرية أو لغوية للطلاب في المحطة الثانية>"
     },
     "3_practice": {
       "name": "التطبيق والتدريب",
       "number": 3,
       "icon": "🛠️",
-      "studentPrompt": "مرحباً بكم في محطة التطبيق والتدريب لدرس (${safeTitle})! ستعمل المجموعات عبر أجهزة الآيباد/الهواتف لإنجاز المهام المتمايزة.",
+      "studentPrompt": "<اكتب هنا توجيهات واضحة ومحفزة للطلاب للعمل التعاوني في محطات التدريب لدرس (${safeTitle})>",
       "practiceStations": [
         {
           "id": 1,
@@ -3102,8 +3109,8 @@ ${customDirectivesText}
           "title": "المحطة 1: الاستقصاء والبحث 🔬",
           "badge": "🔬 فريق البحث والاستقصاء",
           "targetDevice": "آيباد المجموعة 1",
-          "description": "استقصاء وبحث في معطيات (${safeTitle}) لاستخراج أدلة واكتشاف العلاقات...",
-          "challenge": "تحدي استقصائي: ابحثوا في معطيات (${safeTitle}) واستخرجوا دليلين يثبتان صحة الاستنتاج:",
+          "description": "<وصف مهمة الاستقصاء والبحث الخاصة بدرس ${safeTitle}>",
+          "challenge": "<اكتب هنا مهمة استقصائية كاملة ومحددة تطلب من المجموعة الأولى استخراج أدلة أو تحليل حالة واقعية في درس (${safeTitle})>",
           "deliverablePrompt": "سجلوا ناتج بحث مجموعتكم مع الأدلة المستخرجة:"
         },
         {
@@ -3112,8 +3119,8 @@ ${customDirectivesText}
           "title": "المحطة 2: التطبيق والحل العملي ⚙️",
           "badge": "⚙️ فريق التطبيق والتمكن",
           "targetDevice": "آيباد المجموعة 2",
-          "description": "تطبيق عملي لحل تدريبات ومسائل إجرائية حول (${safeTitle}) بدقة...",
-          "challenge": "تحدي تطبيقي: حلوا المسألة التطبيقية حول (${safeTitle}) مع كتابة تعليل خطوة بخطوة:",
+          "description": "<وصف مهمة التطبيق العملي الخاصة بدرس ${safeTitle}>",
+          "challenge": "<اكتب هنا تمريناً تطبيقياً كاملاً أو مسألة عملية محددة حول (${safeTitle}) تتطلب الحل خطوة بخطوة مع التعليل>",
           "deliverablePrompt": "اكتبوا خطوات الحل والنتيجة المبررة:"
         },
         {
@@ -3122,9 +3129,9 @@ ${customDirectivesText}
           "title": "المحطة 3: الإبداع والتمثيل والمحاكاة 🎨",
           "badge": "🎨 فريق الإبداع والمحاكاة",
           "targetDevice": "آيباد المجموعة 3",
-          "description": "تصميم مشهد حواري أو ملخص بصري يجسد مفهوم (${safeTitle}) بأسلوب مشوق...",
-          "challenge": "تحدي إبداعي: صمموا سيناريو محاكاة واقعياً أو رسماً توضيحياً يشرح فكرة (${safeTitle}):",
-          "deliverablePrompt": "اكتبوا نص المشهد الحواري أو وصف التمثيل المبتكر:"
+          "description": "<وصف مهمة الإبداع والمحاكاة الخاصة بدرس ${safeTitle}>",
+          "challenge": "<اكتب هنا مهمة إبداعية محددة تطلب تصميم حوار أو قصة قصيرة أو مخطط مبتكر يشرح (${safeTitle}) لزملائهم>",
+          "deliverablePrompt": "اكتبوا نص المشهد الحواري أو الملخص الإبداعي:"
         },
         {
           "id": 4,
@@ -3132,17 +3139,17 @@ ${customDirectivesText}
           "title": "المحطة 4: التفكير الناقد واكتشاف الأخطاء 🧠",
           "badge": "🧠 فريق التفكير الناقد والتحليل",
           "targetDevice": "آيباد المجموعة 4",
-          "description": "فحص ادعاء مغلوط شائع في درس (${safeTitle}) وتصويبه بالبراهين...",
-          "challenge": "تحدي نقدي: ادعى أحدهم فهماً خاطئاً لـ (${safeTitle})، حددوا مكمن الخطأ وصوبوه بالدليل:",
+          "description": "<وصف مهمة التفكير الناقد الخاصة بدرس ${safeTitle}>",
+          "challenge": "<اكتب هنا مقولة أو حلاً يحتوي خطأً شائعاً محدداً في موضوع (${safeTitle}) واطلب من المجموعة اكتشاف الخطأ وتصويبه بالدليل>",
           "deliverablePrompt": "اكتبوا تحليلكم النقدي وتصويب الخطأ مع الدليل المنطقي:"
         }
       ],
       "tasks": [
-        { "tier": "support", "badge": "🌱 فريق الانطلاق والتمكن", "title": "مهمة الانطلاق والتمكن", "task": "مهمة تطبيقية مباشرة تركز على المفاهيم الأساسية لـ (${safeTitle})...", "scaffold": "تلميح مساند للبدء بالحل..." },
-        { "tier": "core", "badge": "⭐ فريق الممارسة والإتقان", "title": "مهمة الممارسة والإتقان", "task": "مهمة تحليلية وتطبيقية تتطلب تفسير العلاقات في (${safeTitle})...", "scaffold": "تلميح: اربط بين القواعد والنتائج..." },
-        { "tier": "advanced", "badge": "🚀 فريق الرواد والتحدي", "title": "مهمة الرواد والتحدي", "task": "مهمة تفكير ناقد ومقارنة معمقة وحل مشكلات مركبة في (${safeTitle})...", "scaffold": "تلميح: فكر في الأثر المستقبلي والقيمي..." }
+        { "tier": "support", "badge": "🌱 فريق الانطلاق والتمكن", "title": "مهمة الانطلاق والتمكن", "task": "<اكتب هنا سؤالاً تطبيقياً مبسطاً ومباشراً يناسب مجموعة الدعم حول أساسيات (${safeTitle})>", "scaffold": "<اكتب تلميحاً مبسطاً يساعدهم على البدء بالحل>" },
+        { "tier": "core", "badge": "⭐ فريق الممارسة والإتقان", "title": "مهمة الممارسة والإتقان", "task": "<اكتب هنا مهمة تطبيقية وتحليلية متكاملة تقيس إتقان معيار النجاح في (${safeTitle})>", "scaffold": "<اكتب تلميحاً يربط بين القاعدة والتطبيق>" },
+        { "tier": "advanced", "badge": "🚀 فريق الرواد والتحدي", "title": "مهمة الرواد والتحدي", "task": "<اكتب هنا مسألة تحدٍّ وتفكير عليا تربط (${safeTitle}) بموقف حياتي مركب>", "scaffold": "<اكتب تلميحاً يوجههم للتفكير العميق>" }
       ],
-      "teacherGuidance": "إرشادات المعلم للتنقل بين محطات المجموعات ومتابعة شاشات الأجهزة...",
+      "teacherGuidance": "<اكتب هنا إرشادات المعلم للتجول بين المجموعات وتقديم الدعم الفوري وتنشيط النقاش>",
       "suggestedDuration": 15,
       "workMode": "groups"
     },
@@ -3151,23 +3158,23 @@ ${customDirectivesText}
       "number": 4,
       "icon": "🔎",
       "studentPrompt": "ورقة الدليل الفردي المستقل — إثبات فهم [ ${safeTitle} ] ✍️",
-      "individualTask": "١. (تطبيق مباشر): اشرح المفهوم الأساسي لـ (${safeTitle}) بأسلوبك مع مثال.\n٢. (تحليل واستدلال): بيّن بالدليل المنطقي سبب صحة هذا المبدأ وأهميته.\n٣. (مهارة وحل مسألة): قدم حلاً لمسألة أو موقف يرتبط مباشرة بـ (${safeTitle}).\n٤. (نقل الأثر والتطبيق): كيف توظف ما تعلمته في موقف واقعي بحياتك اليومية؟",
-      "teacherGuidance": "إرشادات المعلم لتقييم إجابات الطلاب وفحص مستوى تمكن كل طالب واستقلاليته...",
+      "individualTask": "<اكتب هنا ٤ أسئلة فردية حقيقية ومفصلة خاصة بدرس (${safeTitle}) يجيب عنها الطالب بمفرده: ١. سؤال تطبيق مباشر للمفهوم، ٢. سؤال تعليل واستدلال، ٣. سؤال حل موقف أو مثال عملي، ٤. سؤال ربط بالحياة اليومية>",
+      "teacherGuidance": "<اكتب هنا إرشادات المعلم لتصحيح ورقة الدليل الفردي واتخاذ القرارات التربوية الثلاثة (تقدم، تدريب إضافي، دعم مختلف)>",
       "suggestedDuration": 7,
-      "criterion": "إجابة مستقلة ومبررة تثبت تحقق معيار النجاح."
+      "criterion": "<اكتب هنا معيار الحكم على إجابة الطالب الفردية في درس ${safeTitle}>"
     },
     "5_harvest": {
       "name": "حصاد ونقل الأثر",
       "number": 5,
       "icon": "🎒",
-      "studentPrompt": "محطة الحصاد ونقل الأثر — ثمار تعلم [ ${safeTitle} ] 🎒✨",
+      "studentPrompt": "<اكتب هنا كلمة ختامية ملهمة للطلاب في محطة الحصاد ونقل الأثر لدرس (${safeTitle})>",
       "exitTicket": {
-        "q1": "ما أهم فكرة أو مهارة تعلمتها اليوم حول (${safeTitle})؟",
-        "q2": "ما الذي ساعدني أكثر على الفهم؟",
-        "q3": "ما الذي ما زلت أحتاج إلى توضيحه؟ (يمكنك اختيار: لا أحتاج إلى توضيح إضافي)",
-        "q4_transfer": "أين وكيف تستطيع تطبيق ما تعلمته في حياتك اليومية ومدرستك؟"
+        "q1": "<اكتب هنا سؤال حصاد معرفي مخصص لدرس (${safeTitle}): ما أهم مبدأ أو مفهوم تعلمته اليوم عن...؟>",
+        "q2": "ما النشاط أو الطريقة التي ساعدتك أكثر على فهم الدرس اليوم؟",
+        "q3": "ما النقطة التي تشعر أنك بحاجة لمزيد من الأمثلة حولها؟",
+        "q4_transfer": "<اكتب هنا سؤال نقل الأثر المخصص لدرس (${safeTitle}): كيف ستطبق ما تعلمته اليوم في حياتك اليومية أو في بيتك ومدرستك؟>"
       },
-      "teacherGuidance": "إرشادات المعلم لجمع بطاقات الخروج ومراجعتها ورصد نقل الأثر وإغلاق الحصة...",
+      "teacherGuidance": "<اكتب هنا إرشادات المعلم لإغلاق الحصة ومراجعة تذاكر الخروج وتكليف مهمة نقل الأثر>",
       "suggestedDuration": 5
     }
   }
@@ -3560,9 +3567,18 @@ ${customDirectivesText}
            ? `لو كنت مكان صاحب الموقف، كيف كنت ستتصرف بصدق وشجاعة لتعزيز قيمة (${safeTitle})؟`
            : `برأيكم، ما هو السر أو المبدأ الأساسي الذي يفسر هذه الظاهرة في موضوع (${safeTitle})؟ وكيف نكتشفه معاً؟`);
 
+      const aiTopScenario = hook.interactiveActivity?.scenario || hook.interactiveActivity?.curiosity?.scenario;
+      const aiTopCuriosityQ = hook.interactiveActivity?.curiosityQuestion || hook.interactiveActivity?.curiosity?.curiosityQuestion;
+      const aiTopOptions = Array.isArray(hook.interactiveActivity?.options) && hook.interactiveActivity.options.length >= 2
+        ? hook.interactiveActivity.options
+        : (Array.isArray(hook.interactiveActivity?.curiosity?.options) && hook.interactiveActivity.curiosity.options.length >= 2 ? hook.interactiveActivity.curiosity.options : null);
+      const aiTopSolution = hook.interactiveActivity?.solution || hook.interactiveActivity?.curiosity?.solution;
+      const aiTopExplanation = hook.interactiveActivity?.explanation || hook.interactiveActivity?.curiosity?.explanation;
+      const aiTopTitle = hook.interactiveActivity?.title || hook.interactiveActivity?.curiosity?.title;
+
       const resolvedSearchQuery = hook.youtubeSearchQuery || hook.interactiveActivity?.video?.youtubeSearchQuery || hook.interactiveActivity?.video?.searchQuery || defaultSearchQuery || curatedVid.searchQuery;
-      const resolvedHookStory = hook.hookStoryOrScenario || hook.interactiveActivity?.video?.hookStoryOrScenario || defaultHookStory;
-      const resolvedCuriosityQ = hook.curiosityQuestion || hook.interactiveActivity?.video?.curiosityQuestion || defaultCuriosityQuestion;
+      const resolvedHookStory = hook.hookStoryOrScenario || aiTopScenario || hook.interactiveActivity?.video?.hookStoryOrScenario || defaultHookStory;
+      const resolvedCuriosityQ = hook.curiosityQuestion || aiTopCuriosityQ || hook.interactiveActivity?.video?.curiosityQuestion || defaultCuriosityQuestion;
 
       // Only allow verified known working IDs from AI output to prevent AI-hallucinated broken links
       const VERIFIED_IDS = ['9wqKGG4DASQ', 'FiqScyQysiA', 'ejbnImEtLGY', 'wKi7l_Gbx5w', 'a5MIHpgndVA', 'bMnmJjL3hF8', '4b2b-y4hPoc', 'dK0R5rN2gIc', 'S4328Yx6W20', '7V-eFmF9f2Q', 'Z0o8Z6GqP2o'];
@@ -3721,17 +3737,30 @@ ${customDirectivesText}
       hook.hookStoryOrScenario = resolvedHookStory;
       hook.curiosityQuestion = resolvedCuriosityQ;
 
+      const mergedCuriosity = {
+        ...defaultCuriosity,
+        ...(hook.interactiveActivity?.curiosity || {}),
+        ...(aiTopTitle ? { title: aiTopTitle } : {}),
+        ...(aiTopScenario ? { scenario: aiTopScenario } : {}),
+        ...(aiTopCuriosityQ ? { curiosityQuestion: aiTopCuriosityQ } : {}),
+        ...(aiTopOptions ? { options: aiTopOptions } : {}),
+        ...(aiTopSolution ? { solution: aiTopSolution } : {}),
+        ...(aiTopExplanation ? { explanation: aiTopExplanation } : {})
+      };
+
       // Merge into interactiveActivity
       hook.interactiveActivity = {
         type: activeType,
-        title: activeType === 'curiosity' ? (hook.interactiveActivity?.curiosity?.title || defaultCuriosity.title)
+        title: activeType === 'curiosity' ? (mergedCuriosity.title || defaultCuriosity.title)
              : activeType === 'riddle' ? (targetLang === 'hebrew' ? `חידת הפתיחה: ${safeTitle}` : targetLang === 'english' ? `Opening Riddle: ${safeTitle}` : `أحجية ولغز: ${safeTitle}`)
              : activeType === 'puzzle' ? (targetLang === 'hebrew' ? `פאזל האתגר: ${safeTitle}` : targetLang === 'english' ? `Challenge Puzzle: ${safeTitle}` : `بازل التحدي: ${safeTitle}`)
              : defaultVideo.title,
-        curiosity: {
-          ...defaultCuriosity,
-          ...(hook.interactiveActivity?.curiosity || {})
-        },
+        scenario: mergedCuriosity.scenario,
+        curiosityQuestion: mergedCuriosity.curiosityQuestion,
+        options: mergedCuriosity.options,
+        solution: mergedCuriosity.solution,
+        explanation: mergedCuriosity.explanation,
+        curiosity: mergedCuriosity,
         riddle: {
           ...defaultRiddle,
           ...(hook.interactiveActivity?.riddle || {})
@@ -4095,15 +4124,17 @@ ${customDirectivesText}
           },
           body: JSON.stringify({
             model: m,
+            ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
             messages: [
               {
                 role: 'system',
-                content: `You are an elite bilingual curriculum and educational design expert for elementary schools. Output 100% valid JSON only adhering strictly to the requested language (${targetLang}). Do not output any markdown or text outside the JSON object.`
+                content: `You are an elite bilingual curriculum and educational design expert for elementary schools. Output 100% valid JSON only adhering strictly to the requested language (${targetLang}). CRITICAL: Every <...> placeholder in the schema is an instruction — replace every single one with deep, authentic, specific, classroom-ready educational content. Never output "<" or ">" or placeholder descriptions.`
               },
               { role: 'user', content: prompt }
             ],
             temperature: 0.35,
-            max_tokens: 4200
+            max_tokens: 6000,
+            response_format: { type: 'json_object' }
           })
         }, 28000);
 
@@ -5418,7 +5449,7 @@ export const generateMiftaahExtraChallengeAI = async ({
 
   // 1. Try Groq
   if (groqKey) {
-    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of groqModels) {
       try {
         const res = await fetchWithTimeout(
@@ -5431,12 +5462,13 @@ export const generateMiftaahExtraChallengeAI = async ({
             },
             body: JSON.stringify({
               model: m,
+              ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
               messages: [{ role: 'user', content: prompt }],
               temperature: 0.5,
-              max_tokens: 650
+              max_tokens: 1200
             })
           },
-          6500
+          8500
         );
         if (res.ok) {
           const data = await res.json();
@@ -5530,84 +5562,91 @@ export const generateSocraticNextStepAI = async ({
   const safeSubject = subject.trim() || 'عام';
   const safeGrade = grade.trim() || 'المرحلة الابتدائية';
   const safeGoal = targetObjective.trim() || `فهم واستيعاب (${safeTitle}) وتطبيق مبادئه بدقة`;
-  const isHebrew = language === 'hebrew';
+  const isHebrew = language === 'hebrew' || /[\u0590-\u05FF]/.test(studentAnswer);
 
   // Format previous conversation for the prompt
   let formattedHistory = '';
   if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
     formattedHistory = conversationHistory.map(m => {
-      const roleName = m.role === 'student' ? (isHebrew ? 'תלמיד' : 'الطالب') : (isHebrew ? 'מורה סוקרטי' : 'المحاور السقراطي');
+      const roleName = m.role === 'student' ? (isHebrew ? 'תלמיד' : 'الطالب') : (isHebrew ? 'מורה סוקרטי' : 'المعلم المحاور');
       return `${roleName}: ${m.text}`;
     }).join('\n');
   }
 
   const prompt = isHebrew
-    ? `אתה מורה ומנחה סוקרטי בכיר, חכם וקשוב במיוחד בבית ספר מושירפה.
-אתה מוביל דיאלוג חקר סוקרטי אמיתי וחי בתחנה 2 (הבנת המשמעות) עבור תלמיד בכיתה ${safeGrade}.
-נושא השיעור: "${safeTitle}" (${safeSubject}).
-מטרת השיעור שהתלמיד צריך לגלות בעצמו: "${safeGoal}".
-השלב הנוכחי: שלב ${currentStep} מתוך 3.
+    ? `אתה מורה אמיתי, מומחה פדגוגי ומנחה סוקרטי חם, סבלני וחכם בבית ספר מושירפה.
+אתה מנהל שיחה לימודית אמיתית וחיה עם תלמיד בכיתה ${safeGrade}.
+- נושא השיעור: "${safeTitle}" (${safeSubject}).
+- מטרת הלמידה המרכזית: "${safeGoal}".
+- השלב הנוכחי: שלב ${currentStep} מתוך 3.
 היסטוריית השיחה עד כה:
 ${formattedHistory}
 
-תשובת התלמיד העדכנית: "${studentAnswer}".
+מה שהתלמיד כתב כעת: "${studentAnswer}".
 
-עקרונות פדגוגיים סוקרטיים מהותיים לתגובה אמיתית וקשובה:
-1. התייחסות אותנטית וכנה לתשובת התלמיד (בלי להמציא כוונות שלא נאמרו!):
-   - אם תשובת התלמיד היא מילה מקוטעת, אותיות אקראיות, או חסרת פשר (כמו: "${studentAnswer}", "סתם", "לא יודע", ג'יבריש):
-     * אל תמציא פירוש או כוונה שלא קיימת!
-     * פנה אליו ישירות ובחום: ציין שלא הבנת למה התכוון במילה "${studentAnswer}", שאל האם נקטע לו המשפט או שהתכוון למילה אחרת, ובקש שיסביר את כוונתו.
-     * במצב כזה: "advanceStep": false, "needsClarification": true, "isGoalReached": false, והשאר את התלמיד באותו שלב!
-   - אם התשובה לא קשורה לנושא כלל: החזר אותו בעדינות לנושא השיעור ללא התקדמות שלב ("advanceStep": false).
-   - אם התשובה הגיונית ומתייחסת לשאלה: התייחס עניינית למה שאמר. אם שלב 1 -> שאל שאלת שלב 2 (השוואה), אם שלב 2 -> שאל שאלת שלב 3 (הסקה וניסוח היעד), אם שלב 3 -> אשר את הגילוי בהצלחה (isGoalReached: true, advanceStep: true).
-2. אל תיתן לתלמיד את התשובה הסופית בשום אופן.
+הנחיות פדגוגיות מחייבות — הגב בדיוק כמו מורה אמיתי ומסור בכיתה:
+1. אם התלמיד שואל שאלה, מבקש הסבר, או כותב שלא הבין (למשל: "לא הבנתי", "תסביר לי", "מה ההבדל?", "איך זה עובד?"):
+   - תן לו ב-"feedback" הסבר מפורט, מעמיק, עשיר ובהיר (4 עד 7 משפטים ברורים עם דוגמאות מוחשיות מחיי היומיום והקבלה פשוטה) כדי שיבין את הנושא לעומק כמו שמורה מעולה מסביר בכיתה!
+   - ב-"nextQuestion": שאל אותו שאלה קצרה ומכוונת כדי לבדוק אם ההסבר עזר לו להבין.
+   - הגדר "advanceStep": false ו-"needsClarification": false (נשארים באותו שלב עד שהתלמיד עונה על שאלת החקר).
+2. אם התלמיד עונה תשובה עניינית (מלאה, חלקית, או אפילו תשובה עם טעות הבנתית):
+   - התייחס באופן ישיר, מפורט ומדויק לתוכן דבריו של התלמיד!
+   - אם יש בדבריו טעות או אי-דיוק: הסבר לו בסבלנות ובפירוט רב מדוע זה לא מדויק, תן דוגמה מאירת עיניים, והנחה אותו לתשובה הנכונה באותו שלב ("advanceStep": false).
+   - אם תשובתו נכונה או בכיוון הנכון: שבח אותו ספציפית על הרעיון שהעלה, הוסף העשרה או הרחבה לימודית קצרה שמעמיקה את הבנתו, והתקדם לשלב הבא ("advanceStep": true):
+     * אם שלב 1 -> שאל את שאלת שלב 2 (השוואה וניתוח).
+     * אם שלב 2 -> שאל את שאלת שלב 3 (הסקת מסקנה וניסוח כלל השיעור).
+     * אם שלב 3 -> אשר בחום שהוא גילה והבין את מטרת השיעור במלואה ("isGoalReached": true, "advanceStep": true).
+3. רק אם התלמיד הקליד אותיות אקראיות לחלוטין או מילה קטועה חסרת כל משמעות בשפה (כגון הקלדה אקראית על המקלדת כמו "תבא", "כככ", "asdf"):
+   - אל תמציא פירוש למילה הקטועה; שאל אותו בחיוך למה התכוון ובקש שיכתוב שוב במשפט ברור ("advanceStep": false, "needsClarification": true).
 
-החזר JSON תקין בלבד:
+החזר אובייקט JSON תקין בלבד:
 {
-  "feedback": "משוב ענייני, כנה ואותנטי המתייחס ישירות למה שהתלמיד כתב...",
-  "nextQuestion": "שאלת ההמשך או שאלת בירור והסבר באותו שלב...",
+  "feedback": "תגובת המורה המלאה (אם נדרש הסבר — כתוב הסבר מפורט, עשיר וברור עם דוגמאות; אם התלמיד ענה — הגב ישירות ובפירוט לתשובתו)...",
+  "nextQuestion": "שאלת ההמשך הסוקרטית או שאלת הבירור...",
   "stageTitle": "כותרת השלב",
   "advanceStep": true,
   "needsClarification": false,
-  "isGoalReached": ${currentStep >= 3},
-  "achievedGoalSummary": "סיכום מה שהתלמיד גילה אם הושג היעד",
-  "suggestedThoughtStarters": ["רעיון 1", "רעיון 2", "רעיון 3"]
+  "isGoalReached": false,
+  "achievedGoalSummary": "סיכום המטרה שהושגה (רק כאשר isGoalReached הוא true)",
+  "suggestedThoughtStarters": ["כיוון חשיבה 1...", "כיוון חשיבה 2...", "כיוון חשיבה 3..."]
 }`
-    : `أنت المعلم والمحاور السقراطي الذكي بنظام «مِفتاح التعلّم» بمدرسة مشيرفة الابتدائية.
-تقود حوار استكشاف سقراطي حي وتفاعلي حقيقي في محطة فهم وبناء المعنى لطالب في ${safeGrade}.
-- موضوع الدرس: "${safeTitle}" (${safeSubject}).
-- الهدف التعليمي المركزي الذي يقود الحوار الطالب لاكتشافه ذاتياً: "${safeGoal}".
+    : `أنت معلم حقيقي خبير، قدير، صبور، ومحاور سقراطي ذكي بنظام «مِفتاح التعلّم» بمدرسة مشيرفة الابتدائية.
+أنت تحاور طالباً في ${safeGrade} حواراً تعليمياً حقيقياً وعميقاً حول:
+- موضوع الدرس: "${safeTitle}" (مادة ${safeSubject}).
+- الهدف التعليمي المركزي: "${safeGoal}".
 - الخطوة الحالية: الخطوة رقم ${currentStep} من 3.
 سجل الحوار السابق:
 ${formattedHistory}
 
-إجابة أو مدخل الطالب الأخير الآن: "${studentAnswer}".
+ما كتبه الطالب الآن: "${studentAnswer}".
 
-قواعد التفاعل السقراطي الحي واليقظ (اقرأها بدقة وافهمها):
-١. الصدق والتفاعل الواقعي مع مدخلات الطالب (ممنوع تأليف معانٍ وهمية من نسج الخيال):
-- إذا كانت إجابة الطالب:
-  * كلمة مبتورة، أو أحرفاً عشوائية، أو مبهمة غير مفهومة في السياق (مثل: "${studentAnswer}"، أو حروف عشوائية، أو "ما بعرف"، أو "اي اشي"):
-  * ⚠️ يُحظر تماماً أن تفترض أو تخترع لها معنى وهمياً لم يقصده الطالب (مثل افتراض أن كلمة غامضة مثل "ثبا" تعني ثابتاً أو مستقراً، فهذا ضعف في الحوار)!
-  * تفاعل بصدق وذكاء كما يفعل المعلم الحقيقي في الصف: قل له بلطف: "لم يتضح لي قصدك بكلمة «${studentAnswer}»؛ هل انقطعت حروف الكلمة؟ أم قصدت كلمة أخرى؟ شاركني توضيحاً لما يدور في ذهنك لنواصل الاستكشاف معاً!"
-  * في هذه الحالة: ضع حتماً "advanceStep": false و "needsClarification": true و "isGoalReached": false، واجعله يبقى في نفس الخطوة دون تقدم حتى يوضح قصده.
-- إذا كانت إجابة الطالب خارجة تماماً عن موضوع الدرس (Off-topic):
-  * نبهه بلطف إلى أننا نناقش موضوع (${safeTitle})، وأعد تركيزه على سؤال الخطوة الحالية وضع "advanceStep": false.
-- إذا كانت إجابة الطالب منطقية وفي السياق (حتى لو كانت فكرة بسيطة أو عفوية):
-  * ثَمّن الفكرة الحقيقية التي طرحها تحديداً دون مبالغة، واربطها بالمفهوم.
-  * إذا كنا في خطوة 1: اطرح سؤال المقارنة والتحليل (خطوة 2)، واجعل "advanceStep": true.
-  * إذا كنا في خطوة 2: اطرح سؤال استنتاج القاعدة والهدف (خطوة 3)، واجعل "advanceStep": true.
-  * إذا كنا في خطوة 3: أعلن فوزه وبلوغ الهدف المطلوب بكلماته، واجعل "isGoalReached": true و "advanceStep": true.
+تعليمات المعلم الحقيقي (التزم بها بدقة وذكاء تام):
+١. إذا كان الطالب يسأل سؤالاً، أو يطلب شرحاً، أو يقول إنه لم يفهم (مثل: "اشرح لي"، "لم أفهم"، "ما معنى...؟"، "كيف يحدث ذلك؟"، "وضح أكثر"):
+   - تصرف كمعلم حقيقي متمكن: قدم له في حقل "feedback" **شرحاً وافياً، مفصلاً، موسعاً ومبسطاً** (من ٤ إلى ٧ جمل واضحة ومنظمة مع أمثلة واقعية وتشبيهات قريبة لذهنه) يوضح له الفكرة التي سأل عنها بكل أمانة وإتقان!
+   - ثم في حقل "nextQuestion": اطرح عليه سؤالاً لطيفاً ومباشراً يتأكد من استيعابه للشرح.
+   - اجعل "advanceStep": false و "needsClarification": false (يبقى في نفس المرحلة حتى يجيب عن السؤال بعد أن فهم الشرح).
+
+٢. إذا قدم الطالب إجابة حقيقية أو محاولة تفكير (سواء كانت صحيحة، أو جزئية، أو فيها خطأ علمي):
+   - تفاعل مباشرة وبشكل مفصل مع مضمون إجابته!
+   - إذا كانت إجابته تحتوي خطأً علمياً أو التباساً: اشرح له بهدوء وتفصيل لماذا هذه الفكرة غير دقيقة، وقدم له مثالاً يوضح الصواب، واطرح عليه سؤالاً يساعده على تصويب إجابته في نفس الخطوة ("advanceStep": false).
+   - إذا كانت إجابته صحيحة أو في الاتجاه السليم: أثنِ بدقة على الفكرة التي ذكرها، وأضف إليها معلومة إثرائية أو توضيحاً معلماً يعمق فهمه، ثم انتقل للخطوة التالية ("advanceStep": true):
+     * إذا كنا في خطوة 1: اطرح سؤال الخطوة 2 (المقارنة والتحليل).
+     * إذا كنا في خطوة 2: اطرح سؤال الخطوة 3 (استنتاج القاعدة وصياغة هدف الدرس).
+     * إذا كنا في خطوة 3: توجّه بالتهنئة وتلخيص الهدف الذي توصل إليه ("isGoalReached": true, "advanceStep": true).
+
+٣. فقط إذا كتب الطالب حروفاً عشوائية مقطوعة لا معنى لها إطلاقاً في اللغة (مثل ضربات عشوائية على لوحة المفاتيح كـ "ثبا" أو "سسس" أو "asdf"):
+   - لا تخترع لها معنى من الخيال، بل اسأله بلطف: ما الذي قصدته بهذه الكلمة؟ واطلب منه كتابة فكرته بوضوح ("advanceStep": false, "needsClarification": true).
 
 أخرج JSON فقط بالشكل التالي:
 {
-  "feedback": "تعليق سقراطي واقعي وذكي يرتبط حرفياً بما قاله الطالب دون اختلاق معانٍ غائبة...",
-  "nextQuestion": "السؤال التالي الموجه أو سؤال الاستيضاح...",
+  "feedback": "رد المعلم المفصل والوافي (إن طلب شرحاً فاشرح بإسهاب وتفصيل وأمثلة، وإن أجاب فناقش إجابته بعمق ووضوح)...",
+  "nextQuestion": "السؤال الموجه التالي أو سؤال التحقق من الفهم...",
   "stageTitle": "عنوان المرحلة",
   "advanceStep": true,
   "needsClarification": false,
-  "isGoalReached": ${currentStep >= 3},
-  "achievedGoalSummary": "",
-  "suggestedThoughtStarters": ["مفتاح تفكير أول...", "مفتاح تفكير ثانٍ...", "مفتاح تفكير ثالث..."]
+  "isGoalReached": false,
+  "achievedGoalSummary": "ملخص الهدف المكتشف (عند بلوغ الخطوة 3 بنجاح)",
+  "suggestedThoughtStarters": ["مفتاح تفكير أول يساعد الطالب...", "مفتاح تفكير ثانٍ...", "مفتاح تفكير ثالث..."]
 }`;
 
   const parseSafeJson = (raw) => {
@@ -5628,7 +5667,7 @@ ${formattedHistory}
     }
   };
 
-  // 1. Try Groq (High-Tier LLMs first)
+  // 1. Try Groq (High-Tier LLMs with reasoning_effort: 'low' and generous max_tokens)
   if (groqKey) {
     const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const m of groqModels) {
@@ -5643,13 +5682,14 @@ ${formattedHistory}
             },
             body: JSON.stringify({
               model: m,
+              ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
               messages: [{ role: 'user', content: `${prompt}\n\nStrict JSON response only matching schema:` }],
-              temperature: 0.3,
-              max_tokens: 650,
+              temperature: 0.35,
+              max_tokens: 1800,
               response_format: { type: 'json_object' }
             })
           },
-          6500
+          12000
         );
         if (res.ok) {
           const data = await res.json();
@@ -5676,10 +5716,10 @@ ${formattedHistory}
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: `${prompt}\n\nStrict JSON response only matching schema:` }] }],
-              generationConfig: { temperature: 0.3, maxOutputTokens: 650, responseMimeType: 'application/json' }
+              generationConfig: { temperature: 0.35, maxOutputTokens: 1800, responseMimeType: 'application/json' }
             })
           },
-          6500
+          12000
         );
         if (res.ok) {
           const data = await res.json();
@@ -5694,55 +5734,55 @@ ${formattedHistory}
     }
   }
 
-  // 3. Smart Fallbacks (Dynamic and specific to input clarity and step)
+  // 3. Smart Fallbacks
   const trimmedAns = studentAnswer.trim();
-  const isSuspiciousGibberish = trimmedAns.length < 4 && !/^(نعم|لا|صح|ماء|فم|دم|حر|برد|نار|عين|يد|سن|هضم|طعام|غذاء|خير|علم)$/i.test(trimmedAns);
+  const isSuspiciousGibberish = trimmedAns.length <= 3 && !/^(نعم|لا|صح|ماء|فم|دم|حر|برد|نار|عين|يد|سن|هضم|طعام|غذاء|خير|علم|قلب|روح|وقت|فرض|ركن|כן|לא|מים|דם|פה|לב)$/i.test(trimmedAns);
 
   if (isSuspiciousGibberish) {
     return {
       feedback: isHebrew
-        ? `לא לגמרי הבנתי את כוונתך במילה "${trimmedAns}". האם נקטעו אותיות, או שהתכוונת למילה אחרת? שתף אותי בהסבר קצר כדי שנמשיך יחד!`
-        : `لم يتضح لي قصدك بكلمة «${trimmedAns}»؛ هل انقطعت حروف كلمتك، أم قصدت فكرة أخرى؟ وضح لي ما الذي تقصده تحديداً لنواصل استكشافنا معاً! 💡`,
+        ? `לא לגמרי הבנתי את כוונתך במילה "${trimmedAns}". האם נקטעו אותיות, או שהתכוונת למילה אחרת? אשמח שתכתוב את מחשבתך או שאלתך במשפט ברור כדי שאוכל להסביר ולעזור לך!`
+        : `لم يتضح لي قصدك بكلمة «${trimmedAns}»؛ هل انقطعت حروف الكلمة، أم قصدت فكرة أخرى؟ اكتب لي سؤالك أو فكرتك بوضوح وسأشرحها لك بالتفصيل! 💡`,
       nextQuestion: isHebrew
-        ? `כיצד היית מנסח מחדש את תשובתך לגבי (${safeTitle})?`
-        : `كيف يمكنك توضيح فكرتك بكلمات أخرى حول (${safeTitle})؟ ما الذي قصدته بالتحديد؟`,
+        ? `מה היית רוצה לשאול או להסביר לגבי (${safeTitle})?`
+        : `ما الفكرة التي تود طرحها أو السؤال الذي تريد أن أشرحه لك حول (${safeTitle})؟`,
       stageTitle: isHebrew ? `שלב ${currentStep}: בירור והעמקה 💬` : `الخطوة ${currentStep}: استيضاح وتعميق 💬`,
       advanceStep: false,
       needsClarification: true,
       isGoalReached: false,
       achievedGoalSummary: '',
       suggestedThoughtStarters: isHebrew
-        ? ['אני מתכוון ש...', 'הרעיון שעלה לי הוא...', 'אני זוכר ש...']
-        : ['قصدي هو أن...', 'الفكرة التي خطرت لي هي...', 'ألاحظ أن...']
+        ? ['תסביר לי בבקשה בפירוט...', 'הכוונה שלי היא ש...', 'איך זה קשור ל...']
+        : ['اشرح لي بالتفصيل كيف...', 'قصدي هو أن...', 'ما العلاقة بين...']
     };
   }
 
   if (isHebrew) {
     if (currentStep === 1) {
       return {
-        feedback: `מחשבה מצוינת והבחנה מדויקת! התחלת לחשוב כמו חוקר אמיתי על (${safeTitle}).`,
-        nextQuestion: `כעת נעבור לשלב ההשוואה: אם נשווה בין (${safeTitle}) לבין פעילות רגילה אחרת, מהו הגורם המרכזי שמבדיל ביניהם ומסביר את החשיבות הייחודית של המושג?`,
+        feedback: `מחשבה מצוינת! העלית נקודה חשובה בנושא (${safeTitle}). כאשר אנו מתבוננים בתופעה זו, אנו מגלים שיש קשר ישיר בין הפעולה לתוצאה שלה.`,
+        nextQuestion: `כעת נעבור לשלב ההשוואה: אם נשווה בין שני מצבים בנושא (${safeTitle}), מהו הגורם המרכזי שמבדיל ביניהם ומסביר את החשיבות של המושג?`,
         stageTitle: '2. השוואה וניתוח קשרים 🧩',
         advanceStep: true,
         needsClarification: false,
         isGoalReached: false,
         achievedGoalSummary: '',
-        suggestedThoughtStarters: ['הקשר המיוחד והעמוק', 'המטרה הפנימית שמאחורי הפעולה', 'ההשפעה על התודעה וההרגשה']
+        suggestedThoughtStarters: ['תסביר לי יותר על ההבדל ביניהם', 'הגורם המרכזי שמבדיל הוא...', 'המטרה שעומדת מאחורי הפעולה']
       };
     } else if (currentStep === 2) {
       return {
-        feedback: `ניתוח מעמיק ומשכנע! הצלחת לזהות את ההבדל המהותי ולא הסתפקת בהסתכלות שטחית.`,
-        nextQuestion: `וכעת הרגע המכריע: לאור מה שראינו והשווינו, נסח בעצמך במשפט אחד שלם את המסקנה או הכלל הסופי בנושא (${safeTitle})!`,
+        feedback: `ניתוח מעמיק ומשכנע! הצלחת לזהות את ההבדל המהותי ולהבין כיצד המנגנון של (${safeTitle}) פועל.`,
+        nextQuestion: `וכעת לשלב הסיכום: לאור מה שלמדנו והשווינו, נסח במילים שלך את הכלל או המסקנה המרכזית של השיעור בנושא (${safeTitle})!`,
         stageTitle: '3. הסקת מסקנה והגעה ליעד 🎯',
         advanceStep: true,
         needsClarification: false,
         isGoalReached: false,
         achievedGoalSummary: '',
-        suggestedThoughtStarters: [`המטרה העיקרית היא...`, `הבנתי שהעיקרון פועל כך ש...`, `הכלל המרכזי הוא...`]
+        suggestedThoughtStarters: [`המסקנה המרכזית היא...`, `הבנתי שהעיקרון פועל כך ש...`, `תן לי דוגמה נוספת לסיכום`]
       };
     } else {
       return {
-        feedback: `כל הכבוד! 🎉 הגעת בעצמך ליעד השיעור בשיטה הסוקרטית המפוארת!`,
+        feedback: `כל הכבוד! 🎉 הגעת בעצמך ליעד השיעור בשיטה הסוקרטית והוכחת הבנה מעמיקה!`,
         nextQuestion: '',
         stageTitle: 'היעד הושג בהצלחה! 🌟',
         advanceStep: true,
@@ -5756,29 +5796,29 @@ ${formattedHistory}
 
   if (currentStep === 1) {
     return {
-      feedback: `تفكير رائع وبداية استكشافية موفقة جداً! لقد وضعت يدك على خيط التفكير الأول في درس (${safeTitle}).`,
-      nextQuestion: `والآن لنتعمق في المقارنة والتحليل: إذا قارنا بين (${safeTitle}) وبين أي نشاط أو مفهوم آخر مشابه، ما الفارق الجوهري الذي يميز هذا المفهوم ويمنحه قيمته وأثره الخاص؟`,
+      feedback: `تفكير رائع وملاحظة ذكية في درس (${safeTitle})! ما ذكرته يضعنا مباشرة أمام جوهر الموضوع وكيف تترابط عناصره ببعضها.`,
+      nextQuestion: `والآن لنتعمق في المقارنة والتحليل: إذا قارنا بين حالتين أو عنصرين في (${safeTitle})، ما الفارق الجوهري الذي يميز كلاً منهما ويحقق الهدف؟`,
       stageTitle: '٢. التحليل والمقارنة السقراطية 🧩',
       advanceStep: true,
       needsClarification: false,
       isGoalReached: false,
       achievedGoalSummary: '',
-      suggestedThoughtStarters: ['الفارق يكمن في النية والهدف الداخلي 🤲', 'الصلة المباشرة والأثر المستمر في النفس 🕊️', 'الالتزام والنظام الذي يميزه عن غيره ⏰']
+      suggestedThoughtStarters: ['اشرح لي الفرق بينهما بالتفصيل', 'الفارق الأساسي يكمن في...', 'السبب الذي يؤدي إلى هذه النتيجة هو...']
     };
   } else if (currentStep === 2) {
     return {
-      feedback: `تحليل بارع وذكي للغاية! لقد تجاوزت السطح وتعمقت في جوهر المعنى وسر تميزه.`,
-      nextQuestion: `والآن حان موعد قطف ثمرة تفكيرك: بناءً على ما لاحظته في البداية وما قارنته للتو، كيف تصيغ بأسلوبك الخاص وبجملة واحدة الهدف الأساسي الذي نتعلمه اليوم من (${safeTitle})؟`,
+      feedback: `تحليل بارع وذكي للغاية! لقد ربطت بين السبب والنتيجة بوضوح في موضوع (${safeTitle}).`,
+      nextQuestion: `والآن حان موعد قطف ثمرة تفكيرك: بناءً على ما ناقشناه، كيف تصيغ بأسلوبك الخاص الاستنتاج أو القاعدة الأساسية لدرس (${safeTitle})؟`,
       stageTitle: '٣. الاستنتاج وبلوغ الهدف المطلوب 🎯',
       advanceStep: true,
       needsClarification: false,
       isGoalReached: false,
       achievedGoalSummary: '',
-      suggestedThoughtStarters: [`الهدف الأساسي هو أن...`, `القاعدة الجوهرية التي اكتشفتها هي...`, `أهمية هذا المفهوم تتجلى في...`]
+      suggestedThoughtStarters: [`القاعدة الأساسية التي استنتجتها هي...`, `الهدف الجوهري من هذا المفهوم هو...`, `لخص لي الفكرة بمثال أخير`]
     };
   } else {
     return {
-      feedback: `مبارك يا بطل! 🎉 لقد استنتجت بنفسك الهدف المنشود بالطريقة السقراطية دون أي تلقين مسبق!`,
+      feedback: `مبارك يا بطل! 🎉 لقد استنتجت بنفسك الهدف المنشود بالطريقة السقراطية وأثبتّ فهماً عميقاً!`,
       nextQuestion: '',
       stageTitle: 'تم بلوغ الهدف بنجاح 🌟',
       advanceStep: true,
@@ -5788,4 +5828,122 @@ ${formattedHistory}
       suggestedThoughtStarters: []
     };
   }
+};
+
+/**
+ * 15.I Real AI Student Help Generator for the Golden Key (المفتاح الذهبي للمساعدة):
+ * Provides rich, teacher-quality explanations, hints, alternative analogies, or solved examples
+ * tailored to the exact lesson, station, and student question.
+ */
+export const generateMiftaahStudentHelpAI = async ({
+  helpType = 'explain_diff', // 'clarify' | 'hint' | 'explain_diff' | 'example'
+  stationNumber = 2,
+  stationName = '',
+  lessonTitle = '',
+  subject = '',
+  grade = '',
+  stationTaskPrompt = '',
+  customStudentQuestion = '',
+  language = 'arabic'
+}) => {
+  const { geminiKey, groqKey } = await getActiveAiKeys();
+  const safeTitle = lessonTitle.trim() || 'الدرس';
+  const safeSubject = subject.trim() || 'عام';
+  const safeGrade = grade.trim() || 'المرحلة الابتدائية';
+  const isHebrew = language === 'hebrew' || /[\u0590-\u05FF]/.test(safeTitle + ' ' + customStudentQuestion);
+
+  const typeInstructionsAr = {
+    clarify: 'قم بتوضيح المطلوب في هذه المحطة خطوة بخطوة (١، ٢، ٣) بلغة مبسطة جداً وواضحة للطالب، واشرح له كيف يبدأ الحل وماذا يكتب بالتحديد.',
+    hint: 'قدم تلميحاً ذكياً ومفصلاً يفتح ذهن الطالب ويوجهه إلى مفتاح الحل والقاعدة العلمية المرتبطة بـ (' + safeTitle + ') مع سؤال صغير يرشده للخطوة الأولى.',
+    explain_diff: 'قدم شرحاً تعليمياً موسعاً ووافياً ومبسطاً لمفهوم (' + safeTitle + ') بطريقة أخرى مبتكرة، مستخدماً تشبيهاً تمثيلياً من واقع حياة الطالب اليومية بحيث يفهم الفكرة بعمق تام.',
+    example: 'قدم مثالاً مشابهاً ومحلولاً بالكامل خطوة بخطوة حول موضوع (' + safeTitle + ')، واشرح لماذا وكيف توصلنا للحل في هذا المثال ليقيس الطالب عليه.'
+  };
+
+  const typeInstructionsHe = {
+    clarify: 'הסבר לתלמיד בצורה פשוטה, בהירה ומסודרת (שלב 1, שלב 2, שלב 3) מה בדיוק עליו לעשות בתחנה זו וכיצד להתחיל את הפתרון.',
+    hint: 'תן רמז חכם ומכוון שמאיר את העיקרון המרכזי של (' + safeTitle + ') ומכוון את התלמיד לצעד הראשון של הפתרון.',
+    explain_diff: 'הסבר בהרחבה ובפירוט רב את הנושא (' + safeTitle + ') בדרך אחרת, תוך שימוש בדימוי מוחשי מחיי היומיום של התלמיד כך שיבין את הרעיון לעומק.',
+    example: 'תן דוגמה דומה ופתורה במלואה צעד אחר צעד בנושא (' + safeTitle + '), והסבר כל שלב בפתרון כדי שהתלמיד יוכל ללמוד ממנה.'
+  };
+
+  const prompt = isHebrew
+    ? `אתה מורה מצטיין, סבלני ומסביר פנים בבית ספר מושירפה.
+תלמיד בכיתה ${safeGrade} לומד כעת את השיעור "${safeTitle}" (${safeSubject}) ונמצא בתחנה ${stationNumber} (${stationName}).
+תוכן המשימה בתחנה: "${stationTaskPrompt.slice(0, 600)}"
+${customStudentQuestion ? `שאלת התלמיד המפורשת: "${customStudentQuestion}"` : ''}
+בקשת העזרה של התלמיד: ${typeInstructionsHe[helpType] || typeInstructionsHe.explain_diff}
+
+כתוב הסבר עשיר, ברור, מפורט ומאיר עיניים בעברית תקינה בגובה העיניים של התלמיד (ללא JSON, טקסט ישיר ומעוצב בנקודות ברורות).`
+    : `أنت معلم قدير، حنون، ومتمكن جداً في مدرسة مشيرفة الابتدائية.
+طالب في ${safeGrade} يدرس الآن حصة "${safeTitle}" (مادة ${safeSubject}) في المحطة رقم ${stationNumber} (${stationName}).
+سياق المهمة المعروضة أمام الطالب: "${stationTaskPrompt.slice(0, 600)}"
+${customStudentQuestion ? `سؤال الطالب المباشر لك: "${customStudentQuestion}"` : ''}
+نوع المساعدة والشرح المطلوب منك الآن:
+${typeInstructionsAr[helpType] || typeInstructionsAr.explain_diff}
+
+اكتب شرحاً تعليمياً حقيقياً، موسعاً، وافياً، ومنظماً في نقاط واضحة ومشجعة باللغة العربية الفصيحة الميسرة ليفهم الطالب الموضوع تماماً (نص مباشر بدون JSON).`;
+
+  if (groqKey) {
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
+    for (const m of models) {
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${groqKey}`
+            },
+            body: JSON.stringify({
+              model: m,
+              ...(m.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.4,
+              max_tokens: 1400
+            })
+          },
+          10000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.choices?.[0]?.message?.content;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Groq student help (${m}) notice:`, e);
+      }
+    }
+  }
+
+  if (geminiKey && geminiKey.startsWith('AIza')) {
+    const geminiModels = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    for (const gm of geminiModels) {
+      try {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 1400 }
+            })
+          },
+          10000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt && txt.trim()) return cleanAiResponse(txt.trim());
+        }
+      } catch (e) {
+        console.warn(`Gemini student help (${gm}) notice:`, e);
+      }
+    }
+  }
+
+  return isHebrew
+    ? `💡 הסבר מכוון לנושא (${safeTitle}):\n1. קראו בעיון את מילות המפתח בשאלה.\n2. קשרו בין הדוגמה שלמדנו בתחילת השיעור לבין המקרה שלפניכם.\n3. נסחו את התשובה בשני חלקים: מה קורה, ומדוע זה קורה.`
+    : `💡 شرح وتوضيح مساند لدرس (${safeTitle}):\n١. تأمل الفكرة الأساسية للدرس وحدد المعطيات الرئيسية في السؤال.\n٢. اربط بين القاعدة التي استكشفناها وبين المثال المعروض أمامك.\n٣. صغ إجابتك في خطوتين واضحتين: اذكر الحكم أو النتيجة، ثم علل السبب بدليل من الدرس.`;
 };
