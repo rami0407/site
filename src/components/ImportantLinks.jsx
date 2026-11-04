@@ -125,6 +125,39 @@ const ImportantLinks = () => {
             });
           }
 
+          // Ensure Aflam Al-Maharat is always present
+          const hasAflam = list.some(l => 
+            (l.url && (l.url.includes('aflam') || l.url.includes('skills-films') || l.url.includes('aflam-almaharat'))) || 
+            (l.title && (l.title.includes('أفلام المهارات') || l.title.includes('افلام المهارات')))
+          );
+          if (!hasAflam) {
+            list.splice(1, 0, {
+              id: 'school-aflam-maharat-default',
+              title: 'أفلام المهارات — منصة المهارات التعليمية المرئية',
+              icon: 'fa-film',
+              url: '#/skills-films',
+              externalUrl: 'https://aflam-almaharat.sites.tab.bot/',
+              desc: 'منصة مرئية تعليمية هادفة تضم باقة شيقة ومميزة من أفلام تنمية المهارات الحياتية، التفكير الإبداعي، وبناء القيم.',
+              badge: 'أفلام المهارات 🎬'
+            });
+          }
+
+          // Ensure Qanat is always present
+          const hasQanat = list.some(l => 
+            (l.url && (l.url.includes('qanat') || l.url.includes('taallam') || l.url.includes('ta3allam'))) || 
+            (l.title && (l.title.includes('تعلّم وتمتّع') || l.title.includes('تعلم وتمتع') || l.title.includes('القناة الرقمية')))
+          );
+          if (!hasQanat) {
+            list.splice(2, 0, {
+              id: 'school-qanat-default',
+              title: 'تعلّم وتمتّع — القناة الرقمية (أفلام تعليمية واختبارات)',
+              icon: 'fa-play-circle',
+              url: '#/qanat',
+              desc: 'منصة القناة الرقمية التعليمية التفاعلية: باقة أفلام وثائقية وقصص هادفة واختبارات ذكية ممتعة تدمج التعلم بالترفيه.',
+              badge: 'تعلّم وتمتّع 🎬'
+            });
+          }
+
           // Ensure Padlet is always present
           const hasPadlet = list.some(l => 
             (l.url && (l.url.includes('padlet') || l.url.includes('badlet'))) || 
@@ -516,11 +549,17 @@ const ImportantLinks = () => {
             const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath && !isMiftaah && !isHebrew && !isEnglish;
 
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
+            const isAflam = link.url?.includes('skills-films') || link.url?.includes('aflam') || link.badge?.includes('أفلام المهارات') || link.title?.includes('أفلام المهارات');
+            const isQanat = link.url?.includes('qanat') || link.badge?.includes('تعلّم وتمتّع') || link.title?.includes('القناة الرقمية');
             let iconGradient = undefined;
             if (isMiftaah) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)';
             } else if (isServices) {
               iconGradient = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
+            } else if (isAflam) {
+              iconGradient = 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%)';
+            } else if (isQanat) {
+              iconGradient = 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)';
             } else 
             if (isKiosk) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
@@ -567,6 +606,18 @@ const ImportantLinks = () => {
                   if (link.action === 'open-homework-helper' || link.url?.includes('homework-helper')) {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-homework-helper'));
+                    return;
+                  }
+                  if (link.url?.includes('skills-films') || link.url?.includes('aflam')) {
+                    e.preventDefault();
+                    window.location.hash = '#/skills-films';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  if (link.url?.includes('qanat')) {
+                    e.preventDefault();
+                    window.location.hash = '#/qanat';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
                   if (link.url?.includes('miftaah')) {

@@ -934,6 +934,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSyncAflamToImportantLinks = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'links'));
+      let exists = false;
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.url?.includes('skills-films') || data.url?.includes('aflam') || data.title?.includes('أفلام المهارات')) {
+          exists = true;
+        }
+      });
+      if (exists) {
+        alert('ℹ️ منصة أفلام المهارات مضافة ومفعلة بالفعل ضمن قائمة الروابط الخارجية بالموقع!');
+        return;
+      }
+      await addDoc(collection(db, 'links'), {
+        title: 'أفلام المهارات — منصة المهارات التعليمية المرئية',
+        icon: 'fa-film',
+        url: '#/skills-films',
+        desc: 'منصة مرئية تعليمية هادفة تضم باقة شيقة ومميزة من أفلام تنمية المهارات الحياتية، التفكير الإبداعي، وبناء القيم.',
+        badge: 'أفلام المهارات 🎬',
+        createdAt: new Date().toISOString()
+      });
+      loadDashboardData();
+      alert('🎉 تم بنجاح تثبيت وإضافة "أفلام المهارات" إلى الروابط الخارجية في الصفحة الرئيسية!');
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء إضافة الرابط: ' + err.message);
+    }
+  };
+
   const loadStemTeacherRequests = async () => {
     let list = [];
     try {
@@ -8501,6 +8531,15 @@ const AdminDashboard = () => {
                       title="تثبيت شاشة العرض المدرسية كبطاقة في الروابط الخارجية"
                     >
                       <i className="fas fa-tv"></i> 📺 تثبيت شاشة العرض (Kiosk)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSyncAflamToImportantLinks}
+                      className="btn"
+                      style={{ background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)', color: '#fff', fontWeight: 800, padding: '0.65rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(236,72,153,0.3)' }}
+                      title="تثبيت منصة أفلام المهارات كبطاقة في الروابط الخارجية"
+                    >
+                      <i className="fas fa-film"></i> 🎬 تثبيت منصة أفلام المهارات
                     </button>
                     <button
                       type="button"

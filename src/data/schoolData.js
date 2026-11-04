@@ -128,6 +128,14 @@ export const newsData = [
 
 export const importantLinks = [
   {
+    title: 'أفلام المهارات — منصة المهارات التعليمية المرئية',
+    icon: 'fa-film',
+    url: '#/skills-films',
+    externalUrl: 'https://aflam-almaharat.sites.tab.bot/',
+    desc: 'منصة مرئية تعليمية هادفة تضم باقة شيقة ومميزة من أفلام تنمية المهارات الحياتية، التفكير الإبداعي، وبناء القيم.',
+    badge: 'أفلام المهارات 🎬'
+  },
+  {
     title: 'تعلّم وتمتّع — القناة الرقمية (أفلام تعليمية واختبارات)',
     icon: 'fa-play-circle',
     url: '#/qanat',

@@ -69,6 +69,7 @@ const MathChampionshipArena = lazyWithRetry(() => import('./components/MathChamp
 const HebrewPage = lazyWithRetry(() => import('./components/HebrewPage'));
 const EnglishPage = lazyWithRetry(() => import('./components/EnglishPage'));
 const QanatPage = lazyWithRetry(() => import('./components/QanatPage'));
+const AflamMaharatPage = lazyWithRetry(() => import('./components/AflamMaharatPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const HolisticMappingPage = lazyWithRetry(() => import('./components/HolisticMappingPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
@@ -484,6 +485,19 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <QanatPage />
+      </Suspense>
+    );
+  }
+
+  const isAflamMaharatView = currentHash.includes('aflam') || 
+    currentHash.includes('maharat') || 
+    currentHash.includes('skills-films') || 
+    currentHash.includes('skills-movies');
+
+  if (isAflamMaharatView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <AflamMaharatPage />
       </Suspense>
     );
   }
