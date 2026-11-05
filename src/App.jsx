@@ -216,11 +216,8 @@ function App() {
   }
 
   if (isStudentDismissalView) {
-    return (
-      <Suspense fallback={<Loader />}>
-        <StudentDismissalPage />
-      </Suspense>
-    );
+    window.location.hash = '#/appointments';
+    return null;
   }
 
   if (isVirtualMuseumView) {

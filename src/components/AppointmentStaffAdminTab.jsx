@@ -92,6 +92,10 @@ const AppointmentStaffAdminTab = () => {
   // Editing state for teachers
   const [editingTeacherId, setEditingTeacherId] = useState(null);
   const [editingTeacherData, setEditingTeacherData] = useState(null);
+  const [appointmentsList, setAppointmentsList] = useState([]);
+  const [activeTabMode, setActiveTabMode] = useState('bookings');
+  const [searchAppointment, setSearchAppointment] = useState('');
+  const [filterTeacherOnly, setFilterTeacherOnly] = useState('all');
 
   // Load appointment config and teachers (Cloud Dual-Sync: emtnanDb + db + local)
   const loadData = async () => {
@@ -178,6 +182,47 @@ const AppointmentStaffAdminTab = () => {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Real-time Dual-Sync Listener for Appointments across db & emtnanDb
+  useEffect(() => {
+    let unsub1 = () => {};
+    let unsub2 = () => {};
+
+    try {
+      const appMap = new Map();
+      const syncList = () => {
+        try {
+          const localList = JSON.parse(localStorage.getItem('musherfe_local_appointments') || '[]');
+          localList.forEach(loc => {
+            if (loc && loc.ticketCode && !appMap.has(loc.ticketCode)) {
+              appMap.set(loc.ticketCode, loc);
+            }
+          });
+        } catch (e) {}
+
+        const list = Array.from(appMap.values()).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        setAppointmentsList(list);
+      };
+
+      unsub1 = onSnapshot(collection(db, 'teacher_appointments'), (snap) => {
+        snap.forEach(d => appMap.set(d.id, { id: d.id, ...d.data() }));
+        syncList();
+      }, (e) => console.warn('db appointments note:', e));
+
+      unsub2 = onSnapshot(collection(emtnanDb, 'teacher_appointments'), (snap) => {
+        snap.forEach(d => appMap.set(d.id, { id: d.id, ...d.data() }));
+        syncList();
+      }, (e) => console.warn('emtnanDb appointments note:', e));
+
+    } catch (e) {
+      console.warn('Appointments error:', e);
+    }
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const triggerSuccessAlert = (msg) => {
@@ -506,6 +551,278 @@ const AppointmentStaffAdminTab = () => {
         )}
       </div>
 
+      {/* PRIMARY TAB SWITCHER FOR COORDINATOR */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => setActiveTabMode('bookings')}
+          style={{
+            flex: '1 1 260px',
+            padding: '1rem 1.5rem',
+            borderRadius: '16px',
+            border: activeTabMode === 'bookings' ? '3px solid #0284c7' : '2px solid #e2e8f0',
+            background: activeTabMode === 'bookings' ? 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' : '#ffffff',
+            color: activeTabMode === 'bookings' ? '#0369a1' : '#475569',
+            fontWeight: 900,
+            fontSize: '1.05rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.6rem',
+            boxShadow: activeTabMode === 'bookings' ? '0 8px 20px rgba(2,132,199,0.18)' : 'none',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <span>📅</span>
+          <span>المواعيد والحجوزات الحية المسجلة</span>
+          <span style={{ background: '#0284c7', color: 'white', padding: '2px 10px', borderRadius: '50px', fontSize: '0.85rem' }}>
+            {appointmentsList.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTabMode('settings')}
+          style={{
+            flex: '1 1 260px',
+            padding: '1rem 1.5rem',
+            borderRadius: '16px',
+            border: activeTabMode === 'settings' ? '3px solid #7c3aed' : '2px solid #e2e8f0',
+            background: activeTabMode === 'settings' ? 'linear-gradient(135deg, #faf5ff, #f3e8ff)' : '#ffffff',
+            color: activeTabMode === 'settings' ? '#6b21a8' : '#475569',
+            fontWeight: 900,
+            fontSize: '1.05rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.6rem',
+            boxShadow: activeTabMode === 'settings' ? '0 8px 20px rgba(124,58,237,0.18)' : 'none',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <span>⚙️</span>
+          <span>إعدادات وضبط ساعات الاستقبال ({teachers.length} معلماً)</span>
+        </button>
+      </div>
+
+      {/* VIEW 1: LIVE BOOKED APPOINTMENTS */}
+      {activeTabMode === 'bookings' && (
+        <div style={{ background: '#ffffff', borderRadius: '24px', padding: '1.75rem', boxShadow: '0 8px 25px rgba(0,0,0,0.05)', border: '2px solid #e2e8f0', marginBottom: '2.5rem' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '1rem' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>📋</span> جدول المواعيد المحجوزة الحية (تزامن فوري ومباشر)
+              </h2>
+              <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                استعراض فوري لكافة المواعيد المسجلة من أولياء الأمور مع المعلمين، مع إمكانية التواصل المباشر عبر واتساب
+              </p>
+            </div>
+
+            {/* Filter Chips */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setFilterTeacherOnly('all')}
+                style={{
+                  padding: '0.45rem 1rem',
+                  borderRadius: '10px',
+                  border: filterTeacherOnly === 'all' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                  background: filterTeacherOnly === 'all' ? '#e0f2fe' : '#ffffff',
+                  color: filterTeacherOnly === 'all' ? '#0369a1' : '#475569',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+              >
+                جميع المعلمين ({appointmentsList.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFilterTeacherOnly('itab')}
+                style={{
+                  padding: '0.45rem 1rem',
+                  borderRadius: '10px',
+                  border: filterTeacherOnly === 'itab' ? '2px solid #7c3aed' : '1px solid #cbd5e1',
+                  background: filterTeacherOnly === 'itab' ? '#f3e8ff' : '#ffffff',
+                  color: filterTeacherOnly === 'itab' ? '#6b21a8' : '#475569',
+                  fontWeight: 900,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+              >
+                👩‍🏫 مواعيدي فقط (عتاب بيدوسي): {appointmentsList.filter(a => a.teacherId === 'tch_17' || a.teacherNameAr?.includes('عتاب')).length}
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <input
+              type="text"
+              placeholder="🔍 ابحث باسم الطالب، ولي الأمر، رقم الهاتف، أو كود التذكرة..."
+              value={searchAppointment}
+              onChange={(e) => setSearchAppointment(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1.25rem',
+                borderRadius: '14px',
+                border: '2px solid #cbd5e1',
+                fontSize: '1rem',
+                fontWeight: 700,
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* Bookings List */}
+          {(() => {
+            const filtered = appointmentsList.filter(b => {
+              if (filterTeacherOnly === 'itab') {
+                const isItab = b.teacherId === 'tch_17' || b.teacherNameAr?.includes('عتاب');
+                if (!isItab) return false;
+              }
+              if (!searchAppointment.trim()) return true;
+              const q = searchAppointment.trim().toLowerCase();
+              return (
+                (b.parentName || '').toLowerCase().includes(q) ||
+                (b.studentName || '').toLowerCase().includes(q) ||
+                (b.parentPhone || '').includes(q) ||
+                (b.teacherNameAr || '').toLowerCase().includes(q) ||
+                (b.ticketCode || '').toLowerCase().includes(q) ||
+                (b.date || '').includes(q)
+              );
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📭</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, color: '#334155' }}>لا توجد حجوزات مسجلة مطابقة</h3>
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>عندما يقوم أي ولي أمر بحجز موعد، سيظهر هنا مباشرة وبشكل حي.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                {filtered.map((b, idx) => {
+                  let rawPhone = (b.parentPhone || '').replace(/\D/g, '');
+                  if (rawPhone.startsWith('0')) rawPhone = '972' + rawPhone.slice(1);
+                  const whatsAppMsg = encodeURIComponent(`تحية طيبة حضرة ولي الأمر ${b.parentName}، بخصوص موعدك المسجل بمدرسة مشيرفة الابتدائية مع ${b.teacherNameAr} يوم ${b.dayAr || ''} ${b.date} الساعة ${b.timeSlot} للطالب ${b.studentName}. نسعد بلقائكم!`);
+
+                  return (
+                    <div key={b.id || idx} style={{
+                      background: '#ffffff',
+                      border: '2px solid #bae6fd',
+                      borderRadius: '18px',
+                      padding: '1.25rem',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.2s ease'
+                    }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ background: '#dcfce7', color: '#15803d', padding: '3px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900 }}>
+                            تذكرة #{b.ticketCode}
+                          </span>
+                          <span style={{ color: '#0284c7', fontWeight: 900, fontSize: '0.85rem' }}>
+                            {b.status === 'confirmed' ? '✓ مؤكد رسمي' : b.status}
+                          </span>
+                        </div>
+
+                        <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                          👨‍🏫 المعلم: {b.teacherNameAr} {b.teacherNameHe ? `(${b.teacherNameHe})` : ''}
+                        </h3>
+
+                        <div style={{ background: '#f0f9ff', padding: '0.6rem 0.85rem', borderRadius: '12px', marginBottom: '0.75rem', border: '1px solid #e0f2fe' }}>
+                          <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#0369a1' }}>
+                            🗓️ {b.dayAr} {b.date} | ⏰ الساعة: {b.timeSlot}
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
+                            📍 النوع: {b.meetingType || 'وجاهي بالمدرسة'}
+                          </div>
+                        </div>
+
+                        <div style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 700, marginBottom: '0.3rem' }}>
+                          👤 ولي الأمر: <strong>{b.parentName}</strong> ({b.parentPhone})
+                        </div>
+
+                        <div style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 700, marginBottom: '0.4rem' }}>
+                          🎓 الطالب والصف: <strong>{b.studentName}</strong> ({b.studentClass})
+                        </div>
+
+                        {b.meetingTopic && (
+                          <div style={{ fontSize: '0.85rem', color: '#64748b', background: '#f8fafc', padding: '0.4rem 0.6rem', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                            📝 سبب اللقاء: {b.meetingTopic}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', flexWrap: 'wrap' }}>
+                        <a
+                          href={`https://api.whatsapp.com/send?phone=${rawPhone}&text=${whatsAppMsg}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            flex: 1,
+                            background: '#25D366',
+                            color: 'white',
+                            textAlign: 'center',
+                            textDecoration: 'none',
+                            padding: '0.55rem',
+                            borderRadius: '10px',
+                            fontWeight: 900,
+                            fontSize: '0.85rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 8px rgba(37,211,102,0.3)'
+                          }}
+                        >
+                          <i className="fab fa-whatsapp"></i> مراسلة واتساب
+                        </a>
+
+                        {b.parentPhone && (
+                          <a
+                            href={`tel:${b.parentPhone}`}
+                            style={{
+                              background: '#0284c7',
+                              color: 'white',
+                              textDecoration: 'none',
+                              padding: '0.55rem 0.85rem',
+                              borderRadius: '10px',
+                              fontWeight: 800,
+                              fontSize: '0.85rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            title="اتصال هاتفي"
+                          >
+                            📞
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* VIEW 2: RECEPTION SCHEDULE SETTINGS */}
+      {activeTabMode === 'settings' && (
+        <div>
       {/* SECTION 1: TOP EXECUTIVE & COUNSELING STAFF */}
       <div style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
@@ -1276,6 +1593,8 @@ const AppointmentStaffAdminTab = () => {
           })}
         </div>
       </div>
+        </div>
+      )}
     </div>
   );
 };

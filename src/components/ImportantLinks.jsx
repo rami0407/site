@@ -396,127 +396,14 @@ const ImportantLinks = () => {
             });
           }
 
-          // 4. Student Early Dismissal Portal (منظومة تسريح الطلاب)
-          const hasDismissal = list.some(l => 
-            (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج'))) || 
-            (l.url && (l.url.includes('student-dismissal') || l.url.includes('tasreeh')))
-          );
-          if (!hasDismissal) {
-            list.push({
-              id: 'school-student-dismissal-default',
-              title: 'منظومة تسريح الطلاب (إذن الخروج المدرسي)',
-              icon: 'fa-walking',
-              url: '#/student-dismissal',
-              desc: 'بوابة إلكترونية رسمية للمربين وأولياء الأمور لتسجيل وتوثيق خروج الطلاب ومتابعتها مع حارس البوابة.',
-              badge: 'إذن وخروج 🏃‍♂️'
-            });
-          }
-
-          // 5. Year of Excellence Portal (عام التميز والابتكار 2026 / 2027)
-          const hasExcellence = list.some(l => 
-            (l.title && l.title.includes('التميز') && (l.title.includes('عام') || l.title.includes('وثيقة') || l.title.includes('رؤية'))) || 
-            (l.url && l.url.includes('excellence'))
-          );
-          if (!hasExcellence) {
-            list.splice(1, 0, {
-              id: 'school-excellence-year-default',
-              title: 'عام التميز والابتكار 2026 / 2027 (وثيقة ورؤية المدرسة)',
-              icon: 'fa-award',
-              url: '#/excellence',
-              desc: 'استكشف رؤية المدرسة، ميثاق التميز، وخارطة طريق بناء جيل المبدعين وقادة المستقبل.',
-              badge: 'عام التميز 🌟'
-            });
-          }
-
-          // 6. Tasbih Portal (بوابة الذكر ومسبحة مشيرفة)
-          const hasTasbih = list.some(l => 
-            (l.title && (l.title.includes('مسبحة') || l.title.includes('الذكر') || l.title.includes('تسبيح'))) || 
-            (l.url && l.url.includes('tasbih'))
-          );
-          if (!hasTasbih) {
-            list.splice(2, 0, {
-              id: 'school-tasbih-portal-default',
-              title: 'بوابة الذكر ومسبحة مشيرفة الإلكترونية',
-              icon: 'fa-kaaba',
-              url: '#/tasbih',
-              desc: 'مسبحة إلكترونية وأذكار يومية تفاعلية مع عداد رقمي لغرس قيم الإيمان والذكر لدى الطلاب.',
-              badge: 'بوابة الذكر 📿'
-            });
-          }
-
-          // 7. Monawaat Portal (ركن المنوعات والأنشطة الإبداعية)
-          const hasMonawaat = list.some(l => 
-            (l.title && (l.title.includes('منوعات') || l.title.includes('إبداعية'))) || 
-            (l.url && l.url.includes('monawaat'))
-          );
-          if (!hasMonawaat) {
-            list.splice(3, 0, {
-              id: 'school-monawaat-default',
-              title: 'ركن المنوعات والأنشطة الإبداعية',
-              icon: 'fa-palette',
-              url: '#/monawaat',
-              desc: 'مساحة ثرية ومتنوعة من الأنشطة الإبداعية، المسابقات الترفيهية، والمعلومات الثقافية العامة.',
-              badge: 'منوعات وإبداع 🎨'
-            });
-          }
-
-          // 8. Math Championship Arena (أولمبياد وبطولة الرياضيات المدرسية)
-          const hasMathChampionship = list.some(l => 
-            (l.title && (l.title.includes('رياضيات') || l.title.includes('أولمبياد') || l.title.includes('حساب'))) || 
-            (l.url && (l.url.includes('math-championship') || l.url.includes('math-arena') || l.url.includes('math')))
-          );
-          if (!hasMathChampionship) {
-            list.splice(2, 0, {
-              id: 'school-math-championship-default',
-              title: 'أولمبياد وبطولة الرياضيات (الصفوف 1 - 6)',
-              icon: 'fa-trophy',
-              url: '#/math-championship',
-              desc: 'بطولة الحساب التفاعلية وجدول الضرب الشامل لجميع الصفوف: تنافس سرعة، كؤوس ذهبية، ولوحة شرف وأوسمة وفق المنهاج الوزاري.',
-              badge: 'كؤوس وبطولة 🏆',
-              highlight: true
-            });
-          }
-
-          // 9. Hebrew Language Arena (بوابة اللغة العبرية - ركلات الترجيح وبنك الكلمات)
-          const hasHebrewArena = list.some(l => 
-            (l.title && (l.title.includes('عبري') || l.title.includes('العبرية') || l.title.includes('עברית'))) || 
-            (l.url && (l.url.includes('hebrew') || l.url.includes('ivrit')))
-          );
-          if (!hasHebrewArena) {
-            list.splice(3, 0, {
-              id: 'school-hebrew-arena-default',
-              title: 'بوابة اللغة العبرية (ركلات الترجيح ⚽)',
-              icon: 'fa-futbol',
-              url: '#/hebrew',
-              desc: 'بطولة ركلات الترجيح التفاعلية وبنك أوصر الكلمات والمعاني المشكولة (אוצר מילים) لصفوف 1 - 6 وفق المنهاج الوزاري.',
-              badge: 'عبري تفاعلي ⚽',
-              highlight: true
-            });
-          }
-
-          // 10. English Language Arena (بوابة اللغة الإنجليزية - Subway Surfers 3D)
-          const hasEnglishArena = list.some(l => 
-            (l.title && (l.title.includes('إنجليزي') || l.title.includes('إنجليزية') || l.title.includes('English') || l.title.includes('انكليزي'))) || 
-            (l.url && (l.url.includes('english') || l.url.includes('subway')))
-          );
-          if (!hasEnglishArena) {
-            list.splice(4, 0, {
-              id: 'school-english-arena-default',
-              title: 'بوابة اللغة الإنجليزية (Subway Surfers 3D 🏃)',
-              icon: 'fa-running',
-              url: '#/english',
-              desc: 'لعبة عداء قطارات الأنفاق الإنجليزية ثلاثية الأبعاد وبنك المفردات والصوتيات والقواعد لصفوف 1 - 6 وفق المنهاج الوزاري.',
-              badge: 'إنجليزي 3D 🏃',
-              highlight: true
-            });
-          }
-
-          const normalizedList = normalizeAnnualPlansLink(list);
-          setLinks(normalizedList);
-          try {
-            localStorage.setItem('cached_important_links', JSON.stringify(normalizedList));
-          } catch (e) {}
+          // 4. Student Dismissal Removed
         }
+
+        const filteredList = list.filter(l => !(
+          (l.url && (l.url.includes('student-dismissal') || l.url.includes('tasreeh'))) || 
+          (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج')))
+        ));
+        setLinks(filteredList);
       } catch (error) {
         console.error("Error fetching important links from Firestore:", error);
         setLinks(normalizeAnnualPlansLink(fallbackLinks));

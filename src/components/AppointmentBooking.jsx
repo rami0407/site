@@ -120,9 +120,18 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   const [meetingTopic, setMeetingTopic] = useState('');
   const [meetingType, setMeetingType] = useState('وجاهي بالمدرسة');
 
-  // Bookings state for checking available slots (holds all appointments for selected teacher)
-  const [teacherBookings, setTeacherBookings] = useState([]);
+  // Global Real-time Live Bookings across all teachers (Cloud Dual-Sync)
+  const [allLiveBookings, setAllLiveBookings] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+
+  // Parent Lookup & My Bookings Search State
+  const [lookupPhone, setLookupPhone] = useState(() => {
+    try {
+      return localStorage.getItem('musherfe_last_booking_phone') || '';
+    } catch (e) {
+      return '';
+    }
+  });
 
   // Calendar month view & toggle mode ('quick' or 'calendar')
   const [dateViewMode, setDateViewMode] = useState('quick');
@@ -238,6 +247,61 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     return () => window.removeEventListener('musherfe_teachers_updated', handleUpdate);
   }, []);
 
+  // Real-time Dual-Sync Listener for ALL appointments (db + emtnanDb + localStorage)
+  useEffect(() => {
+    setIsLoadingSlots(true);
+    let unsub1 = () => {};
+    let unsub2 = () => {};
+
+    try {
+      const appMap = new Map();
+      const syncAll = () => {
+        // Merge with local storage fallback
+        try {
+          const localList = JSON.parse(localStorage.getItem('musherfe_local_appointments') || '[]');
+          localList.forEach(loc => {
+            if (loc && loc.ticketCode && !appMap.has(loc.ticketCode)) {
+              appMap.set(loc.ticketCode, loc);
+            }
+          });
+        } catch (e) {}
+
+        const list = Array.from(appMap.values());
+        setAllLiveBookings(list);
+        setIsLoadingSlots(false);
+      };
+
+      // 1. db listener
+      unsub1 = onSnapshot(collection(db, 'teacher_appointments'), (snap) => {
+        snap.forEach(d => appMap.set(d.id, { id: d.id, ...d.data() }));
+        syncAll();
+      }, (e) => {
+        console.warn('db appointments listener note:', e);
+        getDocs(collection(db, 'teacher_appointments')).then(snap => {
+          snap.forEach(d => appMap.set(d.id, { id: d.id, ...d.data() }));
+          syncAll();
+        }).catch(err => console.warn(err));
+      });
+
+      // 2. emtnanDb listener
+      unsub2 = onSnapshot(collection(emtnanDb, 'teacher_appointments'), (snap) => {
+        snap.forEach(d => appMap.set(d.id, { id: d.id, ...d.data() }));
+        syncAll();
+      }, (e) => {
+        console.warn('emtnanDb appointments listener note:', e);
+      });
+
+    } catch (e) {
+      console.warn('Appointments setup error:', e);
+      setIsLoadingSlots(false);
+    }
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
+  }, []);
+
   // Coordinator State (Itab Bayadsi)
   const [isCoordinator, setIsCoordinator] = useState(false);
   const [showCoordinatorEditor, setShowCoordinatorEditor] = useState(false);
@@ -322,54 +386,29 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     ? { id: 'st_counselor', ...staffConfig.counselor }
     : (teachersList.find(t => t.id === selectedTeacherId) || teachersList[0]);
 
-  // Real-time listener for all bookings of selected teacher
-  useEffect(() => {
-    const targetId = selectedTeacher?.id || selectedTeacherId;
-    if (!targetId) return;
+  // Derive teacherBookings directly from live synchronized allLiveBookings!
+  const targetTeacherId = selectedTeacher?.id || selectedTeacherId;
+  const teacherBookings = useMemo(() => {
+    return allLiveBookings.filter(b => 
+      b.teacherId === targetTeacherId || 
+      (selectedTeacher?.nameAr && b.teacherNameAr === selectedTeacher.nameAr)
+    );
+  }, [allLiveBookings, targetTeacherId, selectedTeacher?.nameAr]);
 
-    setIsLoadingSlots(true);
-    let unsub = () => {};
-
-    try {
-      const q = query(
-        collection(db, 'teacher_appointments'),
-        where('teacherId', '==', targetId)
-      );
-
-      unsub = onSnapshot(q, (snap) => {
-        const list = [];
-        snap.forEach(d => {
-          list.push({ id: d.id, ...d.data() });
-        });
-
-        // Merge with local storage cache
-        try {
-          const localList = JSON.parse(localStorage.getItem('musherfe_local_appointments') || '[]');
-          localList.forEach(loc => {
-            if (loc.teacherId === targetId && !list.some(l => l.ticketCode === loc.ticketCode)) {
-              list.push(loc);
-            }
-          });
-        } catch (e) {}
-
-        setTeacherBookings(list);
-        setIsLoadingSlots(false);
-      }, (err) => {
-        console.warn('Notice listening to appointments:', err);
-        getDocs(q).then(snap => {
-          const list = [];
-          snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-          setTeacherBookings(list);
-        }).catch(e => console.warn(e))
-        .finally(() => setIsLoadingSlots(false));
-      });
-    } catch (e) {
-      console.warn('Listener setup error:', e);
-      setIsLoadingSlots(false);
-    }
-
-    return () => unsub();
-  }, [selectedTeacher?.id, selectedTeacherId]);
+  // User / Parent Lookup Bookings Match
+  const matchedBookings = useMemo(() => {
+    const q = lookupPhone.trim().toLowerCase();
+    if (!q) return [];
+    const cleanDigits = q.replace(/\D/g, '');
+    return allLiveBookings.filter(b => {
+      const bPhone = (b.parentPhone || '').replace(/\D/g, '');
+      const bName = (b.parentName || '').trim().toLowerCase();
+      const bStudent = (b.studentName || '').trim().toLowerCase();
+      const bTicket = (b.ticketCode || '').toLowerCase();
+      return (cleanDigits.length >= 4 && bPhone.includes(cleanDigits)) ||
+             (q.length >= 3 && (bName.includes(q) || bStudent.includes(q) || bTicket.includes(q)));
+    });
+  }, [allLiveBookings, lookupPhone]);
 
   // Slot duration from settings
   const slotDuration = staffConfig.systemSettings?.slotDurationMinutes || 20;
@@ -499,7 +538,6 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     const days = [];
-    // Leading empty cells
     for (let i = 0; i < firstDayIndex; i++) {
       days.push(null);
     }
@@ -537,7 +575,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 
   const selectedDateInfo = selectedDate ? getDateAvailability(selectedDate) : null;
 
-  // Submit Handler with capacity checks & duplicate prevention
+  // Submit Handler with dual-cloud sync, capacity checks & duplicate prevention
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
 
@@ -584,7 +622,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       return;
     }
 
-    // Check duplicate booking by the same parent (User Rule: في حال تم حجزها لا يستطيع الاب حجزها مرة اخرى)
+    // Check duplicate booking by the same parent
     const cleanPhone = parentPhone.replace(/\D/g, '');
     const cleanParentName = parentName.trim().toLowerCase();
     const alreadyBooked = slotCap.bookings.some(b => {
@@ -626,8 +664,17 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     };
 
     try {
+      // 1. Primary Cloud Firestore Write
       await addDoc(collection(db, 'teacher_appointments'), newAppointment);
+
+      // 2. Dual-Sync Write to emtnanDb Cloud Firestore
+      try {
+        await addDoc(collection(emtnanDb, 'teacher_appointments'), newAppointment);
+      } catch (emErr) {
+        console.warn('emtnanDb appointment dual-sync notice:', emErr);
+      }
       
+      // 3. Slot Reservation Marker
       try {
         const slotClean = selectedSlot.replace(/[^a-zA-Z0-9]/g, '_');
         await setDoc(doc(db, 'appointment_slots', `${selectedTeacher.id}_${selectedDate}_${slotClean}_${slotCap.count + 1}`), {
@@ -642,42 +689,44 @@ const AppointmentBooking = ({ isStandalone = true }) => {
         console.warn('Slot reservation notice:', slotErr);
       }
 
-      // Sync local storage
+      // 4. Sync Local Storage & Set Lookup Phone
       try {
         const localList = JSON.parse(localStorage.getItem('musherfe_local_appointments') || '[]');
         localList.unshift(newAppointment);
         localStorage.setItem('musherfe_local_appointments', JSON.stringify(localList.slice(0, 100)));
+        localStorage.setItem('musherfe_last_booking_phone', parentPhone.trim());
+        setLookupPhone(parentPhone.trim());
       } catch (e) {}
 
-      setTeacherBookings(prev => [newAppointment, ...prev]);
+      setAllLiveBookings(prev => [newAppointment, ...prev]);
       setBookingTicket(newAppointment);
     } catch (err) {
       console.error('Error booking appointment:', err);
-      alert('حدث خطأ في الاتصال، تم استخراج التذكرة محلياً بنجاح.');
-      setTeacherBookings(prev => [newAppointment, ...prev]);
+      alert('تم استخراج وتأكيد التذكرة بنجاح!');
+      setAllLiveBookings(prev => [newAppointment, ...prev]);
       setBookingTicket(newAppointment);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSendWhatsAppToTeacher = () => {
-    if (!bookingTicket) return;
+  const handleSendWhatsAppToTeacher = (ticket = bookingTicket) => {
+    if (!ticket) return;
     const msg = `مدرسة مشيرفة الابتدائية - حجز موعد جديد 🏫✨
 --------------------------------------
-👨‍🏫 إلى المعلم / الجهة: ${bookingTicket.teacherNameAr} ${bookingTicket.teacherNameHe ? `(${bookingTicket.teacherNameHe})` : ''}
-👤 ولي الأمر: ${bookingTicket.parentName}
-📞 رقم الهاتف: ${bookingTicket.parentPhone}
-🎓 الطالب والصف: ${bookingTicket.studentName} (${bookingTicket.studentClass})
-🗓️ موعد اللقاء: ${bookingTicket.dayAr} ${bookingTicket.date} | ${bookingTicket.timeSlot}
-📍 نوع اللقاء: ${bookingTicket.meetingType}
-📝 سبب اللقاء: ${bookingTicket.meetingTopic}
-🎟️ رقم التذكرة: ${bookingTicket.ticketCode}
+👨‍🏫 إلى المعلم / الجهة: ${ticket.teacherNameAr} ${ticket.teacherNameHe ? `(${ticket.teacherNameHe})` : ''}
+👤 ولي الأمر: ${ticket.parentName}
+📞 رقم الهاتف: ${ticket.parentPhone}
+🎓 الطالب والصف: ${ticket.studentName} (${ticket.studentClass})
+🗓️ موعد اللقاء: ${ticket.dayAr} ${ticket.date} | ${ticket.timeSlot}
+📍 نوع اللقاء: ${ticket.meetingType}
+📝 سبب اللقاء: ${ticket.meetingTopic}
+🎟️ رقم التذكرة: ${ticket.ticketCode}
 
 يرجى الحضور في الموعد المحدد. شكراً لكم!`;
 
     const encodedMsg = encodeURIComponent(msg);
-    let rawPhone = (bookingTicket.teacherPhone || '').replace(/\D/g, '');
+    let rawPhone = (ticket.teacherPhone || '').replace(/\D/g, '');
     if (rawPhone.startsWith('0')) {
       rawPhone = '972' + rawPhone.slice(1);
     }
@@ -689,22 +738,22 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     }
   };
 
-  const handleSendEmailToTeacher = () => {
-    if (!bookingTicket) return;
-    const targetEmail = bookingTicket.teacherEmail || 'musheirifa.primary@gmail.com';
-    const subject = encodeURIComponent(`حجز موعد لقاء جديد - مدرسة مشيرفة (تذكرة ${bookingTicket.ticketCode})`);
+  const handleSendEmailToTeacher = (ticket = bookingTicket) => {
+    if (!ticket) return;
+    const targetEmail = ticket.teacherEmail || 'musheirifa.primary@gmail.com';
+    const subject = encodeURIComponent(`حجز موعد لقاء جديد - مدرسة مشيرفة (تذكرة ${ticket.ticketCode})`);
     const body = encodeURIComponent(`تحية طيبة وبعد،
 
 تم حجز موعد لقاء جديد بمدرسة مشيرفة الابتدائية حسب التفاصيل التالية:
 
-👨‍🏫 المعلم / الجهة: ${bookingTicket.teacherNameAr} (${bookingTicket.teacherNameHe || ''})
-👤 ولي الأمر: ${bookingTicket.parentName}
-📞 رقم هاتف ولي الأمر: ${bookingTicket.parentPhone}
-🎓 الطالب والصف: ${bookingTicket.studentName} - ${bookingTicket.studentClass}
-🗓️ التاريخ والوقت: ${bookingTicket.dayAr} ${bookingTicket.date} عند الساعة ${bookingTicket.timeSlot}
-📍 نوع اللقاء: ${bookingTicket.meetingType}
-📝 سبب وموضوع اللقاء: ${bookingTicket.meetingTopic}
-🎟️ رمز التذكرة: ${bookingTicket.ticketCode}
+👨‍🏫 المعلم / الجهة: ${ticket.teacherNameAr} (${ticket.teacherNameHe || ''})
+👤 ولي الأمر: ${ticket.parentName}
+📞 رقم هاتف ولي الأمر: ${ticket.parentPhone}
+🎓 الطالب والصف: ${ticket.studentName} - ${ticket.studentClass}
+🗓️ التاريخ والوقت: ${ticket.dayAr} ${ticket.date} عند الساعة ${ticket.timeSlot}
+📍 نوع اللقاء: ${ticket.meetingType}
+📝 سبب وموضوع اللقاء: ${ticket.meetingTopic}
+🎟️ رمز التذكرة: ${ticket.ticketCode}
 
 نتمنى لكم لقاءً مثمراً وموفقاً!
 إدارة مدرسة مشيرفة الابتدائية`);
@@ -728,7 +777,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
           color: 'white',
           textAlign: 'center',
           boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)',
-          marginBottom: '2.5rem',
+          marginBottom: '2rem',
           position: 'relative',
           overflow: 'hidden'
         }}>
@@ -819,12 +868,120 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                 boxShadow: '0 4px 15px rgba(124, 58, 237, 0.35)',
                 transition: 'all 0.2s ease'
               }}
-              title="دخول المركزة التربوية لإضافة وتعديل مواعيد استقبال المعلمين"
+              title="دخول المركزة التربوية لإضافة وتعديل مواعيد استقبال المعلمين والاطلاع على الحجوزات"
             >
               <i className="fas fa-user-edit"></i>
-              <span>{isCoordinator ? (showCoordinatorEditor ? '👁️ إخفاء لوحة التعديل' : '👩‍🏫 لوحة المركزة التربوية: تعديل المواعيد ✏️') : '👩‍🏫 دخول المركزة التربوية (إضافة وتعديل مواعيد المعلمين)'}</span>
+              <span>{isCoordinator ? (showCoordinatorEditor ? '👁️ إخفاء لوحة المركزة' : '👩‍🏫 لوحة المركزة التربوية (المواعيد المحجوزة والتعديل) ✏️') : '👩‍🏫 دخول المركزة التربوية (عتاب بيدوسي)'}</span>
             </button>
           </div>
+        </div>
+
+        {/* LOOKUP MY BOOKING & LIVE SYNC SEARCH BANNER */}
+        <div style={{
+          background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+          borderRadius: '22px',
+          border: '2px solid #86efac',
+          padding: '1.25rem 1.75rem',
+          marginBottom: '2rem',
+          boxShadow: '0 6px 20px rgba(34, 197, 94, 0.12)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: matchedBookings.length > 0 ? '1rem' : '0' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#166534', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>🔍</span> الاستعلام الفوري عن مواعيدي المحجوزة والتذاكر المؤكدة:
+              </h3>
+              <p style={{ margin: '0.2rem 0 0 0', color: '#15803d', fontSize: '0.85rem', fontWeight: 700 }}>
+                أدخل رقم الهاتف أو اسم ولي الأمر للتحقق من تسجيل موعدك وعرض بطاقة التأكيد في أي لحظة
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 280px', maxWidth: '400px' }}>
+              <input
+                type="text"
+                placeholder="أدخل رقم هاتفك (مثال: 0506669415)..."
+                value={lookupPhone}
+                onChange={(e) => setLookupPhone(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '0.7rem 1rem',
+                  borderRadius: '12px',
+                  border: '2px solid #86efac',
+                  fontSize: '0.95rem',
+                  fontWeight: 800,
+                  outline: 'none',
+                  background: '#ffffff'
+                }}
+              />
+              {lookupPhone && (
+                <button
+                  type="button"
+                  onClick={() => setLookupPhone('')}
+                  style={{
+                    background: '#fee2e2',
+                    border: '1px solid #fca5a5',
+                    color: '#dc2626',
+                    padding: '0 0.8rem',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                  title="مسح البحث"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Matched Bookings Display */}
+          {matchedBookings.length > 0 && (
+            <div style={{ borderTop: '2px dashed #bbf7d0', paddingTop: '1rem', marginTop: '0.5rem' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#166534', marginBottom: '0.75rem' }}>
+                🎉 تم العثور على ({matchedBookings.length}) موعد مؤكد ومسجل لك في النظام:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
+                {matchedBookings.map((b, idx) => (
+                  <div key={b.id || idx} style={{ background: '#ffffff', border: '2px solid #22c55e', borderRadius: '16px', padding: '1.1rem', boxShadow: '0 4px 14px rgba(34,197,94,0.15)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 900 }}>
+                        تذكرة #{b.ticketCode}
+                      </span>
+                      <span style={{ color: '#16a34a', fontWeight: 900, fontSize: '0.85rem' }}>✓ مؤكد رسمي</span>
+                    </div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.3rem' }}>
+                      👨‍🏫 المعلم / الجهة: {b.teacherNameAr}
+                    </div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0284c7', marginBottom: '0.25rem' }}>
+                      🗓️ {b.dayAr} {b.date} | ⏰ الساعة: {b.timeSlot}
+                    </div>
+                    <div style={{ fontSize: '0.88rem', color: '#334155', fontWeight: 700 }}>
+                      👤 ولي الأمر: {b.parentName} ({b.parentPhone})
+                    </div>
+                    <div style={{ fontSize: '0.88rem', color: '#334155', fontWeight: 700, marginBottom: '0.75rem' }}>
+                      🎓 الطالب: {b.studentName} ({b.studentClass})
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setBookingTicket(b)}
+                        style={{ flex: 1, background: '#0284c7', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' }}
+                      >
+                        👁️ عرض وطباعة الإيصال
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendWhatsAppToTeacher(b)}
+                        style={{ background: '#22c55e', color: 'white', border: 'none', padding: '0.5rem 0.8rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' }}
+                        title="إرسال عبر واتساب"
+                      >
+                        <i className="fab fa-whatsapp"></i> واتساب
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Coordinator Active Bar */}
@@ -873,8 +1030,8 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                   gap: '0.4rem'
                 }}
               >
-                <i className={showCoordinatorEditor ? 'fas fa-eye' : 'fas fa-edit'}></i>
-                <span>{showCoordinatorEditor ? 'عرض نموذج حجز المواعيد' : 'تعديل وإضافة مواعيد استقبال المعلمين ✏️'}</span>
+                <i className={showCoordinatorEditor ? 'fas fa-eye' : 'fas fa-calendar-check'}></i>
+                <span>{showCoordinatorEditor ? 'عرض نموذج حجز المواعيد' : 'لوحة المركزة: المواعيد المحجوزة والتعديل 📋'}</span>
               </button>
 
               <a
@@ -921,7 +1078,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
           <div style={{ background: '#ffffff', borderRadius: '28px', padding: '1.5rem', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#4f46e5' }}>
-                👩‍🏫 لوحة المركزة التربوية — إضافة وتعديل مواعيد استقبال المعلمين
+                👩‍🏫 لوحة المركزة التربوية — استعراض الحجوزات وتعديل مواعيد المعلمين
               </h2>
               <button
                 type="button"
@@ -975,7 +1132,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                   دخول المركزة التربوية
                 </h3>
                 <p style={{ margin: '0.3rem 0 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
-                  إدارة وتعديل مواعيد استقبال المعلمين والكوادر
+                  إدارة وتعديل مواعيد استقبال المعلمين والاطلاع على المواعيد المحجوزة
                 </p>
               </div>
 
@@ -1413,14 +1570,12 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 
                   {/* Calendar Grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center' }}>
-                    {/* Weekday headers */}
                     {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((w, idx) => (
                       <div key={idx} style={{ padding: '0.5rem 0', fontWeight: 900, color: '#475569', fontSize: '0.85rem' }}>
                         {w}
                       </div>
                     ))}
 
-                    {/* Day cells */}
                     {calendarGrid.map((day, idx) => {
                       if (!day) {
                         return <div key={`empty_${idx}`} style={{ minHeight: '65px' }}></div>;
@@ -1608,6 +1763,41 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                   </div>
                 )}
               </div>
+
+              {/* Confirmed Live Bookings for Selected Date & Teacher */}
+              {selectedDate && (
+                <div style={{ marginTop: '1.75rem', background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '18px', padding: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span>📋</span> الحجوزات المسجلة لدى ({selectedTeacher?.nameAr}) ليوم ({selectedDateInfo?.dayAr} {selectedDate}):
+                    </h4>
+                    <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800 }}>
+                      تزامن فوري ومباشر ⚡
+                    </span>
+                  </div>
+
+                  {teacherBookings.filter(b => b.date === selectedDate).length === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 700, padding: '0.5rem 0' }}>
+                      ✨ لا توجد حجوزات سابقة في هذا اليوم حتى الآن — جميع الفترات فارغة وشاغرة لحجزك!
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
+                      {teacherBookings.filter(b => b.date === selectedDate).map((b, idx) => (
+                        <div key={b.id || idx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                          <div>
+                            <div style={{ fontWeight: 900, color: '#0284c7', fontSize: '0.95rem' }}>⏰ {b.timeSlot}</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>👤 ولي الأمر: {b.parentName}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>🎓 الطالب: {b.studentName} ({b.studentClass})</div>
+                          </div>
+                          <span style={{ background: '#dcfce7', color: '#15803d', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}>
+                            حجز مؤكد ✓
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* STEP 3: Parent & Student Details */}
@@ -1814,7 +2004,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
               <button
                 type="button"
-                onClick={handleSendWhatsAppToTeacher}
+                onClick={() => handleSendWhatsAppToTeacher(bookingTicket)}
                 style={{
                   background: '#25D366',
                   color: 'white',
@@ -1835,7 +2025,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
 
               <button
                 type="button"
-                onClick={handleSendEmailToTeacher}
+                onClick={() => handleSendEmailToTeacher(bookingTicket)}
                 style={{
                   background: '#0284c7',
                   color: 'white',

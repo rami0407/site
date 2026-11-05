@@ -179,7 +179,7 @@ const Navbar = () => {
           const isScrolled = window.scrollY > 40;
           setScrolled(prev => (prev !== isScrolled ? isScrolled : prev));
 
-          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh', 'padlet', 'miftaah', 'mafatih', 'hebrew', 'english', 'math-championship', 'qanat', 'skills-films', 'aflam'];
+          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'padlet', 'miftaah', 'mafatih', 'hebrew', 'english', 'math-championship', 'qanat', 'skills-films', 'aflam'];
           const hash = window.location.hash;
           const isOnCustomPage = hash.startsWith('#/page/') || hash.startsWith('#page/') || systemTargets.some(t => hash.includes(t));
 
@@ -215,7 +215,7 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh', 'padlet', 'miftaah', 'mafatih', 'qanat', 'skills-films', 'aflam'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'padlet', 'miftaah', 'mafatih', 'qanat', 'skills-films', 'aflam'];
 
     if (item.type === 'page' || item.type === 'custom_page' || systemPages.includes(item.target)) {
       const isSystemPage = systemPages.includes(item.target);
@@ -244,7 +244,7 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'student-dismissal', 'tasreeh', 'mafatih', 'mafateeh', 'padlet', 'miftaah', 'qanat', 'skills-films', 'aflam'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'mafatih', 'mafateeh', 'padlet', 'miftaah', 'qanat', 'skills-films', 'aflam'];
     if (systemPages.includes(item.target)) {
       return `#/${item.target}`;
     }
@@ -276,21 +276,7 @@ const Navbar = () => {
             ))}
 
 
-            {/* Direct Quick Link for Teachers Dismissal */}
-            <li>
-              <a 
-                href="#/student-dismissal"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  color: '#38bdf8',
-                  fontWeight: 800
-                }}
-              >
-                <i className="fas fa-file-signature"></i> تسريح الطلاب 🏃‍♂️
-              </a>
-            </li>
+            
 
             {/* Student/User Unified Single Sign-On Badge */}
             <li>
@@ -524,11 +510,7 @@ const Navbar = () => {
                     <i className="fas fa-briefcase"></i> منصة الخدمات (שעות בודדות / מילוי מקום) 💼
                   </a>
                 </li>
-                <li>
-                  <a href="#/student-dismissal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#38bdf8', fontWeight: 800 }}>
-                    <i className="fas fa-file-signature"></i> تسريح الطلاب (للمربين) 🏃‍♂️
-                  </a>
-                </li>
+                
                 <li>
                   <a href="#/guard" onClick={() => setMobileMenuOpen(false)} style={{ color: '#34d399', fontWeight: 800 }}>
                     <i className="fas fa-shield-alt"></i> بوابة الحارس والأمن 🛡️

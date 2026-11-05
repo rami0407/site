@@ -139,7 +139,7 @@ const AppointmentsLogPage = () => {
   };
 
   // Main portal mode: 'dismissals' (تسريح الطلاب) or 'visitors' (المواعيد والزوار)
-  const [activePortalTab, setActivePortalTab] = useState('dismissals');
+  const [activePortalTab, setActivePortalTab] = useState('visitors');
 
   // Shared Date Filter
   const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -1027,26 +1027,7 @@ const AppointmentsLogPage = () => {
               <span>قفل الشاشة 🔒</span>
             </button>
 
-            {/* Link to Dismissal Form (for teachers) */}
-            <a
-              href="#/student-dismissal"
-              style={{
-                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-                color: 'white',
-                textDecoration: 'none',
-                padding: '0.75rem 1.15rem',
-                borderRadius: '14px',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)'
-              }}
-            >
-              <i className="fas fa-file-signature"></i>
-              <span>تسجيل إذن تسريح 🏃‍♂️</span>
-            </a>
+            
 
             {/* Quick Walkin */}
             <button
@@ -1100,62 +1081,7 @@ const AppointmentsLogPage = () => {
           gap: '1rem',
           marginBottom: '1.5rem'
         }}>
-          {/* TAB 1: STUDENT DISMISSALS */}
-          <button
-            onClick={() => setActivePortalTab('dismissals')}
-            style={{
-              padding: '1.1rem 1.5rem',
-              borderRadius: '20px',
-              border: activePortalTab === 'dismissals' ? '3px solid #0284c7' : '2px solid #e2e8f0',
-              background: activePortalTab === 'dismissals' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : 'white',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: activePortalTab === 'dismissals' ? '0 8px 20px rgba(2, 132, 199, 0.18)' : '0 2px 8px rgba(0,0,0,0.03)',
-              transition: 'all 0.2s ease',
-              textAlign: 'right'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '14px',
-                background: activePortalTab === 'dismissals' ? '#0284c7' : '#f1f5f9',
-                color: activePortalTab === 'dismissals' ? 'white' : '#64748b',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.4rem'
-              }}>
-                <i className="fas fa-walking"></i>
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: activePortalTab === 'dismissals' ? '#0369a1' : '#1e293b' }}>
-                  أذونات تسريح وخروج الطلاب 🏃‍♂️
-                </h3>
-                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
-                  تأكيد خروج الطلاب المسرحين مع الأولياء
-                </p>
-              </div>
-            </div>
-
-            {waitingDismissalsCount > 0 && (
-              <span style={{
-                background: '#ea580c',
-                color: 'white',
-                padding: '0.35rem 0.85rem',
-                borderRadius: '50px',
-                fontWeight: 900,
-                fontSize: '0.85rem',
-                boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)',
-                animation: 'pulse 1.8s infinite'
-              }}>
-                {waitingDismissalsCount} بانتظار الخروج ⏳
-              </span>
-            )}
-          </button>
+          
 
           {/* TAB 2: VISITORS & APPOINTMENTS */}
           <button
