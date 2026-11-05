@@ -1,5 +1,5 @@
+import React, { useState, useEffect, useMemo } from 'react';
 import AppointmentStaffAdminTab from './AppointmentStaffAdminTab';
-import { useState, useEffect } from 'react';
 import { db, emtnanDb } from '../firebase';
 import { 
   collection, 
@@ -35,17 +35,19 @@ const WEEKDAYS_AR = {
   'Saturday': 'السبت'
 };
 
-const STAFF_CATEGORIES = [
-  { id: 'st_principal', name: 'إدارة المدرسة', role: 'مدير المدرسة والإدارة العامة', icon: '🏛️', color: '#0284c7' },
-  { id: 'st_counselor', name: 'الاستشارة التربوية', role: 'المستشار التربوي والدعم النفسي', icon: '💡', color: '#8b5cf6' },
-  { id: 'st_teachers', name: 'أصحاب الوظائف والمعلمين', role: 'طاقم المعلمين وأصحاب الوظائف (33 معلماً)', icon: '👨‍🏫', color: '#10b981' }
+const MONTH_NAMES_AR = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ];
+
+// Maximum allowed bookings per time slot (User Rule: ولكل موعد فقط يكون حجزين)
+const MAX_BOOKINGS_PER_SLOT = 2;
 
 // Helper generator for time slots based on start/end hours
 const generateTimeSlotsForSchedule = (startTime = '08:30', endTime = '13:30', intervalMinutes = 20) => {
   const slots = [];
-  let [startH, startM] = startTime.split(':').map(Number);
-  let [endH, endM] = endTime.split(':').map(Number);
+  let [startH, startM] = (startTime || '08:30').split(':').map(Number);
+  let [endH, endM] = (endTime || '13:30').split(':').map(Number);
 
   let currentMinutes = startH * 60 + startM;
   const totalEndMinutes = endH * 60 + endM;
@@ -96,7 +98,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       isOpen: true,
       closedMessage: 'نظام حجز المواعيد مغلق مؤقتاً للتحديث أو خلال العطلة المدرسية.',
       slotDurationMinutes: 20,
-      noticeText: 'اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!'
+      noticeText: 'اختر الكادر الإداري، الاستشارة التربوية، أو المعلم لمعرفة أيام استقباله وحجز دورك في الأوقات الشاغرة بسهولة!'
     }
   });
 
@@ -107,11 +109,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   const [selectedTeacherId, setSelectedTeacherId] = useState(defaultSchoolTeachers[0].id);
 
   // Booking Form State
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    today.setDate(today.getDate() + 1);
-    return today.toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
   
   const [parentName, setParentName] = useState('');
@@ -122,9 +120,16 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   const [meetingTopic, setMeetingTopic] = useState('');
   const [meetingType, setMeetingType] = useState('وجاهي بالمدرسة');
 
-  // Bookings state for checking available slots
-  const [bookedSlots, setBookedSlots] = useState([]);
+  // Bookings state for checking available slots (holds all appointments for selected teacher)
+  const [teacherBookings, setTeacherBookings] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+
+  // Calendar month view & toggle mode ('quick' or 'calendar')
+  const [dateViewMode, setDateViewMode] = useState('quick');
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
 
   // Completed booking ticket state
   const [bookingTicket, setBookingTicket] = useState(null);
@@ -317,48 +322,222 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     ? { id: 'st_counselor', ...staffConfig.counselor }
     : (teachersList.find(t => t.id === selectedTeacherId) || teachersList[0]);
 
-  // Calculate current date's day of week & matching schedule for selected teacher
-  const dateObj = new Date(selectedDate);
-  const dayNameEn = WEEKDAYS_MAP[dateObj.getDay()];
-  const currentDaySchedule = (selectedTeacher?.receptionSchedule || []).find(s => s.day === dayNameEn);
+  // Real-time listener for all bookings of selected teacher
+  useEffect(() => {
+    const targetId = selectedTeacher?.id || selectedTeacherId;
+    if (!targetId) return;
 
-  // Dynamic Available Time Slots using configured duration
+    setIsLoadingSlots(true);
+    let unsub = () => {};
+
+    try {
+      const q = query(
+        collection(db, 'teacher_appointments'),
+        where('teacherId', '==', targetId)
+      );
+
+      unsub = onSnapshot(q, (snap) => {
+        const list = [];
+        snap.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+
+        // Merge with local storage cache
+        try {
+          const localList = JSON.parse(localStorage.getItem('musherfe_local_appointments') || '[]');
+          localList.forEach(loc => {
+            if (loc.teacherId === targetId && !list.some(l => l.ticketCode === loc.ticketCode)) {
+              list.push(loc);
+            }
+          });
+        } catch (e) {}
+
+        setTeacherBookings(list);
+        setIsLoadingSlots(false);
+      }, (err) => {
+        console.warn('Notice listening to appointments:', err);
+        getDocs(q).then(snap => {
+          const list = [];
+          snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+          setTeacherBookings(list);
+        }).catch(e => console.warn(e))
+        .finally(() => setIsLoadingSlots(false));
+      });
+    } catch (e) {
+      console.warn('Listener setup error:', e);
+      setIsLoadingSlots(false);
+    }
+
+    return () => unsub();
+  }, [selectedTeacher?.id, selectedTeacherId]);
+
+  // Slot duration from settings
   const slotDuration = staffConfig.systemSettings?.slotDurationMinutes || 20;
+
+  // Helper: Get capacity & bookings for a specific slot on a specific date
+  const getSlotCapacityInfo = (dateStr, slot) => {
+    if (!dateStr || !slot) {
+      return { count: 0, maxCapacity: MAX_BOOKINGS_PER_SLOT, remaining: MAX_BOOKINGS_PER_SLOT, isFull: false, bookings: [] };
+    }
+    const bookings = teacherBookings.filter(b => 
+      b.date === dateStr && 
+      b.timeSlot === slot && 
+      b.status !== 'cancelled'
+    );
+    const count = bookings.length;
+    const remaining = Math.max(0, MAX_BOOKINGS_PER_SLOT - count);
+    const isFull = count >= MAX_BOOKINGS_PER_SLOT;
+    return {
+      count,
+      maxCapacity: MAX_BOOKINGS_PER_SLOT,
+      remaining,
+      isFull,
+      bookings
+    };
+  };
+
+  // Helper: Check full availability of any date for the selected teacher
+  const getDateAvailability = (dateStr) => {
+    if (!dateStr) return { isReceptionDay: false, isFull: false, totalSlots: 0, availableSlotsCount: 0 };
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const dayNameEn = WEEKDAYS_MAP[dt.getDay()];
+
+    let schedList = selectedTeacher?.receptionSchedule || [];
+    if (schedList.length === 0) {
+      // Default fallback: Sun - Thu
+      if (dt.getDay() >= 0 && dt.getDay() <= 4) {
+        schedList = [{ day: dayNameEn, dayAr: WEEKDAYS_AR[dayNameEn], startTime: '08:30', endTime: '13:30' }];
+      }
+    }
+
+    const sched = schedList.find(s => s.day === dayNameEn);
+    if (!sched) {
+      return { isReceptionDay: false, isFull: false, totalSlots: 0, availableSlotsCount: 0 };
+    }
+
+    const slots = generateTimeSlotsForSchedule(sched.startTime, sched.endTime, slotDuration);
+    let totalAvailableSlots = 0;
+    let totalBookingsOnDate = 0;
+
+    slots.forEach(slot => {
+      const cap = getSlotCapacityInfo(dateStr, slot);
+      totalBookingsOnDate += cap.count;
+      if (!cap.isFull) {
+        totalAvailableSlots++;
+      }
+    });
+
+    return {
+      isReceptionDay: true,
+      dayAr: sched.dayAr || WEEKDAYS_AR[dayNameEn],
+      startTime: sched.startTime,
+      endTime: sched.endTime,
+      totalSlots: slots.length,
+      availableSlotsCount: totalAvailableSlots,
+      totalCapacity: slots.length * MAX_BOOKINGS_PER_SLOT,
+      totalBookingsOnDate,
+      isFull: totalAvailableSlots === 0,
+      schedule: sched
+    };
+  };
+
+  // Calculate upcoming valid reception days for selected teacher (next 60 days, up to 10 dates)
+  const upcomingReceptionDays = useMemo(() => {
+    const list = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i <= 60 && list.length < 10; i++) {
+      const dt = new Date(today);
+      dt.setDate(today.getDate() + i);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const d = String(dt.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+
+      const info = getDateAvailability(dateStr);
+      if (info.isReceptionDay) {
+        list.push({
+          dateStr,
+          dateObj: dt,
+          dayNum: dt.getDate(),
+          monthNum: dt.getMonth() + 1,
+          monthNameAr: MONTH_NAMES_AR[dt.getMonth()],
+          year: dt.getFullYear(),
+          ...info
+        });
+      }
+    }
+    return list;
+  }, [selectedTeacher, teacherBookings, slotDuration]);
+
+  // Auto-select the first available reception date whenever teacher changes
+  useEffect(() => {
+    if (upcomingReceptionDays.length > 0) {
+      const currentValid = upcomingReceptionDays.find(d => d.dateStr === selectedDate);
+      if (!currentValid || currentValid.isFull) {
+        const firstAvailable = upcomingReceptionDays.find(d => !d.isFull) || upcomingReceptionDays[0];
+        if (firstAvailable && firstAvailable.dateStr !== selectedDate) {
+          setSelectedDate(firstAvailable.dateStr);
+          setSelectedSlot('');
+          setCurrentCalendarMonth(new Date(firstAvailable.dateObj.getFullYear(), firstAvailable.dateObj.getMonth(), 1));
+        }
+      }
+    }
+  }, [selectedTeacher?.id, upcomingReceptionDays]);
+
+  // Calendar month grid calculation for Month View
+  const calendarGrid = useMemo(() => {
+    const year = currentCalendarMonth.getFullYear();
+    const month = currentCalendarMonth.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 is Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const days = [];
+    // Leading empty cells
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(null);
+    }
+
+    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+      const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      const isPast = dStr < todayStr;
+      const isToday = dStr === todayStr;
+      const availability = isPast 
+        ? { isReceptionDay: false, isPast: true, isFull: false, availableSlotsCount: 0 } 
+        : getDateAvailability(dStr);
+
+      days.push({
+        dayNum,
+        dateStr: dStr,
+        isPast,
+        isToday,
+        ...availability
+      });
+    }
+    return days;
+  }, [currentCalendarMonth, selectedTeacher, teacherBookings, slotDuration]);
+
+  // Current selected date schedule & time slots
+  const selectedDateObj = selectedDate ? new Date(selectedDate + 'T00:00:00') : null;
+  const selectedDayNameEn = selectedDateObj ? WEEKDAYS_MAP[selectedDateObj.getDay()] : '';
+  const currentDaySchedule = (selectedTeacher?.receptionSchedule || []).find(s => s.day === selectedDayNameEn)
+    || (selectedTeacher?.receptionSchedule?.length === 0 && selectedDateObj && selectedDateObj.getDay() <= 4
+      ? { day: selectedDayNameEn, dayAr: WEEKDAYS_AR[selectedDayNameEn], startTime: '08:30', endTime: '13:30' }
+      : null);
+
   const availableSlotsForDay = currentDaySchedule 
     ? generateTimeSlotsForSchedule(currentDaySchedule.startTime, currentDaySchedule.endTime, slotDuration)
     : [];
 
-  // Fetch booked slots whenever teacher or date changes
-  useEffect(() => {
-    const fetchOccupiedSlots = async () => {
-      const targetId = selectedTeacher?.id || selectedTeacherId;
-      if (!targetId || !selectedDate) return;
-      setIsLoadingSlots(true);
-      try {
-        const q = query(
-          collection(db, 'appointment_slots'),
-          where('teacherId', '==', targetId),
-          where('date', '==', selectedDate)
-        );
-        const snap = await getDocs(q);
-        const slots = [];
-        snap.forEach(d => {
-          const data = d.data();
-          if (data.timeSlot) {
-            slots.push(data.timeSlot);
-          }
-        });
-        setBookedSlots(slots);
-      } catch (err) {
-        console.warn('Notice fetching booked slots:', err);
-      } finally {
-        setIsLoadingSlots(false);
-      }
-    };
+  const selectedDateInfo = selectedDate ? getDateAvailability(selectedDate) : null;
 
-    fetchOccupiedSlots();
-  }, [selectedTeacher, selectedTeacherId, selectedDate]);
-
+  // Submit Handler with capacity checks & duplicate prevention
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
 
@@ -371,7 +550,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
         teacherNameHe: selectedTeacher?.nameHe || '',
         teacherRole: selectedTeacher?.role || 'طاقم المدرسة',
         date: selectedDate,
-        dayAr: WEEKDAYS_AR[dayNameEn] || '',
+        dayAr: WEEKDAYS_AR[selectedDayNameEn] || '',
         timeSlot: selectedSlot || '10:00',
         parentName: sanitizeText(parentName.trim()),
         parentPhone: sanitizeText(parentPhone.trim()),
@@ -390,19 +569,40 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       return;
     }
     if (!selectedSlot) {
-      alert('من فضلك اختر ساعة وموعد اللقاء المناسب!');
+      alert('من فضلك اختر ساعة وموعد اللقاء المناسب من المواعيد المتاحة!');
       return;
     }
     if (!currentDaySchedule) {
-      alert('الجهة المختارة لا تستقبل مواعيد في هذا اليوم المحدد. يرجى اختيار تاريخ ضمن أيام الاستقبال!');
+      alert('الجهة المختارة لا تستقبل مواعيد في هذا اليوم المحدد. يرجى اختيار تاريخ ضمن الأيام المتاحة للاستقبال!');
+      return;
+    }
+
+    // Check slot capacity (User Rule: ولكل موعد فقط يكون حجزين)
+    const slotCap = getSlotCapacityInfo(selectedDate, selectedSlot);
+    if (slotCap.isFull) {
+      alert('⚠️ عذراً! هذا الموعد أصبح مكتملاً بالكامل (الحد الأقصى هو حجزين فقط لكل موعد). يرجى اختيار موعد أو ساعة أخرى.');
+      return;
+    }
+
+    // Check duplicate booking by the same parent (User Rule: في حال تم حجزها لا يستطيع الاب حجزها مرة اخرى)
+    const cleanPhone = parentPhone.replace(/\D/g, '');
+    const cleanParentName = parentName.trim().toLowerCase();
+    const alreadyBooked = slotCap.bookings.some(b => {
+      const bPhone = (b.parentPhone || '').replace(/\D/g, '');
+      const bName = (b.parentName || '').trim().toLowerCase();
+      return (cleanPhone && bPhone === cleanPhone) || (cleanParentName && bName === cleanParentName);
+    });
+
+    if (alreadyBooked) {
+      alert('⚠️ لقد قمت بحجز هذا الموعد مسبقاً بنفس رقم الهاتف أو الاسم! لا يمكن لولي الأمر تكرار حجز نفس الموعد مرتين.');
       return;
     }
 
     setIsSubmitting(true);
     const ticketCode = `MUSH-BK-${Math.floor(10000 + Math.random() * 90000)}`;
-
     const teacherPhone = selectedTeacher.phone || '';
     const teacherEmail = selectedTeacher.email || '';
+
     const newAppointment = {
       ticketCode,
       teacherId: selectedTeacher.id,
@@ -412,7 +612,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       teacherPhone: teacherPhone,
       teacherEmail: teacherEmail,
       date: selectedDate,
-      dayAr: WEEKDAYS_AR[dayNameEn] || '',
+      dayAr: WEEKDAYS_AR[selectedDayNameEn] || '',
       timeSlot: selectedSlot,
       parentName: sanitizeText(parentName.trim()),
       parentPhone: sanitizeText(parentPhone.trim()),
@@ -421,26 +621,40 @@ const AppointmentBooking = ({ isStandalone = true }) => {
       meetingTopic: sanitizeText(meetingTopic.trim()) || 'متابعة وتواصل تربوي',
       meetingType,
       status: 'confirmed',
+      bookingSlotNumber: slotCap.count + 1,
       createdAt: new Date().toISOString()
     };
 
     try {
       await addDoc(collection(db, 'teacher_appointments'), newAppointment);
+      
       try {
         const slotClean = selectedSlot.replace(/[^a-zA-Z0-9]/g, '_');
-        await setDoc(doc(db, 'appointment_slots', `${selectedTeacher.id}_${selectedDate}_${slotClean}`), {
+        await setDoc(doc(db, 'appointment_slots', `${selectedTeacher.id}_${selectedDate}_${slotClean}_${slotCap.count + 1}`), {
           teacherId: selectedTeacher.id,
           date: selectedDate,
           timeSlot: selectedSlot,
+          bookingIndex: slotCap.count + 1,
+          parentPhone: sanitizeText(parentPhone.trim()),
           createdAt: new Date().toISOString()
         });
       } catch (slotErr) {
         console.warn('Slot reservation notice:', slotErr);
       }
+
+      // Sync local storage
+      try {
+        const localList = JSON.parse(localStorage.getItem('musherfe_local_appointments') || '[]');
+        localList.unshift(newAppointment);
+        localStorage.setItem('musherfe_local_appointments', JSON.stringify(localList.slice(0, 100)));
+      } catch (e) {}
+
+      setTeacherBookings(prev => [newAppointment, ...prev]);
       setBookingTicket(newAppointment);
     } catch (err) {
       console.error('Error booking appointment:', err);
-      alert('حدث خطأ في الاتصال، تم استخراج التذكرة محلياً.');
+      alert('حدث خطأ في الاتصال، تم استخراج التذكرة محلياً بنجاح.');
+      setTeacherBookings(prev => [newAppointment, ...prev]);
       setBookingTicket(newAppointment);
     } finally {
       setIsSubmitting(false);
@@ -503,8 +717,8 @@ const AppointmentBooking = ({ isStandalone = true }) => {
   );
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: isStandalone ? '100vh' : 'auto', padding: 'clamp(1.5rem, 4vw, 3rem) 1rem' }}>
-      <div className="container" style={{ maxWidth: '950px', margin: '0 auto' }}>
+    <div style={{ background: '#f8fafc', minHeight: isStandalone ? '100vh' : 'auto', padding: 'clamp(1.5rem, 4vw, 3rem) 1rem', direction: 'rtl' }}>
+      <div className="container" style={{ maxWidth: '980px', margin: '0 auto' }}>
         
         {/* Top Header Banner */}
         <div style={{
@@ -533,8 +747,8 @@ const AppointmentBooking = ({ isStandalone = true }) => {
           <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 900, margin: '0 0 0.75rem 0' }}>
             نظام حجز اللقاءات والمواعيد الرسمية 🤝🏫
           </h1>
-          <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '700px', margin: '0 auto', fontWeight: 500 }}>
-            {staffConfig.systemSettings?.noticeText || 'اختر الكادر الإداري، الاستشارة التربوية، أو المعلم المراد تحديد اللقاء معه لمعرفة أيام وساعات استقباله وحجز موعدك بسهولة!'}
+          <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '750px', margin: '0 auto', fontWeight: 500, lineHeight: 1.6 }}>
+            {staffConfig.systemSettings?.noticeText || 'اختر الكادر الإداري أو المعلم لمعرفة أيام استقباله وحجز دورك في الأوقات الشاغرة بسهولة!'}
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
@@ -881,7 +1095,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
           /* BOOKING FORM STEPS */
           <form onSubmit={handleSubmitBooking} style={{ background: '#ffffff', borderRadius: '28px', padding: 'clamp(1.5rem, 4vw, 2.5rem)', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', color: '#1e293b' }}>
             
-            {/* STEP 1: Staff Category Cards (Only 3 Main Cards: Admin, Counseling, Teachers) */}
+            {/* STEP 1: Staff Category Cards */}
             <div style={{ marginBottom: '2.5rem' }}>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
                 <span>1️⃣</span> اختر الكادر الإداري أو التربوي المراد لقاؤه:
@@ -921,7 +1135,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
               {activeCategory === 'st_teachers' && (
                 <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '20px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontWeight: 900, fontSize: '1.1rem' }}>
-                    👨‍🏫 اختر المعلم / المعلمة من القائمة (33 معلماً معتمدين):
+                    👨‍🏫 اختر المعلم / المعلمة من القائمة ({teachersList.length} معلماً معتمدين):
                   </h4>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
@@ -938,7 +1152,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                           padding: '0.9rem 1.2rem',
                           borderRadius: '16px',
                           border: '3px solid #0284c7',
-                          fontSize: '1.1rem',
+                          fontSize: '1.05rem',
                           fontWeight: 900,
                           color: '#0f172a',
                           background: '#ffffff',
@@ -975,144 +1189,425 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                 </div>
               )}
 
-              {/* Selected Teacher / Admin Reception Info Badge */}
+              {/* Selected Teacher Reception Info Badge */}
               {selectedTeacher && (
                 <div style={{
-                  background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
                   border: '2px solid #38bdf8',
                   borderRadius: '20px',
-                  padding: '1.25rem',
+                  padding: '1.35rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1.25rem',
-                  flexWrap: 'wrap'
+                  flexWrap: 'wrap',
+                  boxShadow: '0 4px 15px rgba(2, 132, 199, 0.08)'
                 }}>
                   <div style={{ fontSize: '3rem' }}>
                     {activeCategory === 'st_principal' ? '🏛️' : activeCategory === 'st_counselor' ? '💡' : '👨‍🏫'}
                   </div>
-                  <div>
-                    <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
                       الجهة / المعلم المحدد: {selectedTeacher.nameAr} {selectedTeacher.nameHe ? `(${selectedTeacher.nameHe})` : ''}
                     </h4>
                     <div style={{ fontSize: '0.95rem', color: '#0f172a', fontWeight: 800 }}>
-                      🗓️ أيام وساعات الاستقبال الرسمية:
+                      🗓️ أيام وساعات الاستقبال الرسمية المعتمدة:
                     </div>
                     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                       {(selectedTeacher.receptionSchedule || []).length === 0 ? (
-                        <span style={{ background: '#e2e8f0', color: '#475569', padding: '4px 10px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                        <span style={{ background: '#e2e8f0', color: '#475569', padding: '5px 12px', borderRadius: '10px', fontSize: '0.88rem', fontWeight: 800 }}>
                           من الأحد للخميس (08:30 - 13:30)
                         </span>
                       ) : (
                         selectedTeacher.receptionSchedule.map((s, idx) => (
-                          <span key={idx} style={{ background: '#0284c7', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.88rem', fontWeight: 800 }}>
-                            {s.dayAr}: {s.startTime} حتى {s.endTime}
+                          <span key={idx} style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', padding: '5px 14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 900, boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)' }}>
+                            ✨ {s.dayAr}: من {s.startTime} حتى {s.endTime}
                           </span>
                         ))
                       )}
                     </div>
                   </div>
+                  
+                  <div style={{ background: '#ffffff', padding: '0.75rem 1.1rem', borderRadius: '14px', border: '1px solid #bae6fd', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#0369a1', fontWeight: 800 }}>سعة الموعد الواحد</div>
+                    <div style={{ fontSize: '1.1rem', color: '#0284c7', fontWeight: 900 }}>حجزان كحد أقصى 👥</div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* STEP 2: Select Date & Time Slot */}
+            {/* STEP 2: Intelligent Date & Empty Slots Selection */}
             <div style={{ marginBottom: '2.5rem', borderTop: '2px dashed #e2e8f0', paddingTop: '2rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <span>2️⃣</span> حدد تاريخ وساعة اللقاء المتاحة:
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                  <span>2️⃣</span> اختر تاريخ اللقاء (الأيام الشاغرة فقط بحسب الاستقبال):
+                </h3>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.5rem' }}>تاريخ اللقاء المطلوب:</label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      setSelectedSlot('');
-                    }}
+                {/* View Mode Switcher */}
+                <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '4px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDateViewMode('quick')}
                     style={{
-                      width: '100%',
-                      padding: '0.85rem 1.2rem',
-                      borderRadius: '14px',
-                      border: '2px solid #cbd5e1',
-                      fontSize: '1rem',
-                      fontWeight: 800,
-                      color: '#0f172a',
-                      outline: 'none'
-                    }}
-                  />
-                  <span style={{ fontSize: '0.85rem', color: currentDaySchedule ? '#10b981' : '#ef4444', fontWeight: 800, display: 'block', marginTop: '0.4rem' }}>
-                    {WEEKDAYS_AR[dayNameEn]} - {currentDaySchedule ? `متاح للاستقبال من ${currentDaySchedule.startTime} إلى ${currentDaySchedule.endTime}` : '⚠️ لا يوجد استقبال في هذا اليوم'}
-                  </span>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.5rem' }}>نوع اللقاء:</label>
-                  <select
-                    value={meetingType}
-                    onChange={(e) => setMeetingType(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1.2rem',
-                      borderRadius: '14px',
-                      border: '2px solid #cbd5e1',
-                      fontSize: '1rem',
-                      fontWeight: 800,
-                      color: '#0f172a',
-                      outline: 'none'
+                      background: dateViewMode === 'quick' ? '#ffffff' : 'transparent',
+                      color: dateViewMode === 'quick' ? '#0284c7' : '#64748b',
+                      border: 'none',
+                      padding: '0.45rem 1rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      boxShadow: dateViewMode === 'quick' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <option value="وجاهي بالمدرسة">🏫 لقاء وجاهي بغرفة المعلمين/الإدارة</option>
-                    <option value="اتصال هاتفي">📞 مكالمة هاتفية مباشرة</option>
-                    <option value="لقاء زوم عبر الإنترنت">💻 لقاء افتراضي Zoom</option>
-                  </select>
+                    ⚡ الأيام القادمة المتاحة (سريع)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDateViewMode('calendar')}
+                    style={{
+                      background: dateViewMode === 'calendar' ? '#ffffff' : 'transparent',
+                      color: dateViewMode === 'calendar' ? '#0284c7' : '#64748b',
+                      border: 'none',
+                      padding: '0.45rem 1rem',
+                      borderRadius: '10px',
+                      fontWeight: 900,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      boxShadow: dateViewMode === 'calendar' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    📅 تقويم الشهر كاملاً
+                  </button>
                 </div>
               </div>
 
-              {/* Time Slots Grid */}
-              <label style={{ display: 'block', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>الساعات المتاحة لهذا اليوم:</label>
-              {isLoadingSlots ? (
-                <div style={{ color: '#0284c7', fontWeight: 700, padding: '1rem' }}>
-                  <i className="fas fa-spinner fa-spin" style={{ marginLeft: '0.5rem' }}></i> جاري فحص المواعيد المتاحة...
-                </div>
-              ) : availableSlotsForDay.length === 0 ? (
-                <div style={{ background: '#fef2f2', border: '2px solid #fca5a5', color: '#991b1b', padding: '1.25rem', borderRadius: '16px', fontWeight: 800 }}>
-                  🚫 عذراً! لا تتوفر ساعات استقبال مجهزة في يوم ({WEEKDAYS_AR[dayNameEn]}). يرجى اختيار تاريخ موافق لأيام الاستقبال أعلاه!
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.85rem' }}>
-                  {availableSlotsForDay.map((slot) => {
-                    const isBooked = bookedSlots.includes(slot);
-                    const isSelected = selectedSlot === slot;
-                    return (
-                      <button
-                        type="button"
-                        key={slot}
-                        disabled={isBooked}
-                        onClick={() => setSelectedSlot(slot)}
-                        style={{
-                          background: isBooked ? '#f1f5f9' : (isSelected ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff'),
-                          color: isBooked ? '#94a3b8' : (isSelected ? 'white' : '#0f172a'),
-                          border: `2px solid ${isBooked ? '#e2e8f0' : (isSelected ? '#0284c7' : '#cbd5e1')}`,
-                          padding: '0.75rem',
-                          borderRadius: '14px',
-                          fontWeight: 800,
-                          fontSize: '0.95rem',
-                          cursor: isBooked ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justify: 'center',
-                          gap: '0.4rem',
-                          boxShadow: isSelected ? '0 6px 16px rgba(2, 132, 199, 0.3)' : 'none'
-                        }}
-                      >
-                        <span>{isBooked ? '🔴 محجوز' : (isSelected ? '✓ ' + slot : '⏰ ' + slot)}</span>
-                      </button>
-                    );
-                  })}
+              {/* Informative Rule Callout */}
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '16px',
+                padding: '0.85rem 1.25rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                color: '#166534',
+                fontSize: '0.92rem',
+                fontWeight: 700
+              }}>
+                <span style={{ fontSize: '1.3rem' }}>💡</span>
+                <span>
+                  <strong>آلية الحجز الذكية:</strong> الموقع يعرض تلقائياً أيام وساعات الاستقبال الشاغرة فقط. لكل فترة زمنية <strong>حجزان كحد أقصى</strong>، وفي حال اكتمال الموعد يُغلق تلقائياً لضمان راحة أولياء الأمور وحسن تنظيم اللقاء.
+                </span>
+              </div>
+
+              {/* MODE 1: Upcoming Reception Days Quick Chips */}
+              {dateViewMode === 'quick' && (
+                <div style={{ marginBottom: '1.75rem' }}>
+                  <label style={{ display: 'block', fontWeight: 800, color: '#334155', marginBottom: '0.75rem' }}>
+                    اختر من الأيام والتواريخ القادمة المخصصة لاستقبال هذا المعلم:
+                  </label>
+
+                  {upcomingReceptionDays.length === 0 ? (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '1.25rem', borderRadius: '16px', color: '#991b1b', fontWeight: 800 }}>
+                      ⚠️ لم يتم تحديد أيام استقبال قادمة لهذا المعلم بعد. يرجى التواصل مع إدارة المدرسة أو اختيار معلم آخر.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '0.85rem' }}>
+                      {upcomingReceptionDays.map((d) => {
+                        const isSelected = selectedDate === d.dateStr;
+                        const isFull = d.isFull;
+
+                        return (
+                          <button
+                            type="button"
+                            key={d.dateStr}
+                            disabled={isFull}
+                            onClick={() => {
+                              setSelectedDate(d.dateStr);
+                              setSelectedSlot('');
+                            }}
+                            style={{
+                              background: isFull ? '#f8fafc' : (isSelected ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff'),
+                              color: isFull ? '#94a3b8' : (isSelected ? '#ffffff' : '#0f172a'),
+                              border: `2px solid ${isFull ? '#e2e8f0' : (isSelected ? '#0284c7' : '#bae6fd')}`,
+                              borderRadius: '16px',
+                              padding: '1rem',
+                              cursor: isFull ? 'not-allowed' : 'pointer',
+                              textAlign: 'right',
+                              position: 'relative',
+                              boxShadow: isSelected ? '0 8px 20px rgba(2, 132, 199, 0.3)' : '0 2px 6px rgba(0,0,0,0.03)',
+                              transform: isSelected ? 'translateY(-2px)' : 'none',
+                              transition: 'all 0.2s ease',
+                              opacity: isFull ? 0.65 : 1
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                              <strong style={{ fontSize: '1.05rem', fontWeight: 900 }}>
+                                {d.dayAr}
+                              </strong>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', background: isFull ? '#fee2e2' : (isSelected ? 'rgba(255,255,255,0.25)' : '#dcfce7'), color: isFull ? '#dc2626' : (isSelected ? '#ffffff' : '#15803d') }}>
+                                {isFull ? '🔴 مكتمل' : `🟢 متاح`}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '0.92rem', fontWeight: 700, marginBottom: '0.3rem', color: isSelected ? '#e0f2fe' : '#475569' }}>
+                              {d.dayNum} {d.monthNameAr} {d.year}
+                            </div>
+
+                            <div style={{ fontSize: '0.78rem', color: isSelected ? '#bae6fd' : '#64748b', fontWeight: 700 }}>
+                              ⏰ من {d.startTime} حتى {d.endTime}
+                            </div>
+
+                            <div style={{ marginTop: '0.5rem', paddingTop: '0.4rem', borderTop: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : '#f1f5f9'}`, fontSize: '0.8rem', fontWeight: 800, color: isFull ? '#dc2626' : (isSelected ? '#fef08a' : '#0284c7') }}>
+                              {isFull ? 'محجوز بالكامل' : `شاغر: ${d.availableSlotsCount} فترات زمنية`}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* MODE 2: Full Monthly Calendar Grid */}
+              {dateViewMode === 'calendar' && (
+                <div style={{ background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '22px', padding: '1.5rem', marginBottom: '1.75rem' }}>
+                  {/* Calendar Navigation Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentCalendarMonth(new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() - 1, 1))}
+                      style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', color: '#1e293b' }}
+                    >
+                      ❮ الشهر السابق
+                    </button>
+
+                    <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
+                      📅 {MONTH_NAMES_AR[currentCalendarMonth.getMonth()]} {currentCalendarMonth.getFullYear()}
+                    </h4>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentCalendarMonth(new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() + 1, 1))}
+                      style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', color: '#1e293b' }}
+                    >
+                      الشهر التالي ❯
+                    </button>
+                  </div>
+
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', fontSize: '0.82rem', fontWeight: 800 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '4px' }}></span> يوم متاح لاستقبال المعلم
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '4px' }}></span> يوم مكتمل الحجوزات
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px' }}></span> ليس يوم استقبال
+                    </span>
+                  </div>
+
+                  {/* Calendar Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center' }}>
+                    {/* Weekday headers */}
+                    {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((w, idx) => (
+                      <div key={idx} style={{ padding: '0.5rem 0', fontWeight: 900, color: '#475569', fontSize: '0.85rem' }}>
+                        {w}
+                      </div>
+                    ))}
+
+                    {/* Day cells */}
+                    {calendarGrid.map((day, idx) => {
+                      if (!day) {
+                        return <div key={`empty_${idx}`} style={{ minHeight: '65px' }}></div>;
+                      }
+
+                      const isSelected = selectedDate === day.dateStr;
+                      const isReception = day.isReceptionDay;
+                      const isFull = day.isFull;
+
+                      let cellBg = '#ffffff';
+                      let cellBorder = '#e2e8f0';
+                      let cellColor = '#94a3b8';
+                      let cursor = 'default';
+
+                      if (isReception) {
+                        if (isFull) {
+                          cellBg = '#fef2f2';
+                          cellBorder = '#fca5a5';
+                          cellColor = '#b91c1c';
+                        } else {
+                          cellBg = isSelected ? '#0284c7' : '#f0fdf4';
+                          cellBorder = isSelected ? '#0284c7' : '#86efac';
+                          cellColor = isSelected ? '#ffffff' : '#15803d';
+                          cursor = 'pointer';
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={day.dateStr}
+                          onClick={() => {
+                            if (isReception && !isFull) {
+                              setSelectedDate(day.dateStr);
+                              setSelectedSlot('');
+                            }
+                          }}
+                          style={{
+                            background: cellBg,
+                            border: `2px solid ${cellBorder}`,
+                            borderRadius: '12px',
+                            minHeight: '65px',
+                            padding: '6px 4px',
+                            cursor,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            boxShadow: isSelected ? '0 6px 14px rgba(2, 132, 199, 0.3)' : 'none',
+                            transform: isSelected ? 'scale(1.03)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span style={{ fontWeight: 900, fontSize: '0.95rem', color: isSelected ? '#ffffff' : (isReception ? '#0f172a' : '#94a3b8') }}>
+                            {day.dayNum}
+                          </span>
+                          
+                          {isReception && (
+                            <span style={{ fontSize: '0.68rem', fontWeight: 900, color: isSelected ? '#fef08a' : (isFull ? '#dc2626' : '#15803d'), lineHeight: 1.2 }}>
+                              {isFull ? '🔴 مكتمل' : `🟢 ${day.availableSlotsCount} متاح`}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Day Status Bar */}
+              {selectedDate && (
+                <div style={{
+                  background: '#f8fafc',
+                  border: '2px solid #cbd5e1',
+                  borderRadius: '16px',
+                  padding: '1rem 1.4rem',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>التاريخ المحدد حالياً:</div>
+                    <div style={{ fontSize: '1.15rem', color: '#0f172a', fontWeight: 900 }}>
+                      🗓️ {selectedDateInfo?.dayAr || WEEKDAYS_AR[selectedDayNameEn]} — {selectedDate}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <label style={{ fontWeight: 800, color: '#475569', fontSize: '0.9rem' }}>نوع اللقاء:</label>
+                    <select
+                      value={meetingType}
+                      onChange={(e) => setMeetingType(e.target.value)}
+                      style={{
+                        padding: '0.55rem 1rem',
+                        borderRadius: '12px',
+                        border: '2px solid #cbd5e1',
+                        fontSize: '0.95rem',
+                        fontWeight: 800,
+                        color: '#0f172a',
+                        background: '#ffffff',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="وجاهي بالمدرسة">🏫 لقاء وجاهي بغرفة المعلمين/الإدارة</option>
+                      <option value="اتصال هاتفي">📞 مكالمة هاتفية مباشرة</option>
+                      <option value="لقاء زوم عبر الإنترنت">💻 لقاء افتراضي Zoom</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Time Slots Grid with Real-time Capacity and Status */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', marginBottom: '0.85rem' }}>
+                  ⏰ اختر الساعة المناسبة لهذا اليوم (الأوقات الشاغرة فقط):
+                </label>
+
+                {isLoadingSlots ? (
+                  <div style={{ color: '#0284c7', fontWeight: 800, padding: '1.5rem', textAlign: 'center', background: '#f0f9ff', borderRadius: '16px' }}>
+                    <i className="fas fa-spinner fa-spin" style={{ marginLeft: '0.5rem' }}></i> جاري فحص المقاعد والمواعيد المتاحة...
+                  </div>
+                ) : availableSlotsForDay.length === 0 ? (
+                  <div style={{ background: '#fef2f2', border: '2px solid #fca5a5', color: '#991b1b', padding: '1.25rem', borderRadius: '16px', fontWeight: 800 }}>
+                    🚫 عذراً! لا تتوفر ساعات استقبال مجهزة في يوم ({WEEKDAYS_AR[selectedDayNameEn]}). يرجى اختيار تاريخ موافق لأيام استقبال المعلم!
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                    {availableSlotsForDay.map((slot) => {
+                      const { count, remaining, isFull } = getSlotCapacityInfo(selectedDate, slot);
+                      const isSelected = selectedSlot === slot;
+
+                      return (
+                        <button
+                          type="button"
+                          key={slot}
+                          disabled={isFull}
+                          onClick={() => setSelectedSlot(slot)}
+                          style={{
+                            background: isFull 
+                              ? '#f1f5f9' 
+                              : (isSelected 
+                                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
+                                : (count === 1 ? '#fffbeb' : '#ffffff')),
+                            color: isFull ? '#94a3b8' : (isSelected ? 'white' : '#0f172a'),
+                            border: `2px solid ${isFull ? '#e2e8f0' : (isSelected ? '#0284c7' : (count === 1 ? '#f59e0b' : '#38bdf8'))}`,
+                            padding: '0.9rem',
+                            borderRadius: '16px',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                            cursor: isFull ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.35rem',
+                            boxShadow: isSelected ? '0 8px 20px rgba(2, 132, 199, 0.3)' : '0 2px 6px rgba(0,0,0,0.03)',
+                            transform: isSelected ? 'scale(1.02)' : 'none',
+                            transition: 'all 0.2s ease',
+                            opacity: isFull ? 0.6 : 1
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', fontWeight: 900 }}>
+                            <span>{isFull ? '🔴' : (isSelected ? '✓' : '⏰')}</span>
+                            <span>{slot}</span>
+                          </div>
+
+                          <div style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            background: isFull 
+                              ? '#fee2e2' 
+                              : (isSelected ? 'rgba(255,255,255,0.25)' : (count === 1 ? '#fef3c7' : '#dcfce7')),
+                            color: isFull 
+                              ? '#dc2626' 
+                              : (isSelected ? '#ffffff' : (count === 1 ? '#b45309' : '#15803d'))
+                          }}>
+                            {isFull ? 'محجوز بالكامل (2/2)' : (count === 1 ? 'متاح: بقي مقعد أخير (1/2)' : 'متاح: مقعدان شاغران (2/2)')}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* STEP 3: Parent & Student Details */}
@@ -1142,7 +1637,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                     placeholder="مثال: أحمد محاميد"
                     value={parentName}
                     onChange={(e) => setParentName(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 700, fontSize: '1rem', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -1154,7 +1649,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                     placeholder="050-1234567"
                     value={parentPhone}
                     onChange={(e) => setParentPhone(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 700, fontSize: '1rem', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
@@ -1168,7 +1663,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                     placeholder="مثال: محمد محاميد"
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 700, fontSize: '1rem', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -1177,7 +1672,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                   <select
                     value={studentClass}
                     onChange={(e) => setStudentClass(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 700 }}
+                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 700, fontSize: '1rem', boxSizing: 'border-box' }}
                   >
                     <option value="الصف الأول (أ)">الصف الأول (أ)</option>
                     <option value="الصف الأول (ب)">الصف الأول (ب)</option>
@@ -1198,27 +1693,44 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                   placeholder="مثال: متابعة تحصيل المواد، الاستفسار عن المبادرة القادمة..."
                   value={meetingTopic}
                   onChange={(e) => setMeetingTopic(e.target.value)}
-                  style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontWeight: 600, resize: 'vertical' }}
+                  style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 600, fontSize: '0.95rem', resize: 'vertical', boxSizing: 'border-box' }}
                 />
               </div>
+            </div>
+
+            {/* Summary Preview & Submit */}
+            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '18px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>ملخص الموعد المختار:</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>
+                  {selectedTeacher?.nameAr} | {selectedDateInfo?.dayAr} {selectedDate} | {selectedSlot || 'لم يتم اختيار الساعة'}
+                </div>
+              </div>
+
+              {selectedSlot && (
+                <div style={{ background: '#dcfce7', color: '#15803d', padding: '4px 12px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800 }}>
+                  ✓ موعد شاغر ومتاح للتأكيد
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || availableSlotsForDay.length === 0}
+              disabled={isSubmitting || !selectedSlot || availableSlotsForDay.length === 0}
               className="btn"
               style={{
                 width: '100%',
-                padding: '1.1rem',
+                padding: '1.15rem',
                 fontSize: '1.25rem',
                 fontWeight: 900,
                 borderRadius: '16px',
                 border: 'none',
-                background: availableSlotsForDay.length > 0 ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' : '#cbd5e1',
+                background: selectedSlot ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' : '#cbd5e1',
                 color: 'white',
-                cursor: availableSlotsForDay.length > 0 ? 'pointer' : 'not-allowed',
-                boxShadow: availableSlotsForDay.length > 0 ? '0 10px 25px rgba(16, 185, 129, 0.4)' : 'none'
+                cursor: selectedSlot ? 'pointer' : 'not-allowed',
+                boxShadow: selectedSlot ? '0 10px 25px rgba(16, 185, 129, 0.4)' : 'none',
+                transition: 'all 0.2s ease'
               }}
             >
               {isSubmitting ? 'جاري تأكيد الحجز...' : 'تأكيد حجز الموعد واستخراج الإيصال 🎟️'}
@@ -1249,75 +1761,142 @@ const AppointmentBooking = ({ isStandalone = true }) => {
             }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>المعلم / الجهة:</span>
-                  <strong style={{ display: 'block', fontSize: '1.1rem', color: '#0f172a' }}>{bookingTicket.teacherNameAr} {bookingTicket.teacherNameHe ? `(${bookingTicket.teacherNameHe})` : ''}</strong>
+                  <strong style={{ color: '#64748b', fontSize: '0.85rem' }}>الجهة / المعلم:</strong>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+                    👨‍🏫 {bookingTicket.teacherNameAr} {bookingTicket.teacherNameHe ? `(${bookingTicket.teacherNameHe})` : ''}
+                  </div>
                 </div>
 
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>التاريخ والوقت:</span>
-                  <strong style={{ display: 'block', fontSize: '1.1rem', color: '#10b981' }}>{bookingTicket.dayAr} {bookingTicket.date} | {bookingTicket.timeSlot}</strong>
+                  <strong style={{ color: '#64748b', fontSize: '0.85rem' }}>موعد وتاريخ اللقاء:</strong>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0284c7' }}>
+                    🗓️ {bookingTicket.dayAr} {bookingTicket.date}
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0369a1' }}>
+                    ⏰ الساعة: {bookingTicket.timeSlot}
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>ولي الأمر:</span>
-                  <strong style={{ display: 'block', fontSize: '1rem', color: '#0f172a' }}>{bookingTicket.parentName} ({bookingTicket.parentPhone})</strong>
+                  <strong style={{ color: '#64748b', fontSize: '0.85rem' }}>ولي الأمر:</strong>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    👤 {bookingTicket.parentName} ({bookingTicket.parentPhone})
+                  </div>
                 </div>
 
                 <div>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>الطالب والصف:</span>
-                  <strong style={{ display: 'block', fontSize: '1rem', color: '#0f172a' }}>{bookingTicket.studentName} - {bookingTicket.studentClass}</strong>
+                  <strong style={{ color: '#64748b', fontSize: '0.85rem' }}>الطالب والصف:</strong>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    🎓 {bookingTicket.studentName} - {bookingTicket.studentClass}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>نوع اللقاء والسبب:</span>
-                <strong style={{ display: 'block', fontSize: '1rem', color: '#0284c7' }}>{bookingTicket.meetingType} ({bookingTicket.meetingTopic})</strong>
-              </div>
-
-              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '0.75rem 1rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 800, marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'center', justifyContent: 'center' }}>
-                <i className="fas fa-shield-alt" style={{ color: '#10b981', fontSize: '1.1rem' }}></i>
-                <span>موعدك مسجل تلقائياً لدى حارس البوابة وسكرتارية المدرسة للدخول في الموعد المحدد.</span>
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <strong style={{ color: '#64748b', fontSize: '0.85rem' }}>نوع اللقاء:</strong>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                    📍 {bookingTicket.meetingType}
+                  </div>
+                </div>
+                <div>
+                  <strong style={{ color: '#64748b', fontSize: '0.85rem' }}>حالة الحجز:</strong>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#16a34a' }}>
+                    ✓ مؤكد رسمي بالمدرسة
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {/* Quick Share Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
               <button
+                type="button"
                 onClick={handleSendWhatsAppToTeacher}
-                className="btn"
-                style={{ background: '#25D366', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}
-              >
-                <i className="fab fa-whatsapp" style={{ fontSize: '1.3rem' }}></i> 📲 إرسال إشعار للمدرس عبر واتساب
-              </button>
-
-              <button
-                onClick={handleSendEmailToTeacher}
-                className="btn"
-                style={{ background: '#ea4335', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}
-              >
-                <i className="fas fa-envelope" style={{ fontSize: '1.2rem' }}></i> ✉️ إرسال تأكيد عبر البريد الإلكتروني
-              </button>
-
-              <button
-                onClick={() => window.print()}
-                className="btn"
-                style={{ background: '#0284c7', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 800, border: 'none', cursor: 'pointer' }}
-              >
-                🖨️ طباعة إيصال الموعد
-              </button>
-
-              <button
-                onClick={() => {
-                  setBookingTicket(null);
-                  setSelectedSlot('');
+                style={{
+                  background: '#25D366',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '14px',
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 4px 15px rgba(37, 211, 102, 0.4)'
                 }}
-                className="btn"
-                style={{ background: '#10b981', color: 'white', padding: '0.75rem 1.6rem', borderRadius: '12px', fontWeight: 800, border: 'none', cursor: 'pointer' }}
               >
-                ➕ حجز موعد آخر
+                <i className="fab fa-whatsapp"></i> إرسال تفاصيل الحجز عبر واتساب 💬
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendEmailToTeacher}
+                style={{
+                  background: '#0284c7',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '14px',
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 4px 15px rgba(2, 132, 199, 0.35)'
+                }}
+              >
+                <i className="fas fa-envelope"></i> إرسال إشعار بالبريد الإلكتروني ✉️
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.print()}
+                style={{
+                  background: '#334155',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '14px',
+                  fontWeight: 800,
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <i className="fas fa-print"></i> طباعة الإيصال 🖨️
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setBookingTicket(null);
+                setSelectedSlot('');
+                setParentName('');
+                setParentPhone('');
+                setStudentName('');
+                setMeetingTopic('');
+              }}
+              style={{
+                background: '#f1f5f9',
+                border: 'none',
+                color: '#475569',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '12px',
+                fontWeight: 800,
+                cursor: 'pointer'
+              }}
+            >
+              🔄 حجز موعد آخر جديد
+            </button>
           </div>
         )}
 
