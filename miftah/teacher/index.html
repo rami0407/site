@@ -5,8 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>دخول المعلّم — مفتاح</title>
 <meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
 <link rel="stylesheet" href="../site.css">
+<script>
+// إفراغ أي كاش قديم من المتصفح لضمان عدم ظهور النسخ القديمة
+try {
+  if ('caches' in window) {
+    caches.keys().then(function(names) {
+      names.forEach(function(n) { caches.delete(n); });
+    });
+  }
+} catch (_) {}
+
+// إجبار المتصفح على جلب أحدث نسخة بدون كاش
+(function() {
+  var vTag = 'v=20261106_sec';
+  if (!window.location.search.includes(vTag)) {
+    var sep = window.location.search ? '&' : '?';
+    window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
+  }
+})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;800&display=swap');
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
@@ -18,6 +40,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .box img.logo{width:92px;height:92px;object-fit:contain;border-radius:20px}
 .box h1{margin:8px 0 2px;font-size:28px;color:#1b5e3a}
 .box .sub{margin:0 0 20px;color:#5a6b7c;font-size:14px}
+.hint-box{display:none !important}
 .f{text-align:right;margin:14px 0}
 .f label{display:block;font-weight:700;margin-bottom:6px;font-size:16px}
 .f input{font:inherit;font-size:18px;width:100%;border:2px solid #cfdbe7;border-radius:14px;padding:12px 14px;background:#f8fbfd;outline:none;transition:border-color .2s}
@@ -56,11 +79,20 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 </main>
 <script>
 (function () {
+  // إزالة أي عناصر قديمة في الذاكرة
+  document.querySelectorAll('.hint-box').forEach(function(el) { el.remove(); });
+  var allP = document.querySelectorAll('p, div');
+  allP.forEach(function(el) {
+    if (el.textContent && el.textContent.includes('بيانات الدخول الافتراضية')) {
+      el.remove();
+    }
+  });
+
   var q = new URLSearchParams(location.search);
   var nxt = q.get('next') || 'home.html';
   if (!/^[A-Za-z0-9_\-\/.?=&%]*$/.test(nxt) || nxt.indexOf('//') === 0) nxt = 'home.html';
   
-  // إذا كان مسجلاً مسبقاً بجلسة صالحة
+  // إذا كان مسجلاً مسبقاً بجلسة صالحة ومصادق عليها
   try {
     var saved = JSON.parse(sessionStorage.getItem('miftah_user') || localStorage.getItem('miftah_user') || 'null');
     if (saved && saved.authenticated === true && saved.email) {
@@ -73,6 +105,10 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
   var pw = document.getElementById('pw');
   var m = document.getElementById('m');
   var go = document.getElementById('go');
+
+  // ضمان تفريغ الحقول وعدم التعبئة التلقائية
+  if (em) em.value = '';
+  if (pw) pw.value = '';
 
   document.getElementById('f').addEventListener('submit', function (e) {
     e.preventDefault();
