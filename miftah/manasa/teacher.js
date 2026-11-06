@@ -2,7 +2,8 @@
 (function () {
 var $ = function (id) { return document.getElementById(id); };
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-function api(p, b) { return fetch('/api/manasa/' + p, b ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) } : {}).then(function (r) { return r.json().catch(function () { return { ok: false, error: 'خطأ في الاتصال (' + r.status + ')' }; }); }); }
+var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
+function api(p, b) { return fetch(apiBase + '/api/manasa/' + p, b ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) } : {}).then(function (r) { return r.json().catch(function () { return { ok: false, error: 'خطأ في الاتصال (' + r.status + ')' }; }); }); }
 function ytId(s) { s = String(s || '').trim(); var m = s.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : (/^[A-Za-z0-9_-]{11}$/.test(s) ? s : ''); }
 $('joinb').onclick = function () { var c = $('join').value.trim().toUpperCase(); if (!c) return; $('joinm').textContent = '⏳'; api('session?code=' + c).then(function (r) { if (r.ok) location.href = 'lesson.html?s=' + c; else $('joinm').textContent = r.error; }); };
 $('join').onkeydown = function (e) { if (e.key === 'Enter') $('joinb').click(); };

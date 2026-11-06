@@ -99,7 +99,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 
       var localRecs = [];
       try { localRecs = JSON.parse(localStorage.getItem('manasa-portfolio-' + name) || '[]'); } catch (_) {}
-      fetch('/api/manasa/portfolio?name=' + encodeURIComponent(name))
+      fetch(apiBase + '/api/manasa/portfolio?name=' + encodeURIComponent(name))
         .then(function (r) { return r.json(); })
         .then(function (r) {
           var recs = (r && r.records && r.records.length) ? r.records : localRecs;
