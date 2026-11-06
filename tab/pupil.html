@@ -21,6 +21,7 @@
     <div class="f"><label for="nm">اسم الطالب</label><input id="nm" maxlength="30" autocomplete="off"></div>
     <div class="f"><label for="cd">كود الدخول</label><input id="cd" class="code" maxlength="6" autocapitalize="characters" spellcheck="false" inputmode="text"></div>
     <button class="go" id="go" type="submit">ادخل</button>
+    <button type="button" id="my-portfolio-btn" style="display:block;width:100%;margin-top:10px;background:#eef5ff;color:#0b6bcb;border:1.5px solid #c9d6e4;padding:10px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer">📋 ملفّي التعليمي (سجل تقدّمي)</button>
     <p class="msg" id="m" role="alert"></p>
   </form>
 </main>
@@ -49,6 +50,53 @@
       fail('لم نجدْ حصّةً بهذا الكود. تأكّدْ من الكود مع معلّمك.');
     }).catch(function () { fail('لا يوجد اتّصال بالإنترنت. جرّبْ مرّةً أخرى.'); });
   });
+
+  var portBtn = document.getElementById('my-portfolio-btn');
+  if (portBtn) {
+    portBtn.onclick = function () {
+      var name = (nm.value || localStorage.getItem('manasa-name') || '').trim();
+      if (!name) { alert('اكتبْ اسمَك في الحقل أولاً لعرض ملفّك.'); nm.focus(); return; }
+      var modal = document.getElementById('p-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'p-modal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);direction:rtl';
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;padding:22px;position:relative;box-shadow:0 10px 40px rgba(0,0,0,0.2)">' +
+        '<button id="close-pm" style="position:absolute;left:14px;top:14px;border:0;background:#eef2f6;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer">✕</button>' +
+        '<div style="text-align:center;margin-bottom:14px"><div style="font-size:36px">📋</div><h2 style="margin:4px 0">ملف متابعة الطالب: ' + name + '</h2><p style="color:#64748b;margin:0;font-size:14px">سجل الحصص والإنجازات</p></div>' +
+        '<div id="p-content"><p style="text-align:center;color:#64748b">⏳ جلب البيانات…</p></div></div>';
+      document.getElementById('close-pm').onclick = function () { modal.style.display = 'none'; };
+      modal.onclick = function (e) { if (e.target === modal) modal.style.display = 'none'; };
+
+      var localRecs = [];
+      try { localRecs = JSON.parse(localStorage.getItem('manasa-portfolio-' + name) || '[]'); } catch (_) {}
+      fetch('/api/manasa/portfolio?name=' + encodeURIComponent(name))
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          var recs = (r && r.records && r.records.length) ? r.records : localRecs;
+          var pc = document.getElementById('p-content');
+          if (!pc) return;
+          if (!recs.length) {
+            pc.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b"><p>لا توجد حصص مسجلة باسمك بعد.</p><p style="font-size:13px">عندما تدخل أي حصة باسمك وتتقدم فيها، ستُسجل نتائجك هنا تلقائيًا.</p></div>';
+            return;
+          }
+          pc.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center"><span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">📚 ' + recs.length + ' حصص</span><span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">🌟 مكتملة: ' + recs.filter(function (x) { return x.done; }).length + '</span></div>' +
+            recs.map(function (rc) {
+              return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:10px;background:#f8fafc;text-align:right">' +
+                '<div style="display:flex;justify-content:space-between"><b>📖 ' + (rc.title || 'حصة') + '</b><span style="color:#64748b;font-size:12px">' + (rc.date || '') + '</span></div>' +
+                '<div style="margin:6px 0;font-size:13px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px">المحطة: ' + (rc.station || 'م') + (rc.done ? ' ✓' : '') + '</span> ' + (rc.durationText ? '<span style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:6px">⏱️ ' + rc.durationText + '</span> ' : '') + (rc.result ? '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px">' + (rc.result === 'a' ? 'حقق 🌟' : 'جزئي 🌱') + '</span>' : '') + '</div>' +
+                (rc.harvest ? '<div style="font-size:13px;margin-top:6px;background:#fff;border:1px solid #cbd5e1;padding:8px;border-radius:8px;color:#1b5e3a"><b>الحصاد:</b> ' + (rc.harvest[0] || '—') + '</div>' : '') +
+              '</div>';
+            }).join('');
+        }).catch(function () {
+          var pc = document.getElementById('p-content');
+          if (pc) pc.innerHTML = '<p style="text-align:center;color:#ef4444">تعذّر جلب البيانات حالياً.</p>';
+        });
+    };
+  }
 })();
 </script>
 </body>

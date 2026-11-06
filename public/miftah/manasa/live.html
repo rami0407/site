@@ -3,6 +3,26 @@
 <main class="wrap" style="max-width:1100px">
 <div id="gate" class="card" hidden><h2>🔐 رمزُ المعلّم السرّي</h2><p class="muted">هذه اللوحة للمعلّم فقط.</p><div class="grid2"><input type="password" inputmode="numeric" id="pin" maxlength="8" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:22px"><button class="btn big" id="pinb">افتحْ اللوحة</button></div><p id="pinm" class="fb bad" hidden></p></div>
 <div id="board" hidden>
+<div class="card" style="border:2px solid #f59e0b;background:#fffbeb;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="margin:0;color:#92400e;display:flex;align-items:center;gap:8px">⚡ ومضة مفتاح (انتباه مباشر للصف)</h2>
+      <p class="muted" style="margin:4px 0 0">أطلقْ تنبيهاً فورياً يُجمّد شاشات جميع الطلاب لمدة 60 ثانية لجذب الانتباه والانصياع لتعليماتك في الصف، ويمكنك إنهاؤها متى تشاء.</p>
+    </div>
+    <div id="flash-status-box"></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
+    <input type="text" id="flash-custom-msg" placeholder="اكتب توجيهاً للطلاب (مثال: توقفوا للحظة واستمعوا للمعلّم / شاركوا مع زميلكم)" style="flex:2;min-width:260px;padding:9px 12px;border:1.5px solid #d97706;border-radius:10px;font:inherit">
+    <button class="btn ok" id="flash-trigger-btn" style="background:#d97706;border:0;font-weight:700">⚡ إطلاق الومضة (60 ثانية)</button>
+    <button class="btn alt" id="flash-stop-btn" style="background:#dc2626;color:#fff;border:0;font-weight:700" hidden>⏹️ إنهاء الومضة فوراً</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+    <span class="muted" style="font-size:13px">عبارات سريعة:</span>
+    <button type="button" class="pill" style="background:#fef3c7;border:1px solid #f59e0b;cursor:pointer" onclick="$('flash-custom-msg').value='👂 توقفوا جميعاً وانتبهوا لتوجيهات المعلّم على اللوح'">👂 انتبهوا للمعلّم</button>
+    <button type="button" class="pill" style="background:#fef3c7;border:1px solid #f59e0b;cursor:pointer" onclick="$('flash-custom-msg').value='🗣️ التفت إلى زميلك وناقش معه الفكرة الأساسية لدقيقة واحدة'">🗣️ ناقش مع زميلك</button>
+    <button type="button" class="pill" style="background:#fef3c7;border:1px solid #f59e0b;cursor:pointer" onclick="$('flash-custom-msg').value='💪 وقت التركيز: خذوا نفساً عميقاً واستعدوا للمرحلة التالية'">💪 وقت التركيز</button>
+  </div>
+</div>
 <div id="hbox" class="card helps none"><h2>🙋 طلباتُ المساعدة <span id="hcount"></span></h2><div id="hl"></div></div>
 <div class="card"><div id="sum"></div><p id="legacy" class="muted" hidden>⚠️ هذه الحصّة أُنشئت قبل الرموز السرّية، فهي غير محميّة.</p></div>
 <div class="card"><h2>الطلاب</h2><p class="muted">اضغطْ على اسمِ طالب لترى كلَّ إجاباته.</p><div style="overflow-x:auto"><table id="tb"></table></div><p class="muted">تتحدّث اللوحة كلَّ ٣ ثوانٍ.</p></div>
@@ -17,9 +37,44 @@ function ago(t){var a=Math.max(0,Math.round((now-t)/1000));return a<60?a+' ث':M
 function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();[0,0.25].forEach(function(d){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.25,ac.currentTime+d);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d+0.2);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.22)})}catch(e){}}
 function gate(msg){$('gate').hidden=false;$('board').hidden=true;$('pin').value='';if(msg){$('pinm').textContent=msg;$('pinm').hidden=false}$('pin').focus()}
 $('pinb').onclick=function(){pin=$('pin').value.trim();try{ac=ac||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}load(true)};$('pin').onkeydown=function(e){if(e.key==='Enter')$('pinb').click()};
+
+$('flash-trigger-btn').onclick = function () {
+  var msg = ($('flash-custom-msg').value || '').trim() || 'توقفوا للحظة واستمعوا لتوجيهات المعلّم';
+  $('flash-trigger-btn').disabled = true;
+  fetch('/api/manasa/flash', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sid: s, pin: pin, active: true, duration: 60, text: msg })
+  }).then(function (r) { return r.json(); }).then(function (r) {
+    $('flash-trigger-btn').disabled = false;
+    if (r.ok) { load(); } else { alert(r.error || 'تعذّر إطلاق الومضة'); }
+  }).catch(function () { $('flash-trigger-btn').disabled = false; });
+};
+
+$('flash-stop-btn').onclick = function () {
+  $('flash-stop-btn').disabled = true;
+  fetch('/api/manasa/flash', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sid: s, pin: pin, active: false })
+  }).then(function (r) { return r.json(); }).then(function () {
+    $('flash-stop-btn').disabled = false;
+    load();
+  }).catch(function () { $('flash-stop-btn').disabled = false; });
+};
+
 function load(first){fetch('/api/manasa/live?sid='+s+'&pin='+encodeURIComponent(pin)).then(function(r){return r.json()}).then(function(r){
 if(!r.ok){clearInterval(timer);timer=null;if(r.error==='pin')return gate(first&&pin?'الرمز السرّي غير صحيح.':'');return gate(r.error);}
 sessionStorage.setItem('mpin-'+s,pin);$('gate').hidden=true;$('board').hidden=false;$('legacy').hidden=!r.legacy;if(!timer)timer=setInterval(load,3000);
+if(r.flash&&r.flash.remainingSec>0){
+  $('flash-status-box').innerHTML='<span class="pill" style="background:#fee2e2;color:#991b1b;font-weight:800;font-size:15px;padding:6px 14px;border:1px solid #ef4444">⚡ الومضة نشطة: متبقي '+r.flash.remainingSec+' ثانية</span>';
+  $('flash-stop-btn').hidden=false;
+  $('flash-trigger-btn').hidden=true;
+}else{
+  $('flash-status-box').innerHTML='<span class="pill" style="background:#e2e8f0;color:#475569">الومضة غير نشطة</span>';
+  $('flash-stop-btn').hidden=true;
+  $('flash-trigger-btn').hidden=false;
+}
 P=r.pupils;now=r.now;helps(r.helps||[]);table();});}
 function helps(L){var open=L.filter(function(x){return !x.handled}),ids=open.map(function(x){return x.id});
 var fresh=seen&&ids.some(function(i){return seen.indexOf(i)<0});if(fresh)beep();seen=ids;
@@ -43,6 +98,9 @@ var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</sp
 if(d.game)html+='<p><b>🎮 اللعبة:</b> '+d.game.seconds+' ث · '+d.game.mistakes+' أخطاء</p>';
 if(d.harvest)html+='<h3>🌾 الحصاد</h3>'+H.map(function(q,i){return '<p><b>'+q+'</b><br>'+esc(d.harvest[i])+'</p>'}).join('');
 if(!log.length&&!d.harvest)html+='<p class="muted">لم يُجبْ عن أسئلة بعد.</p>';
-var sh=$('msheet');sh.innerHTML='<div class="mpanel"><button class="mx">✕</button>'+html+'</div>';sh.hidden=false;sh.querySelector('.mx').onclick=function(){sh.hidden=true};sh.onclick=function(e){if(e.target===sh)sh.hidden=true}}
+html+='<button class="btn ok" id="load-history-btn" style="display:block;width:100%;margin-top:14px;background:#0b6bcb">📋 عرض سجل وملف متابعة الطالب الكامل ('+esc(p.name)+')</button><div id="history-box" style="margin-top:10px"></div>';
+var sh=$('msheet');sh.innerHTML='<div class="mpanel"><button class="mx">✕</button>'+html+'</div>';sh.hidden=false;sh.querySelector('.mx').onclick=function(){sh.hidden=true};sh.onclick=function(e){if(e.target===sh)sh.hidden=true};
+setTimeout(function(){var btn=$('load-history-btn');if(btn){btn.onclick=function(){btn.disabled=true;btn.textContent='⏳ جارٍ جلب السجل…';fetch('/api/manasa/portfolio?name='+encodeURIComponent(p.name)).then(function(r){return r.json()}).then(function(r){btn.disabled=false;btn.textContent='📋 تحديث سجل المتابعة';var recs=(r&&r.records)||[];if(!recs.length){$('history-box').innerHTML='<p class="muted">لا توجد حصص سابقة محفوظة لهذا الطالب بعد.</p>';return;}
+$('history-box').innerHTML='<div style="margin-top:8px">'+recs.map(function(rc){return '<div class="portfolio-card '+(rc.result==='a'?'success':'')+'"><div style="display:flex;justify-content:space-between"><b>📖 '+esc(rc.title||'حصة')+'</b><span class="muted" style="font-size:12px">'+esc(rc.date||'')+'</span></div><div style="margin:4px 0"><span class="pill" style="background:#e0f2fe;color:#0369a1">'+esc(rc.station||'م')+(rc.done?' ✓':'')+'</span> '+(rc.durationText?'<span class="pill" style="background:#f1f5f9;color:#334155">⏱️ '+esc(rc.durationText)+'</span> ':'')+(rc.result?'<span class="pill" style="background:#dcfce7;color:#15803d">'+(rc.result==='a'?'حقق 🌟':'جزئي 🌱')+'</span>':'')+'</div>'+(rc.harvest?'<div style="font-size:13px;margin-top:6px;color:#1b5e3a;background:#fff;padding:6px;border-radius:8px;border:1px solid #e2e8f0"><b>الحصاد:</b> '+esc(rc.harvest[0]||'—')+'</div>':'')+'</div>';}).join('')+'</div>';}).catch(function(){btn.disabled=false;btn.textContent='تعذّر الجلب';});};}});}
 if(!s)gate('لا يوجد رمز حصّة في الرابط.');else if(pin)load(false);else gate('');})();
 </script></body></html>

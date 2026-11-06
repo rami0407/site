@@ -38,67 +38,208 @@ function next(label, fn, cls) { setTimeout(function () { var b = $('#nx'); if (b
 function showNext(html) { var d = $('#after'); if (d) d.innerHTML = html; }
 function head(title) { return '<div class="card">' + bar() + '</div><div class="card"><h2>' + title + '</h2>'; }
 
-// ---------- student session timer ----------
+// ---------- student session timer & portfolio & flash ----------
 var studentTimerInterval = null;
 var studentStartTime = null;
+var flashCheckInterval = null;
+var activeFlashData = null;
+var flashAudioContext = null;
 
-function formatDuration(sec) {
-  var m = Math.floor(sec / 60);
-  var s = sec % 60;
-  if (m < 60) {
-    return ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
-  }
-  var h = Math.floor(m / 60);
-  m = m % 60;
-  return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+function playFlashChime() {
+  try {
+    flashAudioContext = flashAudioContext || new (window.AudioContext || window.webkitAudioContext)();
+    [523.25, 659.25, 783.99, 1046.50].forEach(function (freq, idx) {
+      var osc = flashAudioContext.createOscillator();
+      var gain = flashAudioContext.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(flashAudioContext.destination);
+      var t = flashAudioContext.currentTime + (idx * 0.12);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.start(t);
+      osc.stop(t + 0.38);
+    });
+  } catch (_) {}
 }
 
-function startStudentTimer(name) {
-  if (studentTimerInterval) return;
-  var storedStart = sessionStorage.getItem('manasa_timer_start');
-  if (storedStart && !isNaN(+storedStart)) {
-    studentStartTime = +storedStart;
-  } else {
-    studentStartTime = Date.now();
-    sessionStorage.setItem('manasa_timer_start', studentStartTime);
+function renderFlashOverlay(flash) {
+  var overlay = document.getElementById('miftah-flash-overlay');
+  if (!flash || !flash.active || flash.remainingSec <= 0) {
+    if (overlay) overlay.remove();
+    activeFlashData = null;
+    return;
   }
-
-  var topEl = document.querySelector('.top');
-  if (topEl) {
-    var timerBox = document.getElementById('pupil-timer-box');
-    if (!timerBox) {
-      timerBox = document.createElement('div');
-      timerBox.id = 'pupil-timer-box';
-      timerBox.className = 'pupil-timer-bar';
-      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(name || S.name) + '</span>' +
-        '<span class="p-clock" id="pupil-timer-clock">⏱️ 00:00</span>' +
-        '<button type="button" class="p-exit-btn" id="pupil-exit-btn">🚪 خروج</button>';
-      topEl.appendChild(timerBox);
-
-      document.getElementById('pupil-exit-btn').onclick = function () {
-        exitStudentApp();
-      };
-    }
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'miftah-flash-overlay';
+    overlay.className = 'miftah-flash-overlay';
+    document.body.appendChild(overlay);
+    playFlashChime();
   }
-
-  function tick() {
-    var elapsedSec = Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000));
-    var clockEl = document.getElementById('pupil-timer-clock');
-    if (clockEl) {
-      clockEl.textContent = '⏱️ ' + formatDuration(elapsedSec);
-    }
-    S.data.durationSec = elapsedSec;
-  }
-
-  tick();
-  studentTimerInterval = setInterval(tick, 1000);
+  activeFlashData = flash;
+  overlay.innerHTML = '<div class="miftah-flash-box">' +
+    '<div class="miftah-flash-badge">⚡ ومضة مفتاح! (انتباه للصف)</div>' +
+    '<div class="miftah-flash-title">تنبيه مباشر من المعلّم</div>' +
+    '<div class="miftah-flash-msg">📢 ' + esc(flash.text || 'توقفوا للحظة واستمعوا لتوجيهات المعلّم') + '</div>' +
+    '<div class="miftah-flash-timer" id="flash-countdown">' + flash.remainingSec + '</div>' +
+    '<div class="miftah-flash-sub">⏱️ مدة الومضة: 60 ثانية (أو ينهيها المعلّم متى يشاء) — انتبهوا للمعلّم والصف</div>' +
+    '</div>';
 }
 
-function stopStudentTimer() {
-  if (studentTimerInterval) {
-    clearInterval(studentTimerInterval);
-    studentTimerInterval = null;
+setInterval(function () {
+  if (activeFlashData && activeFlashData.remainingSec > 0) {
+    activeFlashData.remainingSec--;
+    var el = document.getElementById('flash-countdown');
+    if (el) el.textContent = activeFlashData.remainingSec;
+    if (activeFlashData.remainingSec <= 0) {
+      renderFlashOverlay(null);
+    }
   }
+}, 1000);
+
+function startFlashWatcher() {
+  if (flashCheckInterval || !S.sid) return;
+  function check() {
+    if (!S.sid) return;
+    fetch('/api/manasa/flash?sid=' + encodeURIComponent(S.sid))
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (r && r.ok && r.flash) {
+          renderFlashOverlay(r.flash);
+        } else {
+          renderFlashOverlay(null);
+        }
+      })
+      .catch(function () {});
+  }
+  check();
+  flashCheckInterval = setInterval(check, 2500);
+}
+
+function saveStudentPortfolioRecord() {
+  var name = S.name || localStorage.getItem('manasa-name') || '';
+  if (!name) return;
+  var totalSec = studentStartTime ? Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000)) : (S.data.durationSec || 0);
+  var rec = {
+    sid: S.sid,
+    lessonId: L ? L.id : '',
+    title: L ? L.title : 'حصة تفاعلية',
+    subject: L ? (L.subject || '') : '',
+    date: new Date().toLocaleDateString('ar-EG'),
+    time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+    durationSec: totalSec,
+    durationText: formatDuration(totalSec),
+    station: ST[Math.min(S.st, 4)][0],
+    done: !!S.done,
+    checks: S.data.checks,
+    practice: S.data.practice,
+    level: S.data.level,
+    evidence: S.data.evidence,
+    result: S.data.result,
+    harvest: S.data.harvest,
+    game: S.data.game
+  };
+
+  try {
+    var raw = localStorage.getItem('manasa-portfolio-' + name) || '[]';
+    var list = JSON.parse(raw);
+    list = list.filter(function (x) { return x.sid !== rec.sid || !rec.sid; });
+    list.unshift(rec);
+    localStorage.setItem('manasa-portfolio-' + name, JSON.stringify(list.slice(0, 40)));
+  } catch (_) {}
+
+  try {
+    fetch('/api/manasa/portfolio', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: name, record: rec })
+    }).catch(function () {});
+  } catch (_) {}
+}
+
+function openPortfolioModal(studentName) {
+  var name = studentName || S.name || localStorage.getItem('manasa-name') || 'الطالب';
+  var list = [];
+  try {
+    var raw = localStorage.getItem('manasa-portfolio-' + name);
+    if (raw) list = JSON.parse(raw);
+  } catch (_) {}
+
+  var modal = document.getElementById('portfolio-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'portfolio-modal';
+    modal.className = 'msheet';
+    document.body.appendChild(modal);
+  }
+  modal.hidden = false;
+
+  function renderList(records) {
+    var resWords = { a: '🌟 حقّق الهدف', p: '🌱 حقّق جزئيًّا', n: '🛠️ يحتاج دعمًا' };
+    var html = '<div class="mpanel" style="max-width:680px;max-height:85vh;overflow-y:auto">' +
+      '<button class="mx" id="portfolio-close-btn">✕</button>' +
+      '<div style="text-align:center;margin-bottom:16px">' +
+        '<div style="font-size:38px">📋</div>' +
+        '<h2 style="margin:4px 0;color:#0b2a4a">ملف متابعة الطالب: ' + esc(name) + '</h2>' +
+        '<p class="muted" style="margin:0">سجل إنجاز الحصص، النتائج، مدة التعلّم وإجابات الحصاد</p>' +
+      '</div>';
+
+    if (!records || !records.length) {
+      html += '<div style="text-align:center;padding:30px 10px;color:#6b7c8f">' +
+        '<p style="font-size:18px">لم يتم تسجيل حصص سابقة لهذا الطالب بعد.</p>' +
+        '<p class="muted">بمجرد تقدمك في الحصة ستظهر بطاقات الإنجاز هنا تلقائيًا.</p>' +
+      '</div>';
+    } else {
+      html += '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;justify-content:center">' +
+        '<span class="pill" style="background:#e0f2fe;color:#0369a1;font-weight:700">📚 عدد الحصص: ' + records.length + '</span>' +
+        '<span class="pill" style="background:#dcfce7;color:#15803d;font-weight:700">🌟 مكتملة: ' + records.filter(function (x) { return x.done; }).length + '</span>' +
+      '</div>';
+
+      html += records.map(function (rec) {
+        var isAchieved = rec.result === 'a';
+        var cardClass = isAchieved ? 'success' : (rec.result === 'p' ? 'partial' : '');
+        return '<div class="portfolio-card ' + cardClass + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">' +
+            '<b style="font-size:18px;color:#0b2a4a">📖 ' + esc(rec.title || 'حصة') + '</b>' +
+            '<span class="muted" style="font-size:13px">📅 ' + esc(rec.date || '') + ' ' + esc(rec.time || '') + '</span>' +
+          '</div>' +
+          '<div style="margin:8px 0;font-size:14px;display:flex;gap:8px;flex-wrap:wrap">' +
+            (rec.durationText ? '<span class="pill" style="background:#f1f5f9;color:#334155">⏱️ المدة: ' + esc(rec.durationText) + '</span>' : '') +
+            '<span class="pill" style="background:#f3e8ff;color:#6b21a8">📍 المحطة: ' + esc(rec.station || 'م') + (rec.done ? ' (أنهى الحصة ✓)' : '') + '</span>' +
+            (rec.result ? '<span class="pill" style="background:' + (isAchieved ? '#dcfce7;color:#15803d' : '#fef9c3;color:#854d0e') + '">' + (resWords[rec.result] || '') + ' (' + (rec.evidence ? rec.evidence.score + '/' + rec.evidence.of : '') + ')</span>' : '') +
+          '</div>' +
+          (rec.harvest && rec.harvest.length ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px;font-size:14px">' +
+            '<b style="color:#1b5e3a">🌾 خلاصة الحصاد:</b>' +
+            '<p style="margin:4px 0">1. ' + esc(rec.harvest[0] || '—') + '</p>' +
+            '<p style="margin:4px 0">2. ' + esc(rec.harvest[1] || '—') + '</p>' +
+            '<p style="margin:4px 0">3. ' + esc(rec.harvest[2] || '—') + '</p>' +
+          '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+
+    html += '</div>';
+    modal.innerHTML = html;
+    document.getElementById('portfolio-close-btn').onclick = function () { modal.hidden = true; };
+    modal.onclick = function (e) { if (e.target === modal) modal.hidden = true; };
+  }
+
+  renderList(list);
+
+  fetch('/api/manasa/portfolio?name=' + encodeURIComponent(name))
+    .then(function (r) { return r.json(); })
+    .then(function (r) {
+      if (r && r.ok && r.records && r.records.length) {
+        var merged = r.records.slice();
+        list.forEach(function (loc) {
+          if (!merged.some(function (m) { return m.sid === loc.sid && loc.sid; })) merged.push(loc);
+        });
+        renderList(merged);
+      }
+    })
+    .catch(function () {});
 }
 
 function exitStudentApp() {
@@ -106,6 +247,7 @@ function exitStudentApp() {
   var m = Math.floor(elapsedSec / 60), s = elapsedSec % 60;
   var timeStr = (m > 0 ? (m + ' دقيقة و ') : '') + s + ' ثانية';
   if (confirm('هل تريد إنهاء الحصة والخروج من التطبيق؟\n\n⏱️ الوقت الذي قضيته في التعلّم: ' + timeStr)) {
+    saveStudentPortfolioRecord();
     stopStudentTimer();
     sessionStorage.removeItem('manasa_timer_start');
     try { report(); } catch (_) {}
@@ -130,6 +272,7 @@ function welcome() {
     localStorage.setItem('manasa-pid', S.pid);
     keyInit();
     startStudentTimer(S.name);
+    startFlashWatcher();
     report();
     stationM();
     return;
@@ -141,6 +284,7 @@ function welcome() {
       S.name = n; localStorage.setItem('manasa-name', n); S.pid = localStorage.getItem('manasa-pid') || Math.random().toString(36).slice(2, 10); localStorage.setItem('manasa-pid', S.pid);
       keyInit();
       startStudentTimer(S.name);
+      startFlashWatcher();
       report();
       stationM();
     }) + (S.sid ? '<p class="muted">رمزُ الحصّة: ' + esc(S.sid) + ' — معلِّمُك يتابعُ تقدُّمَك.</p>' : '') + '</div>');
@@ -152,8 +296,17 @@ function stationM() {
     '<label>ما تخمينُك؟ اكتبْه (لا يوجدُ خطأٌ هنا):</label><textarea id="guess"></textarea></div>';
   if (v.youtube_id) html += '<div class="card"><h3>🎬 شاهِدْ</h3><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(v.youtube_id) + '?rel=0" title="' + esc(v.title || 'فيديو') + '" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div><p class="muted">' + esc(v.title || '') + '</p></div>';
   if (k.riddle) html += '<div class="card"><h3>🧩 حَزّورة</h3><p>' + esc(k.riddle.q) + '</p>' + sayBtn(k.riddle.q) + ' <button class="btn alt" id="rh">💡 تلميح</button> <button class="btn alt" id="ra">👀 الجواب</button><div id="rr"></div></div>';
-  html += '<div class="card">' + next('إلى محطّة «ف» ⬅', function () { S.data.guess = ($('#guess').value || '').slice(0, 300); stationF(0); }) + '</div>';
+  html += '<div class="card">' + next('إلى محطّة «ف» ⬅', function () { S.data.guess = ($('#guess').value || '').slice(0, 300); report(); stationF(0); }) + '</div>';
   h(html);
+  setTimeout(function () {
+    var g = $('#guess');
+    if (g) {
+      g.addEventListener('input', function () {
+        S.data.guess = (g.value || '').slice(0, 300);
+        report();
+      });
+    }
+  });
   if (k.riddle) { $('#rh').onclick = function () { $('#rr').innerHTML = '<div class="fb bad">💡 ' + esc(k.riddle.hint) + '</div>'; }; $('#ra').onclick = function () { $('#rr').innerHTML = '<div class="fb good">🎉 ' + esc(k.riddle.answer) + '</div>'; }; }
 }
 // ---------- ف ----------
@@ -304,6 +457,23 @@ function harvest() {
     }, 'ok') + '</div>');
 
   setTimeout(function () {
+    var syncTimer = null;
+    function syncHarvestLive() {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(function () {
+        var a = [0, 1, 2].map(function (idx) {
+          var el = $('#hv' + idx);
+          return el ? (el.value || '').trim().slice(0, 400) : '';
+        });
+        S.data.harvest = a;
+        report();
+      }, 600);
+    }
+    [0, 1, 2].forEach(function (idx) {
+      var ta = $('#hv' + idx);
+      if (ta) ta.addEventListener('input', syncHarvestLive);
+    });
+
     app.querySelectorAll('.harvest-chip-btn').forEach(function (btn) {
       btn.onclick = function () {
         var qi = btn.getAttribute('data-q');
@@ -321,12 +491,14 @@ function harvest() {
         ta.value = chosen.text;
         ta.focus();
         ta.setSelectionRange(ta.value.length, ta.value.length);
+        syncHarvestLive();
       };
     });
   });
 }
 function end(H) {
   stopStudentTimer();
+  saveStudentPortfolioRecord();
   var totalSec = studentStartTime ? Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000)) : (S.data.durationSec || 0);
   var m = Math.floor(totalSec / 60), s = totalSec % 60;
   var totalStr = (m > 0 ? (m + ' دقيقة و ') : '') + s + ' ثانية (' + formatDuration(totalSec) + ')';
