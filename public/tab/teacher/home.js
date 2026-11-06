@@ -90,14 +90,14 @@ $('lv').onsubmit = function (e) {
 };
 
 (function wait() {
-  if (window.MIFTAH_USER) {
+  if (window.MIFTAH_USER && window.MIFTAH_USER.authenticated === true) {
     boot(window.MIFTAH_USER);
   } else {
     try {
       var stored = JSON.parse(sessionStorage.getItem('miftah_user') || localStorage.getItem('miftah_user') || 'null');
-      if (stored) { window.MIFTAH_USER = stored; boot(stored); return; }
+      if (stored && stored.authenticated === true) { window.MIFTAH_USER = stored; boot(stored); return; }
     } catch (_) {}
-    setTimeout(wait, 60);
+    location.replace('index.html');
   }
 })();
 })();

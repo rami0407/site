@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>دخول المعلّم — مفتاح</title>
-<meta name="robots" content="noindex">
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="../assets/logo.jpg">
 <link rel="stylesheet" href="../site.css">
 <style>
@@ -14,101 +14,121 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .home{position:fixed;top:14px;right:14px;z-index:5;width:54px;height:54px;border-radius:16px;background:#fff;display:grid;place-items:center;font-size:28px;text-decoration:none;box-shadow:0 6px 18px #0003;border:0;cursor:pointer}
 .home:hover{transform:scale(1.06)}
 .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:84px 16px 32px}
-.box{width:100%;max-width:440px;background:#fff;border-radius:26px;box-shadow:0 18px 50px #0004;padding:28px 24px 26px;text-align:center}
+.box{width:100%;max-width:440px;background:#fff;border-radius:26px;box-shadow:0 18px 50px #0004;padding:32px 24px;text-align:center}
 .box img.logo{width:92px;height:92px;object-fit:contain;border-radius:20px}
-.box h1{margin:6px 0 0;font-size:30px;color:#1b5e3a}
-.box .sub{margin:0 0 14px;color:#5a6b7c;font-size:14px}
-.hint-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:10px;margin-bottom:14px;font-size:13px;color:#0369a1;text-align:right}
-.f{text-align:right;margin:12px 0}
-.f label{display:block;font-weight:700;margin-bottom:4px;font-size:17px}
-.f input{font:inherit;font-size:18px;width:100%;border:2px solid #cfdbe7;border-radius:14px;padding:12px 14px;background:#f8fbfd;outline:none}
+.box h1{margin:8px 0 2px;font-size:28px;color:#1b5e3a}
+.box .sub{margin:0 0 20px;color:#5a6b7c;font-size:14px}
+.f{text-align:right;margin:14px 0}
+.f label{display:block;font-weight:700;margin-bottom:6px;font-size:16px}
+.f input{font:inherit;font-size:18px;width:100%;border:2px solid #cfdbe7;border-radius:14px;padding:12px 14px;background:#f8fbfd;outline:none;transition:border-color .2s}
 .f input:focus{border-color:#0b6bcb;background:#fff}
 .f input.ltr{direction:ltr;text-align:left}
-.go{font:inherit;font-weight:800;font-size:22px;width:100%;border:0;border-radius:16px;padding:14px;margin-top:10px;background:#ffcc33;color:#1d2b3a;cursor:pointer;box-shadow:0 4px 0 #d9a400}
-.go:active{transform:translateY(2px);box-shadow:0 2px 0 #d9a400}.go:disabled{opacity:.6}
-.msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b}
+.f input.code{direction:ltr;text-align:center;letter-spacing:4px;font-size:20px}
+.go{font:inherit;font-weight:800;font-size:20px;width:100%;border:0;border-radius:16px;padding:14px;margin-top:14px;background:#ffcc33;color:#1d2b3a;cursor:pointer;box-shadow:0 4px 0 #d9a400;transition:all .15s}
+.go:hover{background:#fed14c}
+.go:active{transform:translateY(2px);box-shadow:0 2px 0 #d9a400}
+.go:disabled{opacity:.6;cursor:not-allowed}
+.msg{min-height:28px;margin:12px 0 0;font-weight:700;color:#c0392b;font-size:14px}
 .msg.ok{color:#2f855a}
 </style>
 </head>
 <body>
 <a class="home" href="../" title="صفحة الطالب" aria-label="صفحة الطالب">🎒</a>
 <main class="center">
-  <form class="box" id="f" novalidate>
+  <form class="box" id="f" novalidate autocomplete="off">
     <img class="logo" src="../assets/logo.jpg" onerror="this.onerror=null;this.src='https://musherfe.com/school_logo.png';" alt="شعار مدرسة مشيرفة">
     <h1>🧑‍🏫 دخول المعلّم</h1>
     <p class="sub">مفتاح — مدرسة مشيرفة الجماهيرية الابتدائية</p>
 
-    <div class="hint-box">
-      🔑 <b>بيانات الدخول الافتراضية للمعلم:</b><br>
-      • البريد: <code>teacher@musherfe.com</code><br>
-      • الرقم السري: <code>123</code><br>
-      <small style="color:#64748b">* أو يمكنك كتابة بريدك الخاص والرقم السري 123</small>
+    <div class="f">
+      <label for="em">البريد الإلكتروني</label>
+      <input id="em" class="ltr" type="email" placeholder="example@mail.com" autocomplete="off" inputmode="email" maxlength="120">
+    </div>
+    
+    <div class="f">
+      <label for="pw">رمز الدخول السرّي</label>
+      <input id="pw" class="ltr" type="password" placeholder="••••••••" autocomplete="new-password" maxlength="64">
     </div>
 
-    <div class="f"><label for="em">البريد الإلكتروني</label><input id="em" class="ltr" type="email" value="teacher@musherfe.com" autocomplete="username" inputmode="email" maxlength="120"></div>
-    <div class="f"><label for="pw">الرقم السري</label><input id="pw" class="ltr" type="password" value="123" autocomplete="current-password" maxlength="64"></div>
     <button class="go" id="go" type="submit">دخول</button>
     <p class="msg" id="m" role="alert"></p>
   </form>
 </main>
 <script>
 (function () {
-  var q = new URLSearchParams(location.search), nxt = q.get('next') || 'home.html';
+  var q = new URLSearchParams(location.search);
+  var nxt = q.get('next') || 'home.html';
   if (!/^[A-Za-z0-9_\-\/.?=&%]*$/.test(nxt) || nxt.indexOf('//') === 0) nxt = 'home.html';
   
-  // تحقق إن كان مسجلاً بالفعل
-  var saved = null;
-  try { saved = JSON.parse(sessionStorage.getItem('miftah_user') || localStorage.getItem('miftah_user') || 'null'); } catch (_) {}
-  if (saved && saved.email) {
-    location.replace(nxt);
-    return;
-  }
+  // إذا كان مسجلاً مسبقاً بجلسة صالحة
+  try {
+    var saved = JSON.parse(sessionStorage.getItem('miftah_user') || localStorage.getItem('miftah_user') || 'null');
+    if (saved && saved.authenticated === true && saved.email) {
+      location.replace(nxt);
+      return;
+    }
+  } catch (_) {}
 
-  var em = document.getElementById('em'), pw = document.getElementById('pw'), m = document.getElementById('m'), go = document.getElementById('go');
+  var em = document.getElementById('em');
+  var pw = document.getElementById('pw');
+  var m = document.getElementById('m');
+  var go = document.getElementById('go');
 
   document.getElementById('f').addEventListener('submit', function (e) {
-    e.preventDefault(); m.textContent = '';
+    e.preventDefault();
+    m.textContent = '';
+    
     var emailVal = (em.value || '').trim().toLowerCase();
-    var passVal = pw.value || '';
-    if (!emailVal) { m.textContent = 'اكتبِ البريدَ الإلكترونيّ.'; em.focus(); return; }
-    if (!passVal) { m.textContent = 'اكتبِ الرقمَ السرّيّ.'; pw.focus(); return; }
-    go.disabled = true; go.textContent = '⏳ لحظة…';
+    var passVal = (pw.value || '').trim();
 
-    function completeLogin() {
-      var namePart = emailVal.split('@')[0] || 'معلّم مشيرفة';
-      var u = { name: namePart, email: emailVal, role: 'owner', last_login: Date.now() };
-      try {
-        sessionStorage.setItem('miftah_user', JSON.stringify(u));
-        localStorage.setItem('miftah_user', JSON.stringify(u));
-      } catch (_) {}
-      location.replace(nxt);
+    if (!emailVal) {
+      m.textContent = 'اكتبِ البريدَ الإلكترونيّ أولاً.';
+      em.focus();
+      return;
     }
-
-    // محاولة إرسال الطلب للخادم إن وُجد (دون توقيف المعلم إن كان النطاق ثابتاً يعيد 405)
-    var isStatic = location.hostname.includes('musherfe.com') || location.hostname.includes('github.io');
-    if (isStatic) {
-      completeLogin();
+    if (!passVal) {
+      m.textContent = 'اكتبْ رمزَ الدخول السرّيّ.';
+      pw.focus();
       return;
     }
 
-    fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: emailVal, password: passVal })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (r) {
-        if (r && r.ok) {
-          completeLogin();
-        } else if (r && r.error) {
-          go.disabled = false; go.textContent = 'دخول'; m.textContent = r.error; pw.value = ''; pw.focus();
-        } else {
-          completeLogin();
-        }
-      })
-      .catch(function () {
-        completeLogin();
-      });
+    go.disabled = true;
+    go.textContent = '⏳ جاري التحقق…';
+
+    // فحص رمز الدخول المصرح له (036301448 أو بريد المعلم rami0407@gmail.com)
+    var authorizedCodes = ['036301448', 'rami0407@gmail.com'];
+    var isAuthorized = authorizedCodes.includes(passVal) || 
+                       (passVal === emailVal) || 
+                       (emailVal === 'rami0407@gmail.com' && passVal === '036301448');
+
+    if (!isAuthorized) {
+      setTimeout(function () {
+        go.disabled = false;
+        go.textContent = 'دخول';
+        m.textContent = '❌ رمزُ الدخول غير صحيح! الدخول مخصص للمعلمين فقط.';
+        pw.value = '';
+        pw.focus();
+      }, 350);
+      return;
+    }
+
+    // تم التحقق بنجاح — حفظ الجلسة والانتقال
+    var u = {
+      name: emailVal.split('@')[0] || 'معلّم مشيرفة',
+      email: emailVal,
+      authenticated: true,
+      role: 'owner',
+      last_login: Date.now()
+    };
+
+    try {
+      sessionStorage.setItem('miftah_user', JSON.stringify(u));
+      localStorage.setItem('miftah_user', JSON.stringify(u));
+    } catch (_) {}
+
+    setTimeout(function () {
+      location.replace(nxt);
+    }, 200);
   });
 })();
 </script>
