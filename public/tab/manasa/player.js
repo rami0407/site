@@ -8,7 +8,8 @@ var L = null, S = { sid: (qs.get('s') || '').toUpperCase(), name: '', pid: '', s
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function h(html) { app.innerHTML = html; window.scrollTo(0, 0); }
 function $(sel) { return app.querySelector(sel); }
-function api(path, body) { return fetch('/api/manasa/' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(function (r) { return r.json(); }); }
+var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
+function api(path, body) { return fetch(apiBase + '/api/manasa/' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(function (r) { return r.json(); }); }
 function report() { if (!S.sid) return; try { api('progress', { sid: S.sid, pid: S.pid, name: S.name, station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''), data: S.data }).catch(function () {}); } catch (e) {} }
 function bar() { return '<div class="stations">' + ST.map(function (s, i) { return '<div class="st ' + (i < S.st || S.done ? 'done' : i === S.st ? 'on' : '') + '">' + s[0] + '</div>'; }).join('') + '</div><div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>'; }
 var canSpeak = 'speechSynthesis' in window;
@@ -103,7 +104,7 @@ function startFlashWatcher() {
   if (flashCheckInterval || !S.sid) return;
   function check() {
     if (!S.sid) return;
-    fetch('/api/manasa/flash?sid=' + encodeURIComponent(S.sid))
+    fetch(apiBase + '/api/manasa/flash?sid=' + encodeURIComponent(S.sid))
       .then(function (r) { return r.json(); })
       .then(function (r) {
         if (r && r.ok && r.flash) {
@@ -151,7 +152,7 @@ function saveStudentPortfolioRecord() {
   } catch (_) {}
 
   try {
-    fetch('/api/manasa/portfolio', {
+    fetch(apiBase + '/api/manasa/portfolio', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: name, record: rec })
@@ -228,7 +229,7 @@ function openPortfolioModal(studentName) {
 
   renderList(list);
 
-  fetch('/api/manasa/portfolio?name=' + encodeURIComponent(name))
+  fetch(apiBase + '/api/manasa/portfolio?name=' + encodeURIComponent(name))
     .then(function (r) { return r.json(); })
     .then(function (r) {
       if (r && r.ok && r.records && r.records.length) {

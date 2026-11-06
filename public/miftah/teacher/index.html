@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>دخول المعلّم — مفتاح</title>
 <meta name="robots" content="noindex">
-<link rel="icon" href="/assets/logo.jpg">
-<link rel="stylesheet" href="/site.css">
+<link rel="icon" href="../assets/logo.jpg">
+<link rel="stylesheet" href="../site.css">
 </head>
 <body>
-<a class="home" href="/" title="صفحة الطالب" aria-label="صفحة الطالب">🎒</a>
+<a class="home" href="../" title="صفحة الطالب" aria-label="صفحة الطالب">🎒</a>
 <main class="center">
   <form class="box" id="f" novalidate>
-    <img class="logo" src="/assets/logo.jpg" alt="شعار المدرسة">
+    <img class="logo" src="../assets/logo.jpg" alt="شعار المدرسة">
     <h1>🧑‍🏫 دخول المعلّم</h1>
     <p class="sub">مفتاح — مدرسة مشيرفة الجماهيرية الابتدائية</p>
     <div class="f"><label for="em">البريد الإلكتروني</label><input id="em" class="ltr" type="email" autocomplete="username" inputmode="email" maxlength="120"></div>
@@ -23,8 +23,8 @@
 </main>
 <script>
 (function () {
-  var q = new URLSearchParams(location.search), nxt = q.get('next') || '';
-  if (!/^\/[A-Za-z0-9_\-\/.?=&%]*$/.test(nxt) || nxt.indexOf('//') === 0) nxt = '/teacher/home.html';
+  var q = new URLSearchParams(location.search), nxt = q.get('next') || 'home.html';
+  if (!/^[A-Za-z0-9_\-\/.?=&%]*$/.test(nxt) || nxt.indexOf('//') === 0) nxt = 'home.html';
   fetch('/api/auth/me').then(function (r) { if (r.ok) location.replace(nxt); });
   var em = document.getElementById('em'), pw = document.getElementById('pw'), m = document.getElementById('m'), go = document.getElementById('go');
   document.getElementById('f').addEventListener('submit', function (e) {

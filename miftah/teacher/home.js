@@ -40,11 +40,11 @@ $('cp').onsubmit = function (e) {
 function loadMine() { fetch('/api/manasa/mine', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (r) {
   var s = (r && r.sessions) || [];
   $('mine').innerHTML = s.length ? '<table><thead><tr><th>الحصّة</th><th>الكود</th><th>طلاب</th><th>بدأت</th><th></th></tr></thead><tbody>' + s.map(function (x) {
-    return '<tr><td>' + esc(x.title || x.lesson) + '</td><td style="direction:ltr;text-align:right;font-weight:800;letter-spacing:2px">' + esc(x.code) + '</td><td>' + (x.n || 0) + '</td><td>' + when(x.created) + '</td><td><a class="btn p" href="/manasa/live.html?s=' + esc(x.code) + '" target="_blank">📊 متابعة</a> <button class="btn" data-hide="' + esc(x.code) + '" title="إخفاء من القائمة">✖</button></td></tr>';
+    return '<tr><td>' + esc(x.title || x.lesson) + '</td><td style="direction:ltr;text-align:right;font-weight:800;letter-spacing:2px">' + esc(x.code) + '</td><td>' + (x.n || 0) + '</td><td>' + when(x.created) + '</td><td><a class="btn p" href="../manasa/live.html?s=' + esc(x.code) + '" target="_blank">📊 متابعة</a> <button class="btn" data-hide="' + esc(x.code) + '" title="إخفاء من القائمة">✖</button></td></tr>';
   }).join('') + '</tbody></table>' : 'لم تبدأْ حصّةً بعد. ابدأْ من «منصّة مفتاح» وستظهر حصصُك هنا.';
 }).catch(function () { $('mine').textContent = ''; }); }
 loadMine();
 $('mine').addEventListener('click', function (e) { var b = e.target.closest('[data-hide]'); if (!b) return; fetch('/api/manasa/mine/hide', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: b.getAttribute('data-hide') }) }).then(loadMine); });
-$('lv').onsubmit = function (e) { e.preventDefault(); var c = $('lvc').value.trim().toUpperCase(); if (c) window.open('/manasa/live.html?s=' + encodeURIComponent(c), '_blank'); };
+$('lv').onsubmit = function (e) { e.preventDefault(); var c = $('lvc').value.trim().toUpperCase(); if (c) window.open('../manasa/live.html?s=' + encodeURIComponent(c), '_blank'); };
 (function wait() { if (window.MIFTAH_USER) boot(window.MIFTAH_USER); else setTimeout(wait, 60); })();
 })();

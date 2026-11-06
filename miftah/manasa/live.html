@@ -32,6 +32,7 @@
 (function(){var s=(new URLSearchParams(location.search).get('s')||'').toUpperCase();var $=function(i){return document.getElementById(i)};$('code').textContent='رمز الحصّة: '+s;$('edit').href='panel.html?s='+s;
 function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 var RW={a:['حقّق','#dff6e8'],p:['جزئيًّا','#fff3d6'],n:['لم يحقّق بعد','#fde6e6']},LV={easy:'سهل',medium:'متوسّط',hard:'صعب'},H=['ماذا استفدت؟','ماذا ساعدني في التعلّم؟','أين سأقابل ما تعلّمته؟'];
+var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
 var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'',P=[],seen=null,timer=null,ac=null,now=0;
 function ago(t){var a=Math.max(0,Math.round((now-t)/1000));return a<60?a+' ث':Math.round(a/60)+' د'}
 function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();[0,0.25].forEach(function(d){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.25,ac.currentTime+d);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d+0.2);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.22)})}catch(e){}}
@@ -41,7 +42,7 @@ $('pinb').onclick=function(){pin=$('pin').value.trim();try{ac=ac||new (window.Au
 $('flash-trigger-btn').onclick = function () {
   var msg = ($('flash-custom-msg').value || '').trim() || 'توقفوا للحظة واستمعوا لتوجيهات المعلّم';
   $('flash-trigger-btn').disabled = true;
-  fetch('/api/manasa/flash', {
+  fetch(apiBase + '/api/manasa/flash', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ sid: s, pin: pin, active: true, duration: 60, text: msg })
@@ -53,7 +54,7 @@ $('flash-trigger-btn').onclick = function () {
 
 $('flash-stop-btn').onclick = function () {
   $('flash-stop-btn').disabled = true;
-  fetch('/api/manasa/flash', {
+  fetch(apiBase + '/api/manasa/flash', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ sid: s, pin: pin, active: false })
@@ -63,7 +64,7 @@ $('flash-stop-btn').onclick = function () {
   }).catch(function () { $('flash-stop-btn').disabled = false; });
 };
 
-function load(first){fetch('/api/manasa/live?sid='+s+'&pin='+encodeURIComponent(pin)).then(function(r){return r.json()}).then(function(r){
+function load(first){fetch(apiBase+'/api/manasa/live?sid='+s+'&pin='+encodeURIComponent(pin)).then(function(r){return r.json()}).then(function(r){
 if(!r.ok){clearInterval(timer);timer=null;if(r.error==='pin')return gate(first&&pin?'الرمز السرّي غير صحيح.':'');return gate(r.error);}
 sessionStorage.setItem('mpin-'+s,pin);$('gate').hidden=true;$('board').hidden=false;$('legacy').hidden=!r.legacy;if(!timer)timer=setInterval(load,3000);
 if(r.flash&&r.flash.remainingSec>0){
@@ -82,7 +83,7 @@ document.title=(open.length?'('+open.length+') 🙋 ':'')+'لوحة المتاب
 var done=L.filter(function(x){return x.handled}).slice(0,5);
 $('hl').innerHTML=(open.length?open.map(function(x){return '<div class="hreq"><div><b>'+esc(x.name)+'</b> · '+esc(x.station)+(x.note?' · «'+esc(x.note)+'»':'')+' <span class="muted">منذ '+ago(x.created)+'</span></div><button class="btn ok" data-done="'+x.id+'">✔️ تمّ</button></div>'}).join(''):'<p class="muted">لا توجد طلبات الآن. أيُّ طالب يضغطُ «🔑 مفتاح ← أحتاجُ مساعدة» يظهرُ هنا فورًا مع صوت تنبيه.</p>')+
 done.map(function(x){return '<div class="hreq done"><div>✔️ '+esc(x.name)+' · '+esc(x.station)+(x.note?' · «'+esc(x.note)+'»':'')+'</div></div>'}).join('');
-$('hl').querySelectorAll('[data-done]').forEach(function(b){b.onclick=function(){b.disabled=true;fetch('/api/manasa/help/done',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sid:s,pin:pin,id:+b.getAttribute('data-done')})}).then(function(){load()})}})}
+$('hl').querySelectorAll('[data-done]').forEach(function(b){b.onclick=function(){b.disabled=true;fetch(apiBase+'/api/manasa/help/done',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sid:s,pin:pin,id:+b.getAttribute('data-done')})}).then(function(){load()})}})}
 function table(){var cnt={};P.forEach(function(p){var k=p.station.indexOf('✓')>=0?'✓':p.station;cnt[k]=(cnt[k]||0)+1});
 $('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0);
 $('tb').innerHTML='<tr><th>الطالب</th><th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+P.map(function(p,i){var d=p.data||{},r=d.result&&RW[d.result];
@@ -100,7 +101,7 @@ if(d.harvest)html+='<h3>🌾 الحصاد</h3>'+H.map(function(q,i){return '<p><
 if(!log.length&&!d.harvest)html+='<p class="muted">لم يُجبْ عن أسئلة بعد.</p>';
 html+='<button class="btn ok" id="load-history-btn" style="display:block;width:100%;margin-top:14px;background:#0b6bcb">📋 عرض سجل وملف متابعة الطالب الكامل ('+esc(p.name)+')</button><div id="history-box" style="margin-top:10px"></div>';
 var sh=$('msheet');sh.innerHTML='<div class="mpanel"><button class="mx">✕</button>'+html+'</div>';sh.hidden=false;sh.querySelector('.mx').onclick=function(){sh.hidden=true};sh.onclick=function(e){if(e.target===sh)sh.hidden=true};
-setTimeout(function(){var btn=$('load-history-btn');if(btn){btn.onclick=function(){btn.disabled=true;btn.textContent='⏳ جارٍ جلب السجل…';fetch('/api/manasa/portfolio?name='+encodeURIComponent(p.name)).then(function(r){return r.json()}).then(function(r){btn.disabled=false;btn.textContent='📋 تحديث سجل المتابعة';var recs=(r&&r.records)||[];if(!recs.length){$('history-box').innerHTML='<p class="muted">لا توجد حصص سابقة محفوظة لهذا الطالب بعد.</p>';return;}
+setTimeout(function(){var btn=$('load-history-btn');if(btn){btn.onclick=function(){btn.disabled=true;btn.textContent='⏳ جارٍ جلب السجل…';fetch(apiBase+'/api/manasa/portfolio?name='+encodeURIComponent(p.name)).then(function(r){return r.json()}).then(function(r){btn.disabled=false;btn.textContent='📋 تحديث سجل المتابعة';var recs=(r&&r.records)||[];if(!recs.length){$('history-box').innerHTML='<p class="muted">لا توجد حصص سابقة محفوظة لهذا الطالب بعد.</p>';return;}
 $('history-box').innerHTML='<div style="margin-top:8px">'+recs.map(function(rc){return '<div class="portfolio-card '+(rc.result==='a'?'success':'')+'"><div style="display:flex;justify-content:space-between"><b>📖 '+esc(rc.title||'حصة')+'</b><span class="muted" style="font-size:12px">'+esc(rc.date||'')+'</span></div><div style="margin:4px 0"><span class="pill" style="background:#e0f2fe;color:#0369a1">'+esc(rc.station||'م')+(rc.done?' ✓':'')+'</span> '+(rc.durationText?'<span class="pill" style="background:#f1f5f9;color:#334155">⏱️ '+esc(rc.durationText)+'</span> ':'')+(rc.result?'<span class="pill" style="background:#dcfce7;color:#15803d">'+(rc.result==='a'?'حقق 🌟':'جزئي 🌱')+'</span>':'')+'</div>'+(rc.harvest?'<div style="font-size:13px;margin-top:6px;color:#1b5e3a;background:#fff;padding:6px;border-radius:8px;border:1px solid #e2e8f0"><b>الحصاد:</b> '+esc(rc.harvest[0]||'—')+'</div>':'')+'</div>';}).join('')+'</div>';}).catch(function(){btn.disabled=false;btn.textContent='تعذّر الجلب';});};}});}
 if(!s)gate('لا يوجد رمز حصّة في الرابط.');else if(pin)load(false);else gate('');})();
 </script></body></html>
