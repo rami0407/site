@@ -1,0 +1,48 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css"></head>
+<body><div class="top"><b>📊 لوحة المتابعة المباشرة</b><span class="sp"></span><a id="edit" class="pill" style="background:#ffcc33;color:#1d2b3a;text-decoration:none" href="#">✏️ عدّل الحصّة</a> <span id="code" class="pill" style="background:#fff;color:#5b3cc4;font-size:18px"></span></div>
+<main class="wrap" style="max-width:1100px">
+<div id="gate" class="card" hidden><h2>🔐 رمزُ المعلّم السرّي</h2><p class="muted">هذه اللوحة للمعلّم فقط.</p><div class="grid2"><input type="password" inputmode="numeric" id="pin" maxlength="8" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:22px"><button class="btn big" id="pinb">افتحْ اللوحة</button></div><p id="pinm" class="fb bad" hidden></p></div>
+<div id="board" hidden>
+<div id="hbox" class="card helps none"><h2>🙋 طلباتُ المساعدة <span id="hcount"></span></h2><div id="hl"></div></div>
+<div class="card"><div id="sum"></div><p id="legacy" class="muted" hidden>⚠️ هذه الحصّة أُنشئت قبل الرموز السرّية، فهي غير محميّة.</p></div>
+<div class="card"><h2>الطلاب</h2><p class="muted">اضغطْ على اسمِ طالب لترى كلَّ إجاباته.</p><div style="overflow-x:auto"><table id="tb"></table></div><p class="muted">تتحدّث اللوحة كلَّ ٣ ثوانٍ.</p></div>
+<div class="card"><h2>🤝 مجموعات مقترحة</h2><div id="grp"></div></div><div class="card"><h2>🌾 إجابات الحصاد</h2><div id="hv"></div></div></div>
+</main><div id="msheet" class="msheet" hidden></div>
+<script>
+(function(){var s=(new URLSearchParams(location.search).get('s')||'').toUpperCase();var $=function(i){return document.getElementById(i)};$('code').textContent='رمز الحصّة: '+s;$('edit').href='panel.html?s='+s;
+function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var RW={a:['حقّق','#dff6e8'],p:['جزئيًّا','#fff3d6'],n:['لم يحقّق بعد','#fde6e6']},LV={easy:'سهل',medium:'متوسّط',hard:'صعب'},H=['ماذا استفدت؟','ماذا ساعدني في التعلّم؟','أين سأقابل ما تعلّمته؟'];
+var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'',P=[],seen=null,timer=null,ac=null,now=0;
+function ago(t){var a=Math.max(0,Math.round((now-t)/1000));return a<60?a+' ث':Math.round(a/60)+' د'}
+function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();[0,0.25].forEach(function(d){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.25,ac.currentTime+d);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d+0.2);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.22)})}catch(e){}}
+function gate(msg){$('gate').hidden=false;$('board').hidden=true;$('pin').value='';if(msg){$('pinm').textContent=msg;$('pinm').hidden=false}$('pin').focus()}
+$('pinb').onclick=function(){pin=$('pin').value.trim();try{ac=ac||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}load(true)};$('pin').onkeydown=function(e){if(e.key==='Enter')$('pinb').click()};
+function load(first){fetch('/api/manasa/live?sid='+s+'&pin='+encodeURIComponent(pin)).then(function(r){return r.json()}).then(function(r){
+if(!r.ok){clearInterval(timer);timer=null;if(r.error==='pin')return gate(first&&pin?'الرمز السرّي غير صحيح.':'');return gate(r.error);}
+sessionStorage.setItem('mpin-'+s,pin);$('gate').hidden=true;$('board').hidden=false;$('legacy').hidden=!r.legacy;if(!timer)timer=setInterval(load,3000);
+P=r.pupils;now=r.now;helps(r.helps||[]);table();});}
+function helps(L){var open=L.filter(function(x){return !x.handled}),ids=open.map(function(x){return x.id});
+var fresh=seen&&ids.some(function(i){return seen.indexOf(i)<0});if(fresh)beep();seen=ids;
+document.title=(open.length?'('+open.length+') 🙋 ':'')+'لوحة المتابعة — منصة مفتاح';$('hbox').className='card helps'+(open.length?'':' none')+(fresh?' blink':'');$('hcount').textContent=open.length?'('+open.length+')':'';
+var done=L.filter(function(x){return x.handled}).slice(0,5);
+$('hl').innerHTML=(open.length?open.map(function(x){return '<div class="hreq"><div><b>'+esc(x.name)+'</b> · '+esc(x.station)+(x.note?' · «'+esc(x.note)+'»':'')+' <span class="muted">منذ '+ago(x.created)+'</span></div><button class="btn ok" data-done="'+x.id+'">✔️ تمّ</button></div>'}).join(''):'<p class="muted">لا توجد طلبات الآن. أيُّ طالب يضغطُ «🔑 مفتاح ← أحتاجُ مساعدة» يظهرُ هنا فورًا مع صوت تنبيه.</p>')+
+done.map(function(x){return '<div class="hreq done"><div>✔️ '+esc(x.name)+' · '+esc(x.station)+(x.note?' · «'+esc(x.note)+'»':'')+'</div></div>'}).join('');
+$('hl').querySelectorAll('[data-done]').forEach(function(b){b.onclick=function(){b.disabled=true;fetch('/api/manasa/help/done',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sid:s,pin:pin,id:+b.getAttribute('data-done')})}).then(function(){load()})}})}
+function table(){var cnt={};P.forEach(function(p){var k=p.station.indexOf('✓')>=0?'✓':p.station;cnt[k]=(cnt[k]||0)+1});
+$('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0);
+$('tb').innerHTML='<tr><th>الطالب</th><th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+P.map(function(p,i){var d=p.data||{},r=d.result&&RW[d.result];
+return '<tr class="pclick" data-p="'+i+'"><td><b>'+esc(p.name)+'</b> 🔍</td><td>'+esc(p.station)+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated)+'</td></tr>'}).join('');
+$('tb').querySelectorAll('[data-p]').forEach(function(tr){tr.onclick=function(){pupil(P[+tr.getAttribute('data-p')])}});
+var need=P.filter(function(p){var d=p.data||{};return d.result==='n'||d.result==='p'||(d.checks&&d.checks[1]>=2&&d.checks[0]/d.checks[1]<0.5)});
+var adv=P.filter(function(p){return (p.data||{}).result==='a'});
+$('grp').innerHTML='<p><b>🛠️ مجموعة دعم معك:</b> '+(need.length?need.map(function(p){return esc(p.name)+((p.data||{}).result?'':' (أخطاء في «أرني»)')}).join('، '):'لا أحد حتى الآن')+'</p><p><b>🌟 مَن حقّقوا (يمكنهم مساعدة زملائهم أو مهمة إثراء):</b> '+(adv.length?adv.map(function(p){return esc(p.name)}).join('، '):'—')+'</p>';
+$('hv').innerHTML=P.filter(function(p){return (p.data||{}).harvest}).map(function(p){return '<p><b>'+esc(p.name)+'</b><br>'+H.map(function(q,i){return '• '+q+' '+esc(p.data.harvest[i])}).join('<br>')+'</p>'}).join('')||'<p class="muted">لم يصلْ أحدٌ إلى الحصاد بعد.</p>';}
+function pupil(p){var d=p.data||{},log=d.log||[],g={};log.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x)});
+var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</span></h3>'+(d.guess?'<p><b>🔍 توقّعُه في «م»:</b> '+esc(d.guess)+'</p>':'');
+['أرِني','تدريب','تحدٍّ','دليل'].forEach(function(k){if(!g[k])return;var ok=g[k].filter(function(x){return x.ok}).length;html+='<h3>'+({'أرِني':'✋ أرِني','تدريب':'🏋️ التدريب','تحدٍّ':'🏆 التحدّيات','دليل':'📝 مهمّة الدليل'})[k]+' — '+ok+'/'+g[k].length+'</h3>'+g[k].map(function(x){return '<div class="ans '+(x.ok?'y':'n')+'">'+(x.ok?'✅':'❌')+' '+esc(x.q)+'<br><b>أجاب:</b> '+esc(x.a)+(x.ok?'':' · <b>الصحيح:</b> '+esc(x.c))+(x.t>1?' <span class="muted">('+x.t+' محاولات)</span>':'')+'</div>'}).join('')});
+if(d.game)html+='<p><b>🎮 اللعبة:</b> '+d.game.seconds+' ث · '+d.game.mistakes+' أخطاء</p>';
+if(d.harvest)html+='<h3>🌾 الحصاد</h3>'+H.map(function(q,i){return '<p><b>'+q+'</b><br>'+esc(d.harvest[i])+'</p>'}).join('');
+if(!log.length&&!d.harvest)html+='<p class="muted">لم يُجبْ عن أسئلة بعد.</p>';
+var sh=$('msheet');sh.innerHTML='<div class="mpanel"><button class="mx">✕</button>'+html+'</div>';sh.hidden=false;sh.querySelector('.mx').onclick=function(){sh.hidden=true};sh.onclick=function(e){if(e.target===sh)sh.hidden=true}}
+if(!s)gate('لا يوجد رمز حصّة في الرابط.');else if(pin)load(false);else gate('');})();
+</script></body></html>

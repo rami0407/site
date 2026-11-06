@@ -130,8 +130,8 @@ export const importantLinks = [
   {
     title: 'منصة تاب — مفتاح (الحصص التفاعلية ومولّد خطة الدرس)',
     icon: 'fa-layer-group',
-    url: 'https://miftah-generator.sites.tab.bot/',
-    externalUrl: 'https://miftah-generator.sites.tab.bot/',
+    url: '/tab/',
+    externalUrl: '/tab/',
     desc: 'بوابة تاب الرقمية التفاعلية وفق نموذج مفتاح: توليد خطط الدروس بالذكاء الاصطناعي، شاشات العرض الذكية، والحصص التفاعلية للطلاب والمعلمين.',
     badge: 'منصة تاب 🔑',
     isAi: true,

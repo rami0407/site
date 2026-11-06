@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>صفحة المعلّم — مفتاح</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.jpg">
+<link rel="stylesheet" href="/site.css">
+<script src="/auth-guard.js" data-to="/teacher/"></script>
+</head>
+<body>
+<header class="bar"><img src="/assets/logo.jpg" alt=""><b>🔑 مفتاح</b><small>مدرسة مشيرفة الجماهيرية الابتدائية</small><span class="sp"></span><a class="btn" href="/" title="صفحة الطالب">🎒 صفحة الطالب</a><button class="btn r" id="out">خروج</button></header>
+<main class="page">
+  <p class="hello" id="hello">أهلًا بك 👋</p>
+  <div class="tiles">
+    <a class="tile" href="/manasa/"><div class="i">🏫</div><h3>منصّة مفتاح</h3><p>ولّدْ حصّةً تفاعليّة، وابدأْ حصّةً مع صفّك واحصلْ على كود الدخول للطلاب.</p></a>
+    <a class="tile" href="/generator.html"><div class="i">📝</div><h3>مولّد خطة الدرس</h3><p>خطة درس كاملة حسب نموذج «مفتاح»، جاهزة للطباعة والعرض.</p></a>
+    <a class="tile" href="/manasa/panel.html"><div class="i">🛠️</div><h3>لوحة التحكّم</h3><p>عدّلْ محتوى أيّ حصّة: الفيديو، الشرح، الأسئلة، اللعبة والتحدّيات.</p></a>
+    <a class="tile" href="/manasa/lesson.html?l=heat" target="_blank"><div class="i">⭐</div><h3>الحصّة النموذجيّة</h3><p>«التوصيل الحراري» كما يراها الطالب.</p></a>
+  </div>
+  <section class="panelc">
+    <h2>📊 حصصي ولوحاتُ المتابعة</h2>
+    <div id="mine" style="color:#5a6b7c">⏳</div>
+    <form id="lv" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><input id="lvc" placeholder="كود الحصّة" maxlength="6" style="font:inherit;font-size:18px;border:2px solid #cfdbe7;border-radius:12px;padding:8px 12px;direction:ltr;text-align:center;letter-spacing:4px;width:170px;text-transform:uppercase"><button class="btn p">افتحْ لوحة المتابعة</button></form>
+  </section>
+  <section class="panelc" id="owner" hidden>
+    <h2>👥 حسابات المعلّمين <span class="tag">لصاحب الموقع فقط</span></h2>
+    <form id="add" class="row" novalidate autocomplete="off">
+      <div class="f"><label for="an">اسم المعلّم</label><input id="an" maxlength="60"></div>
+      <div class="f"><label for="ae">البريد الإلكتروني</label><input id="ae" class="ltr" type="email" maxlength="120" autocomplete="off"></div>
+      <div class="f"><label for="ap">الرقم السري</label><input id="ap" class="ltr" type="text" maxlength="64" autocomplete="new-password"></div>
+      <button class="btn g" id="addb">➕ أضفْ معلّمًا</button>
+    </form>
+    <p class="msg" id="am"></p>
+    <table><thead><tr><th>الاسم</th><th>البريد</th><th>آخر دخول</th><th></th></tr></thead><tbody id="tl"></tbody></table>
+    <p style="color:#5a6b7c;font-size:14px">لتغيير الرقم السرّي لمعلّم: أضفْه مرّةً أخرى بالبريد نفسه ورقمٍ جديد.</p>
+  </section>
+  <section class="panelc">
+    <h2>🔒 تغيير رقمي السرّي</h2>
+    <form id="cp" class="row" novalidate>
+      <div class="f"><label for="po">الرقم الحاليّ</label><input id="po" class="ltr" type="password" autocomplete="current-password"></div>
+      <div class="f"><label for="pn">الرقم الجديد</label><input id="pn" class="ltr" type="password" autocomplete="new-password"></div>
+      <div class="f"><label for="pn2">أعدْ كتابته</label><input id="pn2" class="ltr" type="password" autocomplete="new-password"></div>
+      <button class="btn p">حفظ</button>
+    </form>
+    <p class="msg" id="cm"></p>
+  </section>
+</main>
+<script src="home.js"></script>
+</body>
+</html>

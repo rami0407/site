@@ -91,16 +91,20 @@ try {
   
   fs.writeFileSync(devHtmlPath, compiledHtml, 'utf-8');
 
-  // Copy other files in dist/ root (e.g. books_list.pdf, CNAME, favicon.svg, icons.svg) to root
+  // Copy other files and directories in dist/ root (e.g. tab, miftah, articles, books_list.pdf, CNAME, etc.) to root
   const distRootFiles = fs.readdirSync(distDir);
-  const gitAddedFiles = ['index.html'];
   distRootFiles.forEach(file => {
+    if (file === 'assets') return; // already handled
     const srcPath = path.join(distDir, file);
     const destPath = path.join(rootDir, file);
     const stat = fs.statSync(srcPath);
-    if (stat.isFile() && file !== 'index.html') {
+    if (stat.isDirectory()) {
+      if (fs.existsSync(destPath)) {
+        fs.rmSync(destPath, { recursive: true, force: true });
+      }
+      fs.cpSync(srcPath, destPath, { recursive: true });
+    } else if (stat.isFile() && file !== 'index.html') {
       fs.copyFileSync(srcPath, destPath);
-      gitAddedFiles.push(file);
     }
   });
 

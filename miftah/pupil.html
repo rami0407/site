@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مفتاح | مدرسة مشيرفة الجماهيرية الابتدائية</title>
+<meta name="description" content="«مفتاح» — اكتبِ اسمَك وكودَ الدخول من معلّمك وابدأ الحصّة.">
+<meta property="og:title" content="مفتاح — ادخلْ إلى حصّتك">
+<meta property="og:description" content="اكتبْ اسمَك وكودَ الدخول الذي أرسله معلّمك.">
+<meta property="og:image" content="https://miftah-generator.sites.tab.bot/assets/logo.jpg">
+<link rel="icon" href="/assets/logo.jpg">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<a class="home" href="/teacher/" title="دخول المعلّم" aria-label="دخول المعلّم">🏠</a>
+<main class="center">
+  <form class="box" id="f" novalidate autocomplete="off">
+    <img class="logo" src="/assets/logo.jpg" alt="شعار مدرسة مشيرفة الجماهيرية الابتدائية">
+    <h1>🔑 مفتاح</h1>
+    <p class="sub">مدرسة مشيرفة الجماهيرية الابتدائية</p>
+    <div class="f"><label for="nm">اسم الطالب</label><input id="nm" maxlength="30" autocomplete="off"></div>
+    <div class="f"><label for="cd">كود الدخول</label><input id="cd" class="code" maxlength="6" autocapitalize="characters" spellcheck="false" inputmode="text"></div>
+    <button class="go" id="go" type="submit">ادخل</button>
+    <p class="msg" id="m" role="alert"></p>
+  </form>
+</main>
+<script>
+(function () {
+  var nm = document.getElementById('nm'), cd = document.getElementById('cd'), m = document.getElementById('m'), go = document.getElementById('go');
+  try { nm.value = localStorage.getItem('manasa-name') || ''; } catch (_) {}
+  var q = new URLSearchParams(location.search); if (q.get('code')) cd.value = q.get('code').toUpperCase();
+  cd.addEventListener('input', function () { var p = cd.selectionStart; cd.value = cd.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); try { cd.setSelectionRange(p, p); } catch (_) {} });
+  function get(u) { return fetch(u).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+  document.getElementById('f').addEventListener('submit', function (e) {
+    e.preventDefault(); m.className = 'msg'; m.textContent = '';
+    var name = nm.value.trim().replace(/\s+/g, ' '), code = cd.value.trim().toUpperCase();
+    if (!name) { m.textContent = 'اكتبْ اسمَك أوّلًا.'; nm.focus(); return; }
+    if (!code) { m.textContent = 'اكتبْ كودَ الدخول الذي أرسله معلّمك.'; cd.focus(); return; }
+    if (!/^[A-Z0-9]{4,6}$/.test(code)) { m.textContent = 'كودُ الدخول غيرُ صحيح. تأكّدْ منه مع معلّمك.'; cd.focus(); return; }
+    go.disabled = true; go.textContent = '⏳ لحظة…';
+    function done(url) {
+      try { var old = localStorage.getItem('manasa-name'); if (old !== name) localStorage.setItem('manasa-pid', Math.random().toString(36).slice(2, 10)); localStorage.setItem('manasa-name', name); } catch (_) {}
+      location.href = url;
+    }
+    function fail(t) { go.disabled = false; go.textContent = 'ادخل'; m.textContent = t; cd.focus(); cd.select(); }
+    get('/api/manasa/session?code=' + encodeURIComponent(code)).then(function (r) {
+      if (r.ok) return done('/manasa/lesson.html?s=' + code + '&go=1');
+      if (code.length === 5) return get('/api/manasa/lesson?code=' + code).then(function (x) { if (x.ok) done('/manasa/lesson.html?c=' + code + '&go=1'); else fail('لم نجدْ حصّةً بهذا الكود. تأكّدْ من الكود مع معلّمك.'); });
+      fail('لم نجدْ حصّةً بهذا الكود. تأكّدْ من الكود مع معلّمك.');
+    }).catch(function () { fail('لا يوجد اتّصال بالإنترنت. جرّبْ مرّةً أخرى.'); });
+  });
+})();
+</script>
+</body>
+</html>

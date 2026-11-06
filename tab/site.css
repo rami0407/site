@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;800&display=swap');
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3a;background:linear-gradient(160deg,#1b5e3a 0%,#2f855a 38%,#0b6bcb 100%);min-height:100vh;line-height:1.8}
+.home{position:fixed;top:14px;right:14px;z-index:5;width:54px;height:54px;border-radius:16px;background:#fff;display:grid;place-items:center;font-size:28px;text-decoration:none;box-shadow:0 6px 18px #0003;border:0;cursor:pointer}
+.home:hover{transform:scale(1.06)}
+.center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:84px 16px 32px}
+.box{width:100%;max-width:440px;background:#fff;border-radius:26px;box-shadow:0 18px 50px #0004;padding:28px 24px 26px;text-align:center}
+.box img.logo{width:92px;height:92px;object-fit:contain;border-radius:20px}
+.box h1{margin:6px 0 0;font-size:30px;color:#1b5e3a}
+.box .sub{margin:0 0 18px;color:#5a6b7c;font-size:14px}
+.f{text-align:right;margin:12px 0}
+.f label{display:block;font-weight:700;margin-bottom:4px;font-size:17px}
+.f input{font:inherit;font-size:20px;width:100%;border:2px solid #cfdbe7;border-radius:14px;padding:12px 14px;background:#f8fbfd;outline:none}
+.f input:focus{border-color:#0b6bcb;background:#fff}
+.f input.code{direction:ltr;text-align:center;letter-spacing:8px;font-size:28px;font-weight:800;text-transform:uppercase}
+.f input.ltr{direction:ltr;text-align:left}
+.go{font:inherit;font-weight:800;font-size:22px;width:100%;border:0;border-radius:16px;padding:14px;margin-top:10px;background:#ffcc33;color:#1d2b3a;cursor:pointer;box-shadow:0 4px 0 #d9a400}
+.go:active{transform:translateY(2px);box-shadow:0 2px 0 #d9a400}.go:disabled{opacity:.6}
+.msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b}
+.msg.ok{color:#2f855a}
+/* teacher home */
+.bar{background:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;box-shadow:0 2px 12px #0002;position:sticky;top:0;z-index:3}
+.bar img{width:44px;height:44px;object-fit:contain}.bar b{font-size:19px;color:#1b5e3a}.bar .sp{flex:1}.bar small{color:#5a6b7c}
+.btn{font:inherit;font-weight:700;border:0;border-radius:12px;padding:9px 16px;cursor:pointer;background:#e8eef6;color:#1d2b3a;font-size:16px;text-decoration:none;display:inline-block}
+.btn.p{background:#0b6bcb;color:#fff}.btn.r{background:#fde6e6;color:#a12b2b}.btn.g{background:#2f855a;color:#fff}
+.page{max-width:980px;margin:0 auto;padding:18px 14px 40px}
+.hello{color:#fff;font-size:24px;font-weight:800;margin:6px 0 14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.tile{background:#fff;border-radius:20px;padding:18px;text-decoration:none;color:#1d2b3a;box-shadow:0 6px 20px #0002;display:block;transition:transform .15s}
+.tile:hover{transform:translateY(-3px)}.tile .i{font-size:38px}.tile h3{margin:4px 0;font-size:19px;color:#1b5e3a}.tile p{margin:0;font-size:14px;color:#5a6b7c}
+.panelc{background:#fff;border-radius:20px;padding:18px;margin-top:16px;box-shadow:0 6px 20px #0002}
+.panelc h2{margin:0 0 8px;font-size:21px;color:#1b5e3a}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}
+.row .f{margin:4px 0}.row .f input{font-size:16px;padding:9px 10px}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}td,th{padding:8px;border-bottom:1px solid #e3eaf2;text-align:right}th{color:#5a6b7c;font-weight:600}
+.tag{display:inline-block;border-radius:10px;padding:0 8px;font-size:13px;background:#fff3d6}
+@media (max-width:640px){.row{grid-template-columns:1fr}.bar small{display:none}}
