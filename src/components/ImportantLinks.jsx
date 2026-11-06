@@ -82,6 +82,34 @@ const ImportantLinks = () => {
         if (list.length === 0) {
           setLinks(fallbackLinks);
         } else {
+          // Ensure Tab Platform is always present at the very top
+          const hasTab = list.some(l => 
+            (l.title && (l.title.includes('منصة تاب') || l.title.includes('تاب —') || l.title === 'تاب')) || 
+            (l.url && (l.url.includes('miftah-generator.sites.tab.bot') || l.url.includes('/tab')))
+          );
+          if (!hasTab) {
+            list.unshift({
+              id: 'school-tab-platform-default',
+              title: 'منصة تاب — مفتاح (الحصص التفاعلية ومولّد خطة الدرس)',
+              icon: 'fa-layer-group',
+              url: 'https://miftah-generator.sites.tab.bot/',
+              externalUrl: 'https://miftah-generator.sites.tab.bot/',
+              desc: 'بوابة تاب الرقمية التفاعلية وفق نموذج مفتاح: توليد خطط الدروس بالذكاء الاصطناعي، شاشات العرض الذكية، والحصص التفاعلية للطلاب والمعلمين.',
+              badge: 'منصة تاب 🔑',
+              isAi: true,
+              highlight: true
+            });
+          } else {
+            const tabIdx = list.findIndex(l => 
+              (l.title && (l.title.includes('منصة تاب') || l.title.includes('تاب —') || l.title === 'تاب')) || 
+              (l.url && (l.url.includes('miftah-generator.sites.tab.bot') || l.url.includes('/tab')))
+            );
+            if (tabIdx > 0) {
+              const [tabItem] = list.splice(tabIdx, 1);
+              list.unshift(tabItem);
+            }
+          }
+
           // Ensure Miftaah AI Platform is always present at the very top
           const hasMiftaah = list.some(l => 
             (l.title && (l.title.includes('مِفتاح AI') || l.title.includes('منصة مِفتاح') || l.title.includes('مفتاح AI'))) || 
@@ -435,11 +463,14 @@ const ImportantLinks = () => {
             const isEnglish = link.url?.includes('english') || link.badge?.includes('إنجليزي') || link.title?.includes('الإنجليزية') || link.title?.includes('English') || link.title?.includes('انكليزي');
             const isAi = (link.isAi || link.badge?.includes('ذكاء اصطناعي') || link.title?.includes('سقراط') || link.title?.includes('الذكي') || link.title?.includes('الأديب الصغير') || link.title?.includes('المناظرة')) && !isMafatih && !isMath && !isMiftaah && !isHebrew && !isEnglish;
 
+            const isTab = link.url?.includes('tab') || link.badge?.includes('تاب') || link.title?.includes('تاب');
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             const isAflam = link.url?.includes('skills-films') || link.url?.includes('aflam') || link.badge?.includes('أفلام المهارات') || link.title?.includes('أفلام المهارات');
             const isQanat = link.url?.includes('qanat') || link.badge?.includes('تعلّم وتمتّع') || link.title?.includes('القناة الرقمية');
             let iconGradient = undefined;
-            if (isMiftaah) {
+            if (isTab) {
+              iconGradient = 'linear-gradient(135deg, #1b5e3a 0%, #2f855a 50%, #0b6bcb 100%)';
+            } else if (isMiftaah) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)';
             } else if (isServices) {
               iconGradient = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';

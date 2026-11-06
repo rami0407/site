@@ -1,0 +1,248 @@
+/* ===== miftah.css — مولّد خطة درس «مفتاح» =====
+   The plan styles reuse the hand-made «الفاعل» plan. Everything is scoped under .miftah. */
+.miftah, .miftah * { box-sizing: border-box; }
+.miftah { direction: rtl; font-family: "Noto Naskh Arabic", "Noto Sans Hebrew", "Amiri", "Segoe UI", Tahoma, serif; color: #1d2433; }
+.miftah .kufi, .miftah h1, .miftah h2, .miftah h3, .miftah h4, .miftah label, .miftah button { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", "Segoe UI", Tahoma, sans-serif; }
+
+/* ---------- app (form) ---------- */
+.mf-app { max-width: 980px; margin: 0 auto; padding: 18px 14px 40px; }
+.mf-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.mf-head img { width: 64px; height: 64px; object-fit: contain; }
+.mf-head h1 { margin: 0; font-size: 22px; color: #1b5e3a; line-height: 1.4; }
+.mf-head p { margin: 2px 0 0; color: #556; font-size: 14px; }
+.mf-form { background: #fff; border: 1px solid #dfe7e2; border-radius: 16px; padding: 16px; box-shadow: 0 2px 10px rgba(20,60,40,.06); }
+.mf-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.mf-field { display: flex; flex-direction: column; gap: 4px; }
+.mf-field.wide { grid-column: span 3; } .mf-field.two { grid-column: span 2; }
+.mf-field label { font-size: 13px; font-weight: 700; color: #334; }
+.mf-field label small { font-weight: 400; color: #778; }
+.mf-field input, .mf-field select, .mf-field textarea { font: inherit; font-size: 16px; padding: 9px 11px; border: 1px solid #c9d6cf; border-radius: 10px; background: #fbfdfc; color: #1d2433; width: 100%; }
+.mf-field textarea { min-height: 64px; resize: vertical; }
+.mf-field input:focus, .mf-field select:focus, .mf-field textarea:focus { outline: 3px solid #9fd4b4; border-color: #2f855a; }
+.mf-check { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-top: 4px; }
+.mf-check input { width: 18px; height: 18px; }
+.mf-hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.mf-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.mf-btn { border: 0; border-radius: 12px; padding: 11px 20px; font-size: 16px; font-weight: 700; cursor: pointer; background: #2f855a; color: #fff; }
+.mf-btn:hover { background: #276749; } .mf-btn:focus-visible { outline: 3px solid #f0b27a; outline-offset: 2px; }
+.mf-btn[disabled] { opacity: .6; cursor: wait; }
+.mf-btn.alt { background: #c0561b; } .mf-btn.alt:hover { background: #a14615; }
+.mf-btn.ghost { background: #eef3f0; color: #1b5e3a; }
+.mf-status { font-size: 14px; color: #556; }
+.mf-status.err { color: #b42318; font-weight: 700; }
+.mf-spin { display: inline-block; width: 16px; height: 16px; border: 3px solid #cfe5d8; border-top-color: #2f855a; border-radius: 50%; animation: mfspin .8s linear infinite; vertical-align: -3px; margin-left: 6px; }
+@keyframes mfspin { to { transform: rotate(360deg); } }
+.mf-notice { background: #fff8e1; border: 1px solid #f0d27a; color: #6b4e00; border-radius: 10px; padding: 8px 12px; font-size: 14px; margin: 12px 0 0; }
+.mf-toolbar { display: none; gap: 10px; flex-wrap: wrap; align-items: center; margin: 18px 0 10px; }
+.mf-toolbar.show { display: flex; }
+.mf-paper-wrap { overflow-x: auto; }
+.mf-paper { background: #fff; width: 210mm; max-width: 100%; margin: 0 auto; padding: 11mm; box-shadow: 0 4px 24px rgba(0,0,0,.12); border-radius: 4px; }
+.mf-paper[contenteditable="true"] { outline: 3px dashed #f0b27a; }
+.mf-foot { text-align: center; color: #889; font-size: 12px; margin-top: 18px; }
+@media (max-width: 720px) {
+  .mf-grid { grid-template-columns: 1fr 1fr; } .mf-field.wide { grid-column: span 2; } .mf-field.two { grid-column: span 1; }
+  .mf-paper { padding: 5mm; }
+  .miftah .plan .cols, .miftah .plan .goalbox { flex-direction: column; }
+  .miftah .plan .det td { display: inline-block; margin: 2px; }
+  .miftah .plan .eg { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) { .mf-grid { grid-template-columns: 1fr; } .mf-field.wide, .mf-field.two { grid-column: span 1; } .mf-head h1 { font-size: 19px; } }
+
+/* ---------- the plan (same look as the hand-made «الفاعل» plan) ---------- */
+.plan { font-size: 9.6pt; line-height: 1.5; }
+.plan h4 { margin: 0 0 1mm; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-size: 8.6pt; font-weight: 700; color: #334; }
+.plan ul { margin: 0; padding-right: 4.2mm; padding-left: 0; } .plan li { margin-bottom: .6mm; }
+.plan .vb { color: #1f5fbf; font-weight: 700; } .plan .sb { color: #1e8a4a; font-weight: 700; }
+.plan .top { display: flex; align-items: center; gap: 5mm; border-bottom: 2.2pt solid #2f855a; padding-bottom: 2.5mm; margin-bottom: 2.5mm; }
+.plan .logo { width: 25mm; height: 25mm; object-fit: contain; } .plan .logo.s { width: 16mm; height: 16mm; }
+.plan .school { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 15pt; color: #1b5e3a; line-height: 1.5; } .plan .school.s { font-size: 11pt; }
+.plan .title { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; font-size: 13pt; color: #c0561b; line-height: 1.5; }
+.plan .sub { font-size: 9pt; color: #556; }
+.plan .det { width: calc(100% + 2.4mm); border-collapse: separate; border-spacing: 1.2mm; margin: 0 -1.2mm 1.5mm; }
+.plan .det td { background: #f2f6f4; border-radius: 2mm; padding: 1mm 2.5mm; font-weight: 700; font-size: 9.6pt; }
+.plan .det td span { display: block; font-weight: 400; font-size: 7.6pt; color: #5a6b62; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; }
+.plan .goalbox { display: flex; gap: 3mm; margin-bottom: 2mm; }
+.plan .gb { flex: 1; border-radius: 3mm; padding: 2mm 3mm; } .plan .gb p { margin: .5mm 0; }
+.plan .g1 { background: #fff4e8; border: 1pt solid #f0b27a; } .plan .g2 { background: #ecf7f0; border: 1pt solid #8fcca6; }
+.plan .gh { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; font-size: 10pt; }
+.plan .kid { font-size: 9pt; color: #8a4b14; }
+.plan .pre { font-size: 8.8pt; background: #f7f7fa; border-radius: 2mm; padding: 1.5mm 3mm; margin-bottom: 2mm; }
+.plan .tl { display: flex; height: 8mm; border-radius: 2mm; overflow: hidden; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-size: 8.5pt; color: #fff; }
+.plan .seg { display: flex; align-items: center; justify-content: center; gap: 1mm; border-left: 1pt solid #fff; white-space: nowrap; overflow: hidden; }
+.plan .seg.m{background:#e07b22}.plan .seg.f{background:#2b6cb0}.plan .seg.r{background:#e0b400;color:#333}.plan .seg.t{background:#2f855a}.plan .seg.a{background:#8e3b5f}.plan .seg.h{background:#0f7c86}
+.plan .tlnote { text-align: center; font-size: 8pt; color: #666; margin: .8mm 0 2.5mm; }
+.plan .map { display: flex; align-items: center; gap: 1.5mm; margin: 0 0 3mm; font-size: 8.8pt; flex-wrap: wrap; }
+.plan .mh { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; font-size: 8.4pt; color: #334; }
+.plan .mi { border-radius: 3mm; padding: .3mm 2.5mm; background: #f3f3f6; }
+.plan .mi b { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; margin-left: 1mm; }
+.plan .mi.m b{color:#e07b22}.plan .mi.f b{color:#2b6cb0}.plan .mi.t b{color:#2f855a}.plan .mi.a b{color:#8e3b5f}.plan .mi.h b{color:#0f7c86}
+.plan .card { border: 1.3pt solid var(--c); border-radius: 3.5mm; margin-bottom: 2.4mm; break-inside: avoid; page-break-inside: avoid; overflow: hidden; }
+.plan .card.m{--c:#e07b22;--l:#fdf1e6}.plan .card.f{--c:#2b6cb0;--l:#eaf2fb}.plan .card.t{--c:#2f855a;--l:#e9f5ee}.plan .card.a{--c:#8e3b5f;--l:#f7ecf1}.plan .card.h{--c:#0f7c86;--l:#e6f4f5}
+.plan .ch { display: flex; align-items: center; gap: 3mm; background: var(--c); color: #fff; padding: 1mm 3mm; }
+.plan .let { width: 10mm; height: 10mm; flex: none; border-radius: 50%; background: #fff; color: var(--c); font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 15pt; line-height: 10mm; text-align: center; }
+.plan .tt { flex: 1; } .plan .sn { font-size: 8pt; opacity: .9; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; } .plan .nm { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 12.5pt; line-height: 1.3; }
+.plan .time { text-align: center; background: rgba(255,255,255,.2); border-radius: 2mm; padding: .5mm 2.5mm; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-size: 9pt; line-height: 1.25; }
+.plan .time b { font-size: 14pt; } .plan .time small { font-size: 7pt; }
+.plan .q { background: var(--l); padding: .9mm 3mm; font-weight: 700; color: var(--c); font-size: 9.8pt; }
+.plan .cols { display: flex; gap: 4mm; padding: 1.4mm 3mm 0; } .plan .col { flex: 1; } .plan .col:first-child { flex: 1.45; }
+.plan .modes { padding: 1mm 3mm; font-size: 8.8pt; } .plan .lbl { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; font-size: 8.4pt; }
+.plan .chip { display: inline-block; border: 1pt solid var(--c); color: var(--c); border-radius: 3mm; padding: 0 2.2mm; margin: 0 0 .6mm 1mm; font-weight: 700; font-size: 8.6pt; }
+.plan .incl { background: var(--l); margin: 0 3mm 2mm; border-radius: 2mm; padding: 1.1mm 2.5mm; font-size: 8.6pt; }
+.plan .incl .ttl { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; font-size: 8.4pt; }
+.plan .steps { margin: 1.5mm 3mm 0; border: 1pt dashed var(--c); border-radius: 2mm; padding: 1mm 3mm; font-size: 8.8pt; }
+.plan .steps .sh { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; color: var(--c); }
+.plan .steps ol { display: flex; flex-wrap: wrap; gap: 1.5mm 3mm; padding: 0; margin: .5mm 0 0; list-style: none; counter-reset: st; }
+.plan .steps ol li { flex: 1 1 30%; background: var(--l); border-radius: 1.5mm; padding: .5mm 1.5mm; margin: 0; counter-increment: st; }
+.plan .steps ol li::before { content: counter(st, arabic-indic) ". "; font-weight: 700; }
+.plan .refresh { border: 1.6pt dashed #d4a600; background: #fffbe3; border-radius: 3.5mm; padding: 1.5mm 3.5mm; margin-bottom: 2.4mm; break-inside: avoid; page-break-inside: avoid; }
+.plan .rt { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 12.5pt; color: #9a6b00; } .plan .rtime { font-size: 8.5pt; font-weight: 400; color: #7a5a00; margin-right: 3mm; }
+.plan .rb { font-size: 9.4pt; } .plan .back { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; color: #2f855a; font-size: 10pt; margin-top: .5mm; }
+.plan .exit { margin: 1.5mm 3mm 0; font-size: 9.2pt; background: #fff; border: 1pt solid #e2c5d2; border-radius: 2mm; padding: 1mm 2.5mm; }
+.plan .exit ol { list-style: arabic-indic; margin: 0; padding-right: 5mm; display: flex; flex-wrap: wrap; gap: 0 6mm; }
+.plan .exit ol li { margin: 0; }
+.plan .dec { width: calc(100% - 6mm); margin: 1.5mm 3mm 0; border-collapse: collapse; font-size: 8.8pt; }
+.plan .dec th { background: #8e3b5f; color: #fff; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-size: 8.4pt; padding: 1mm 2mm; text-align: right; }
+.plan .dec td { border: .8pt solid #ddd; padding: 1mm 2mm; vertical-align: top; }
+.plan .dec td:first-child { font-weight: 800; white-space: nowrap; font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-size: 8.6pt; }
+.plan .dec tr.g td:first-child{background:#e3f4e9;color:#1e7a43} .plan .dec tr.y td:first-child{background:#fdf3d8;color:#946200} .plan .dec tr.r td:first-child{background:#fbe6e6;color:#a33}
+.plan .note { background: #eef3fb; border-right: 3pt solid #2b6cb0; padding: 2mm 3mm; font-size: 9.2pt; border-radius: 1.5mm; break-inside: avoid; page-break-inside: avoid; }
+.plan .gen { font-size: 7.5pt; color: #99a; text-align: center; margin-top: 2mm; }
+/* worksheet */
+.plan .ws { margin-top: 10mm; padding-top: 6mm; border-top: 2px dashed #ccd; font-size: 12pt; line-height: 1.75; }
+.plan .wtop { display: flex; align-items: center; gap: 4mm; border-bottom: 2pt solid #2f855a; padding-bottom: 2mm; }
+.plan .wtitle { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 14pt; color: #c0561b; line-height: 1.5; }
+.plan .wname { margin: 2mm 0; font-size: 11pt; }
+.plan .wsteps { background: #f2f6f4; border-radius: 2mm; padding: 1.5mm 3mm; font-size: 11pt; margin-bottom: 2mm; }
+.plan .part { margin-bottom: 2.5mm; break-inside: avoid; page-break-inside: avoid; }
+.plan .ph { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 700; font-size: 11pt; color: #1b5e3a; }
+.plan .wl { font-size: 12.5pt; border-bottom: .6pt solid #e2e2e2; padding: .8mm 0; }
+.plan .wl .n { color: #888; font-size: 11pt; margin-left: 2mm; }
+.plan .cut { color: #999; margin: 3mm 0 1.5mm; font-size: 9pt; white-space: nowrap; overflow: hidden; }
+.plan .exitc { border: 1.5pt solid #8e3b5f; border-radius: 3mm; padding: 2mm 4mm; break-inside: avoid; page-break-inside: avoid; }
+.plan .eh { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 12pt; color: #8e3b5f; }
+.plan .eh span { font-family: "Noto Naskh Arabic", serif; font-weight: 400; font-size: 11pt; color: #333; margin-right: 6mm; }
+.plan .ei { font-weight: 700; } .plan .eg { display: grid; grid-template-columns: 1fr 1fr; font-size: 13pt; line-height: 1.9; }
+.plan .lights { margin-top: 1mm; font-size: 11pt; }
+
+/* ---------- print: A4, plan only, cards never split ---------- */
+@media print {
+  @page { size: A4; margin: 11mm 11mm 12mm 11mm; }
+  html, body { background: #fff !important; margin: 0 !important; }
+  .mf-app { max-width: none; padding: 0; margin: 0; }
+  .mf-app > *:not(.mf-paper-wrap), .mf-noprint { display: none !important; }
+  .mf-paper-wrap { overflow: visible; }
+  .mf-paper { width: auto; max-width: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; outline: none !important; }
+  .plan .ws { break-before: page; page-break-before: always; margin-top: 0; padding-top: 0; border-top: 0; }
+  .plan .gen { display: none; }
+  .plan { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* demo / sample warnings */
+.mf-demo-banner { background: #fff1f0; border: 2px solid #e0563f; color: #8a1f11; border-radius: 12px; padding: 12px 14px; margin: 0 0 16px; font-size: 15px; line-height: 1.7; }
+.mf-demo-banner b { display: block; font-size: 16px; }
+.mf-demo-banner span { display: block; font-size: 14px; color: #6b2a20; }
+.mf-mismatch { background: #fff8e1; border: 2px solid #e0a800; color: #5c4300; border-radius: 12px; padding: 14px 16px; margin: 18px 0 10px; font-size: 16px; line-height: 1.8; }
+.mf-mismatch p { margin: 0 0 10px; }
+.mf-sample-stamp { background: #fff1f0; border: 2px dashed #e0563f; color: #8a1f11; border-radius: 10px; padding: 8px 12px; margin: 0 0 12px; font-weight: 700; text-align: center; }
+@media print { .mf-demo-banner, .mf-mismatch { display: none !important; } }
+
+/* ===== ready classroom content inside the printed plan ===== */
+.plan .ready { margin: 1.6mm 3mm 0; border: 1pt solid var(--c); background: #fff; border-radius: 2.2mm; padding: 1.2mm 3mm 1.6mm; font-size: 9.4pt; line-height: 1.65; }
+.plan .ready .rlbl { font-family: "Noto Kufi Arabic", sans-serif; font-weight: 800; color: var(--c); font-size: 8.6pt; direction: rtl; text-align: right; }
+.plan .ready .rh { font-weight: 700; font-size: 10.4pt; margin: .6mm 0; }
+.plan .ready p { margin: .8mm 0; }
+.plan .ready .story { background: var(--l); border-radius: 1.6mm; padding: 1mm 2.5mm; }
+.plan .ready .bigq { font-weight: 700; font-size: 10.4pt; }
+.plan .ready .vis, .plan .ready .why { color: #445; font-size: 8.8pt; }
+.plan .ready .sub2 { font-weight: 700; color: var(--c); margin-top: 1.2mm; font-size: 9pt; }
+.plan .ready .sub2.lv1 { color: #2f855a } .plan .ready .sub2.lv2 { color: #b7791f } .plan .ready .sub2.lv3 { color: #c53030 }
+.plan .ready .rule { border: 1.2pt dashed var(--c); border-radius: 1.6mm; padding: 1mm 2.5mm; font-weight: 700; margin: 1.2mm 0; background: var(--l); }
+.plan .ready .reading { border-inline-start: 2pt solid var(--c); padding: .5mm 2.5mm; margin: 1mm 0; background: #fafafa; }
+.plan .ready ol, .plan .ready ul { margin: .4mm 0; padding-inline-start: 5mm; padding-inline-end: 0; }
+.plan .ready li { margin: .5mm 0; }
+.plan .ready .aa, .plan .exit .aa, .plan .key .aa { display: block; color: #1f7a45; font-size: 8.6pt; font-weight: 700; }
+.plan .ready .grp { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; }
+.plan .refresh .rb ol { margin: .6mm 0 0; padding-inline-start: 5mm; padding-inline-end: 0; }
+.plan .exit ol li .aa { display: inline; margin-inline-start: 1.5mm; }
+.plan .key { margin-top: 6mm; border-top: 2pt dashed #8e3b5f; padding-top: 3mm; }
+.plan .key .kt { font-family: "Noto Kufi Arabic", sans-serif; font-weight: 800; color: #8e3b5f; font-size: 11pt; margin-bottom: 2mm; }
+@media (max-width: 640px) { .plan .ready .grp { grid-template-columns: 1fr; } }
+.mf-btn.present { background: #e07b22; font-size: 17px; } .mf-btn.present:hover { background: #c4661a; }
+
+@media print {
+  .plan .key { break-before: page; page-break-before: always; border-top: 0; margin-top: 0; }
+  .plan .ready, .plan .card { break-inside: auto; page-break-inside: auto; }
+  html.mf-print-ws .plan > *:not(.ws) { display: none !important; }
+  html.mf-print-ws .plan .ws { break-before: auto; page-break-before: auto; }
+  html.mf-print-key .plan > *:not(.key) { display: none !important; }
+  html.mf-print-key .plan .key { break-before: auto; page-break-before: auto; }
+  .mf-show { display: none !important; }
+}
+
+/* ===== presentation mode (وضع العرض) ===== */
+html.mf-showing, html.mf-showing body { overflow: hidden; }
+.mf-show { position: fixed; inset: 0; z-index: 9999; background: #fffdf8; display: flex; flex-direction: column; color: #1d2433; }
+.mf-show .sbar { height: 6px; background: #eee; flex: none; }
+.mf-show .sprog { height: 100%; width: 0; background: #2f855a; transition: width .25s; }
+.mf-show .sprog.m, .mf-show .sslide.m { --c: #e07b22; --l: #fdf1e6; } .mf-show .sprog.f, .mf-show .sslide.f { --c: #2b6cb0; --l: #eaf2fb; }
+.mf-show .sprog.t, .mf-show .sslide.t { --c: #2f855a; --l: #e9f5ee; } .mf-show .sprog.a, .mf-show .sslide.a { --c: #8e3b5f; --l: #f7ecf1; }
+.mf-show .sprog.h, .mf-show .sslide.h { --c: #0f7c86; --l: #e6f4f5; } .mf-show .sprog.r, .mf-show .sslide.r { --c: #b38900; --l: #fff8d6; }
+.mf-show .sslide.c { --c: #1b5e3a; --l: #eef6f1; }
+.mf-show .sprog { background: var(--c, #2f855a); }
+.mf-show .sstage { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 2vh 4vw; }
+.mf-show .sslide { --fs: 1; width: 100%; max-width: 1200px; max-height: 100%; font-size: calc(var(--fs) * clamp(19px, 2.7vw + 1.1vh, 44px)); line-height: 1.55;
+  font-family: "Noto Naskh Arabic", "Noto Sans Hebrew", "Segoe UI", Tahoma, sans-serif; }
+.mf-show .sslide[lang=he] { font-family: "Noto Sans Hebrew", "Noto Naskh Arabic", sans-serif; }
+.mf-show .sslide[lang=en] { font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.mf-show .sbadge { display: inline-flex; align-items: center; gap: .4em; background: var(--l); color: var(--c); border: 2px solid var(--c); border-radius: 999px; padding: .1em .7em .1em .5em; font-size: .55em; font-family: "Noto Kufi Arabic", sans-serif; margin-bottom: .3em; }
+.mf-show .sbadge b { background: var(--c); color: #fff; border-radius: 50%; width: 1.6em; height: 1.6em; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2em; }
+.mf-show .stitle { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; color: var(--c); font-size: 1.25em; margin: .1em 0 .4em; line-height: 1.35; }
+.mf-show .sslide[lang=en] .stitle { font-family: "Segoe UI", Roboto, Arial, sans-serif; }
+.mf-show .sbody p { margin: .35em 0; }
+.mf-show .sstory { background: var(--l); border-radius: .5em; padding: .5em .8em; font-size: 1.05em; }
+.mf-show .svis { font-size: .7em; color: #556; }
+.mf-show .shuge { font-size: 1.35em; font-weight: 700; color: #1d2433; line-height: 1.4; }
+.mf-show .sgoal { font-size: 1.3em; font-weight: 700; background: var(--l); border: 3px solid var(--c); border-radius: .5em; padding: .4em .7em; }
+.mf-show .smid { font-size: 1em; }
+.mf-show .slbl { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; color: var(--c); font-weight: 700; font-size: .75em; margin-top: .7em; }
+.mf-show .srule { font-size: 1.3em; font-weight: 700; border: 4px dashed var(--c); background: var(--l); border-radius: .5em; padding: .6em .8em; text-align: center; }
+.mf-show .skey { font-size: .75em; } .mf-show .vb { color: #2b6cb0; font-weight: 700; } .mf-show .sb { color: #2f855a; font-weight: 700; }
+.mf-show .sread { font-size: .95em; background: #fff; border-inline-start: 6px solid var(--c); padding: .3em .8em; white-space: pre-line; }
+.mf-show .sins { font-size: .8em; color: #445; }
+.mf-show .sl, .mf-show .sq { margin: .2em 0; padding-inline-start: 1.4em; padding-inline-end: 0; }
+.mf-show .sl li, .mf-show .sq li { margin: .3em 0; }
+.mf-show .sq li { cursor: pointer; }
+.mf-show .sq li::marker { color: var(--c); font-weight: 700; }
+.mf-show .ans { color: #1f7a45; font-weight: 700; font-size: .85em; background: #eaf7ef; border-radius: .3em; padding: .05em .4em; margin-top: .15em; display: block; }
+.mf-show .ans[hidden] { display: none; }
+.mf-show .scols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; }
+.mf-show .sback { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; color: var(--c); font-weight: 800; margin-top: .6em; }
+.mf-show .stimer { font: 800 1.6em/1 "Segoe UI", Roboto, Arial, sans-serif; color: var(--c); margin-top: .3em; text-align: center; }
+.mf-show .stimer.done { color: #c53030; }
+.mf-show .cover { text-align: center; }
+.mf-show .slogo { width: 3.2em; height: 3.2em; object-fit: contain; }
+.mf-show .stopic { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-weight: 800; font-size: 1.8em; color: #1b5e3a; line-height: 1.3; margin: .2em 0; }
+.mf-show .smeta { font-size: .8em; color: #556; }
+.mf-show .smap { display: flex; flex-wrap: wrap; justify-content: center; gap: .3em .6em; margin-top: .8em; font-size: .6em; font-family: "Noto Kufi Arabic", sans-serif; }
+.mf-show .smap span { background: #fff; border: 2px solid #ddd; border-radius: .6em; padding: .2em .6em; }
+.mf-show .smap b { font-size: 1.5em; margin-inline-end: .25em; }
+.mf-show .smap .m b { color: #e07b22 } .mf-show .smap .f b { color: #2b6cb0 } .mf-show .smap .t b { color: #2f855a } .mf-show .smap .a b { color: #8e3b5f } .mf-show .smap .h b { color: #0f7c86 }
+.mf-show .send { font-family: "Noto Kufi Arabic", "Noto Sans Hebrew", sans-serif; font-size: 2em; font-weight: 800; color: #1b5e3a; }
+.mf-show .snav { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e3e3e3; font-family: "Noto Kufi Arabic", sans-serif; }
+.mf-show .snav button { white-space: nowrap; font: inherit; font-size: 15px; font-weight: 700; border: 1px solid #cfd8d3; background: #f6f8f7; color: #1d2433; border-radius: 10px; padding: 9px 12px; cursor: pointer; min-height: 44px; }
+.mf-show .snav button:disabled { opacity: .4; cursor: default; }
+.mf-show .snav .snext { background: #2f855a; color: #fff; border-color: #2f855a; margin-inline-start: auto; padding: 9px 22px; }
+.mf-show .snav .scount { font-size: 14px; color: #556; min-width: 52px; text-align: center; }
+.mf-show .snav [hidden] { display: none; }
+@media (max-width: 640px) {
+  .mf-show .scols { grid-template-columns: 1fr; gap: .4em; }
+  .mf-show .snav { gap: 5px; padding-inline: 6px; }
+  .mf-show .snav button { padding: 8px 8px; font-size: 14px; }
+  .mf-show .snav [data-a=fs] { display: none; }
+  .mf-show .snav .snext { padding: 8px 14px; }
+  .mf-show .sstage { padding: 1.5vh 4vw; align-items: flex-start; }
+}
+
+@media print { .plan .ready .grp > div, .plan .ready li, .plan .key .wl { break-inside: avoid; page-break-inside: avoid; } .plan .ready .sub2, .plan .ready .rh { break-after: avoid; page-break-after: avoid; } }
+.mf-show .sslide[lang=ar] ol { list-style: arabic-indic; }
+.plan .ready[lang=ar] ol { list-style: arabic-indic; }

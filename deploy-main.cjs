@@ -39,7 +39,7 @@ try {
   fs.writeFileSync(devHtmlPath, devHtmlTemplate, 'utf-8');
 
   console.log("1. Running Vite build from /src/main.jsx...");
-  execSync('npm run build', { stdio: 'inherit' });
+  execSync('npm run build', { cwd: rootDir, stdio: 'inherit' });
 
   console.log("2. Cleaning old assets and copying compiled assets to root assets folder...");
   const assetsDistDir = path.join(distDir, 'assets');
@@ -105,19 +105,19 @@ try {
   });
 
   console.log("4. Committing and pushing all source code and production build to GitHub main branch...");
-  execSync('git add -f assets', { stdio: 'inherit' });
-  execSync('git add .', { stdio: 'inherit' });
+  execSync('git add -f assets', { cwd: rootDir, stdio: 'inherit' });
+  execSync('git add .', { cwd: rootDir, stdio: 'inherit' });
   try {
-    execSync('git commit -m "Deploy latest source code and production build to main branch"', { stdio: 'inherit' });
+    execSync('git commit -m "Deploy latest source code and production build to main branch"', { cwd: rootDir, stdio: 'inherit' });
   } catch (commitErr) {
     console.log("No changes to commit in build files.");
   }
   
   console.log("Pushing to main branch...");
-  execSync('git push origin main', { stdio: 'inherit' });
+  execSync('git push origin main', { cwd: rootDir, stdio: 'inherit' });
 
   console.log("Pushing to gh-pages branch...");
-  execSync('git push origin main:gh-pages --force', { stdio: 'inherit' });
+  execSync('git push origin main:gh-pages --force', { cwd: rootDir, stdio: 'inherit' });
 
   console.log("✨ Radical deployment completed successfully! The site is now live on main branch root.");
 } catch (error) {
