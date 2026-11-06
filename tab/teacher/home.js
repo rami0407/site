@@ -22,7 +22,7 @@ $('out').onclick = function () {
     localStorage.removeItem('miftah_user');
   } catch (_) {}
   try { fetch((apiBase || '') + '/api/auth/logout', { method: 'POST' }).catch(function () {}); } catch (_) {}
-  location.replace('index.html');
+  location.replace('login.html');
 };
 
 function boot(u) {
@@ -97,7 +97,7 @@ $('lv').onsubmit = function (e) {
       var stored = JSON.parse(sessionStorage.getItem('miftah_user') || localStorage.getItem('miftah_user') || 'null');
       if (stored && stored.authenticated === true) { window.MIFTAH_USER = stored; boot(stored); return; }
     } catch (_) {}
-    location.replace('index.html');
+    location.replace('login.html');
   }
 })();
 })();

@@ -1,11 +1,11 @@
 // auth-guard.js — حماية صفحات المعلّم: تتحقّق بدقّة من تسجيل الدخول، وتمنع أيّ زائر غير مصرّح له
 (function () {
-  var s = document.currentScript, to = (s && s.getAttribute('data-to')) || 'teacher/';
+  var s = document.currentScript, to = (s && s.getAttribute('data-to')) || 'teacher/login.html';
   var de = document.documentElement;
   de.style.visibility = 'hidden';
 
   function away() {
-    var dest = to.includes('teacher') ? 'teacher/?next=' + encodeURIComponent(location.pathname + location.search) : to;
+    var dest = to.includes('teacher') ? (to.includes('login.html') ? to : 'teacher/login.html') + '?next=' + encodeURIComponent(location.pathname + location.search) : to;
     location.replace(dest);
   }
 
@@ -19,6 +19,6 @@
     }
   } catch (_) {}
 
-  // إذا لم يكن مسجلاً برمز الدخول، يُطرد فوراً إلى صفحة الدخول
+  // إذا لم يكن مسجلاً برمز الدخول، يُطرد فوراً إلى صفحة الدخول الآمنة
   away();
 })();
