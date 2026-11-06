@@ -252,10 +252,78 @@ function evidence() {
   one();
 }
 // ---------- ح ----------
+function getHarvestOptions(i, L) {
+  var title = (L && L.title) || 'الدرس';
+  var recap = (L && L.recap) || '';
+  if (i === 0) {
+    // ماذا استفدت؟
+    return [
+      { text: 'فهمتُ فكرة «' + title + '» جيداً ' + (recap ? ('(' + recap.slice(0, 70) + ')') : '') + '، واستوعبتُ كيف تُطبّق.', type: 'good', icon: '🌟' },
+      { text: 'تعلّمتُ معلومات ومفاهيم جديدة ومفيدة عن «' + title + '» أستطيع شرحها واستخدامها.', type: 'good', icon: '✅' },
+      { text: 'لم أستفد كثيراً وما زلتُ أرى أن الموضوع صعب وغير مفهوم.', type: 'warn', icon: '⚠️' }
+    ];
+  }
+  if (i === 1) {
+    // ماذا ساعدني في التعلّم؟
+    return [
+      { text: 'الأنشطة التفاعلية، والتفكير بالخطوات، وتجربة الأسئلة المتدرجة داخل التطبيق.', type: 'good', icon: '💡' },
+      { text: 'التركيز والمحاولة بهدوء ومراجعة الشرح عند الخطأ بمساعدة المعلم.', type: 'good', icon: '🎯' },
+      { text: 'التسرع في اختيار الإجابات دون قراءة الشرح وفهم السؤال.', type: 'warn', icon: '❌' }
+    ];
+  }
+  // أين سأقابل ما تعلّمته؟
+  return [
+    { text: 'في حياتي اليومية بالبيت والشارع وملاحظة ما يدور حولي من مواقف.', type: 'good', icon: '🌍' },
+    { text: 'في المدرسة، والدروس القادمة، وأثناء حل التدريبات ومناقشة زملائي.', type: 'good', icon: '🏫' },
+    { text: 'لن أقابل ما تعلمته في أي مكان ولن أحتاجه خارج هذا الدرس.', type: 'warn', icon: '🚫' }
+  ];
+}
+
 function harvest() {
   S.st = 4; report(); ctx(L.recap, null); var H = L.harvest && L.harvest.length === 3 ? L.harvest : HARVEST;
-  h(head('🌾 الحصاد') + '<p>فكِّرْ واكتبْ بكلماتِك:</p>' + H.map(function (q, i) { return '<label class="q">' + (i + 1) + '. ' + esc(q) + '</label>' + sayBtn(q) + '<textarea id="hv' + i + '"></textarea>'; }).join('') +
-    next('أنهيتُ الحصاد ✅', function () { var a = H.map(function (q, i) { return ($('#hv' + i).value || '').trim().slice(0, 400); }); if (!a.every(Boolean)) { alert('أجبْ عن الأسئلةِ الثّلاثة 🙂'); return; } S.data.harvest = a; S.done = true; report(); end(H); }, 'ok') + '</div>');
+  var qHtml = H.map(function (q, i) {
+    var opts = getHarvestOptions(i, L);
+    return '<div class="harvest-q-box">' +
+      '<label class="q">' + (i + 1) + '. ' + esc(q) + '</label>' + sayBtn(q) +
+      '<textarea id="hv' + i + '" placeholder="اكتب إجابتك هنا، أو اضغط على إحدى الإمكانيات المقترحة بالأسفل لتعبئتها والإضافة عليها..."></textarea>' +
+      '<div class="harvest-chips-label">💡 إمكانيات مقترحة (اختر لتعبئة المربع، ويمكنك الإكمال أو التعديل):</div>' +
+      '<div class="harvest-chips">' +
+      opts.map(function (op, k) {
+        return '<button type="button" class="harvest-chip-btn ' + op.type + '" data-q="' + i + '" data-k="' + k + '">' +
+          '<span class="c-ico">' + op.icon + '</span><span class="c-txt">' + esc(op.text) + '</span>' +
+        '</button>';
+      }).join('') +
+      '</div></div>';
+  }).join('');
+
+  h(head('🌾 الحصاد') + '<p>فكِّرْ وعبِّرْ: يمكنك الكتابة بحرية، أو اختيار إحدى الإمكانيات المساعدة ثم الإضافة عليها:</p>' + qHtml +
+    next('أنهيتُ الحصاد ✅', function () {
+      var a = H.map(function (q, i) { return ($('#hv' + i).value || '').trim().slice(0, 400); });
+      if (!a.every(Boolean)) { alert('الرجاء الإجابة عن الأسئلة الثلاثة (بالكتابة أو باختيار إمكانية مساعدة) 🙂'); return; }
+      S.data.harvest = a; S.done = true; report(); end(H);
+    }, 'ok') + '</div>');
+
+  setTimeout(function () {
+    app.querySelectorAll('.harvest-chip-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        var qi = btn.getAttribute('data-q');
+        var ki = btn.getAttribute('data-k');
+        var opts = getHarvestOptions(+qi, L);
+        var chosen = opts[+ki];
+        var ta = $('#hv' + qi);
+        if (!ta || !chosen) return;
+
+        app.querySelectorAll('.harvest-chip-btn[data-q="' + qi + '"]').forEach(function (b) {
+          b.classList.remove('selected');
+        });
+        btn.classList.add('selected');
+
+        ta.value = chosen.text;
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      };
+    });
+  });
 }
 function end(H) {
   stopStudentTimer();

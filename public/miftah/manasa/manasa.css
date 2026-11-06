@@ -10,6 +10,18 @@ a{color:#0b6bcb}
 .pupil-timer-bar .p-exit-btn{background:#e5484d;color:#fff;border:0;border-radius:10px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;margin-right:2px;transition:all .2s;font-family:inherit}
 .pupil-timer-bar .p-exit-btn:hover{background:#c93b40;transform:scale(1.05)}
 .pupil-timer-bar .p-name{color:#ffea79;font-weight:800}
+
+/* خيارات الحصاد التفاعلية لدعم التمايز والطلاب */
+.harvest-q-box{margin-bottom:20px;background:#fcfdff;border:1px solid #e2ebf4;border-radius:14px;padding:14px}
+.harvest-chips-label{margin:8px 0 6px;color:#5b3cc4;font-weight:700;font-size:14px}
+.harvest-chips{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.harvest-chip-btn{font-family:inherit;font-size:15px;text-align:right;background:#fff;border:1.5px solid #d3deea;border-radius:12px;padding:9px 14px;color:#1d2b3a;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:10px;line-height:1.6}
+.harvest-chip-btn:hover{background:#edf5fd;border-color:#0b6bcb;transform:translateY(-1px)}
+.harvest-chip-btn.selected{background:#eaf7ef;border-color:#2fb36d;font-weight:700;color:#1b5e3a;box-shadow:0 3px 10px rgba(47,179,109,.18)}
+.harvest-chip-btn.warn{border-color:#fed7aa;background:#fffaf0;color:#9a3412}
+.harvest-chip-btn.warn.selected{background:#fee2e2;border-color:#ef4444;color:#991b1b;box-shadow:0 3px 10px rgba(239,68,68,.18)}
+.harvest-chip-btn .c-ico{font-size:18px;flex:none;margin-top:2px}
+.harvest-chip-btn .c-txt{flex:1}
 .wrap{max-width:860px;margin:0 auto;padding:14px}
 .card{background:#fff;border-radius:18px;box-shadow:0 4px 18px #0b2a4a14;padding:18px;margin:14px 0}
 h1{font-size:26px;margin:.2em 0}h2{font-size:22px;margin:.2em 0 .5em}h3{font-size:19px;margin:.4em 0}
