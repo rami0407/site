@@ -38,6 +38,81 @@ function next(label, fn, cls) { setTimeout(function () { var b = $('#nx'); if (b
 function showNext(html) { var d = $('#after'); if (d) d.innerHTML = html; }
 function head(title) { return '<div class="card">' + bar() + '</div><div class="card"><h2>' + title + '</h2>'; }
 
+// ---------- student session timer ----------
+var studentTimerInterval = null;
+var studentStartTime = null;
+
+function formatDuration(sec) {
+  var m = Math.floor(sec / 60);
+  var s = sec % 60;
+  if (m < 60) {
+    return ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+  }
+  var h = Math.floor(m / 60);
+  m = m % 60;
+  return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+}
+
+function startStudentTimer(name) {
+  if (studentTimerInterval) return;
+  var storedStart = sessionStorage.getItem('manasa_timer_start');
+  if (storedStart && !isNaN(+storedStart)) {
+    studentStartTime = +storedStart;
+  } else {
+    studentStartTime = Date.now();
+    sessionStorage.setItem('manasa_timer_start', studentStartTime);
+  }
+
+  var topEl = document.querySelector('.top');
+  if (topEl) {
+    var timerBox = document.getElementById('pupil-timer-box');
+    if (!timerBox) {
+      timerBox = document.createElement('div');
+      timerBox.id = 'pupil-timer-box';
+      timerBox.className = 'pupil-timer-bar';
+      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(name || S.name) + '</span>' +
+        '<span class="p-clock" id="pupil-timer-clock">⏱️ 00:00</span>' +
+        '<button type="button" class="p-exit-btn" id="pupil-exit-btn">🚪 خروج</button>';
+      topEl.appendChild(timerBox);
+
+      document.getElementById('pupil-exit-btn').onclick = function () {
+        exitStudentApp();
+      };
+    }
+  }
+
+  function tick() {
+    var elapsedSec = Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000));
+    var clockEl = document.getElementById('pupil-timer-clock');
+    if (clockEl) {
+      clockEl.textContent = '⏱️ ' + formatDuration(elapsedSec);
+    }
+    S.data.durationSec = elapsedSec;
+  }
+
+  tick();
+  studentTimerInterval = setInterval(tick, 1000);
+}
+
+function stopStudentTimer() {
+  if (studentTimerInterval) {
+    clearInterval(studentTimerInterval);
+    studentTimerInterval = null;
+  }
+}
+
+function exitStudentApp() {
+  var elapsedSec = studentStartTime ? Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000)) : 0;
+  var m = Math.floor(elapsedSec / 60), s = elapsedSec % 60;
+  var timeStr = (m > 0 ? (m + ' دقيقة و ') : '') + s + ' ثانية';
+  if (confirm('هل تريد إنهاء الحصة والخروج من التطبيق؟\n\n⏱️ الوقت الذي قضيته في التعلّم: ' + timeStr)) {
+    stopStudentTimer();
+    sessionStorage.removeItem('manasa_timer_start');
+    try { report(); } catch (_) {}
+    location.href = '../';
+  }
+}
+
 // ---------- start ----------
 function start() {
   var src = qs.get('l') ? fetch('lessons/' + encodeURIComponent(qs.get('l')) + '.json').then(function (r) { if (!r.ok) throw 0; return r.json(); })
@@ -49,12 +124,25 @@ function start() {
 }
 function welcome() {
   var saved = localStorage.getItem('manasa-name') || '';
+  if (qs.get('go') === '1' && saved) {
+    S.name = saved;
+    S.pid = localStorage.getItem('manasa-pid') || Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('manasa-pid', S.pid);
+    keyInit();
+    startStudentTimer(S.name);
+    report();
+    stationM();
+    return;
+  }
   h('<div class="card"><div class="emoji">🔑</div><h1 style="text-align:center">' + esc(L.title) + '</h1><p class="muted" style="text-align:center">' + esc([L.subject, L.grade].filter(Boolean).join(' · ')) + '</p>' +
     '<h3>🎯 هدفُنا اليوم</h3><p>' + esc(L.goal) + '</p>' + (L.success && L.success.length ? '<h3>✅ كيف أعرفُ أنّي نجحْت؟</h3><ul>' + L.success.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
     '<label>ما اسمُك؟</label><input type="text" id="nm" value="' + esc(saved) + '" placeholder="اكتبِ اسمَك" maxlength="30">' + next('ابدأ الرّحلة 🚀', function () {
       var n = ($('#nm').value || '').trim(); if (!n) { $('#nm').focus(); return; }
       S.name = n; localStorage.setItem('manasa-name', n); S.pid = localStorage.getItem('manasa-pid') || Math.random().toString(36).slice(2, 10); localStorage.setItem('manasa-pid', S.pid);
-      keyInit(); report(); stationM();
+      keyInit();
+      startStudentTimer(S.name);
+      report();
+      stationM();
     }) + (S.sid ? '<p class="muted">رمزُ الحصّة: ' + esc(S.sid) + ' — معلِّمُك يتابعُ تقدُّمَك.</p>' : '') + '</div>');
 }
 // ---------- م ----------
@@ -170,12 +258,21 @@ function harvest() {
     next('أنهيتُ الحصاد ✅', function () { var a = H.map(function (q, i) { return ($('#hv' + i).value || '').trim().slice(0, 400); }); if (!a.every(Boolean)) { alert('أجبْ عن الأسئلةِ الثّلاثة 🙂'); return; } S.data.harvest = a; S.done = true; report(); end(H); }, 'ok') + '</div>');
 }
 function end(H) {
+  stopStudentTimer();
+  var totalSec = studentStartTime ? Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000)) : (S.data.durationSec || 0);
+  var m = Math.floor(totalSec / 60), s = totalSec % 60;
+  var totalStr = (m > 0 ? (m + ' دقيقة و ') : '') + s + ' ثانية (' + formatDuration(totalSec) + ')';
   var d = S.data, rw = { a: 'حقّق 🌟', p: 'حقّق جزئيًّا 🌱', n: 'لم يحقّق بعد 🛠️' };
   h('<div class="card">' + bar() + '</div><div class="card"><div class="emoji">🎉</div><h2 style="text-align:center">أحسنتَ يا ' + esc(S.name) + '!</h2><p style="text-align:center">أنهيتَ حصّة «' + esc(L.title) + '»</p>' +
-    '<table><tr><td>✋ أسئلة «أرني»</td><td>' + d.checks[0] + ' / ' + d.checks[1] + '</td></tr><tr><td>🏋️ التّدريب (من المحاولة الأولى)</td><td>' + d.practice[0] + ' / ' + d.practice[1] + ' · وصلتَ إلى مستوى ' + LV[d.level] + '</td></tr>' +
+    '<table><tr><td>⏱️ وقت التعلّم الإجمالي</td><td><b style="color:#0b6bcb">' + totalStr + '</b></td></tr><tr><td>✋ أسئلة «أرني»</td><td>' + d.checks[0] + ' / ' + d.checks[1] + '</td></tr><tr><td>🏋️ التّدريب (من المحاولة الأولى)</td><td>' + d.practice[0] + ' / ' + d.practice[1] + ' · وصلتَ إلى مستوى ' + LV[d.level] + '</td></tr>' +
     (d.game ? '<tr><td>🎮 اللّعبة</td><td>' + d.game.seconds + ' ث · ' + d.game.mistakes + ' أخطاء</td></tr>' : '') + '<tr><td>📝 مهمّة الدّليل</td><td><b>' + rw[d.result] + '</b> (' + d.evidence.score + ' / ' + d.evidence.of + ')</td></tr></table>' +
     '<h3>🌾 حصادي</h3>' + H.map(function (q, i) { return '<p><b>' + esc(q) + '</b><br>' + esc(d.harvest[i]) + '</p>'; }).join('') +
-    '<p class="muted">' + (S.sid ? '✔️ وصلتْ نتيجتُك إلى معلِّمِك.' : 'أرِ معلِّمَك هذه الشّاشة.') + '</p><button class="btn alt" onclick="location.reload()">🔁 من جديد</button></div>');
+    '<p class="muted">' + (S.sid ? '✔️ وصلتْ نتيجتُك إلى معلِّمِك.' : 'أرِ معلِّمَك هذه الشّاشة.') + '</p>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn alt" style="flex:1" onclick="location.reload()">🔁 من جديد</button><button class="btn ok" style="flex:1" id="final-exit-btn">🚪 خروج من التطبيق</button></div></div>');
+  setTimeout(function () {
+    var eb = document.getElementById('final-exit-btn');
+    if (eb) eb.onclick = exitStudentApp;
+  });
 }
 // ---------- 🔑 floating key: explain more / ask the teacher / challenge ----------
 S.data.log = []; S.data.chal = [0, 0]; S.cur = {}; var chUsed = 0, helpPoll = null;
