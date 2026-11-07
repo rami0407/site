@@ -487,49 +487,7 @@
     };
   }
 
-  // 7. نافذة دخول الطالب السريعة
-  var pupilTrigger = $('pupil-join-trigger');
-  var pupilModal = $('pupil-modal');
-  var closePupilModal = $('close-pupil-modal');
-  var modalJoinBtn = $('modal-join-btn');
-  var modalJoinCode = $('modal-join-code');
-  var modalJoinMsg = $('modal-join-msg');
-
-  if (pupilTrigger && pupilModal) {
-    pupilTrigger.onclick = function () {
-      pupilModal.style.display = 'flex';
-      modalJoinCode.value = '';
-      modalJoinMsg.textContent = '';
-      setTimeout(function () { modalJoinCode.focus(); }, 100);
-    };
-    closePupilModal.onclick = function () { pupilModal.style.display = 'none'; };
-    pupilModal.onclick = function (e) { if (e.target === pupilModal) pupilModal.style.display = 'none'; };
-
-    modalJoinBtn.onclick = function () {
-      var c = (modalJoinCode.value || '').trim().toUpperCase();
-      if (!c) { modalJoinMsg.textContent = 'اكتب كود الدخول أولاً.'; return; }
-      modalJoinBtn.disabled = true;
-      modalJoinBtn.textContent = '⏳ لحظة…';
-
-      api('session?code=' + encodeURIComponent(c)).then(function (r) {
-        if (r && r.ok) {
-          location.href = 'lesson.html?s=' + c + '&go=1';
-        } else {
-          modalJoinBtn.disabled = false;
-          modalJoinBtn.textContent = 'ادخل الحصّة ⬅';
-          modalJoinMsg.textContent = 'لم نجد حصة بهذا الرمز. تأكد منه مع معلمك.';
-        }
-      }).catch(function () {
-        location.href = '../?code=' + encodeURIComponent(c);
-      });
-    };
-
-    modalJoinCode.onkeydown = function (e) {
-      if (e.key === 'Enter') modalJoinBtn.click();
-    };
-  }
-
-  // بدء الصفحة بعرض الواجهة الرئيسية ذات الزرين
+  // بدء الصفحة بعرض الواجهة الرئيسية ذات الزرين فقط
   showView('hub');
 
 })();

@@ -4,10 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>منصة مفتاح — الحصص التفاعلية الذكية | مدرسة مشيرفة</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
 <link rel="stylesheet" href="manasa.css">
+<script>
+// إجبار المتصفح على جلب أحدث نسخة بدون كاش
+(function() {
+  var vTag = 'v=hub_20261107_final';
+  if (!window.location.search.includes(vTag)) {
+    var sep = window.location.search ? '&' : '?';
+    window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
+  }
+})();
+</script>
 <style>
-.nav-back-btn{background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;font-family:inherit}
+.nav-back-btn{background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:7px 16px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;font-family:inherit}
 .nav-back-btn:hover{background:#fff;color:#0b6bcb}
 .quick-subj-btn{background:#f1f5f9;border:1px solid #cbd5e1;padding:6px 14px;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;transition:all 0.15s;color:#334e68;font-weight:600}
 .quick-subj-btn:hover,.quick-subj-btn.active{background:#0b6bcb;color:#fff;border-color:#0b6bcb}
@@ -23,18 +36,17 @@
   </div>
   <span class="sp"></span>
   <div id="teacher-profile-badge" style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:700">
-    <span id="t-name">أهلاً بك 👋</span>
+    <span id="t-name">أهلاً بك يا معلّم 👋</span>
   </div>
-  <button id="pupil-join-trigger" class="nav-back-btn" title="دخول طالب برمز الحصة">🎒 أنا طالب</button>
   <a href="../teacher/home.html" class="nav-back-btn" title="لوحة المعلم الرئيسية">🏠 صفحة المعلم</a>
 </header>
 
 <main class="wrap">
-  <!-- 1. الشاشة الرئيسية: الزران الأساسيان المحددان في طلب المستخدم -->
+  <!-- 1. الشاشة الرئيسية: الزران الأساسيان فقط -->
   <section id="view-hub" class="hub-container">
     <div class="hub-title-box">
       <h1>منصّة مفتاح التفاعلية</h1>
-      <p>صمّم حصصك الذكية بنموذج «مفتاح»، وشارك زملاءك المعلمين في الأرشيف أو احتفظ بخصوصية حصصك.</p>
+      <p>صمّم حصصك بالذكاء الاصطناعي وفق نموذج «مفتاح»، وتصفح أرشيف الحصص أو شارك زملاءك المعلمين.</p>
     </div>
 
     <div class="hub-cards-grid">
@@ -42,7 +54,7 @@
       <div id="btn-open-archive" class="hub-btn-card primary" role="button" tabindex="0">
         <div class="hub-icon-circle">🗂️</div>
         <h2 class="hub-card-title">أرشيف الحصص التفاعلية</h2>
-        <p class="hub-card-desc">تصفّح بنك الحصص التفاعلية لمدرسة مشيرفة، وحصصك الخاصة المحفوظة مع إمكانية إطلاق الحصة فوراً لطلابك أو معاينتها وتعديلها.</p>
+        <p class="hub-card-desc">تصفّح بنك الحصص التفاعلية لمدرسة مشيرفة (الحصص النموذجية وحصص المعلمين)، وحصصك الخاصة المحفوظة في ملفك مع إمكانية إطلاق الحصة فوراً أو تعديلها.</p>
         <div class="hub-action-pill">
           <span>استعراض الأرشيف</span>
           <span>⬅</span>
@@ -62,7 +74,7 @@
     </div>
   </section>
 
-  <!-- 2. واجهة الأرشيف (تظهر عند النقر على أرشيف الحصص) -->
+  <!-- 2. واجهة الأرشيف (تظهر عند النقر على أرشيف الحصص وتضم الحصص النموذجية وحصص المعلمين) -->
   <section id="view-archive" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <button class="btn alt" id="back-to-hub-from-archive" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
@@ -73,7 +85,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div>
           <h2 style="margin:0 0 4px">📚 بنك وأرشيف الحصص التفاعلية</h2>
-          <p style="color:#5a6b7c;font-size:15px;margin:0">استعرض الحصص المشتركة لجميع معلمي المدرسة، أو الحصص الخاصة المحفوظة في ملفك الشخصي</p>
+          <p style="color:#5a6b7c;font-size:15px;margin:0">استعرض الحصص النموذجية والمشتركة لجميع معلمي المدرسة، أو الحصص الخاصة المحفوظة في ملفك الشخصي</p>
         </div>
         <div id="archive-count-badge" style="background:#e0f2fe;color:#0369a1;padding:6px 14px;border-radius:999px;font-weight:800;font-size:14px">
           جاري التحميل…
@@ -173,7 +185,7 @@
           <textarea id="notes" placeholder="أمثلة من بيئة الطالب اليومية، نقاط تحتاج إلى تركيز، أو احتياجات خاصة…"></textarea>
         </div>
 
-        <!-- 🔑 خيار الخصوصية والمشاركة (الميزة المطلوبة) -->
+        <!-- 🔑 خيار الخصوصية والمشاركة -->
         <div class="privacy-selector-box">
           <label style="font-weight:800;color:#0f172a;font-size:17px;display:flex;align-items:center;gap:8px">
             <span>🛡️ خصوصية الحصة وخيار المشاركة:</span>
@@ -208,19 +220,6 @@
 
   <!-- إطلاق الحصة للطلاب (الكود والباركود) -->
   <div id="sess"></div>
-
-  <!-- مودال دخول الطالب السريع -->
-  <div id="pupil-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px">
-    <div style="background:#fff;border-radius:24px;max-width:440px;width:100%;padding:28px 24px;position:relative;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25)">
-      <button id="close-pupil-modal" style="position:absolute;left:14px;top:14px;border:0;background:#f1f5f9;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer">✕</button>
-      <div style="font-size:44px;margin-bottom:6px">🎒</div>
-      <h2 style="margin:0 0 8px">أنا طالب — ادخل إلى حصتك</h2>
-      <p style="color:#64748b;font-size:14px;margin:0 0 16px">اكتب رمز الدخول المكون من ٤ إلى ٦ خانات الذي أرسله معلمك:</p>
-      <input type="text" id="modal-join-code" maxlength="6" placeholder="مثال: K7QM" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:26px;font-weight:800;text-transform:uppercase;margin-bottom:12px">
-      <button class="btn big" id="modal-join-btn">ادخل الحصّة ⬅</button>
-      <p id="modal-join-msg" style="color:#e5484d;font-weight:700;margin:10px 0 0;min-height:22px"></p>
-    </div>
-  </div>
 </main>
 
 <script src="teacher.js"></script>

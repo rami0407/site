@@ -33,7 +33,7 @@
 function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 var RW={a:['حقّق','#dff6e8'],p:['جزئيًّا','#fff3d6'],n:['لم يحقّق بعد','#fde6e6']},LV={easy:'سهل',medium:'متوسّط',hard:'صعب'},H=['ماذا استفدت؟','ماذا ساعدني في التعلّم؟','أين سأقابل ما تعلّمته؟'];
 var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
-var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'',P=[],seen=null,timer=null,ac=null,now=0;
+var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'036301448',P=[],seen=null,timer=null,ac=null,now=0;
 function ago(t){var a=Math.max(0,Math.round((now-t)/1000));return a<60?a+' ث':Math.round(a/60)+' د'}
 function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();[0,0.25].forEach(function(d){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.25,ac.currentTime+d);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d+0.2);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.22)})}catch(e){}}
 function gate(msg){$('gate').hidden=false;$('board').hidden=true;$('pin').value='';if(msg){$('pinm').textContent=msg;$('pinm').hidden=false}$('pin').focus()}

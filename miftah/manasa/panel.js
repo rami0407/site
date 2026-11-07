@@ -11,7 +11,7 @@ function get(o, p) { return p.split('.').reduce(function (a, k) { return a == nu
 function set(o, p, v) { var ks = p.split('.'), last = ks.pop(); ks.forEach(function (k, i) { var nk = ks[i + 1] !== undefined ? ks[i + 1] : last; if (o[k] == null) o[k] = /^\d+$/.test(nk) ? [] : {}; o = o[k]; }); o[last] = v; }
 // ---------- login ----------
 function login(msg) {
-  var saved = sessionStorage.getItem('mpin-' + SID) || localStorage.getItem('manasa-pin') || '';
+  var saved = sessionStorage.getItem('mpin-' + SID) || localStorage.getItem('manasa-pin') || '036301448';
   var isModel = /^[a-z]+$/.test(CODE);
   app.innerHTML = '<div class="card"><h1>🛠️ لوحة تحكّم المعلّم</h1><p>عدّلْ محتوى أيِّ حصّة: النصوص، الأسئلة والأجوبة والتلميحات، الفيديو، اللغز، اللعبة، أسئلة الدليل، الشرح الإضافي والتحدّيات. تظهر التعديلات للطلاب فورًا عند فتح الحصّة.</p>' +
     (SID ? '<p>حصّة الصفّ: <b style="direction:ltr">' + esc(SID) + '</b></p>' : '<label>رمز الحصّة المحفوظة (٥ أحرف، يظهر بعد التوليد)</label><input type="text" id="code" value="' + esc(isModel ? '' : CODE) + '" placeholder="مثال: K7QMB" style="direction:ltr;text-align:center;letter-spacing:4px">' + (isModel ? '<p class="fb good">⭐ ستعدّل نسخةً خاصّةً بك من الحصّة النموذجية «التوصيل الحراري». اتركْ الرمز فارغًا.</p>' : '')) +
