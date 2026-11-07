@@ -1,228 +1,311 @@
 /* QanatPage Styles — منصة تعلّم وتمتّع (القناة الرقمية) */
+/* Full-Bleed Edge-to-Edge Seamless Native Integration */
 
 .qanat-page-root {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0b132b 0%, #1c2541 40%, #0f172a 100%);
-  color: #f8fafc;
-  font-family: 'Cairo', Tajawal, system-ui, -apple-system, sans-serif;
-  direction: rtl;
-  padding-bottom: 50px;
-}
-
-.qanat-container {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 130px 16px 20px; /* Accounts for fixed top navbar */
+  min-height: 100dvh;
+  background: #fff8ec; /* Matches the exact warm ivory background of the embedded channel */
+  display: flex;
+  flex-direction: column;
+  padding-top: 105px; /* Offset for fixed dual header on desktop */
   box-sizing: border-box;
+  margin: 0;
+  padding-bottom: 0;
+  overflow-x: hidden;
+  direction: rtl;
+  font-family: 'Cairo', Tajawal, system-ui, -apple-system, sans-serif;
 }
 
-@media (max-width: 768px) {
-  .qanat-container {
-    padding: 155px 12px 16px;
+@media (max-width: 991px) {
+  .qanat-page-root {
+    padding-top: 135px;
   }
 }
 
-/* Hero card */
-.qanat-hero-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%);
-  border: 2px solid rgba(250, 204, 21, 0.4);
-  border-radius: 24px;
-  padding: 20px 24px;
-  margin-bottom: 18px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.55), 0 0 25px rgba(250, 204, 21, 0.15);
-  backdrop-filter: blur(10px);
+@media (max-width: 600px) {
+  .qanat-page-root {
+    padding-top: 145px;
+  }
 }
 
-.qanat-hero-badges {
+/* 1. SLIM CONTEXTUAL SUB-BAR */
+.qanat-sub-bar {
+  background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  border-bottom: 2.5px solid #eab308;
+  color: #f8fafc;
+  padding: 8px 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+  position: relative;
+  z-index: 10;
+}
+
+.qanat-sub-bar-inner {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 8px;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
+}
+
+.qanat-brand-block {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
-.qanat-pill-tag {
+/* Pulsing live indicator */
+.qanat-live-indicator {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(250, 204, 21, 0.15);
-  color: #facc15;
-  border: 1px solid rgba(250, 204, 21, 0.4);
-  padding: 4px 12px;
-  border-radius: 99px;
-  font-size: 0.85rem;
-  font-weight: 800;
+  width: 12px;
+  height: 12px;
 }
 
-.qanat-pill-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  padding: 4px 12px;
-  border-radius: 99px;
-  font-size: 0.85rem;
-  font-weight: 800;
+.qanat-live-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: #22c55e;
+  opacity: 0.75;
+  animation: qanatPing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-.qanat-title-row {
+.qanat-live-core {
+  position: relative;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #16a34a;
+  border: 1.5px solid #ffffff;
+}
+
+@keyframes qanatPing {
+  75%, 100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.qanat-brand-titles {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.qanat-icon-bubble {
-  width: 58px;
-  height: 58px;
-  min-width: 58px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  border: 2px solid #fecaca;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
+.qanat-title-text {
+  font-size: 0.95rem;
   color: #ffffff;
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
-.qanat-main-title {
-  margin: 0 0 6px;
-  font-size: clamp(1.4rem, 2.5vw, 2rem);
+.qanat-title-text strong {
+  color: #facc15;
   font-weight: 900;
-  color: #ffffff;
-  line-height: 1.3;
 }
 
-.qanat-main-title .highlight {
-  color: #facc15;
-  text-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+.qanat-badge-tag {
+  background: rgba(250, 204, 21, 0.15);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  color: #fde047;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.qanat-sub-title {
-  margin: 0;
-  font-size: clamp(0.9rem, 1.4vw, 1.02rem);
-  color: #cbd5e1;
-  line-height: 1.6;
-  max-width: 900px;
+@media (max-width: 680px) {
+  .qanat-badge-tag {
+    display: none;
+  }
 }
 
 /* Action buttons */
-.qanat-actions-bar {
+.qanat-action-buttons {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.qanat-btn {
-  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
-  border-radius: 14px;
-  font-size: 0.92rem;
+}
+
+.qanat-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 0.82rem;
   font-weight: 800;
   cursor: pointer;
   border: none;
   text-decoration: none;
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
 }
 
 .qanat-btn-home {
   background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  color: #f8fafc;
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .qanat-btn-home:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
-.qanat-btn-fullscreen {
+.qanat-btn-fs {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: #0f172a;
   border: 1px solid #fef08a;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
-.qanat-btn-fullscreen:hover {
+.qanat-btn-fs:hover,
+.qanat-btn-fs.active {
   background: #fbbf24;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
 }
 
 .qanat-btn-external {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
   border: 1px solid #7dd3fc;
-  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
 }
 
 .qanat-btn-external:hover {
   background: #0ea5e9;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.5);
 }
 
-/* Iframe Wrapper */
-.qanat-iframe-wrapper {
+/* 2. FULL-BLEED STAGE CONTAINER (NO BOXES, NO PADDING, NO RADIUS) */
+.qanat-stage-wrapper {
   position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  height: calc(100vh - 270px);
-  min-height: 680px;
-  background: #090e17;
-  border: 2px solid rgba(250, 204, 21, 0.3);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
-}
-
-.qanat-iframe-wrapper.is-fullscreen {
-  position: fixed;
-  inset: 0;
   width: 100vw;
-  height: 100vh;
-  z-index: 100000;
-  border-radius: 0;
-  border: none;
+  max-width: 100%;
+  height: calc(100vh - 155px);
+  height: calc(100dvh - 155px);
+  min-height: 720px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #fff8ec;
+  overflow: hidden;
 }
 
-.qanat-iframe {
+@media (max-width: 991px) {
+  .qanat-stage-wrapper {
+    height: calc(100vh - 185px);
+    height: calc(100dvh - 185px);
+    min-height: 600px;
+  }
+}
+
+@media (max-width: 600px) {
+  .qanat-stage-wrapper {
+    height: calc(100vh - 200px);
+    height: calc(100dvh - 200px);
+    min-height: 520px;
+  }
+}
+
+/* 3. NATIVE EMBEDDED IFRAME */
+.qanat-iframe-native {
   display: block;
   width: 100%;
   height: 100%;
-  border: 0;
-  background: #ffffff;
+  min-height: 100%;
+  border: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff8ec;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Loading skeleton */
+/* 4. FULLSCREEN OVERLAY MODE */
+.qanat-stage-wrapper.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 999999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.qanat-exit-fs-float {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 1000000;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 8px 18px;
+  border-radius: 99px;
+  font-weight: 900;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.qanat-exit-fs-float:hover {
+  background: #dc2626;
+  border-color: #fecaca;
+  transform: scale(1.05);
+}
+
+/* 5. LOADING SKELETON */
 .qanat-loading-skeleton {
   position: absolute;
   inset: 0;
-  background: #0f172a;
+  background: #fff8ec;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 16px;
   z-index: 5;
-  color: #e2e8f0;
+  color: #1f2a44;
 }
 
 .qanat-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(250, 204, 21, 0.25);
-  border-top-color: #facc15;
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(108, 76, 245, 0.2);
+  border-top-color: #6c4cf5;
   border-radius: 50%;
-  animation: qanatSpin 0.9s linear infinite;
+  animation: qanatSpin 0.85s linear infinite;
 }
 
 @keyframes qanatSpin {
@@ -232,8 +315,8 @@
 }
 
 .qanat-loading-text {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
-  color: #fde047;
+  color: #6c4cf5;
   margin: 0;
 }

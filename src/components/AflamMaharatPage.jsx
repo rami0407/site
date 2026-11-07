@@ -16,13 +16,21 @@ export default function AflamMaharatPage() {
     if (!container) return;
 
     if (!document.fullscreenElement) {
-      container.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {
-        setIsFullscreen(!isFullscreen);
-      });
+      if (container.requestFullscreen) {
+        container.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {
+          setIsFullscreen(prev => !prev);
+        });
+      } else {
+        setIsFullscreen(prev => !prev);
+      }
     } else {
-      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {
+          setIsFullscreen(false);
+        });
+      } else {
         setIsFullscreen(false);
-      });
+      }
     }
   };
 
@@ -31,57 +39,51 @@ export default function AflamMaharatPage() {
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
     document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
   }, []);
 
   return (
     <div className="aflam-page-root" dir="rtl">
-      {/* Fixed Main Navbar */}
+      {/* Fixed Main Dual Navbar */}
       <Navbar />
 
-      {/* Main Container */}
-      <main className="aflam-container">
-        {/* Header / Intro Card */}
-        <section className="aflam-hero-card">
-          <div className="aflam-hero-badges">
-            <span className="aflam-pill-tag">
-              <span className="sparkle">✨</span> منصة تعليمية مرئية
+      {/* Slim Contextual Integration Bar */}
+      <aside className="aflam-sub-bar" aria-label="شريط أفلام المهارات">
+        <div className="aflam-sub-bar-inner">
+          <div className="aflam-brand-block">
+            <span className="aflam-live-indicator" title="منصة متصلة مباشرة">
+              <span className="aflam-live-ping"></span>
+              <span className="aflam-live-core"></span>
             </span>
-            <span className="aflam-pill-badge">
-              🎬 أفلام المهارات والقيم الحياتية
-            </span>
-          </div>
-
-          <div className="aflam-title-row">
-            <div className="aflam-icon-bubble">
-              <i className="fas fa-film"></i>
-            </div>
-            <div>
-              <h1 className="aflam-main-title">
-                أفلام المهارات — <span className="highlight">المنصة التعليمية المرئية</span> 🎬
-              </h1>
-              <p className="aflam-sub-title">
-                مرحباً بكم في منصة «أفلام المهارات» لطلاب مدرسة مشيرفة الابتدائية! باقة مختارة بعناية من الأفلام المرئية الهادفة لتعزيز المهارات الحياتية، القيادة، التفكير الإبداعي وبناء القيم التربوية النبيلة.
-              </p>
+            <div className="aflam-brand-titles">
+              <span className="aflam-title-text">
+                🎬 <strong>أفلام المهارات</strong> — المنصة المرئية لمدرسة مشيرفة
+              </span>
+              <span className="aflam-badge-tag">
+                ✨ مهارات لغوية وتفكير وأوراق عمل
+              </span>
             </div>
           </div>
 
-          {/* Quick Actions Bar */}
-          <div className="aflam-actions-bar">
+          <div className="aflam-action-buttons">
             <button
               type="button"
               onClick={() => { window.location.hash = '#/'; }}
-              className="aflam-btn aflam-btn-home"
-              title="العودة للصفحة الرئيسية"
+              className="aflam-action-btn aflam-btn-home"
+              title="العودة للصفحة الرئيسية للمدرسة"
             >
-              <i className="fas fa-arrow-right"></i>
+              <i className="fas fa-home"></i>
               <span>الرئيسية 🏠</span>
             </button>
 
             <button
               type="button"
               onClick={handleToggleFullscreen}
-              className="aflam-btn aflam-btn-fullscreen"
+              className={`aflam-action-btn aflam-btn-fs ${isFullscreen ? 'active' : ''}`}
               title="عرض بملء الشاشة"
             >
               <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
@@ -92,40 +94,51 @@ export default function AflamMaharatPage() {
               href="https://aflam-almaharat.sites.tab.bot/"
               target="_blank"
               rel="noopener noreferrer"
-              className="aflam-btn aflam-btn-external"
-              title="فتح في نافذة مستقلة جديدة"
+              className="aflam-action-btn aflam-btn-external"
+              title="فتح المنصة في تبويب مستقل"
             >
               <i className="fas fa-external-link-alt"></i>
-              <span>فتح بنافذة جديدة 🚀</span>
+              <span>نافذة مستقلة 🚀</span>
             </a>
           </div>
-        </section>
-
-        {/* Embedded Iframe Player Stage */}
-        <div id="aflam-frame-wrapper" className={`aflam-iframe-wrapper ${isFullscreen ? 'is-fullscreen' : ''}`}>
-          {!iframeLoaded && (
-            <div className="aflam-loading-skeleton">
-              <div className="aflam-spinner"></div>
-              <p className="aflam-loading-text">
-                🎬 جاري تحميل منصة «أفلام المهارات»...
-              </p>
-            </div>
-          )}
-
-          <iframe
-            src="https://aflam-almaharat.sites.tab.bot/"
-            title="أفلام المهارات — المنصة التعليمية المرئية"
-            className="aflam-iframe"
-            width="100%"
-            height="900"
-            style={{ border: 0 }}
-            allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture"
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onLoad={() => setIframeLoaded(true)}
-          />
         </div>
+      </aside>
+
+      {/* Full-Bleed 100% Width Edge-to-Edge Embedded Stage */}
+      <main
+        id="aflam-frame-wrapper"
+        className={`aflam-stage-wrapper ${isFullscreen ? 'is-fullscreen' : ''}`}
+      >
+        {!iframeLoaded && (
+          <div className="aflam-loading-skeleton" aria-live="polite">
+            <div className="aflam-spinner"></div>
+            <p className="aflam-loading-text">
+              🎬 جاري تحميل منصة «أفلام المهارات»...
+            </p>
+          </div>
+        )}
+
+        {isFullscreen && (
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className="aflam-exit-fs-float"
+            title="الخروج من وضع ملء الشاشة (Esc)"
+          >
+            <i className="fas fa-times"></i> تصغير الشاشة ✕
+          </button>
+        )}
+
+        <iframe
+          src="https://aflam-almaharat.sites.tab.bot/"
+          title="أفلام المهارات — المنصة التعليمية المرئية"
+          className="aflam-iframe-native"
+          allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          allowFullScreen
+          loading="eager"
+          referrerPolicy="no-referrer"
+          onLoad={() => setIframeLoaded(true)}
+        />
       </main>
     </div>
   );

@@ -16,13 +16,21 @@ export default function QanatPage() {
     if (!container) return;
 
     if (!document.fullscreenElement) {
-      container.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {
-        setIsFullscreen(!isFullscreen);
-      });
+      if (container.requestFullscreen) {
+        container.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {
+          setIsFullscreen(prev => !prev);
+        });
+      } else {
+        setIsFullscreen(prev => !prev);
+      }
     } else {
-      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {
+          setIsFullscreen(false);
+        });
+      } else {
         setIsFullscreen(false);
-      });
+      }
     }
   };
 
@@ -31,58 +39,52 @@ export default function QanatPage() {
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
     document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
   }, []);
 
   return (
     <div className="qanat-page-root" dir="rtl">
-      {/* Fixed Main Navbar */}
+      {/* Fixed Main Dual Navbar */}
       <Navbar />
 
-      {/* Main Container */}
-      <main className="qanat-container">
-        {/* Header / Intro Card */}
-        <section className="qanat-hero-card">
-          <div className="qanat-hero-badges">
-            <span className="qanat-pill-tag">
-              <span className="sparkle">✨</span> منصة تعليمية تفاعلية
+      {/* Slim Contextual Integration Bar (Directly below Navbar) */}
+      <aside className="qanat-sub-bar" aria-label="شريط منصة تعلّم وتمتّع">
+        <div className="qanat-sub-bar-inner">
+          <div className="qanat-brand-block">
+            <span className="qanat-live-indicator" title="منصة متصلة مباشرة">
+              <span className="qanat-live-ping"></span>
+              <span className="qanat-live-core"></span>
             </span>
-            <span className="qanat-pill-badge">
-              🎬 أفلام تعليمية واختبارات شيقة
-            </span>
-          </div>
-
-          <div className="qanat-title-row">
-            <div className="qanat-icon-bubble">
-              <i className="fas fa-play-circle"></i>
-            </div>
-            <div>
-              <h1 className="qanat-main-title">
-                تعلّم وتَمَتَّع — <span className="highlight">القناة الرقمية</span> 📺
-              </h1>
-              <p className="qanat-sub-title">
-                أهلاً بكم في واحة المشاهدة والتعلم الممتع لطلاب مدرسة مشيرفة! أفلام تعليمية هادفة، مسابقات، ومحطات تفاعلية تدمج متعة التعلم بالاكتشاف.
-              </p>
+            <div className="qanat-brand-titles">
+              <span className="qanat-title-text">
+                🎬 <strong>تعلّم وتَمَتَّع</strong> — القناة الرقمية
+              </span>
+              <span className="qanat-badge-tag">
+                ✨ أفلام تعليمية واختبارات تفاعلية فورية
+              </span>
             </div>
           </div>
 
-          {/* Quick Actions Bar */}
-          <div className="qanat-actions-bar">
+          <div className="qanat-action-buttons">
             <button
               type="button"
               onClick={() => { window.location.hash = '#/'; }}
-              className="qanat-btn qanat-btn-home"
-              title="العودة للصفحة الرئيسية"
+              className="qanat-action-btn qanat-btn-home"
+              title="العودة للصفحة الرئيسية للمدرسة"
             >
-              <i className="fas fa-arrow-right"></i>
+              <i className="fas fa-home"></i>
               <span>الرئيسية 🏠</span>
             </button>
 
             <button
               type="button"
               onClick={handleToggleFullscreen}
-              className="qanat-btn qanat-btn-fullscreen"
-              title="عرض بملء الشاشة"
+              className={`qanat-action-btn qanat-btn-fs ${isFullscreen ? 'active' : ''}`}
+              title="عرض المنصة بملء الشاشة للتفاعل الكامل"
             >
               <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
               <span>{isFullscreen ? 'تصغير الشاشة ⛶' : 'ملء الشاشة ⛶'}</span>
@@ -92,37 +94,51 @@ export default function QanatPage() {
               href="https://qanat-raqamiya.sites.tab.bot/"
               target="_blank"
               rel="noopener noreferrer"
-              className="qanat-btn qanat-btn-external"
-              title="فتح في نافذة مستقلة جديدة"
+              className="qanat-action-btn qanat-btn-external"
+              title="فتح المنصة في تبويب مستقل"
             >
               <i className="fas fa-external-link-alt"></i>
-              <span>فتح بنافذة جديدة 🚀</span>
+              <span>نافذة مستقلة 🚀</span>
             </a>
           </div>
-        </section>
-
-        {/* Embedded Iframe Player Stage */}
-        <div id="qanat-frame-wrapper" className={`qanat-iframe-wrapper ${isFullscreen ? 'is-fullscreen' : ''}`}>
-          {!iframeLoaded && (
-            <div className="qanat-loading-skeleton">
-              <div className="qanat-spinner"></div>
-              <p className="qanat-loading-text">
-                🎬 جاري تحميل منصة «تعلّم وتمتّع — القناة الرقمية»...
-              </p>
-            </div>
-          )}
-
-          <iframe
-            src="https://qanat-raqamiya.sites.tab.bot/"
-            title="تعلّم وتمتّع — القناة الرقمية: أفلام تعليمية واختبارات"
-            className="qanat-iframe"
-            allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture"
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onLoad={() => setIframeLoaded(true)}
-          />
         </div>
+      </aside>
+
+      {/* Full-Bleed 100% Width Edge-to-Edge Embedded Stage */}
+      <main
+        id="qanat-frame-wrapper"
+        className={`qanat-stage-wrapper ${isFullscreen ? 'is-fullscreen' : ''}`}
+      >
+        {!iframeLoaded && (
+          <div className="qanat-loading-skeleton" aria-live="polite">
+            <div className="qanat-spinner"></div>
+            <p className="qanat-loading-text">
+              🎬 جاري تحميل منصة «تعلّم وتمتّع — القناة الرقمية»...
+            </p>
+          </div>
+        )}
+
+        {isFullscreen && (
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className="qanat-exit-fs-float"
+            title="الخروج من وضع ملء الشاشة (Esc)"
+          >
+            <i className="fas fa-times"></i> تصغير الشاشة ✕
+          </button>
+        )}
+
+        <iframe
+          src="https://qanat-raqamiya.sites.tab.bot/"
+          title="تعلّم وتمتّع — القناة الرقمية: أفلام تعليمية واختبارات"
+          className="qanat-iframe-native"
+          allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          allowFullScreen
+          loading="eager"
+          referrerPolicy="no-referrer"
+          onLoad={() => setIframeLoaded(true)}
+        />
       </main>
     </div>
   );
