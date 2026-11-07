@@ -118,3 +118,56 @@ body:has(#mkey) .wrap{padding-bottom:110px}
 .portfolio-card.partial{border-color:#fef08a;background:#fefce8}
 .portfolio-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700}
 
+
+
+/* =========================================================
+   مفتاح: واجهة المنصة الجديدة (الأرشيف وتوليد الحصص)
+   ========================================================= */
+.hub-container{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:65vh;padding:24px 10px}
+.hub-title-box{text-align:center;margin-bottom:34px}
+.hub-title-box h1{font-size:32px;color:#1b5e3a;margin:0 0 10px;font-weight:800}
+.hub-title-box p{color:#5a6b7c;font-size:17px;margin:0}
+.hub-cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px;width:100%;max-width:840px}
+.hub-btn-card{background:#ffffff;border-radius:26px;padding:36px 26px;border:2.5px solid #e2ebf4;box-shadow:0 10px 30px rgba(11,42,74,0.08);cursor:pointer;text-align:center;transition:all .25s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;align-items:center;position:relative}
+.hub-btn-card:hover{transform:translateY(-6px);box-shadow:0 20px 45px rgba(11,42,74,0.16)}
+.hub-btn-card.primary{background:linear-gradient(145deg,#ffffff 55%,#f0f7ff 100%);border-color:#b9d7fb}
+.hub-btn-card.primary:hover{border-color:#0b6bcb}
+.hub-btn-card.secondary{background:linear-gradient(145deg,#ffffff 55%,#f0fdf4 100%);border-color:#bbf7d0}
+.hub-btn-card.secondary:hover{border-color:#2fb36d}
+.hub-icon-circle{width:86px;height:86px;border-radius:24px;display:grid;place-items:center;font-size:46px;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,0.06)}
+.hub-btn-card.primary .hub-icon-circle{background:linear-gradient(135deg,#0b6bcb,#5b3cc4);color:#fff}
+.hub-btn-card.secondary .hub-icon-circle{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.hub-card-title{font-size:24px;font-weight:800;margin:0 0 10px;color:#102a43}
+.hub-card-desc{font-size:15px;color:#627d98;margin:0 0 20px;line-height:1.6}
+.hub-action-pill{font-weight:800;font-size:16px;padding:10px 24px;border-radius:999px;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.hub-btn-card.primary .hub-action-pill{background:#0b6bcb;color:#fff}
+.hub-btn-card.secondary .hub-action-pill{background:#2fb36d;color:#fff}
+.hub-btn-card:hover .hub-action-pill{transform:scale(1.05)}
+
+/* تبويبات الأرشيف */
+.archive-tabs{display:flex;background:#e2ebf4;border-radius:16px;padding:6px;gap:6px;margin:16px 0 20px}
+.archive-tab{flex:1;text-align:center;padding:12px 16px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;border:0;background:transparent;color:#486581;transition:all .2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+.archive-tab.active{background:#ffffff;color:#0b6bcb;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.filter-bar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:20px}
+@media (max-width:680px){.filter-bar{grid-template-columns:1fr}.hub-cards-grid{grid-template-columns:1fr}}
+
+/* بطاقات اختيار الخصوصية عند التوليد */
+.privacy-selector-box{background:#f8fafc;border:2px dashed #cbd5e1;border-radius:18px;padding:18px;margin:18px 0}
+.privacy-options{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+@media (max-width:600px){.privacy-options{grid-template-columns:1fr}}
+.privacy-radio-card{border:2px solid #e2e8f0;background:#fff;border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:12px;user-select:none}
+.privacy-radio-card.selected{border-color:#0b6bcb;background:#f0f7ff;box-shadow:0 4px 14px rgba(11,107,203,0.12)}
+.privacy-radio-card input[type="radio"]{width:20px;height:20px;margin-top:3px;cursor:pointer;accent-color:#0b6bcb}
+
+/* بطاقات الدروس في الأرشيف */
+.lesson-archive-card{background:#fff;border-radius:18px;border:1px solid #e2ebf4;padding:22px;margin-bottom:16px;box-shadow:0 4px 16px rgba(11,42,74,0.06);transition:transform .15s,box-shadow .15s}
+.lesson-archive-card:hover{box-shadow:0 8px 24px rgba(11,42,74,0.12);transform:translateY(-2px)}
+.lesson-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.lesson-card-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}
+.pill-badge{padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700}
+.pill-badge.subject{background:#e0f2fe;color:#0369a1}
+.pill-badge.grade{background:#fef3c7;color:#92400e}
+.pill-badge.public{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+.pill-badge.private{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
+.privacy-toggle-btn{background:#fff;border:1.5px solid #cbd5e1;color:#334155;border-radius:12px;padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .2s}
+.privacy-toggle-btn:hover{background:#f1f5f9;border-color:#94a3b8}

@@ -1,16 +1,228 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>منصة مفتاح — حصص تفاعلية</title><link rel="stylesheet" href="manasa.css"></head>
-<body><div class="top"><b>🔑 منصة مفتاح</b><span class="sp"></span><a href="../" style="color:#fff">← مولّد خطة الدرس</a></div>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>منصة مفتاح — الحصص التفاعلية الذكية | مدرسة مشيرفة</title>
+<link rel="icon" href="../assets/logo.jpg">
+<link rel="stylesheet" href="manasa.css">
+<style>
+.nav-back-btn{background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;font-family:inherit}
+.nav-back-btn:hover{background:#fff;color:#0b6bcb}
+.quick-subj-btn{background:#f1f5f9;border:1px solid #cbd5e1;padding:6px 14px;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;transition:all 0.15s;color:#334e68;font-weight:600}
+.quick-subj-btn:hover,.quick-subj-btn.active{background:#0b6bcb;color:#fff;border-color:#0b6bcb}
+.lesson-actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.lesson-actions-row .btn{min-height:42px;padding:8px 16px;font-size:15px;margin:0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div style="display:flex;align-items:center;gap:10px">
+    <b>🔑 منصّة مفتاح</b>
+    <small style="opacity:0.9">مدرسة مشيرفة الجماهيرية الابتدائية</small>
+  </div>
+  <span class="sp"></span>
+  <div id="teacher-profile-badge" style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:700">
+    <span id="t-name">أهلاً بك 👋</span>
+  </div>
+  <button id="pupil-join-trigger" class="nav-back-btn" title="دخول طالب برمز الحصة">🎒 أنا طالب</button>
+  <a href="../teacher/home.html" class="nav-back-btn" title="لوحة المعلم الرئيسية">🏠 صفحة المعلم</a>
+</header>
+
 <main class="wrap">
-<div class="card"><h1>حصصٌ تفاعليّة على نموذج «مفتاح»</h1><p>التطبيقُ يعلّم الطالبَ خطوةً بخطوة (م ف ت ا ح)، والمعلّمُ يوجّه ويتابع مباشرةً مَن حقّق ومَن يحتاج دعمًا.</p></div>
-<div class="card"><h2>🎒 أنا طالب</h2><label>اكتبْ رمزَ الحصّة من معلّمك:</label><div class="grid2"><input type="text" id="join" maxlength="6" placeholder="مثال: K7QM" style="direction:ltr;text-align:center;letter-spacing:4px;font-size:24px"><button class="btn big" id="joinb">ادخلْ ⬅</button></div><p id="joinm" class="muted"></p></div>
-<div class="card" style="border:2px solid #5b3cc4"><h2>🔐 للمعلّم: رمزُك السرّي</h2><p class="muted">اخترْ رمزًا من ٤–٨ أرقام. يحمي لوحةَ المتابعة وتعديلَ حصصِك، فلا يراها إلّا أنت. احفظْه جيّدًا.</p><div class="grid2"><input type="password" inputmode="numeric" id="pin" maxlength="8" placeholder="مثال: 4821" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:22px"><a class="btn alt" href="panel.html" style="text-align:center;text-decoration:none">🛠️ لوحةُ تحكّم المعلّم (تعديل حصّة)</a></div></div>
-<div class="card"><h2>⭐ الحصة النموذجية: التَّوصيلُ الحراريّ</h2><p class="muted">علوم · الصف الخامس (مناسبة أيضًا للسادس) · ٤٥ دقيقة · فيديو، لغز وحزّورة، شرح مسموع مع «أرني»، تجربة الملاعق الافتراضية، تدريب متكيّف، لعبة تصنيف، وقت الانتعاش، مهمة دليل، وأسئلة الحصاد.</p>
-<a class="btn" href="lesson.html?l=heat">👀 جرّبها كطالب</a> <button class="btn ok" id="startHeat">🏫 ابدأ حصّة مع صفّي</button> <a class="btn alt" href="panel.html?c=heat">✏️ انسخْها وعدّلْها</a></div>
-<div class="card"><h2>🧑‍🏫 ولّد حصّة تفاعلية جديدة</h2>
-<div class="grid2"><div><label>المادة</label><input type="text" id="subject" placeholder="علوم / رياضيات / لغة عربية…"></div><div><label>الصف</label><select id="grade"><option>الصف الأول</option><option>الصف الثاني</option><option>الصف الثالث</option><option>الصف الرابع</option><option selected>الصف الخامس</option><option>الصف السادس</option></select></div></div>
-<label>موضوع الحصّة</label><input type="text" id="topic" placeholder="مثال: حالات المادة، الكسور العشرية، همزة القطع…">
-<label>ملاحظات (اختياري)</label><textarea id="notes" placeholder="ما يعرفه الطلاب، أمثلة من البيئة، احتياجات خاصة…"></textarea>
-<p class="muted">لغة الحصّة: العربية. التوليد يستغرق عادةً دقيقة إلى دقيقتين.</p>
-<button class="btn big" id="gen">✨ ولّد الحصّة التفاعلية</button><div id="genout"></div></div>
-<div id="sess"></div>
-</main><script src="teacher.js"></script></body></html>
+  <!-- 1. الشاشة الرئيسية: الزران الأساسيان المحددان في طلب المستخدم -->
+  <section id="view-hub" class="hub-container">
+    <div class="hub-title-box">
+      <h1>منصّة مفتاح التفاعلية</h1>
+      <p>صمّم حصصك الذكية بنموذج «مفتاح»، وشارك زملاءك المعلمين في الأرشيف أو احتفظ بخصوصية حصصك.</p>
+    </div>
+
+    <div class="hub-cards-grid">
+      <!-- الزر الأول: الأرشيف -->
+      <div id="btn-open-archive" class="hub-btn-card primary" role="button" tabindex="0">
+        <div class="hub-icon-circle">🗂️</div>
+        <h2 class="hub-card-title">أرشيف الحصص التفاعلية</h2>
+        <p class="hub-card-desc">تصفّح بنك الحصص التفاعلية لمدرسة مشيرفة، وحصصك الخاصة المحفوظة مع إمكانية إطلاق الحصة فوراً لطلابك أو معاينتها وتعديلها.</p>
+        <div class="hub-action-pill">
+          <span>استعراض الأرشيف</span>
+          <span>⬅</span>
+        </div>
+      </div>
+
+      <!-- الزر الثاني: توليد حصة -->
+      <div id="btn-open-generator" class="hub-btn-card secondary" role="button" tabindex="0">
+        <div class="hub-icon-circle">✨</div>
+        <h2 class="hub-card-title">توليد حصّة تفاعلية جديدة</h2>
+        <p class="hub-card-desc">ولّد حصة جديدة بالذكاء الاصطناعي وفق نموذج مفتاح (م-ف-ت-ا-ح) مع خيار الحفاظ على خصوصية الحصة أو مشاركتها للجميع في الأرشيف.</p>
+        <div class="hub-action-pill">
+          <span>ابدأ التوليد الآن</span>
+          <span>⬅</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. واجهة الأرشيف (تظهر عند النقر على أرشيف الحصص) -->
+  <section id="view-archive" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <button class="btn alt" id="back-to-hub-from-archive" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
+      <button class="btn ok" id="go-gen-from-archive" style="min-height:44px;padding:8px 18px;margin:0">✨ توليد حصة جديدة</button>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="margin:0 0 4px">📚 بنك وأرشيف الحصص التفاعلية</h2>
+          <p style="color:#5a6b7c;font-size:15px;margin:0">استعرض الحصص المشتركة لجميع معلمي المدرسة، أو الحصص الخاصة المحفوظة في ملفك الشخصي</p>
+        </div>
+        <div id="archive-count-badge" style="background:#e0f2fe;color:#0369a1;padding:6px 14px;border-radius:999px;font-weight:800;font-size:14px">
+          جاري التحميل…
+        </div>
+      </div>
+
+      <!-- تبويبات الخصوصية والمشاركة -->
+      <div class="archive-tabs">
+        <button class="archive-tab active" id="tab-public" data-tab="public">
+          <span>🌐 حصص المدرسة المشتركة (تظهر للجميع)</span>
+          <span class="pill-badge" id="count-public" style="background:#dcfce7;color:#15803d;padding:2px 8px">0</span>
+        </button>
+        <button class="archive-tab" id="tab-private" data-tab="private">
+          <span>🔒 حصصي الخاصة (ملفي الخاص)</span>
+          <span class="pill-badge" id="count-private" style="background:#fee2e2;color:#b91c1c;padding:2px 8px">0</span>
+        </button>
+      </div>
+
+      <!-- شريط البحث والفلترة -->
+      <div class="filter-bar">
+        <div>
+          <input type="text" id="archive-search" placeholder="🔍 ابحث بالموضوع، المادة، أو اسم المعلم…">
+        </div>
+        <div>
+          <select id="archive-filter-subj">
+            <option value="">كل المواد</option>
+            <option value="علوم">علوم</option>
+            <option value="لغة عربية">لغة عربية</option>
+            <option value="رياضيات">رياضيات</option>
+            <option value="لغة إنجليزية">لغة إنجليزية</option>
+            <option value="تربية إسلامية">تربية إسلامية</option>
+            <option value="موطن">موطن وجغرافيا</option>
+          </select>
+        </div>
+        <div>
+          <select id="archive-filter-grade">
+            <option value="">كل الصفوف</option>
+            <option value="الصف الأول">الصف الأول</option>
+            <option value="الصف الثاني">الصف الثاني</option>
+            <option value="الصف الثالث">الصف الثالث</option>
+            <option value="الصف الرابع">الصف الرابع</option>
+            <option value="الصف الخامس">الصف الخامس</option>
+            <option value="الصف السادس">الصف السادس</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- قائمة الحصص -->
+      <div id="archive-lessons-list">
+        <p style="text-align:center;color:#64748b;padding:30px">⏳ جاري تحميل الأرشيف…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. واجهة التوليد (تظهر عند النقر على توليد حصة) -->
+  <section id="view-generator" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <button class="btn alt" id="back-to-hub-from-gen" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
+      <button class="btn" id="go-archive-from-gen" style="min-height:44px;padding:8px 18px;margin:0;background:#eef2f6;color:#1e293b">🗂️ عرض الأرشيف</button>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <h2 style="margin:0 0 6px">✨ توليد حصّة تفاعلية جديدة بالذكاء الاصطناعي</h2>
+      <p style="color:#5a6b7c;margin-top:0;font-size:15px">توليد مسار تعلّم تفاعلي كامل وفق نموذج «مفتاح» (م: مشوّق، ف: فهم، ت: تدريب متكيّف، ا: إثبات دليل، ح: حصاد).</p>
+
+      <form id="gen-form" onsubmit="return false;">
+        <label style="font-weight:700">المادة الدراسية:</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px">
+          <button type="button" class="quick-subj-btn active" data-s="علوم">علوم</button>
+          <button type="button" class="quick-subj-btn" data-s="لغة عربية">لغة عربية</button>
+          <button type="button" class="quick-subj-btn" data-s="رياضيات">رياضيات</button>
+          <button type="button" class="quick-subj-btn" data-s="لغة إنجليزية">لغة إنجليزية</button>
+          <button type="button" class="quick-subj-btn" data-s="تربية إسلامية">تربية إسلامية</button>
+          <button type="button" class="quick-subj-btn" data-s="موطن">موطن وجغرافيا</button>
+        </div>
+        <input type="text" id="subject" value="علوم" placeholder="أو اكتب اسم المادة…">
+
+        <div style="margin-top:14px">
+          <label style="font-weight:700">الصف المستهدف:</label>
+          <select id="grade">
+            <option>الصف الأول</option>
+            <option>الصف الثاني</option>
+            <option>الصف الثالث</option>
+            <option>الصف الرابع</option>
+            <option selected>الصف الخامس</option>
+            <option>الصف السادس</option>
+          </select>
+        </div>
+
+        <div style="margin-top:14px">
+          <label style="font-weight:700">موضوع الحصّة بدقة:</label>
+          <input type="text" id="topic" placeholder="مثال: حالات المادة، الكسور العشرية، همزة القطع والوصل، الدائرة الكهربائية…">
+        </div>
+
+        <div style="margin-top:14px">
+          <label style="font-weight:700">ملاحظات إضافية للمعلم (اختياري):</label>
+          <textarea id="notes" placeholder="أمثلة من بيئة الطالب اليومية، نقاط تحتاج إلى تركيز، أو احتياجات خاصة…"></textarea>
+        </div>
+
+        <!-- 🔑 خيار الخصوصية والمشاركة (الميزة المطلوبة) -->
+        <div class="privacy-selector-box">
+          <label style="font-weight:800;color:#0f172a;font-size:17px;display:flex;align-items:center;gap:8px">
+            <span>🛡️ خصوصية الحصة وخيار المشاركة:</span>
+          </label>
+          <p style="color:#64748b;font-size:14px;margin:4px 0 12px">حدد ما إذا كنت ترغب في مشاركة هذه الحصة مع زملائك المعلمين أو الاحتفاظ بها في ملفك الشخصي فقط:</p>
+
+          <div class="privacy-options">
+            <label class="privacy-radio-card selected" id="card-opt-public">
+              <input type="radio" name="lesson_privacy" id="privacy-public" value="public" checked>
+              <div>
+                <b style="color:#15803d;font-size:16px">🌐 مشاركة الحصة للجميع</b>
+                <p style="margin:4px 0 0;color:#64748b;font-size:13px">تظهر الحصة في أرشيف المدرسة العام لجميع المعلمين للاستفادة منها وتبادل الخبرات.</p>
+              </div>
+            </label>
+
+            <label class="privacy-radio-card" id="card-opt-private">
+              <input type="radio" name="lesson_privacy" id="privacy-private" value="private">
+              <div>
+                <b style="color:#b91c1c;font-size:16px">🔒 خاصة بي فقط (ملفي الشخصي)</b>
+                <p style="margin:4px 0 0;color:#64748b;font-size:13px">تُحفظ الحصة في ملفك الخاص فقط، ولا تظهر لباقي المعلمين لحفظ خصوصيتك التامة.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn big ok" id="gen" style="margin-top:14px">✨ ولّد الحصّة التفاعلية الذكية</button>
+      </form>
+
+      <div id="genout" style="margin-top:18px"></div>
+    </div>
+  </section>
+
+  <!-- إطلاق الحصة للطلاب (الكود والباركود) -->
+  <div id="sess"></div>
+
+  <!-- مودال دخول الطالب السريع -->
+  <div id="pupil-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:24px;max-width:440px;width:100%;padding:28px 24px;position:relative;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25)">
+      <button id="close-pupil-modal" style="position:absolute;left:14px;top:14px;border:0;background:#f1f5f9;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer">✕</button>
+      <div style="font-size:44px;margin-bottom:6px">🎒</div>
+      <h2 style="margin:0 0 8px">أنا طالب — ادخل إلى حصتك</h2>
+      <p style="color:#64748b;font-size:14px;margin:0 0 16px">اكتب رمز الدخول المكون من ٤ إلى ٦ خانات الذي أرسله معلمك:</p>
+      <input type="text" id="modal-join-code" maxlength="6" placeholder="مثال: K7QM" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:26px;font-weight:800;text-transform:uppercase;margin-bottom:12px">
+      <button class="btn big" id="modal-join-btn">ادخل الحصّة ⬅</button>
+      <p id="modal-join-msg" style="color:#e5484d;font-weight:700;margin:10px 0 0;min-height:22px"></p>
+    </div>
+  </div>
+</main>
+
+<script src="teacher.js"></script>
+</body>
+</html>
