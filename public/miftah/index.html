@@ -7,7 +7,7 @@
 <meta name="description" content="«مفتاح» — اكتبِ اسمَك وكودَ الدخول من معلّمك وابدأ الحصّة.">
 <meta property="og:title" content="مفتاح — ادخلْ إلى حصّتك">
 <meta property="og:description" content="اكتبْ اسمَك وكودَ الدخول الذي أرسله معلّمك.">
-<meta property="og:image" content="https://miftah-generator.sites.tab.bot/assets/logo.jpg">
+<meta property="og:image" content="https://musherfe.com/school_logo.png">
 <link rel="icon" href="assets/logo.jpg">
 <link rel="stylesheet" href="site.css">
 <style>
@@ -53,7 +53,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
   try { nm.value = localStorage.getItem('manasa-name') || ''; } catch (_) {}
   var q = new URLSearchParams(location.search); if (q.get('code')) cd.value = q.get('code').toUpperCase();
   cd.addEventListener('input', function () { var p = cd.selectionStart; cd.value = cd.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); try { cd.setSelectionRange(p, p); } catch (_) {} });
-  var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
+  var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : '';
   function get(u) {
     var fullUrl = (u.startsWith('/api/') && apiBase) ? (apiBase + u) : u;
     return fetch(fullUrl).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });

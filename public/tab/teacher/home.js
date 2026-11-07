@@ -1,7 +1,7 @@
 (function () {
 var $ = function (id) { return document.getElementById(id); };
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
+var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : '';
 function call(p, b) {
   var url = (p.startsWith('/') ? p : ('/api/auth/' + p));
   if (apiBase && url.startsWith('/api/')) url = apiBase + url;

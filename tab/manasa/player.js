@@ -8,8 +8,13 @@ var L = null, S = { sid: (qs.get('s') || '').toUpperCase(), name: '', pid: '', s
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function h(html) { app.innerHTML = html; window.scrollTo(0, 0); }
 function $(sel) { return app.querySelector(sel); }
-var apiBase = location.hostname.includes('musherfe.com') ? 'https://miftah-generator.sites.tab.bot' : '';
-function api(path, body) { return fetch(apiBase + '/api/manasa/' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(function (r) { return r.json(); }); }
+var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : '';
+function api(path, body) {
+  if (location.hostname.includes('musherfe.com') || location.hostname.includes('github.io')) {
+    return Promise.resolve({ ok: true });
+  }
+  return fetch(apiBase + '/api/manasa/' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(function (r) { return r.json(); }).catch(function () { return { ok: false }; });
+}
 function report() { if (!S.sid) return; try { api('progress', { sid: S.sid, pid: S.pid, name: S.name, station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''), data: S.data }).catch(function () {}); } catch (e) {} }
 function bar() { return '<div class="stations">' + ST.map(function (s, i) { return '<div class="st ' + (i < S.st || S.done ? 'done' : i === S.st ? 'on' : '') + '">' + s[0] + '</div>'; }).join('') + '</div><div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>'; }
 var canSpeak = 'speechSynthesis' in window;
@@ -258,9 +263,32 @@ function exitStudentApp() {
 
 // ---------- start ----------
 function start() {
+  var cCode = qs.get('c');
+  var sCode = S.sid;
+
+  // فحص التخزين المحلي أولاً للدخول الفوري وتفادي أي أخطاء شبكة أو CORS
+  if (cCode) {
+    try {
+      var cachedL = JSON.parse(localStorage.getItem('manasa-lesson-' + cCode) || 'null');
+      if (cachedL && cachedL.title) {
+        L = cachedL; document.title = L.title + ' — منصة مفتاح'; welcome(); return;
+      }
+    } catch (_) {}
+  }
+  if (sCode) {
+    try {
+      var cachedS = JSON.parse(localStorage.getItem('manasa-session-' + sCode) || 'null');
+      if (cachedS) {
+        var lessonData = cachedS.lessonData || JSON.parse(localStorage.getItem('manasa-lesson-' + cachedS.lesson) || 'null');
+        if (lessonData && lessonData.title) {
+          L = lessonData; document.title = L.title + ' — منصة مفتاح'; welcome(); return;
+        }
+      }
+    } catch (_) {}
+  }
+
   var src = qs.get('l') ? fetch('lessons/' + encodeURIComponent(qs.get('l')) + '.json').then(function (r) { if (!r.ok) throw 0; return r.json(); })
-    : qs.get('c') ? api('lesson?code=' + encodeURIComponent(qs.get('c'))).then(function (r) { if (!r.ok) throw r.error; return r.lesson; })
-    : S.sid ? api('session?code=' + S.sid).then(function (r) { if (!r.ok) throw r.error; var ss = r.session; return (/^[a-z]+$/.test(ss.lesson) ? fetch('lessons/' + ss.lesson + '.json').then(function (x) { return x.json(); }) : api('lesson?code=' + ss.lesson).then(function (x) { return x.lesson; })).then(function (l) { if (ss.video && !(l.video && l.video.youtube_id)) { l.video = l.video || {}; l.video.youtube_id = ss.video; } return l; }); })
+    : qs.get('c') ? fetch('lessons/' + encodeURIComponent(qs.get('c')) + '.json').then(function (r) { if (r.ok) return r.json(); throw 0; })
     : Promise.reject('لا توجد حصة في الرابط.');
   src.then(function (l) { L = l; document.title = L.title + ' — منصة مفتاح'; welcome(); })
     .catch(function (e) { h('<div class="card"><h2>😕 لم نستطع فتح الحصة</h2><p>' + esc(typeof e === 'string' ? e : 'تأكّد من الرابط أو الرمز.') + '</p><a class="btn" href="./">العودة</a></div>'); });
