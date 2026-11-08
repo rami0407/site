@@ -70,11 +70,39 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
       location.href = url;
     }
     function fail(t) { go.disabled = false; go.textContent = 'ادخل'; m.textContent = t; cd.focus(); cd.select(); }
-    get('/api/manasa/session?code=' + encodeURIComponent(code)).then(function (r) {
-      if (r.ok) return done('manasa/lesson.html?s=' + code + '&go=1');
-      if (code.length === 5) return get('/api/manasa/lesson?code=' + code).then(function (x) { if (x.ok) done('manasa/lesson.html?c=' + code + '&go=1'); else fail('لم نجدْ حصّةً بهذا الكود. تأكّدْ من الكود مع معلّمك.'); });
-      fail('لم نجدْ حصّةً بهذا الكود. تأكّدْ من الكود مع معلّمك.');
-    }).catch(function () { fail('لا يوجد اتّصال بالإنترنت. جرّبْ مرّةً أخرى.'); });
+
+    // 1. فحص التخزين المحلي أولاً للدخول الفوري
+    try {
+      var locL = localStorage.getItem('manasa-lesson-' + code);
+      var locS = localStorage.getItem('manasa-session-' + code);
+      if (locL || locS) return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
+      var arch = JSON.parse(localStorage.getItem('miftah_archive_lessons') || '[]');
+      if (arch.some(function (x) { return String(x.code || '').toUpperCase() === code; })) {
+        return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
+      }
+    } catch (_) {}
+
+    // 2. فحص السحابة (Firestore) مباشرة عبر REST API لتعمل على جميع أجهزة الطلاب والواتساب
+    fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons/' + encodeURIComponent(code))
+      .then(function (r) {
+        if (r.ok) return r.json();
+        throw new Error('not_in_cloud');
+      })
+      .then(function (doc) {
+        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+          try {
+            var parsed = JSON.parse(doc.fields.json.stringValue);
+            localStorage.setItem('manasa-lesson-' + code, JSON.stringify(parsed));
+            localStorage.setItem('manasa-session-' + code, JSON.stringify({ code: code, lesson: code, title: parsed.title, lessonData: parsed }));
+          } catch (_) {}
+          return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
+        }
+        throw new Error('empty');
+      })
+      .catch(function () {
+        // 3. احتياط للروابط أو الجلسات الأخرى
+        return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
+      });
   });
 
   var portBtn = document.getElementById('my-portfolio-btn');

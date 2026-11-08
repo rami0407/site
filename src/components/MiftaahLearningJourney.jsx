@@ -6691,15 +6691,77 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                   </span>
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>
-                      أنت الآن في وضع: تعديل ومعاينة الحصة بنمط شاشة التلميذ التفاعلية
+                      أنت الآن في وضع: فحص وتعديل الحصة المولّدة بنمط شاشة التلميذ التفاعلية
                     </div>
-                    <div style={{ fontSize: '0.86rem', opacity: 0.9 }}>
-                      الدرس المعروض: <strong>{activeLesson.title}</strong> — كود الطلاب: <strong>{activeLesson.code || activeLesson.pin}</strong>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.95, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                      <span>الدرس المعروض: <strong>{activeLesson.title}</strong></span>
+                      <span>— كود الحصة للطلاب:</span>
+                      <span style={{
+                        background: '#ffffff',
+                        color: '#1e3a8a',
+                        padding: '2px 12px',
+                        borderRadius: '8px',
+                        fontWeight: 900,
+                        letterSpacing: '2px',
+                        fontFamily: 'monospace',
+                        fontSize: '1rem'
+                      }}>
+                        {activeLesson.code || activeLesson.pin}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const c = activeLesson.code || activeLesson.pin || '';
+                      if (navigator.clipboard) navigator.clipboard.writeText(c);
+                      setToastMsg(`✅ تم نسخ كود الحصة (${c}) بنجاح!`);
+                    }}
+                    style={{
+                      background: '#ffffff',
+                      color: '#1e3a8a',
+                      border: 'none',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.86rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.12)'
+                    }}
+                  >
+                    📋 نسخ الكود ({activeLesson.code || activeLesson.pin})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const c = activeLesson.code || activeLesson.pin || '';
+                      const directLink = `${window.location.origin}/?miftaah_pin=${encodeURIComponent(c)}#/miftaah`;
+                      const msg = `🌟 أهلاً بكم طلابي الأعزاء في منصة مفتاح التفاعلية!\n\n📚 عنوان الحصة: *${activeLesson.title}*\n🔑 كود الدخول للحصة: *${c}*\n\n👇 اضغطوا على الرابط التالي للبدء مباشرة:\n${directLink}`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                    }}
+                    style={{
+                      background: '#25D366',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.86rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(37, 211, 102, 0.35)'
+                    }}
+                  >
+                    💬 إرسال الكود والرابط بالواتساب
+                  </button>
                   <button
                     type="button"
                     onClick={() => setTeacherSubView('my_lessons')}
@@ -6707,17 +6769,17 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       background: 'rgba(255, 255, 255, 0.2)',
                       color: '#ffffff',
                       border: '1.5px solid rgba(255, 255, 255, 0.4)',
-                      padding: '8px 16px',
+                      padding: '8px 14px',
                       borderRadius: '10px',
                       fontWeight: 700,
-                      fontSize: '0.88rem',
+                      fontSize: '0.86rem',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px'
                     }}
                   >
-                    <i className="fas fa-archive"></i> 📂 العودة للأرشيف
+                    <i className="fas fa-archive"></i> 📂 الأرشيف
                   </button>
                   <button
                     type="button"
@@ -6726,10 +6788,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       background: '#22c55e',
                       color: '#ffffff',
                       border: 'none',
-                      padding: '8px 16px',
+                      padding: '8px 14px',
                       borderRadius: '10px',
                       fontWeight: 800,
-                      fontSize: '0.88rem',
+                      fontSize: '0.86rem',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -6737,7 +6799,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
                     }}
                   >
-                    <i className="fas fa-save"></i> 💾 حفظ التعديلات سحابياً
+                    <i className="fas fa-save"></i> 💾 حفظ التعديلات
                   </button>
                   <button
                     type="button"
@@ -6746,10 +6808,10 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       background: '#f97316',
                       color: '#ffffff',
                       border: 'none',
-                      padding: '8px 16px',
+                      padding: '8px 14px',
                       borderRadius: '10px',
                       fontWeight: 800,
-                      fontSize: '0.88rem',
+                      fontSize: '0.86rem',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -6757,7 +6819,7 @@ export default function MiftaahLearningJourney({ onSwitchTab }) {
                       boxShadow: '0 2px 8px rgba(249, 115, 22, 0.3)'
                     }}
                   >
-                    <i className="fas fa-play"></i> 🚀 بدء وبث الحصة للطلاب
+                    <i className="fas fa-play"></i> 🚀 بدء وبث الحصة
                   </button>
                 </div>
               </div>

@@ -8,11 +8,11 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
-<link rel="stylesheet" href="manasa.css?v=20261107_corsfree">
+<link rel="stylesheet" href="manasa.css?v=20261108_v5">
 <script>
 // إجبار المتصفح على جلب أحدث نسخة بدون كاش
 (function() {
-  var vTag = 'v=hub_20261107_v3';
+  var vTag = 'v=hub_20261108_v5';
   if (!window.location.search.includes(vTag)) {
     var sep = window.location.search ? '&' : '?';
     window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
@@ -26,6 +26,19 @@
 .quick-subj-btn:hover,.quick-subj-btn.active{background:#0b6bcb;color:#fff;border-color:#0b6bcb}
 .lesson-actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
 .lesson-actions-row .btn{min-height:42px;padding:8px 16px;font-size:15px;margin:0}
+.whatsapp-btn{background:#25D366 !important;color:#fff !important;border:0;font-weight:800;display:inline-flex;align-items:center;gap:6px;box-shadow:0 3px 0 #1da851 !important}
+.whatsapp-btn:hover{background:#1ebe5d !important}
+.code-hero-banner{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#0b6bcb 100%);color:#fff;border-radius:22px;padding:22px;margin-bottom:18px;box-shadow:0 12px 32px rgba(11,107,203,0.22)}
+.code-box-pill{background:#fff;color:#0f172a;border-radius:16px;padding:10px 20px;display:inline-flex;align-items:center;gap:12px;box-shadow:0 4px 15px rgba(0,0,0,0.18)}
+.code-box-pill .code-num{font-size:28px;font-weight:900;letter-spacing:5px;color:#0b6bcb;direction:ltr;font-family:monospace}
+.station-edit-card{background:#fff;border:2px solid #e2e8f0;border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 4px 14px rgba(0,0,0,0.04)}
+.station-edit-card h3{margin:0 0 12px;color:#0b2a4a;font-size:20px;display:flex;align-items:center;gap:8px;border-bottom:2px solid #f1f5f9;padding-bottom:10px}
+.station-badge-letter{width:38px;height:38px;border-radius:12px;background:#0b6bcb;color:#fff;display:inline-grid;place-items:center;font-weight:900;font-size:20px}
+.sub-item-box{background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:14px;padding:14px;margin:12px 0}
+.opt-edit-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.opt-edit-row input[type=radio]{width:20px;height:20px;margin:0;accent-color:#16a34a;cursor:pointer}
+.opt-edit-row input[type=text]{flex:1;margin:0}
+.toast-float{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 24px;border-radius:999px;font-weight:700;font-size:15px;z-index:9999;box-shadow:0 10px 25px rgba(0,0,0,0.25);animation:fadeIn .25s}
 </style>
 </head>
 <body>
@@ -42,11 +55,11 @@
 </header>
 
 <main class="wrap">
-  <!-- 1. الشاشة الرئيسية: الزران الأساسيان فقط -->
+  <!-- 1. الشاشة الرئيسية: الزران الأساسيان -->
   <section id="view-hub" class="hub-container">
     <div class="hub-title-box">
       <h1>منصّة مفتاح التفاعلية</h1>
-      <p>صمّم حصصك بالذكاء الاصطناعي وفق نموذج «مفتاح»، وتصفح أرشيف الحصص أو شارك زملاءك المعلمين.</p>
+      <p>صمّم حصصك بالذكاء الاصطناعي وفق نموذج «مفتاح»، وافحصها وعدّلها وشارك كود الحصة مباشرة عبر واتساب أو تصفح الأرشيف.</p>
     </div>
 
     <div class="hub-cards-grid">
@@ -54,7 +67,7 @@
       <div id="btn-open-archive" class="hub-btn-card primary" role="button" tabindex="0">
         <div class="hub-icon-circle">🗂️</div>
         <h2 class="hub-card-title">أرشيف الحصص التفاعلية</h2>
-        <p class="hub-card-desc">تصفّح بنك الحصص التفاعلية لمدرسة مشيرفة (الحصص النموذجية وحصص المعلمين)، وحصصك الخاصة المحفوظة في ملفك مع إمكانية إطلاق الحصة فوراً أو تعديلها.</p>
+        <p class="hub-card-desc">تصفّح بنك الحصص التفاعلية لمدرسة مشيرفة (جميع الحصص المولّدة، الحصص النموذجية، وحصصك الخاصة) مع إمكانية فحصها وتعديلها وإرسال الكود بالواتساب.</p>
         <div class="hub-action-pill">
           <span>استعراض الأرشيف</span>
           <span>⬅</span>
@@ -65,7 +78,7 @@
       <div id="btn-open-generator" class="hub-btn-card secondary" role="button" tabindex="0">
         <div class="hub-icon-circle">✨</div>
         <h2 class="hub-card-title">توليد حصّة تفاعلية جديدة</h2>
-        <p class="hub-card-desc">ولّد حصة جديدة بالذكاء الاصطناعي وفق نموذج مفتاح (م-ف-ت-ا-ح) مع خيار الحفاظ على خصوصية الحصة أو مشاركتها للجميع في الأرشيف.</p>
+        <p class="hub-card-desc">ولّد حصة جديدة بالذكاء الاصطناعي وفق نموذج مفتاح (م-ف-ت-ا-ح)؛ سينقلك الموقع فور التوليد إلى صفحة الحصة لفحصها وتعديلها ونسخ الكود وإرساله بالواتساب.</p>
         <div class="hub-action-pill">
           <span>ابدأ التوليد الآن</span>
           <span>⬅</span>
@@ -74,7 +87,7 @@
     </div>
   </section>
 
-  <!-- 2. واجهة الأرشيف (تظهر عند النقر على أرشيف الحصص وتضم الحصص النموذجية وحصص المعلمين) -->
+  <!-- 2. واجهة الأرشيف -->
   <section id="view-archive" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <button class="btn alt" id="back-to-hub-from-archive" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
@@ -85,21 +98,25 @@
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div>
           <h2 style="margin:0 0 4px">📚 بنك وأرشيف الحصص التفاعلية</h2>
-          <p style="color:#5a6b7c;font-size:15px;margin:0">استعرض الحصص النموذجية والمشتركة لجميع معلمي المدرسة، أو الحصص الخاصة المحفوظة في ملفك الشخصي</p>
+          <p style="color:#5a6b7c;font-size:15px;margin:0">جميع الحصص التي ولّدتها والحصص المشتركة لمعلمي مدرسة مشيرفة جاهزة للفحص والتعديل والمشاركة</p>
         </div>
         <div id="archive-count-badge" style="background:#e0f2fe;color:#0369a1;padding:6px 14px;border-radius:999px;font-weight:800;font-size:14px">
           جاري التحميل…
         </div>
       </div>
 
-      <!-- تبويبات الخصوصية والمشاركة -->
+      <!-- تبويبات الأرشيف -->
       <div class="archive-tabs">
-        <button class="archive-tab active" id="tab-public" data-tab="public">
-          <span>🌐 حصص المدرسة المشتركة (تظهر للجميع)</span>
+        <button class="archive-tab active" id="tab-all" data-tab="all">
+          <span>📚 كل الحصص المتاحة (حصصي + المدرسة)</span>
+          <span class="pill-badge" id="count-all" style="background:#e0f2fe;color:#0369a1;padding:2px 8px">0</span>
+        </button>
+        <button class="archive-tab" id="tab-public" data-tab="public">
+          <span>🌐 حصص المدرسة المشتركة</span>
           <span class="pill-badge" id="count-public" style="background:#dcfce7;color:#15803d;padding:2px 8px">0</span>
         </button>
         <button class="archive-tab" id="tab-private" data-tab="private">
-          <span>🔒 حصصي الخاصة (ملفي الخاص)</span>
+          <span>🔒 حصصي الخاصة فقط</span>
           <span class="pill-badge" id="count-private" style="background:#fee2e2;color:#b91c1c;padding:2px 8px">0</span>
         </button>
       </div>
@@ -107,7 +124,7 @@
       <!-- شريط البحث والفلترة -->
       <div class="filter-bar">
         <div>
-          <input type="text" id="archive-search" placeholder="🔍 ابحث بالموضوع، المادة، أو اسم المعلم…">
+          <input type="text" id="archive-search" placeholder="🔍 ابحث بالموضوع، الكود، المادة، أو اسم المعلم…">
         </div>
         <div>
           <select id="archive-filter-subj">
@@ -140,7 +157,7 @@
     </div>
   </section>
 
-  <!-- 3. واجهة التوليد (تظهر عند النقر على توليد حصة) -->
+  <!-- 3. واجهة التوليد -->
   <section id="view-generator" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <button class="btn alt" id="back-to-hub-from-gen" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
@@ -149,7 +166,7 @@
 
     <div class="card" style="margin-top:0">
       <h2 style="margin:0 0 6px">✨ توليد حصّة تفاعلية جديدة بالذكاء الاصطناعي</h2>
-      <p style="color:#5a6b7c;margin-top:0;font-size:15px">توليد مسار تعلّم تفاعلي كامل وفق نموذج «مفتاح» (م: مشوّق، ف: فهم، ت: تدريب متكيّف، ا: إثبات دليل، ح: حصاد).</p>
+      <p style="color:#5a6b7c;margin-top:0;font-size:15px">توليد مسار تعلّم تفاعلي كامل وفق نموذج «مفتاح» (م: مشوّق، ف: فهم، ت: تدريب متكيّف، ا: إثبات دليل، ح: حصاد). سينقلك الموقع فور الضغط إلى الحصة المولّدة لفحصها وتعديلها ومشاركة الكود بالواتساب.</p>
 
       <form id="gen-form" onsubmit="return false;">
         <label style="font-weight:700">المادة الدراسية:</label>
@@ -177,7 +194,7 @@
 
         <div style="margin-top:14px">
           <label style="font-weight:700">موضوع الحصّة بدقة:</label>
-          <input type="text" id="topic" placeholder="مثال: حالات المادة، الكسور العشرية، همزة القطع والوصل، الدائرة الكهربائية…">
+          <input type="text" id="topic" placeholder="مثال: الجبال، حالات المادة، الكسور العشرية، همزة القطع والوصل، معركة بدر…">
         </div>
 
         <div style="margin-top:14px">
@@ -211,17 +228,30 @@
           </div>
         </div>
 
-        <button class="btn big ok" id="gen" style="margin-top:14px">✨ ولّد الحصّة التفاعلية الذكية</button>
+        <button class="btn big ok" id="gen" style="margin-top:14px">✨ ولّد الحصّة التفاعلية الذكية وانتقل إليها فوراً</button>
       </form>
 
       <div id="genout" style="margin-top:18px"></div>
     </div>
   </section>
 
+  <!-- 4. واجهة فحص وتعديل الحصة المولدة مباشرة (تفتح تلقائياً فور التوليد أو عند النقر على فحص/تعديل) -->
+  <section id="view-inspector" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn alt" id="back-to-archive-from-inspector" style="min-height:44px;padding:8px 18px;margin:0">🗂️ الذهاب إلى الأرشيف</button>
+        <button class="btn alt" id="back-to-gen-from-inspector" style="min-height:44px;padding:8px 18px;margin:0">✨ توليد حصة أخرى</button>
+      </div>
+      <button class="btn ok" id="save-inspector-top-btn" style="min-height:44px;padding:8px 22px;margin:0">💾 حفظ جميع التعديلات</button>
+    </div>
+
+    <div id="inspector-content"></div>
+  </section>
+
   <!-- إطلاق الحصة للطلاب (الكود والباركود) -->
   <div id="sess"></div>
 </main>
 
-<script src="teacher.js?v=20261107_corsfree"></script>
+<script src="teacher.js?v=20261108_v5"></script>
 </body>
 </html>

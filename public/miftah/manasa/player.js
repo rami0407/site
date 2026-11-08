@@ -262,34 +262,85 @@ function exitStudentApp() {
 }
 
 // ---------- start ----------
+function fetchCloudLessonByCode(code) {
+  var cleanCode = String(code || '').trim().toUpperCase();
+  if (!cleanCode) return Promise.reject('رمز غير صالح');
+  return fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons/' + encodeURIComponent(cleanCode))
+    .then(function (r) {
+      if (!r.ok) throw new Error('not_found');
+      return r.json();
+    })
+    .then(function (doc) {
+      if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+        var parsed = JSON.parse(doc.fields.json.stringValue);
+        try {
+          localStorage.setItem('manasa-lesson-' + cleanCode, JSON.stringify(parsed));
+          localStorage.setItem('manasa-session-' + cleanCode, JSON.stringify({
+            code: cleanCode,
+            lesson: cleanCode,
+            title: parsed.title,
+            lessonData: parsed
+          }));
+        } catch (_) {}
+        return parsed;
+      }
+      throw new Error('empty');
+    });
+}
+
+function findLocalLessonByCode(code) {
+  var cleanCode = String(code || '').trim().toUpperCase();
+  if (!cleanCode) return null;
+  try {
+    var cachedL = JSON.parse(localStorage.getItem('manasa-lesson-' + cleanCode) || 'null');
+    if (cachedL && cachedL.title) return cachedL;
+  } catch (_) {}
+  try {
+    var cachedS = JSON.parse(localStorage.getItem('manasa-session-' + cleanCode) || 'null');
+    if (cachedS) {
+      var ld = cachedS.lessonData || JSON.parse(localStorage.getItem('manasa-lesson-' + cachedS.lesson) || 'null');
+      if (ld && ld.title) return ld;
+    }
+  } catch (_) {}
+  try {
+    var arch = JSON.parse(localStorage.getItem('miftah_archive_lessons') || '[]');
+    var found = arch.find(function (item) { return String(item.code || '').toUpperCase() === cleanCode; });
+    if (found && found.data && found.data.title) return found.data;
+  } catch (_) {}
+  return null;
+}
+
 function start() {
   var cCode = qs.get('c');
   var sCode = S.sid;
+  var targetCode = cCode || sCode;
 
-  // فحص التخزين المحلي أولاً للدخول الفوري وتفادي أي أخطاء شبكة أو CORS
-  if (cCode) {
-    try {
-      var cachedL = JSON.parse(localStorage.getItem('manasa-lesson-' + cCode) || 'null');
-      if (cachedL && cachedL.title) {
-        L = cachedL; document.title = L.title + ' — منصة مفتاح'; welcome(); return;
-      }
-    } catch (_) {}
-  }
-  if (sCode) {
-    try {
-      var cachedS = JSON.parse(localStorage.getItem('manasa-session-' + sCode) || 'null');
-      if (cachedS) {
-        var lessonData = cachedS.lessonData || JSON.parse(localStorage.getItem('manasa-lesson-' + cachedS.lesson) || 'null');
-        if (lessonData && lessonData.title) {
-          L = lessonData; document.title = L.title + ' — منصة مفتاح'; welcome(); return;
-        }
-      }
-    } catch (_) {}
+  // 1. فحص التخزين المحلي أولاً للدخول الفوري
+  if (targetCode) {
+    var localData = findLocalLessonByCode(targetCode);
+    if (localData && localData.title) {
+      L = localData;
+      document.title = L.title + ' — منصة مفتاح';
+      welcome();
+      return;
+    }
   }
 
-  var src = qs.get('l') ? fetch('lessons/' + encodeURIComponent(qs.get('l')) + '.json').then(function (r) { if (!r.ok) throw 0; return r.json(); })
-    : qs.get('c') ? fetch('lessons/' + encodeURIComponent(qs.get('c')) + '.json').then(function (r) { if (r.ok) return r.json(); throw 0; })
-    : Promise.reject('لا توجد حصة في الرابط.');
+  // 2. إذا كان رمز حصة مولّدة أو جلسة، نفحص السحابة (Firestore) أو ملفات الدروس الثابتة
+  var src;
+  if (qs.get('l')) {
+    src = fetch('lessons/' + encodeURIComponent(qs.get('l')) + '.json').then(function (r) { if (!r.ok) throw 0; return r.json(); });
+  } else if (targetCode) {
+    src = fetchCloudLessonByCode(targetCode).catch(function () {
+      return fetch('lessons/' + encodeURIComponent(targetCode) + '.json').then(function (r) {
+        if (r.ok) return r.json();
+        throw 'لم نجد الحصة بالرمز (' + targetCode + '). تأكّد من الرمز مع معلّمك.';
+      });
+    });
+  } else {
+    src = Promise.reject('لا توجد حصة في الرابط.');
+  }
+
   src.then(function (l) { L = l; document.title = L.title + ' — منصة مفتاح'; welcome(); })
     .catch(function (e) { h('<div class="card"><h2>😕 لم نستطع فتح الحصة</h2><p>' + esc(typeof e === 'string' ? e : 'تأكّد من الرابط أو الرمز.') + '</p><a class="btn" href="./">العودة</a></div>'); });
 }
@@ -324,7 +375,7 @@ function stationM() {
   var html = head('🔍 ' + esc(k.title || 'لنبدأ بلغز!')) + '<p class="story">' + esc(k.story) + '</p>' + sayBtn(k.story + ' ' + k.question) + '<p class="q">❓ ' + esc(k.question) + '</p>' +
     '<label>ما تخمينُك؟ اكتبْه (لا يوجدُ خطأٌ هنا):</label><textarea id="guess"></textarea></div>';
   if (v.youtube_id) html += '<div class="card"><h3>🎬 شاهِدْ</h3><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(v.youtube_id) + '?rel=0" title="' + esc(v.title || 'فيديو') + '" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div><p class="muted">' + esc(v.title || '') + '</p></div>';
-  if (k.riddle) html += '<div class="card"><h3>🧩 حَزّورة</h3><p>' + esc(k.riddle.q) + '</p>' + sayBtn(k.riddle.q) + ' <button class="btn alt" id="rh">💡 تلميح</button> <button class="btn alt" id="ra">👀 الجواب</button><div id="rr"></div></div>';
+  if (k.riddle) { var rq = k.riddle.q || k.riddle.text || ''; html += '<div class="card"><h3>🧩 حَزّورة</h3><p>' + esc(rq) + '</p>' + sayBtn(rq) + ' <button class="btn alt" id="rh">💡 تلميح</button> <button class="btn alt" id="ra">👀 الجواب</button><div id="rr"></div></div>'; }
   html += '<div class="card">' + next('إلى محطّة «ف» ⬅', function () { S.data.guess = ($('#guess').value || '').slice(0, 300); report(); stationF(0); }) + '</div>';
   h(html);
   setTimeout(function () {
@@ -410,8 +461,8 @@ function game() {
 }
 function brk() {
   ctx(L.recap, null);
-  var k = L.break, s = k.seconds || 30;
-  h(head('🤸 ' + esc(k.title || 'وقتُ الانتعاش!')) + '<p style="font-size:20px">' + esc(k.text) + '</p>' + sayBtn(k.text) + '<div class="timer" id="tm">' + s + '</div><button class="btn big alt" id="go">▶️ ابدأ</button><div id="after"></div></div>');
+  var k = L.break || {}, s = k.seconds || 30, btxt = k.text || k.activity || 'قف وتمدّد وخذ نفساً عميقاً!';
+  h(head('🤸 ' + esc(k.title || 'وقتُ الانتعاش!')) + '<p style="font-size:20px">' + esc(btxt) + '</p>' + sayBtn(btxt) + '<div class="timer" id="tm">' + s + '</div><button class="btn big alt" id="go">▶️ ابدأ</button><div id="after"></div></div>');
   $('#go').onclick = function () { $('#go').remove(); var iv = setInterval(function () { s--; $('#tm').textContent = s; if (s <= 0) { clearInterval(iv); $('#tm').textContent = '💪'; showNext(next('نعودُ إلى رحلتِنا! إلى محطّة «ا» ⬅', evidence)); } }, 1000); };
   showNext(next('تخطَّ ⬅', evidence, 'alt'));
 }
