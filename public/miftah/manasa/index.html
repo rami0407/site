@@ -62,23 +62,34 @@
       <p>صمّم حصصك بالذكاء الاصطناعي وفق نموذج «مفتاح»، وافحصها وعدّلها وشارك كود الحصة مباشرة عبر واتساب أو تصفح الأرشيف.</p>
     </div>
 
-    <div class="hub-cards-grid">
-      <!-- الزر الأول: الأرشيف -->
+    <div class="hub-cards-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <!-- الزر الأول: أرشيف الحصص لجميع المعلمين -->
       <div id="btn-open-archive" class="hub-btn-card primary" role="button" tabindex="0">
         <div class="hub-icon-circle">🗂️</div>
-        <h2 class="hub-card-title">أرشيف الحصص التفاعلية</h2>
-        <p class="hub-card-desc">تصفّح بنك الحصص التفاعلية لمدرسة مشيرفة (جميع الحصص المولّدة، الحصص النموذجية، وحصصك الخاصة) مع إمكانية فحصها وتعديلها وإرسال الكود بالواتساب.</p>
+        <h2 class="hub-card-title">أرشيف الحصص</h2>
+        <p class="hub-card-desc">جميع الحصص المولّدة لكلّ معلّمي مدرسة مشيرفة: ابحث، عاين، واستخدمها مع صفّك أو انسخها لحصصك.</p>
         <div class="hub-action-pill">
-          <span>استعراض الأرشيف</span>
+          <span>جميع حصص المعلمين</span>
           <span>⬅</span>
         </div>
       </div>
 
-      <!-- الزر الثاني: توليد حصة -->
+      <!-- الزر الثاني: مكتبتي (فقط حصص المعلم نفسه) -->
+      <div id="btn-open-mylibrary" class="hub-btn-card primary" style="border-color:#10b981;background:linear-gradient(145deg,#ffffff 0%,#ecfdf5 100%)" role="button" tabindex="0">
+        <div class="hub-icon-circle" style="background:linear-gradient(135deg,#059669,#10b981)">📚</div>
+        <h2 class="hub-card-title">مكتبتي</h2>
+        <p class="hub-card-desc">فقط الحصص المولّدة الخاصة بك أنت كمعلّم، بمربّعات مع الكود وزرّ المشاركة بالواتساب وفحص وتعديل الحصة.</p>
+        <div class="hub-action-pill" style="background:#d1fae5;color:#065f46">
+          <span>فتح مكتبتي الخاصة</span>
+          <span>⬅</span>
+        </div>
+      </div>
+
+      <!-- الزر الثالث: توليد حصة -->
       <div id="btn-open-generator" class="hub-btn-card secondary" role="button" tabindex="0">
         <div class="hub-icon-circle">✨</div>
         <h2 class="hub-card-title">توليد حصّة تفاعلية جديدة</h2>
-        <p class="hub-card-desc">ولّد حصة جديدة بالذكاء الاصطناعي وفق نموذج مفتاح (م-ف-ت-ا-ح)؛ سينقلك الموقع فور التوليد إلى صفحة الحصة لفحصها وتعديلها ونسخ الكود وإرساله بالواتساب.</p>
+        <p class="hub-card-desc">ولّد حصة جديدة بالذكاء الاصطناعي (بالعربية أو العبرية أو الإنجليزية)؛ ينقلك الموقع فور التوليد لفحصها ومشاركة الكود بالواتساب.</p>
         <div class="hub-action-pill">
           <span>ابدأ التوليد الآن</span>
           <span>⬅</span>
@@ -87,7 +98,7 @@
     </div>
   </section>
 
-  <!-- 2. واجهة الأرشيف -->
+  <!-- 2. واجهة الأرشيف ومكتبتي -->
   <section id="view-archive" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <button class="btn alt" id="back-to-hub-from-archive" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
@@ -97,26 +108,26 @@
     <div class="card" style="margin-top:0">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div>
-          <h2 style="margin:0 0 4px">📚 بنك وأرشيف الحصص التفاعلية</h2>
-          <p style="color:#5a6b7c;font-size:15px;margin:0">جميع الحصص التي ولّدتها والحصص المشتركة لمعلمي مدرسة مشيرفة جاهزة للفحص والتعديل والمشاركة</p>
+          <h2 id="archive-main-heading" style="margin:0 0 4px">🗂️ أرشيف الحصص ومكتبتي</h2>
+          <p id="archive-main-sub" style="color:#5a6b7c;font-size:15px;margin:0">جميع الحصص المولّدة لمعلمي مدرسة مشيرفة وحصصك الخاصة جاهزة للفحص والتعديل والمشاركة</p>
         </div>
         <div id="archive-count-badge" style="background:#e0f2fe;color:#0369a1;padding:6px 14px;border-radius:999px;font-weight:800;font-size:14px">
           جاري التحميل…
         </div>
       </div>
 
-      <!-- تبويبات الأرشيف -->
+      <!-- تبويبات الأرشيف ومكتبتي -->
       <div class="archive-tabs">
         <button class="archive-tab active" id="tab-all" data-tab="all">
-          <span>📚 كل الحصص المتاحة (حصصي + المدرسة)</span>
+          <span>🗂️ أرشيف الحصص (جميع حصص المعلمين)</span>
           <span class="pill-badge" id="count-all" style="background:#e0f2fe;color:#0369a1;padding:2px 8px">0</span>
         </button>
-        <button class="archive-tab" id="tab-public" data-tab="public">
-          <span>🌐 حصص المدرسة المشتركة</span>
+        <button class="archive-tab" id="tab-public" data-tab="mine">
+          <span>📚 مكتبتي (حصصي المولّدة الخاصة بي فقط)</span>
           <span class="pill-badge" id="count-public" style="background:#dcfce7;color:#15803d;padding:2px 8px">0</span>
         </button>
         <button class="archive-tab" id="tab-private" data-tab="private">
-          <span>🔒 حصصي الخاصة فقط</span>
+          <span>🔒 حصصي السرية فقط (غير المشاركة)</span>
           <span class="pill-badge" id="count-private" style="background:#fee2e2;color:#b91c1c;padding:2px 8px">0</span>
         </button>
       </div>
@@ -264,6 +275,6 @@
   <div id="sess"></div>
 </main>
 
-<script src="teacher.js?v=20261109_v6"></script>
+<script src="teacher.js?v=20261109_v7"></script>
 </body>
 </html>

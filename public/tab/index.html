@@ -125,30 +125,22 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
       document.getElementById('close-pm').onclick = function () { modal.style.display = 'none'; };
       modal.onclick = function (e) { if (e.target === modal) modal.style.display = 'none'; };
 
-      var localRecs = [];
-      try { localRecs = JSON.parse(localStorage.getItem('manasa-portfolio-' + name) || '[]'); } catch (_) {}
-      fetch(apiBase + '/api/manasa/portfolio?name=' + encodeURIComponent(name))
-        .then(function (r) { return r.json(); })
-        .then(function (r) {
-          var recs = (r && r.records && r.records.length) ? r.records : localRecs;
-          var pc = document.getElementById('p-content');
-          if (!pc) return;
-          if (!recs.length) {
-            pc.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b"><p>لا توجد حصص مسجلة باسمك بعد.</p><p style="font-size:13px">عندما تدخل أي حصة باسمك وتتقدم فيها، ستُسجل نتائجك هنا تلقائيًا.</p></div>';
-            return;
-          }
-          pc.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center"><span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">📚 ' + recs.length + ' حصص</span><span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">🌟 مكتملة: ' + recs.filter(function (x) { return x.done; }).length + '</span></div>' +
-            recs.map(function (rc) {
-              return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:10px;background:#f8fafc;text-align:right">' +
-                '<div style="display:flex;justify-content:space-between"><b>📖 ' + (rc.title || 'حصة') + '</b><span style="color:#64748b;font-size:12px">' + (rc.date || '') + '</span></div>' +
-                '<div style="margin:6px 0;font-size:13px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px">المحطة: ' + (rc.station || 'م') + (rc.done ? ' ✓' : '') + '</span> ' + (rc.durationText ? '<span style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:6px">⏱️ ' + rc.durationText + '</span> ' : '') + (rc.result ? '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px">' + (rc.result === 'a' ? 'حقق 🌟' : 'جزئي 🌱') + '</span>' : '') + '</div>' +
-                (rc.harvest ? '<div style="font-size:13px;margin-top:6px;background:#fff;border:1px solid #cbd5e1;padding:8px;border-radius:8px;color:#1b5e3a"><b>الحصاد:</b> ' + (rc.harvest[0] || '—') + '</div>' : '') +
-              '</div>';
-            }).join('');
-        }).catch(function () {
-          var pc = document.getElementById('p-content');
-          if (pc) pc.innerHTML = '<p style="text-align:center;color:#ef4444">تعذّر جلب البيانات حالياً.</p>';
-        });
+      var recs = [];
+      try { recs = JSON.parse(localStorage.getItem('manasa-portfolio-' + name) || '[]'); } catch (_) {}
+      var pc = document.getElementById('p-content');
+      if (!pc) return;
+      if (!recs.length) {
+        pc.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b"><p>لا توجد حصص مسجلة باسمك بعد.</p><p style="font-size:13px">عندما تدخل أي حصة باسمك وتتقدم فيها، ستُسجل نتائجك هنا تلقائيًا.</p></div>';
+        return;
+      }
+      pc.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center"><span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">📚 ' + recs.length + ' حصص</span><span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">🌟 مكتملة: ' + recs.filter(function (x) { return x.done; }).length + '</span></div>' +
+        recs.map(function (rc) {
+          return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:10px;background:#f8fafc;text-align:right">' +
+            '<div style="display:flex;justify-content:space-between"><b>📖 ' + (rc.title || 'حصة') + '</b><span style="color:#64748b;font-size:12px">' + (rc.date || '') + '</span></div>' +
+            '<div style="margin:6px 0;font-size:13px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px">المحطة: ' + (rc.station || 'م') + (rc.done ? ' ✓' : '') + '</span> ' + (rc.durationText ? '<span style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:6px">⏱️ ' + rc.durationText + '</span> ' : '') + (rc.result ? '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px">' + (rc.result === 'a' ? 'حقق 🌟' : 'جزئي 🌱') + '</span>' : '') + '</div>' +
+            (rc.harvest ? '<div style="font-size:13px;margin-top:6px;background:#fff;border:1px solid #cbd5e1;padding:8px;border-radius:8px;color:#1b5e3a"><b>الحصاد:</b> ' + (rc.harvest[0] || '—') + '</div>' : '') +
+          '</div>';
+        }).join('');
     };
   }
 })();

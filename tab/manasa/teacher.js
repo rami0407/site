@@ -118,12 +118,13 @@
   }
 
   // أزرار الشاشة الرئيسية والتنقل
-  if ($('btn-open-archive')) $('btn-open-archive').onclick = function () { showView('archive'); };
+  if ($('btn-open-archive')) $('btn-open-archive').onclick = function () { setArchiveTab('all'); showView('archive'); };
+  if ($('btn-open-mylibrary')) $('btn-open-mylibrary').onclick = function () { setArchiveTab('mine'); showView('archive'); };
   if ($('btn-open-generator')) $('btn-open-generator').onclick = function () { showView('generator'); };
   if ($('back-to-hub-from-archive')) $('back-to-hub-from-archive').onclick = function () { showView('hub'); };
   if ($('back-to-hub-from-gen')) $('back-to-hub-from-gen').onclick = function () { showView('hub'); };
   if ($('go-gen-from-archive')) $('go-gen-from-archive').onclick = function () { showView('generator'); };
-  if ($('go-archive-from-gen')) $('go-archive-from-gen').onclick = function () { showView('archive'); };
+  if ($('go-archive-from-gen')) $('go-archive-from-gen').onclick = function () { setArchiveTab('all'); showView('archive'); };
   if ($('back-to-archive-from-inspector')) $('back-to-archive-from-inspector').onclick = function () { showView('archive'); };
   if ($('back-to-gen-from-inspector')) $('back-to-gen-from-inspector').onclick = function () { showView('generator'); };
 
@@ -317,21 +318,28 @@
     } catch (_) {}
   }
 
-  var currentTab = 'all'; // 'all' | 'public' | 'private'
+  var currentTab = 'all'; // 'all' | 'mine' | 'private'
   var tabAllBtn = $('tab-all');
   var tabPublicBtn = $('tab-public');
   var tabPrivateBtn = $('tab-private');
 
   function setArchiveTab(tabName) {
-    currentTab = tabName;
-    if (tabAllBtn) tabAllBtn.classList.toggle('active', tabName === 'all');
-    if (tabPublicBtn) tabPublicBtn.classList.toggle('active', tabName === 'public');
-    if (tabPrivateBtn) tabPrivateBtn.classList.toggle('active', tabName === 'private');
+    currentTab = (tabName === 'mine' || tabName === 'public') ? 'mine' : (tabName === 'private' ? 'private' : 'all');
+    if (tabAllBtn) tabAllBtn.classList.toggle('active', currentTab === 'all');
+    if (tabPublicBtn) tabPublicBtn.classList.toggle('active', currentTab === 'mine');
+    if (tabPrivateBtn) tabPrivateBtn.classList.toggle('active', currentTab === 'private');
+    if ($('archive-main-heading')) {
+      $('archive-main-heading').textContent = currentTab === 'mine'
+        ? '📚 مكتبتي الخاصة (حصصي التي ولّدتها فقط)'
+        : currentTab === 'private'
+        ? '🔒 حصصي السرية فقط (غير المشاركة)'
+        : '🗂️ أرشيف الحصص العام (جميع حصص المعلمين)';
+    }
     renderArchive();
   }
 
   if (tabAllBtn) tabAllBtn.onclick = function () { setArchiveTab('all'); };
-  if (tabPublicBtn) tabPublicBtn.onclick = function () { setArchiveTab('public'); };
+  if (tabPublicBtn) tabPublicBtn.onclick = function () { setArchiveTab('mine'); };
   if (tabPrivateBtn) tabPrivateBtn.onclick = function () { setArchiveTab('private'); };
 
   var searchInput = $('archive-search');
@@ -412,25 +420,39 @@
     showToast(successMsg || '✅ تم النسخ بنجاح!');
   }
 
-  function displayLessonsList(allLessons) {
-    var teacherEmail = (currentTeacher.email || '').toLowerCase();
+  function checkIsMyLesson(x) {
+    if (!x || x.is_model || x.author_email === 'school@musherfe.com') return false;
+    var teacherEmail = (currentTeacher.email || '').trim().toLowerCase();
+    var teacherName = (currentTeacher.name || '').trim().toLowerCase();
+    var lEmail = String(x.author_email || '').trim().toLowerCase();
+    var lAuthor = String(x.author || '').trim().toLowerCase();
+    if (teacherEmail && lEmail && teacherEmail === lEmail) return true;
+    if (teacherName && lAuthor && teacherName === lAuthor) return true;
+    if (x.localOwner === true) return true;
+    return false;
+  }
 
-    var publicLessons = allLessons.filter(function (x) { return x.is_public !== false; });
+  function displayLessonsList(allLessons) {
+    var myLessonsOnly = allLessons.filter(function (x) {
+      return checkIsMyLesson(x);
+    });
     var privateLessons = allLessons.filter(function (x) {
-      var isOwner = (x.author_email && x.author_email.toLowerCase() === teacherEmail) || x.localOwner === true;
-      return x.is_public === false && isOwner;
+      return x.is_public === false && checkIsMyLesson(x);
     });
     var allVisibleLessons = allLessons.filter(function (x) {
-      var isOwner = (x.author_email && x.author_email.toLowerCase() === teacherEmail) || x.localOwner === true;
-      return x.is_public !== false || isOwner;
+      return x.is_public !== false || checkIsMyLesson(x);
     });
 
     if ($('count-all')) $('count-all').textContent = allVisibleLessons.length;
-    if ($('count-public')) $('count-public').textContent = publicLessons.length;
+    if ($('count-public')) $('count-public').textContent = myLessonsOnly.length;
     if ($('count-private')) $('count-private').textContent = privateLessons.length;
-    if ($('archive-count-badge')) $('archive-count-badge').textContent = 'إجمالي الحصص: ' + allVisibleLessons.length;
+    if ($('archive-count-badge')) {
+      $('archive-count-badge').textContent = currentTab === 'mine'
+        ? ('حصص مكتبتي: ' + myLessonsOnly.length)
+        : ('إجمالي أرشيف المدرسة: ' + allVisibleLessons.length);
+    }
 
-    var activeList = (currentTab === 'public') ? publicLessons : (currentTab === 'private') ? privateLessons : allVisibleLessons;
+    var activeList = (currentTab === 'mine' || currentTab === 'public') ? myLessonsOnly : (currentTab === 'private') ? privateLessons : allVisibleLessons;
 
     var query = (searchInput ? searchInput.value : '').trim().toLowerCase();
     var subj = filterSubj ? filterSubj.value : '';
@@ -1912,7 +1934,10 @@
   var urlParams = new URLSearchParams(location.search);
   if (urlParams.get('inspect')) {
     openLessonInspector(urlParams.get('inspect').toUpperCase());
+  } else if (urlParams.get('view') === 'generator') {
+    showView('generator');
   } else if (urlParams.get('view') === 'archive') {
+    if (urlParams.get('tab')) setArchiveTab(urlParams.get('tab'));
     showView('archive');
   } else {
     showView('hub');

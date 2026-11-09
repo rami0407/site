@@ -4,18 +4,53 @@
 var HARVEST = ['ماذا استفدت؟', 'ماذا ساعدني في التعلّم؟', 'أين سأقابل ما تعلّمته؟'];
 var ST = [['م', 'مُشوِّقٌ ومُحفِّز'], ['ف', 'فهمٌ وبناءُ المعنى'], ['ت', 'تدريبٌ وتطبيق'], ['ا', 'إثباتُ الدَّليل'], ['ح', 'حصادٌ ونقلُ الأثر']];
 var app = document.getElementById('app'), qs = new URLSearchParams(location.search);
-var L = null, S = { sid: (qs.get('s') || '').toUpperCase(), name: '', pid: '', st: 0, data: { checks: [0, 0], practice: [0, 0], level: 'medium', game: null, evidence: null, result: null, harvest: null, guess: '' } };
+var L = null, S = { sid: (qs.get('s') || qs.get('c') || '').toUpperCase(), name: '', pid: '', st: 0, data: { checks: [0, 0], practice: [0, 0], level: 'medium', game: null, evidence: null, result: null, harvest: null, guess: '' } };
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function h(html) { app.innerHTML = html; window.scrollTo(0, 0); }
 function $(sel) { return app.querySelector(sel); }
 var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : '';
 function api(path, body) {
-  if (location.hostname.includes('musherfe.com') || location.hostname.includes('github.io')) {
-    return Promise.resolve({ ok: true });
-  }
-  return fetch(apiBase + '/api/manasa/' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(function (r) { return r.json(); }).catch(function () { return { ok: false }; });
+  return Promise.resolve({ ok: true });
 }
-function report() { if (!S.sid) return; try { api('progress', { sid: S.sid, pid: S.pid, name: S.name, station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''), data: S.data }).catch(function () {}); } catch (e) {} }
+function report() {
+  if (!S.sid) return;
+  try {
+    var liveKey = 'manasa-live-state-' + S.sid;
+    var state = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":[],"help":[],"flash":null}');
+    if (!Array.isArray(state.pupils)) state.pupils = [];
+    var pupilObj = {
+      pid: S.pid || ('p_' + (S.name || 'pupil')),
+      name: S.name || 'طالب',
+      station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''),
+      level: S.data.level,
+      checks: S.data.checks,
+      practice: S.data.practice,
+      evidence: S.data.evidence,
+      result: S.data.result,
+      harvest: S.data.harvest,
+      guess: S.data.guess,
+      durationSec: S.data.durationSec || 0,
+      updatedAt: Date.now()
+    };
+    var idx = state.pupils.findIndex(function (p) { return (p.pid && p.pid === pupilObj.pid) || (p.name && p.name === pupilObj.name); });
+    if (idx >= 0) state.pupils[idx] = pupilObj;
+    else state.pupils.push(pupilObj);
+    localStorage.setItem(liveKey, JSON.stringify(state));
+    fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_live_sessions?documentId=' + encodeURIComponent(S.sid), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(state) } } })
+    }).then(function (r) {
+      if (r.status === 409) {
+        return fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_live_sessions/' + encodeURIComponent(S.sid), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(state) } } })
+        });
+      }
+    }).catch(function () {});
+  } catch (e) {}
+}
 function bar() { return '<div class="stations">' + ST.map(function (s, i) { return '<div class="st ' + (i < S.st || S.done ? 'done' : i === S.st ? 'on' : '') + '">' + s[0] + '</div>'; }).join('') + '</div><div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>'; }
 var canSpeak = 'speechSynthesis' in window;
 function getLessonLang() {
@@ -138,16 +173,15 @@ function startFlashWatcher() {
   if (flashCheckInterval || !S.sid) return;
   function check() {
     if (!S.sid) return;
-    fetch(apiBase + '/api/manasa/flash?sid=' + encodeURIComponent(S.sid))
-      .then(function (r) { return r.json(); })
-      .then(function (r) {
-        if (r && r.ok && r.flash) {
-          renderFlashOverlay(r.flash);
-        } else {
-          renderFlashOverlay(null);
-        }
-      })
-      .catch(function () {});
+    try {
+      var st = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || 'null');
+      if (st && st.flash && st.flash.active && st.flash.expiresAt > Date.now()) {
+        st.flash.remainingSec = Math.max(0, Math.ceil((st.flash.expiresAt - Date.now()) / 1000));
+        renderFlashOverlay(st.flash);
+      } else {
+        renderFlashOverlay(null);
+      }
+    } catch (_) {}
   }
   check();
   flashCheckInterval = setInterval(check, 2500);
@@ -183,14 +217,6 @@ function saveStudentPortfolioRecord() {
     list = list.filter(function (x) { return x.sid !== rec.sid || !rec.sid; });
     list.unshift(rec);
     localStorage.setItem('manasa-portfolio-' + name, JSON.stringify(list.slice(0, 40)));
-  } catch (_) {}
-
-  try {
-    fetch(apiBase + '/api/manasa/portfolio', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: name, record: rec })
-    }).catch(function () {});
   } catch (_) {}
 }
 
@@ -262,19 +288,6 @@ function openPortfolioModal(studentName) {
   }
 
   renderList(list);
-
-  fetch(apiBase + '/api/manasa/portfolio?name=' + encodeURIComponent(name))
-    .then(function (r) { return r.json(); })
-    .then(function (r) {
-      if (r && r.ok && r.records && r.records.length) {
-        var merged = r.records.slice();
-        list.forEach(function (loc) {
-          if (!merged.some(function (m) { return m.sid === loc.sid && loc.sid; })) merged.push(loc);
-        });
-        renderList(merged);
-      }
-    })
-    .catch(function () {});
 }
 
 function exitStudentApp() {
