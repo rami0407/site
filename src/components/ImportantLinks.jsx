@@ -489,8 +489,22 @@ const ImportantLinks = () => {
           (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج')))
         ));
 
-        localStorage.setItem('cached_important_links', JSON.stringify(filteredList));
-        setLinks(filteredList);
+        // Deduplicate links by normalized URL or Title so duplicate entries never appear
+        const seenUrls = new Set();
+        const seenTitles = new Set();
+        const deduplicatedList = [];
+        for (const item of filteredList) {
+          const normUrl = (item.url || '').trim().toLowerCase();
+          const normTitle = (item.title || '').trim().toLowerCase();
+          if (normUrl && seenUrls.has(normUrl)) continue;
+          if (normTitle && seenTitles.has(normTitle)) continue;
+          if (normUrl) seenUrls.add(normUrl);
+          if (normTitle) seenTitles.add(normTitle);
+          deduplicatedList.push(item);
+        }
+
+        localStorage.setItem('cached_important_links', JSON.stringify(deduplicatedList));
+        setLinks(deduplicatedList);
       } catch (error) {
         console.error("Error processing links:", error);
       }

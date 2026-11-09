@@ -597,6 +597,7 @@ const AdminDashboard = () => {
   const [initiatives, setInitiatives] = useState([]);
   const [principal, setPrincipal] = useState({ message: '', signature: '', image: '' });
   const [links, setLinks] = useState([]);
+  const [linkSearchQuery, setLinkSearchQuery] = useState('');
   const [gallery, setGallery] = useState([]);
   const [contactInfo, setContactInfo] = useState({
     phone: '',
@@ -2903,11 +2904,11 @@ const AdminDashboard = () => {
         }
       } catch (e) {}
       try {
-        const snapLinksEmtnan = await getDocs(query(collection(emtnanDb, 'links'), orderBy('createdAt', 'asc')));
+        const snapLinksEmtnan = await getDocs(collection(emtnanDb, 'links'));
         snapLinksEmtnan.forEach(d => linkMap.set(d.id, { ...d.data(), id: d.id }));
       } catch (e) {}
       try {
-        const snapLinksDb = await getDocs(query(collection(db, 'links'), orderBy('createdAt', 'asc')));
+        const snapLinksDb = await getDocs(collection(db, 'links'));
         snapLinksDb.forEach(d => linkMap.set(d.id, { ...d.data(), id: d.id }));
       } catch (e) {}
       const fetchedLinks = Array.from(linkMap.values());
@@ -8659,7 +8660,28 @@ const AdminDashboard = () => {
 
                     {/* Links Table */}
                     <div style={{ background: 'var(--bg-white)', padding: '2rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>الروابط الحالية للموقع ({links.length})</h3>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-dark)' }}>الروابط الحالية للموقع ({links.length})</h3>
+                        <div style={{ position: 'relative', minWidth: '260px' }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="🔍 ابحث في الروابط..."
+                            value={linkSearchQuery}
+                            onChange={(e) => setLinkSearchQuery(e.target.value)}
+                            style={{ padding: '0.5rem 0.75rem', fontSize: '0.88rem', borderRadius: '8px' }}
+                          />
+                          {linkSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setLinkSearchQuery('')}
+                              style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#999', fontSize: '1.1rem' }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
                       {links.length > 0 ? (
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
@@ -8673,7 +8695,15 @@ const AdminDashboard = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {links.map((link, idx) => (
+                              {links
+                                .filter(l => {
+                                  if (!linkSearchQuery.trim()) return true;
+                                  const q = linkSearchQuery.toLowerCase();
+                                  return (l.title && l.title.toLowerCase().includes(q)) ||
+                                         (l.url && l.url.toLowerCase().includes(q)) ||
+                                         (l.desc && l.desc.toLowerCase().includes(q));
+                                })
+                                .map((link, idx) => (
                                 <tr key={link.id || idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
                                   <td style={{ padding: '0.75rem', fontSize: '1.2rem', color: 'var(--primary)' }}>
                                     <i className={`fas ${link.icon || 'fa-link'}`}></i>
