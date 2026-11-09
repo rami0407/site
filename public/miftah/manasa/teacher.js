@@ -483,7 +483,7 @@
     }
 
     container.innerHTML = filtered.map(function (l) {
-      var isOwner = (l.author_email && l.author_email.toLowerCase() === teacherEmail) || l.localOwner === true;
+      var isOwner = checkIsMyLesson(l);
       var isPub = (l.is_public !== false);
       var studentUrl = buildStudentLessonUrl(l.code);
 
