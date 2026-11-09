@@ -18,12 +18,41 @@ function api(path, body) {
 function report() { if (!S.sid) return; try { api('progress', { sid: S.sid, pid: S.pid, name: S.name, station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''), data: S.data }).catch(function () {}); } catch (e) {} }
 function bar() { return '<div class="stations">' + ST.map(function (s, i) { return '<div class="st ' + (i < S.st || S.done ? 'done' : i === S.st ? 'on' : '') + '">' + s[0] + '</div>'; }).join('') + '</div><div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>'; }
 var canSpeak = 'speechSynthesis' in window;
-function sayBtn(text) { return canSpeak ? '<button class="btn say" data-say="' + esc(text) + '">🔊 اسمعْ</button>' : ''; }
-app.addEventListener('click', function (e) { var b = e.target.closest('[data-say]'); if (!b) return; speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(b.getAttribute('data-say')); u.lang = 'ar-SA'; u.rate = 0.9; var v = speechSynthesis.getVoices().filter(function (x) { return /^ar/i.test(x.lang); })[0]; if (v) u.voice = v; speechSynthesis.speak(u); });
+function getLessonLang() {
+  if (L && (L.lang === 'he' || L.lang === 'en' || L.lang === 'ar')) return L.lang;
+  var s = String((L && L.subject) || '').toLowerCase();
+  if (/عبري|עברית|hebrew/.test(s)) return 'he';
+  if (/إنجليز|انجليز|انكليز|english/.test(s)) return 'en';
+  return 'ar';
+}
+function speakUtterance(txt) {
+  if (!canSpeak || !txt) return;
+  speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(txt);
+  var heCount = (txt.match(/[\u0590-\u05FF]/g) || []).length;
+  var enCount = (txt.match(/[A-Za-z]/g) || []).length;
+  var arCount = (txt.match(/[\u0600-\u06FF]/g) || []).length;
+  var lang = getLessonLang();
+  if (heCount > arCount && heCount > enCount) lang = 'he';
+  else if (enCount > arCount && enCount > heCount) lang = 'en';
+  else if (arCount > heCount && arCount > enCount) lang = 'ar';
+  u.lang = lang === 'he' ? 'he-IL' : lang === 'en' ? 'en-US' : 'ar-SA';
+  u.rate = 0.9;
+  var prefix = lang === 'he' ? /^(he|iw)/i : lang === 'en' ? /^en/i : /^ar/i;
+  var v = speechSynthesis.getVoices().filter(function (x) { return prefix.test(x.lang); })[0];
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+function sayBtn(text) {
+  var l = getLessonLang();
+  var lbl = l === 'he' ? '🔊 האזן' : l === 'en' ? '🔊 Listen' : '🔊 اسمعْ';
+  return canSpeak ? '<button class="btn say" data-say="' + esc(text) + '">' + lbl + '</button>' : '';
+}
+app.addEventListener('click', function (e) { var b = e.target.closest('[data-say]'); if (!b) return; speakUtterance(b.getAttribute('data-say')); });
 function mcq(q, opts) {
   // opts: {feedback:true, onDone(correct, tries)}
   var id = 'q' + Math.random().toString(36).slice(2, 7);
-  var html = '<div class="q">' + esc(q.q) + '</div>' + q.options.map(function (o, i) { return '<button class="opt" data-q="' + id + '" data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '<div id="' + id + 'fb"></div>';
+  var html = '<div class="q" dir="auto">' + esc(q.q) + '</div>' + q.options.map(function (o, i) { return '<button class="opt" dir="auto" data-q="' + id + '" data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '<div id="' + id + 'fb"></div>';
   setTimeout(function () {
     var tries = 0, locked = false, first = null;
     document.querySelectorAll('[data-q="' + id + '"]').forEach(function (b) {
@@ -488,6 +517,49 @@ function evidence() {
 function getHarvestOptions(i, L) {
   var title = (L && L.title) || 'الدرس';
   var recap = (L && L.recap) || '';
+  var lang = getLessonLang();
+  if (lang === 'he') {
+    if (i === 0) {
+      return [
+        { text: 'הבנתי היטב את הנושא «' + title + '» ולמדתי איך ליישם אותו במשפטים ובמשימות.', type: 'good', icon: '🌟' },
+        { text: 'למדתי מילים וכללים חדשים ושימושיים על «' + title + '» שאני יכול/ה להסביר.', type: 'good', icon: '✅' },
+        { text: 'הנושא עדיין קצת מאתגר עבורי ואני זקוק/ה לתרגול נוסף.', type: 'warn', icon: '⚠️' }
+      ];
+    }
+    if (i === 1) {
+      return [
+        { text: 'ההסברים הברורים, הדוגמאות והתרגול המדורג באפליקציה.', type: 'good', icon: '💡' },
+        { text: 'קריאה בריכוז, ניסיון חוזר ובדיקת הרמזים של המורה.', type: 'good', icon: '🎯' },
+        { text: 'מיהרתי לבחור תשובות בלי לקרוא עד הסוף.', type: 'warn', icon: '❌' }
+      ];
+    }
+    return [
+      { text: 'בשיחות ובקריאה בחיי היומיום, בבית ובסביבה שלי.', type: 'good', icon: '🌍' },
+      { text: 'בשיעורי העברית הבאים ובפתרון משימות בכיתה עם חבריי.', type: 'good', icon: '🏫' },
+      { text: 'עדיין לא בטוח/ה איפה אשתמש בזה מחוץ לשיעור.', type: 'warn', icon: '🚫' }
+    ];
+  }
+  if (lang === 'en') {
+    if (i === 0) {
+      return [
+        { text: 'I understood "' + title + '" very well and learned how to use it in sentences.', type: 'good', icon: '🌟' },
+        { text: 'I learned new and useful English words and rules about "' + title + '".', type: 'good', icon: '✅' },
+        { text: 'I still find this topic a bit tricky and need more practice.', type: 'warn', icon: '⚠️' }
+      ];
+    }
+    if (i === 1) {
+      return [
+        { text: 'The interactive steps, clear examples, and practice questions in the app.', type: 'good', icon: '💡' },
+        { text: 'Reading carefully, using the hints, and trying again with focus.', type: 'good', icon: '🎯' },
+        { text: 'Rushing to pick answers without reading the explanation.', type: 'warn', icon: '❌' }
+      ];
+    }
+    return [
+      { text: 'In my daily life when reading, speaking, or writing in English.', type: 'good', icon: '🌍' },
+      { text: 'In school during upcoming English lessons and class activities.', type: 'good', icon: '🏫' },
+      { text: 'I am not sure yet where I will use it outside of class.', type: 'warn', icon: '🚫' }
+    ];
+  }
   if (i === 0) {
     // ماذا استفدت؟
     return [
@@ -619,8 +691,7 @@ function keyExplain() {
     if (r.ok) { S.cur.more = r.text; keyExplain(); } else sheet('<h3>💡</h3><p>' + esc(r.error || 'لم أستطع الآن.') + '</p><button class="btn kb" id="kh">🙋 أحتاجُ المعلّم</button>').querySelector('#kh').onclick = keyHelp;
   }).catch(function () { sheet('<p>لا يوجد اتّصال الآن.</p>'); });
 }
-function sayBtnK(t) { return canSpeak ? '<button class="btn say" data-sayk="' + esc(t) + '">🔊 اسمعْ</button>' : ''; }
-document.addEventListener('click', function (e) { var b = e.target.closest('[data-sayk]'); if (!b) return; speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(b.getAttribute('data-sayk')); u.lang = 'ar-SA'; u.rate = 0.9; var v = speechSynthesis.getVoices().filter(function (x) { return /^ar/i.test(x.lang); })[0]; if (v) u.voice = v; speechSynthesis.speak(u); });
+function sayBtnK(t) { return sayBtn(t); }
 function keyHelp() {
   if (!S.sid) return sheet('<h3>🙋 مساعدةُ المعلّم</h3><p>أنت تتعلّمُ الآنَ بدون صفٍّ متّصل، فلا يصلُ الطّلبُ إلى معلِّمِك. ارفعْ يدَك ✋ واسألْه مباشرةً.</p>');
   var sh = sheet('<h3>🙋 أحتاجُ مساعدةً من المعلّم</h3><label>بماذا أحتاجُ المساعدة؟ (اختياريّ)</label><input type="text" id="hn" maxlength="120" placeholder="مثلًا: لم أفهمْ الخطوة الثّانية"><button class="btn kb" id="hs">📨 أرسلْ إلى المعلّم</button>');

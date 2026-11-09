@@ -127,14 +127,49 @@
   if ($('back-to-archive-from-inspector')) $('back-to-archive-from-inspector').onclick = function () { showView('archive'); };
   if ($('back-to-gen-from-inspector')) $('back-to-gen-from-inspector').onclick = function () { showView('generator'); };
 
-  // اختيار المواد السريعة
-  document.querySelectorAll('.quick-subj-btn').forEach(function (btn) {
+  // ضبط لغة التوليد المختارة
+  function setGeneratorLanguage(langCode) {
+    var cleanLang = (langCode === 'he' || langCode === 'en') ? langCode : 'ar';
+    if ($('lesson-lang')) $('lesson-lang').value = cleanLang;
+    document.querySelectorAll('.quick-lang-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-lang-choice') === cleanLang);
+    });
+    var topicEl = $('topic');
+    if (topicEl) {
+      if (cleanLang === 'he') {
+        topicEl.placeholder = 'דוגמה: חיות הבית, עונות השנה, פעלים בזמן עבר, המשפחה שלי (أو اكتب الموضوع بالعربية وسيُولَّد بالعبرية)…';
+      } else if (cleanLang === 'en') {
+        topicEl.placeholder = 'Example: Present Simple, Animals, My Family, Daily Routine (أو اكتب الموضوع بالعربية وسيُولَّد بالإنجليزية)…';
+      } else {
+        topicEl.placeholder = 'مثال: الجبال، حالات المادة، الكسور العشرية، همزة القطع والوصل، معركة بدر…';
+      }
+    }
+  }
+
+  document.querySelectorAll('.quick-lang-btn').forEach(function (btn) {
     btn.onclick = function () {
-      document.querySelectorAll('.quick-subj-btn').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      if ($('subject')) $('subject').value = btn.getAttribute('data-s');
+      setGeneratorLanguage(btn.getAttribute('data-lang-choice'));
     };
   });
+
+  // اختيار المواد السريعة (مع التبديل التلقائي للغة الحصة عند اختيار عبري أو إنجليزي)
+  document.querySelectorAll('.quick-subj-btn[data-s]').forEach(function (btn) {
+    btn.onclick = function () {
+      document.querySelectorAll('.quick-subj-btn[data-s]').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      if ($('subject')) $('subject').value = btn.getAttribute('data-s');
+      var autoLang = btn.getAttribute('data-lang') || 'ar';
+      setGeneratorLanguage(autoLang);
+    };
+  });
+
+  if ($('subject')) {
+    $('subject').addEventListener('input', function () {
+      var v = (this.value || '').trim().toLowerCase();
+      if (/عبري|עברית|hebrew/.test(v)) setGeneratorLanguage('he');
+      else if (/إنجليز|انجليز|انكليز|english/.test(v)) setGeneratorLanguage('en');
+    });
+  }
 
   // 3. ضبط بطاقات اختيار الخصوصية والمشاركة
   var cardPublic = $('card-opt-public');
@@ -607,8 +642,24 @@
     return m ? m[1] : (/^[A-Za-z0-9_-]{11}$/.test(s) ? s : '');
   }
 
+  function detectLessonLanguage(subject, topic, explicitLang) {
+    if (explicitLang === 'he' || explicitLang === 'en') return explicitLang;
+    var s = String(subject || '').toLowerCase();
+    var t = String(topic || '');
+    if (/عبري|עברית|hebrew/.test(s)) return 'he';
+    if (/إنجليز|انجليز|انكليز|english/.test(s)) return 'en';
+    var heChars = (t.match(/[\u0590-\u05FF]/g) || []).length;
+    var enChars = (t.match(/[A-Za-z]/g) || []).length;
+    var arChars = (t.match(/[\u0600-\u06FF]/g) || []).length;
+    if (heChars > arChars && heChars > enChars) return 'he';
+    if (enChars > arChars && enChars > heChars) return 'en';
+    return explicitLang || 'ar';
+  }
+
   function normalizeLessonStructure(L) {
     if (!L) return null;
+    var lang = L.lang || detectLessonLanguage(L.subject, L.title, '');
+    L.lang = lang;
     L.hook = L.hook || {};
     L.hook.riddle = L.hook.riddle || { q: '', hint: '', answer: '' };
     if (!L.hook.riddle.q && L.hook.riddle.text) L.hook.riddle.q = L.hook.riddle.text;
@@ -618,19 +669,43 @@
     ['easy', 'medium', 'hard'].forEach(function (lv) {
       if (!Array.isArray(L.practice[lv])) L.practice[lv] = [];
     });
-    L.game = L.game || { title: 'لعبة التصنيف التفاعلية', instructions: 'صنّف كل عنصر في السلة المناسبة:', buckets: ['ينتمي للمفهوم', 'لا ينتمي للمفهوم'], items: [] };
-    if (!Array.isArray(L.game.buckets) || L.game.buckets.length < 2) L.game.buckets = ['ينتمي للمفهوم', 'لا ينتمي للمفهوم'];
+
+    var defGameTitle = lang === 'he' ? 'משחק המיון האינטראקטיבי' : lang === 'en' ? 'Interactive Sorting Game' : 'لعبة التصنيف التفاعلية';
+    var defGameInst = lang === 'he' ? 'מיינו כל פריט לסל המתאים:' : lang === 'en' ? 'Sort each item into the correct bucket:' : 'صنّف كل عنصر في السلة المناسبة:';
+    var defBuckets = lang === 'he' ? ['שייך לנושא', 'לא שייך לנושא'] : lang === 'en' ? ['Correct / Belongs', 'Incorrect / Does Not Belong'] : ['ينتمي للمفهوم', 'لا ينتمي للمفهوم'];
+
+    L.game = L.game || { title: defGameTitle, instructions: defGameInst, buckets: defBuckets, items: [] };
+    if (!Array.isArray(L.game.buckets) || L.game.buckets.length < 2) L.game.buckets = defBuckets;
     if (!Array.isArray(L.game.items)) L.game.items = [];
-    L.break = L.break || { title: 'وقت الانتعاش وتنشيط الدماغ', text: '', seconds: 30 };
+
+    var defBreakTitle = lang === 'he' ? 'זמן התרעננות ותנועה!' : lang === 'en' ? 'Brain Break & Refresh!' : 'وقت الانتعاش وتنشيط الدماغ';
+    L.break = L.break || { title: defBreakTitle, text: '', seconds: 30 };
     if (!L.break.text && L.break.activity) L.break.text = L.break.activity;
-    L.evidence = L.evidence || { instructions: 'أجب عن أسئلة الدليل الفردي بمفردك لإثبات فهمك:', items: [] };
+
+    var defEvidInst = lang === 'he' ? 'ענו בעצמכם על שאלות ההוכחה כדי להראות את הבנתכם:' : lang === 'en' ? 'Answer these questions on your own to show what you learned:' : 'أجب عن أسئلة الدليل الفردي بمفردك لإثبات فهمك:';
+    L.evidence = L.evidence || { instructions: defEvidInst, items: [] };
     if (!Array.isArray(L.evidence.items)) L.evidence.items = [];
+
     if (!Array.isArray(L.harvest) || L.harvest.length < 3) {
-      L.harvest = [
-        'ماذا استفدت اليوم من حصة «' + (L.title || 'الدرس') + '»؟',
-        'ما الذي ساعدني في التعلّم وفهم الفكرة؟',
-        'أين سأقابل وأطبق ما تعلّمته في حياتي اليومية؟'
-      ];
+      if (lang === 'he') {
+        L.harvest = [
+          'מה למדתי והפקתי היום מהשיעור על «' + (L.title || 'הנושא') + '»?',
+          'מה עזר לי ללמוד ולהבין את הנושא בצורה טובה?',
+          'איפה אפגוש ואיישם את מה שלמדתי בחיי היומיום?'
+        ];
+      } else if (lang === 'en') {
+        L.harvest = [
+          'What new ideas did I learn today about "' + (L.title || 'the lesson') + '"?',
+          'What helped me understand and learn best during this lesson?',
+          'How and where can I use what I learned in my daily life?'
+        ];
+      } else {
+        L.harvest = [
+          'ماذا استفدت اليوم من حصة «' + (L.title || 'الدرس') + '»؟',
+          'ما الذي ساعدني في التعلّم وفهم الفكرة؟',
+          'أين سأقابل وأطبق ما تعلّمته في حياتي اليومية؟'
+        ];
+      }
     }
     if (!Array.isArray(L.challenges)) L.challenges = [];
     return L;
@@ -1028,100 +1103,296 @@
   // =========================================================================
   var GROQ_API_KEY = ['gs', 'k_', 'Bjye', 'fCPla', '1HfTVuMYWdmW', 'Gdyb3FYujmC', 'KlPpsY3UJmzg', 'RUiR3EwZ'].join('');
 
-  function generateLessonWithRealAI(subject, grade, topic, notes, isPublic, author, authorEmail) {
+  function generateLessonWithRealAI(subject, grade, topic, notes, isPublic, author, authorEmail, explicitLang) {
     var code = 'M' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    var targetLang = detectLessonLanguage(subject, topic, explicitLang);
 
-    var prompt = 'أنت خبير تربوي ومؤلف مناهج في مدرسة مشيرفة الابتدائية. صمم حصة تفاعلية كاملة وغنية ودقيقة علمياً بنسبة 100% وفق نموذج «مفتاح» (م، ف، ت، ا، ح) حول:\n' +
-      '- الموضوع: ' + topic + '\n' +
-      '- المادة: ' + subject + '\n' +
-      '- الصف: ' + grade + '\n' +
-      (notes ? '- ملاحظات المعلم: ' + notes + '\n' : '') +
-      '\n⚠️ تعليمات صارمة جداً:\n' +
-      '1. يجب أن تكون جميع النصوص والقصص والخطوات والأسئلة والخيارات والتلميحات متمحورة بدقة علمية وتربوية عالية حول موضوع (' + topic + ') نفسه، ويُمنع منعاً باتاً استخدام عبارات عامة أو قالبية!\n' +
-      '2. أخرج كائن JSON صالحاً فقط (بدون أي نص خارجه) يطابق الهيكل التالي بدقة:\n' +
-      '{\n' +
-      '  "goal": "<اكتب هنا هدف التعلم الدقيق والواضح لدرس ' + topic + '>",\n' +
-      '  "success": ["<معيار النجاح الأول>", "<معيار النجاح الثاني>", "<معيار النجاح الثالث>"],\n' +
-      '  "recap": "<ملخص شامل ومبسط لقاعدة ومفاهيم ' + topic + ' في 3 جمل>",\n' +
-      '  "hook": {\n' +
-      '    "title": "<عنوان مشوق للمحطة الأولى حول ' + topic + '>",\n' +
-      '    "story": "<قصة واقعية مشوقة من 3-4 جمل تثير دهشة الطالب حول ' + topic + '>",\n' +
-      '    "question": "<سؤال فضول محفز للتفكير حول القصة؟>",\n' +
-      '    "more": "<توضيح مبسط إضافي يقرب فكرة ' + topic + ' لذهن الطالب>",\n' +
-      '    "riddle": {\n' +
-      '      "q": "<لغز ذكي وممتع يصف ' + topic + ' أو أحد عناصره الأساسية>",\n' +
-      '      "hint": "<تلميح ذكي يساعد الطالب على حل اللغز>",\n' +
-      '      "answer": "<الجواب الصحيح للغز>"\n' +
-      '    }\n' +
-      '  },\n' +
-      '  "explain": {\n' +
-      '    "steps": [\n' +
-      '      {\n' +
-      '        "title": "<عنوان الخطوة الأولى: تعريف ومفهوم ' + topic + '>",\n' +
-      '        "text": "<شرح علمي واضح ومفصل (3-4 جمل) مع مثال حي حول ' + topic + '>",\n' +
-      '        "more": "<تبسيط إضافي وتشبيه قريب لذهن الطالب>",\n' +
-      '        "check": { "q": "<سؤال فحص فهم مباشر عن الخطوة الأولى؟>", "options": ["<الإجابة الصحيحة الدقيقة>", "<خيار خاطئ 1>", "<خيار خاطئ 2>"], "answer": 0, "why": "<تعليل علمي لماذا الإجابة صحيحة>" }\n' +
-      '      },\n' +
-      '      {\n' +
-      '        "title": "<عنوان الخطوة الثانية: خصائص وأقسام أو خطوات ' + topic + '>",\n' +
-      '        "text": "<شرح تفصيلي للخصائص أو الأنواع أو القواعد الفرعية في ' + topic + '>",\n' +
-      '        "more": "<مثال توضيحي إضافي مبسط>",\n' +
-      '        "check": { "q": "<سؤال فحص فهم عن الخطوة الثانية؟>", "options": ["<خيار خاطئ 1>", "<الإجابة الصحيحة الدقيقة>", "<خيار خاطئ 2>"], "answer": 1, "why": "<تعليل علمي واضح>" }\n' +
-      '      },\n' +
-      '      {\n' +
-      '        "title": "<عنوان الخطوة الثالثة: تطبيقات وأهمية ' + topic + '>",\n' +
-      '        "text": "<شرح لكيفية تطبيق المفهوم وأهميته وأمثلة من الواقع>",\n' +
-      '        "more": "<خلاصة مركزة تساعد الطالب على التذكر>",\n' +
-      '        "check": { "q": "<سؤال فحص فهم تطبيقي عن الخطوة الثالثة؟>", "options": ["<الإجابة الصحيحة الدقيقة>", "<خيار خاطئ 1>", "<خيار خاطئ 2>"], "answer": 0, "why": "<تعليل علمي واضح>" }\n' +
-      '      }\n' +
-      '    ]\n' +
-      '  },\n' +
-      '  "practice": {\n' +
-      '    "easy": [\n' +
-      '      { "q": "<سؤال سهل ومباشر 1 حول ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" },\n' +
-      '      { "q": "<سؤال سهل ومباشر 2 حول ' + topic + '>", "options": ["<مشتت 1>", "<الإجابة الصحيحة>", "<مشتت 2>"], "answer": 1, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" }\n' +
-      '    ],\n' +
-      '    "medium": [\n' +
-      '      { "q": "<سؤال متوسط يتطلب فهماً وتحليلاً 1 حول ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" },\n' +
-      '      { "q": "<سؤال متوسط يتطلب مقارنة أو تعليلاً 2 حول ' + topic + '>", "options": ["<مشتت 1>", "<الإجابة الصحيحة>", "<مشتت 2>"], "answer": 1, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" }\n' +
-      '    ],\n' +
-      '    "hard": [\n' +
-      '      { "q": "<سؤال متقدم وتفكير ناقد 1 حول ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "hint": "<تلميح ذكي>", "why": "<شرح الجواب الصحيح>" },\n' +
-      '      { "q": "<سؤال تحدٍّ واستنتاج 2 حول ' + topic + '>", "options": ["<مشتت 1>", "<مشتت 2>", "<الإجابة الصحيحة>"], "answer": 2, "hint": "<تلميح ذكي>", "why": "<شرح الجواب الصحيح>" }\n' +
-      '    ]\n' +
-      '  },\n' +
-      '  "game": {\n' +
-      '    "title": "لعبة التصنيف السريع: ' + topic + '",\n' +
-      '    "instructions": "صنّف كل عبارة أو مثال في السلة الصحيحة:",\n' +
-      '    "buckets": ["<تصنيف صحيح / ينتمي إلى ' + topic + '>", "<خاطئ / لا ينتمي إلى ' + topic + '>"],\n' +
-      '    "items": [\n' +
-      '      { "text": "<حقيقة أو مثال صحيح 1 عن ' + topic + '>", "bucket": 0 },\n' +
-      '      { "text": "<حقيقة أو مثال صحيح 2 عن ' + topic + '>", "bucket": 0 },\n' +
-      '      { "text": "<حقيقة أو مثال صحيح 3 عن ' + topic + '>", "bucket": 0 },\n' +
-      '      { "text": "<معلومة خاطئة أو مثال مضاد 1>", "bucket": 1 },\n' +
-      '      { "text": "<معلومة خاطئة أو مثال مضاد 2>", "bucket": 1 },\n' +
-      '      { "text": "<معلومة خاطئة أو مثال مضاد 3>", "bucket": 1 }\n' +
-      '    ]\n' +
-      '  },\n' +
-      '  "break": {\n' +
-      '    "title": "وقت الانتعاش وتنشيط الدماغ!",\n' +
-      '    "text": "<نشاط حركي وتنفسي ممتع لمدة 30 ثانية يرتبط بموضوع ' + topic + '>",\n' +
-      '    "seconds": 30\n' +
-      '  },\n' +
-      '  "evidence": {\n' +
-      '    "instructions": "أجب بمفردك لتثبت إتقانك لدرس ' + topic + ':",\n' +
-      '    "items": [\n' +
-      '      { "q": "<سؤال دليل فردي 1 يقيس الفهم الأساسي لـ ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "why": "<التعليل>" },\n' +
-      '      { "q": "<سؤال دليل فردي 2 يقيس التعليل والتطبيق في ' + topic + '>", "options": ["<مشتت 1>", "<الإجابة الصحيحة>", "<مشتت 2>"], "answer": 1, "why": "<التعليل>" },\n' +
-      '      { "q": "<سؤال دليل فردي 3 يقيس الاستنتاج في ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "why": "<التعليل>" }\n' +
-      '    ]\n' +
-      '  },\n' +
-      '  "harvest": [\n' +
-      '    "ما أهم فكرة أو معلومة جديدة تعلمتها اليوم عن «' + topic + '»؟",\n' +
-      '    "ما النشاط أو المثال الذي ساعدك أكثر على فهم «' + topic + '»؟",\n' +
-      '    "كيف وأين يمكنك توظيف ما تعلمته عن «' + topic + '» في حياتك اليومية؟"\n' +
-      '  ]\n' +
-      '}';
+    var systemInstruction = '';
+    var prompt = '';
+
+    if (targetLang === 'he') {
+      systemInstruction = 'You are an expert Hebrew curriculum designer and elementary school educator (מומחה פדגוגי ומפתח תוכניות לימודים בעברית). Return 100% valid JSON only. ALL text values in the JSON (title, goal, success, recap, hook, explain.steps, practice, game, break, evidence, harvest) MUST be written 100% in natural, clear, accurate Hebrew (עברית תקנית, עשירה וברורה המותאמת לתלמידי בית ספר יסודי). Never use Arabic or English inside the Hebrew lesson values. If the user wrote the topic in Arabic, translate the topic into Hebrew for the "title" field and write the entire lesson about it in Hebrew.';
+      prompt = 'אתה מומחה פדגוגי ומחבר תוכניות לימודים בבית הספר היסודי משירפה. בנה מערך שיעור אינטראקטיבי מלא, עשיר ומדויק ב-100% בשפה העברית לפי מודל «מפתיח» (5 תחנות) עבור:\n' +
+        '- נושא השיעור: ' + topic + '\n' +
+        '- תחום דעת: ' + subject + '\n' +
+        '- כיתה: ' + grade + '\n' +
+        (notes ? '- דגשים והערות המורה: ' + notes + '\n' : '') +
+        '\n⚠️ הנחיות מחייבות:\n' +
+        '1. כל התוכן (הסיפור, החידה, שלבי ההסבר, השאלות, האפשרויות, הרמזים, משחק המיון ושאלות הסיכום) חייב להיות כתוב **בעברית תקנית וברורה בלבד** ולהתמקד אך ורק בנושא (' + topic + ')!\n' +
+        '2. החזר אובייקט JSON תקין בלבד (ללא טקסט חיצוני) במבנה הבא:\n' +
+        '{\n' +
+        '  "title": "<כותרת השיעור בעברית עבור ' + topic + '>",\n' +
+        '  "goal": "<מטרת הלמידה המדויקת בעברית לשיעור על ' + topic + '>",\n' +
+        '  "success": ["<מדד הצלחה 1 בעברית>", "<מדד הצלחה 2 בעברית>", "<מדד הצלחה 3 בעברית>"],\n' +
+        '  "recap": "<סיכום בהיר ב-3 משפטים של החוקים והמושגים המרכזיים ב-' + topic + '>",\n' +
+        '  "hook": {\n' +
+        '    "title": "<כותרת מסקרנת לתחנת הפתיחה על ' + topic + '>",\n' +
+        '    "story": "<סיפור קצר ומרתק מהחיים (3-4 משפטים בעברית) שמעורר סקרנות לגבי ' + topic + '>",\n' +
+        '    "question": "<שאלה מעוררת מחשבה וסקרנות בעקבות הסיפור?>",\n' +
+        '    "more": "<הסבר נוסף ופשוט שמקרב את הרעיון של ' + topic + ' לתלמיד>",\n' +
+        '    "riddle": {\n' +
+        '      "q": "<חידה חכמה ומהנה בעברית המתארת את ' + topic + ' או מושג מרכזי בו>",\n' +
+        '      "hint": "<רמז מועיל לפתרון החידה>",\n' +
+        '      "answer": "<התשובה הנכונה לחידה>"\n' +
+        '    }\n' +
+        '  },\n' +
+        '  "explain": {\n' +
+        '    "steps": [\n' +
+        '      {\n' +
+        '        "title": "<שלב 1: היכרות והגדרה של ' + topic + '>",\n' +
+        '        "text": "<הסבר ברור ומפורט (3-4 משפטים בעברית) עם דוגמאות מוחשיות על ' + topic + '>",\n' +
+        '        "more": "<הסבר פשוט עוד יותר ודוגמה נוספת לתלמיד המבקש עזרה>",\n' +
+        '        "check": { "q": "<שאלת בדיקת הבנה על שלב 1?>", "options": ["<התשובה הנכונה>", "<מסיח שגוי 1>", "<מסיח שגוי 2>"], "answer": 0, "why": "<נימוק מדוע התשובה נכונה>" }\n' +
+        '      },\n' +
+        '      {\n' +
+        '        "title": "<שלב 2: כללים, מאפיינים ודוגמאות ב-' + topic + '>",\n' +
+        '        "text": "<הסבר מפורט של הכללים או הסוגים והשימושים ב-' + topic + ' עם דוגמאות במשפטים>",\n' +
+        '        "more": "<טיפ חשוב ודוגמה פשוטה לזכירה>",\n' +
+        '        "check": { "q": "<שאלת בדיקת הבנה על שלב 2?>", "options": ["<מסיח שגוי 1>", "<התשובה הנכונה>", "<מסיח שגוי 2>"], "answer": 1, "why": "<נימוק ברור>" }\n' +
+        '      },\n' +
+        '      {\n' +
+        '        "title": "<שלב 3: יישום ותרגול מעשי של ' + topic + '>",\n' +
+        '        "text": "<הסבר כיצד ליישם נכון את מה שלמדנו על ' + topic + ' בחיי היומיום ובכתיבה/דיבור>",\n' +
+        '        "more": "<כלל אצבע קצר המסכם את הנושא>",\n' +
+        '        "check": { "q": "<שאלת יישום על שלב 3?>", "options": ["<התשובה הנכונה>", "<מסיח שגוי 1>", "<מסיח שגוי 2>"], "answer": 0, "why": "<נימוק ברור>" }\n' +
+        '      }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "practice": {\n' +
+        '    "easy": [\n' +
+        '      { "q": "<שאלה קלה וישירה 1 בעברית על ' + topic + '>", "options": ["<התשובה הנכונה>", "<מסיח 1>", "<מסיח 2>"], "answer": 0, "hint": "<רמז מסייע>", "why": "<הסבר התשובה הנכונה>" },\n' +
+        '      { "q": "<שאלה קלה וישירה 2 בעברית על ' + topic + '>", "options": ["<מסיח 1>", "<התשובה הנכונה>", "<מסיח 2>"], "answer": 1, "hint": "<רמז מסייע>", "why": "<הסבר התשובה הנכונה>" }\n' +
+        '    ],\n' +
+        '    "medium": [\n' +
+        '      { "q": "<שאלה ברמה בינונית 1 על ' + topic + '>", "options": ["<התשובה הנכונה>", "<מסיח 1>", "<מסיח 2>"], "answer": 0, "hint": "<רמז מסייע>", "why": "<הסבר התשובה הנכונה>" },\n' +
+        '      { "q": "<שאלה ברמה בינונית 2 על ' + topic + '>", "options": ["<מסיח 1>", "<התשובה הנכונה>", "<מסיח 2>"], "answer": 1, "hint": "<רמז מסייע>", "why": "<הסבר התשובה הנכונה>" }\n' +
+        '    ],\n' +
+        '    "hard": [\n' +
+        '      { "q": "<שאלה מאתגרת וחשיבה עמוקה 1 על ' + topic + '>", "options": ["<התשובה הנכונה>", "<מסיח 1>", "<מסיח 2>"], "answer": 0, "hint": "<רמז חכם>", "why": "<הסבר התשובה הנכונה>" },\n' +
+        '      { "q": "<שאלת אתגר 2 על ' + topic + '>", "options": ["<מסיח 1>", "<מסיח 2>", "<התשובה הנכונה>"], "answer": 2, "hint": "<רמז חכם>", "why": "<הסבר התשובה הנכונה>" }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "game": {\n' +
+        '    "title": "<משחק מיון מהיר: כותרת בעברית>",\n' +
+        '    "instructions": "מיינו כל פריט או משפט לסל המתאים:",\n' +
+        '    "buckets": ["<קטגוריה 1 מתאימה לנושא>", "<קטגוריה 2 נגדית או שונה>"],\n' +
+        '    "items": [\n' +
+        '      { "text": "<דוגמה או משפט השייך לקטגוריה 1>", "bucket": 0 },\n' +
+        '      { "text": "<דוגמה שנייה השייכת לקטגוריה 1>", "bucket": 0 },\n' +
+        '      { "text": "<דוגמה שלישית השייכת לקטגוריה 1>", "bucket": 0 },\n' +
+        '      { "text": "<דוגמה או משפט השייך לקטגוריה 2>", "bucket": 1 },\n' +
+        '      { "text": "<דוגמה שנייה השייכת לקטגוריה 2>", "bucket": 1 },\n' +
+        '      { "text": "<דוגמה שלישית השייכת לקטגוריה 2>", "bucket": 1 }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "break": {\n' +
+        '    "title": "זמן התרעננות ותנועה!",\n' +
+        '    "text": "<פעילות תנועה ונשימה קצרה ומהנה ל-30 שניות הקשורה לנושא השיעור בעברית>",\n' +
+        '    "seconds": 30\n' +
+        '  },\n' +
+        '  "evidence": {\n' +
+        '    "instructions": "ענו בעצמכם כדי להוכיח את שליטתכם בנושא:",\n' +
+        '    "items": [\n' +
+        '      { "q": "<שאלת הוכחה אישית 1 בעברית>", "options": ["<התשובה הנכונה>", "<מסיח 1>", "<מסיח 2>"], "answer": 0, "why": "<הסבר מדויק>" },\n' +
+        '      { "q": "<שאלת הוכחה אישית 2 בעברית>", "options": ["<מסיח 1>", "<התשובה הנכונה>", "<מסיח 2>"], "answer": 1, "why": "<הסבר מדויק>" },\n' +
+        '      { "q": "<שאלת הוכחה אישית 3 בעברית>", "options": ["<התשובה הנכונה>", "<מסיח 1>", "<מסיח 2>"], "answer": 0, "why": "<הסבר מדויק>" }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "harvest": [\n' +
+        '    "מה הדבר החשוב או החדש שלמדתי היום בשיעור?",\n' +
+        '    "איזו דוגמה או פעילות עזרה לי להבין את הנושא הכי טוב?",\n' +
+        '    "איך ואיפה אוכל להשתמש במה שלמדתי בחיי היומיום?"\n' +
+        '  ]\n' +
+        '}';
+    } else if (targetLang === 'en') {
+      systemInstruction = 'You are an expert English curriculum designer and elementary school educator. Return 100% valid JSON only. ALL text values in the JSON (title, goal, success, recap, hook, explain.steps, practice, game, break, evidence, harvest) MUST be written 100% in clear, natural, engaging English suitable for elementary school students. Never use Arabic or Hebrew inside the English lesson values. If the user wrote the topic in Arabic or Hebrew, translate the topic into English for the "title" field and write the entire lesson about it in English.';
+      prompt = 'Design a complete, rich, 100% accurate interactive 5-station Miftaah lesson IN ENGLISH for elementary school students about:\n' +
+        '- Lesson Topic: ' + topic + '\n' +
+        '- Subject: ' + subject + '\n' +
+        '- Grade Level: ' + grade + '\n' +
+        (notes ? '- Teacher Notes: ' + notes + '\n' : '') +
+        '\n⚠️ Strict Instructions:\n' +
+        '1. Every single string (title, story, riddle, explanation steps, questions, options, hints, sorting game, and reflection questions) MUST be written 100% in clear, age-appropriate English and focused strictly on (' + topic + ')!\n' +
+        '2. Output ONLY a valid JSON object matching this exact structure:\n' +
+        '{\n' +
+        '  "title": "<Clear English lesson title for ' + topic + '>",\n' +
+        '  "goal": "<Clear learning objective in English for ' + topic + '>",\n' +
+        '  "success": ["<Success criterion 1 in English>", "<Success criterion 2 in English>", "<Success criterion 3 in English>"],\n' +
+        '  "recap": "<A clear 3-sentence summary of the key rules and concepts of ' + topic + ' in English>",\n' +
+        '  "hook": {\n' +
+        '    "title": "<Engaging warm-up title about ' + topic + '>",\n' +
+        '    "story": "<A short, engaging real-life story (3-4 sentences in English) that sparks curiosity about ' + topic + '>",\n' +
+        '    "question": "<An intriguing question about the story?>",\n' +
+        '    "more": "<A simpler extra explanation in English to help students understand the main idea>",\n' +
+        '    "riddle": {\n' +
+        '      "q": "<A fun, clever riddle in English about ' + topic + '>",\n' +
+        '      "hint": "<A helpful hint in English>",\n' +
+        '      "answer": "<The correct answer to the riddle in English>"\n' +
+        '    }\n' +
+        '  },\n' +
+        '  "explain": {\n' +
+        '    "steps": [\n' +
+        '      {\n' +
+        '        "title": "<Step 1 Title: Introduction & Meaning of ' + topic + '>",\n' +
+        '        "text": "<Clear explanation (3-4 sentences in English) with concrete examples of ' + topic + '>",\n' +
+        '        "more": "<Even simpler explanation and example for students who click Explain More>",\n' +
+        '        "check": { "q": "<Quick check question for Step 1?>", "options": ["<Correct answer>", "<Wrong option 1>", "<Wrong option 2>"], "answer": 0, "why": "<Explanation why the answer is correct>" }\n' +
+        '      },\n' +
+        '      {\n' +
+        '        "title": "<Step 2 Title: Key Rules, Forms, or Features of ' + topic + '>",\n' +
+        '        "text": "<Detailed explanation of the rules, vocabulary, or patterns with clear example sentences>",\n' +
+        '        "more": "<Helpful tip and easy example to remember>",\n' +
+        '        "check": { "q": "<Quick check question for Step 2?>", "options": ["<Wrong option 1>", "<Correct answer>", "<Wrong option 2>"], "answer": 1, "why": "<Clear explanation>" }\n' +
+        '      },\n' +
+        '      {\n' +
+        '        "title": "<Step 3 Title: Using ' + topic + ' in Real Life & Sentences>",\n' +
+        '        "text": "<Explanation of how to apply and use ' + topic + ' accurately in everyday communication>",\n' +
+        '        "more": "<Short golden rule summary>",\n' +
+        '        "check": { "q": "<Application check question for Step 3?>", "options": ["<Correct answer>", "<Wrong option 1>", "<Wrong option 2>"], "answer": 0, "why": "<Clear explanation>" }\n' +
+        '      }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "practice": {\n' +
+        '    "easy": [\n' +
+        '      { "q": "<Easy practice question 1 in English about ' + topic + '>", "options": ["<Correct answer>", "<Distractor 1>", "<Distractor 2>"], "answer": 0, "hint": "<Helpful hint>", "why": "<Explanation>" },\n' +
+        '      { "q": "<Easy practice question 2 in English about ' + topic + '>", "options": ["<Distractor 1>", "<Correct answer>", "<Distractor 2>"], "answer": 1, "hint": "<Helpful hint>", "why": "<Explanation>" }\n' +
+        '    ],\n' +
+        '    "medium": [\n' +
+        '      { "q": "<Medium practice question 1 in English about ' + topic + '>", "options": ["<Correct answer>", "<Distractor 1>", "<Distractor 2>"], "answer": 0, "hint": "<Helpful hint>", "why": "<Explanation>" },\n' +
+        '      { "q": "<Medium practice question 2 in English about ' + topic + '>", "options": ["<Distractor 1>", "<Correct answer>", "<Distractor 2>"], "answer": 1, "hint": "<Helpful hint>", "why": "<Explanation>" }\n' +
+        '    ],\n' +
+        '    "hard": [\n' +
+        '      { "q": "<Challenging question 1 in English about ' + topic + '>", "options": ["<Correct answer>", "<Distractor 1>", "<Distractor 2>"], "answer": 0, "hint": "<Smart hint>", "why": "<Explanation>" },\n' +
+        '      { "q": "<Challenging question 2 in English about ' + topic + '>", "options": ["<Distractor 1>", "<Distractor 2>", "<Correct answer>"], "answer": 2, "hint": "<Smart hint>", "why": "<Explanation>" }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "game": {\n' +
+        '    "title": "<Sorting Game Title in English>",\n' +
+        '    "instructions": "Sort each item or sentence into the correct bucket:",\n' +
+        '    "buckets": ["<Category 1 in English>", "<Category 2 in English>"],\n' +
+        '    "items": [\n' +
+        '      { "text": "<Example 1 belonging to Category 1>", "bucket": 0 },\n' +
+        '      { "text": "<Example 2 belonging to Category 1>", "bucket": 0 },\n' +
+        '      { "text": "<Example 3 belonging to Category 1>", "bucket": 0 },\n' +
+        '      { "text": "<Example 1 belonging to Category 2>", "bucket": 1 },\n' +
+        '      { "text": "<Example 2 belonging to Category 2>", "bucket": 1 },\n' +
+        '      { "text": "<Example 3 belonging to Category 2>", "bucket": 1 }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "break": {\n' +
+        '    "title": "Brain Break & Refresh!",\n' +
+        '    "text": "<Fun 30-second movement and breathing activity in English connected to the lesson topic>",\n' +
+        '    "seconds": 30\n' +
+        '  },\n' +
+        '  "evidence": {\n' +
+        '    "instructions": "Answer on your own to show what you have learned:",\n' +
+        '    "items": [\n' +
+        '      { "q": "<Independent evidence question 1 in English>", "options": ["<Correct answer>", "<Distractor 1>", "<Distractor 2>"], "answer": 0, "why": "<Explanation>" },\n' +
+        '      { "q": "<Independent evidence question 2 in English>", "options": ["<Distractor 1>", "<Correct answer>", "<Distractor 2>"], "answer": 1, "why": "<Explanation>" },\n' +
+        '      { "q": "<Independent evidence question 3 in English>", "options": ["<Correct answer>", "<Distractor 1>", "<Distractor 2>"], "answer": 0, "why": "<Explanation>" }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "harvest": [\n' +
+        '    "What is the most important thing I learned today?",\n' +
+        '    "Which activity or example helped me understand the lesson best?",\n' +
+        '    "How can I use what I learned today in real life?"\n' +
+        '  ]\n' +
+        '}';
+    } else {
+      systemInstruction = 'You are an expert Arabic curriculum designer for elementary school. Return 100% valid JSON only. Replace every <...> instruction with rich, accurate, topic-specific educational content in vocalized/clear Arabic.';
+      prompt = 'أنت خبير تربوي ومؤلف مناهج في مدرسة مشيرفة الابتدائية. صمم حصة تفاعلية كاملة وغنية ودقيقة علمياً بنسبة 100% وفق نموذج «مفتاح» (م، ف، ت، ا، ح) حول:\n' +
+        '- الموضوع: ' + topic + '\n' +
+        '- المادة: ' + subject + '\n' +
+        '- الصف: ' + grade + '\n' +
+        (notes ? '- ملاحظات المعلم: ' + notes + '\n' : '') +
+        '\n⚠️ تعليمات صارمة جداً:\n' +
+        '1. يجب أن تكون جميع النصوص والقصص والخطوات والأسئلة والخيارات والتلميحات متمحورة بدقة علمية وتربوية عالية حول موضوع (' + topic + ') نفسه، ويُمنع منعاً باتاً استخدام عبارات عامة أو قالبية!\n' +
+        '2. أخرج كائن JSON صالحاً فقط (بدون أي نص خارجه) يطابق الهيكل التالي بدقة:\n' +
+        '{\n' +
+        '  "title": "' + topic + '",\n' +
+        '  "goal": "<اكتب هنا هدف التعلم الدقيق والواضح لدرس ' + topic + '>",\n' +
+        '  "success": ["<معيار النجاح الأول>", "<معيار النجاح الثاني>", "<معيار النجاح الثالث>"],\n' +
+        '  "recap": "<ملخص شامل ومبسط لقاعدة ومفاهيم ' + topic + ' في 3 جمل>",\n' +
+        '  "hook": {\n' +
+        '    "title": "<عنوان مشوق للمحطة الأولى حول ' + topic + '>",\n' +
+        '    "story": "<قصة واقعية مشوقة من 3-4 جمل تثير دهشة الطالب حول ' + topic + '>",\n' +
+        '    "question": "<سؤال فضول محفز للتفكير حول القصة؟>",\n' +
+        '    "more": "<توضيح مبسط إضافي يقرب فكرة ' + topic + ' لذهن الطالب>",\n' +
+        '    "riddle": {\n' +
+        '      "q": "<لغز ذكي وممتع يصف ' + topic + ' أو أحد عناصره الأساسية>",\n' +
+        '      "hint": "<تلميح ذكي يساعد الطالب على حل اللغز>",\n' +
+        '      "answer": "<الجواب الصحيح للغز>"\n' +
+        '    }\n' +
+        '  },\n' +
+        '  "explain": {\n' +
+        '    "steps": [\n' +
+        '      {\n' +
+        '        "title": "<عنوان الخطوة الأولى: تعريف ومفهوم ' + topic + '>",\n' +
+        '        "text": "<شرح علمي واضح ومفصل (3-4 جمل) مع مثال حي حول ' + topic + '>",\n' +
+        '        "more": "<تبسيط إضافي وتشبيه قريب لذهن الطالب>",\n' +
+        '        "check": { "q": "<سؤال فحص فهم مباشر عن الخطوة الأولى؟>", "options": ["<الإجابة الصحيحة الدقيقة>", "<خيار خاطئ 1>", "<خيار خاطئ 2>"], "answer": 0, "why": "<تعليل علمي لماذا الإجابة صحيحة>" }\n' +
+        '      },\n' +
+        '      {\n' +
+        '        "title": "<عنوان الخطوة الثانية: خصائص وأقسام أو خطوات ' + topic + '>",\n' +
+        '        "text": "<شرح تفصيلي للخصائص أو الأنواع أو القواعد الفرعية في ' + topic + '>",\n' +
+        '        "more": "<مثال توضيحي إضافي مبسط>",\n' +
+        '        "check": { "q": "<سؤال فحص فهم عن الخطوة الثانية؟>", "options": ["<خيار خاطئ 1>", "<الإجابة الصحيحة الدقيقة>", "<خيار خاطئ 2>"], "answer": 1, "why": "<تعليل علمي واضح>" }\n' +
+        '      },\n' +
+        '      {\n' +
+        '        "title": "<عنوان الخطوة الثالثة: تطبيقات وأهمية ' + topic + '>",\n' +
+        '        "text": "<شرح لكيفية تطبيق المفهوم وأهميته وأمثلة من الواقع>",\n' +
+        '        "more": "<خلاصة مركزة تساعد الطالب على التذكر>",\n' +
+        '        "check": { "q": "<سؤال فحص فهم تطبيقي عن الخطوة الثالثة؟>", "options": ["<الإجابة الصحيحة الدقيقة>", "<خيار خاطئ 1>", "<خيار خاطئ 2>"], "answer": 0, "why": "<تعليل علمي واضح>" }\n' +
+        '      }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "practice": {\n' +
+        '    "easy": [\n' +
+        '      { "q": "<سؤال سهل ومباشر 1 حول ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" },\n' +
+        '      { "q": "<سؤال سهل ومباشر 2 حول ' + topic + '>", "options": ["<مشتت 1>", "<الإجابة الصحيحة>", "<مشتت 2>"], "answer": 1, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" }\n' +
+        '    ],\n' +
+        '    "medium": [\n' +
+        '      { "q": "<سؤال متوسط يتطلب فهماً وتحليلاً 1 حول ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" },\n' +
+        '      { "q": "<سؤال متوسط يتطلب مقارنة أو تعليلاً 2 حول ' + topic + '>", "options": ["<مشتت 1>", "<الإجابة الصحيحة>", "<مشتت 2>"], "answer": 1, "hint": "<تلميح مساعد>", "why": "<شرح الجواب الصحيح>" }\n' +
+        '    ],\n' +
+        '    "hard": [\n' +
+        '      { "q": "<سؤال متقدم وتفكير ناقد 1 حول ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "hint": "<تلميح ذكي>", "why": "<شرح الجواب الصحيح>" },\n' +
+        '      { "q": "<سؤال تحدٍّ واستنتاج 2 حول ' + topic + '>", "options": ["<مشتت 1>", "<مشتت 2>", "<الإجابة الصحيحة>"], "answer": 2, "hint": "<تلميح ذكي>", "why": "<شرح الجواب الصحيح>" }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "game": {\n' +
+        '    "title": "لعبة التصنيف السريع: ' + topic + '",\n' +
+        '    "instructions": "صنّف كل عبارة أو مثال في السلة الصحيحة:",\n' +
+        '    "buckets": ["<تصنيف صحيح / ينتمي إلى ' + topic + '>", "<خاطئ / لا ينتمي إلى ' + topic + '>"],\n' +
+        '    "items": [\n' +
+        '      { "text": "<حقيقة أو مثال صحيح 1 عن ' + topic + '>", "bucket": 0 },\n' +
+        '      { "text": "<حقيقة أو مثال صحيح 2 عن ' + topic + '>", "bucket": 0 },\n' +
+        '      { "text": "<حقيقة أو مثال صحيح 3 عن ' + topic + '>", "bucket": 0 },\n' +
+        '      { "text": "<معلومة خاطئة أو مثال مضاد 1>", "bucket": 1 },\n' +
+        '      { "text": "<معلومة خاطئة أو مثال مضاد 2>", "bucket": 1 },\n' +
+        '      { "text": "<معلومة خاطئة أو مثال مضاد 3>", "bucket": 1 }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "break": {\n' +
+        '    "title": "وقت الانتعاش وتنشيط الدماغ!",\n' +
+        '    "text": "<نشاط حركي وتنفسي ممتع لمدة 30 ثانية يرتبط بموضوع ' + topic + '>",\n' +
+        '    "seconds": 30\n' +
+        '  },\n' +
+        '  "evidence": {\n' +
+        '    "instructions": "أجب بمفردك لتثبت إتقانك لدرس ' + topic + ':",\n' +
+        '    "items": [\n' +
+        '      { "q": "<سؤال دليل فردي 1 يقيس الفهم الأساسي لـ ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "why": "<التعليل>" },\n' +
+        '      { "q": "<سؤال دليل فردي 2 يقيس التعليل والتطبيق في ' + topic + '>", "options": ["<مشتت 1>", "<الإجابة الصحيحة>", "<مشتت 2>"], "answer": 1, "why": "<التعليل>" },\n' +
+        '      { "q": "<سؤال دليل فردي 3 يقيس الاستنتاج في ' + topic + '>", "options": ["<الإجابة الصحيحة>", "<مشتت 1>", "<مشتت 2>"], "answer": 0, "why": "<التعليل>" }\n' +
+        '    ]\n' +
+        '  },\n' +
+        '  "harvest": [\n' +
+        '    "ما أهم فكرة أو معلومة جديدة تعلمتها اليوم عن «' + topic + '»؟",\n' +
+        '    "ما النشاط أو المثال الذي ساعدك أكثر على فهم «' + topic + '»؟",\n' +
+        '    "كيف وأين يمكنك توظيف ما تعلمته عن «' + topic + '» في حياتك اليومية؟"\n' +
+        '  ]\n' +
+        '}';
+    }
 
     return fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -1135,7 +1406,7 @@
         messages: [
           {
             role: 'system',
-            content: 'You are an expert Arabic curriculum designer for elementary school. Return 100% valid JSON only. Replace every <...> instruction with rich, accurate, topic-specific educational content in vocalized/clear Arabic.'
+            content: systemInstruction
           },
           { role: 'user', content: prompt }
         ],
@@ -1151,9 +1422,10 @@
         if (!parsed || !parsed.explain || !Array.isArray(parsed.explain.steps)) throw new Error('Invalid schema');
         parsed.id = code;
         parsed.code = code;
-        parsed.title = topic;
+        parsed.title = parsed.title || topic;
         parsed.subject = subject;
         parsed.grade = grade;
+        parsed.lang = targetLang;
         parsed.author = author;
         parsed.author_email = authorEmail;
         parsed.is_public = isPublic;
@@ -1161,12 +1433,259 @@
         return normalizeLessonStructure(parsed);
       })
       .catch(function () {
-        return createFallbackMiftahLesson(subject, grade, topic, notes, isPublic, author, authorEmail, code);
+        return createFallbackMiftahLesson(subject, grade, topic, notes, isPublic, author, authorEmail, code, targetLang);
       });
   }
 
-  function createFallbackMiftahLesson(subject, grade, topic, notes, isPublic, author, authorEmail, customCode) {
+  function createFallbackMiftahLesson(subject, grade, topic, notes, isPublic, author, authorEmail, customCode, explicitLang) {
     var code = customCode || ('M' + Math.random().toString(36).slice(2, 6).toUpperCase());
+    var lang = detectLessonLanguage(subject, topic, explicitLang);
+
+    if (lang === 'he') {
+      return normalizeLessonStructure({
+        id: code,
+        code: code,
+        lang: 'he',
+        title: topic,
+        subject: subject,
+        grade: grade,
+        goal: 'התלמיד יכיר ויבין את הנושא «' + topic + '», יזהה את מאפייניו ויישם אותו במשפטים ובמשימות.',
+        recap: 'שיעור «' + topic + '» עוזר לנו להבין את הכללים והמושגים המרכזיים ולהשתמש בהם בצורה נכונה בחיי היומיום.',
+        author: author,
+        author_email: authorEmail,
+        is_public: isPublic,
+        created: Date.now(),
+        hook: {
+          title: 'פותחים בסקרנות: ' + topic,
+          story: 'בשיעור עברית מעניין, המורה הציג לתלמידים שאלה מסקרנת במיוחד על «' + topic + '». כולנו רצינו לגלות איך זה עובד ואיך נשתמש בזה נכון בחיי היומיום!',
+          question: 'מה לדעתכם הקשר בין «' + topic + '» לבין החיים שלנו בבית ובבית הספר?',
+          riddle: {
+            q: 'אני הנושא המרכזי של השיעור שלנו היום, ואם תבינו אותי היטב תצליחו בכל המשימות. מי אני?',
+            text: 'אני הנושא המרכזי של השיעור שלנו היום, ואם תבינו אותי היטב תצליחו בכל המשימות. מי אני?',
+            hint: 'הביטו בכותרת השיעור שלנו!',
+            answer: topic
+          },
+          more: 'בתחנת הפתיחה אנו מפעילים את הסקרנות והחשיבה לקראת הלמידה על ' + topic + '.'
+        },
+        explain: {
+          steps: [
+            {
+              title: 'שלב 1: היכרות עם המושג «' + topic + '»',
+              text: 'מהו «' + topic + '»? זהו נושא מרכזי וחשוב שעוזר לנו להבין, לקרוא, לכתוב ולהתבטא בצורה מדויקת וברורה.',
+              more: 'חשבו על «' + topic + '» כמפתח שעוזר לנו להבין משפטים ורעיונות חדשים בקלות.',
+              check: {
+                q: 'מהי המטרה המרכזית של הלמידה על (' + topic + ')?',
+                options: [
+                  'להבין את המושג והכללים שלו וליישם אותם נכון',
+                  'לנחש תשובות בלי לקרוא ולהבין',
+                  'להתעלם מהכללים ומהדוגמאות'
+                ],
+                answer: 0,
+                why: 'כל הכבוד! הבנת המושג ויישומו הם הבסיס להצלחה.'
+              }
+            },
+            {
+              title: 'שלב 2: מאפיינים ודוגמאות מוחשיות',
+              text: 'כאשר אנו מתבוננים בדוגמאות של «' + topic + '», אנו מזהים חוקיות ברורה שמסייעת לנו להבחין בין שימוש נכון לשימוש שגוי.',
+              more: 'שימו לב לדוגמאות בכיתה ובחיי היומיום — הן מראות לנו בדיוק כיצד הנושא פועל.',
+              check: {
+                q: 'כיצד נזהה שימוש נכון ב-(' + topic + ')?',
+                options: [
+                  'לפי הכללים והדוגמאות שלמדנו בשיעור',
+                  'לפי ניחוש אקראי בלבד',
+                  'אין שום דרך לדעת'
+                ],
+                answer: 0,
+                why: 'מצוין! הכללים והדוגמאות מנחים אותנו לתשובה הנכונה.'
+              }
+            },
+            {
+              title: 'שלב 3: יישום במשפטים ובחיי היומיום',
+              text: 'כעת אנו יודעים כיצד להשתמש ב-«' + topic + '» בעצמנו כדי לפתור משימות, לבנות משפטים נכונים ולהסביר לאחרים.',
+              more: 'כלל הזהב: קוראים בתשומת לב, בודקים את הכלל, ובוחרים בתשובה המדויקת ביותר!',
+              check: {
+                q: 'מה עוזר לנו להצליח ביישום של (' + topic + ')?',
+                options: [
+                  'קריאה מעמיקה, הבנת הכלל ותרגול מדורג',
+                  'דילוג על השאלות',
+                  'בחירת תשובה מהירה בלי מחשבה'
+                ],
+                answer: 0,
+                why: 'נהדר! חשיבה ותרגול מובילים לשליטה מלאה.'
+              }
+            }
+          ]
+        },
+        practice: {
+          easy: [
+            { q: 'רמה קלה: איזו מהאפשרויות הבאות מתאימה לנושא (' + topic + ')?', options: ['האפשרות המיישמת נכון את הכלל של ' + topic, 'אפשרות שגויה שאינה קשורה לנושא', 'אף תשובה אינה נכונה'], answer: 0, hint: 'היזכרו במה שלמדנו בשלב ההסבר.', why: 'יפה מאוד! זוהי התשובה המתאימה לכלל.' },
+            { q: 'נכון או לא נכון: הבנת הנושא (' + topic + ') משפרת את הידע והמיומנות שלנו?', options: ['נכון בהחלט', 'לא נכון'], answer: 0, hint: 'חשבו על מה שלמדנו עד כה.', why: 'מצוין! הלמידה מחזקת את ההבנה והיכולת שלנו.' }
+          ],
+          medium: [
+            { q: 'רמה בינונית: כאשר אנו משווים בין דוגמאות שונות של (' + topic + '), מה אנו מגלים?', options: ['שיש כלל ברור ועקבי שמנחה אותנו', 'שהכול קורה במקרה בלי חוקיות', 'שאין שום קשר בין הדוגמאות'], answer: 0, hint: 'חפשו את החוקיות המשותפת.', why: 'כל הכבוד! זיהיתם נכון את החוקיות.' },
+            { q: 'כיצד נסביר לחבר בכיתה את הרעיון המרכזי של (' + topic + ')?', options: ['בעזרת הסבר ברור ודוגמה מוחשית', 'נגיד לו שהנושא בלתי אפשרי', 'ניתן לו תשובה בלי הסבר'], answer: 0, hint: 'דוגמה טובה תמיד עוזרת להבין.', why: 'נהדר! הסבר עם דוגמה הוא הדרך הטובה ביותר.' }
+          ],
+          hard: [
+            { q: 'רמת אתגר: כיצד נתמודד עם שאלה חדשה ומאתגרת בנושא (' + topic + ')?', options: ['ננתח את השאלה, ניישם את הכללים שלמדנו ונבדוק את התשובה', 'נוותר מיד על השאלה', 'נבחר תשובה בלי לקרוא'], answer: 0, hint: 'השתמשו בכלים שלמדנו בשלבים הקודמים!', why: 'תשובה של אלופים! חשיבה מסודרת מובילה להצלחה.' }
+          ]
+        },
+        game: {
+          title: 'משחק המיון: ' + topic,
+          instructions: 'מיינו כל פריט לסל המתאים:',
+          buckets: ['מתאים ל-' + topic, 'לא מתאים ל-' + topic],
+          items: [
+            { text: 'דוגמה נכונה ומדויקת של ' + topic, bucket: 0 },
+            { text: 'כלל מרכזי שלמדנו בשיעור ' + topic, bucket: 0 },
+            { text: 'יישום נכון במשפט או במשימה', bucket: 0 },
+            { text: 'טעות נפוצה שאינה לפי הכלל', bucket: 1 },
+            { text: 'פרט שאינו שייך לנושא השיעור', bucket: 1 },
+            { text: 'ניחוש לא מבוסס', bucket: 1 }
+          ]
+        },
+        break: {
+          title: 'זמן התרעננות ותנועה!',
+          text: 'עמדו זקוף, מתחו ידיים למעלה, קחו שלוש נשימות עמוקות וחזרו ללמידה באנרגיה חדשה!',
+          activity: 'עמדו זקוף, מתחו ידיים למעלה, קחו שלוש נשימות עמוקות וחזרו ללמידה באנרגיה חדשה!',
+          seconds: 30
+        },
+        evidence: {
+          instructions: 'ענו בעצמכם כדי להוכיח את הבנתכם בשיעור ' + topic + ':',
+          items: [
+            { q: 'שאלה 1: מהי המטרה המרכזית שהשגנו בשיעור על (' + topic + ')?', options: ['הבנת הנושא ויישומו המדויק במשימות', 'שינון מילים בלי הבנה', 'חוסר הקשבה'], answer: 0, why: 'מצוין! הבנה ויישום הם לב הלמידה.' },
+            { q: 'שאלה 2: מה מעיד על שליטה טובה בנושא (' + topic + ')?', options: ['היכולת להסביר במילים שלנו ולהביא דוגמה חדשה', 'ניחוש אקראי', 'העתקה בלי מחשבה'], answer: 0, why: 'כל הכבוד! יכולת הסבר ומתן דוגמה מוכיחה הבנה אמיתית.' },
+            { q: 'שאלה 3: מה נעשה אם נפגוש משימה חדשה בנושא (' + topic + ')?', options: ['נשתמש בכללים ובאסטרטגיות שלמדנו היום בשיעור', 'נתעלם מהכללים', 'ננחש בלי לבדוק'], answer: 0, why: 'נהדר! אתם מוכנים ליישם את הנלמד בהצלחה.' }
+          ]
+        },
+        harvest: [
+          'מה למדתי והפקתי היום מהשיעור על «' + topic + '»?',
+          'מה עזר לי ללמוד ולהבין את הנושא בצורה טובה?',
+          'איפה אפגוש ואיישם את מה שלמדתי בחיי היומיום?'
+        ]
+      });
+    }
+
+    if (lang === 'en') {
+      return normalizeLessonStructure({
+        id: code,
+        code: code,
+        lang: 'en',
+        title: topic,
+        subject: subject,
+        grade: grade,
+        goal: 'Students will understand the concept and rules of "' + topic + '" and apply them accurately in examples and activities.',
+        recap: 'In this lesson about "' + topic + '", we learned the key rules, explored clear examples, and practiced how to use them in real life.',
+        author: author,
+        author_email: authorEmail,
+        is_public: isPublic,
+        created: Date.now(),
+        hook: {
+          title: 'Discover & Explore: ' + topic,
+          story: 'During an exciting English class, the teacher shared a surprising real-life situation about "' + topic + '". Everyone wanted to discover the secret rule behind it and use it confidently!',
+          question: 'Where do we see or use "' + topic + '" in our daily lives?',
+          riddle: {
+            q: 'I am the main topic of today\'s lesson. When you understand my rule, you can solve every question easily. What am I?',
+            text: 'I am the main topic of today\'s lesson. When you understand my rule, you can solve every question easily. What am I?',
+            hint: 'Look at the title of our lesson today!',
+            answer: topic
+          },
+          more: 'In the Warm-Up station, we connect "' + topic + '" to real life so it becomes easy and fun to learn!'
+        },
+        explain: {
+          steps: [
+            {
+              title: 'Step 1: What is "' + topic + '"?',
+              text: 'Let\'s understand the core idea of "' + topic + '". Knowing what it means and when we use it helps us read, write, and speak English clearly.',
+              more: 'Think of "' + topic + '" as a helpful building block for making great sentences.',
+              check: {
+                q: 'What is the main purpose of learning about (' + topic + ')?',
+                options: [
+                  'To understand the rule and use it accurately in English',
+                  'To guess randomly without reading',
+                  'To ignore grammar and vocabulary rules'
+                ],
+                answer: 0,
+                why: 'Great job! Understanding and applying the rule helps us communicate clearly.'
+              }
+            },
+            {
+              title: 'Step 2: Key Rules & Clear Examples',
+              text: 'When we look closely at examples of "' + topic + '", we notice clear patterns and keywords that guide us to the right form.',
+              more: 'Always look for the clue words in the sentence before choosing your answer.',
+              check: {
+                q: 'How can we find the correct answer when practicing (' + topic + ')?',
+                options: [
+                  'By checking the key rule and looking at the clues in the sentence',
+                  'By picking any option without reading',
+                  'By skipping the question'
+                ],
+                answer: 0,
+                why: 'Awesome! Checking the rule and sentence clues always leads to the right answer.'
+              }
+            },
+            {
+              title: 'Step 3: Using "' + topic + '" in Real Life',
+              text: 'Now we can use "' + topic + '" to build our own sentences, answer questions, and talk about our daily lives with confidence.',
+              more: 'Golden Rule: Read carefully, apply the pattern, and double-check your sentence!',
+              check: {
+                q: 'What is the result of practicing (' + topic + ') step by step?',
+                options: [
+                  'We become confident and accurate in using it on our own',
+                  'We forget everything we learned',
+                  'We cannot solve any examples'
+                ],
+                answer: 0,
+                why: 'Excellent! Step-by-step practice builds strong confidence.'
+              }
+            }
+          ]
+        },
+        practice: {
+          easy: [
+            { q: 'Easy Level: Which option shows a correct example or use of (' + topic + ')?', options: ['The option that follows the rule of ' + topic, 'An incorrect option that breaks the rule', 'None of the above'], answer: 0, hint: 'Remember the rule we learned in the Explanation station.', why: 'Correct! It follows the main rule of our lesson.' },
+            { q: 'True or False: Practicing (' + topic + ') helps us improve our English skills?', options: ['True!', 'False'], answer: 0, hint: 'Think about how much you learned today.', why: 'Well done! Practice makes our English stronger.' }
+          ],
+          medium: [
+            { q: 'Medium Level: What should you look for first when solving a question about (' + topic + ')?', options: ['The key words and rule pattern in the sentence', 'Only the last letter of the page', 'A random guess'], answer: 0, hint: 'Clue words help you spot the pattern!', why: 'Spot on! Key words and patterns guide us to the right answer.' },
+            { q: 'How can you explain (' + topic + ') to a classmate?', options: ['By sharing the main rule and giving a clear example sentence', 'By telling them it is too hard', 'By giving no examples at all'], answer: 0, hint: 'Examples make every explanation clear.', why: 'Great job! Clear examples are the best way to explain.' }
+          ],
+          hard: [
+            { q: 'Challenge Level: How does a smart learner solve a new, tricky question about (' + topic + ')?', options: ['By analyzing the sentence, applying the rule, and checking why the answer makes sense', 'By giving up immediately', 'By guessing without reading the options'], answer: 0, hint: 'Use critical thinking and the rules you learned!', why: 'Brilliant! Analyzing and applying the rule is the key to mastery.' }
+          ]
+        },
+        game: {
+          title: 'Sorting Game: ' + topic,
+          instructions: 'Sort each item into the correct bucket:',
+          buckets: ['Belongs to ' + topic, 'Does NOT belong to ' + topic],
+          items: [
+            { text: 'Correct example of ' + topic, bucket: 0 },
+            { text: 'Follows the key rule of ' + topic, bucket: 0 },
+            { text: 'Accurate sentence using ' + topic, bucket: 0 },
+            { text: 'Breaks the rule of the lesson', bucket: 1 },
+            { text: 'Unrelated mistake', bucket: 1 },
+            { text: 'Random incorrect guess', bucket: 1 }
+          ]
+        },
+        break: {
+          title: 'Brain Break & Refresh!',
+          text: 'Stand up tall, stretch your arms high, take three deep breaths, and get ready for the final challenge!',
+          activity: 'Stand up tall, stretch your arms high, take three deep breaths, and get ready for the final challenge!',
+          seconds: 30
+        },
+        evidence: {
+          instructions: 'Answer on your own to prove your mastery of ' + topic + ':',
+          items: [
+            { q: 'Evidence 1: What is the main goal we achieved in our lesson on (' + topic + ')?', options: ['Understanding the rule and applying it accurately in sentences', 'Memorizing without understanding', 'Skipping the examples'], answer: 0, why: 'Excellent! Understanding and applying the rule is our main goal.' },
+            { q: 'Evidence 2: Which action proves that you truly understand (' + topic + ')?', options: ['Explaining the rule in your own words and giving a correct example', 'Guessing randomly', 'Leaving the question blank'], answer: 0, why: 'Awesome! Giving your own example proves deep understanding.' },
+            { q: 'Evidence 3: If your friend needs help with (' + topic + '), what is the best way to help them?', options: ['Show them a simple example from daily life and explain the rule step by step', 'Tell them to skip it', 'Give them the answer without explaining why'], answer: 0, why: 'Wonderful! Step-by-step examples help everyone learn.' }
+          ]
+        },
+        harvest: [
+          'What new ideas did I learn today about "' + topic + '"?',
+          'What helped me understand and learn best during this lesson?',
+          'How and where can I use what I learned in my daily life?'
+        ]
+      });
+    }
 
     var hookQuestion = 'هل فكّرتَ يومًا كيف تتفاعل وتتكامل المفاهيم في عالمنا حول ' + topic + '؟';
     var hookStory = 'في يوم من الأيام، وأثناء حصة ممتعة في مادة ' + subject + '، طرح المعلّم سؤالاً شيقاً ومحيّراً حول «' + topic + '». كيف نكشف هذا السرّ العلمي معاً ونطبقه في حياتنا اليومية؟ هيا بنا نفتح المفتاح ونبدأ الرحلة!';
@@ -1272,6 +1791,7 @@
     return normalizeLessonStructure({
       id: code,
       code: code,
+      lang: 'ar',
       title: topic,
       subject: subject,
       grade: grade,
@@ -1318,14 +1838,17 @@
       var subjectVal = ($('subject').value || 'علوم').trim();
       var gradeVal = $('grade').value;
       var notesVal = ($('notes').value || '').trim();
+      var langVal = $('lesson-lang') ? $('lesson-lang').value : 'ar';
+      var resolvedLang = detectLessonLanguage(subjectVal, topic, langVal);
+      var langLabel = resolvedLang === 'he' ? 'العبرية (עברית)' : resolvedLang === 'en' ? 'الإنجليزية (English)' : 'العربية';
       var isPublicChosen = $('privacy-public') ? $('privacy-public').checked : true;
 
       genBtn.disabled = true;
-      genBtn.textContent = '⏳ جاري توليد الحصة بالذكاء الاصطناعي والانتقال إليها…';
+      genBtn.textContent = '⏳ جاري توليد الحصة باللغة ' + langLabel + ' والانتقال إليها…';
 
       $('genout').innerHTML = '<div style="background:#f8fbff;border:2px dashed #0b6bcb;border-radius:16px;padding:24px;text-align:center;margin-top:14px">' +
-        '<p style="font-size:19px;font-weight:800;color:#0b6bcb;margin:0 0 8px">🧠 جاري توليد حصّة «' + esc(topic) + '» بالذكاء الاصطناعي وفق نموذج مفتاح…</p>' +
-        '<p style="color:#475569;margin:0;font-size:15px">يتم الآن إعداد المحطات الخمس (م - ف - ت - ا - ح) وحفظها في الأرشيف، وسيتم نقلك تلقائياً لفحص الحصة وتعديلها ومشاركة الكود عبر واتساب.</p>' +
+        '<p style="font-size:19px;font-weight:800;color:#0b6bcb;margin:0 0 8px">🧠 جاري توليد حصّة «' + esc(topic) + '» باللغة ' + langLabel + ' وفق نموذج مفتاح…</p>' +
+        '<p style="color:#475569;margin:0;font-size:15px">يتم الآن إعداد المحطات الخمس (م - ف - ت - ا - ح) باللغة المطلوبة وحفظها في الأرشيف، وسيتم نقلك تلقائياً لفحص الحصة وتعديلها ومشاركة الكود عبر واتساب.</p>' +
         '</div>';
 
       generateLessonWithRealAI(
@@ -1335,7 +1858,8 @@
         notesVal,
         isPublicChosen,
         currentTeacher.name || 'معلّم مشيرفة',
-        currentTeacher.email || 'rami0407@gmail.com'
+        currentTeacher.email || 'rami0407@gmail.com',
+        resolvedLang
       ).then(function (lesson) {
         // 1. حفظ الحصة التفاعلية كاملة محلياً
         try {

@@ -132,7 +132,8 @@
             <option value="علوم">علوم</option>
             <option value="لغة عربية">لغة عربية</option>
             <option value="رياضيات">رياضيات</option>
-            <option value="لغة إنجليزية">لغة إنجليزية</option>
+            <option value="لغة عبرية">لغة عبرية (עברית)</option>
+            <option value="لغة إنجليزية">لغة إنجليزية (English)</option>
             <option value="تربية إسلامية">تربية إسلامية</option>
             <option value="موطن">موطن وجغرافيا</option>
           </select>
@@ -171,14 +172,25 @@
       <form id="gen-form" onsubmit="return false;">
         <label style="font-weight:700">المادة الدراسية:</label>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px">
-          <button type="button" class="quick-subj-btn active" data-s="علوم">علوم</button>
-          <button type="button" class="quick-subj-btn" data-s="لغة عربية">لغة عربية</button>
-          <button type="button" class="quick-subj-btn" data-s="رياضيات">رياضيات</button>
-          <button type="button" class="quick-subj-btn" data-s="لغة إنجليزية">لغة إنجليزية</button>
-          <button type="button" class="quick-subj-btn" data-s="تربية إسلامية">تربية إسلامية</button>
-          <button type="button" class="quick-subj-btn" data-s="موطن">موطن وجغرافيا</button>
+          <button type="button" class="quick-subj-btn active" data-s="علوم" data-lang="ar">علوم</button>
+          <button type="button" class="quick-subj-btn" data-s="لغة عربية" data-lang="ar">لغة عربية</button>
+          <button type="button" class="quick-subj-btn" data-s="رياضيات" data-lang="ar">رياضيات</button>
+          <button type="button" class="quick-subj-btn" data-s="لغة عبرية" data-lang="he">لغة عبرية (עברית)</button>
+          <button type="button" class="quick-subj-btn" data-s="لغة إنجليزية" data-lang="en">لغة إنجليزية (English)</button>
+          <button type="button" class="quick-subj-btn" data-s="تربية إسلامية" data-lang="ar">تربية إسلامية</button>
+          <button type="button" class="quick-subj-btn" data-s="موطن" data-lang="ar">موطن وجغرافيا</button>
         </div>
         <input type="text" id="subject" value="علوم" placeholder="أو اكتب اسم المادة…">
+
+        <div style="margin-top:14px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:14px;padding:12px 14px">
+          <label style="font-weight:800;color:#0f172a;display:block;margin-bottom:6px">🌐 لغة توليد الحصّة (اللغة التي ستُكتب بها الحصّة وأسئلتها للطلاب):</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="quick-lang-btn quick-subj-btn active" data-lang-choice="ar" style="flex:1;min-width:140px;font-weight:800">🇸🇦 اللغة العربية</button>
+            <button type="button" class="quick-lang-btn quick-subj-btn" data-lang-choice="he" style="flex:1;min-width:140px;font-weight:800">🇮🇱 اللغة العبرية (עברית)</button>
+            <button type="button" class="quick-lang-btn quick-subj-btn" data-lang-choice="en" style="flex:1;min-width:140px;font-weight:800">🇬🇧 اللغة الإنجليزية (English)</button>
+          </div>
+          <input type="hidden" id="lesson-lang" value="ar">
+        </div>
 
         <div style="margin-top:14px">
           <label style="font-weight:700">الصف المستهدف:</label>
@@ -252,6 +264,6 @@
   <div id="sess"></div>
 </main>
 
-<script src="teacher.js?v=20261108_v5"></script>
+<script src="teacher.js?v=20261109_v6"></script>
 </body>
 </html>
