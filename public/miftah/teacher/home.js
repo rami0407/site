@@ -461,32 +461,7 @@ if ($('inspect-by-code-btn')) {
   };
 }
 
-// 3. مكتبة المحاكاة
-function renderSimulations() {
-  var box = $('sims-grid');
-  if (!box) return;
-  var sims = [
-    { icon: '🌡️', title: 'مختبر التوصيل الحراري والملاعق الثلاث', subject: 'علوم · الصف الخامس', desc: 'محاكاة حية لانتقال الحرارة في الملعقة المعدنية والخشبية والبلاستيكية وذوبان الزبدة بالثواني.', url: '../manasa/lesson.html?l=heat' },
-    { icon: '🧊', title: 'حالات المادة الثلاث وتحولاتها', subject: 'علوم · الصف الرابع', desc: 'استكشاف تفاعلي للجزيئات في الحالة الصلبة والسائلة والغازية وأثر التسخين والتبريد.', url: '../manasa/index.html?inspect=states_matter' },
-    { icon: '🍕', title: 'تمثيل الكسور العادية والمقارنة البصرية', subject: 'رياضيات · الصف الخامس', desc: 'نشاط تفاعلي لتمثيل البسط والمقام وتقسيم الأشكال الهندسية ومقارنة الكسور.', url: '../manasa/index.html?inspect=fractions_basics' },
-    { icon: '✍️', title: 'مختبر همزة الوصل وهمزة القطع', subject: 'لغة عربية · الصف الرابع', desc: 'تطبيق قاعدة حرف الواو السحرية والتمييز الصوتي والبصري بين الهمزتين.', url: '../manasa/index.html?inspect=hamza_rules' }
-  ];
-  box.innerHTML = sims.map(function (s) {
-    return '<div class="lib-card">' +
-      '<div>' +
-        '<div style="font-size:32px;margin-bottom:4px">' + s.icon + '</div>' +
-        '<h4>' + esc(s.title) + '</h4>' +
-        '<span class="tag" style="margin:6px 0">' + esc(s.subject) + '</span>' +
-        '<p style="margin:4px 0 0;font-size:13.5px;color:#475569">' + esc(s.desc) + '</p>' +
-      '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:8px">' +
-        '<a class="btn p" href="' + s.url + '" target="_blank">▶️ عرض المحاكاة على الشاشة</a>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-// 4. صفوفي وطلابي وملفات الطلاب
+// 3. صفوفي وطلابي وملفات الطلاب
 function getAllStudentRecords() {
   var records = [];
   try {
@@ -585,7 +560,6 @@ function boot(u) {
     loadT();
   }
   loadMine();
-  renderSimulations();
   renderClassesSection();
   renderPortfoliosSection();
   renderDirectorStats();
