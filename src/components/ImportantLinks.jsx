@@ -110,32 +110,6 @@ const ImportantLinks = () => {
             }
           }
 
-          // Ensure Miftaah AI Platform is always present at the very top
-          const hasMiftaah = list.some(l => 
-            (l.title && (l.title.includes('مِفتاح AI') || l.title.includes('منصة مِفتاح') || l.title.includes('مفتاح AI'))) || 
-            (l.url && (l.url.includes('miftaah') || l.url.includes('miftah')))
-          );
-          if (!hasMiftaah) {
-            list.unshift({
-              id: 'school-miftaah-ai-default',
-              title: 'منصة مِفتاح AI — رحلة التعلم التفاعلية (طلاب ومعلمون)',
-              icon: 'fa-key',
-              url: '#/miftaah',
-              desc: 'الحصة التفاعلية الممتعة لطلاب المدرسة بمحطات التحدي والاستكشاف بالذكاء الاصطناعي، واستوديو المعلم لتحضير وإدارة الحصص النموذجية.',
-              badge: 'منصة مِفتاح AI 🗝️',
-              isAi: true,
-              highlight: true
-            });
-          } else {
-            const mIndex = list.findIndex(l => 
-              (l.title && (l.title.includes('مِفتاح AI') || l.title.includes('منصة مِفتاح') || l.title.includes('مفتاح AI'))) || 
-              (l.url && (l.url.includes('miftaah') || l.url.includes('miftah')))
-            );
-            if (mIndex > 0) {
-              const [mItem] = list.splice(mIndex, 1);
-              list.unshift(mItem);
-            }
-          }
 
           // Ensure Happiness Mail is always present at the top
           const hasHappinessMail = list.some(l => 
@@ -429,7 +403,10 @@ const ImportantLinks = () => {
 
         const filteredList = list.filter(l => !(
           (l.url && (l.url.includes('student-dismissal') || l.url.includes('tasreeh'))) || 
-          (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج')))
+          (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج'))) ||
+          (l.url && (l.url.includes('miftaah') || l.url.includes('#/miftaah'))) ||
+          (l.title && (l.title.includes('منصة مِفتاح') || l.title.includes('منصة مفتاح') || l.title.includes('مِفتاح AI') || l.title.includes('مفتاح AI'))) ||
+          (l.badge && (l.badge.includes('منصة مِفتاح') || l.badge.includes('مِفتاح AI') || l.badge.includes('منصة مفتاح')))
         ));
         setLinks(filteredList);
       } catch (error) {
@@ -535,12 +512,6 @@ const ImportantLinks = () => {
                   if (link.url?.includes('qanat')) {
                     e.preventDefault();
                     window.location.hash = '#/qanat';
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    return;
-                  }
-                  if (link.url?.includes('miftaah')) {
-                    e.preventDefault();
-                    window.location.hash = '#/miftaah';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }

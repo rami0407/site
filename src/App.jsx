@@ -447,11 +447,8 @@ function App() {
   const isMiftaahJourneyView = currentHash.includes('miftaah') || currentHash.includes('miftah') || currentHash.includes('journey') || currentHash.includes('rihla');
 
   if (isMiftaahJourneyView) {
-    return (
-      <Suspense fallback={<Loader />}>
-        <MiftaahLearningJourney />
-      </Suspense>
-    );
+    window.location.hash = '#/';
+    return null;
   }
 
   const isMafatihView = currentHash.includes('mafatih') || currentHash.includes('mafateeh') || currentHash.includes('pedagogy');
