@@ -2893,13 +2893,24 @@ const AdminDashboard = () => {
         setPrincipal(principalSnap.data());
       }
 
-      // 6. Load Links
-      const qLinks = query(collection(db, 'links'), orderBy('createdAt', 'asc'));
-      const querySnapshotLinks = await getDocs(qLinks);
-      const fetchedLinks = [];
-      querySnapshotLinks.forEach((doc) => {
-        fetchedLinks.push({ ...doc.data(), id: doc.id });
-      });
+      // 6. Load Links (Cloud Dual-Sync: emtnanDb + db + local)
+      const linkMap = new Map();
+      try {
+        const localCached = localStorage.getItem('db_links');
+        if (localCached) {
+          const parsed = JSON.parse(localCached);
+          if (Array.isArray(parsed)) parsed.forEach(l => { if (l && l.id) linkMap.set(l.id, l); });
+        }
+      } catch (e) {}
+      try {
+        const snapLinksEmtnan = await getDocs(query(collection(emtnanDb, 'links'), orderBy('createdAt', 'asc')));
+        snapLinksEmtnan.forEach(d => linkMap.set(d.id, { ...d.data(), id: d.id }));
+      } catch (e) {}
+      try {
+        const snapLinksDb = await getDocs(query(collection(db, 'links'), orderBy('createdAt', 'asc')));
+        snapLinksDb.forEach(d => linkMap.set(d.id, { ...d.data(), id: d.id }));
+      } catch (e) {}
+      const fetchedLinks = Array.from(linkMap.values());
       setLinks(fetchedLinks);
 
       // 7. Load Gallery
@@ -3995,24 +4006,33 @@ const AdminDashboard = () => {
 
     if (editingLinkId) {
       // Edit Mode
-      if (isOfflineMode) {
-        const updated = links.map(l => l.id === editingLinkId ? { ...l, ...newLink } : l);
-        localStorage.setItem('db_links', JSON.stringify(updated));
-        setLinks(updated);
-        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
-        setEditingLinkId(null);
-        return;
+      const updatedLink = {
+        ...newLink,
+        updatedAt: new Date().toISOString()
+      };
+
+      const updated = links.map(l => l.id === editingLinkId ? { ...l, ...updatedLink } : l);
+      localStorage.setItem('db_links', JSON.stringify(updated));
+      localStorage.setItem('cached_important_links', JSON.stringify(updated));
+      setLinks(updated);
+      setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+      setEditingLinkId(null);
+
+      // Cloud Dual-Sync: Save to both emtnanDb and db
+      try {
+        await setDoc(doc(emtnanDb, 'links', editingLinkId), updatedLink, { merge: true });
+      } catch (e) {
+        console.warn('emtnanDb link update note:', e);
+      }
+      try {
+        await setDoc(doc(db, 'links', editingLinkId), updatedLink, { merge: true });
+      } catch (e) {
+        console.warn('db link update note:', e);
       }
 
-      try {
-        await updateDoc(doc(db, 'links', editingLinkId), newLink);
-        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
-        setEditingLinkId(null);
-        loadDashboardData();
-        alert('تم تعديل الرابط بنجاح!');
-      } catch (error) {
-        alert('حدث خطأ أثناء تعديل الرابط: ' + error.message);
-      }
+      window.dispatchEvent(new CustomEvent('musherfe_links_updated', { detail: updated }));
+      loadDashboardData();
+      alert('✅ تم تعديل الرابط بنجاح ونشره في الموقع فوراً!');
     } else {
       // Add Mode
       const linkObj = {
@@ -4020,22 +4040,29 @@ const AdminDashboard = () => {
         createdAt: new Date().toISOString()
       };
 
-      if (isOfflineMode) {
-        const updated = [...links, { ...linkObj, id: String(Date.now()) }];
-        localStorage.setItem('db_links', JSON.stringify(updated));
-        setLinks(updated);
-        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
-        return;
+      let newDocId = 'link_' + Date.now();
+      try {
+        const emtnanRef = await addDoc(collection(emtnanDb, 'links'), linkObj);
+        newDocId = emtnanRef.id;
+      } catch (e) {
+        console.warn('emtnanDb addDoc note:', e);
       }
 
       try {
-        await addDoc(collection(db, 'links'), linkObj);
-        setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
-        loadDashboardData();
-        alert('تم إضافة الرابط بنجاح!');
-      } catch (error) {
-        alert('حدث خطأ أثناء إضافة الرابط: ' + error.message);
+        await setDoc(doc(db, 'links', newDocId), linkObj, { merge: true });
+      } catch (e) {
+        console.warn('db setDoc note:', e);
       }
+
+      const updated = [{ ...linkObj, id: newDocId }, ...links];
+      localStorage.setItem('db_links', JSON.stringify(updated));
+      localStorage.setItem('cached_important_links', JSON.stringify(updated));
+      setLinks(updated);
+      setNewLink({ title: '', url: '', desc: '', icon: 'fa-link' });
+
+      window.dispatchEvent(new CustomEvent('musherfe_links_updated', { detail: updated }));
+      loadDashboardData();
+      alert('✅ تم إضافة الرابط بنجاح وظهوره المباشر في الموقع!');
     }
   };
 
@@ -4057,19 +4084,25 @@ const AdminDashboard = () => {
   const handleDeleteLink = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الرابط؟')) return;
 
-    if (isOfflineMode) {
-      const updated = links.filter(l => l.id !== id);
-      localStorage.setItem('db_links', JSON.stringify(updated));
-      setLinks(updated);
-      return;
-    }
+    const updated = links.filter(l => l.id !== id);
+    localStorage.setItem('db_links', JSON.stringify(updated));
+    localStorage.setItem('cached_important_links', JSON.stringify(updated));
+    setLinks(updated);
 
     try {
-      await deleteDoc(doc(db, 'links', id));
-      loadDashboardData();
-    } catch (error) {
-      alert('حدث خطأ أثناء حذف الرابط: ' + error.message);
+      await deleteDoc(doc(emtnanDb, 'links', id));
+    } catch (e) {
+      console.warn('emtnanDb deleteDoc note:', e);
     }
+    try {
+      await deleteDoc(doc(db, 'links', id));
+    } catch (e) {
+      console.warn('db deleteDoc note:', e);
+    }
+
+    window.dispatchEvent(new CustomEvent('musherfe_links_updated', { detail: updated }));
+    loadDashboardData();
+    alert('✅ تم حذف الرابط بنجاح!');
   };
 
   // ==================== GALLERY ACTIONS ====================

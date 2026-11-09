@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, doc, getDocs, setDoc, query, orderBy } from 'firebase/firestore';
+import { db, emtnanDb } from '../firebase';
+import { collection, doc, setDoc, onSnapshot, getDocs, query, orderBy } from 'firebase/firestore';
 import { importantLinks as fallbackLinks } from '../data/schoolData';
 
 const normalizeAnnualPlansLink = (rawList) => {
@@ -41,385 +41,502 @@ const normalizeAnnualPlansLink = (rawList) => {
 const ImportantLinks = () => {
   const [links, setLinks] = useState(() => {
     try {
-      const cached = localStorage.getItem('cached_important_links');
-      if (cached) return normalizeAnnualPlansLink(JSON.parse(cached));
+      const localStr = localStorage.getItem('db_links') || localStorage.getItem('cached_important_links');
+      if (localStr) return normalizeAnnualPlansLink(JSON.parse(localStr));
     } catch (e) {}
     return normalizeAnnualPlansLink(fallbackLinks);
   });
 
   useEffect(() => {
-    const fetchLinks = async () => {
+    let unsub1 = () => {};
+    let unsub2 = () => {};
+    const rawMap = new Map();
+
+    const processAndSetLinks = () => {
       try {
-        const q = query(collection(db, 'links'), orderBy('createdAt', 'asc'));
-        const querySnapshot = await getDocs(q);
-        const list = [];
-        querySnapshot.forEach((docSnap) => {
-          const d = docSnap.data();
+        // 1. Incorporate local links from db_links if any
+        try {
+          const localStr = localStorage.getItem('db_links');
+          if (localStr) {
+            const localArr = JSON.parse(localStr);
+            if (Array.isArray(localArr)) {
+              localArr.forEach(l => {
+                if (l && l.id && !rawMap.has(l.id)) {
+                  rawMap.set(l.id, l);
+                }
+              });
+            }
+          }
+        } catch (e) {}
+
+        const list = Array.from(rawMap.values()).map(d => {
           const isOldBulletin =
             (d.title && (d.title.includes('لوح الاعلانات') || d.title.includes('لوح الإعلانات'))) ||
             (d.desc && (d.desc.includes('لوح الاعلانات') || d.desc.includes('لوح الإعلانات')));
           if (isOldBulletin) {
-            const updatedDoc = {
+            return {
               ...d,
-              id: docSnap.id,
               title: 'خطط سنوية',
               desc: 'خطط سنوية',
               url: '#/holistic-mapping',
               icon: d.icon || 'fa-link'
             };
-            list.push(updatedDoc);
-            // Also persist the replacement directly in Firestore so it stays updated everywhere
-            setDoc(
-              doc(db, 'links', docSnap.id),
-              { title: 'خطط سنوية', desc: 'خطط سنوية', url: '#/holistic-mapping' },
-              { merge: true }
-            ).catch(() => {});
-          } else {
-            list.push({ ...d, id: docSnap.id });
           }
+          return d;
+        });
+
+        // Sort custom links with newest first so new admin links appear right away
+        list.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
         });
 
         if (list.length === 0) {
           setLinks(fallbackLinks);
-        } else {
-          // Ensure Tab Platform is always present at the very top
-          const hasTab = list.some(l => 
-            (l.title && (l.title.includes('منصة تاب') || l.title.includes('تاب —') || l.title === 'تاب')) || 
-            (l.url && (l.url.includes('miftah-generator.sites.tab.bot') || l.url.includes('/tab')))
-          );
-          if (!hasTab) {
-            list.unshift({
-              id: 'school-tab-platform-default',
-              title: 'منصة تاب — مفتاح (الحصص التفاعلية ومولّد خطة الدرس)',
-              icon: 'fa-layer-group',
-              url: '/tab/',
-              externalUrl: '/tab/',
-              desc: 'بوابة تاب الرقمية التفاعلية وفق نموذج مفتاح: توليد خطط الدروس بالذكاء الاصطناعي، شاشات العرض الذكية، والحصص التفاعلية للطلاب والمعلمين.',
-              badge: 'منصة تاب 🔑',
-              isAi: true,
-              highlight: true
-            });
-          } else {
-            const tabIdx = list.findIndex(l => 
-              (l.title && (l.title.includes('منصة تاب') || l.title.includes('تاب —') || l.title === 'تاب')) || 
-              (l.url && (l.url.includes('miftah-generator.sites.tab.bot') || l.url.includes('/tab')))
-            );
-            if (tabIdx > 0) {
-              const [tabItem] = list.splice(tabIdx, 1);
-              list.unshift(tabItem);
-            }
-          }
-
-
-          // Ensure Happiness Mail is always present at the top
-          const hasHappinessMail = list.some(l => 
-            (l.title && (l.title.includes('بريد السعادة') || l.title.includes('بريد التميز') || l.title.includes('بريد'))) || 
-            (l.url && (l.url.includes('happiness-mail') || l.url.includes('bareed')))
-          );
-          if (!hasHappinessMail) {
-            list.splice(1, 0, {
-              id: 'school-happiness-mail-default',
-              title: 'بريد التميز',
-              icon: 'fa-envelope-open-text',
-              url: '#happiness-mail',
-              desc: 'بطاقات تقدير وتميّز مدرسية مخصصة للطلاب والطالبات: رسالة صغيرة... وأثر كبير وباقٍ!',
-              badge: 'جديد 💌'
-            });
-          }
-
-          // Ensure Aflam Al-Maharat is always present
-          const hasAflam = list.some(l => 
-            (l.url && (l.url.includes('aflam') || l.url.includes('skills-films') || l.url.includes('aflam-almaharat'))) || 
-            (l.title && (l.title.includes('أفلام المهارات') || l.title.includes('افلام المهارات')))
-          );
-          if (!hasAflam) {
-            list.splice(1, 0, {
-              id: 'school-aflam-maharat-default',
-              title: 'أفلام المهارات — منصة المهارات التعليمية المرئية',
-              icon: 'fa-film',
-              url: '#/skills-films',
-              externalUrl: 'https://aflam-almaharat.sites.tab.bot/',
-              desc: 'منصة مرئية تعليمية هادفة تضم باقة شيقة ومميزة من أفلام تنمية المهارات الحياتية، التفكير الإبداعي، وبناء القيم.',
-              badge: 'أفلام المهارات 🎬'
-            });
-          }
-
-          // Ensure Qanat is always present
-          const hasQanat = list.some(l => 
-            (l.url && (l.url.includes('qanat') || l.url.includes('taallam') || l.url.includes('ta3allam'))) || 
-            (l.title && (l.title.includes('تعلّم وتمتّع') || l.title.includes('تعلم وتمتع') || l.title.includes('القناة الرقمية')))
-          );
-          if (!hasQanat) {
-            list.splice(2, 0, {
-              id: 'school-qanat-default',
-              title: 'تعلّم وتمتّع — القناة الرقمية (أفلام تعليمية واختبارات)',
-              icon: 'fa-play-circle',
-              url: '#/qanat',
-              desc: 'منصة القناة الرقمية التعليمية التفاعلية: باقة أفلام وثائقية وقصص هادفة واختبارات ذكية ممتعة تدمج التعلم بالترفيه.',
-              badge: 'تعلّم وتمتّع 🎬'
-            });
-          }
-
-          // Ensure Padlet is always present
-          const hasPadlet = list.some(l => 
-            (l.url && (l.url.includes('padlet') || l.url.includes('badlet'))) || 
-            (l.title && l.title.includes('بادليت'))
-          );
-          if (!hasPadlet) {
-            list.unshift({
-              id: 'school-padlet-default',
-              title: 'بادليت مدرسة مشيرفة',
-              icon: 'fa-chalkboard',
-              url: '#/padlet',
-              desc: 'حائط البادليت التفاعلي: تضع المعلمة الأسئلة ويشارك المعلمون والجمهور ببطاقات وإجابات حية.',
-              badge: 'جديد 📌'
-            });
-          }
-
-          // Ensure Kiosk is always included even if not manually added in Firestore yet
-          const hasKiosk = list.some(l => 
-            (l.url && (l.url.includes('kiosk') || l.url.includes('display'))) || 
-            (l.title && (l.title.includes('شاشة العرض') || l.title.includes('شاشات العرض') || l.title.toLowerCase().includes('kiosk')))
-          );
-          if (!hasKiosk) {
-            list.push({
-              id: 'school-kiosk-display-default',
-              title: 'شاشة العرض المدرسية (Kiosk)',
-              icon: 'fa-tv',
-              url: '#/kiosk',
-              desc: 'البث المباشر لشاشات العرض الذكية: الإعلانات، الفعاليات المدرسية وجدول اليوم.'
-            });
-          }
-
-          // Ensure AI tools are present even if not yet saved in Firestore
-          const hasSocratic = list.some(l => 
-            (l.action === 'open-homework-helper') || 
-            (l.title && l.title.includes('السقراطي')) || 
-            (l.url && l.url.includes('homework-helper'))
-          );
-          if (!hasSocratic) {
-            list.push({
-              id: 'ai-socratic-homework-default',
-              title: 'المعلم السقراطي للواجبات والتفكير',
-              icon: 'fa-brain',
-              url: '#/worksheets',
-              action: 'open-homework-helper',
-              desc: 'مرشد ذكي يعتمد الحوار السقراطي لمساعدتك في فهم المسائل والواجبات خطوة بخطوة.',
-              badge: 'ذكاء اصطناعي 🤖',
-              isAi: true
-            });
-          }
-
-          const hasBookBuddy = list.some(l => 
-            (l.title && l.title.includes('المحاور القرائي')) || 
-            (l.url && l.url.includes('action=book-buddy'))
-          );
-          if (!hasBookBuddy) {
-            list.push({
-              id: 'ai-book-buddy-default',
-              title: 'المحاور القرائي الذكي (نادي القراء)',
-              icon: 'fa-book-reader',
-              url: '#/readers-club?action=book-buddy',
-              desc: 'حاور المرشد القرائي الذكي لمناقشة القصص التي قرأتها واستخلاص العِبر والتفكير الناقد.',
-              badge: 'ذكاء اصطناعي 🤖',
-              isAi: true
-            });
-          }
-
-          const hasStoryStudio = list.some(l => 
-            (l.title && l.title.includes('الأديب الصغير')) || 
-            (l.url && l.url.includes('action=story-studio'))
-          );
-          if (!hasStoryStudio) {
-            list.push({
-              id: 'ai-story-studio-default',
-              title: 'مختبر الأديب الصغير (تأليف القصص)',
-              icon: 'fa-feather-alt',
-              url: '#/readers-club?action=story-studio',
-              desc: 'مساحة لتأليف ونشر القصص والقصائد بمساعدة الذكاء الاصطناعي التوليدي الملهم للطالب.',
-              badge: 'ذكاء اصطناعي 🤖',
-              isAi: true
-            });
-          }
-
-          const hasDebate = list.some(l => 
-            (l.title && (l.title.includes('المناظرة') || l.title.includes('الحوار'))) || 
-            (l.url && l.url.includes('debate'))
-          );
-          if (!hasDebate) {
-            list.push({
-              id: 'ai-debate-arena-default',
-              title: 'منبر الحوار والمناظرة الفكرية',
-              icon: 'fa-balance-scale',
-              url: '#/debate',
-              desc: 'ساحة نقاش أسبوعية ذكية تطرح قضايا معاصرة، يوجهها الذكاء الاصطناعي سقراطياً لترسيخ أدب الحوار.',
-              badge: 'ذكاء اصطناعي 🤖',
-              isAi: true
-            });
-          }
-
-          const hasBooks = list.some(l => 
-            (l.title && l.title.includes('الكتب')) || 
-            (l.url && l.url.includes('books'))
-          );
-          if (!hasBooks) {
-            list.push({
-              id: 'school-books-guide-default',
-              title: 'دليل الكتب واللباس الموحد',
-              icon: 'fa-book-open',
-              url: '#/books',
-              desc: 'قوائم الكتب الدراسية المقررة لكافة المراحل وتفاصيل الزي المدرسي المعتمد.'
-            });
-          }
-
-          const hasPrincipal = list.some(l => 
-            (l.title && l.title.includes('المدير')) || 
-            (l.url && l.url.includes('principal'))
-          );
-          if (!hasPrincipal) {
-            list.push({
-              id: 'school-principal-message-default',
-              title: 'كلمة مدير المدرسة',
-              icon: 'fa-graduation-cap',
-              url: '#/principal',
-              desc: 'الرسالة التربوية، الرؤية المستقبلية وكلمة ترحيبية من إدارة مدرسة مشيرفة الابتدائية.',
-              badge: 'رسالة الإدارة 🎓'
-            });
-          }
-
-          const hasInitiatives = list.some(l => 
-            (l.title && l.title.includes('المبادرات')) || 
-            (l.url && l.url.includes('initiatives'))
-          );
-          if (!hasInitiatives) {
-            list.push({
-              id: 'school-initiatives-default',
-              title: 'المبادرات والمشاريع التربوية',
-              icon: 'fa-lightbulb',
-              url: '#initiatives',
-              desc: 'استكشف مبادرات المدرسة الرائدة: مشروع امتنان، مسرح الدمى، ومقصف المعرفة لمهارات القرن 21.',
-              badge: 'مبادرات نوعية 💡'
-            });
-          }
-
-          const hasArticles = list.some(l => 
-            (l.title && l.title.includes('المقالات')) || 
-            (l.url && l.url.includes('articles'))
-          );
-          if (!hasArticles) {
-            list.push({
-              id: 'school-articles-default',
-              title: 'المقالات والأبحاث العلمية',
-              icon: 'fa-book',
-              url: '#/articles',
-              desc: 'مكتبة المقالات والأبحاث التربوية والعلمية الموثقة لإثراء معارف الطلاب وأولياء الأمور.',
-              badge: 'أبحاث ومعرفة 📚'
-            });
-          }
-
-          // Mafatih Pedagogy Portal (موديل مِفْتَاح وتخطيط الحصص - السطر القبل أخير)
-          const hasMafatih = list.some(l => 
-            (l.title && (l.title.includes('مفاتيح') || l.title.includes('مفتاح') || l.title.includes('المفتاح') || l.title.includes('מפת"ח') || l.title.includes('מפתי"ח'))) || 
-            (l.url && (l.url.includes('mafatih') || l.url.includes('pedagogy')))
-          );
-          if (!hasMafatih) {
-            list.push({
-              id: 'school-mafatih-pedagogy-default',
-              title: 'موديل مِفْتَاح التربوي (מַפְתֵּי"חַ — تخطيط الحصص والتعلم العميق)',
-              icon: 'fa-key',
-              url: '#/mafatih',
-              desc: 'منظومة التخطيط البيداغوجي المتقدمة بمحطات مِفْتَاح الخمس [م • ف • ت • ي • ح] (מודל מַפְתֵּי"חַ) بالذكاء الاصطناعي ومكتبة الدروس المدرسية المشتركة.',
-              badge: 'موديل مِفْتَاح 🗝️',
-              isAi: true
-            });
-          }
-
-          // 0. Services Platform (منصة الخدمات)
-          const hasServices = list.some(l => 
-            (l.title && (l.title.includes('منصة الخدمات') || l.title.includes('שעות בודדות') || l.title.includes('ميلوي מקום'))) || 
-            (l.url && (l.url.includes('services') || l.url.includes('staffing')))
-          );
-          if (!hasServices) {
-            list.unshift({
-              id: 'school-services-platform-default',
-              title: 'منصة الخدمات (שעות בודדות / מילוי מקום / ספק חוגים)',
-              icon: 'fa-briefcase',
-              url: '#/services',
-              desc: 'بوابة تنظيم وتسجيل معلمين بدلاء (מילוי מקום)، ساعات مساعدة فردية (שעות בודדות)، ومزودي الدورات والبرامج التعليمية (سواء جيفين أو خارجي).',
-              badge: 'منصة الخدمات 💼'
-            });
-          }
-
-          // 1. Virtual 3D Museum
-          const hasMuseum = list.some(l => 
-            (l.title && l.title.includes('المعرض الافتراضي')) || 
-            (l.url && l.url.includes('virtual-museum'))
-          );
-          if (!hasMuseum) {
-            list.push({
-              id: 'school-virtual-museum-default',
-              title: 'المعرض الافتراضي ثلاثي الأبعاد 3D',
-              icon: 'fa-palette',
-              url: '#/virtual-museum',
-              desc: 'جولة ثلاثية الأبعاد تفاعلية بين إبداعات وأنامل الطلاب في الفنون التشكيلية ومجسمات الروبوت والعلوم.',
-              badge: 'معرض 3D تفاعلي 🎨'
-            });
-          }
-
-          // 2. Lost & Found Hub
-          const hasLostFound = list.some(l => 
-            (l.title && l.title.includes('المفقودات')) || 
-            (l.url && l.url.includes('lost-found'))
-          );
-          if (!hasLostFound) {
-            list.push({
-              id: 'school-lost-found-default',
-              title: 'ركن المفقودات والموجودات المدرسية',
-              icon: 'fa-search-location',
-              url: '#/lost-found',
-              desc: 'منظومة الأمانات المدرسية لتوثيق وتصوير الأغراض المعثور عليها وطلب استردادها للأهالي.',
-              badge: 'أمانات المدرسة 🎒'
-            });
-          }
-
-          // 3. Weekly Family Challenge
-          const hasFamilyChallenge = list.some(l => 
-            (l.title && l.title.includes('تحدي العائلة')) || 
-            (l.url && l.url.includes('family-challenge'))
-          );
-          if (!hasFamilyChallenge) {
-            list.push({
-              id: 'school-family-challenge-default',
-              title: 'تحدي العائلة الأسبوعي ولوحة الشرف',
-              icon: 'fa-users',
-              url: '#/family-challenge',
-              desc: 'تحدٍّ وألغاز STEM أسبوعية تجمع الطالب بأسرته نهاية كل أسبوع مع تكريم العائلات الفائزة.',
-              badge: 'شراكة عائلية 👨‍👩‍👧‍👦'
-            });
-          }
-
-          // 4. Student Dismissal Removed
+          return;
         }
 
+        // 1. Ensure Tab Platform is always present at the very top
+        const hasTab = list.some(l => 
+          (l.title && (l.title.includes('منصة تاب') || l.title.includes('تاب —') || l.title === 'تاب')) || 
+          (l.url && (l.url.includes('miftah-generator.sites.tab.bot') || l.url.includes('/tab') || l.url.includes('miftah.sites.tab.bot')))
+        );
+        if (!hasTab) {
+          list.unshift({
+            id: 'school-tab-platform-default',
+            title: 'منصة تاب — مفتاح (الحصص التفاعلية ومولّد خطة الدرس)',
+            icon: 'fa-layer-group',
+            url: '/tab/',
+            externalUrl: '/tab/',
+            desc: 'بوابة تاب الرقمية التفاعلية وفق نموذج مفتاح: توليد خطط الدروس بالذكاء الاصطناعي، شاشات العرض الذكية، والحصص التفاعلية للطلاب والمعلمين.',
+            badge: 'منصة تاب 🔑',
+            isAi: true,
+            highlight: true
+          });
+        }
+
+        // Ensure Happiness Mail is always present at the top
+        const hasHappinessMail = list.some(l => 
+          (l.title && (l.title.includes('بريد السعادة') || l.title.includes('بريد التميز') || l.title.includes('بريد'))) || 
+          (l.url && (l.url.includes('happiness-mail') || l.url.includes('bareed')))
+        );
+        if (!hasHappinessMail) {
+          list.splice(1, 0, {
+            id: 'school-happiness-mail-default',
+            title: 'بريد التميز',
+            icon: 'fa-envelope-open-text',
+            url: '#happiness-mail',
+            desc: 'بطاقات تقدير وتميّز مدرسية مخصصة للطلاب والطالبات: رسالة صغيرة... وأثر كبير وباقٍ!',
+            badge: 'جديد 💌'
+          });
+        }
+
+        // Ensure Aflam Al-Maharat is always present
+        const hasAflam = list.some(l => 
+          (l.url && (l.url.includes('aflam') || l.url.includes('skills-films') || l.url.includes('aflam-almaharat'))) || 
+          (l.title && (l.title.includes('أفلام المهارات') || l.title.includes('افلام المهارات')))
+        );
+        if (!hasAflam) {
+          list.splice(1, 0, {
+            id: 'school-aflam-maharat-default',
+            title: 'أفلام المهارات — منصة المهارات التعليمية المرئية',
+            icon: 'fa-film',
+            url: '#/skills-films',
+            externalUrl: 'https://aflam-almaharat.sites.tab.bot/',
+            desc: 'منصة مرئية تعليمية هادفة تضم باقة شيقة ومميزة من أفلام تنمية المهارات الحياتية، التفكير الإبداعي، وبناء القيم.',
+            badge: 'أفلام المهارات 🎬'
+          });
+        }
+
+        // Ensure Qanat is always present
+        const hasQanat = list.some(l => 
+          (l.url && (l.url.includes('qanat') || l.url.includes('taallam') || l.url.includes('ta3allam'))) || 
+          (l.title && (l.title.includes('تعلّم وتمتّع') || l.title.includes('تعلم وتمتع') || l.title.includes('القناة الرقمية')))
+        );
+        if (!hasQanat) {
+          list.splice(2, 0, {
+            id: 'school-qanat-default',
+            title: 'تعلّم وتمتّع — القناة الرقمية (أفلام تعليمية واختبارات)',
+            icon: 'fa-play-circle',
+            url: '#/qanat',
+            desc: 'منصة القناة الرقمية التعليمية التفاعلية: باقة أفلام وثائقية وقصص هادفة واختبارات ذكية ممتعة تدمج التعلم بالترفيه.',
+            badge: 'تعلّم وتمتّع 🎬'
+          });
+        }
+
+        // System Pages injection (if missing from Firestore)
+        const hasDebate = list.some(l => 
+          (l.title && (l.title.includes('المناظرة') || l.title.includes('الحوار'))) || 
+          (l.url && l.url.includes('debate'))
+        );
+        if (!hasDebate) {
+          list.push({
+            id: 'ai-debate-arena-default',
+            title: 'منبر الحوار والمناظرة الفكرية',
+            icon: 'fa-balance-scale',
+            url: '#/debate',
+            desc: 'ساحة نقاش أسبوعية ذكية تطرح قضايا معاصرة، يوجهها الذكاء الاصطناعي سقراطياً لترسيخ أدب الحوار.',
+            badge: 'ذكاء اصطناعي 🤖',
+            isAi: true
+          });
+        }
+
+        const hasBooks = list.some(l => 
+          (l.title && l.title.includes('الكتب')) || 
+          (l.url && l.url.includes('books'))
+        );
+        if (!hasBooks) {
+          list.push({
+            id: 'school-books-guide-default',
+            title: 'دليل الكتب واللباس الموحد',
+            icon: 'fa-book-open',
+            url: '#/books',
+            desc: 'قوائم الكتب الدراسية المقررة لكافة المراحل وتفاصيل الزي المدرسي المعتمد.'
+          });
+        }
+
+        const hasPrincipal = list.some(l => 
+          (l.title && l.title.includes('المدير')) || 
+          (l.url && l.url.includes('principal'))
+        );
+        if (!hasPrincipal) {
+          list.push({
+            id: 'school-principal-message-default',
+            title: 'كلمة مدير المدرسة',
+            icon: 'fa-graduation-cap',
+            url: '#/principal',
+            desc: 'الرسالة التربوية، الرؤية المستقبلية وكلمة ترحيبية من إدارة مدرسة مشيرفة الابتدائية.',
+            badge: 'رسالة الإدارة 🎓'
+          });
+        }
+
+        const hasInitiatives = list.some(l => 
+          (l.title && l.title.includes('المبادرات')) || 
+          (l.url && l.url.includes('initiatives'))
+        );
+        if (!hasInitiatives) {
+          list.push({
+            id: 'school-initiatives-default',
+            title: 'المبادرات والمشاريع التربوية',
+            icon: 'fa-lightbulb',
+            url: '#initiatives',
+            desc: 'استكشف مبادرات المدرسة الرائدة: مشروع امتنان، مسرح الدمى، ومقصف المعرفة لمهارات القرن 21.',
+            badge: 'مبادرات نوعية 💡'
+          });
+        }
+
+        const hasArticles = list.some(l => 
+          (l.title && l.title.includes('المقالات')) || 
+          (l.url && l.url.includes('articles'))
+        );
+        if (!hasArticles) {
+          list.push({
+            id: 'school-articles-default',
+            title: 'المقالات والأبحاث العلمية',
+            icon: 'fa-book',
+            url: '#/articles',
+            desc: 'أبحاث ودراسات علمية وتربوية قيّمة بقلم نخبة من معلمي وخبراء المدرسة.'
+          });
+        }
+
+        const hasTasbih = list.some(l => 
+          (l.title && (l.title.includes('المسبحة') || l.title.includes('مسبحة') || l.title.includes('تسبيح'))) || 
+          (l.url && l.url.includes('tasbih'))
+        );
+        if (!hasTasbih) {
+          list.push({
+            id: 'school-tasbih-portal-default',
+            title: 'مسبحة المدرسة الإلكترونية',
+            icon: 'fa-heart',
+            url: '#/tasbih',
+            desc: 'بوابة الأذكار والتسبيح التفاعلية: عداد حي، خيارات تصميمية ملكية، وعداد تشاركي يجمع أذكار طلاب المدرسة.',
+            badge: 'أذكار وتسابيح 📿'
+          });
+        }
+
+        const hasStem = list.some(l => 
+          (l.title && (l.title.includes('STEM') || l.title.includes('ستيم') || l.title.includes('حاضنة'))) || 
+          (l.url && l.url.includes('stem'))
+        );
+        if (!hasStem) {
+          list.push({
+            id: 'school-stem-incubator-default',
+            title: 'حاضنة ومختبر STEM الذكي',
+            icon: 'fa-atom',
+            url: '#/stem',
+            desc: 'منصة العلوم والتكنولوجيا والهندسة والرياضيات: تحديات برمجية، تجارب علمية ومشاريع ابتكارية تفاعلية.',
+            badge: 'مختبر الابتكار 🚀'
+          });
+        }
+
+        const hasMonawaat = list.some(l => 
+          (l.title && l.title.includes('منوعات')) || 
+          (l.url && l.url.includes('monawaat'))
+        );
+        if (!hasMonawaat) {
+          list.push({
+            id: 'school-monawaat-quiz-default',
+            title: 'منوعات وبنك الأسئلة التفاعلي',
+            icon: 'fa-gamepad',
+            url: '#/monawaat',
+            desc: 'ألعاب تعليمية مسلية، مسابقات سرعة، واختبارات معرفية لجميع المراحل الدراسية لتعزيز التفكير والذكاء.',
+            badge: 'تحدي وتسلية 🎮'
+          });
+        }
+
+        const hasMath = list.some(l => 
+          (l.title && (l.title.includes('الرياضيات') || l.title.includes('أولمبياد'))) || 
+          (l.url && (l.url.includes('math-championship') || l.url.includes('olympiad')))
+        );
+        if (!hasMath) {
+          list.push({
+            id: 'school-math-championship-default',
+            title: 'أولمبياد وبطولة الرياضيات الكبرى 2026',
+            icon: 'fa-calculator',
+            url: '#/math-championship',
+            desc: 'ساحة التحدي الحسابي والذهني التفاعلية: مستويات متعددة، ألعاب ثلاثية الأبعاد، شهادات تميز فورية ولوحة أبطال.',
+            badge: 'بطولة الحساب 🧮'
+          });
+        }
+
+        const hasHebrew = list.some(l => 
+          (l.title && (l.title.includes('العبرية') || l.title.includes('עברית'))) || 
+          (l.url && l.url.includes('hebrew'))
+        );
+        if (!hasHebrew) {
+          list.push({
+            id: 'school-hebrew-corner-default',
+            title: 'ركن اللغة العبرية التفاعلي (עברית בהנאה)',
+            icon: 'fa-language',
+            url: '#/hebrew',
+            desc: 'مساحة تفاعلية لتعزيز مهارات المحادثة، القراءة والمفردات في اللغة العبرية عبر ألعاب وتطبيقات ممتعة.',
+            badge: 'עברית 🇮🇱'
+          });
+        }
+
+        const hasEnglish = list.some(l => 
+          (l.title && (l.title.includes('الإنجليزية') || l.title.includes('English'))) || 
+          (l.url && l.url.includes('english'))
+        );
+        if (!hasEnglish) {
+          list.push({
+            id: 'school-english-corner-default',
+            title: 'ركن اللغة الإنجليزية (Fun with English)',
+            icon: 'fa-globe-americas',
+            url: '#/english',
+            desc: 'تدريبات لغوية سمعية وبصرية وقصص تفاعلية لتطوير الطلاقة في اللغة الإنجليزية بطرق مبتكرة وشيقة.',
+            badge: 'English 🇬🇧'
+          });
+        }
+
+        const hasExcellence = list.some(l => 
+          (l.title && l.title.includes('التميز والابتكار')) || 
+          (l.url && l.url.includes('excellence'))
+        );
+        if (!hasExcellence) {
+          list.push({
+            id: 'school-excellence-year-default',
+            title: 'عام التميز والابتكار 2026 / 2027 (وثيقة ورؤية المدرسة)',
+            icon: 'fa-award',
+            url: '#/excellence',
+            desc: 'استكشف رؤية المدرسة، ميثاق التميز، وخارطة طريق بناء جيل المبدعين والمبتكرين.',
+            badge: 'عام التميز 🌟'
+          });
+        }
+
+        const hasKiosk = list.some(l => 
+          (l.title && (l.title.includes('شاشة العرض') || l.title.includes('شاشة الاعلان') || l.title.includes('كيوسك'))) || 
+          (l.url && l.url.includes('kiosk'))
+        );
+        if (!hasKiosk) {
+          list.push({
+            id: 'school-kiosk-display-default',
+            title: 'شاشة العرض المدرسية الذكية (Live Display)',
+            icon: 'fa-tv',
+            url: '#/kiosk',
+            desc: 'البث الحي للشاشة الذكية في مدخل المدرسة: فعاليات حية، أسماء المتميزين، حكم اليوم وتنبيهات لحظية.',
+            badge: 'بث حي 📺'
+          });
+        }
+
+        const hasPolls = list.some(l => 
+          (l.title && (l.title.includes('استطلاع') || l.title.includes('لقاء أولياء الأمور'))) || 
+          (l.url && l.url.includes('parent-polls'))
+        );
+        if (!hasPolls) {
+          list.push({
+            id: 'school-parent-polls-default',
+            title: 'استطلاع ودعوة لقاء أولياء الأمور والمعلمين',
+            icon: 'fa-calendar-check',
+            url: '#/parent-polls',
+            desc: 'الدعوة الرسمية واستطلاع الحضور التفاعلي للقاء الأهالي الأول: تأكيد المشاركة، إبداء الملاحظات والتواصل الفعّال.',
+            badge: 'استطلاع تفاعلي 📝'
+          });
+        }
+
+        const hasAppointments = list.some(l => 
+          (l.title && (l.title.includes('مواعيد استقبال') || l.title.includes('حجز المواعيد'))) || 
+          (l.url && l.url.includes('appointments'))
+        );
+        if (!hasAppointments) {
+          list.push({
+            id: 'school-appointments-booking-default',
+            title: 'منظومة حجز مواعيد استقبال المعلمين والكوادر',
+            icon: 'fa-calendar-alt',
+            url: '#/appointments',
+            desc: 'بوابة إلكترونية منظمة لحجز مواعيد المقابلات الفردية مع طاقم المعلمين، الاستشارة، وإدارة المدرسة بكل سهولة.',
+            badge: 'حجز المواعيد 📅'
+          });
+        }
+
+        const hasChallenge = list.some(l => 
+          (l.title && l.title.includes('تحدي الأسبوع')) || 
+          (l.url && l.url.includes('challenge'))
+        );
+        if (!hasChallenge) {
+          list.push({
+            id: 'school-weekly-challenge-default',
+            title: 'تحدي الأسبوع التفاعلي',
+            icon: 'fa-puzzle-piece',
+            url: '#/challenge',
+            desc: 'تحديات ذكاء، ألغاز علمية، ومسابقات أسبوعية متجددة تحفز التفكير الإبداعي لدى الطلاب.',
+            badge: 'تحدي أسبوعي 🧩'
+          });
+        }
+
+        const hasPadlet = list.some(l => 
+          (l.title && l.title.includes('بادليت')) || 
+          (l.url && l.url.includes('padlet'))
+        );
+        if (!hasPadlet) {
+          list.push({
+            id: 'school-padlet-wall-default',
+            title: 'بادليت مدرسة مشيرفة (حائط المشاركات التفاعلي)',
+            icon: 'fa-chalkboard',
+            url: '#/padlet',
+            desc: 'حائط تفاعلي ذكي يطرح فيه المعلم أسئلة واستطلاعات رأي، ويشارك الطلاب والأهالي ببطاقات وإجابات حية.',
+            badge: 'جديد 📌'
+          });
+        }
+
+        const hasServices = list.some(l => 
+          (l.title && (l.title.includes('منصة الخدمات') || l.title.includes('שעות בודדות'))) || 
+          (l.url && l.url.includes('services'))
+        );
+        if (!hasServices) {
+          list.push({
+            id: 'school-services-platform-default',
+            title: 'منصة الخدمات (שעות בודדות / מילוי מקום / ספק חוגים)',
+            icon: 'fa-briefcase',
+            url: '#/services',
+            desc: 'بوابة تنظيم وتسجيل معلمين بدلاء (מילוי מקום)، ساعات مساعدة فردية (שעות בודדות)، ومزودي الدورات والبرامج التعليمية (سواء جيفين أو خارجي).',
+            badge: 'منصة الخدمات 💼'
+          });
+        }
+
+        const hasMuseum = list.some(l => 
+          (l.title && l.title.includes('المعرض الافتراضي')) || 
+          (l.url && l.url.includes('virtual-museum'))
+        );
+        if (!hasMuseum) {
+          list.push({
+            id: 'school-virtual-museum-default',
+            title: 'المعرض الافتراضي ثلاثي الأبعاد 3D',
+            icon: 'fa-palette',
+            url: '#/virtual-museum',
+            desc: 'جولة ثلاثية الأبعاد تفاعلية بين إبداعات وأنامل الطلاب في الفنون التشكيلية ومجسمات الروبوت والعلوم.',
+            badge: 'معرض 3D تفاعلي 🎨'
+          });
+        }
+
+        const hasLostFound = list.some(l => 
+          (l.title && l.title.includes('المفقودات')) || 
+          (l.url && l.url.includes('lost-found'))
+        );
+        if (!hasLostFound) {
+          list.push({
+            id: 'school-lost-found-default',
+            title: 'ركن المفقودات والموجودات المدرسية',
+            icon: 'fa-search-location',
+            url: '#/lost-found',
+            desc: 'منظومة الأمانات المدرسية لتوثيق وتصوير الأغراض المعثور عليها وطلب استردادها للأهالي.',
+            badge: 'أمانات المدرسة 🎒'
+          });
+        }
+
+        const hasFamilyChallenge = list.some(l => 
+          (l.title && l.title.includes('تحدي العائلة')) || 
+          (l.url && l.url.includes('family-challenge'))
+        );
+        if (!hasFamilyChallenge) {
+          list.push({
+            id: 'school-family-challenge-default',
+            title: 'تحدي العائلة الأسبوعي ولوحة الشرف',
+            icon: 'fa-users',
+            url: '#/family-challenge',
+            desc: 'تحدٍّ وألغاز STEM أسبوعية تجمع الطالب بأسرته نهاية كل أسبوع مع تكريم العائلات الفائزة.',
+            badge: 'شراكة عائلية 👨‍👩‍👧‍👦'
+          });
+        }
+
+        // Clean Safe Filter: Only removes student-dismissal and the deleted internal #/miftaah route
+        // NEVER filters out user added links!
         const filteredList = list.filter(l => !(
+          (l.id === 'school-miftaah-ai-default') ||
+          (l.url && (l.url === '#/miftaah' || l.url === '/#/miftaah' || l.url === '#miftaah')) ||
           (l.url && (l.url.includes('student-dismissal') || l.url.includes('tasreeh'))) || 
-          (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج'))) ||
-          (l.url && (l.url.includes('miftaah') || l.url.includes('#/miftaah'))) ||
-          (l.title && (l.title.includes('منصة مِفتاح') || l.title.includes('منصة مفتاح') || l.title.includes('مِفتاح AI') || l.title.includes('مفتاح AI'))) ||
-          (l.badge && (l.badge.includes('منصة مِفتاح') || l.badge.includes('مِفتاح AI') || l.badge.includes('منصة مفتاح')))
+          (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج')))
         ));
+
+        localStorage.setItem('cached_important_links', JSON.stringify(filteredList));
         setLinks(filteredList);
       } catch (error) {
-        console.error("Error fetching important links from Firestore:", error);
-        setLinks(normalizeAnnualPlansLink(fallbackLinks));
+        console.error("Error processing links:", error);
       }
     };
 
-    fetchLinks();
+    // Initial immediate run
+    processAndSetLinks();
+
+    // Real-time Dual Cloud Listeners (db & emtnanDb)
+    try {
+      unsub1 = onSnapshot(collection(db, 'links'), (snap) => {
+        snap.forEach(d => rawMap.set(d.id, { ...d.data(), id: d.id }));
+        processAndSetLinks();
+      }, (e) => console.warn('db links onSnapshot note:', e));
+    } catch (e) {}
+
+    try {
+      unsub2 = onSnapshot(collection(emtnanDb, 'links'), (snap) => {
+        snap.forEach(d => rawMap.set(d.id, { ...d.data(), id: d.id }));
+        processAndSetLinks();
+      }, (e) => console.warn('emtnanDb links onSnapshot note:', e));
+    } catch (e) {}
+
+    const handleLinksUpdate = (evt) => {
+      if (evt && evt.detail && Array.isArray(evt.detail)) {
+        evt.detail.forEach(l => {
+          if (l && l.id) rawMap.set(l.id, l);
+        });
+      }
+      processAndSetLinks();
+    };
+
+    window.addEventListener('musherfe_links_updated', handleLinksUpdate);
+    window.addEventListener('storage', handleLinksUpdate);
+
+    return () => {
+      unsub1();
+      unsub2();
+      window.removeEventListener('musherfe_links_updated', handleLinksUpdate);
+      window.removeEventListener('storage', handleLinksUpdate);
+    };
   }, []);
 
   return (
     <section className="section links-section" id="links">
+
       <div className="container">
         <div className="section-header">
           <h2 className="section-title">روابط هامة ومفيدة</h2>
