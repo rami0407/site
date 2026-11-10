@@ -4,7 +4,8 @@ var $ = function (id) { return document.getElementById(id); };
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function when(t) { if (!t) return 'الآن'; var d = new Date(Number(t) || Date.now()); return d.toLocaleDateString('ar', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }); }
 
-var FIRESTORE_LESSONS_URL = 'https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons';
+var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+var FS_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
 var currentUser = { name: 'معلم مشيرفة', email: 'rami0407@gmail.com', role: 'owner' };
 
 $('out').onclick = function () {
@@ -122,36 +123,23 @@ function getAllLessonsFromStorage() {
 }
 
 function syncLessonsFromCloud() {
-  return fetch(FIRESTORE_LESSONS_URL + '?pageSize=100')
+  return fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY)
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (data) {
-      if (!data || !Array.isArray(data.documents)) return getAllLessonsFromStorage();
+    .then(function (doc) {
+      if (!doc || !doc.fields || !doc.fields.lessons_json || !doc.fields.lessons_json.stringValue) return getAllLessonsFromStorage();
+      var cloudList = [];
+      try {
+        cloudList = JSON.parse(doc.fields.lessons_json.stringValue);
+      } catch (_) {}
+      if (!Array.isArray(cloudList) || !cloudList.length) return getAllLessonsFromStorage();
+
       var current = getAllLessonsFromStorage();
       var map = new Map();
       current.forEach(function (item) { map.set(item.code, item); });
-      data.documents.forEach(function (doc) {
-        try {
-          var f = doc.fields || {};
-          if (f.json && f.json.stringValue) {
-            var fullLesson = JSON.parse(f.json.stringValue);
-            if (fullLesson && fullLesson.code) {
-              localStorage.setItem('manasa-lesson-' + fullLesson.code, JSON.stringify(fullLesson));
-              var existing = map.get(fullLesson.code);
-              map.set(fullLesson.code, {
-                code: fullLesson.code,
-                title: fullLesson.title,
-                subject: fullLesson.subject,
-                grade: fullLesson.grade,
-                goal: fullLesson.goal,
-                author: fullLesson.author || 'معلم مشيرفة',
-                author_email: fullLesson.author_email || '',
-                is_public: fullLesson.is_public !== false,
-                created: Number(fullLesson.created) || Date.now(),
-                localOwner: existing ? existing.localOwner : false
-              });
-            }
-          }
-        } catch (_) {}
+      cloudList.forEach(function (cItem) {
+        if (!map.has(cItem.code)) {
+          map.set(cItem.code, cItem);
+        }
       });
       var merged = Array.from(map.values()).sort(function (a, b) { return (Number(b.created) || 0) - (Number(a.created) || 0); });
       try { localStorage.setItem('miftah_archive_lessons', JSON.stringify(merged)); } catch (_) {}

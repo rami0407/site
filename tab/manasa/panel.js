@@ -8,7 +8,8 @@ function ytId(s) { s = String(s || '').trim(); var m = s.match(/(?:v=|youtu\.be\
 function get(o, p) { return p.split('.').reduce(function (a, k) { return a == null ? undefined : a[k]; }, o); }
 function set(o, p, v) { var ks = p.split('.'), last = ks.pop(); ks.forEach(function (k, i) { var nk = ks[i + 1] !== undefined ? ks[i + 1] : last; if (o[k] == null) o[k] = /^\d+$/.test(nk) ? [] : {}; o = o[k]; }); o[last] = v; }
 
-var FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons';
+var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+var FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
 
 function loadLessonFromAnywhere(targetCode) {
   var clean = String(targetCode || '').trim();
@@ -42,7 +43,7 @@ function loadLessonFromAnywhere(targetCode) {
       })
       .catch(function () {
         // 5. Cloud Firestore
-        return fetch(FIRESTORE_BASE + '/' + encodeURIComponent(upper))
+        return fetch(FIRESTORE_BASE + '/miftaah_lesson_' + encodeURIComponent(upper) + '?key=' + FIREBASE_API_KEY)
           .then(function (r) { if (!r.ok) throw new Error('not_found'); return r.json(); })
           .then(function (doc) {
             if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {

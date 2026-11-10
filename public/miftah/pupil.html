@@ -83,7 +83,8 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     } catch (_) {}
 
     // 2. فحص السحابة (Firestore) مباشرة عبر REST API لتعمل على جميع أجهزة الطلاب والواتساب
-    fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons/' + encodeURIComponent(code))
+    var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+    fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_lesson_' + encodeURIComponent(code) + '?key=' + pKey)
       .then(function (r) {
         if (r.ok) return r.json();
         throw new Error('not_in_cloud');

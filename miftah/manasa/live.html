@@ -37,7 +37,8 @@ $('edit').href='index.html?inspect='+encodeURIComponent(s);
 function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 var RW={a:['حقّق','#dff6e8'],p:['جزئيًّا','#fff3d6'],n:['لم يحقّق بعد','#fde6e6']},LV={easy:'سهل',medium:'متوسّط',hard:'صعب'},H=['ماذا استفدت؟','ماذا ساعدني في التعلّم؟','أين سأقابل ما تعلّمته؟'];
 var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'036301448',P=[],seen=null,timer=null,ac=null,now=Date.now();
-var FIRESTORE_LIVE='https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_live_sessions';
+var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+var FIRESTORE_LIVE='https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
 
 function ago(t){var a=Math.max(0,Math.round((Date.now()-(Number(t)||Date.now()))/1000));return a<60?a+' ث':Math.round(a/60)+' د'}
 function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();[0,0.25].forEach(function(d){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.25,ac.currentTime+d);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d+0.2);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.22)})}catch(e){}}
@@ -54,7 +55,7 @@ function getLocalLiveState(){
 }
 function saveLocalLiveState(st){
   try{localStorage.setItem('manasa-live-state-'+s,JSON.stringify(st));}catch(_){}
-  fetch(FIRESTORE_LIVE+'/'+encodeURIComponent(s),{
+  fetch(FIRESTORE_LIVE+'/miftaah_session_'+encodeURIComponent(s)+'?key='+FIREBASE_API_KEY,{
     method:'PATCH',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({fields:{json:{stringValue:JSON.stringify(st)},updatedAt:{integerValue:String(Date.now())}}})
@@ -99,7 +100,7 @@ function renderState(st){
 function load(){
   var localSt=getLocalLiveState();
   renderState(localSt);
-  fetch(FIRESTORE_LIVE+'/'+encodeURIComponent(s))
+  fetch(FIRESTORE_LIVE+'/miftaah_session_'+encodeURIComponent(s)+'?key='+FIREBASE_API_KEY)
     .then(function(r){return r.ok?r.json():null;})
     .then(function(doc){
       if(doc&&doc.fields&&doc.fields.json&&doc.fields.json.stringValue){

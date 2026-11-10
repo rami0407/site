@@ -36,18 +36,11 @@ function report() {
     if (idx >= 0) state.pupils[idx] = pupilObj;
     else state.pupils.push(pupilObj);
     localStorage.setItem(liveKey, JSON.stringify(state));
-    fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_live_sessions?documentId=' + encodeURIComponent(S.sid), {
-      method: 'POST',
+    var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+    fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_session_' + encodeURIComponent(S.sid) + '?key=' + pKey, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(state) } } })
-    }).then(function (r) {
-      if (r.status === 409) {
-        return fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_live_sessions/' + encodeURIComponent(S.sid), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(state) } } })
-        });
-      }
     }).catch(function () {});
   } catch (e) {}
 }
@@ -304,10 +297,13 @@ function exitStudentApp() {
 }
 
 // ---------- start ----------
+var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+var FS_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
+
 function fetchCloudLessonByCode(code) {
   var cleanCode = String(code || '').trim().toUpperCase();
   if (!cleanCode) return Promise.reject('رمز غير صالح');
-  return fetch('https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons/' + encodeURIComponent(cleanCode))
+  return fetch(FS_BASE + '/miftaah_lesson_' + encodeURIComponent(cleanCode) + '?key=' + FIREBASE_API_KEY)
     .then(function (r) {
       if (!r.ok) throw new Error('not_found');
       return r.json();

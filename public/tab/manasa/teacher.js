@@ -18,12 +18,14 @@
     setTimeout(function () { if (d.parentNode) d.remove(); }, 4000);
   }
 
-  // رابط Firestore السحابي لمزامنة الحصص والأرشيف عبر كافة الأجهزة
-  var FIRESTORE_COLLECTION_URL = 'https://firestore.googleapis.com/v1/projects/musheirifa-school/databases/(default)/documents/miftaah_manasa_lessons';
+  // رابط Firestore السحابي لمزامنة الحصص والأرشيف عبر كافة الأجهزة (مشروع المدرسة النشط site-a8b88)
+  var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+  var FS_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
 
   function saveLessonToCloud(lesson) {
     if (!lesson || !lesson.code) return Promise.resolve();
     var code = String(lesson.code).toUpperCase();
+    var lessonJsonStr = JSON.stringify(lesson);
     var body = {
       fields: {
         code: { stringValue: code },
@@ -34,46 +36,69 @@
         author: { stringValue: String(lesson.author || 'معلم مشيرفة') },
         author_email: { stringValue: String(lesson.author_email || '') },
         is_public: { booleanValue: lesson.is_public !== false },
+        is_miftaah_lesson: { booleanValue: true },
         created: { integerValue: String(lesson.created || Date.now()) },
-        json: { stringValue: JSON.stringify(lesson) }
+        json: { stringValue: lessonJsonStr }
       }
     };
-    return fetch(FIRESTORE_COLLECTION_URL + '/' + encodeURIComponent(code), {
+
+    // 1. حفظ الدرس في مستنده الخاص (للوصول الفوري بالرابط أو الكود)
+    var p1 = fetch(FS_BASE + '/miftaah_lesson_' + encodeURIComponent(code) + '?key=' + FIREBASE_API_KEY, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }).catch(function () {});
+
+    // 2. تحديث قائمة الأرشيف السحابي المجمّع
+    var p2 = fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        var existingList = [];
+        try {
+          if (doc && doc.fields && doc.fields.lessons_json && doc.fields.lessons_json.stringValue) {
+            existingList = JSON.parse(doc.fields.lessons_json.stringValue);
+          }
+        } catch (_) {}
+        var metaItem = {
+          code: code,
+          title: lesson.title,
+          subject: lesson.subject,
+          grade: lesson.grade,
+          goal: lesson.goal,
+          author: lesson.author,
+          author_email: lesson.author_email,
+          is_public: lesson.is_public !== false,
+          created: lesson.created || Date.now()
+        };
+        existingList = existingList.filter(function (x) { return x.code !== code; });
+        existingList.unshift(metaItem);
+        return fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fields: {
+              is_miftaah_archive: { booleanValue: true },
+              updated: { integerValue: String(Date.now()) },
+              lessons_json: { stringValue: JSON.stringify(existingList.slice(0, 100)) }
+            }
+          })
+        });
+      }).catch(function () {});
+
+    return Promise.all([p1, p2]);
   }
 
   function fetchCloudLessons() {
-    return fetch(FIRESTORE_COLLECTION_URL + '?pageSize=100')
+    return fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY)
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (!data || !Array.isArray(data.documents)) return [];
-        var list = [];
-        data.documents.forEach(function (doc) {
-          try {
-            var f = doc.fields || {};
-            if (f.json && f.json.stringValue) {
-              var fullLesson = JSON.parse(f.json.stringValue);
-              if (fullLesson && fullLesson.code) {
-                localStorage.setItem('manasa-lesson-' + fullLesson.code, JSON.stringify(fullLesson));
-                list.push({
-                  code: fullLesson.code,
-                  title: fullLesson.title,
-                  subject: fullLesson.subject,
-                  grade: fullLesson.grade,
-                  goal: fullLesson.goal,
-                  author: fullLesson.author || 'معلم مشيرفة',
-                  author_email: fullLesson.author_email || '',
-                  is_public: fullLesson.is_public !== false,
-                  created: Number(fullLesson.created) || Date.now()
-                });
-              }
-            }
-          } catch (_) {}
-        });
-        return list;
+      .then(function (doc) {
+        if (!doc || !doc.fields || !doc.fields.lessons_json || !doc.fields.lessons_json.stringValue) return [];
+        try {
+          var list = JSON.parse(doc.fields.lessons_json.stringValue);
+          return Array.isArray(list) ? list : [];
+        } catch (_) {
+          return [];
+        }
       })
       .catch(function () { return []; });
   }
