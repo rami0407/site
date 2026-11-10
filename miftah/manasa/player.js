@@ -108,6 +108,65 @@ var flashCheckInterval = null;
 var activeFlashData = null;
 var flashAudioContext = null;
 
+function formatDuration(sec) {
+  var s = Number(sec) || 0;
+  var m = Math.floor(s / 60);
+  var remS = s % 60;
+  if (m < 60) {
+    return ('0' + m).slice(-2) + ':' + ('0' + remS).slice(-2);
+  }
+  var h = Math.floor(m / 60);
+  m = m % 60;
+  return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2) + ':' + ('0' + remS).slice(-2);
+}
+
+function startStudentTimer(name) {
+  if (studentTimerInterval) return;
+  var storedStart = sessionStorage.getItem('manasa_timer_start');
+  if (storedStart && !isNaN(+storedStart)) {
+    studentStartTime = +storedStart;
+  } else {
+    studentStartTime = Date.now();
+    sessionStorage.setItem('manasa_timer_start', studentStartTime);
+  }
+
+  var topEl = document.querySelector('.top');
+  if (topEl) {
+    var timerBox = document.getElementById('pupil-timer-box');
+    if (!timerBox) {
+      timerBox = document.createElement('div');
+      timerBox.id = 'pupil-timer-box';
+      timerBox.className = 'pupil-timer-bar';
+      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(name || S.name) + '</span>' +
+        '<span class="p-clock" id="pupil-timer-clock">⏱️ 00:00</span>' +
+        '<button type="button" class="p-exit-btn" id="pupil-exit-btn">🚪 خروج</button>';
+      topEl.appendChild(timerBox);
+
+      document.getElementById('pupil-exit-btn').onclick = function () {
+        exitStudentApp();
+      };
+    }
+  }
+
+  function tick() {
+    var elapsedSec = Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000));
+    var clockEl = document.getElementById('pupil-timer-clock');
+    if (clockEl) {
+      clockEl.textContent = '⏱️ ' + formatDuration(elapsedSec);
+    }
+    S.data.durationSec = elapsedSec;
+  }
+  tick();
+  studentTimerInterval = setInterval(tick, 1000);
+}
+
+function stopStudentTimer() {
+  if (studentTimerInterval) {
+    clearInterval(studentTimerInterval);
+    studentTimerInterval = null;
+  }
+}
+
 function playFlashChime() {
   try {
     flashAudioContext = flashAudioContext || new (window.AudioContext || window.webkitAudioContext)();
