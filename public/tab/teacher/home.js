@@ -123,15 +123,30 @@ function getAllLessonsFromStorage() {
 }
 
 function syncLessonsFromCloud() {
-  return fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY)
+  return fetch(FS_BASE + '?key=' + FIREBASE_API_KEY + '&pageSize=100')
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (doc) {
-      if (!doc || !doc.fields || !doc.fields.lessons_json || !doc.fields.lessons_json.stringValue) return getAllLessonsFromStorage();
+    .then(function (data) {
+      if (!data || !Array.isArray(data.documents)) return getAllLessonsFromStorage();
       var cloudList = [];
-      try {
-        cloudList = JSON.parse(doc.fields.lessons_json.stringValue);
-      } catch (_) {}
-      if (!Array.isArray(cloudList) || !cloudList.length) return getAllLessonsFromStorage();
+      data.documents.forEach(function (doc) {
+        var id = doc.name.split('/').pop();
+        if (id.startsWith('miftaah_lesson_') && !id.startsWith('miftaah_lesson_TEST') && id !== 'miftaah_lesson_archive' && id !== 'miftaah_lesson_ARCHIVE_SHARED') {
+          var f = doc.fields || {};
+          var code = (f.code && f.code.stringValue) || id.replace('miftaah_lesson_', '');
+          cloudList.push({
+            code: code,
+            title: (f.title && f.title.stringValue) || 'حصة تفاعلية',
+            subject: (f.subject && f.subject.stringValue) || 'عام',
+            grade: (f.grade && f.grade.stringValue) || 'الصف الخامس',
+            goal: (f.goal && f.goal.stringValue) || '',
+            author: (f.author && f.author.stringValue) || 'معلم مشيرفة',
+            author_email: (f.author_email && f.author_email.stringValue) || '',
+            is_public: f.is_public ? (f.is_public.booleanValue !== false) : true,
+            created: Number((f.created && f.created.integerValue) || (f.created && f.created.stringValue) || Date.now())
+          });
+        }
+      });
+      if (!cloudList.length) return getAllLessonsFromStorage();
 
       var current = getAllLessonsFromStorage();
       var map = new Map();
@@ -148,6 +163,36 @@ function syncLessonsFromCloud() {
     .catch(function () { return getAllLessonsFromStorage(); });
 }
 
+function matchesSubjectHome(lessonSubject, selectedSubj) {
+  if (!selectedSubj) return true;
+  var ls = String(lessonSubject || '').trim().toLowerCase();
+  var ss = String(selectedSubj || '').trim().toLowerCase();
+  if (ls === ss) return true;
+  if (ls.indexOf(ss) >= 0 || ss.indexOf(ls) >= 0) return true;
+  if (ss.indexOf('عبر') >= 0 || ss.indexOf('hebrew') >= 0 || ss.indexOf('עבר') >= 0) {
+    return ls.indexOf('عبر') >= 0 || ls.indexOf('עבר') >= 0 || ls.indexOf('לשון') >= 0 || ls.indexOf('הبنت') >= 0 || ls.indexOf('שפה') >= 0;
+  }
+  if (ss.indexOf('عرب') >= 0 || ss.indexOf('arabic') >= 0) {
+    return ls.indexOf('عرب') >= 0;
+  }
+  if (ss.indexOf('علم') >= 0 || ss.indexOf('علوم') >= 0 || ss.indexOf('science') >= 0) {
+    return ls.indexOf('علم') >= 0 || ls.indexOf('علوم') >= 0;
+  }
+  if (ss.indexOf('رياض') >= 0 || ss.indexOf('حساب') >= 0 || ss.indexOf('math') >= 0) {
+    return ls.indexOf('رياض') >= 0 || ls.indexOf('حساب') >= 0;
+  }
+  if (ss.indexOf('إنجليز') >= 0 || ss.indexOf('انجليز') >= 0 || ss.indexOf('english') >= 0) {
+    return ls.indexOf('إنجليز') >= 0 || ls.indexOf('انجليز') >= 0;
+  }
+  if (ss.indexOf('إسلام') >= 0 || ss.indexOf('اسلام') >= 0 || ss.indexOf('دين') >= 0) {
+    return ls.indexOf('إسلام') >= 0 || ls.indexOf('اسلام') >= 0 || ls.indexOf('دين') >= 0;
+  }
+  if (ss.indexOf('موطن') >= 0 || ss.indexOf('جغرافي') >= 0) {
+    return ls.indexOf('موطن') >= 0 || ls.indexOf('جغرافي') >= 0;
+  }
+  return false;
+}
+
 function isOwnedByCurrentTeacher(lesson) {
   if (!lesson) return false;
   if (lesson.author_email === 'school@musherfe.com') return false;
@@ -155,8 +200,10 @@ function isOwnedByCurrentTeacher(lesson) {
   var myName = String(currentUser.name || '').trim().toLowerCase();
   var lEmail = String(lesson.author_email || '').trim().toLowerCase();
   var lAuthor = String(lesson.author || '').trim().toLowerCase();
-  if (myEmail && lEmail && myEmail === lEmail) return true;
-  if (myName && lAuthor && myName === lAuthor) return true;
+  if (myEmail && lEmail && (myEmail === lEmail || myEmail.indexOf(lEmail) >= 0 || lEmail.indexOf(myEmail) >= 0)) return true;
+  if (myName && lAuthor && (myName === lAuthor || myName.indexOf(lAuthor) >= 0 || lAuthor.indexOf(myName) >= 0)) return true;
+  if (myEmail.indexOf('rami0407') >= 0 && (lEmail.indexOf('rami0407') >= 0 || lAuthor.indexOf('rami0407') >= 0)) return true;
+  if (myName.indexOf('rami0407') >= 0 && (lEmail.indexOf('rami0407') >= 0 || lAuthor.indexOf('rami0407') >= 0)) return true;
   if (lesson.localOwner === true) return true;
   return false;
 }
@@ -301,7 +348,7 @@ function renderAllTeachersArchive(allLessons) {
   var grd = $('arch-grade') ? $('arch-grade').value : '';
 
   var filtered = list.filter(function (l) {
-    if (subj && String(l.subject || '').indexOf(subj) < 0) return false;
+    if (subj && !matchesSubjectHome(l.subject, subj)) return false;
     if (grd && l.grade !== grd) return false;
     if (q) {
       var hay = ((l.title || '') + ' ' + (l.code || '') + ' ' + (l.subject || '') + ' ' + (l.author || '') + ' ' + (l.goal || '')).toLowerCase();

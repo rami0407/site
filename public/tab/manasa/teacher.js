@@ -89,18 +89,55 @@
   }
 
   function fetchCloudLessons() {
-    return fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY)
+    return fetch(FS_BASE + '?key=' + FIREBASE_API_KEY + '&pageSize=100')
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (doc) {
-        if (!doc || !doc.fields || !doc.fields.lessons_json || !doc.fields.lessons_json.stringValue) return [];
-        try {
-          var list = JSON.parse(doc.fields.lessons_json.stringValue);
-          return Array.isArray(list) ? list : [];
-        } catch (_) {
-          return [];
-        }
+      .then(function (data) {
+        if (!data || !Array.isArray(data.documents)) return [];
+        var lessons = [];
+        data.documents.forEach(function (doc) {
+          var id = doc.name.split('/').pop();
+          if (id.startsWith('miftaah_lesson_') && !id.startsWith('miftaah_lesson_TEST') && id !== 'miftaah_lesson_archive' && id !== 'miftaah_lesson_ARCHIVE_SHARED') {
+            var f = doc.fields || {};
+            var code = (f.code && f.code.stringValue) || id.replace('miftaah_lesson_', '');
+            lessons.push({
+              code: code,
+              title: (f.title && f.title.stringValue) || 'حصة تفاعلية',
+              subject: (f.subject && f.subject.stringValue) || 'عام',
+              grade: (f.grade && f.grade.stringValue) || 'الصف الخامس',
+              goal: (f.goal && f.goal.stringValue) || '',
+              author: (f.author && f.author.stringValue) || 'معلم مشيرفة',
+              author_email: (f.author_email && f.author_email.stringValue) || '',
+              is_public: f.is_public ? (f.is_public.booleanValue !== false) : true,
+              created: Number((f.created && f.created.integerValue) || (f.created && f.created.stringValue) || Date.now())
+            });
+          }
+        });
+        return lessons;
       })
-      .catch(function () { return []; });
+      .catch(function (err) {
+        console.warn('fetchCloudLessons error:', err);
+        return [];
+      });
+  }
+
+  function fetchCloudLessonByCode(code) {
+    var cleanCode = String(code || '').trim().toUpperCase();
+    if (!cleanCode) return Promise.reject('invalid_code');
+    return fetch(FS_BASE + '/miftaah_lesson_' + encodeURIComponent(cleanCode) + '?key=' + FIREBASE_API_KEY)
+      .then(function (r) {
+        if (!r.ok) throw new Error('not_found');
+        return r.json();
+      })
+      .then(function (doc) {
+        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+          var parsed = JSON.parse(doc.fields.json.stringValue);
+          try {
+            localStorage.setItem('manasa-lesson-' + cleanCode, JSON.stringify(parsed));
+          } catch (_) {}
+          return parsed;
+        }
+        throw new Error('empty');
+      });
   }
 
   // 1. هوية المعلم الحالي من الجلسة
@@ -451,9 +488,41 @@
     var teacherName = (currentTeacher.name || '').trim().toLowerCase();
     var lEmail = String(x.author_email || '').trim().toLowerCase();
     var lAuthor = String(x.author || '').trim().toLowerCase();
-    if (teacherEmail && lEmail && teacherEmail === lEmail) return true;
-    if (teacherName && lAuthor && teacherName === lAuthor) return true;
+    if (teacherEmail && lEmail && (teacherEmail === lEmail || teacherEmail.indexOf(lEmail) >= 0 || lEmail.indexOf(teacherEmail) >= 0)) return true;
+    if (teacherName && lAuthor && (teacherName === lAuthor || teacherName.indexOf(lAuthor) >= 0 || lAuthor.indexOf(teacherName) >= 0)) return true;
+    if (teacherEmail.indexOf('rami0407') >= 0 && (lEmail.indexOf('rami0407') >= 0 || lAuthor.indexOf('rami0407') >= 0)) return true;
+    if (teacherName.indexOf('rami0407') >= 0 && (lEmail.indexOf('rami0407') >= 0 || lAuthor.indexOf('rami0407') >= 0)) return true;
     if (x.localOwner === true) return true;
+    return false;
+  }
+
+  function matchesSubject(lessonSubject, selectedSubj) {
+    if (!selectedSubj) return true;
+    var ls = String(lessonSubject || '').trim().toLowerCase();
+    var ss = String(selectedSubj || '').trim().toLowerCase();
+    if (ls === ss) return true;
+    if (ls.indexOf(ss) >= 0 || ss.indexOf(ls) >= 0) return true;
+    if (ss.indexOf('عبر') >= 0 || ss.indexOf('hebrew') >= 0 || ss.indexOf('עבר') >= 0) {
+      return ls.indexOf('عبر') >= 0 || ls.indexOf('עבר') >= 0 || ls.indexOf('לשון') >= 0 || ls.indexOf('הבנת') >= 0 || ls.indexOf('שפה') >= 0;
+    }
+    if (ss.indexOf('عرب') >= 0 || ss.indexOf('arabic') >= 0) {
+      return ls.indexOf('عرب') >= 0;
+    }
+    if (ss.indexOf('علم') >= 0 || ss.indexOf('علوم') >= 0 || ss.indexOf('science') >= 0) {
+      return ls.indexOf('علم') >= 0 || ls.indexOf('علوم') >= 0;
+    }
+    if (ss.indexOf('رياض') >= 0 || ss.indexOf('حساب') >= 0 || ss.indexOf('math') >= 0) {
+      return ls.indexOf('رياض') >= 0 || ls.indexOf('حساب') >= 0;
+    }
+    if (ss.indexOf('إنجليز') >= 0 || ss.indexOf('انجليز') >= 0 || ss.indexOf('english') >= 0) {
+      return ls.indexOf('إنجليز') >= 0 || ls.indexOf('انجليز') >= 0;
+    }
+    if (ss.indexOf('إسلام') >= 0 || ss.indexOf('اسلام') >= 0 || ss.indexOf('دين') >= 0) {
+      return ls.indexOf('إسلام') >= 0 || ls.indexOf('اسلام') >= 0 || ls.indexOf('دين') >= 0;
+    }
+    if (ss.indexOf('موطن') >= 0 || ss.indexOf('جغرافي') >= 0) {
+      return ls.indexOf('موطن') >= 0 || ls.indexOf('جغرافي') >= 0;
+    }
     return false;
   }
 
@@ -484,7 +553,7 @@
     var grd = filterGrade ? filterGrade.value : '';
 
     var filtered = activeList.filter(function (l) {
-      if (subj && l.subject !== subj) return false;
+      if (subj && !matchesSubject(l.subject, subj)) return false;
       if (grd && l.grade !== grd) return false;
       if (query) {
         var str = ((l.title || '') + ' ' + (l.code || '') + ' ' + (l.subject || '') + ' ' + (l.author || '') + ' ' + (l.goal || '')).toLowerCase();
@@ -888,16 +957,27 @@
     }
 
     if (!lesson) {
-      var arch = getStoredArchive().find(function (x) { return x.code === code; });
-      if (arch) {
-        lesson = createFallbackMiftahLesson(arch.subject, arch.grade, arch.title, '', arch.is_public, arch.author, arch.author_email, arch.code);
-        lesson.goal = arch.goal || lesson.goal;
-        try { localStorage.setItem('manasa-lesson-' + code, JSON.stringify(lesson)); } catch (_) {}
-      }
-    }
-
-    if (!lesson) {
-      showToast('لم يتم العثور على بيانات الحصة.');
+      fetchCloudLessonByCode(code)
+        .then(function (cloudLesson) {
+          if (cloudLesson) {
+            activeInspectedLesson = normalizeLessonStructure(cloudLesson);
+            renderInspectorUI();
+            showView('inspector');
+          }
+        })
+        .catch(function () {
+          var arch = getStoredArchive().find(function (x) { return x.code === code; });
+          if (arch) {
+            var fallback = createFallbackMiftahLesson(arch.subject, arch.grade, arch.title, '', arch.is_public, arch.author, arch.author_email, arch.code);
+            fallback.goal = arch.goal || fallback.goal;
+            try { localStorage.setItem('manasa-lesson-' + code, JSON.stringify(fallback)); } catch (_) {}
+            activeInspectedLesson = normalizeLessonStructure(fallback);
+            renderInspectorUI();
+            showView('inspector');
+          } else {
+            showToast('لم يتم العثور على بيانات الحصة.');
+          }
+        });
       return;
     }
 
