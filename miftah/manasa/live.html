@@ -1,4 +1,4 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261112_v3">
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261112_v4">
 <style>
 .kahoot-opt-card {
   padding: 16px;
@@ -219,6 +219,130 @@
     <button type="button" class="pill" style="background:#fef3c7;border:1px solid #f59e0b;cursor:pointer" onclick="document.getElementById('flash-custom-msg').value='💪 وقت التركيز: خذوا نفساً عميقاً واستعدوا للمرحلة التالية'">💪 وقت التركيز</button>
   </div>
 </div>
+
+<!-- 1. كرت تحكم المعلم بالانتقال بين المحطات والمجموعات -->
+<div class="card" id="pacing-control-card" style="border:2.5px solid #0284c7;background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="margin:0;color:#0369a1;display:flex;align-items:center;gap:8px;font-size:20px">
+        🚦 نظام الانتقال في الحصّة والمحطّات
+      </h2>
+      <p class="muted" style="margin:4px 0 0;color:#0c4a6e;font-size:14.5px">
+        قرّرْ ما إذا كان انتقال الطلاب والمجموعات بين مراحل الحصّة حرًّا وتلقائيًّا، أو مقيّدًا بإرادتك وأمرك المباشر.
+      </p>
+    </div>
+    <div id="pacing-status-badge">
+      <span class="pill" style="background:#dcfce7;color:#15803d;font-weight:800">🔓 انتقال حُرّ</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+    <button type="button" id="pacing-mode-free-btn" class="btn" style="flex:1;min-width:220px;font-weight:800;border-radius:12px;padding:10px 16px;background:#0284c7;color:#fff;border:2px solid #0284c7">
+      🔓 انتقال حُرّ (تلقائي حسب إنجاز الطالب/المجموعة)
+    </button>
+    <button type="button" id="pacing-mode-teacher-btn" class="btn alt" style="flex:1;min-width:220px;font-weight:800;border-radius:12px;padding:10px 16px;background:#fff;color:#0369a1;border:2px solid #7dd3fc">
+      🔒 بحسب إرادة المعلّم (انتقال بأمر المعلّم فقط)
+    </button>
+  </div>
+
+  <!-- لوحة تحديد المحطة المفتوحة عندما يختار المعلم التحكم بالانتقال -->
+  <div id="pacing-teacher-panel" style="display:none;margin-top:14px;background:#fff;border:1.5px solid #bae6fd;border-radius:14px;padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <b style="color:#0369a1;font-size:15px">📍 حدِّدِ المحطّة المفتوحة للطلاب الآن (لن يتجاوزها الطلاب إلا بأمرك):</b>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" id="pacing-unlock-next-btn" class="btn ok" style="background:#0284c7;color:#fff;font-size:14px;padding:7px 14px;border-radius:10px;margin:0;font-weight:800">
+          ⏭️ افتحِ المحطّة التالية للصف
+        </button>
+        <button type="button" id="pacing-force-all-btn" class="btn alt" style="background:#f59e0b;color:#fff;border:0;font-size:14px;padding:7px 14px;border-radius:10px;margin:0;font-weight:800">
+          📢 انقلْ جميع الطلاب فوراً إلى المحطة المحددة
+        </button>
+      </div>
+    </div>
+    <div id="pacing-stations-bar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+  </div>
+</div>
+
+<!-- 2. كرت نظام المجموعات في مرحلة التدريب والتمرين (محطّة «ت») -->
+<div class="card" id="groups-control-card" style="border:2.5px solid #0d9488;background:linear-gradient(135deg,#f0fdfa 0%,#ccfbf1 100%);margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="margin:0;color:#0f766e;display:flex;align-items:center;gap:8px;font-size:20px">
+        👥 نظام العمل في مرحلة التدريب والتمرين (محطّة «ت»)
+      </h2>
+      <p class="muted" style="margin:4px 0 0;color:#115e59;font-size:14.5px">
+        قرّرْ ما إذا كان التدريب في محطّة «ت» فرديًّا أو في مجموعات، وحدِّدْ عدد المجموعات وطريقة انضمام الطلاب وحرية التنقل بينها.
+      </p>
+    </div>
+    <div id="groups-status-badge">
+      <span class="pill" style="background:#e2e8f0;color:#334155;font-weight:800">👤 تدريب فردي</span>
+    </div>
+  </div>
+
+  <!-- تفعيل/إيقاف نظام المجموعات -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+    <button type="button" id="grp-mode-indiv-btn" class="btn" style="flex:1;min-width:200px;font-weight:800;border-radius:12px;padding:10px 16px;background:#0d9488;color:#fff;border:2px solid #0d9488">
+      👤 عمل فردي (كل طالب يتدرب بمفرده)
+    </button>
+    <button type="button" id="grp-mode-coop-btn" class="btn alt" style="flex:1;min-width:200px;font-weight:800;border-radius:12px;padding:10px 16px;background:#fff;color:#0f766e;border:2px solid #5eead4">
+      👥 عمل الصف في مجموعات (في مرحلة التدريب والتمرين)
+    </button>
+  </div>
+
+  <!-- إعدادات المجموعات (تظهر عند اختيار العمل في مجموعات) -->
+  <div id="grp-coop-settings" style="display:none;margin-top:14px;background:#fff;border:1.5px solid #99f6e4;border-radius:14px;padding:16px">
+    <!-- السطر 1: عدد المجموعات + حرية الانتقال بين المجموعات -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label for="grp-count-input" style="font-weight:800;color:#0f766e;font-size:15px">🔢 عدد المجموعات:</label>
+        <input type="number" id="grp-count-input" value="4" min="2" max="10" style="width:68px;padding:6px 8px;font-size:17px;font-weight:900;text-align:center;border:2px solid #0d9488;border-radius:10px;color:#0f766e">
+        <div id="grp-count-pills" style="display:flex;gap:5px;flex-wrap:wrap">
+          <button type="button" class="pill grp-cnt-btn" data-cnt="2" style="cursor:pointer;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-weight:700">2</button>
+          <button type="button" class="pill grp-cnt-btn" data-cnt="3" style="cursor:pointer;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-weight:700">3</button>
+          <button type="button" class="pill grp-cnt-btn" data-cnt="4" style="cursor:pointer;border:1px solid #0d9488;background:#0d9488;color:#fff;font-weight:800">4 مجموعات</button>
+          <button type="button" class="pill grp-cnt-btn" data-cnt="5" style="cursor:pointer;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-weight:700">5</button>
+          <button type="button" class="pill grp-cnt-btn" data-cnt="6" style="cursor:pointer;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-weight:700">6</button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-weight:800;color:#0f766e;font-size:14px">🔄 التنقّل بين المجموعات:</span>
+        <button type="button" id="grp-move-free-btn" class="pill" style="cursor:pointer;font-weight:800;padding:6px 12px;border:1.5px solid #0d9488;background:#0d9488;color:#fff">
+          🔓 حُرّ
+        </button>
+        <button type="button" id="grp-move-teacher-btn" class="pill" style="cursor:pointer;font-weight:800;padding:6px 12px;border:1.5px solid #cbd5e1;background:#f8fafc;color:#334155">
+          🔒 بأمر المعلّم فقط
+        </button>
+      </div>
+    </div>
+
+    <!-- السطر 2: طريقة انضمام الطلاب للمجموعات (تلقائي / باختيار المعلم / باختيار الطالب) -->
+    <div style="margin-top:12px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <b style="color:#0f766e;font-size:15px">📥 طريقة انضمام الطلاب إلى المجموعات:</b>
+        <button type="button" id="grp-redistribute-btn" class="btn alt" style="background:#0284c7;color:#fff;border:0;font-size:13px;padding:6px 14px;border-radius:10px;margin:0;font-weight:800">
+          🔀 توزيع جميع الطلاب المتصلين بالتساوي الآن
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px">
+        <button type="button" class="btn grp-assign-mode-btn" data-amode="auto" style="font-weight:800;border-radius:10px;padding:10px;font-size:14px;margin:0">
+          🤖 تلقائي حسب النظام (توزيع متوازن)
+        </button>
+        <button type="button" class="btn grp-assign-mode-btn" data-amode="teacher" style="font-weight:800;border-radius:10px;padding:10px;font-size:14px;margin:0">
+          👨‍🏫 باختيار المعلّم (تعيين يدوي)
+        </button>
+        <button type="button" class="btn grp-assign-mode-btn" data-amode="student" style="font-weight:800;border-radius:10px;padding:10px;font-size:14px;margin:0">
+          🙋 باختيار الطالب (يختار مجموعته بنفسه)
+        </button>
+      </div>
+    </div>
+
+    <!-- السطر 3: لوحة المجموعات الحية وتعيين الطلاب -->
+    <div style="margin-top:14px">
+      <div id="grp-unassigned-box" style="display:none;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:12px;padding:10px 14px;margin-bottom:12px"></div>
+      <div id="grp-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>
+    </div>
+  </div>
+</div>
 <div id="hbox" class="card helps none"><h2>🙋 طلباتُ المساعدة <span id="hcount"></span></h2><div id="hl"></div></div>
 <div class="card"><div id="sum"></div></div>
 <div class="card"><h2>الطلاب</h2><p class="muted">اضغطْ على اسمِ طالب لترى كلَّ إجاباته.</p><div style="overflow-x:auto"><table id="tb"></table></div><p class="muted">تتحدّث اللوحة كلَّ ٣ ثوانٍ.</p></div>
@@ -295,10 +419,13 @@ function saveLocalLiveState(st){
 }
 
 function mergeLiveStates(statesList) {
-  var merged = { pupils: {}, helps: [], flash: null, challenge: null };
+  var merged = { pupils: {}, helps: [], flash: null, challenge: null, pacing: null, grouping: null };
   var latestFlashTime = -1;
   var authChal = null;
   var latestChalTeacherTime = -1;
+  var latestPacingTime = -1;
+  var latestGroupingCfgTime = -1;
+  var authGrouping = null;
 
   statesList.forEach(function (st) {
     if (!st || typeof st !== 'object') return;
@@ -338,6 +465,22 @@ function mergeLiveStates(statesList) {
       }
     }
 
+    if (st.pacing) {
+      var pt = st.pacing.updatedAt || 0;
+      if (pt >= latestPacingTime) {
+        latestPacingTime = pt;
+        merged.pacing = JSON.parse(JSON.stringify(st.pacing));
+      }
+    }
+
+    if (st.grouping) {
+      var gt = st.grouping.cfgUpdatedAt || st.grouping.updatedAt || 0;
+      if (gt >= latestGroupingCfgTime) {
+        latestGroupingCfgTime = gt;
+        authGrouping = JSON.parse(JSON.stringify(st.grouping));
+      }
+    }
+
     if (st.challenge && st.challenge.id) {
       var ct = st.challenge.teacherUpdatedAt || st.challenge.qStartedAt || 0;
       if (ct >= latestChalTeacherTime) {
@@ -346,6 +489,25 @@ function mergeLiveStates(statesList) {
       }
     }
   });
+
+  if (authGrouping) {
+    var mergedAssign = {};
+    var cfgResetId = authGrouping.resetId || 0;
+    statesList.forEach(function (st) {
+      if (!st || !st.grouping || !st.grouping.assignments) return;
+      if ((st.grouping.resetId || 0) < cfgResetId) return;
+      Object.keys(st.grouping.assignments).forEach(function (pid) {
+        var a = st.grouping.assignments[pid];
+        if (!a || !a.group) return;
+        var prev = mergedAssign[pid];
+        if (!prev || (a.updatedAt || 0) >= (prev.updatedAt || 0)) {
+          mergedAssign[pid] = a;
+        }
+      });
+    });
+    authGrouping.assignments = mergedAssign;
+    merged.grouping = authGrouping;
+  }
 
   if (authChal) {
     var mergedAnswers = {};
@@ -884,6 +1046,457 @@ $('flash-stop-btn').onclick = function () {
   load();
 };
 
+// ---------- Pacing & Cooperative Groups Controls ----------
+var ST_INFO = [
+  { idx: 0, let: 'م', title: 'مُشوِّق ومحفِّز', color: '#e11d48' },
+  { idx: 1, let: 'ف', title: 'فهم وبناء المعنى', color: '#0284c7' },
+  { idx: 2, let: 'ت', title: 'تدريب وتطبيق', color: '#d97706' },
+  { idx: 3, let: 'ا', title: 'مهمّة الدليل', color: '#7c3aed' },
+  { idx: 4, let: 'ح', title: 'الحصاد ونقل الأثر', color: '#15803d' }
+];
+
+var GROUP_META = [
+  { icon: '🦁', name: 'المجموعة 1 (الأسود)', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  { icon: '🦅', name: 'المجموعة 2 (الصقور)', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
+  { icon: '🐬', name: 'المجموعة 3 (الدلافين)', color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+  { icon: '🚀', name: 'المجموعة 4 (الروّاد)', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  { icon: '🌟', name: 'المجموعة 5 (النجوم)', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { icon: '🏆', name: 'المجموعة 6 (الأبطال)', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  { icon: '💎', name: 'المجموعة 7 (الجواهر)', color: '#be185d', bg: '#fdf2f8', border: '#fbcfe8' },
+  { icon: '🔥', name: 'المجموعة 8 (الشعلة)', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
+  { icon: '🌿', name: 'المجموعة 9 (السنابل)', color: '#047857', bg: '#ecfdf5', border: '#a7f3d0' },
+  { icon: '⚡', name: 'المجموعة 10 (البرق)', color: '#4338ca', bg: '#eef2ff', border: '#c7d2fe' }
+];
+
+function ensurePacingObj(st) {
+  if (!st.pacing || typeof st.pacing !== 'object') {
+    st.pacing = { mode: 'free', maxStation: 4, forcedStation: null, forcedAt: 0, updatedAt: 0 };
+  }
+  if (typeof st.pacing.maxStation !== 'number') st.pacing.maxStation = 4;
+  return st.pacing;
+}
+
+function ensureGroupingObj(st) {
+  if (!st.grouping || typeof st.grouping !== 'object') {
+    st.grouping = {
+      enabled: false,
+      groupCount: 4,
+      assignMode: 'auto', // 'auto' | 'teacher' | 'student'
+      moveMode: 'free', // 'free' | 'teacher'
+      resetId: 1,
+      assignments: {},
+      cfgUpdatedAt: 0,
+      updatedAt: 0
+    };
+  }
+  st.grouping.groupCount = Math.max(2, Math.min(10, Number(st.grouping.groupCount) || 4));
+  if (!st.grouping.assignments || typeof st.grouping.assignments !== 'object') st.grouping.assignments = {};
+  return st.grouping;
+}
+
+function autoBalancePupilsIntoGroups(st, forceRedistribute) {
+  var grp = ensureGroupingObj(st);
+  var count = grp.groupCount;
+  var nowTs = Date.now();
+  if (forceRedistribute) {
+    grp.resetId = nowTs;
+    grp.assignments = {};
+  }
+  var bucketSizes = {};
+  for (var g = 1; g <= count; g++) bucketSizes[g] = 0;
+
+  // Count existing valid assignments
+  Object.keys(grp.assignments).forEach(function (pid) {
+    var a = grp.assignments[pid];
+    if (a && a.group >= 1 && a.group <= count) {
+      bucketSizes[a.group] = (bucketSizes[a.group] || 0) + 1;
+    } else {
+      delete grp.assignments[pid];
+    }
+  });
+
+  // Assign unassigned pupils to smallest group
+  P.forEach(function (p) {
+    var pid = p.pid || p.name;
+    if (!pid) return;
+    if (!grp.assignments[pid]) {
+      var bestG = 1;
+      for (var g = 2; g <= count; g++) {
+        if ((bucketSizes[g] || 0) < (bucketSizes[bestG] || 0)) bestG = g;
+      }
+      bucketSizes[bestG] = (bucketSizes[bestG] || 0) + 1;
+      grp.assignments[pid] = {
+        group: bestG,
+        name: p.name || 'طالب',
+        updatedBy: 'auto',
+        updatedAt: nowTs
+      };
+    }
+  });
+  grp.cfgUpdatedAt = nowTs;
+  grp.updatedAt = nowTs;
+}
+
+$('pacing-mode-free-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var pc = ensurePacingObj(st);
+  pc.mode = 'free';
+  pc.maxStation = 4;
+  pc.updatedAt = Date.now();
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('pacing-mode-teacher-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var pc = ensurePacingObj(st);
+  pc.mode = 'teacher';
+  if (typeof pc.maxStation !== 'number' || pc.maxStation > 4 || pc.maxStation < 0) pc.maxStation = 0;
+  // If switching from free to teacher for the first time, default to station 0 ('م') or current
+  if (pc.maxStation === 4 && !pc.teacherInitialized) {
+    pc.maxStation = 0;
+    pc.teacherInitialized = true;
+  }
+  pc.updatedAt = Date.now();
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('pacing-unlock-next-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var pc = ensurePacingObj(st);
+  pc.mode = 'teacher';
+  pc.maxStation = Math.min(4, (Number(pc.maxStation) || 0) + 1);
+  pc.updatedAt = Date.now();
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('pacing-force-all-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var pc = ensurePacingObj(st);
+  var nowTs = Date.now();
+  pc.forcedStation = Number(pc.maxStation) || 0;
+  pc.forcedAt = nowTs;
+  pc.updatedAt = nowTs;
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('grp-mode-indiv-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var grp = ensureGroupingObj(st);
+  grp.enabled = false;
+  grp.cfgUpdatedAt = Date.now();
+  grp.updatedAt = Date.now();
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('grp-mode-coop-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var grp = ensureGroupingObj(st);
+  grp.enabled = true;
+  if (grp.assignMode === 'auto') {
+    autoBalancePupilsIntoGroups(st, false);
+  } else {
+    grp.cfgUpdatedAt = Date.now();
+    grp.updatedAt = Date.now();
+  }
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('grp-count-input').onchange = function () {
+  var val = Math.max(2, Math.min(10, Number(this.value) || 4));
+  this.value = val;
+  var st = getLocalLiveState();
+  var grp = ensureGroupingObj(st);
+  grp.groupCount = val;
+  if (grp.assignMode === 'auto') {
+    autoBalancePupilsIntoGroups(st, true);
+  } else {
+    grp.cfgUpdatedAt = Date.now();
+    grp.updatedAt = Date.now();
+  }
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+document.querySelectorAll('.grp-cnt-btn').forEach(function (btn) {
+  btn.onclick = function () {
+    var cnt = Number(btn.getAttribute('data-cnt')) || 4;
+    $('grp-count-input').value = cnt;
+    $('grp-count-input').onchange();
+  };
+});
+
+$('grp-move-free-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var grp = ensureGroupingObj(st);
+  grp.moveMode = 'free';
+  grp.cfgUpdatedAt = Date.now();
+  grp.updatedAt = Date.now();
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+$('grp-move-teacher-btn').onclick = function () {
+  var st = getLocalLiveState();
+  var grp = ensureGroupingObj(st);
+  grp.moveMode = 'teacher';
+  grp.cfgUpdatedAt = Date.now();
+  grp.updatedAt = Date.now();
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+document.querySelectorAll('.grp-assign-mode-btn').forEach(function (btn) {
+  btn.onclick = function () {
+    var amode = btn.getAttribute('data-amode') || 'auto';
+    var st = getLocalLiveState();
+    var grp = ensureGroupingObj(st);
+    grp.assignMode = amode;
+    if (amode === 'auto') {
+      autoBalancePupilsIntoGroups(st, false);
+    } else {
+      grp.cfgUpdatedAt = Date.now();
+      grp.updatedAt = Date.now();
+    }
+    saveLocalLiveState(st);
+    renderState(st);
+  };
+});
+
+$('grp-redistribute-btn').onclick = function () {
+  var st = getLocalLiveState();
+  autoBalancePupilsIntoGroups(st, true);
+  saveLocalLiveState(st);
+  renderState(st);
+};
+
+function renderPacingAndGroupingUI(st) {
+  var pc = ensurePacingObj(st);
+  var grp = ensureGroupingObj(st);
+
+  // 1. Pacing UI
+  var isTeacherPacing = pc.mode === 'teacher';
+  if (isTeacherPacing) {
+    $('pacing-status-badge').innerHTML = '<span class="pill" style="background:#fef3c7;color:#92400e;font-weight:800;border:1px solid #f59e0b">🔒 بأمر المعلّم (حتّى محطة «' + ST_INFO[pc.maxStation].let + '»)</span>';
+    $('pacing-mode-free-btn').style.background = '#fff';
+    $('pacing-mode-free-btn').style.color = '#0369a1';
+    $('pacing-mode-teacher-btn').style.background = '#0284c7';
+    $('pacing-mode-teacher-btn').style.color = '#fff';
+    $('pacing-teacher-panel').style.display = 'block';
+
+    $('pacing-stations-bar').innerHTML = ST_INFO.map(function (info) {
+      var isUnlocked = info.idx <= pc.maxStation;
+      var isCurrentMax = info.idx === pc.maxStation;
+      return '<button type="button" data-st-max="' + info.idx + '" style="cursor:pointer;padding:10px 8px;border-radius:12px;border:2px solid ' + (isCurrentMax ? info.color : (isUnlocked ? '#38bdf8' : '#cbd5e1')) + ';background:' + (isCurrentMax ? info.color : (isUnlocked ? '#e0f2fe' : '#f8fafc')) + ';color:' + (isCurrentMax ? '#fff' : '#0f172a') + ';font-family:inherit;font-weight:800;text-align:center;transition:all .15s">' +
+        '<div style="font-size:18px">' + (isUnlocked ? '🔓' : '🔒') + ' محطّة «' + info.let + '»</div>' +
+        '<div style="font-size:12px;opacity:0.9;margin-top:2px">' + info.title + '</div>' +
+        (isCurrentMax ? '<div style="font-size:11px;background:rgba(0,0,0,0.2);border-radius:6px;padding:2px 6px;margin-top:4px">المحطّة المفتوحة الآن</div>' : '') +
+      '</button>';
+    }).join('');
+
+    $('pacing-stations-bar').querySelectorAll('[data-st-max]').forEach(function (b) {
+      b.onclick = function () {
+        var idx = Number(b.getAttribute('data-st-max')) || 0;
+        var curSt = getLocalLiveState();
+        var curPc = ensurePacingObj(curSt);
+        curPc.mode = 'teacher';
+        curPc.maxStation = idx;
+        curPc.updatedAt = Date.now();
+        saveLocalLiveState(curSt);
+        renderState(curSt);
+      };
+    });
+  } else {
+    $('pacing-status-badge').innerHTML = '<span class="pill" style="background:#dcfce7;color:#15803d;font-weight:800">🔓 انتقال حُرّ</span>';
+    $('pacing-mode-free-btn').style.background = '#0284c7';
+    $('pacing-mode-free-btn').style.color = '#fff';
+    $('pacing-mode-teacher-btn').style.background = '#fff';
+    $('pacing-mode-teacher-btn').style.color = '#0369a1';
+    $('pacing-teacher-panel').style.display = 'none';
+  }
+
+  // 2. Grouping UI
+  if (!grp.enabled) {
+    $('groups-status-badge').innerHTML = '<span class="pill" style="background:#e2e8f0;color:#334155;font-weight:800">👤 تدريب فردي</span>';
+    $('grp-mode-indiv-btn').style.background = '#0d9488';
+    $('grp-mode-indiv-btn').style.color = '#fff';
+    $('grp-mode-coop-btn').style.background = '#fff';
+    $('grp-mode-coop-btn').style.color = '#0f766e';
+    $('grp-coop-settings').style.display = 'none';
+    return;
+  }
+
+  // When grouping is enabled: if auto mode and there are unassigned connected pupils, auto-assign them
+  if (grp.assignMode === 'auto') {
+    var hasUnassigned = P.some(function (p) {
+      var pid = p.pid || p.name;
+      return pid && (!grp.assignments[pid] || grp.assignments[pid].group > grp.groupCount);
+    });
+    if (hasUnassigned) {
+      autoBalancePupilsIntoGroups(st, false);
+      saveLocalLiveState(st);
+    }
+  }
+
+  var assignLabels = { auto: 'تلقائي حسب النظام', teacher: 'باختيار المعلّم', student: 'باختيار الطالب' };
+  $('groups-status-badge').innerHTML = '<span class="pill" style="background:#ccfbf1;color:#0f766e;font-weight:800;border:1px solid #14b8a6">👥 ' + grp.groupCount + ' مجموعات · ' + (assignLabels[grp.assignMode] || '') + ' · ' + (grp.moveMode === 'free' ? '🔓 تنقّل حر' : '🔒 بأمر المعلّم') + '</span>';
+  $('grp-mode-indiv-btn').style.background = '#fff';
+  $('grp-mode-indiv-btn').style.color = '#0f766e';
+  $('grp-mode-coop-btn').style.background = '#0d9488';
+  $('grp-mode-coop-btn').style.color = '#fff';
+  $('grp-coop-settings').style.display = 'block';
+
+  if (document.activeElement !== $('grp-count-input')) {
+    $('grp-count-input').value = grp.groupCount;
+  }
+
+  document.querySelectorAll('.grp-cnt-btn').forEach(function (btn) {
+    var c = Number(btn.getAttribute('data-cnt'));
+    if (c === grp.groupCount) {
+      btn.style.background = '#0d9488';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '#f0fdfa';
+      btn.style.color = '#0f766e';
+    }
+  });
+
+  if (grp.moveMode === 'free') {
+    $('grp-move-free-btn').style.background = '#0d9488';
+    $('grp-move-free-btn').style.color = '#fff';
+    $('grp-move-teacher-btn').style.background = '#f8fafc';
+    $('grp-move-teacher-btn').style.color = '#334155';
+  } else {
+    $('grp-move-free-btn').style.background = '#f8fafc';
+    $('grp-move-free-btn').style.color = '#334155';
+    $('grp-move-teacher-btn').style.background = '#0d9488';
+    $('grp-move-teacher-btn').style.color = '#fff';
+  }
+
+  document.querySelectorAll('.grp-assign-mode-btn').forEach(function (btn) {
+    var m = btn.getAttribute('data-amode');
+    if (m === grp.assignMode) {
+      btn.style.background = '#0f766e';
+      btn.style.color = '#fff';
+      btn.style.border = '2px solid #0f766e';
+    } else {
+      btn.style.background = '#f8fafc';
+      btn.style.color = '#0f766e';
+      btn.style.border = '1.5px solid #99f6e4';
+    }
+  });
+
+  // Build pupil lookup & group lists
+  var unassignedPupils = [];
+  var groupsMembers = {};
+  for (var g = 1; g <= grp.groupCount; g++) groupsMembers[g] = [];
+
+  P.forEach(function (p) {
+    var pid = p.pid || p.name;
+    var a = pid ? grp.assignments[pid] : null;
+    if (a && a.group >= 1 && a.group <= grp.groupCount) {
+      groupsMembers[a.group].push(p);
+    } else {
+      unassignedPupils.push(p);
+    }
+  });
+
+  // Also include assigned students who might not be in P yet
+  Object.keys(grp.assignments).forEach(function (pid) {
+    var a = grp.assignments[pid];
+    if (!a || !a.group || a.group < 1 || a.group > grp.groupCount) return;
+    var existsInP = P.some(function (p) { return (p.pid || p.name) === pid; });
+    if (!existsInP) {
+      groupsMembers[a.group].push({ pid: pid, name: a.name || 'طالب', station: 'م', data: {} });
+    }
+  });
+
+  // Render unassigned box if any
+  if (unassignedPupils.length > 0) {
+    $('grp-unassigned-box').style.display = 'block';
+    $('grp-unassigned-box').innerHTML = '<div style="font-weight:800;color:#92400e;margin-bottom:8px">⏳ طلاب بانتظار الانضمام لمجموعة (' + unassignedPupils.length + '):</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      unassignedPupils.map(function (p) {
+        var pid = p.pid || p.name;
+        var opts = '<option value="0">اختر مجموعة لـ ' + esc(p.name) + '...</option>';
+        for (var g = 1; g <= grp.groupCount; g++) {
+          opts += '<option value="' + g + '">' + GROUP_META[g - 1].icon + ' مجموعة ' + g + '</option>';
+        }
+        return '<div style="background:#fff;border:1px solid #fcd34d;border-radius:10px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px">' +
+          '<b>👤 ' + esc(p.name) + '</b>' +
+          '<select data-assign-pid="' + esc(pid) + '" data-assign-name="' + esc(p.name) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #d97706;font-family:inherit;font-size:13px">' + opts + '</select>' +
+        '</div>';
+      }).join('') +
+      '</div>';
+  } else {
+    $('grp-unassigned-box').style.display = 'none';
+  }
+
+  // Render group cards
+  var cardsHtml = '';
+  for (var gIdx = 1; gIdx <= grp.groupCount; gIdx++) {
+    var meta = GROUP_META[gIdx - 1] || { icon: '👥', name: 'المجموعة ' + gIdx, color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' };
+    var members = groupsMembers[gIdx] || [];
+    var grpPracticeScore = 0;
+    var grpPracticeTotal = 0;
+    members.forEach(function (m) {
+      var d = m.data || m || {};
+      if (Array.isArray(d.practice)) {
+        grpPracticeScore += (Number(d.practice[0]) || 0);
+        grpPracticeTotal += (Number(d.practice[1]) || 0);
+      }
+    });
+
+    cardsHtml += '<div style="background:' + meta.bg + ';border:2px solid ' + meta.border + ';border-radius:14px;padding:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ' + meta.border + ';padding-bottom:8px;margin-bottom:8px">' +
+        '<b style="color:' + meta.color + ';font-size:16px">' + meta.icon + ' ' + esc(meta.name) + '</b>' +
+        '<span class="pill" style="background:#fff;color:' + meta.color + ';font-weight:800;font-size:12px">👥 ' + members.length + ' · ⭐ ' + grpPracticeScore + '/' + grpPracticeTotal + '</span>' +
+      '</div>' +
+      (members.length ? members.map(function (m) {
+        var pid = m.pid || m.name;
+        var d = m.data || m || {};
+        var pScore = d.practice ? (d.practice[0] + '/' + d.practice[1]) : '0/0';
+        var moveOpts = '';
+        for (var k = 1; k <= grp.groupCount; k++) {
+          moveOpts += '<option value="' + k + '"' + (k === gIdx ? ' selected' : '') + '>مجموعة ' + k + '</option>';
+        }
+        return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 8px;border-radius:8px;margin-bottom:5px;font-size:13.5px;border:1px solid #e2e8f0">' +
+          '<div><b>' + esc(m.name) + '</b> <small class="muted">(«' + esc(m.station || 'م') + '» · تدريب ' + pScore + ')</small></div>' +
+          '<select data-assign-pid="' + esc(pid) + '" data-assign-name="' + esc(m.name) + '" title="نقل الطالب لمجموعة أخرى" style="padding:2px 6px;border-radius:6px;border:1px solid #cbd5e1;font-size:12px;font-family:inherit;width:auto;margin:0">' + moveOpts + '</select>' +
+        '</div>';
+      }).join('') : '<p class="muted" style="font-size:13px;text-align:center;margin:12px 0">لا يوجد طلاب في هذه المجموعة بعد</p>') +
+    '</div>';
+  }
+  $('grp-cards-grid').innerHTML = cardsHtml;
+
+  // Wire select dropdowns for teacher manual assignment
+  $('grp-coop-settings').querySelectorAll('[data-assign-pid]').forEach(function (sel) {
+    sel.onchange = function () {
+      var pid = sel.getAttribute('data-assign-pid');
+      var pname = sel.getAttribute('data-assign-name') || 'طالب';
+      var targetG = Number(sel.value) || 0;
+      if (!pid || targetG < 1) return;
+      var curSt = getLocalLiveState();
+      var curGrp = ensureGroupingObj(curSt);
+      var nowTs = Date.now();
+      curGrp.assignments[pid] = {
+        group: targetG,
+        name: pname,
+        updatedBy: 'teacher',
+        updatedAt: nowTs
+      };
+      curGrp.updatedAt = nowTs;
+      saveLocalLiveState(curSt);
+      renderState(curSt);
+    };
+  });
+}
+
 function renderState(st){
   $('gate').hidden=true;$('board').hidden=false;
   if(!timer)timer=setInterval(load,3000);
@@ -906,8 +1519,9 @@ function renderState(st){
 
   var pupilsMap=st.pupils||{};
   P=Array.isArray(pupilsMap)?pupilsMap:Object.keys(pupilsMap).map(function(k){return pupilsMap[k];});
+  renderPacingAndGroupingUI(st);
   helps(st.helps||[]);
-  table();
+  table(st);
 }
 
 function load(){
@@ -964,10 +1578,14 @@ $('hl').querySelectorAll('[data-done]').forEach(function(b){b.onclick=function()
   saveLocalLiveState(st);
   load();
 }})}
-function table(){var cnt={};P.forEach(function(p){var k=(p.station||'م').indexOf('✓')>=0?'✓':(p.station||'م');cnt[k]=(cnt[k]||0)+1});
+function table(st){
+var grp=(st&&st.grouping)||ensureGroupingObj(getLocalLiveState());
+var cnt={};P.forEach(function(p){var k=(p.station||'م').indexOf('✓')>=0?'✓':(p.station||'م');cnt[k]=(cnt[k]||0)+1});
 $('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0);
-$('tb').innerHTML='<tr><th>الطالب</th><th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||p||{},r=d.result&&RW[d.result];
-return '<tr class="pclick" data-p="'+i+'"><td><b>'+esc(p.name)+'</b> 🔍</td><td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>'}).join(''):'<tr><td colspan="8" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
+$('tb').innerHTML='<tr><th>الطالب</th>'+(grp.enabled?'<th>المجموعة</th>':'')+'<th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||p||{},r=d.result&&RW[d.result];
+var pid=p.pid||p.name,gAssign=grp.enabled&&pid&&grp.assignments?grp.assignments[pid]:null;
+var gBadge=grp.enabled?(gAssign&&gAssign.group?'<span class="pill" style="background:#ccfbf1;color:#0f766e;font-weight:800">'+(GROUP_META[gAssign.group-1]?GROUP_META[gAssign.group-1].icon:'👥')+' مجموعة '+gAssign.group+'</span>':'<span class="muted">غير منضم</span>'):'';
+return '<tr class="pclick" data-p="'+i+'"><td><b>'+esc(p.name)+'</b> 🔍</td>'+(grp.enabled?'<td>'+gBadge+'</td>':'')+'<td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>'}).join(''):'<tr><td colspan="'+(grp.enabled?9:8)+'" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
 $('tb').querySelectorAll('[data-p]').forEach(function(tr){tr.onclick=function(){pupil(P[+tr.getAttribute('data-p')])}});
 var need=P.filter(function(p){var d=p.data||p||{};return d.result==='n'||d.result==='p'||(d.checks&&d.checks[1]>=2&&d.checks[0]/d.checks[1]<0.5)});
 var adv=P.filter(function(p){return ((p.data||p||{}).result)==='a'});

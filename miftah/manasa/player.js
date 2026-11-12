@@ -120,7 +120,85 @@ function mcq(q, opts) {
 }
 function next(label, fn, cls) { setTimeout(function () { var b = $('#nx'); if (b) b.onclick = fn; }); return '<button id="nx" class="btn big ' + (cls || '') + '">' + (label || 'التّالي ⬅') + '</button>'; }
 function showNext(html) { var d = $('#after'); if (d) d.innerHTML = html; }
-function head(title) { return '<div class="card">' + bar() + '</div><div class="card"><h2>' + title + '</h2>'; }
+
+var GROUP_META_PLAYER = [
+  { icon: '🦁', name: 'المجموعة 1 (الأسود)', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  { icon: '🦅', name: 'المجموعة 2 (الصقور)', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
+  { icon: '🐬', name: 'المجموعة 3 (الدلافين)', color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+  { icon: '🚀', name: 'المجموعة 4 (الروّاد)', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  { icon: '🌟', name: 'المجموعة 5 (النجوم)', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { icon: '🏆', name: 'المجموعة 6 (الأبطال)', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  { icon: '💎', name: 'المجموعة 7 (الجواهر)', color: '#be185d', bg: '#fdf2f8', border: '#fbcfe8' },
+  { icon: '🔥', name: 'المجموعة 8 (الشعلة)', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
+  { icon: '🌿', name: 'المجموعة 9 (السنابل)', color: '#047857', bg: '#ecfdf5', border: '#a7f3d0' },
+  { icon: '⚡', name: 'المجموعة 10 (البرق)', color: '#4338ca', bg: '#eef2ff', border: '#c7d2fe' }
+];
+
+var livePacing = null;
+var liveGrouping = null;
+var livePupilsMap = {};
+var pendingStationWait = null;
+var waitingForTeacherGroup = false;
+var lastHandledForceAt = 0;
+
+function renderGroupBannerHtml() {
+  if (S.st !== 2 || !liveGrouping || !liveGrouping.enabled) return '';
+  var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+  var myAssign = liveGrouping.assignments && liveGrouping.assignments[myPid];
+  if (!myAssign || !myAssign.group) return '';
+  var gNum = Number(myAssign.group) || 1;
+  var meta = GROUP_META_PLAYER[gNum - 1] || { icon: '👥', name: 'المجموعة ' + gNum, color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' };
+
+  var mates = [];
+  var grpScore = 0, grpTotal = 0;
+  Object.keys(liveGrouping.assignments || {}).forEach(function (pid) {
+    var a = liveGrouping.assignments[pid];
+    if (a && Number(a.group) === gNum) {
+      var pObj = livePupilsMap[pid];
+      var mName = (pObj && pObj.name) || a.name || 'طالب';
+      if (pid !== myPid) mates.push(mName);
+      var d = (pObj && (pObj.data || pObj)) || {};
+      if (Array.isArray(d.practice)) {
+        grpScore += (Number(d.practice[0]) || 0);
+        grpTotal += (Number(d.practice[1]) || 0);
+      }
+    }
+  });
+  // Add my own practice score if not yet in livePupilsMap
+  if (!livePupilsMap[myPid] && Array.isArray(S.data.practice)) {
+    grpScore += (Number(S.data.practice[0]) || 0);
+    grpTotal += (Number(S.data.practice[1]) || 0);
+  }
+
+  var canSwitch = liveGrouping.moveMode !== 'teacher';
+  return '<div id="student-grp-banner" style="background:' + meta.bg + ';border:2px solid ' + meta.border + ';border-radius:16px;padding:12px 16px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
+    '<div>' +
+      '<div style="font-weight:900;font-size:17px;color:' + meta.color + '">' + meta.icon + ' أنت في: ' + esc(meta.name) + ' <span class="pill" style="background:#fff;color:' + meta.color + ';font-size:13px;margin-right:6px">⭐ نقاط المجموعة: ' + grpScore + '/' + grpTotal + '</span></div>' +
+      '<div style="font-size:13.5px;color:#334155;margin-top:4px">👥 زملاؤك في المجموعة: <b>' + (mates.length ? mates.map(esc).join(' ، ') : 'أنت أول المنضمين في هذه المجموعة') + '</b></div>' +
+    '</div>' +
+    '<div>' +
+      (canSwitch
+        ? '<button type="button" id="switch-my-grp-btn" class="btn alt" style="min-height:36px;padding:6px 14px;font-size:13px;margin:0;border-color:' + meta.color + ';color:' + meta.color + ';background:#fff">🔄 تغيير المجموعة</button>'
+        : '<span class="pill" style="background:#fff;color:#475569;font-size:12px;border:1px solid #cbd5e1">🔒 المجموعة بإشراف المعلّم</span>') +
+    '</div>' +
+  '</div>';
+}
+
+function wireGroupBannerSwitchBtn() {
+  setTimeout(function () {
+    var b = document.getElementById('switch-my-grp-btn');
+    if (b) {
+      b.onclick = function () {
+        renderStudentGroupPicker(true);
+      };
+    }
+  });
+}
+
+function head(title) {
+  wireGroupBannerSwitchBtn();
+  return '<div class="card">' + bar() + renderGroupBannerHtml() + '</div><div class="card"><h2>' + title + '</h2>';
+}
 
 // ---------- student session timer & portfolio & flash ----------
 var studentTimerInterval = null;
@@ -553,10 +631,13 @@ setInterval(function () {
 }, 1000);
 
 function mergeLiveStates(statesList) {
-  var merged = { pupils: {}, helps: [], flash: null, challenge: null };
+  var merged = { pupils: {}, helps: [], flash: null, challenge: null, pacing: null, grouping: null };
   var latestFlashTime = -1;
   var authChal = null;
   var latestChalTeacherTime = -1;
+  var latestPacingTime = -1;
+  var latestGroupingCfgTime = -1;
+  var authGrouping = null;
 
   statesList.forEach(function (st) {
     if (!st || typeof st !== 'object') return;
@@ -596,6 +677,22 @@ function mergeLiveStates(statesList) {
       }
     }
 
+    if (st.pacing) {
+      var pt = st.pacing.updatedAt || 0;
+      if (pt >= latestPacingTime) {
+        latestPacingTime = pt;
+        merged.pacing = JSON.parse(JSON.stringify(st.pacing));
+      }
+    }
+
+    if (st.grouping) {
+      var gt = st.grouping.cfgUpdatedAt || st.grouping.updatedAt || 0;
+      if (gt >= latestGroupingCfgTime) {
+        latestGroupingCfgTime = gt;
+        authGrouping = JSON.parse(JSON.stringify(st.grouping));
+      }
+    }
+
     if (st.challenge && st.challenge.id) {
       var ct = st.challenge.teacherUpdatedAt || st.challenge.qStartedAt || 0;
       if (ct >= latestChalTeacherTime) {
@@ -604,6 +701,25 @@ function mergeLiveStates(statesList) {
       }
     }
   });
+
+  if (authGrouping) {
+    var mergedAssign = {};
+    var cfgResetId = authGrouping.resetId || 0;
+    statesList.forEach(function (st) {
+      if (!st || !st.grouping || !st.grouping.assignments) return;
+      if ((st.grouping.resetId || 0) < cfgResetId) return;
+      Object.keys(st.grouping.assignments).forEach(function (pid) {
+        var a = st.grouping.assignments[pid];
+        if (!a || !a.group) return;
+        var prev = mergedAssign[pid];
+        if (!prev || (a.updatedAt || 0) >= (prev.updatedAt || 0)) {
+          mergedAssign[pid] = a;
+        }
+      });
+    });
+    authGrouping.assignments = mergedAssign;
+    merged.grouping = authGrouping;
+  }
 
   if (authChal) {
     var mergedAnswers = {};
@@ -671,6 +787,10 @@ function startFlashWatcher() {
 
   function syncAndRender(st) {
     if (!st) return;
+    livePacing = st.pacing || null;
+    liveGrouping = st.grouping || null;
+    livePupilsMap = st.pupils || {};
+
     // 1. Flash alert
     if (st.flash && st.flash.active && st.flash.expiresAt > Date.now()) {
       st.flash.remainingSec = Math.max(0, Math.ceil((st.flash.expiresAt - Date.now()) / 1000));
@@ -680,6 +800,71 @@ function startFlashWatcher() {
     }
     // 2. Kahoot Challenge
     renderChallengeOverlay(st.challenge);
+
+    // 3. Teacher Force-Move to a specific station
+    if (livePacing && typeof livePacing.forcedStation === 'number' && livePacing.forcedAt && livePacing.forcedAt > lastHandledForceAt) {
+      if (lastHandledForceAt > 0 || (Date.now() - livePacing.forcedAt < 30000)) {
+        lastHandledForceAt = livePacing.forcedAt;
+        pendingStationWait = null;
+        waitingForTeacherGroup = false;
+        jumpToStationIndex(livePacing.forcedStation);
+        return;
+      }
+      lastHandledForceAt = livePacing.forcedAt;
+    }
+
+    // 4. Resume waiting student if teacher unlocked the next station (or switched pacing to free)
+    if (pendingStationWait) {
+      var canGo = !livePacing || livePacing.mode !== 'teacher' || (Number(livePacing.maxStation) >= pendingStationWait.targetSt);
+      if (canGo) {
+        var fn = pendingStationWait.fn;
+        pendingStationWait = null;
+        fn();
+        return;
+      }
+    }
+
+    // 5. Resume waiting student if teacher assigned their group in Station «ت»
+    if (waitingForTeacherGroup && S.st === 2) {
+      var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+      if (!liveGrouping || !liveGrouping.enabled) {
+        waitingForTeacherGroup = false;
+        launchStationTaContent();
+        return;
+      }
+      var myAssign = liveGrouping.assignments && liveGrouping.assignments[myPid];
+      if ((myAssign && myAssign.group >= 1 && myAssign.group <= liveGrouping.groupCount) || liveGrouping.assignMode !== 'teacher') {
+        waitingForTeacherGroup = false;
+        enterStationTa();
+        return;
+      }
+    }
+
+    // 6. Live refresh of the Group Banner in Station «ت» when classmates join or group changes
+    if (S.st === 2 && !waitingForTeacherGroup) {
+      var existingBanner = document.getElementById('student-grp-banner');
+      var newBannerHtml = renderGroupBannerHtml();
+      if (existingBanner && newBannerHtml) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = newBannerHtml;
+        if (tmp.firstElementChild) {
+          existingBanner.replaceWith(tmp.firstElementChild);
+          wireGroupBannerSwitchBtn();
+        }
+      } else if (existingBanner && !newBannerHtml) {
+        existingBanner.remove();
+      } else if (!existingBanner && newBannerHtml) {
+        var stNameEl = app.querySelector('.stname');
+        if (stNameEl && stNameEl.parentNode) {
+          var tmp2 = document.createElement('div');
+          tmp2.innerHTML = newBannerHtml;
+          if (tmp2.firstElementChild) {
+            stNameEl.parentNode.appendChild(tmp2.firstElementChild);
+            wireGroupBannerSwitchBtn();
+          }
+        }
+      }
+    }
   }
 
   function check() {
@@ -991,13 +1176,175 @@ function welcome() {
     }) + (S.sid ? '<p class="muted">رمزُ الحصّة: ' + esc(S.sid) + ' — معلِّمُك يتابعُ تقدُّمَك.</p>' : '') + '</div>');
 }
 // ---------- م ----------
+function jumpToStationIndex(stIdx) {
+  if (stIdx === 0) return stationM();
+  if (stIdx === 1) return stationF(0);
+  if (stIdx === 2) return enterStationTa();
+  if (stIdx === 3) return evidence();
+  if (stIdx === 4) return harvest();
+}
+
+function tryAdvanceToStation(targetSt, proceedFn) {
+  if (S.sid && livePacing && livePacing.mode === 'teacher' && targetSt > (Number(livePacing.maxStation) || 0)) {
+    pendingStationWait = { targetSt: targetSt, fn: proceedFn };
+    var nextStName = ST[targetSt] ? ('محطّة «' + ST[targetSt][0] + '»: ' + ST[targetSt][1]) : 'المحطة التالية';
+    h('<div class="card">' + bar() + '</div>' +
+      '<div class="card" style="text-align:center;padding:34px 20px;border:2.5px solid #0284c7;background:linear-gradient(135deg,#f0f9ff,#e0f2fe)">' +
+        '<div style="font-size:54px;margin-bottom:10px">⏳</div>' +
+        '<h2 style="color:#0369a1;margin:0 0 10px">أحسنتَ يا ' + esc(S.name) + '! أنهيتَ هذه المحطّة بنجاح 🌟</h2>' +
+        '<p style="font-size:18px;color:#0c4a6e;max-width:520px;margin:0 auto 14px;line-height:1.7">' +
+          'معلّمُك يتحكّم بانتقال الصفّ بين المحطّات.<br>' +
+          'انتظرْ إشارةَ المعلّم لفتح <b>' + esc(nextStName) + '</b>، وستفتحُ لك الشاشةُ تلقائياً فورَ سماحه!' +
+        '</p>' +
+        '<div class="pill" style="background:#fff;color:#0284c7;font-weight:800;padding:8px 18px;font-size:15px;border:1.5px solid #7dd3fc">🔒 بانتظار إذن المعلّم للانتقال...</div>' +
+      '</div>');
+    return;
+  }
+  pendingStationWait = null;
+  proceedFn();
+}
+
+function assignStudentToGroup(groupNum, byWho) {
+  if (!S.sid) return;
+  var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+  var nowTs = Date.now();
+  try {
+    var liveKey = 'manasa-live-state-' + S.sid;
+    var state = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":{},"helps":[],"flash":null}');
+    state.grouping = state.grouping || liveGrouping || { enabled: true, groupCount: 4, assignMode: 'student', moveMode: 'free', resetId: 1, assignments: {} };
+    state.grouping.assignments = state.grouping.assignments || {};
+    state.grouping.assignments[myPid] = {
+      group: groupNum,
+      name: S.name || 'طالب',
+      updatedBy: byWho || 'student',
+      updatedAt: nowTs
+    };
+    state.grouping.updatedAt = nowTs;
+    liveGrouping = state.grouping;
+    localStorage.setItem(liveKey, JSON.stringify(state));
+    pushLiveStateToCloud(state);
+  } catch (_) {}
+}
+
+function renderStudentGroupPicker(isSwitching) {
+  S.st = 2;
+  var grp = liveGrouping || { enabled: true, groupCount: 4, assignments: {} };
+  var count = Math.max(2, Math.min(10, Number(grp.groupCount) || 4));
+  var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+  var curGroup = (grp.assignments && grp.assignments[myPid] && grp.assignments[myPid].group) || 0;
+
+  var cardsHtml = '';
+  for (var g = 1; g <= count; g++) {
+    var meta = GROUP_META_PLAYER[g - 1] || { icon: '👥', name: 'المجموعة ' + g, color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' };
+    var members = [];
+    Object.keys(grp.assignments || {}).forEach(function (pid) {
+      var a = grp.assignments[pid];
+      if (a && Number(a.group) === g) {
+        var pObj = livePupilsMap[pid];
+        members.push((pObj && pObj.name) || a.name || 'طالب');
+      }
+    });
+    var isMine = curGroup === g;
+    cardsHtml += '<div style="background:' + meta.bg + ';border:2.5px solid ' + (isMine ? meta.color : meta.border) + ';border-radius:16px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:10px">' +
+      '<div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<b style="font-size:18px;color:' + meta.color + '">' + meta.icon + ' ' + esc(meta.name) + '</b>' +
+          '<span class="pill" style="background:#fff;color:' + meta.color + ';font-weight:800;font-size:13px">👥 ' + members.length + ' طلاب</span>' +
+        '</div>' +
+        '<div style="font-size:14px;color:#334155;min-height:36px">' +
+          (members.length ? 'الأعضاء: <b>' + members.map(esc).join(' ، ') + '</b>' : '<span class="muted">كن أول المنضمين لهذه المجموعة!</span>') +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="btn" data-pick-grp="' + g + '" style="background:' + meta.color + ';color:#fff;font-weight:800;border-radius:12px;margin:0;width:100%">' +
+        (isMine ? '✅ مجموعتك الحالية (متابعة)' : '🙋 انضمّ إلى ' + esc(meta.name)) +
+      '</button>' +
+    '</div>';
+  }
+
+  h('<div class="card">' + bar() + '</div>' +
+    '<div class="card">' +
+      '<h2 style="color:#0f766e;margin:0 0 6px">👥 اخترْ مجموعتَك للتدريب والتطبيق</h2>' +
+      '<p class="muted" style="margin:0 0 16px">قرّر المعلّمُ أن يكون التدريبُ في مجموعات تعاونية. اخترِ المجموعة التي تودّ العمل معها:</p>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">' + cardsHtml + '</div>' +
+    '</div>');
+
+  app.querySelectorAll('[data-pick-grp]').forEach(function (btn) {
+    btn.onclick = function () {
+      var chosenG = Number(btn.getAttribute('data-pick-grp')) || 1;
+      assignStudentToGroup(chosenG, 'student');
+      launchStationTaContent();
+    };
+  });
+}
+
+function launchStationTaContent() {
+  waitingForTeacherGroup = false;
+  if (L.experiment) experiment();
+  else practice();
+}
+
+function enterStationTa() {
+  S.st = 2;
+  report();
+  if (!S.sid || !liveGrouping || !liveGrouping.enabled) {
+    return launchStationTaContent();
+  }
+
+  var grp = liveGrouping;
+  var count = Math.max(2, Math.min(10, Number(grp.groupCount) || 4));
+  var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+  var myAssign = grp.assignments && grp.assignments[myPid];
+
+  // If already assigned to a valid group
+  if (myAssign && myAssign.group >= 1 && myAssign.group <= count) {
+    return launchStationTaContent();
+  }
+
+  // Not assigned yet: check assignMode
+  if (grp.assignMode === 'auto') {
+    var sizes = {};
+    for (var g = 1; g <= count; g++) sizes[g] = 0;
+    Object.keys(grp.assignments || {}).forEach(function (pid) {
+      var a = grp.assignments[pid];
+      if (a && a.group >= 1 && a.group <= count) sizes[a.group] = (sizes[a.group] || 0) + 1;
+    });
+    var bestG = 1;
+    for (var k = 2; k <= count; k++) {
+      if ((sizes[k] || 0) < (sizes[bestG] || 0)) bestG = k;
+    }
+    assignStudentToGroup(bestG, 'auto');
+    return launchStationTaContent();
+  }
+
+  if (grp.assignMode === 'student') {
+    return renderStudentGroupPicker(false);
+  }
+
+  if (grp.assignMode === 'teacher') {
+    waitingForTeacherGroup = true;
+    h('<div class="card">' + bar() + '</div>' +
+      '<div class="card" style="text-align:center;padding:34px 20px;border:2.5px solid #0d9488;background:linear-gradient(135deg,#f0fdfa,#ccfbf1)">' +
+        '<div style="font-size:54px;margin-bottom:10px">👥</div>' +
+        '<h2 style="color:#0f766e;margin:0 0 10px">التدريب التعاوني في مجموعات!</h2>' +
+        '<p style="font-size:18px;color:#115e59;max-width:520px;margin:0 auto 14px;line-height:1.7">' +
+          'يقومُ المعلّمُ الآن بتوزيع الطلاب وتحديد مجموعتك.<br>' +
+          'ستفتحُ لك شاشةُ التدريب مع مجموعتك تلقائياً فورَ اختيار المعلّم لمجموعتك!' +
+        '</p>' +
+        '<div class="pill" style="background:#fff;color:#0f766e;font-weight:800;padding:8px 18px;font-size:15px;border:1.5px solid #5eead4">⏳ بانتظار تعيين المجموعة من المعلّم...</div>' +
+      '</div>');
+    return;
+  }
+
+  launchStationTaContent();
+}
+
 function stationM() {
   S.st = 0; report(); var k = L.hook || {}, v = L.video || {}; ctx(k.more, (k.story || '') + ' ' + (k.question || ''));
   var html = head('🔍 ' + esc(k.title || 'لنبدأ بلغز!')) + '<p class="story">' + esc(k.story) + '</p>' + sayBtn(k.story + ' ' + k.question) + '<p class="q">❓ ' + esc(k.question) + '</p>' +
     '<label>ما تخمينُك؟ اكتبْه (لا يوجدُ خطأٌ هنا):</label><textarea id="guess"></textarea></div>';
   if (v.youtube_id) html += '<div class="card"><h3>🎬 شاهِدْ</h3><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(v.youtube_id) + '?rel=0" title="' + esc(v.title || 'فيديو') + '" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div><p class="muted">' + esc(v.title || '') + '</p></div>';
   if (k.riddle) { var rq = k.riddle.q || k.riddle.text || ''; html += '<div class="card"><h3>🧩 حَزّورة</h3><p>' + esc(rq) + '</p>' + sayBtn(rq) + ' <button class="btn alt" id="rh">💡 تلميح</button> <button class="btn alt" id="ra">👀 الجواب</button><div id="rr"></div></div>'; }
-  html += '<div class="card">' + next('إلى محطّة «ف» ⬅', function () { S.data.guess = ($('#guess').value || '').slice(0, 300); report(); stationF(0); }) + '</div>';
+  html += '<div class="card">' + next('إلى محطّة «ف» ⬅', function () { S.data.guess = ($('#guess').value || '').slice(0, 300); report(); tryAdvanceToStation(1, function () { stationF(0); }); }) + '</div>';
   h(html);
   setTimeout(function () {
     var g = $('#guess');
@@ -1016,7 +1363,7 @@ function stationF(i) {
   h(head('📘 خطوة ' + (i + 1) + ' من ' + steps.length + ': ' + esc(s.title)) + '<div class="bar"><i style="width:' + Math.round((i) / steps.length * 100) + '%"></i></div>' +
     (s.emoji ? '<div class="emoji">' + esc(s.emoji) + '</div>' : '') + '<p style="font-size:20px">' + esc(s.text) + '</p>' + sayBtn(s.text) + '</div>' +
     '<div class="card"><h3>✋ أرِني!</h3>' + mcq(s.check, { feedback: true, onDone: function (ok, t, f) { logA('أرِني', s.check, f, ok, t); S.data.checks[1]++; if (ok) S.data.checks[0]++; report();
-      showNext(next(i + 1 < steps.length ? 'الخطوة التّالية ⬅' : 'إلى محطّة «ت» ⬅', function () { i + 1 < steps.length ? stationF(i + 1) : (L.experiment ? experiment() : practice()); })); } }) + '<div id="after"></div></div>');
+      showNext(next(i + 1 < steps.length ? 'الخطوة التّالية ⬅' : 'إلى محطّة «ت» ⬅', function () { i + 1 < steps.length ? stationF(i + 1) : tryAdvanceToStation(2, enterStationTa); })); } }) + '<div id="after"></div></div>');
 }
 // ---------- ت ----------
 function experiment() {
@@ -1068,7 +1415,7 @@ function game() {
     else { mistakes++; chip.classList.remove('sel'); $('#gfb').innerHTML = '<div class="fb bad">❌ فكِّرْ مرّةً أخرى: هل «' + esc(it.text) + '» ' + esc(g.buckets[bi]) + '؟</div>'; }
     sel = null;
     if (placed === g.items.length) { var sec = Math.round((Date.now() - t0) / 1000); S.data.game = { mistakes: mistakes, seconds: sec }; report();
-      showNext('<div class="res a">🏆 أنهيتَ اللّعبة في ' + sec + ' ثانية، بـ' + mistakes + ' أخطاء!</div>' + next('إلى محطّة «ا» ⬅', evidence)); }
+      showNext('<div class="res a">🏆 أنهيتَ اللّعبة في ' + sec + ' ثانية، بـ' + mistakes + ' أخطاء!</div>' + next('إلى محطّة «ا» ⬅', function () { tryAdvanceToStation(3, evidence); })); }
   }
   app.querySelectorAll('.chip').forEach(function (c) {
     c.onclick = function () { if (c.classList.contains('ok')) return; app.querySelectorAll('.chip').forEach(function (z) { z.classList.remove('sel'); }); c.classList.add('sel'); sel = c; };
@@ -1094,7 +1441,7 @@ function evidence() {
     S.data.evidence = { score: score, of: items.length, pct: pct }; S.data.result = r; report();
     h(head('📝 نتيجةُ مهمّةِ الدّليل') + '<div class="res ' + r + '">' + words[r] + '<br>' + score + ' من ' + items.length + '</div>' +
       items.map(function (q, k) { var ok = ans[k] === q.answer; return '<p>' + (ok ? '✅' : '❌') + ' ' + esc(q.q) + (ok ? '' : '<br><span class="muted">الصّحيح: ' + esc(q.options[q.answer]) + '</span>') + '</p>'; }).join('') +
-      (r !== 'a' ? '<p class="fb bad">' + (S.sid ? 'معلِّمُك يرى نتيجتَك وسيأتي ليساعدَك. ' : '') + 'راجِعِ الأخطاءَ أعلاه.</p>' : '') + next('إلى محطّة «ح» 🌾', harvest) + '</div>');
+      (r !== 'a' ? '<p class="fb bad">' + (S.sid ? 'معلِّمُك يرى نتيجتَك وسيأتي ليساعدَك. ' : '') + 'راجِعِ الأخطاءَ أعلاه.</p>' : '') + next('إلى محطّة «ح» 🌾', function () { tryAdvanceToStation(4, harvest); }) + '</div>');
   }
   one();
 }
