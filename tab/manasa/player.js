@@ -186,6 +186,319 @@ function playFlashChime() {
   } catch (_) {}
 }
 
+// ---------- Live Kahoot Challenge Audio & Helpers ----------
+var kahootAudioCtx = null;
+function playKahootSound(type) {
+  try {
+    kahootAudioCtx = kahootAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'click') {
+      var osc = kahootAudioCtx.createOscillator(), g = kahootAudioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(580, kahootAudioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(320, kahootAudioCtx.currentTime + 0.08);
+      osc.connect(g);
+      g.connect(kahootAudioCtx.destination);
+      g.gain.setValueAtTime(0.25, kahootAudioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, kahootAudioCtx.currentTime + 0.09);
+      osc.start();
+      osc.stop(kahootAudioCtx.currentTime + 0.1);
+    } else if (type === 'correct') {
+      [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) {
+        var o = kahootAudioCtx.createOscillator(), g = kahootAudioCtx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        o.connect(g);
+        g.connect(kahootAudioCtx.destination);
+        var t = kahootAudioCtx.currentTime + (i * 0.09);
+        g.gain.setValueAtTime(0.2, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        o.start(t);
+        o.stop(t + 0.3);
+      });
+    } else if (type === 'wrong') {
+      [360, 240].forEach(function (f, i) {
+        var o = kahootAudioCtx.createOscillator(), g = kahootAudioCtx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        o.connect(g);
+        g.connect(kahootAudioCtx.destination);
+        var t = kahootAudioCtx.currentTime + (i * 0.12);
+        g.gain.setValueAtTime(0.18, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        o.start(t);
+        o.stop(t + 0.22);
+      });
+    } else if (type === 'fanfare') {
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach(function (f, i) {
+        var o = kahootAudioCtx.createOscillator(), g = kahootAudioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.value = f;
+        o.connect(g);
+        g.connect(kahootAudioCtx.destination);
+        var t = kahootAudioCtx.currentTime + (i * 0.14);
+        g.gain.setValueAtTime(0.22, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        o.start(t);
+        o.stop(t + 0.38);
+      });
+    }
+  } catch (_) {}
+}
+
+var activeChallengeData = null;
+var lastAnsweredQIndex = -1;
+var studentSelectedOpt = null;
+
+function renderChallengeOverlay(chal) {
+  var overlay = document.getElementById('miftah-kahoot-overlay');
+  if (!chal || !chal.active) {
+    if (overlay) overlay.remove();
+    activeChallengeData = null;
+    lastAnsweredQIndex = -1;
+    studentSelectedOpt = null;
+    return;
+  }
+
+  activeChallengeData = chal;
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'miftah-kahoot-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999990;background:linear-gradient(135deg,#13122c 0%,#1e1b4b 50%,#2e1065 100%);color:#fff;display:flex;flex-direction:column;overflow-y:auto;padding:16px;direction:rtl;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;';
+    document.body.appendChild(overlay);
+  }
+
+  var currQIdx = chal.currentQ || 0;
+  var currQ = chal.questions && chal.questions[currQIdx];
+  if (!currQ) return;
+
+  var myPid = S.pid || localStorage.getItem('manasa-pid') || ('p_' + (S.name || 'pupil'));
+  var myScoreObj = (chal.scores && chal.scores[myPid]) || { totalPoints: 0, correctCount: 0 };
+  var myScore = myScoreObj.totalPoints || 0;
+  var myAnsObj = (chal.answers && chal.answers[myPid]);
+  var hasAnswered = !!myAnsObj;
+  if (hasAnswered && studentSelectedOpt === null) {
+    studentSelectedOpt = myAnsObj.answerIdx;
+  }
+
+  var isReveal = (chal.phase === 'reveal');
+  var isPodium = (chal.phase === 'podium');
+
+  var kahootThemes = [
+    { bg: '#e21b3c', sym: '▲', name: 'أحمر' },
+    { bg: '#1368ce', sym: '◆', name: 'أزرق' },
+    { bg: '#d89e00', sym: '●', name: 'أصفر' },
+    { bg: '#26890c', sym: '■', name: 'أخضر' }
+  ];
+
+  if (isPodium) {
+    // Grand Podium on Student Screen
+    var list = [];
+    var scMap = chal.scores || {};
+    Object.keys(scMap).forEach(function (pid) {
+      list.push({ pid: pid, name: scMap[pid].name || 'طالب', totalPoints: scMap[pid].totalPoints || 0 });
+    });
+    list.sort(function (a, b) { return b.totalPoints - a.totalPoints; });
+    var myRank = list.findIndex(function (it) { return it.pid === myPid; }) + 1;
+
+    var p1 = list[0] || { name: '—', totalPoints: 0 };
+    var p2 = list[1] || { name: '—', totalPoints: 0 };
+    var p3 = list[2] || { name: '—', totalPoints: 0 };
+
+    overlay.innerHTML = '<div style="max-width:650px;width:100%;margin:auto;text-align:center;padding:20px">' +
+      '<div style="font-size:54px;margin-bottom:8px">🎉 🏆 🎉</div>' +
+      '<h1 style="color:#fde047;font-size:28px;margin:0 0 8px">منصّة تتويج أبطال التحدّي</h1>' +
+      '<p style="color:#c7d2fe;font-size:16px;margin:0 0 24px">انتهت منافسة اليوم الحماسية! مبارك لجميع الأبطال المشاركين!</p>' +
+      (myRank > 0 ? '<div style="background:rgba(255,255,255,0.12);border:2px solid #fde047;padding:12px 20px;border-radius:16px;display:inline-block;margin-bottom:20px;font-size:18px;font-weight:900;color:#fde047">🎖️ ترتيبك النهائي في الصف: المركز ' + myRank + ' (⭐ ' + myScore + ' نقطة)</div>' : '') +
+      '<div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;min-height:200px;margin-bottom:24px">' +
+        '<div style="width:120px;display:flex;flex-direction:column;align-items:center">' +
+          '<div style="font-size:26px">🥈</div>' +
+          '<b style="font-size:15px;color:#fde047;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p2.name) + '</b>' +
+          '<span style="font-size:12px;color:#c7d2fe;margin-bottom:6px">⭐ ' + p2.totalPoints + '</span>' +
+          '<div style="width:100%;height:100px;background:linear-gradient(180deg,#94a3b8,#64748b);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900">2</div>' +
+        '</div>' +
+        '<div style="width:140px;display:flex;flex-direction:column;align-items:center">' +
+          '<div style="font-size:36px">👑 🥇</div>' +
+          '<b style="font-size:17px;color:#fef08a;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p1.name) + '</b>' +
+          '<span style="font-size:13px;color:#fff;font-weight:800;margin-bottom:6px">⭐ ' + p1.totalPoints + '</span>' +
+          '<div style="width:100%;height:140px;background:linear-gradient(180deg,#fbbf24,#d97706);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900">1</div>' +
+        '</div>' +
+        '<div style="width:120px;display:flex;flex-direction:column;align-items:center">' +
+          '<div style="font-size:26px">🥉</div>' +
+          '<b style="font-size:15px;color:#fde047;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p3.name) + '</b>' +
+          '<span style="font-size:12px;color:#c7d2fe;margin-bottom:6px">⭐ ' + p3.totalPoints + '</span>' +
+          '<div style="width:100%;height:75px;background:linear-gradient(180deg,#d97706,#b45309);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900">3</div>' +
+        '</div>' +
+      '</div>' +
+      '<p style="color:#a5b4fc;font-size:14px">⏳ سيعيدك المعلّم إلى محطات الحصة فور انتهاء العرض.</p>' +
+      '</div>';
+    return;
+  }
+
+  // Question or Reveal phase
+  var remSec = chal.qExpiresAt ? Math.max(0, Math.ceil((chal.qExpiresAt - Date.now()) / 1000)) : 0;
+
+  var html = '<div style="max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction:column;flex:1">' +
+    // Top Bar
+    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:rgba(255,255,255,0.08);padding:10px 16px;border-radius:14px;margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:20px">🎮</span>' +
+        '<b style="font-size:16px;color:#fde047">السؤال ' + (currQIdx + 1) + ' من ' + (chal.totalQ || 10) + '</b>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px">' +
+        '<div style="background:#8b5cf6;color:#fff;padding:4px 12px;border-radius:999px;font-weight:800;font-size:14px">⭐ نقاطي: ' + myScore + '</div>' +
+        (!isReveal ? '<div id="kahoot-student-timer" style="background:#ef4444;color:#fff;padding:4px 14px;border-radius:999px;font-weight:900;font-size:16px">⏱️ <span>' + remSec + '</span> ث</div>' : '<div style="background:#22c55e;color:#fff;padding:4px 14px;border-radius:999px;font-weight:800;font-size:14px">كشف النتيجة 👀</div>') +
+      '</div>' +
+    '</div>' +
+
+    // Question Box
+    '<div style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);padding:18px 20px;border-radius:18px;text-align:center;margin-bottom:18px">' +
+      '<h2 style="font-size:22px;margin:0;line-height:1.5;color:#fff;font-weight:800">' + esc(currQ.q) + '</h2>' +
+    '</div>';
+
+  // Reveal Status Banner
+  if (isReveal) {
+    var myAns = chal.answers && chal.answers[myPid];
+    var isCorrect = (myAns && myAns.isCorrect);
+    var correctOptTxt = (currQ.options && currQ.options[currQ.answer]) || '';
+    var fastest = chal.fastestInCurrentQ;
+
+    html += '<div style="margin-bottom:16px;padding:14px 18px;border-radius:16px;text-align:center;' + (isCorrect ? 'background:rgba(34,197,94,0.22);border:2px solid #22c55e;color:#86efac;' : 'background:rgba(239,68,68,0.22);border:2px solid #ef4444;color:#fca5a5;') + '">' +
+      '<div style="font-size:24px;font-weight:900;margin-bottom:4px">' + (isCorrect ? '🎉 إجابة صحيحة وممتازة! (+' + (myAns.points || 0) + ' نقطة ⭐)' : '❌ إجابة غير صحيحة') + '</div>' +
+      '<div style="font-size:16px;color:#fff">الإجابة الصحيحة هي: <b style="color:#fde047">«' + esc(correctOptTxt) + '»</b></div>' +
+      (fastest && fastest.name ? '<div style="margin-top:8px;font-size:15px;color:#fde047;font-weight:800">⚡ أسرع إجابة صحيحة في الصف: ' + esc(fastest.name) + ' (خلال ' + fastest.timeSec + ' ثانية!)</div>' : '') +
+    '</div>';
+  } else if (hasAnswered) {
+    html += '<div style="margin-bottom:14px;background:rgba(59,130,246,0.2);border:1.5px solid #3b82f6;padding:10px 16px;border-radius:14px;text-align:center;color:#93c5fd;font-weight:700">' +
+      '✅ تم استلام إجابتك بسرعة! ⏳ بانتظار انتهاء الوقت لكشف النتيجة والسرعة…' +
+    '</div>';
+  }
+
+  // 4 Kahoot Colored Buttons Grid
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;flex:1">';
+  (currQ.options || []).forEach(function (optTxt, optIdx) {
+    var th = kahootThemes[optIdx] || kahootThemes[0];
+    var isChosen = (studentSelectedOpt === optIdx);
+    var isCorrectOpt = (optIdx === currQ.answer);
+    var extraStyle = '';
+
+    if (isReveal) {
+      if (isCorrectOpt) {
+        extraStyle = 'border:4px solid #4ade80;box-shadow:0 0 25px #22c55e;transform:scale(1.02);';
+      } else {
+        extraStyle = 'opacity:0.4;filter:grayscale(30%);';
+      }
+    } else if (hasAnswered) {
+      if (isChosen) {
+        extraStyle = 'border:3.5px solid #fff;box-shadow:0 0 20px rgba(255,255,255,0.6);';
+      } else {
+        extraStyle = 'opacity:0.45;';
+      }
+    }
+
+    html += '<button type="button" class="kahoot-student-choice-btn" data-opt="' + optIdx + '" ' + (hasAnswered || isReveal ? 'disabled' : '') + ' style="border:0;border-radius:16px;padding:20px 16px;font-size:19px;font-weight:800;color:#fff;background:' + th.bg + ';cursor:' + (hasAnswered || isReveal ? 'default' : 'pointer') + ';display:flex;align-items:center;gap:12px;text-align:right;box-shadow:0 6px 18px rgba(0,0,0,0.25);transition:all .15s ease;' + extraStyle + '">' +
+      '<span style="width:40px;height:40px;background:rgba(0,0,0,0.22);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">' + th.sym + '</span>' +
+      '<span style="flex:1;line-height:1.4">' + esc(optTxt) + '</span>' +
+      (isChosen ? '<span>✔️</span>' : '') +
+    '</button>';
+  });
+  html += '</div>';
+
+  html += '</div>';
+  overlay.innerHTML = html;
+
+  // Add click handlers for the 4 option buttons
+  if (!hasAnswered && !isReveal) {
+    overlay.querySelectorAll('.kahoot-student-choice-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        var opt = parseInt(btn.getAttribute('data-opt'), 10);
+        submitKahootStudentAnswer(opt);
+      };
+    });
+  }
+}
+
+function submitKahootStudentAnswer(optIdx) {
+  var chal = activeChallengeData;
+  if (!chal || chal.phase !== 'question' || !chal.active) return;
+  var currQIdx = chal.currentQ || 0;
+  if (lastAnsweredQIndex === currQIdx) return;
+  lastAnsweredQIndex = currQIdx;
+  studentSelectedOpt = optIdx;
+
+  var now = Date.now();
+  var currQ = chal.questions && chal.questions[currQIdx];
+  var isCorrect = (currQ && optIdx === currQ.answer);
+  var timeMs = Math.max(100, now - (chal.qStartedAt || now));
+  var timeSec = (timeMs / 1000).toFixed(1);
+  var duration = chal.durationSec || 20;
+
+  var points = 0;
+  if (isCorrect) {
+    var fraction = Math.max(0, 1 - (timeMs / (duration * 1000)));
+    points = Math.round(500 + 500 * fraction);
+    playKahootSound('click');
+  } else {
+    playKahootSound('click');
+  }
+
+  var myPid = S.pid || localStorage.getItem('manasa-pid') || ('p_' + (S.name || 'pupil'));
+  var myName = S.name || localStorage.getItem('manasa-name') || 'طالب';
+
+  // Update local state
+  var localSt = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || '{}');
+  localSt.challenge = localSt.challenge || chal;
+  localSt.challenge.answers = localSt.challenge.answers || {};
+  localSt.challenge.answers[myPid] = {
+    name: myName,
+    answerIdx: optIdx,
+    isCorrect: isCorrect,
+    timeMs: timeMs,
+    timeSec: timeSec,
+    points: points
+  };
+  localSt.challenge.scores = localSt.challenge.scores || {};
+  var prev = localSt.challenge.scores[myPid] || { totalPoints: 0, correctCount: 0 };
+  localSt.challenge.scores[myPid] = {
+    name: myName,
+    totalPoints: (prev.totalPoints || 0) + points,
+    correctCount: (prev.correctCount || 0) + (isCorrect ? 1 : 0),
+    lastTimeSec: timeSec
+  };
+
+  if (isCorrect) {
+    var fastest = localSt.challenge.fastestInCurrentQ;
+    if (!fastest || !fastest.timeMs || timeMs < fastest.timeMs) {
+      localSt.challenge.fastestInCurrentQ = {
+        pid: myPid,
+        name: myName,
+        timeSec: timeSec,
+        timeMs: timeMs,
+        points: points
+      };
+    }
+  }
+
+  try { localStorage.setItem('manasa-live-state-' + S.sid, JSON.stringify(localSt)); } catch (_) {}
+  renderChallengeOverlay(localSt.challenge);
+
+  // Send to Firestore
+  var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+  fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_session_' + encodeURIComponent(S.sid) + '?key=' + pKey, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(localSt) } } })
+  }).catch(function () {});
+}
+
+// 1-second countdown for student challenge timer
+setInterval(function () {
+  if (activeChallengeData && activeChallengeData.active && activeChallengeData.phase === 'question') {
+    var rem = Math.max(0, Math.ceil((activeChallengeData.qExpiresAt - Date.now()) / 1000));
+    var timerSpan = document.querySelector('#kahoot-student-timer span');
+    if (timerSpan) timerSpan.textContent = rem;
+  }
+}, 1000);
+
 function renderFlashOverlay(flash) {
   var overlay = document.getElementById('miftah-flash-overlay');
   if (!flash || !flash.active || flash.remainingSec <= 0) {
@@ -223,20 +536,42 @@ setInterval(function () {
 
 function startFlashWatcher() {
   if (flashCheckInterval || !S.sid) return;
+  var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+  var url = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_session_' + encodeURIComponent(S.sid) + '?key=' + pKey;
+
+  function syncAndRender(st) {
+    if (!st) return;
+    // 1. Flash alert
+    if (st.flash && st.flash.active && st.flash.expiresAt > Date.now()) {
+      st.flash.remainingSec = Math.max(0, Math.ceil((st.flash.expiresAt - Date.now()) / 1000));
+      renderFlashOverlay(st.flash);
+    } else {
+      renderFlashOverlay(null);
+    }
+    // 2. Kahoot Challenge
+    renderChallengeOverlay(st.challenge);
+  }
+
   function check() {
     if (!S.sid) return;
     try {
-      var st = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || 'null');
-      if (st && st.flash && st.flash.active && st.flash.expiresAt > Date.now()) {
-        st.flash.remainingSec = Math.max(0, Math.ceil((st.flash.expiresAt - Date.now()) / 1000));
-        renderFlashOverlay(st.flash);
-      } else {
-        renderFlashOverlay(null);
-      }
+      var localSt = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || 'null');
+      syncAndRender(localSt);
     } catch (_) {}
+
+    // Cloud fetch for live cross-device sync
+    fetch(url)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+          var cloudSt = JSON.parse(doc.fields.json.stringValue);
+          try { localStorage.setItem('manasa-live-state-' + S.sid, JSON.stringify(cloudSt)); } catch (_) {}
+          syncAndRender(cloudSt);
+        }
+      }).catch(function () {});
   }
   check();
-  flashCheckInterval = setInterval(check, 2500);
+  flashCheckInterval = setInterval(check, 2000);
 }
 
 function saveStudentPortfolioRecord() {

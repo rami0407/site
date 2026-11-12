@@ -1,8 +1,204 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css"></head>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css">
+<style>
+.kahoot-opt-card {
+  padding: 16px;
+  border-radius: 14px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.kahoot-sym {
+  width: 42px;
+  height: 42px;
+  background: rgba(0,0,0,0.22);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.kahoot-opt-txt {
+  flex: 1;
+  line-height: 1.4;
+}
+.kahoot-pick-count {
+  background: rgba(0,0,0,0.28);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 900;
+}
+.kahoot-winner-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 0 10px;
+}
+.podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 140px;
+}
+.podium-pedestal {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #fff;
+  font-size: 28px;
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.2);
+}
+.podium-info {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.podium-avatar {
+  font-size: 34px;
+  margin-bottom: 4px;
+}
+.podium-name {
+  font-weight: 800;
+  font-size: 16px;
+  color: #fde047;
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.podium-score {
+  font-size: 13px;
+  color: #e0e7ff;
+  font-weight: 700;
+}
+</style>
+</head>
 <body><div class="top"><b>📊 لوحة المتابعة المباشرة</b><span class="sp"></span><a id="edit" class="pill" style="background:#ffcc33;color:#1d2b3a;text-decoration:none" href="#">✏️ عدّل الحصّة</a> <span id="code" class="pill" style="background:#fff;color:#5b3cc4;font-size:18px"></span></div>
 <main class="wrap" style="max-width:1100px">
 <div id="gate" class="card" hidden><h2>🔐 رمزُ المعلّم السرّي</h2><p class="muted">هذه اللوحة للمعلّم فقط.</p><div class="grid2"><input type="password" inputmode="numeric" id="pin" maxlength="8" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:22px"><button class="btn big" id="pinb">افتحْ اللوحة</button></div><p id="pinm" class="fb bad" hidden></p></div>
 <div id="board" hidden>
+
+<!-- كرت تحدي الطلاب المباشر (كاهوت الحصّة) -->
+<div class="card" id="chal-setup-card" style="border:2.5px solid #7c3aed;background:linear-gradient(135deg,#fbf7ff 0%,#f3e8ff 100%);margin-bottom:14px;box-shadow:0 8px 24px rgba(124,58,237,0.12)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="margin:0;color:#5b21b6;display:flex;align-items:center;gap:8px;font-size:20px">
+        🎮 أضفْ تحدٍّ للطلاب (كاهوت الحصّة المباشر)
+      </h2>
+      <p class="muted" style="margin:4px 0 0;color:#6b21a8;font-size:14.5px">
+        أطلقْ مسابقة كاهوت تفاعلية سريعة على شاشات جميع الطلاب من موضوع الحصة؛ مع عداد سرعة ونقاط وبث مباشر لاسم الفائز والأسرع في الصف. يمكنك إيقاف التحدي والرجوع للحصة متى تشاء.
+      </p>
+    </div>
+    <div id="chal-status-badge">
+      <span class="pill" style="background:#e9d5ff;color:#6b21a8;font-weight:800">التحدي غير نشط</span>
+    </div>
+  </div>
+
+  <!-- تحكم الإعداد (عندما لا يكون نشطاً) -->
+  <div id="chal-config-controls" style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;padding:14px;border-radius:14px;border:1.5px solid #ddd6fe">
+    <div style="display:flex;align-items:center;gap:8px">
+      <label for="chal-q-count" style="font-weight:800;color:#4c1d95;font-size:15px">عدد الأسئلة:</label>
+      <input type="number" id="chal-q-count" value="10" min="3" max="30" style="width:75px;padding:8px 10px;font-size:18px;font-weight:900;text-align:center;border:2px solid #8b5cf6;border-radius:10px;color:#5b21b6">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button type="button" class="pill" style="background:#f3e8ff;color:#5b21b6;border:1px solid #c4b5fd;cursor:pointer;font-weight:700" onclick="document.getElementById('chal-q-count').value=5">5 أسئلة</button>
+      <button type="button" class="pill" style="background:#8b5cf6;color:#fff;border:1px solid #7c3aed;cursor:pointer;font-weight:800" onclick="document.getElementById('chal-q-count').value=10">10 أسئلة (تلقائي)</button>
+      <button type="button" class="pill" style="background:#f3e8ff;color:#5b21b6;border:1px solid #c4b5fd;cursor:pointer;font-weight:700" onclick="document.getElementById('chal-q-count').value=15">15 سؤالاً</button>
+      <button type="button" class="pill" style="background:#f3e8ff;color:#5b21b6;border:1px solid #c4b5fd;cursor:pointer;font-weight:700" onclick="document.getElementById('chal-q-count').value=20">20 سؤالاً</button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn ok" id="chal-start-btn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:16px;font-weight:900;padding:10px 22px;border:0;border-radius:12px;box-shadow:0 4px 14px rgba(124,58,237,0.35);cursor:pointer">
+      🎮 أضفْ تحدٍّ للطلاب (بدء التحدي الآن)
+    </button>
+  </div>
+
+  <!-- لوحة العرض المباشر للتحدي في شاشة المعلم (تظهر عندما يكون التحدي نشطاً) -->
+  <div id="chal-live-arena" style="display:none;margin-top:16px;background:#1e1b4b;color:#fff;border-radius:18px;padding:22px;box-shadow:0 12px 36px rgba(0,0,0,0.35);direction:rtl">
+    <!-- الرأس -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">🎮</span>
+        <div>
+          <b id="chal-arena-title" style="font-size:18px;color:#fde047">تحدي الحصة المباشر</b>
+          <div id="chal-arena-progress" style="font-size:14px;color:#c7d2fe;font-weight:700">السؤال 1 من 10</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div id="chal-arena-timer-pill" style="background:#ef4444;color:#fff;font-weight:900;font-size:20px;padding:6px 18px;border-radius:999px;box-shadow:0 0 15px rgba(239,68,68,0.5)">
+          ⏱️ <span id="chal-timer-val">20</span> ث
+        </div>
+        <div id="chal-arena-ans-count" style="background:rgba(255,255,255,0.12);padding:6px 14px;border-radius:999px;font-size:14px;font-weight:800;color:#e0e7ff">
+          👥 أجابوا: 0 / 0
+        </div>
+        <button id="chal-stop-btn-top" class="btn alt" style="background:#dc2626;color:#fff;border:0;font-weight:800;border-radius:10px;padding:8px 16px;margin:0">
+          ⏹️ إيقاف التحدّي والرجوع للحصّة
+        </button>
+      </div>
+    </div>
+
+    <!-- نص السؤال الرئيسي -->
+    <div id="chal-arena-q-box" style="margin:20px 0;text-align:center;padding:18px 20px;background:rgba(255,255,255,0.07);border-radius:14px;border:1px solid rgba(255,255,255,0.15)">
+      <h3 id="chal-arena-q-text" style="font-size:23px;margin:0;line-height:1.5;color:#fff;font-weight:800">السؤال...</h3>
+    </div>
+
+    <!-- شبكة خيارات كاهوت الأربعة -->
+    <div id="chal-arena-opts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+    </div>
+
+    <!-- شريط معلومات الأسرع في الإجابة -->
+    <div id="chal-arena-fastest-box" style="display:none;background:rgba(234,179,8,0.18);border:2px solid #eab308;border-radius:14px;padding:14px 18px;margin-bottom:14px;text-align:center;font-size:17px;font-weight:800;color:#fde047;box-shadow:0 0 20px rgba(234,179,8,0.25)">
+      ⚡ أسرع إجابة صحيحة في الصف: <span id="chal-fastest-name" style="color:#fff;text-decoration:underline">—</span>
+    </div>
+
+    <!-- لوحة الصدارة والتتويج -->
+    <div id="chal-arena-leaderboard" style="display:none;background:rgba(255,255,255,0.07);border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.15)">
+      <h4 style="margin:0 0 12px;color:#fde047;font-size:18px;display:flex;align-items:center;gap:8px">
+        🏆 لوحة صدارة المتسابقين (Top Leaders)
+      </h4>
+      <div id="chal-leaderboard-list"></div>
+    </div>
+
+    <!-- منصة التتويج الكبرى Podium -->
+    <div id="chal-arena-podium" style="display:none;background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:18px;padding:24px;margin-bottom:18px;text-align:center;border:2px solid #fbbf24;box-shadow:0 0 35px rgba(251,191,36,0.3)">
+      <h2 style="color:#fbbf24;font-size:26px;margin:0 0 6px">🎉 منصّة تتويج أبطال التحدّي 🎉</h2>
+      <p style="color:#c7d2fe;margin:0 0 20px;font-size:15px">مبارك للفرسان الفائزين في تحدي اليوم على السرعة والدقة والإتقان!</p>
+      <div id="chal-podium-bars" class="kahoot-winner-podium"></div>
+      <div id="chal-podium-runners" style="background:rgba(255,255,255,0.06);padding:12px;border-radius:12px;text-align:right"></div>
+    </div>
+
+    <!-- شريط التحكم بالمراحل للمعلم -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(255,255,255,0.15);padding-top:14px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button id="chal-reveal-btn" class="btn" style="background:#eab308;color:#000;font-weight:900;border:0;border-radius:10px;padding:9px 20px;font-size:15px;cursor:pointer">
+          👀 كشف الإجابة والنتائج الآن
+        </button>
+        <button id="chal-next-btn" class="btn ok" style="display:none;background:#22c55e;color:#fff;font-weight:900;border:0;border-radius:10px;padding:9px 22px;font-size:15px;cursor:pointer">
+          ➡️ السؤال التالي
+        </button>
+        <button id="chal-podium-btn" class="btn ok" style="display:none;background:linear-gradient(135deg,#f59e0b,#eab308);color:#000;font-weight:900;border:0;border-radius:10px;padding:9px 22px;font-size:15px;cursor:pointer">
+          🏆 عرض منصّة التتويج الكبرى
+        </button>
+      </div>
+      <div>
+        <button id="chal-exit-btn" class="btn alt" style="background:#dc2626;color:#fff;border:0;font-weight:800;border-radius:10px;padding:9px 18px;font-size:15px;cursor:pointer">
+          ⏹️ إيقاف التحدّي والرجوع للحصّة
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card" style="border:2px solid #f59e0b;background:#fffbeb;margin-bottom:12px">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
@@ -40,8 +236,34 @@ var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'
 var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
 var FIRESTORE_LIVE='https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
 
+var kahootThemes = [
+  { bg: '#e21b3c', sym: '▲', name: 'أحمر' },
+  { bg: '#1368ce', sym: '◆', name: 'أزرق' },
+  { bg: '#d89e00', sym: '●', name: 'أصفر' },
+  { bg: '#26890c', sym: '■', name: 'أخضر' }
+];
+
 function ago(t){var a=Math.max(0,Math.round((Date.now()-(Number(t)||Date.now()))/1000));return a<60?a+' ث':Math.round(a/60)+' د'}
 function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();[0,0.25].forEach(function(d){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.25,ac.currentTime+d);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d+0.2);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.22)})}catch(e){}}
+
+function playFanfareSound(){
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    [523.25, 659.25, 783.99, 1046.5].forEach(function(freq, idx){
+      var osc = ac.createOscillator(), gain = ac.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      var t = ac.currentTime + (idx * 0.15);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.start(t);
+      osc.stop(t + 0.42);
+    });
+  }catch(_){}
+}
+
 function gate(msg){$('gate').hidden=false;$('board').hidden=true;$('pin').value='';if(msg){$('pinm').textContent=msg;$('pinm').hidden=false}$('pin').focus()}
 $('pinb').onclick=function(){pin=$('pin').value.trim()||'036301448';sessionStorage.setItem('mpin-'+s,pin);load(true)};
 $('pin').onkeydown=function(e){if(e.key==='Enter')$('pinb').click()};
@@ -51,8 +273,9 @@ function getLocalLiveState(){
     var obj=JSON.parse(localStorage.getItem('manasa-live-state-'+s)||'null');
     if(obj && typeof obj==='object')return obj;
   }catch(_){}
-  return {pupils:{},helps:[],flash:null};
+  return {pupils:{},helps:[],flash:null,challenge:null};
 }
+
 function saveLocalLiveState(st){
   try{localStorage.setItem('manasa-live-state-'+s,JSON.stringify(st));}catch(_){}
   fetch(FIRESTORE_LIVE+'/miftaah_session_'+encodeURIComponent(s)+'?key='+FIREBASE_API_KEY,{
@@ -62,6 +285,433 @@ function saveLocalLiveState(st){
   }).catch(function(){});
 }
 
+// ---------- Question Extractor for Kahoot Challenge ----------
+function fetchLessonData(code, cb) {
+  var lk = 'manasa-lesson-' + code;
+  try {
+    var cached = JSON.parse(localStorage.getItem(lk) || 'null');
+    if (cached && (cached.explain || cached.practice || cached.evidence || cached.title)) {
+      return cb(cached);
+    }
+  } catch (_) {}
+
+  fetch(FIRESTORE_LIVE + '/miftaah_lesson_' + encodeURIComponent(code) + '?key=' + FIREBASE_API_KEY)
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(doc){
+      if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+        var les = JSON.parse(doc.fields.json.stringValue);
+        return cb(les);
+      }
+      fetch('lessons/' + code.toLowerCase() + '.json')
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(les){ cb(les); })
+        .catch(function(){ cb(null); });
+    })
+    .catch(function(){
+      fetch('lessons/' + code.toLowerCase() + '.json')
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(les){ cb(les); })
+        .catch(function(){ cb(null); });
+    });
+}
+
+function extractAndBuildChallengeQuestions(lesson, desiredCount) {
+  desiredCount = Math.max(3, Number(desiredCount) || 10);
+  var pool = [];
+
+  if (lesson) {
+    if (lesson.explain && Array.isArray(lesson.explain.steps)) {
+      lesson.explain.steps.forEach(function (st) {
+        if (st && st.check && st.check.q && Array.isArray(st.check.options) && st.check.options.length >= 2) {
+          pool.push({
+            q: st.check.q,
+            options: st.check.options.slice(0, 4),
+            answer: Number(st.check.answer) || 0,
+            why: st.check.why || st.title || ''
+          });
+        }
+      });
+    }
+
+    if (lesson.practice) {
+      ['easy', 'medium', 'hard'].forEach(function (lvl) {
+        var arr = lesson.practice[lvl];
+        if (Array.isArray(arr)) {
+          arr.forEach(function (it) {
+            if (it && it.q && Array.isArray(it.options) && it.options.length >= 2) {
+              pool.push({
+                q: it.q,
+                options: it.options.slice(0, 4),
+                answer: Number(it.answer) || 0,
+                why: it.why || ''
+              });
+            }
+          });
+        }
+      });
+    }
+
+    if (lesson.evidence && Array.isArray(lesson.evidence.items)) {
+      lesson.evidence.items.forEach(function (it) {
+        if (it && it.q && Array.isArray(it.options) && it.options.length >= 2) {
+          pool.push({
+            q: it.q,
+            options: it.options.slice(0, 4),
+            answer: Number(it.answer) || 0,
+            why: it.why || ''
+          });
+        }
+      });
+    }
+
+    if (Array.isArray(lesson.challenges)) {
+      lesson.challenges.forEach(function (it) {
+        if (it && it.q && Array.isArray(it.options) && it.options.length >= 2) {
+          pool.push({
+            q: it.q,
+            options: it.options.slice(0, 4),
+            answer: Number(it.answer) || 0,
+            why: it.why || ''
+          });
+        }
+      });
+    }
+  }
+
+  var seen = {};
+  var unique = [];
+  pool.forEach(function (item) {
+    var k = (item.q || '').trim();
+    if (k && !seen[k]) {
+      seen[k] = true;
+      unique.push(item);
+    }
+  });
+
+  var isHebrew = lesson && (lesson.lang === 'he' || /עברית|hebrew/.test(String(lesson.subject || '')));
+  var fillers = isHebrew
+    ? ['אפשרות נוספת', 'אף תשובה אינה נכונה', 'כל התשובות נכונות', 'תשובה אחרת']
+    : ['إجابة أخرى', 'غير ذلك', 'كل ما ذكر صحيح', 'لا شيء مما ذكر'];
+
+  unique.forEach(function (item) {
+    while (item.options.length < 4) {
+      item.options.push(fillers[item.options.length] || 'خيار إضافي');
+    }
+  });
+
+  var title = (lesson && lesson.title) || 'موضوع الحصة';
+  var fallbackQuestions = isHebrew ? [
+    { q: 'מהו הנושא המרכזי של השיעור שלנו היום?', options: [title, 'נושא אקראי אחר', 'היסטוריה עתיקה', 'כללים לא קשורים'], answer: 0, why: 'נושא השיעור' },
+    { q: 'במודל מפתח (מפת\"ח), מה מסמלת האות מ\' בתחילת המסע?', options: ['מושך ומעורר סקרנות', 'משימה בלתי אפשרית', 'ספרייה בלבד', 'הערות סיום'], answer: 0, why: 'מ = מושך ומעורר' },
+    { q: 'מהי המטרה הלימודית העיקרית בלמידת ' + title + '?', options: ['הבנת המושג ויישומו בחיים', 'שינון עיוור ללא הבנה', 'העברת הזמן בלבד', 'אין מטרה'], answer: 0, why: 'יישום המושג' },
+    { q: 'בעת מענה על שאלת חשיבה ביקורתית, מה הצעד הראשון?', options: ['קריאה מדויקת וניתוח הנתונים', 'ניחוש מהיר ללא קריאה', 'השארת השאלה ריקה', 'ויתור מראש'], answer: 0, why: 'ניתוח נתונים' },
+    { q: 'כיצד אנו מוכיחים שליטה והבנה בנושא ' + title + '?', options: ['הצגת הוכחה ויישום מעשי נכון', 'טענה ללא הוכחה', 'שתיקה מוחלטת', 'העתקה ללא הבנה'], answer: 0, why: 'הוכחת השליטה' }
+  ] : [
+    { q: 'ما هو المفهوم الأساسي الذي تدور حوله حصتنا اليوم؟', options: [title, 'موضوع عشوائي غير مرتبط', 'تاريخ قديم عام', 'قواعد لا صلة لها'], answer: 0, why: 'موضوع الحصة المركزي' },
+    { q: 'في نموذج مفتاح، ماذا يرمز الحرف «م» في بداية رحلتنا؟', options: ['مُشوّق ومُحفّز', 'مهمة مستحيلة', 'مكتبة فقط', 'ملاحظات نهائية'], answer: 0, why: 'الحرف م = مشوق ومحفز' },
+    { q: 'ما الهدف التعليمي الأسمى من دراسة ' + title + '؟', options: ['فهم المفهوم وتطبيقه في الحياة الواقعية', 'الحفظ فقط دون فهم', 'تجاوز الوقت فقط', 'لا يوجد هدف'], answer: 0, why: 'الهدف تطبيق المفهوم حياتياً' },
+    { q: 'عند مواجهة سؤال تفكير ناقد حول ' + title + '، ما الخطوة الأولى؟', options: ['قراءة المعطيات بدقة وتحليل الفكرة', 'التخمين العشوائي السريع', 'ترك السؤال دون إجابة', 'الاستسلام فوراً'], answer: 0, why: 'تحليل المعطيات والتفكير المنطقي' },
+    { q: 'كيف نثبت فهمنا وإتقاننا لموضوع ' + title + '؟', options: ['تقديم الدليل والتطبيق العملي الصحيح', 'الادعاء دون برهان', 'الصمت التام', 'نقل إجابة الآخرين دون فهم'], answer: 0, why: 'إثبات الدليل محطة أساسية' }
+  ];
+
+  for (var i = 0; unique.length < desiredCount && i < fallbackQuestions.length; i++) {
+    unique.push(fallbackQuestions[i]);
+  }
+
+  return unique.slice(0, desiredCount);
+}
+
+// ---------- Challenge Controls and Rendering ----------
+$('chal-start-btn').onclick = function () {
+  var count = Math.max(3, parseInt($('chal-q-count').value, 10) || 10);
+  $('chal-start-btn').disabled = true;
+  $('chal-start-btn').textContent = '⏳ جاري استخراج الأسئلة وتجهيز التحدي…';
+
+  fetchLessonData(s, function (lesson) {
+    $('chal-start-btn').disabled = false;
+    $('chal-start-btn').textContent = '🎮 أضفْ تحدٍّ للطلاب (بدء التحدي الآن)';
+
+    var questions = extractAndBuildChallengeQuestions(lesson, count);
+    if (!questions || !questions.length) {
+      alert('تعذّر استخراج أسئلة من الحصة. تأكّد من صحة رمز الحصة أو توليدها.');
+      return;
+    }
+
+    var st = getLocalLiveState();
+    var duration = 20;
+    st.challenge = {
+      id: 'chal_' + Date.now(),
+      active: true,
+      title: (lesson && lesson.title) || ('تحدي الحصة ' + s),
+      subject: (lesson && lesson.subject) || '',
+      totalQ: questions.length,
+      currentQ: 0,
+      phase: 'question',
+      durationSec: duration,
+      qStartedAt: Date.now(),
+      qExpiresAt: Date.now() + (duration * 1000),
+      questions: questions,
+      answers: {},
+      scores: (st.challenge && st.challenge.scores) ? st.challenge.scores : {},
+      fastestInCurrentQ: null
+    };
+
+    saveLocalLiveState(st);
+    renderChallengeState(st.challenge);
+  });
+};
+
+function stopChallenge() {
+  var st = getLocalLiveState();
+  if (st.challenge) {
+    st.challenge.active = false;
+  }
+  saveLocalLiveState(st);
+  renderChallengeState(st.challenge);
+}
+
+$('chal-stop-btn-top').onclick = stopChallenge;
+$('chal-exit-btn').onclick = stopChallenge;
+
+$('chal-reveal-btn').onclick = function () {
+  var st = getLocalLiveState();
+  if (!st.challenge || !st.challenge.active) return;
+  st.challenge.phase = 'reveal';
+  saveLocalLiveState(st);
+  renderChallengeState(st.challenge);
+};
+
+$('chal-next-btn').onclick = function () {
+  var st = getLocalLiveState();
+  if (!st.challenge || !st.challenge.active) return;
+  var nextQ = (st.challenge.currentQ || 0) + 1;
+  if (nextQ >= st.challenge.totalQ) {
+    st.challenge.phase = 'podium';
+  } else {
+    var duration = 20;
+    st.challenge.currentQ = nextQ;
+    st.challenge.phase = 'question';
+    st.challenge.durationSec = duration;
+    st.challenge.qStartedAt = Date.now();
+    st.challenge.qExpiresAt = Date.now() + (duration * 1000);
+    st.challenge.answers = {};
+    st.challenge.fastestInCurrentQ = null;
+  }
+  saveLocalLiveState(st);
+  renderChallengeState(st.challenge);
+};
+
+$('chal-podium-btn').onclick = function () {
+  var st = getLocalLiveState();
+  if (!st.challenge || !st.challenge.active) return;
+  st.challenge.phase = 'podium';
+  saveLocalLiveState(st);
+  renderChallengeState(st.challenge);
+  playFanfareSound();
+};
+
+function renderChallengeState(chal) {
+  if (!chal || !chal.active) {
+    $('chal-status-badge').innerHTML = '<span class="pill" style="background:#e9d5ff;color:#6b21a8;font-weight:800">التحدي غير نشط</span>';
+    $('chal-config-controls').style.display = 'flex';
+    $('chal-live-arena').style.display = 'none';
+    return;
+  }
+
+  $('chal-status-badge').innerHTML = '<span class="pill" style="background:#fee2e2;color:#b91c1c;font-weight:900;border:1px solid #ef4444;box-shadow:0 0 10px rgba(239,68,68,0.4)">🔥 التحدي نشط الآن على شاشات الطلاب</span>';
+  $('chal-config-controls').style.display = 'none';
+  $('chal-live-arena').style.display = 'block';
+
+  $('chal-arena-title').textContent = chal.title || 'تحدي الحصة المباشر';
+  $('chal-arena-progress').textContent = 'السؤال ' + ((chal.currentQ || 0) + 1) + ' من ' + (chal.totalQ || 10);
+
+  var currQ = chal.questions && chal.questions[chal.currentQ];
+  if (!currQ) return;
+
+  $('chal-arena-q-text').textContent = currQ.q || 'سؤال التحدي';
+
+  var answersMap = chal.answers || {};
+  var answeredCount = Object.keys(answersMap).length;
+  var totalStudents = P.length || answeredCount;
+  $('chal-arena-ans-count').textContent = '👥 أجابوا: ' + answeredCount + ' / ' + totalStudents;
+
+  var picksCount = [0, 0, 0, 0];
+  Object.keys(answersMap).forEach(function(pid){
+    var ans = answersMap[pid];
+    if (ans && typeof ans.answerIdx === 'number' && ans.answerIdx >= 0 && ans.answerIdx < 4) {
+      picksCount[ans.answerIdx]++;
+    }
+  });
+
+  var remSec = chal.qExpiresAt ? Math.max(0, Math.ceil((chal.qExpiresAt - Date.now()) / 1000)) : 0;
+  $('chal-timer-val').textContent = remSec;
+
+  var isReveal = (chal.phase === 'reveal');
+  var isPodium = (chal.phase === 'podium');
+
+  if (isPodium) {
+    $('chal-arena-q-box').style.display = 'none';
+    $('chal-arena-opts-grid').style.display = 'none';
+    $('chal-arena-fastest-box').style.display = 'none';
+    $('chal-arena-leaderboard').style.display = 'none';
+    $('chal-arena-podium').style.display = 'block';
+    renderPodiumView(chal);
+
+    $('chal-reveal-btn').style.display = 'none';
+    $('chal-next-btn').style.display = 'none';
+    $('chal-podium-btn').style.display = 'none';
+    return;
+  } else {
+    $('chal-arena-q-box').style.display = 'block';
+    $('chal-arena-opts-grid').style.display = 'grid';
+    $('chal-arena-podium').style.display = 'none';
+  }
+
+  // Render 4 Kahoot Options
+  var optsHtml = '';
+  (currQ.options || []).forEach(function (optTxt, idx) {
+    var th = kahootThemes[idx] || kahootThemes[0];
+    var isCorrect = (idx === currQ.answer);
+    var extraStyle = '';
+    if (isReveal) {
+      if (isCorrect) {
+        extraStyle = 'border:4px solid #4ade80;box-shadow:0 0 25px #22c55e;transform:scale(1.02);';
+      } else {
+        extraStyle = 'opacity:0.45;filter:grayscale(30%);';
+      }
+    }
+    optsHtml += '<div class="kahoot-opt-card" style="background:' + th.bg + ';' + extraStyle + '">' +
+      '<div class="kahoot-sym">' + th.sym + '</div>' +
+      '<div class="kahoot-opt-txt">' + esc(optTxt) + (isReveal && isCorrect ? ' <b style="color:#fef08a">✅ (الصحيحة)</b>' : '') + '</div>' +
+      '<div class="kahoot-pick-count">👥 ' + picksCount[idx] + '</div>' +
+    '</div>';
+  });
+  $('chal-arena-opts-grid').innerHTML = optsHtml;
+
+  // Fastest Responder Box
+  var fastest = chal.fastestInCurrentQ;
+  if (isReveal && fastest && fastest.name) {
+    $('chal-arena-fastest-box').style.display = 'block';
+    $('chal-fastest-name').textContent = fastest.name + ' (خلال ' + fastest.timeSec + ' ثانية! +' + (fastest.points || 0) + ' نقطة ⭐)';
+  } else if (isReveal) {
+    $('chal-arena-fastest-box').style.display = 'block';
+    $('chal-fastest-name').textContent = 'لم يُجب أحد إجابة صحيحة في الوقت المحدد';
+  } else {
+    $('chal-arena-fastest-box').style.display = 'none';
+  }
+
+  // Leaderboard
+  if (isReveal) {
+    $('chal-arena-leaderboard').style.display = 'block';
+    renderLeaderboardList(chal);
+    $('chal-reveal-btn').style.display = 'none';
+    if ((chal.currentQ || 0) + 1 >= (chal.totalQ || 10)) {
+      $('chal-next-btn').style.display = 'none';
+      $('chal-podium-btn').style.display = 'inline-block';
+    } else {
+      $('chal-next-btn').style.display = 'inline-block';
+      $('chal-next-btn').textContent = '➡️ السؤال التالي (السؤال ' + ((chal.currentQ || 0) + 2) + ' من ' + chal.totalQ + ')';
+      $('chal-podium-btn').style.display = 'none';
+    }
+  } else {
+    $('chal-arena-leaderboard').style.display = 'none';
+    $('chal-reveal-btn').style.display = 'inline-block';
+    $('chal-next-btn').style.display = 'none';
+    $('chal-podium-btn').style.display = 'none';
+  }
+}
+
+function getSortedScores(chal) {
+  var scMap = chal.scores || {};
+  var list = Object.keys(scMap).map(function (pid) {
+    return {
+      pid: pid,
+      name: scMap[pid].name || 'طالب',
+      totalPoints: scMap[pid].totalPoints || 0,
+      correctCount: scMap[pid].correctCount || 0
+    };
+  });
+  list.sort(function (a, b) { return b.totalPoints - a.totalPoints; });
+  return list;
+}
+
+function renderLeaderboardList(chal) {
+  var list = getSortedScores(chal);
+  if (!list.length) {
+    $('chal-leaderboard-list').innerHTML = '<p class="muted" style="color:#c7d2fe;margin:0">بانتظار تسجيل النقاط مع الإجابات…</p>';
+    return;
+  }
+  var medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  $('chal-leaderboard-list').innerHTML = list.slice(0, 5).map(function (it, idx) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin-bottom:6px;background:rgba(255,255,255,0.08);border-radius:10px;font-size:16px">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<span style="font-size:20px">' + (medals[idx] || (idx + 1)) + '</span>' +
+        '<b style="color:#fff">' + esc(it.name) + '</b>' +
+        '<small style="color:#a5b4fc;margin-right:6px">(' + it.correctCount + ' إجابة صحيحة)</small>' +
+      '</div>' +
+      '<div style="font-weight:900;color:#fde047;font-size:18px">⭐ ' + it.totalPoints + ' نقطة</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPodiumView(chal) {
+  var list = getSortedScores(chal);
+  var p1 = list[0] || { name: '—', totalPoints: 0 };
+  var p2 = list[1] || { name: '—', totalPoints: 0 };
+  var p3 = list[2] || { name: '—', totalPoints: 0 };
+
+  $('chal-podium-bars').innerHTML =
+    '<div class="podium-col">' +
+      '<div class="podium-info">' +
+        '<div class="podium-avatar">🥈</div>' +
+        '<div class="podium-name">' + esc(p2.name) + '</div>' +
+        '<div class="podium-score">⭐ ' + p2.totalPoints + ' نقطة</div>' +
+      '</div>' +
+      '<div class="podium-pedestal" style="height:110px;background:linear-gradient(180deg,#94a3b8,#64748b)">2</div>' +
+    '</div>' +
+    '<div class="podium-col">' +
+      '<div class="podium-info">' +
+        '<div class="podium-avatar">👑 🥇</div>' +
+        '<div class="podium-name" style="font-size:19px;color:#fef08a">' + esc(p1.name) + '</div>' +
+        '<div class="podium-score" style="font-size:15px;color:#fff;font-weight:900">⭐ ' + p1.totalPoints + ' نقطة</div>' +
+      '</div>' +
+      '<div class="podium-pedestal" style="height:160px;background:linear-gradient(180deg,#fbbf24,#d97706)">1</div>' +
+    '</div>' +
+    '<div class="podium-col">' +
+      '<div class="podium-info">' +
+        '<div class="podium-avatar">🥉</div>' +
+        '<div class="podium-name">' + esc(p3.name) + '</div>' +
+        '<div class="podium-score">⭐ ' + p3.totalPoints + ' نقطة</div>' +
+      '</div>' +
+      '<div class="podium-pedestal" style="height:80px;background:linear-gradient(180deg,#d97706,#b45309)">3</div>' +
+    '</div>';
+
+  if (list.length > 3) {
+    $('chal-podium-runners').innerHTML = '<b style="color:#fde047;display:block;margin-bottom:6px">باقي المراكز المتميزة:</b>' +
+      list.slice(3, 8).map(function(it, i){
+        return '<span class="pill" style="background:rgba(255,255,255,0.1);color:#fff;margin:3px 4px;display:inline-block">' + (i + 4) + '. ' + esc(it.name) + ' (' + it.totalPoints + ' نقطة)</span>';
+      }).join(' ');
+  } else {
+    $('chal-podium-runners').innerHTML = '';
+  }
+}
+
+// 1-second countdown interval for live arena
+setInterval(function () {
+  var st = getLocalLiveState();
+  if (st && st.challenge && st.challenge.active && st.challenge.phase === 'question') {
+    var rem = Math.max(0, Math.ceil((st.challenge.qExpiresAt - Date.now()) / 1000));
+    var timerEl = $('chal-timer-val');
+    if (timerEl) timerEl.textContent = rem;
+    if (rem <= 0) {
+      st.challenge.phase = 'reveal';
+      saveLocalLiveState(st);
+      renderChallengeState(st.challenge);
+    }
+  }
+}, 1000);
+
+// Flash Controls
 $('flash-trigger-btn').onclick = function () {
   var msg = ($('flash-custom-msg').value || '').trim() || 'توقفوا للحظة واستمعوا لتوجيهات المعلّم';
   var st = getLocalLiveState();
@@ -80,6 +730,8 @@ $('flash-stop-btn').onclick = function () {
 function renderState(st){
   $('gate').hidden=true;$('board').hidden=false;
   if(!timer)timer=setInterval(load,3000);
+  
+  // Flash status
   var fl=st.flash;
   var rem=fl&&fl.active&&fl.expiresAt?Math.max(0,Math.ceil((fl.expiresAt-Date.now())/1000)):0;
   if(rem>0){
@@ -91,6 +743,10 @@ function renderState(st){
     $('flash-stop-btn').hidden=true;
     $('flash-trigger-btn').hidden=false;
   }
+
+  // Challenge status
+  renderChallengeState(st.challenge);
+
   var pupilsMap=st.pupils||{};
   P=Object.keys(pupilsMap).map(function(k){return pupilsMap[k];});
   helps(st.helps||[]);
@@ -109,6 +765,9 @@ function load(){
         merged.pupils=Object.assign({},merged.pupils||{},cloudSt.pupils||{});
         if(cloudSt.helps&&cloudSt.helps.length)merged.helps=cloudSt.helps;
         if(cloudSt.flash)merged.flash=cloudSt.flash;
+        if(cloudSt.challenge) {
+          merged.challenge = cloudSt.challenge;
+        }
         try{localStorage.setItem('manasa-live-state-'+s,JSON.stringify(merged));}catch(_){}
         renderState(merged);
       }

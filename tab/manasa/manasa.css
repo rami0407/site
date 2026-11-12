@@ -171,3 +171,10 @@ body:has(#mkey) .wrap{padding-bottom:110px}
 .pill-badge.private{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
 .privacy-toggle-btn{background:#fff;border:1.5px solid #cbd5e1;color:#334155;border-radius:12px;padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .2s}
 .privacy-toggle-btn:hover{background:#f1f5f9;border-color:#94a3b8}
+
+/* كاهوت مفتاح: التحدي المباشر */
+.kahoot-student-choice-btn:active{transform:scale(0.97)}
+.kahoot-student-choice-btn:hover:not(:disabled){filter:brightness(1.08)}
+@media (max-width:600px){
+  .kahoot-student-choice-btn{padding:16px 12px !important;font-size:17px !important}
+}
