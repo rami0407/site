@@ -9,7 +9,8 @@ function get(o, p) { return p.split('.').reduce(function (a, k) { return a == nu
 function set(o, p, v) { var ks = p.split('.'), last = ks.pop(); ks.forEach(function (k, i) { var nk = ks[i + 1] !== undefined ? ks[i + 1] : last; if (o[k] == null) o[k] = /^\d+$/.test(nk) ? [] : {}; o = o[k]; }); o[last] = v; }
 
 var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-var FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
+var FIRESTORE_ROOT = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents';
+var FIRESTORE_BASE = FIRESTORE_ROOT + '/school_padlet_cards';
 
 function loadLessonFromAnywhere(targetCode) {
   var clean = String(targetCode || '').trim();
@@ -42,12 +43,40 @@ function loadLessonFromAnywhere(targetCode) {
         throw new Error('not_static');
       })
       .catch(function () {
-        // 5. Cloud Firestore
-        return fetch(FIRESTORE_BASE + '/miftaah_lesson_' + encodeURIComponent(upper) + '?key=' + FIREBASE_API_KEY)
+        // 5. Cloud Firestore via runQuery
+        return fetch(FIRESTORE_ROOT + ':runQuery?key=' + FIREBASE_API_KEY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            structuredQuery: {
+              from: [{ collectionId: 'school_padlet_cards' }],
+              where: {
+                fieldFilter: {
+                  field: { fieldPath: 'code' },
+                  op: 'EQUAL',
+                  value: { stringValue: upper }
+                }
+              }
+            }
+          })
+        })
           .then(function (r) { if (!r.ok) throw new Error('not_found'); return r.json(); })
-          .then(function (doc) {
-            if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
-              var parsed = JSON.parse(doc.fields.json.stringValue);
+          .then(function (rows) {
+            if (!Array.isArray(rows)) throw new Error('not_found');
+            var bestDoc = null;
+            var bestTs = -1;
+            rows.forEach(function (row) {
+              if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+                var f = row.document.fields;
+                var ts = Number((f.updatedAt && f.updatedAt.integerValue) || (f.created && f.created.integerValue) || (f.createdAt && f.createdAt.integerValue) || 0);
+                if (ts >= bestTs) {
+                  bestTs = ts;
+                  bestDoc = row.document;
+                }
+              }
+            });
+            if (bestDoc) {
+              var parsed = JSON.parse(bestDoc.fields.json.stringValue);
               return { ok: true, lesson: parsed, code: upper, static: false };
             }
             throw new Error('empty');
@@ -96,7 +125,8 @@ function saveLessonEverywhere(code, lessonObj) {
     localStorage.setItem('miftah_archive_lessons', JSON.stringify(arch));
   } catch (_) {}
 
-  // Save to Cloud Firestore
+  // Save to Cloud Firestore (new unique document ID to avoid 403 on update)
+  var nowTs = Date.now();
   var payload = {
     fields: {
       code: { stringValue: String(finalCode) },
@@ -104,15 +134,20 @@ function saveLessonEverywhere(code, lessonObj) {
       subject: { stringValue: String(lessonObj.subject || '') },
       grade: { stringValue: String(lessonObj.grade || '') },
       goal: { stringValue: String(lessonObj.goal || '') },
+      author: { stringValue: String(localStorage.getItem('miftah_teacher_name') || 'معلم مشيرفة') },
       teacherName: { stringValue: String(localStorage.getItem('miftah_teacher_name') || 'معلم مشيرفة') },
       teacherPin: { stringValue: String(PIN || '036301448') },
       is_public: { booleanValue: true },
+      is_miftaah_lesson: { booleanValue: true },
       date: { stringValue: new Date().toLocaleDateString('ar-EG') },
-      createdAt: { integerValue: String(Date.now()) },
+      created: { integerValue: String(nowTs) },
+      updatedAt: { integerValue: String(nowTs) },
+      createdAt: { integerValue: String(nowTs) },
       json: { stringValue: JSON.stringify(lessonObj) }
     }
   };
-  return fetch(FIRESTORE_BASE + '/' + encodeURIComponent(finalCode), {
+  var docId = 'miftaah_lesson_' + encodeURIComponent(finalCode) + '_' + nowTs;
+  return fetch(FIRESTORE_BASE + '/' + docId + '?key=' + FIREBASE_API_KEY, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)

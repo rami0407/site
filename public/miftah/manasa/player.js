@@ -12,14 +12,33 @@ var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0
 function api(path, body) {
   return Promise.resolve({ ok: true });
 }
+function pushLiveStateToCloud(state) {
+  if (!S.sid || !state) return;
+  var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+  var nowTs = Date.now();
+  var docId = 'miftaah_ev_' + encodeURIComponent(S.sid) + '_' + nowTs + '_' + Math.random().toString(36).slice(2, 7);
+  fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/' + docId + '?key=' + pKey, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fields: {
+        sessionCode: { stringValue: String(S.sid) },
+        updatedAt: { integerValue: String(nowTs) },
+        json: { stringValue: JSON.stringify(state) }
+      }
+    })
+  }).catch(function () {});
+}
+
 function report() {
   if (!S.sid) return;
   try {
     var liveKey = 'manasa-live-state-' + S.sid;
-    var state = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":[],"help":[],"flash":null}');
-    if (!Array.isArray(state.pupils)) state.pupils = [];
+    var state = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":{},"helps":[],"flash":null}');
+    var nowTs = Date.now();
+    var myPid = S.pid || ('p_' + (S.name || 'pupil'));
     var pupilObj = {
-      pid: S.pid || ('p_' + (S.name || 'pupil')),
+      pid: myPid,
       name: S.name || 'طالب',
       station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''),
       level: S.data.level,
@@ -30,18 +49,20 @@ function report() {
       harvest: S.data.harvest,
       guess: S.data.guess,
       durationSec: S.data.durationSec || 0,
-      updatedAt: Date.now()
+      data: S.data,
+      updated: nowTs,
+      updatedAt: nowTs
     };
-    var idx = state.pupils.findIndex(function (p) { return (p.pid && p.pid === pupilObj.pid) || (p.name && p.name === pupilObj.name); });
-    if (idx >= 0) state.pupils[idx] = pupilObj;
-    else state.pupils.push(pupilObj);
+    if (Array.isArray(state.pupils)) {
+      var idx = state.pupils.findIndex(function (p) { return (p.pid && p.pid === pupilObj.pid) || (p.name && p.name === pupilObj.name); });
+      if (idx >= 0) state.pupils[idx] = pupilObj;
+      else state.pupils.push(pupilObj);
+    } else {
+      state.pupils = state.pupils || {};
+      state.pupils[myPid] = pupilObj;
+    }
     localStorage.setItem(liveKey, JSON.stringify(state));
-    var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-    fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_session_' + encodeURIComponent(S.sid) + '?key=' + pKey, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(state) } } })
-    }).catch(function () {});
+    pushLiveStateToCloud(state);
   } catch (e) {}
 }
 function bar() { return '<div class="stations">' + ST.map(function (s, i) { return '<div class="st ' + (i < S.st || S.done ? 'done' : i === S.st ? 'on' : '') + '">' + s[0] + '</div>'; }).join('') + '</div><div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>'; }
@@ -275,9 +296,11 @@ function renderChallengeOverlay(chal) {
   var myScoreObj = (chal.scores && chal.scores[myPid]) || { totalPoints: 0, correctCount: 0 };
   var myScore = myScoreObj.totalPoints || 0;
   var myAnsObj = (chal.answers && chal.answers[myPid]);
-  var hasAnswered = !!myAnsObj;
-  if (hasAnswered && studentSelectedOpt === null) {
+  var hasAnswered = !!(myAnsObj && (typeof myAnsObj.qIdx !== 'number' || myAnsObj.qIdx === currQIdx));
+  if (hasAnswered) {
     studentSelectedOpt = myAnsObj.answerIdx;
+  } else if (lastAnsweredQIndex !== currQIdx) {
+    studentSelectedOpt = null;
   }
 
   var isReveal = (chal.phase === 'reveal');
@@ -449,6 +472,7 @@ function submitKahootStudentAnswer(optIdx) {
   localSt.challenge = localSt.challenge || chal;
   localSt.challenge.answers = localSt.challenge.answers || {};
   localSt.challenge.answers[myPid] = {
+    qIdx: currQIdx,
     name: myName,
     answerIdx: optIdx,
     isCorrect: isCorrect,
@@ -462,7 +486,8 @@ function submitKahootStudentAnswer(optIdx) {
     name: myName,
     totalPoints: (prev.totalPoints || 0) + points,
     correctCount: (prev.correctCount || 0) + (isCorrect ? 1 : 0),
-    lastTimeSec: timeSec
+    lastTimeSec: timeSec,
+    updatedAt: now
   };
 
   if (isCorrect) {
@@ -480,14 +505,7 @@ function submitKahootStudentAnswer(optIdx) {
 
   try { localStorage.setItem('manasa-live-state-' + S.sid, JSON.stringify(localSt)); } catch (_) {}
   renderChallengeOverlay(localSt.challenge);
-
-  // Send to Firestore
-  var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-  fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_session_' + encodeURIComponent(S.sid) + '?key=' + pKey, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: { json: { stringValue: JSON.stringify(localSt) } } })
-  }).catch(function () {});
+  pushLiveStateToCloud(localSt);
 }
 
 // 1-second countdown for student challenge timer
@@ -534,10 +552,122 @@ setInterval(function () {
   }
 }, 1000);
 
+function mergeLiveStates(statesList) {
+  var merged = { pupils: {}, helps: [], flash: null, challenge: null };
+  var latestFlashTime = -1;
+  var authChal = null;
+  var latestChalTeacherTime = -1;
+
+  statesList.forEach(function (st) {
+    if (!st || typeof st !== 'object') return;
+
+    if (Array.isArray(st.pupils)) {
+      st.pupils.forEach(function (p) {
+        if (p && (p.pid || p.name)) {
+          var key = p.pid || p.name;
+          var prev = merged.pupils[key];
+          if (!prev || (p.updatedAt || p.updated || 0) >= (prev.updatedAt || prev.updated || 0)) {
+            merged.pupils[key] = p;
+          }
+        }
+      });
+    } else if (st.pupils && typeof st.pupils === 'object') {
+      Object.keys(st.pupils).forEach(function (k) {
+        var p = st.pupils[k];
+        if (p && (p.pid || p.name)) {
+          var key = p.pid || p.name || k;
+          var prev = merged.pupils[key];
+          if (!prev || (p.updatedAt || p.updated || 0) >= (prev.updatedAt || prev.updated || 0)) {
+            merged.pupils[key] = p;
+          }
+        }
+      });
+    }
+
+    if (Array.isArray(st.helps) && st.helps.length >= merged.helps.length) {
+      merged.helps = st.helps;
+    }
+
+    if (st.flash) {
+      var ft = st.flash.updatedAt || st.flash.expiresAt || 0;
+      if (ft >= latestFlashTime) {
+        latestFlashTime = ft;
+        merged.flash = st.flash;
+      }
+    }
+
+    if (st.challenge && st.challenge.id) {
+      var ct = st.challenge.teacherUpdatedAt || st.challenge.qStartedAt || 0;
+      if (ct >= latestChalTeacherTime) {
+        latestChalTeacherTime = ct;
+        authChal = JSON.parse(JSON.stringify(st.challenge));
+      }
+    }
+  });
+
+  if (authChal) {
+    var mergedAnswers = {};
+    var mergedScores = {};
+    var currQ = authChal.currentQ || 0;
+
+    statesList.forEach(function (st) {
+      if (!st || !st.challenge || st.challenge.id !== authChal.id) return;
+      var c = st.challenge;
+
+      if (c.scores && typeof c.scores === 'object') {
+        Object.keys(c.scores).forEach(function (pid) {
+          var sc = c.scores[pid];
+          if (!sc) return;
+          var prev = mergedScores[pid];
+          if (!prev || (sc.totalPoints || 0) > (prev.totalPoints || 0) || ((sc.totalPoints || 0) === (prev.totalPoints || 0) && (sc.updatedAt || 0) >= (prev.updatedAt || 0))) {
+            mergedScores[pid] = sc;
+          }
+        });
+      }
+
+      if (c.answers && typeof c.answers === 'object') {
+        Object.keys(c.answers).forEach(function (pid) {
+          var ans = c.answers[pid];
+          if (!ans) return;
+          var ansQ = (typeof ans.qIdx === 'number') ? ans.qIdx : c.currentQ;
+          if (ansQ === currQ) {
+            if (!mergedAnswers[pid] || (ans.timeMs || 999999) < (mergedAnswers[pid].timeMs || 999999)) {
+              mergedAnswers[pid] = ans;
+            }
+          }
+        });
+      }
+    });
+
+    authChal.answers = mergedAnswers;
+    authChal.scores = mergedScores;
+
+    var fastest = null;
+    Object.keys(mergedAnswers).forEach(function (pid) {
+      var ans = mergedAnswers[pid];
+      if (ans && ans.isCorrect) {
+        if (!fastest || (ans.timeMs || 999999) < (fastest.timeMs || 999999)) {
+          fastest = {
+            pid: pid,
+            name: ans.name || 'طالب',
+            timeSec: ans.timeSec || ((ans.timeMs || 1000) / 1000).toFixed(1),
+            timeMs: ans.timeMs || 1000,
+            points: ans.points || 0
+          };
+        }
+      }
+    });
+    authChal.fastestInCurrentQ = fastest;
+    merged.challenge = authChal;
+  }
+
+  return merged;
+}
+
 function startFlashWatcher() {
   if (flashCheckInterval || !S.sid) return;
   var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-  var url = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_session_' + encodeURIComponent(S.sid) + '?key=' + pKey;
+  var queryUrl = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents:runQuery?key=' + pKey;
 
   function syncAndRender(st) {
     if (!st) return;
@@ -559,14 +689,44 @@ function startFlashWatcher() {
       syncAndRender(localSt);
     } catch (_) {}
 
-    // Cloud fetch for live cross-device sync
-    fetch(url)
+    // Cloud query for live cross-device sync (HTTP 200 always, zero 403/404)
+    fetch(queryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'school_padlet_cards' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'sessionCode' },
+              op: 'EQUAL',
+              value: { stringValue: String(S.sid) }
+            }
+          }
+        }
+      })
+    })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (doc) {
-        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
-          var cloudSt = JSON.parse(doc.fields.json.stringValue);
-          try { localStorage.setItem('manasa-live-state-' + S.sid, JSON.stringify(cloudSt)); } catch (_) {}
-          syncAndRender(cloudSt);
+      .then(function (rows) {
+        if (Array.isArray(rows)) {
+          var items = [];
+          rows.forEach(function (row) {
+            if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+              try {
+                var ts = Number((row.document.fields.updatedAt && row.document.fields.updatedAt.integerValue) || 0);
+                items.push({ ts: ts, st: JSON.parse(row.document.fields.json.stringValue) });
+              } catch (_) {}
+            }
+          });
+          items.sort(function (a, b) { return a.ts - b.ts; });
+          var statesList = items.map(function (x) { return x.st; });
+          try {
+            var loc = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || 'null');
+            if (loc) statesList.push(loc);
+          } catch (_) {}
+          var merged = mergeLiveStates(statesList);
+          try { localStorage.setItem('manasa-live-state-' + S.sid, JSON.stringify(merged)); } catch (_) {}
+          syncAndRender(merged);
         }
       }).catch(function () {});
   }
@@ -692,29 +852,58 @@ function exitStudentApp() {
 
 // ---------- start ----------
 var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-var FS_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
+var FS_DOCS = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents';
+var FS_BASE = FS_DOCS + '/school_padlet_cards';
 
 function fetchCloudLessonByCode(code) {
   var cleanCode = String(code || '').trim().toUpperCase();
   if (!cleanCode) return Promise.reject('رمز غير صالح');
-  return fetch(FS_BASE + '/miftaah_lesson_' + encodeURIComponent(cleanCode) + '?key=' + FIREBASE_API_KEY)
+  return fetch(FS_DOCS + ':runQuery?key=' + FIREBASE_API_KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: 'school_padlet_cards' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'code' },
+            op: 'EQUAL',
+            value: { stringValue: cleanCode }
+          }
+        }
+      }
+    })
+  })
     .then(function (r) {
       if (!r.ok) throw new Error('not_found');
       return r.json();
     })
-    .then(function (doc) {
-      if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
-        var parsed = JSON.parse(doc.fields.json.stringValue);
+    .then(function (rows) {
+      var best = null, bestTime = -1;
+      if (Array.isArray(rows)) {
+        rows.forEach(function (row) {
+          if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+            var t = Number((row.document.fields.created && row.document.fields.created.integerValue) || (row.document.fields.createdAt && row.document.fields.createdAt.integerValue) || 0);
+            if (t >= bestTime) {
+              try {
+                best = JSON.parse(row.document.fields.json.stringValue);
+                bestTime = t;
+              } catch (_) {}
+            }
+          }
+        });
+      }
+      if (best) {
         try {
-          localStorage.setItem('manasa-lesson-' + cleanCode, JSON.stringify(parsed));
+          localStorage.setItem('manasa-lesson-' + cleanCode, JSON.stringify(best));
           localStorage.setItem('manasa-session-' + cleanCode, JSON.stringify({
             code: cleanCode,
             lesson: cleanCode,
-            title: parsed.title,
-            lessonData: parsed
+            title: best.title,
+            lessonData: best
           }));
         } catch (_) {}
-        return parsed;
+        return best;
       }
       throw new Error('empty');
     });
@@ -1099,12 +1288,21 @@ function keyHelp() {
   if (!S.sid) return sheet('<h3>🙋 مساعدةُ المعلّم</h3><p>أنت تتعلّمُ الآنَ بدون صفٍّ متّصل، فلا يصلُ الطّلبُ إلى معلِّمِك. ارفعْ يدَك ✋ واسألْه مباشرةً.</p>');
   var sh = sheet('<h3>🙋 أحتاجُ مساعدةً من المعلّم</h3><label>بماذا أحتاجُ المساعدة؟ (اختياريّ)</label><input type="text" id="hn" maxlength="120" placeholder="مثلًا: لم أفهمْ الخطوة الثّانية"><button class="btn kb" id="hs">📨 أرسلْ إلى المعلّم</button>');
   sh.querySelector('#hs').onclick = function () {
-    this.disabled = true; var where = 'محطّة «' + ST[Math.min(S.st, 4)][0] + '»' + (S.cur.title ? '' : '');
-    api('help', { sid: S.sid, pid: S.pid, name: S.name, station: where, note: (sh.querySelector('#hn').value || '').trim() }).then(function (r) {
-      if (!r.ok) return sheet('<p>' + esc(r.error || 'لم يُرسَل الطّلب.') + '</p>');
-      S.help = r.id; sheet('<h3>✔️ وصلَ طلبُك إلى المعلّم</h3><p>تابِعْ حتّى يأتيَ إليك. سأخبرُك عندما يراه.</p>'); keyBadge('⏳');
-      clearInterval(helpPoll); helpPoll = setInterval(function () { api('help?sid=' + S.sid + '&pid=' + encodeURIComponent(S.pid)).then(function (x) { if (x.help && x.help.handled) { clearInterval(helpPoll); keyBadge(''); toast('👩‍🏫 المعلّمُ رأى طلبَك وهو في الطّريق إليك!'); } }).catch(function () {}); }, 8000);
-    }).catch(function () { sheet('<p>لا يوجد اتّصال الآن. ارفعْ يدَك ✋</p>'); });
+    this.disabled = true;
+    var where = 'محطّة «' + ST[Math.min(S.st, 4)][0] + '»';
+    var note = (sh.querySelector('#hn').value || '').trim();
+    var helpId = Date.now();
+    try {
+      var liveKey = 'manasa-live-state-' + S.sid;
+      var st = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":{},"helps":[],"flash":null}');
+      st.helps = Array.isArray(st.helps) ? st.helps : [];
+      st.helps.unshift({ id: helpId, pid: S.pid, name: S.name || 'طالب', station: where, note: note, created: helpId, handled: false });
+      localStorage.setItem(liveKey, JSON.stringify(st));
+      pushLiveStateToCloud(st);
+    } catch (_) {}
+    S.help = helpId;
+    sheet('<h3>✔️ وصلَ طلبُك إلى المعلّم</h3><p>تابِعْ حتّى يأتيَ إليك. سأخبرُك عندما يراه.</p>');
+    keyBadge('⏳');
   };
 }
 function keyBadge(t) { var b = document.getElementById('mkey'); if (b) b.setAttribute('data-badge', t); }

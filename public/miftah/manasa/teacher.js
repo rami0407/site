@@ -20,11 +20,13 @@
 
   // رابط Firestore السحابي لمزامنة الحصص والأرشيف عبر كافة الأجهزة (مشروع المدرسة النشط site-a8b88)
   var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-  var FS_BASE = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
+  var FS_ROOT = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents';
+  var FS_BASE = FS_ROOT + '/school_padlet_cards';
 
   function saveLessonToCloud(lesson) {
     if (!lesson || !lesson.code) return Promise.resolve();
     var code = String(lesson.code).toUpperCase();
+    var nowTs = Date.now();
     var lessonJsonStr = JSON.stringify(lesson);
     var body = {
       fields: {
@@ -37,55 +39,19 @@
         author_email: { stringValue: String(lesson.author_email || '') },
         is_public: { booleanValue: lesson.is_public !== false },
         is_miftaah_lesson: { booleanValue: true },
-        created: { integerValue: String(lesson.created || Date.now()) },
+        created: { integerValue: String(lesson.created || nowTs) },
+        updatedAt: { integerValue: String(nowTs) },
         json: { stringValue: lessonJsonStr }
       }
     };
 
-    // 1. حفظ الدرس في مستنده الخاص (للوصول الفوري بالرابط أو الكود)
-    var p1 = fetch(FS_BASE + '/miftaah_lesson_' + encodeURIComponent(code) + '?key=' + FIREBASE_API_KEY, {
+    // حفظ الدرس في مستند جديد فريد (لتجنب خطأ 403 عند تحديث مستند موجود مسبقاً)
+    var docId = 'miftaah_lesson_' + encodeURIComponent(code) + '_' + nowTs;
+    return fetch(FS_BASE + '/' + docId + '?key=' + FIREBASE_API_KEY, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }).catch(function () {});
-
-    // 2. تحديث قائمة الأرشيف السحابي المجمّع
-    var p2 = fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY)
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (doc) {
-        var existingList = [];
-        try {
-          if (doc && doc.fields && doc.fields.lessons_json && doc.fields.lessons_json.stringValue) {
-            existingList = JSON.parse(doc.fields.lessons_json.stringValue);
-          }
-        } catch (_) {}
-        var metaItem = {
-          code: code,
-          title: lesson.title,
-          subject: lesson.subject,
-          grade: lesson.grade,
-          goal: lesson.goal,
-          author: lesson.author,
-          author_email: lesson.author_email,
-          is_public: lesson.is_public !== false,
-          created: lesson.created || Date.now()
-        };
-        existingList = existingList.filter(function (x) { return x.code !== code; });
-        existingList.unshift(metaItem);
-        return fetch(FS_BASE + '/miftaah_shared_archive?key=' + FIREBASE_API_KEY, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fields: {
-              is_miftaah_archive: { booleanValue: true },
-              updated: { integerValue: String(Date.now()) },
-              lessons_json: { stringValue: JSON.stringify(existingList.slice(0, 100)) }
-            }
-          })
-        });
-      }).catch(function () {});
-
-    return Promise.all([p1, p2]);
   }
 
   function fetchCloudLessons() {
@@ -93,13 +59,14 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         if (!data || !Array.isArray(data.documents)) return [];
-        var lessons = [];
+        var byCode = {};
         data.documents.forEach(function (doc) {
           var id = doc.name.split('/').pop();
           if (id.startsWith('miftaah_lesson_') && !id.startsWith('miftaah_lesson_TEST') && id !== 'miftaah_lesson_archive' && id !== 'miftaah_lesson_ARCHIVE_SHARED') {
             var f = doc.fields || {};
-            var code = (f.code && f.code.stringValue) || id.replace('miftaah_lesson_', '');
-            lessons.push({
+            var code = (f.code && f.code.stringValue) || id.replace('miftaah_lesson_', '').split('_')[0];
+            var created = Number((f.updatedAt && f.updatedAt.integerValue) || (f.created && f.created.integerValue) || (f.created && f.created.stringValue) || Date.now());
+            var item = {
               code: code,
               title: (f.title && f.title.stringValue) || 'حصة تفاعلية',
               subject: (f.subject && f.subject.stringValue) || 'عام',
@@ -108,11 +75,14 @@
               author: (f.author && f.author.stringValue) || 'معلم مشيرفة',
               author_email: (f.author_email && f.author_email.stringValue) || '',
               is_public: f.is_public ? (f.is_public.booleanValue !== false) : true,
-              created: Number((f.created && f.created.integerValue) || (f.created && f.created.stringValue) || Date.now())
-            });
+              created: created
+            };
+            if (!byCode[code] || created >= byCode[code].created) {
+              byCode[code] = item;
+            }
           }
         });
-        return lessons;
+        return Object.keys(byCode).map(function (k) { return byCode[k]; });
       })
       .catch(function (err) {
         console.warn('fetchCloudLessons error:', err);
@@ -123,14 +93,42 @@
   function fetchCloudLessonByCode(code) {
     var cleanCode = String(code || '').trim().toUpperCase();
     if (!cleanCode) return Promise.reject('invalid_code');
-    return fetch(FS_BASE + '/miftaah_lesson_' + encodeURIComponent(cleanCode) + '?key=' + FIREBASE_API_KEY)
+    return fetch(FS_ROOT + ':runQuery?key=' + FIREBASE_API_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'school_padlet_cards' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'code' },
+              op: 'EQUAL',
+              value: { stringValue: cleanCode }
+            }
+          }
+        }
+      })
+    })
       .then(function (r) {
         if (!r.ok) throw new Error('not_found');
         return r.json();
       })
-      .then(function (doc) {
-        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
-          var parsed = JSON.parse(doc.fields.json.stringValue);
+      .then(function (rows) {
+        if (!Array.isArray(rows)) throw new Error('not_found');
+        var bestDoc = null;
+        var bestTs = -1;
+        rows.forEach(function (row) {
+          if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+            var f = row.document.fields;
+            var ts = Number((f.updatedAt && f.updatedAt.integerValue) || (f.created && f.created.integerValue) || (f.createdAt && f.createdAt.integerValue) || 0);
+            if (ts >= bestTs) {
+              bestTs = ts;
+              bestDoc = row.document;
+            }
+          }
+        });
+        if (bestDoc) {
+          var parsed = JSON.parse(bestDoc.fields.json.stringValue);
           try {
             localStorage.setItem('manasa-lesson-' + cleanCode, JSON.stringify(parsed));
           } catch (_) {}

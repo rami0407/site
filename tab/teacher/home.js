@@ -127,13 +127,14 @@ function syncLessonsFromCloud() {
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (data) {
       if (!data || !Array.isArray(data.documents)) return getAllLessonsFromStorage();
-      var cloudList = [];
+      var byCode = {};
       data.documents.forEach(function (doc) {
         var id = doc.name.split('/').pop();
         if (id.startsWith('miftaah_lesson_') && !id.startsWith('miftaah_lesson_TEST') && id !== 'miftaah_lesson_archive' && id !== 'miftaah_lesson_ARCHIVE_SHARED') {
           var f = doc.fields || {};
-          var code = (f.code && f.code.stringValue) || id.replace('miftaah_lesson_', '');
-          cloudList.push({
+          var code = (f.code && f.code.stringValue) || id.replace('miftaah_lesson_', '').split('_')[0];
+          var created = Number((f.updatedAt && f.updatedAt.integerValue) || (f.created && f.created.integerValue) || (f.created && f.created.stringValue) || Date.now());
+          var item = {
             code: code,
             title: (f.title && f.title.stringValue) || 'حصة تفاعلية',
             subject: (f.subject && f.subject.stringValue) || 'عام',
@@ -142,17 +143,21 @@ function syncLessonsFromCloud() {
             author: (f.author && f.author.stringValue) || 'معلم مشيرفة',
             author_email: (f.author_email && f.author_email.stringValue) || '',
             is_public: f.is_public ? (f.is_public.booleanValue !== false) : true,
-            created: Number((f.created && f.created.integerValue) || (f.created && f.created.stringValue) || Date.now())
-          });
+            created: created
+          };
+          if (!byCode[code] || created >= byCode[code].created) {
+            byCode[code] = item;
+          }
         }
       });
+      var cloudList = Object.keys(byCode).map(function (k) { return byCode[k]; });
       if (!cloudList.length) return getAllLessonsFromStorage();
 
       var current = getAllLessonsFromStorage();
       var map = new Map();
       current.forEach(function (item) { map.set(item.code, item); });
       cloudList.forEach(function (cItem) {
-        if (!map.has(cItem.code)) {
+        if (!map.has(cItem.code) || (cItem.created > (map.get(cItem.code).created || 0))) {
           map.set(cItem.code, cItem);
         }
       });

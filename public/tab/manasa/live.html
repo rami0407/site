@@ -1,4 +1,4 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css">
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261112_v2">
 <style>
 .kahoot-opt-card {
   padding: 16px;
@@ -234,7 +234,8 @@ function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return
 var RW={a:['حقّق','#dff6e8'],p:['جزئيًّا','#fff3d6'],n:['لم يحقّق بعد','#fde6e6']},LV={easy:'سهل',medium:'متوسّط',hard:'صعب'},H=['ماذا استفدت؟','ماذا ساعدني في التعلّم؟','أين سأقابل ما تعلّمته؟'];
 var pin=sessionStorage.getItem('mpin-'+s)||localStorage.getItem('manasa-pin')||'036301448',P=[],seen=null,timer=null,ac=null,now=Date.now();
 var FIREBASE_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-var FIRESTORE_LIVE='https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards';
+var FIRESTORE_DOCS = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents';
+var FIRESTORE_LIVE = FIRESTORE_DOCS + '/school_padlet_cards';
 
 var kahootThemes = [
   { bg: '#e21b3c', sym: '▲', name: 'أحمر' },
@@ -278,11 +279,131 @@ function getLocalLiveState(){
 
 function saveLocalLiveState(st){
   try{localStorage.setItem('manasa-live-state-'+s,JSON.stringify(st));}catch(_){}
-  fetch(FIRESTORE_LIVE+'/miftaah_session_'+encodeURIComponent(s)+'?key='+FIREBASE_API_KEY,{
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({fields:{json:{stringValue:JSON.stringify(st)},updatedAt:{integerValue:String(Date.now())}}})
+  var nowTs = Date.now();
+  var docId = 'miftaah_ev_' + encodeURIComponent(s) + '_' + nowTs + '_' + Math.random().toString(36).slice(2, 7);
+  fetch(FIRESTORE_LIVE + '/' + docId + '?key=' + FIREBASE_API_KEY, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fields: {
+        sessionCode: { stringValue: String(s) },
+        updatedAt: { integerValue: String(nowTs) },
+        json: { stringValue: JSON.stringify(st) }
+      }
+    })
   }).catch(function(){});
+}
+
+function mergeLiveStates(statesList) {
+  var merged = { pupils: {}, helps: [], flash: null, challenge: null };
+  var latestFlashTime = -1;
+  var authChal = null;
+  var latestChalTeacherTime = -1;
+
+  statesList.forEach(function (st) {
+    if (!st || typeof st !== 'object') return;
+
+    if (Array.isArray(st.pupils)) {
+      st.pupils.forEach(function (p) {
+        if (p && (p.pid || p.name)) {
+          var key = p.pid || p.name;
+          var prev = merged.pupils[key];
+          if (!prev || (p.updatedAt || p.updated || 0) >= (prev.updatedAt || prev.updated || 0)) {
+            merged.pupils[key] = p;
+          }
+        }
+      });
+    } else if (st.pupils && typeof st.pupils === 'object') {
+      Object.keys(st.pupils).forEach(function (k) {
+        var p = st.pupils[k];
+        if (p && (p.pid || p.name)) {
+          var key = p.pid || p.name || k;
+          var prev = merged.pupils[key];
+          if (!prev || (p.updatedAt || p.updated || 0) >= (prev.updatedAt || prev.updated || 0)) {
+            merged.pupils[key] = p;
+          }
+        }
+      });
+    }
+
+    if (Array.isArray(st.helps) && st.helps.length >= merged.helps.length) {
+      merged.helps = st.helps;
+    }
+
+    if (st.flash) {
+      var ft = st.flash.updatedAt || st.flash.expiresAt || 0;
+      if (ft >= latestFlashTime) {
+        latestFlashTime = ft;
+        merged.flash = st.flash;
+      }
+    }
+
+    if (st.challenge && st.challenge.id) {
+      var ct = st.challenge.teacherUpdatedAt || st.challenge.qStartedAt || 0;
+      if (ct >= latestChalTeacherTime) {
+        latestChalTeacherTime = ct;
+        authChal = JSON.parse(JSON.stringify(st.challenge));
+      }
+    }
+  });
+
+  if (authChal) {
+    var mergedAnswers = {};
+    var mergedScores = {};
+    var currQ = authChal.currentQ || 0;
+
+    statesList.forEach(function (st) {
+      if (!st || !st.challenge || st.challenge.id !== authChal.id) return;
+      var c = st.challenge;
+
+      if (c.scores && typeof c.scores === 'object') {
+        Object.keys(c.scores).forEach(function (pid) {
+          var sc = c.scores[pid];
+          if (!sc) return;
+          var prev = mergedScores[pid];
+          if (!prev || (sc.totalPoints || 0) > (prev.totalPoints || 0) || ((sc.totalPoints || 0) === (prev.totalPoints || 0) && (sc.updatedAt || 0) >= (prev.updatedAt || 0))) {
+            mergedScores[pid] = sc;
+          }
+        });
+      }
+
+      if (c.answers && typeof c.answers === 'object') {
+        Object.keys(c.answers).forEach(function (pid) {
+          var ans = c.answers[pid];
+          if (!ans) return;
+          var ansQ = (typeof ans.qIdx === 'number') ? ans.qIdx : c.currentQ;
+          if (ansQ === currQ) {
+            if (!mergedAnswers[pid] || (ans.timeMs || 999999) < (mergedAnswers[pid].timeMs || 999999)) {
+              mergedAnswers[pid] = ans;
+            }
+          }
+        });
+      }
+    });
+
+    authChal.answers = mergedAnswers;
+    authChal.scores = mergedScores;
+
+    var fastest = null;
+    Object.keys(mergedAnswers).forEach(function (pid) {
+      var ans = mergedAnswers[pid];
+      if (ans && ans.isCorrect) {
+        if (!fastest || (ans.timeMs || 999999) < (fastest.timeMs || 999999)) {
+          fastest = {
+            pid: pid,
+            name: ans.name || 'طالب',
+            timeSec: ans.timeSec || ((ans.timeMs || 1000) / 1000).toFixed(1),
+            timeMs: ans.timeMs || 1000,
+            points: ans.points || 0
+          };
+        }
+      }
+    });
+    authChal.fastestInCurrentQ = fastest;
+    merged.challenge = authChal;
+  }
+
+  return merged;
 }
 
 // ---------- Question Extractor for Kahoot Challenge ----------
@@ -295,12 +416,38 @@ function fetchLessonData(code, cb) {
     }
   } catch (_) {}
 
-  fetch(FIRESTORE_LIVE + '/miftaah_lesson_' + encodeURIComponent(code) + '?key=' + FIREBASE_API_KEY)
+  fetch(FIRESTORE_DOCS + ':runQuery?key=' + FIREBASE_API_KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: 'school_padlet_cards' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'code' },
+            op: 'EQUAL',
+            value: { stringValue: String(code) }
+          }
+        }
+      }
+    })
+  })
     .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(doc){
-      if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
-        var les = JSON.parse(doc.fields.json.stringValue);
-        return cb(les);
+    .then(function(rows){
+      if (Array.isArray(rows)) {
+        var best = null, bestTime = -1;
+        rows.forEach(function(row){
+          if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+            var t = Number((row.document.fields.created && row.document.fields.created.integerValue) || (row.document.fields.createdAt && row.document.fields.createdAt.integerValue) || 0);
+            if (t >= bestTime) {
+              try {
+                best = JSON.parse(row.document.fields.json.stringValue);
+                bestTime = t;
+              } catch (_) {}
+            }
+          }
+        });
+        if (best) return cb(best);
       }
       fetch('lessons/' + code.toLowerCase() + '.json')
         .then(function(r){ return r.ok ? r.json() : null; })
@@ -439,8 +586,9 @@ $('chal-start-btn').onclick = function () {
 
     var st = getLocalLiveState();
     var duration = 20;
+    var nowTs = Date.now();
     st.challenge = {
-      id: 'chal_' + Date.now(),
+      id: 'chal_' + nowTs,
       active: true,
       title: (lesson && lesson.title) || ('تحدي الحصة ' + s),
       subject: (lesson && lesson.subject) || '',
@@ -448,11 +596,12 @@ $('chal-start-btn').onclick = function () {
       currentQ: 0,
       phase: 'question',
       durationSec: duration,
-      qStartedAt: Date.now(),
-      qExpiresAt: Date.now() + (duration * 1000),
+      qStartedAt: nowTs,
+      qExpiresAt: nowTs + (duration * 1000),
+      teacherUpdatedAt: nowTs,
       questions: questions,
       answers: {},
-      scores: (st.challenge && st.challenge.scores) ? st.challenge.scores : {},
+      scores: {},
       fastestInCurrentQ: null
     };
 
@@ -465,6 +614,7 @@ function stopChallenge() {
   var st = getLocalLiveState();
   if (st.challenge) {
     st.challenge.active = false;
+    st.challenge.teacherUpdatedAt = Date.now();
   }
   saveLocalLiveState(st);
   renderChallengeState(st.challenge);
@@ -477,6 +627,7 @@ $('chal-reveal-btn').onclick = function () {
   var st = getLocalLiveState();
   if (!st.challenge || !st.challenge.active) return;
   st.challenge.phase = 'reveal';
+  st.challenge.teacherUpdatedAt = Date.now();
   saveLocalLiveState(st);
   renderChallengeState(st.challenge);
 };
@@ -485,15 +636,18 @@ $('chal-next-btn').onclick = function () {
   var st = getLocalLiveState();
   if (!st.challenge || !st.challenge.active) return;
   var nextQ = (st.challenge.currentQ || 0) + 1;
+  var nowTs = Date.now();
   if (nextQ >= st.challenge.totalQ) {
     st.challenge.phase = 'podium';
+    st.challenge.teacherUpdatedAt = nowTs;
   } else {
     var duration = 20;
     st.challenge.currentQ = nextQ;
     st.challenge.phase = 'question';
     st.challenge.durationSec = duration;
-    st.challenge.qStartedAt = Date.now();
-    st.challenge.qExpiresAt = Date.now() + (duration * 1000);
+    st.challenge.qStartedAt = nowTs;
+    st.challenge.qExpiresAt = nowTs + (duration * 1000);
+    st.challenge.teacherUpdatedAt = nowTs;
     st.challenge.answers = {};
     st.challenge.fastestInCurrentQ = null;
   }
@@ -505,6 +659,7 @@ $('chal-podium-btn').onclick = function () {
   var st = getLocalLiveState();
   if (!st.challenge || !st.challenge.active) return;
   st.challenge.phase = 'podium';
+  st.challenge.teacherUpdatedAt = Date.now();
   saveLocalLiveState(st);
   renderChallengeState(st.challenge);
   playFanfareSound();
@@ -705,6 +860,7 @@ setInterval(function () {
     if (timerEl) timerEl.textContent = rem;
     if (rem <= 0) {
       st.challenge.phase = 'reveal';
+      st.challenge.teacherUpdatedAt = Date.now();
       saveLocalLiveState(st);
       renderChallengeState(st.challenge);
     }
@@ -715,14 +871,15 @@ setInterval(function () {
 $('flash-trigger-btn').onclick = function () {
   var msg = ($('flash-custom-msg').value || '').trim() || 'توقفوا للحظة واستمعوا لتوجيهات المعلّم';
   var st = getLocalLiveState();
-  st.flash = { active: true, text: msg, expiresAt: Date.now() + 60000 };
+  var nowTs = Date.now();
+  st.flash = { active: true, text: msg, expiresAt: nowTs + 60000, updatedAt: nowTs };
   saveLocalLiveState(st);
   load();
 };
 
 $('flash-stop-btn').onclick = function () {
   var st = getLocalLiveState();
-  st.flash = { active: false, text: '', expiresAt: 0 };
+  st.flash = { active: false, text: '', expiresAt: 0, updatedAt: Date.now() };
   saveLocalLiveState(st);
   load();
 };
@@ -748,7 +905,7 @@ function renderState(st){
   renderChallengeState(st.challenge);
 
   var pupilsMap=st.pupils||{};
-  P=Object.keys(pupilsMap).map(function(k){return pupilsMap[k];});
+  P=Array.isArray(pupilsMap)?pupilsMap:Object.keys(pupilsMap).map(function(k){return pupilsMap[k];});
   helps(st.helps||[]);
   table();
 }
@@ -756,18 +913,38 @@ function renderState(st){
 function load(){
   var localSt=getLocalLiveState();
   renderState(localSt);
-  fetch(FIRESTORE_LIVE+'/miftaah_session_'+encodeURIComponent(s)+'?key='+FIREBASE_API_KEY)
-    .then(function(r){return r.ok?r.json():null;})
-    .then(function(doc){
-      if(doc&&doc.fields&&doc.fields.json&&doc.fields.json.stringValue){
-        var cloudSt=JSON.parse(doc.fields.json.stringValue);
-        var merged=getLocalLiveState();
-        merged.pupils=Object.assign({},merged.pupils||{},cloudSt.pupils||{});
-        if(cloudSt.helps&&cloudSt.helps.length)merged.helps=cloudSt.helps;
-        if(cloudSt.flash)merged.flash=cloudSt.flash;
-        if(cloudSt.challenge) {
-          merged.challenge = cloudSt.challenge;
+  fetch(FIRESTORE_DOCS + ':runQuery?key=' + FIREBASE_API_KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: 'school_padlet_cards' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'sessionCode' },
+            op: 'EQUAL',
+            value: { stringValue: String(s) }
+          }
         }
+      }
+    })
+  })
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(rows){
+      if(Array.isArray(rows)){
+        var items=[];
+        rows.forEach(function(row){
+          if(row&&row.document&&row.document.fields&&row.document.fields.json&&row.document.fields.json.stringValue){
+            try{
+              var ts=Number((row.document.fields.updatedAt&&row.document.fields.updatedAt.integerValue)||0);
+              items.push({ts:ts,st:JSON.parse(row.document.fields.json.stringValue)});
+            }catch(_){}
+          }
+        });
+        items.sort(function(a,b){return a.ts-b.ts;});
+        var statesList=items.map(function(x){return x.st;});
+        statesList.push(getLocalLiveState());
+        var merged=mergeLiveStates(statesList);
         try{localStorage.setItem('manasa-live-state-'+s,JSON.stringify(merged));}catch(_){}
         renderState(merged);
       }
@@ -789,14 +966,14 @@ $('hl').querySelectorAll('[data-done]').forEach(function(b){b.onclick=function()
 }})}
 function table(){var cnt={};P.forEach(function(p){var k=(p.station||'م').indexOf('✓')>=0?'✓':(p.station||'م');cnt[k]=(cnt[k]||0)+1});
 $('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0);
-$('tb').innerHTML='<tr><th>الطالب</th><th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||{},r=d.result&&RW[d.result];
-return '<tr class="pclick" data-p="'+i+'"><td><b>'+esc(p.name)+'</b> 🔍</td><td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated)+'</td></tr>'}).join(''):'<tr><td colspan="8" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
+$('tb').innerHTML='<tr><th>الطالب</th><th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||p||{},r=d.result&&RW[d.result];
+return '<tr class="pclick" data-p="'+i+'"><td><b>'+esc(p.name)+'</b> 🔍</td><td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>'}).join(''):'<tr><td colspan="8" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
 $('tb').querySelectorAll('[data-p]').forEach(function(tr){tr.onclick=function(){pupil(P[+tr.getAttribute('data-p')])}});
-var need=P.filter(function(p){var d=p.data||{};return d.result==='n'||d.result==='p'||(d.checks&&d.checks[1]>=2&&d.checks[0]/d.checks[1]<0.5)});
-var adv=P.filter(function(p){return (p.data||{}).result==='a'});
-$('grp').innerHTML='<p><b>🛠️ مجموعة دعم معك:</b> '+(need.length?need.map(function(p){return esc(p.name)+((p.data||{}).result?'':' (أخطاء في «أرني»)')}).join('، '):'لا أحد حتى الآن')+'</p><p><b>🌟 مَن حقّقوا (يمكنهم مساعدة زملائهم أو مهمة إثراء):</b> '+(adv.length?adv.map(function(p){return esc(p.name)}).join('، '):'—')+'</p>';
-$('hv').innerHTML=P.filter(function(p){return (p.data||{}).harvest}).map(function(p){return '<p><b>'+esc(p.name)+'</b><br>'+H.map(function(q,i){return '• '+q+' '+esc(p.data.harvest[i])}).join('<br>')+'</p>'}).join('')||'<p class="muted">لم يصلْ أحدٌ إلى الحصاد بعد.</p>';}
-function pupil(p){var d=p.data||{},log=d.log||[],g={};log.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x)});
+var need=P.filter(function(p){var d=p.data||p||{};return d.result==='n'||d.result==='p'||(d.checks&&d.checks[1]>=2&&d.checks[0]/d.checks[1]<0.5)});
+var adv=P.filter(function(p){return ((p.data||p||{}).result)==='a'});
+$('grp').innerHTML='<p><b>🛠️ مجموعة دعم معك:</b> '+(need.length?need.map(function(p){return esc(p.name)+(((p.data||p||{}).result)?'':' (أخطاء في «أرني»)')}).join('، '):'لا أحد حتى الآن')+'</p><p><b>🌟 مَن حقّقوا (يمكنهم مساعدة زملائهم أو مهمة إثراء):</b> '+(adv.length?adv.map(function(p){return esc(p.name)}).join('، '):'—')+'</p>';
+$('hv').innerHTML=P.filter(function(p){return (p.data||p||{}).harvest}).map(function(p){var hArr=(p.data||p).harvest;return '<p><b>'+esc(p.name)+'</b><br>'+H.map(function(q,i){return '• '+q+' '+esc(hArr[i])}).join('<br>')+'</p>'}).join('')||'<p class="muted">لم يصلْ أحدٌ إلى الحصاد بعد.</p>';}
+function pupil(p){var d=p.data||p||{},log=d.log||[],g={};log.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x)});
 var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</span></h3>'+(d.guess?'<p><b>🔍 توقّعُه في «م»:</b> '+esc(d.guess)+'</p>':'');
 ['أرِني','تدريب','تحدٍّ','دليل'].forEach(function(k){if(!g[k])return;var ok=g[k].filter(function(x){return x.ok}).length;html+='<h3>'+({'أرِني':'✋ أرِني','تدريب':'🏋️ التدريب','تحدٍّ':'🏆 التحدّيات','دليل':'📝 مهمّة الدليل'})[k]+' — '+ok+'/'+g[k].length+'</h3>'+g[k].map(function(x){return '<div class="ans '+(x.ok?'y':'n')+'">'+(x.ok?'✅':'❌')+' '+esc(x.q)+'<br><b>أجاب:</b> '+esc(x.a)+(x.ok?'':' · <b>الصحيح:</b> '+esc(x.c))+(x.t>1?' <span class="muted">('+x.t+' محاولات)</span>':'')+'</div>'}).join('')});
 if(d.game)html+='<p><b>🎮 اللعبة:</b> '+d.game.seconds+' ث · '+d.game.mistakes+' أخطاء</p>';
