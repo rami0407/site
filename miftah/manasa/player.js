@@ -1068,7 +1068,7 @@ function game() {
     else { mistakes++; chip.classList.remove('sel'); $('#gfb').innerHTML = '<div class="fb bad">❌ فكِّرْ مرّةً أخرى: هل «' + esc(it.text) + '» ' + esc(g.buckets[bi]) + '؟</div>'; }
     sel = null;
     if (placed === g.items.length) { var sec = Math.round((Date.now() - t0) / 1000); S.data.game = { mistakes: mistakes, seconds: sec }; report();
-      showNext('<div class="res a">🏆 أنهيتَ اللّعبة في ' + sec + ' ثانية، بـ' + mistakes + ' أخطاء!</div>' + (L.break ? next('⬅ التّالي', brk) : next('إلى محطّة «ا» ⬅', evidence))); }
+      showNext('<div class="res a">🏆 أنهيتَ اللّعبة في ' + sec + ' ثانية، بـ' + mistakes + ' أخطاء!</div>' + next('إلى محطّة «ا» ⬅', evidence)); }
   }
   app.querySelectorAll('.chip').forEach(function (c) {
     c.onclick = function () { if (c.classList.contains('ok')) return; app.querySelectorAll('.chip').forEach(function (z) { z.classList.remove('sel'); }); c.classList.add('sel'); sel = c; };
@@ -1079,13 +1079,6 @@ function game() {
     b.ondragover = function (e) { e.preventDefault(); b.classList.add('over'); }; b.ondragleave = function () { b.classList.remove('over'); };
     b.ondrop = function (e) { e.preventDefault(); b.classList.remove('over'); if (sel) drop(sel, +b.getAttribute('data-b')); };
   });
-}
-function brk() {
-  ctx(L.recap, null);
-  var k = L.break || {}, s = k.seconds || 30, btxt = k.text || k.activity || 'قف وتمدّد وخذ نفساً عميقاً!';
-  h(head('🤸 ' + esc(k.title || 'وقتُ الانتعاش!')) + '<p style="font-size:20px">' + esc(btxt) + '</p>' + sayBtn(btxt) + '<div class="timer" id="tm">' + s + '</div><button class="btn big alt" id="go">▶️ ابدأ</button><div id="after"></div></div>');
-  $('#go').onclick = function () { $('#go').remove(); var iv = setInterval(function () { s--; $('#tm').textContent = s; if (s <= 0) { clearInterval(iv); $('#tm').textContent = '💪'; showNext(next('نعودُ إلى رحلتِنا! إلى محطّة «ا» ⬅', evidence)); } }, 1000); };
-  showNext(next('تخطَّ ⬅', evidence, 'alt'));
 }
 // ---------- ا ----------
 function evidence() {

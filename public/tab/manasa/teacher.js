@@ -1183,9 +1183,9 @@
         '<button type="button" class="btn alt" data-iadd="explain.steps" data-ikind="step">➕ إضافة خطوة شرح جديدة</button>' +
       '</div>' +
 
-      // المحطة 3: ت — تدريب وتطبيق متدرج + اللعبة + الانتعاش
+      // المحطة 3: ت — تدريب وتطبيق متدرج + اللعبة
       '<div class="station-edit-card">' +
-        '<h3><span class="station-badge-letter" style="background:#d97706">ت</span> المحطة الثالثة (ت): تدريب وتطبيق متكيّف + لعبة التصنيف + وقت الانتعاش</h3>' +
+        '<h3><span class="station-badge-letter" style="background:#d97706">ت</span> المحطة الثالثة (ت): تدريب وتطبيق متكيّف + لعبة التصنيف</h3>' +
         [['easy', '🌱 المستوى السهل (دعم وانطلاق)'], ['medium', '⭐ المستوى المتوسط (تمكّن وممارسة)'], ['hard', '🚀 المستوى المتقدم (تحدي الأبطال)']].map(function (lv) {
           var arr = L.practice[lv[0]] || [];
           return '<div style="margin:14px 0">' +
@@ -1216,11 +1216,6 @@
             '</div>';
           }).join('') +
           '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.items" data-ikind="item">➕ إضافة عنصر للعبة</button>' +
-        '</div>' +
-
-        '<div class="sub-item-box" style="background:#ecfdf5;border-color:#6ee7b7;margin-top:14px">' +
-          '<b style="font-size:16px;color:#047857">🤸 وقت الانتعاش وتنشيط الدماغ (30 ثانية):</b>' +
-          fieldInput('نشاط الحركة والتنفس:', 'break.text', false) +
         '</div>' +
       '</div>' +
 

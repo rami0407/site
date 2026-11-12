@@ -220,7 +220,7 @@ function render() {
     '<fieldset><legend>ت — تدريب وتطبيق</legend>' + [['easy', 'سهل'], ['medium', 'متوسّط'], ['hard', 'صعب']].map(function (lv) { return '<h3>مستوى ' + lv[1] + '</h3>' + list('practice.' + lv[0], function (p, i) { return MCQ(p, 'سؤال ' + (i + 1), true, 1); }, 'mcq', 'سؤال'); }).join('') +
     '<h3>🎮 لعبة التصنيف</h3>' + F('عنوان اللعبة', 'game.title') + F('التعليمات', 'game.instructions') + F('السلّة الأولى', 'game.buckets.0') + F('السلّة الثانية', 'game.buckets.1') +
     list('game.items', function (p) { var it = get(L, p) || {}; return '<div class="orow item"><input type="text" data-p="' + p + '.text" value="' + esc(it.text) + '"><select data-num="' + p + '.bucket"><option value="0"' + (it.bucket ? '' : ' selected') + '>' + esc((g.buckets || [])[0] || 'السلّة 1') + '</option><option value="1"' + (it.bucket ? ' selected' : '') + '>' + esc((g.buckets || [])[1] || 'السلّة 2') + '</option></select>' + rm(p) + '</div>'; }, 'item', 'عنصر') +
-    '<h3>🤸 وقتُ الانتعاش</h3>' + F('العنوان', 'break.title') + F('الحركة', 'break.text', 1) + '</fieldset>' +
+    '</fieldset>' +
     '<fieldset><legend>ا — إثبات الدليل</legend>' + F('التعليمات', 'evidence.instructions') + list('evidence.items', function (p, i) { return MCQ(p, 'سؤال ' + (i + 1), false, 1); }, 'mcq', 'سؤال') + '</fieldset>' +
     '<fieldset><legend>🔑 أيقونة مفتاح: الخلاصة والتحدّيات</legend>' + F('خلاصة الحصّة (شرحٌ إضافيّ في محطّات ت و ح)', 'recap', 1) + '<h3>🏆 أسئلة التحدّي («أعطني تحدّيًا»)</h3>' + list('challenges', function (p, i) { return MCQ(p, 'تحدٍّ ' + (i + 1), false, 1); }, 'mcq', 'تحدٍّ') + '</fieldset>' +
     '<fieldset><legend>ح — حصاد ونقل الأثر (ثابتة)</legend><ul>' + HARVEST.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></fieldset>' +
