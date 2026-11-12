@@ -876,8 +876,13 @@ function startFlashWatcher() {
   function check() {
     if (!S.sid) return;
     try {
+      var localList = [];
       var localSt = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || 'null');
-      syncAndRender(localSt);
+      if (localSt) localList.push(localSt);
+      var tCtrl = JSON.parse(localStorage.getItem('manasa-teacher-ctrl-' + S.sid) || 'null');
+      if (tCtrl) localList.push(tCtrl);
+      if (livePacing || liveGrouping) localList.push({ pacing: livePacing, grouping: liveGrouping });
+      if (localList.length > 0) syncAndRender(mergeLiveStates(localList));
     } catch (_) {}
 
     // Cloud query for live cross-device sync (HTTP 200 always, zero 403/404)
@@ -914,7 +919,10 @@ function startFlashWatcher() {
           try {
             var loc = JSON.parse(localStorage.getItem('manasa-live-state-' + S.sid) || 'null');
             if (loc) statesList.push(loc);
+            var tCtrl2 = JSON.parse(localStorage.getItem('manasa-teacher-ctrl-' + S.sid) || 'null');
+            if (tCtrl2) statesList.push(tCtrl2);
           } catch (_) {}
+          if (livePacing || liveGrouping) statesList.push({ pacing: livePacing, grouping: liveGrouping });
           var merged = mergeLiveStates(statesList);
           try { localStorage.setItem('manasa-live-state-' + S.sid, JSON.stringify(merged)); } catch (_) {}
           syncAndRender(merged);

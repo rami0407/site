@@ -1,4 +1,4 @@
-const CACHE_NAME = 'musherfe-pwa-v22';
+const CACHE_NAME = 'musherfe-pwa-v23';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
                        url.hostname.includes('fonts.gstatic.com') ||
                        url.hostname.includes('cdnjs.cloudflare.com');
 
-  if (url.pathname.startsWith('/tab') || url.pathname.startsWith('/miftah')) return;
+  if (url.pathname.includes('/tab') || url.pathname.includes('/miftah')) return;
   if (!isSameOrigin && !isAllowedCdn) {
     // Let browser handle all external APIs, Firebase, Groq, images natively!
     return;
