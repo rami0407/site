@@ -801,7 +801,7 @@ function startFlashWatcher() {
     // 2. Kahoot Challenge
     renderChallengeOverlay(st.challenge);
 
-    // 3. Teacher Force-Move to a specific station
+    // 3. Teacher Force-Move to a specific station (or if student is ahead of teacher's locked maxStation)
     if (livePacing && typeof livePacing.forcedStation === 'number' && livePacing.forcedAt && livePacing.forcedAt > lastHandledForceAt) {
       if (lastHandledForceAt > 0 || (Date.now() - livePacing.forcedAt < 30000)) {
         lastHandledForceAt = livePacing.forcedAt;
@@ -811,6 +811,12 @@ function startFlashWatcher() {
         return;
       }
       lastHandledForceAt = livePacing.forcedAt;
+    }
+    if (livePacing && livePacing.mode === 'teacher' && typeof livePacing.maxStation === 'number' && S.name && !S.done && S.st > livePacing.maxStation) {
+      pendingStationWait = null;
+      waitingForTeacherGroup = false;
+      jumpToStationIndex(livePacing.maxStation);
+      return;
     }
 
     // 4. Resume waiting student if teacher unlocked the next station (or switched pacing to free)

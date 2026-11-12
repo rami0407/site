@@ -1,4 +1,4 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261112_v4">
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261112_v5">
 <style>
 .kahoot-opt-card {
   padding: 16px;
@@ -227,8 +227,8 @@
       <h2 style="margin:0;color:#0369a1;display:flex;align-items:center;gap:8px;font-size:20px">
         🚦 نظام الانتقال في الحصّة والمحطّات
       </h2>
-      <p class="muted" style="margin:4px 0 0;color:#0c4a6e;font-size:14.5px">
-        قرّرْ ما إذا كان انتقال الطلاب والمجموعات بين مراحل الحصّة حرًّا وتلقائيًّا، أو مقيّدًا بإرادتك وأمرك المباشر.
+      <p class="muted" style="margin:4px 0 0;color:#0c4a6e;font-size:14px">
+        قرّرْ ما إذا كان انتقال الطلاب بين مراحل الحصّة حرًّا وتلقائيًّا، أو بحسب إرادتك وأمرك المباشر.
       </p>
     </div>
     <div id="pacing-status-badge">
@@ -236,29 +236,29 @@
     </div>
   </div>
 
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-    <button type="button" id="pacing-mode-free-btn" class="btn" style="flex:1;min-width:220px;font-weight:800;border-radius:12px;padding:10px 16px;background:#0284c7;color:#fff;border:2px solid #0284c7">
-      🔓 انتقال حُرّ (تلقائي حسب إنجاز الطالب/المجموعة)
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+    <button type="button" id="pacing-mode-free-btn" class="btn" style="min-height:44px;margin:0;font-size:15px;font-weight:800;border-radius:12px;padding:8px 14px;background:#0284c7;color:#fff;border:2px solid #0284c7">
+      🔓 انتقال حُرّ (تلقائي حسب إنجاز الطالب)
     </button>
-    <button type="button" id="pacing-mode-teacher-btn" class="btn alt" style="flex:1;min-width:220px;font-weight:800;border-radius:12px;padding:10px 16px;background:#fff;color:#0369a1;border:2px solid #7dd3fc">
+    <button type="button" id="pacing-mode-teacher-btn" class="btn alt" style="min-height:44px;margin:0;font-size:15px;font-weight:800;border-radius:12px;padding:8px 14px;background:#fff;color:#0369a1;border:2px solid #7dd3fc">
       🔒 بحسب إرادة المعلّم (انتقال بأمر المعلّم فقط)
     </button>
   </div>
 
   <!-- لوحة تحديد المحطة المفتوحة عندما يختار المعلم التحكم بالانتقال -->
-  <div id="pacing-teacher-panel" style="display:none;margin-top:14px;background:#fff;border:1.5px solid #bae6fd;border-radius:14px;padding:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-      <b style="color:#0369a1;font-size:15px">📍 حدِّدِ المحطّة المفتوحة للطلاب الآن (لن يتجاوزها الطلاب إلا بأمرك):</b>
+  <div id="pacing-teacher-panel" style="display:none;margin-top:12px;background:#fff;border:1.5px solid #bae6fd;border-radius:14px;padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <b style="color:#0369a1;font-size:14.5px">📍 اخترِ المحطّة المسموح للطلاب الوصول إليها الآن:</b>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" id="pacing-unlock-next-btn" class="btn ok" style="background:#0284c7;color:#fff;font-size:14px;padding:7px 14px;border-radius:10px;margin:0;font-weight:800">
-          ⏭️ افتحِ المحطّة التالية للصف
+        <button type="button" id="pacing-unlock-next-btn" class="btn ok" style="min-height:38px;background:#0284c7;color:#fff;font-size:13.5px;padding:6px 14px;border-radius:10px;margin:0;font-weight:800">
+          ⏭️ فتح المحطّة التالية للصف
         </button>
-        <button type="button" id="pacing-force-all-btn" class="btn alt" style="background:#f59e0b;color:#fff;border:0;font-size:14px;padding:7px 14px;border-radius:10px;margin:0;font-weight:800">
-          📢 انقلْ جميع الطلاب فوراً إلى المحطة المحددة
+        <button type="button" id="pacing-force-all-btn" class="btn alt" style="min-height:38px;background:#f59e0b;color:#fff;border:0;font-size:13.5px;padding:6px 14px;border-radius:10px;margin:0;font-weight:800">
+          📢 نقل جميع الطلاب فوراً لهذه المحطّة
         </button>
       </div>
     </div>
-    <div id="pacing-stations-bar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+    <div id="pacing-stations-bar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:stretch"></div>
   </div>
 </div>
 
@@ -269,7 +269,7 @@
       <h2 style="margin:0;color:#0f766e;display:flex;align-items:center;gap:8px;font-size:20px">
         👥 نظام العمل في مرحلة التدريب والتمرين (محطّة «ت»)
       </h2>
-      <p class="muted" style="margin:4px 0 0;color:#115e59;font-size:14.5px">
+      <p class="muted" style="margin:4px 0 0;color:#115e59;font-size:14px">
         قرّرْ ما إذا كان التدريب في محطّة «ت» فرديًّا أو في مجموعات، وحدِّدْ عدد المجموعات وطريقة انضمام الطلاب وحرية التنقل بينها.
       </p>
     </div>
@@ -279,22 +279,22 @@
   </div>
 
   <!-- تفعيل/إيقاف نظام المجموعات -->
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-    <button type="button" id="grp-mode-indiv-btn" class="btn" style="flex:1;min-width:200px;font-weight:800;border-radius:12px;padding:10px 16px;background:#0d9488;color:#fff;border:2px solid #0d9488">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+    <button type="button" id="grp-mode-indiv-btn" class="btn" style="min-height:44px;margin:0;font-size:15px;font-weight:800;border-radius:12px;padding:8px 14px;background:#0d9488;color:#fff;border:2px solid #0d9488">
       👤 عمل فردي (كل طالب يتدرب بمفرده)
     </button>
-    <button type="button" id="grp-mode-coop-btn" class="btn alt" style="flex:1;min-width:200px;font-weight:800;border-radius:12px;padding:10px 16px;background:#fff;color:#0f766e;border:2px solid #5eead4">
+    <button type="button" id="grp-mode-coop-btn" class="btn alt" style="min-height:44px;margin:0;font-size:15px;font-weight:800;border-radius:12px;padding:8px 14px;background:#fff;color:#0f766e;border:2px solid #5eead4">
       👥 عمل الصف في مجموعات (في مرحلة التدريب والتمرين)
     </button>
   </div>
 
   <!-- إعدادات المجموعات (تظهر عند اختيار العمل في مجموعات) -->
-  <div id="grp-coop-settings" style="display:none;margin-top:14px;background:#fff;border:1.5px solid #99f6e4;border-radius:14px;padding:16px">
+  <div id="grp-coop-settings" style="display:none;margin-top:12px;background:#fff;border:1.5px solid #99f6e4;border-radius:14px;padding:16px">
     <!-- السطر 1: عدد المجموعات + حرية الانتقال بين المجموعات -->
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <label for="grp-count-input" style="font-weight:800;color:#0f766e;font-size:15px">🔢 عدد المجموعات:</label>
-        <input type="number" id="grp-count-input" value="4" min="2" max="10" style="width:68px;padding:6px 8px;font-size:17px;font-weight:900;text-align:center;border:2px solid #0d9488;border-radius:10px;color:#0f766e">
+        <label for="grp-count-input" style="font-weight:800;color:#0f766e;font-size:14.5px">🔢 عدد المجموعات:</label>
+        <input type="number" id="grp-count-input" value="4" min="2" max="10" style="width:64px;padding:5px 8px;font-size:16px;font-weight:900;text-align:center;border:2px solid #0d9488;border-radius:10px;color:#0f766e">
         <div id="grp-count-pills" style="display:flex;gap:5px;flex-wrap:wrap">
           <button type="button" class="pill grp-cnt-btn" data-cnt="2" style="cursor:pointer;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-weight:700">2</button>
           <button type="button" class="pill grp-cnt-btn" data-cnt="3" style="cursor:pointer;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-weight:700">3</button>
@@ -305,12 +305,12 @@
       </div>
 
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-weight:800;color:#0f766e;font-size:14px">🔄 التنقّل بين المجموعات:</span>
+        <span style="font-weight:800;color:#0f766e;font-size:14px">🔄 الانتقال بالمجموعات:</span>
         <button type="button" id="grp-move-free-btn" class="pill" style="cursor:pointer;font-weight:800;padding:6px 12px;border:1.5px solid #0d9488;background:#0d9488;color:#fff">
           🔓 حُرّ
         </button>
         <button type="button" id="grp-move-teacher-btn" class="pill" style="cursor:pointer;font-weight:800;padding:6px 12px;border:1.5px solid #cbd5e1;background:#f8fafc;color:#334155">
-          🔒 بأمر المعلّم فقط
+          🔒 بحسب إرادة المعلّم
         </button>
       </div>
     </div>
@@ -318,20 +318,20 @@
     <!-- السطر 2: طريقة انضمام الطلاب للمجموعات (تلقائي / باختيار المعلم / باختيار الطالب) -->
     <div style="margin-top:12px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-        <b style="color:#0f766e;font-size:15px">📥 طريقة انضمام الطلاب إلى المجموعات:</b>
-        <button type="button" id="grp-redistribute-btn" class="btn alt" style="background:#0284c7;color:#fff;border:0;font-size:13px;padding:6px 14px;border-radius:10px;margin:0;font-weight:800">
-          🔀 توزيع جميع الطلاب المتصلين بالتساوي الآن
+        <b style="color:#0f766e;font-size:14.5px">📥 طريقة انضمام الطلاب للمجموعات:</b>
+        <button type="button" id="grp-redistribute-btn" class="btn alt" style="min-height:34px;background:#0284c7;color:#fff;border:0;font-size:13px;padding:5px 14px;border-radius:10px;margin:0;font-weight:800">
+          🔀 توزيع الطلاب المتصلين بالتساوي الآن
         </button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px">
-        <button type="button" class="btn grp-assign-mode-btn" data-amode="auto" style="font-weight:800;border-radius:10px;padding:10px;font-size:14px;margin:0">
-          🤖 تلقائي حسب النظام (توزيع متوازن)
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <button type="button" class="btn grp-assign-mode-btn" data-amode="auto" style="min-height:42px;font-weight:800;border-radius:10px;padding:8px 10px;font-size:14px;margin:0">
+          🤖 تلقائي حسب النظام
         </button>
-        <button type="button" class="btn grp-assign-mode-btn" data-amode="teacher" style="font-weight:800;border-radius:10px;padding:10px;font-size:14px;margin:0">
-          👨‍🏫 باختيار المعلّم (تعيين يدوي)
+        <button type="button" class="btn grp-assign-mode-btn" data-amode="teacher" style="min-height:42px;font-weight:800;border-radius:10px;padding:8px 10px;font-size:14px;margin:0">
+          👨‍🏫 باختيار المعلّم
         </button>
-        <button type="button" class="btn grp-assign-mode-btn" data-amode="student" style="font-weight:800;border-radius:10px;padding:10px;font-size:14px;margin:0">
-          🙋 باختيار الطالب (يختار مجموعته بنفسه)
+        <button type="button" class="btn grp-assign-mode-btn" data-amode="student" style="min-height:42px;font-weight:800;border-radius:10px;padding:8px 10px;font-size:14px;margin:0">
+          🙋 باختيار الطالب
         </button>
       </div>
     </div>
@@ -1292,10 +1292,15 @@ function renderPacingAndGroupingUI(st) {
     $('pacing-stations-bar').innerHTML = ST_INFO.map(function (info) {
       var isUnlocked = info.idx <= pc.maxStation;
       var isCurrentMax = info.idx === pc.maxStation;
-      return '<button type="button" data-st-max="' + info.idx + '" style="cursor:pointer;padding:10px 8px;border-radius:12px;border:2px solid ' + (isCurrentMax ? info.color : (isUnlocked ? '#38bdf8' : '#cbd5e1')) + ';background:' + (isCurrentMax ? info.color : (isUnlocked ? '#e0f2fe' : '#f8fafc')) + ';color:' + (isCurrentMax ? '#fff' : '#0f172a') + ';font-family:inherit;font-weight:800;text-align:center;transition:all .15s">' +
-        '<div style="font-size:18px">' + (isUnlocked ? '🔓' : '🔒') + ' محطّة «' + info.let + '»</div>' +
+      var statusBadge = isCurrentMax
+        ? '<div style="font-size:11px;background:rgba(255,255,255,0.24);color:#fff;border-radius:6px;padding:2px 8px;margin-top:6px;font-weight:800">📍 المحطّة المفتوحة الآن</div>'
+        : (isUnlocked
+          ? '<div style="font-size:11px;background:#dcfce7;color:#15803d;border-radius:6px;padding:2px 8px;margin-top:6px;font-weight:800">✅ متاحة للطلاب</div>'
+          : '<div style="font-size:11px;background:#e2e8f0;color:#64748b;border-radius:6px;padding:2px 8px;margin-top:6px;font-weight:700">🔒 مغلقة حالياً</div>');
+      return '<button type="button" data-st-max="' + info.idx + '" style="cursor:pointer;padding:10px 8px;min-height:94px;border-radius:12px;border:2px solid ' + (isCurrentMax ? info.color : (isUnlocked ? '#38bdf8' : '#cbd5e1')) + ';background:' + (isCurrentMax ? info.color : (isUnlocked ? '#e0f2fe' : '#f8fafc')) + ';color:' + (isCurrentMax ? '#fff' : '#0f172a') + ';font-family:inherit;font-weight:800;text-align:center;display:flex;flex-direction:column;justify-content:space-between;align-items:center;transition:all .15s">' +
+        '<div style="font-size:17px">' + (isUnlocked ? '🔓' : '🔒') + ' محطّة «' + info.let + '»</div>' +
         '<div style="font-size:12px;opacity:0.9;margin-top:2px">' + info.title + '</div>' +
-        (isCurrentMax ? '<div style="font-size:11px;background:rgba(0,0,0,0.2);border-radius:6px;padding:2px 6px;margin-top:4px">المحطّة المفتوحة الآن</div>' : '') +
+        statusBadge +
       '</button>';
     }).join('');
 
@@ -1416,6 +1421,11 @@ function renderPacingAndGroupingUI(st) {
     }
   });
 
+  // Do not overwrite group dropdowns if teacher is currently interacting with a select/input inside #grp-coop-settings
+  if ($('grp-coop-settings') && $('grp-coop-settings').contains(document.activeElement) && document.activeElement.tagName === 'SELECT') {
+    return;
+  }
+
   // Render unassigned box if any
   if (unassignedPupils.length > 0) {
     $('grp-unassigned-box').style.display = 'block';
@@ -1429,7 +1439,7 @@ function renderPacingAndGroupingUI(st) {
         }
         return '<div style="background:#fff;border:1px solid #fcd34d;border-radius:10px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px">' +
           '<b>👤 ' + esc(p.name) + '</b>' +
-          '<select data-assign-pid="' + esc(pid) + '" data-assign-name="' + esc(p.name) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #d97706;font-family:inherit;font-size:13px">' + opts + '</select>' +
+          '<select data-assign-pid="' + esc(pid) + '" data-assign-name="' + esc(p.name) + '" style="width:auto;min-width:130px;padding:4px 8px;border-radius:8px;border:1px solid #d97706;font-family:inherit;font-size:13px;margin:0">' + opts + '</select>' +
         '</div>';
       }).join('') +
       '</div>';
