@@ -265,6 +265,18 @@
   // 4. نظام الأرشيف وبنك الحصص التفاعلية
   var defaultModelLessons = [
     {
+      code: 'TMYZ26',
+      title: '🏆 رحلةُ التميّز في مدرسة مشيرفة — كيف أصنعُ تميّزي؟ (انتقال تكيّفي حسب قدرات الطالب)',
+      subject: 'سنة التميّز ومهارات التفكير',
+      grade: 'الصف الخامس',
+      goal: 'أن يكتشفَ الطالبُ ركائزَ التميّز الأربعة (الفهم العميق، المثابرة والتعلّم من الخطأ، التعاون الإيجابي، وإثبات الدليل)، ويُطبّقها في مواقف تفكير متدرّجة تنتقلُ تلقائياً حسب قدراته.',
+      author: 'إدارة مدرسة مشيرفة (درس تقييم التميّز النّموذجي)',
+      author_email: 'school@musherfe.com',
+      is_public: true,
+      created: 1794650000000,
+      is_model: true
+    },
+    {
       code: 'heat',
       title: 'التوصيل الحراري والمواد العازلة',
       subject: 'علوم',
@@ -316,8 +328,17 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
+    fetch('lessons/excellence.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (lData) {
+        if (lData) {
+          lData.code = 'TMYZ26';
+          try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
+        }
+      }).catch(function () {});
+
     defaultModelLessons.forEach(function (dm) {
-      if (dm.code === 'heat') return;
+      if (dm.code === 'heat' || dm.code === 'TMYZ26') return;
       try {
         var existing = localStorage.getItem('manasa-lesson-' + dm.code);
         if (!existing) {
@@ -2485,6 +2506,11 @@
       if ($('exc-status-filter')) $('exc-status-filter').onchange = renderExcellenceTable;
       if ($('btn-export-excellence-csv')) $('btn-export-excellence-csv').onclick = exportExcellenceToCSV;
       if ($('btn-print-class-cards')) $('btn-print-class-cards').onclick = printClassSecretCards;
+      if ($('exc-share-model-wa')) {
+        $('exc-share-model-wa').onclick = function () {
+          shareViaWhatsApp('TMYZ26', 'رحلة التميّز في مدرسة مشيرفة — كيف أصنع تميّزي؟', 'سنة التميّز ومهارات التفكير', 'جميع الصفوف');
+        };
+      }
     }
 
     renderExcellenceTable();

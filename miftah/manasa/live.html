@@ -1758,6 +1758,10 @@ var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</sp
   (inf.cls?'<span class="pill" style="background:#dcfce7;color:#15803d;font-weight:800">🏫 الصّف: '+esc(inf.cls)+'</span>':'')+
   (inf.idStr?'<span class="pill" style="background:#f3e8ff;color:#6b21a8;font-weight:800">🪪 الهويّة: '+esc(inf.idStr)+'</span>':'')+
 '</div>':'')+
+(d.diagnostic?'<div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13.5px">'+
+  '<b style="color:#92400e">🧭 تقييم وضع الطالب حسب قدراته: '+esc(d.diagnostic.standingLabel)+'</b><br>'+
+  '<span style="color:#78350f">'+esc(d.diagnostic.recommendation)+'</span>'+
+'</div>':'')+
 (d.guess?'<p><b>🔍 توقّعُه في «م»:</b> '+esc(d.guess)+'</p>':'');
 ['أرِني','تدريب','تحدٍّ','دليل'].forEach(function(k){if(!g[k])return;var ok=g[k].filter(function(x){return x.ok}).length;html+='<h3>'+({'أرِني':'✋ أرِني','تدريب':'🏋️ التدريب','تحدٍّ':'🏆 التحدّيات','دليل':'📝 مهمّة الدليل'})[k]+' — '+ok+'/'+g[k].length+'</h3>'+g[k].map(function(x){return '<div class="ans '+(x.ok?'y':'n')+'">'+(x.ok?'✅':'❌')+' '+esc(x.q)+'<br><b>أجاب:</b> '+esc(x.a)+(x.ok?'':' · <b>الصحيح:</b> '+esc(x.c))+(x.t>1?' <span class="muted">('+x.t+' محاولات)</span>':'')+'</div>'}).join('')});
 if(d.game)html+='<p><b>🎮 اللعبة:</b> '+d.game.seconds+' ث · '+d.game.mistakes+' أخطاء</p>';

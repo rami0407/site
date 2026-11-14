@@ -938,12 +938,49 @@ function startFlashWatcher() {
   flashCheckInterval = setInterval(check, 2000);
 }
 
+function computeStudentAbilityDiagnostic() {
+  var d = S.data || {};
+  var cTotal = (d.checks && d.checks[1]) || 0;
+  var cFirst = d.checksFirstTry !== undefined ? d.checksFirstTry : ((d.checks && d.checks[0]) || 0);
+  var fPct = cTotal > 0 ? Math.round((cFirst / cTotal) * 100) : 75;
+  var pTotal = (d.practice && d.practice[1]) || 0;
+  var pFirst = (d.practice && d.practice[0]) || 0;
+  var tPct = pTotal > 0 ? Math.round((pFirst / pTotal) * 100) : 75;
+  var aPct = (d.evidence && d.evidence.of > 0) ? Math.round((d.evidence.score / d.evidence.of) * 100) : (d.result === 'a' ? 100 : d.result === 'p' ? 70 : 50);
+  var lv = d.level || 'medium';
+  var weighted = Math.round(fPct * 0.25 + tPct * 0.35 + aPct * 0.40);
+  var standing = 'proficient';
+  var standingLabel = '✅ متمكّن ومتطوّر';
+  var recommendation = 'يمتلك الطالب فهماً جيداً وقدرة متوازنة على التدرّج في المهام؛ يُوصى بتعزيز مشاركته في تحديات المستوى المتقدّم.';
+  if (lv === 'hard' && weighted >= 82) {
+    standing = 'advanced';
+    standingLabel = '🌟 تميّز فائق وقدرات متقدّمة';
+    recommendation = 'أظهر الطالب قدرات ذهنية عالية وسرعة استيعاب وارتقى بجدارة للمستوى المتقدّم؛ يُوصى بتكليفه بدور قيادي ومهام إثرائية.';
+  } else if (lv === 'easy' || weighted < 62) {
+    standing = 'foundational';
+    standingLabel = '🌱 في طور التمكّن (يحتاج مساندة تدريجية)';
+    recommendation = 'يتقدّم الطالب بوتيرة تأسيسية؛ يُوصى بمتابعته فردياً وتجزئة المهام مع التدرّج الهادئ لبناء الثقة والإتقان.';
+  }
+  return {
+    standing: standing,
+    standingLabel: standingLabel,
+    levelReached: lv,
+    comprehensionPct: fPct,
+    adaptivePracticePct: tPct,
+    evidencePct: aPct,
+    overallDiagnosticScore: weighted,
+    recommendation: recommendation
+  };
+}
+
 function saveStudentPortfolioRecord() {
   var name = S.name || localStorage.getItem('manasa-name') || '';
   var stuId = S.studentId || localStorage.getItem('manasa-student-id') || '';
   if (!name && !stuId) return;
   var totalSec = studentStartTime ? Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000)) : (S.data.durationSec || 0);
   var nowTs = Date.now();
+  var diag = computeStudentAbilityDiagnostic();
+  S.data.diagnostic = diag;
   var rec = {
     sid: S.sid,
     studentId: stuId,
@@ -963,13 +1000,15 @@ function saveStudentPortfolioRecord() {
     station: ST[Math.min(S.st, 4)][0],
     done: !!S.done,
     checks: S.data.checks,
+    checksFirstTry: S.data.checksFirstTry,
     practice: S.data.practice,
     level: S.data.level,
     evidence: S.data.evidence,
     result: S.data.result,
     harvest: S.data.harvest,
     game: S.data.game,
-    chal: S.data.chal
+    chal: S.data.chal,
+    diagnostic: diag
   };
 
   try {
@@ -1464,17 +1503,63 @@ function stationM() {
 }
 // ---------- ف ----------
 function stationF(i) {
-  S.st = 1; if (i === 0) report(); var steps = L.explain.steps, s = steps[i]; ctx(s.more, (s.title || '') + ': ' + s.text);
+  S.st = 1;
+  if (i === 0) {
+    S.data.checksFirstTry = 0;
+    report();
+  }
+  var steps = L.explain.steps, s = steps[i];
+  ctx(s.more, (s.title || '') + ': ' + s.text);
   h(head('📘 خطوة ' + (i + 1) + ' من ' + steps.length + ': ' + esc(s.title)) + '<div class="bar"><i style="width:' + Math.round((i) / steps.length * 100) + '%"></i></div>' +
     (s.emoji ? '<div class="emoji">' + esc(s.emoji) + '</div>' : '') + '<p style="font-size:20px">' + esc(s.text) + '</p>' + sayBtn(s.text) + '</div>' +
-    '<div class="card"><h3>✋ أرِني!</h3>' + mcq(s.check, { feedback: true, onDone: function (ok, t, f) { logA('أرِني', s.check, f, ok, t); S.data.checks[1]++; if (ok) S.data.checks[0]++; report(); if (i + 1 >= steps.length) saveStudentPortfolioRecord();
-      showNext(next(i + 1 < steps.length ? 'الخطوة التّالية ⬅' : 'إلى محطّة «ت» ⬅', function () { i + 1 < steps.length ? stationF(i + 1) : tryAdvanceToStation(2, enterStationTa); })); } }) + '<div id="after"></div></div>');
+    '<div class="card"><h3>✋ أرِني! <small style="font-size:13px;color:#0284c7;font-weight:700">(يحدّدُ النظامُ مسارَكَ التّالي تلقائياً حسبَ إجابتك وقدراتك)</small></h3>' +
+    mcq(s.check, {
+      feedback: true,
+      onDone: function (ok, t, f) {
+        logA('أرِني', s.check, f, ok, t);
+        S.data.checks[1]++;
+        if (ok) S.data.checks[0]++;
+        if (ok && t === 1) S.data.checksFirstTry = (S.data.checksFirstTry || 0) + 1;
+        var supportHtml = '';
+        if ((!ok || t > 1) && s.more) {
+          supportHtml = '<div style="margin:10px 0;padding:12px 14px;background:#f0f9ff;border:1.5px solid #7dd3fc;border-radius:12px;color:#0c4a6e;font-size:15px"><b>💡 شرحٌ مساندٌ حسبَ وتيرتك:</b> ' + esc(s.more) + '</div>';
+        }
+        var adaptiveBanner = '';
+        if (i + 1 >= steps.length) {
+          var firstRatio = steps.length ? ((S.data.checksFirstTry || 0) / steps.length) : 0.75;
+          if (firstRatio >= 0.99) {
+            S.data.level = 'medium';
+            S.data.abilityTrack = 'advanced';
+            adaptiveBanner = '<div style="margin:12px 0;padding:14px;border-radius:14px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #10b981;color:#065f46;font-weight:700">' +
+              '🌟 <b>انتقالٌ ذكيٌّ حسبَ قدراتك:</b> أتقنتَ جميعَ أسئلةِ الفهمِ من المحاولةِ الأولى! سينقلُكَ النظامُ الآنَ إلى مسارِ التحدّي المتدرّجِ نحوَ المستوى المتقدّم!' +
+            '</div>';
+          } else if (firstRatio >= 0.5) {
+            S.data.level = 'medium';
+            S.data.abilityTrack = 'proficient';
+            adaptiveBanner = '<div style="margin:12px 0;padding:14px;border-radius:14px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;color:#1e3a8a;font-weight:700">' +
+              '🧭 <b>انتقالٌ متوازنٌ حسبَ قدراتك:</b> فهمُكَ جيّدٌ جدّاً! ستبدأُ التّدريبَ في المستوى المتوسّطِ وترتقي تلقائيّاً كلّما تقدّمت.' +
+            '</div>';
+          } else {
+            S.data.level = 'easy';
+            S.data.abilityTrack = 'foundational';
+            adaptiveBanner = '<div style="margin:12px 0;padding:14px;border-radius:14px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;color:#92400e;font-weight:700">' +
+              '🌱 <b>مسارٌ تمهيديٌّ داعمٌ حسبَ قدراتك:</b> سنبدأُ التّدريبَ بأسئلةٍ تأسيسيّةٍ ميسّرةٍ خطوةً بخطوةٍ لتثبيتِ الفهمِ والصّعودِ بثقة!' +
+            '</div>';
+          }
+          saveStudentPortfolioRecord();
+        }
+        report();
+        showNext(supportHtml + adaptiveBanner + next(i + 1 < steps.length ? 'الخطوة التّالية ⬅' : 'إلى محطّة «ت» (حسب مسار قدراتك) ⬅', function () {
+          i + 1 < steps.length ? stationF(i + 1) : tryAdvanceToStation(2, enterStationTa);
+        }));
+      }
+    }) + '<div id="after"></div></div>');
 }
 // ---------- ت ----------
 function experiment() {
   S.st = 2; report(); var x = L.experiment; ctx(L.recap, x.intro);
   h(head('🧪 ' + esc(x.title)) + '<p>' + esc(x.intro) + '</p>' + sayBtn(x.intro) +
-    '<p class="q">توقُّعي:</p><div id="pred">' + x.materials.map(function (m, i) { return '<button class="opt" data-m="' + i + '">' + m.emoji + ' ملعقة ' + esc(m.name) + '</button>'; }).join('') + '</div>' +
+    '<p class="q">توقُّعي:</p><div id="pred">' + x.materials.map(function (m, i) { return '<button class="opt" data-m="' + i + '">' + m.emoji + ' ' + esc(m.name) + '</button>'; }).join('') + '</div>' +
     '<div class="lab">' + x.materials.map(function (m, i) { return '<div><div class="beaker"><div class="steam">♨️</div><div class="spoon" style="background:' + m.color + '"><div class="butter" id="bt' + i + '"></div></div></div><b>' + m.emoji + ' ' + esc(m.name) + '</b><div class="bar"><i id="hb' + i + '" style="background:#e0524f"></i></div></div>'; }).join('') + '</div>' +
     '<div class="timer" id="tm">0 ث</div><button class="btn big" id="go" disabled>▶️ شغِّلِ التّجربة</button><div id="after"></div></div>');
   var pick = null;
@@ -1486,26 +1571,80 @@ function experiment() {
       t++; $('#tm').textContent = t + ' ث';
       x.materials.forEach(function (m, i) { heat[i] = Math.min(100, heat[i] + m.speed * 12); $('#hb' + i).style.width = heat[i] + '%'; var b = $('#bt' + i); var melt = Math.max(0, (heat[i] - 40) / 60); b.style.height = Math.max(4, 22 - 18 * melt) + 'px'; b.style.width = (34 + 16 * melt) + 'px'; b.style.opacity = 1 - 0.6 * melt; });
       if (t >= 10) { clearInterval(iv); var right = x.materials[pick].name === x.answer;
-        showNext('<div class="fb ' + (right ? 'good' : 'bad') + '">' + (right ? '✅ توقّعُك صحيح! ' : '🤔 توقّعُك كان مختلفًا، وهذا جيّد: العلماءُ يتعلّمون من التّجربة. ') + esc(x.conclusion) + '</div>' + sayBtn(x.conclusion) + next('إلى التّمارين ⬅', practice)); }
+        showNext('<div class="fb ' + (right ? 'good' : 'bad') + '">' + (right ? '✅ توقّعُك صحيح! ' : '🤔 توقّعُك كان مختلفًا، وهذا جيّد: العلماءُ يتعلّمون من التّجربة. ') + esc(x.conclusion) + '</div>' + sayBtn(x.conclusion) + next('إلى التّمارين التّكيّفيّة ⬅', practice)); }
     }, 600);
   };
 }
-var LV = { easy: 'سهل', medium: 'متوسّط', hard: 'صعب' }, ORDER = ['easy', 'medium', 'hard'];
+var LV = { easy: '🌱 تأسيسي (سهل)', medium: '⚡ متمكّن (متوسّط)', hard: '🏆 متميّز متقدّم (صعب)' }, ORDER = ['easy', 'medium', 'hard'];
+function renderAbilityStepper(curLv) {
+  return '<div style="display:flex;gap:6px;margin:8px 0 12px;flex-wrap:wrap;align-items:center;background:#f8fafc;padding:8px 10px;border-radius:12px;border:1px solid #e2e8f0">' +
+    '<span style="font-size:12.5px;font-weight:800;color:#475569">🧭 مسار القدرات التكيّفي:</span>' +
+    ORDER.map(function (k) {
+      var active = k === curLv;
+      var bg = active ? (k === 'hard' ? '#7c3aed' : k === 'medium' ? '#0284c7' : '#16a34a') : '#e2e8f0';
+      var col = active ? '#fff' : '#64748b';
+      return '<span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:' + bg + ';color:' + col + '">' + LV[k] + '</span>';
+    }).join(' ⬅ ') +
+  '</div>';
+}
 function practice() {
-  S.st = 2; report(); ctx(L.recap, null); var used = { easy: 0, medium: 0, hard: 0 }, n = 0, total = 6, streak = 0;
+  S.st = 2; report(); ctx(L.recap, null);
+  var used = { easy: 0, medium: 0, hard: 0 }, n = 0, total = 6, streak = 0, hardMastered = 0;
   function one() {
-    var lv = S.data.level, pool = L.practice[lv];
-    if (used[lv] >= pool.length) { var alt = ORDER.filter(function (z) { return used[z] < L.practice[z].length; }); if (!alt.length || n >= total) return game(); lv = alt.sort(function (a, b) { return Math.abs(ORDER.indexOf(a) - ORDER.indexOf(S.data.level)) - Math.abs(ORDER.indexOf(b) - ORDER.indexOf(S.data.level)); })[0]; }
+    var lv = S.data.level || 'medium', pool = L.practice[lv] || [];
+    if (used[lv] >= pool.length) {
+      var alt = ORDER.filter(function (z) { return L.practice[z] && used[z] < L.practice[z].length; });
+      if (!alt.length || n >= total) return game();
+      lv = alt.sort(function (a, b) { return Math.abs(ORDER.indexOf(a) - ORDER.indexOf(S.data.level)) - Math.abs(ORDER.indexOf(b) - ORDER.indexOf(S.data.level)); })[0];
+    }
     if (n >= total) return game();
-    var q = pool === L.practice[lv] ? pool[used[lv]] : L.practice[lv][used[lv]]; used[lv]++; n++;
-    h(head('🏋️ تدريب ' + n + ' من ' + total + ' <span class="lvl ' + lv + '">' + LV[lv] + '</span>') + '<div class="bar"><i style="width:' + Math.round((n - 1) / total * 100) + '%"></i></div>' + sayBtn(q.q) +
-      mcq(q, { feedback: true, onDone: function (ok, tries, f) { logA('تدريب', q, f, ok, tries);
-        S.data.practice[1]++; if (ok && tries === 1) { S.data.practice[0]++; streak++; } else streak = 0;
-        var i = ORDER.indexOf(S.data.level), msg = '';
-        if (ok && tries === 1 && streak >= 2 && i < 2) { S.data.level = ORDER[i + 1]; streak = 0; msg = '🚀 رائع! ننتقلُ إلى مستوًى أصعب.'; }
-        else if (!ok && i > 0) { S.data.level = ORDER[i - 1]; msg = '👣 لا بأس، نتدرّبُ قليلًا على سؤالٍ أسهل.'; }
-        report(); showNext((msg ? '<p>' + msg + '</p>' : '') + next(n >= total ? 'إلى اللّعبة 🎮' : 'السّؤال التّالي ⬅', one));
-      } }) + '<div id="after"></div></div>');
+    var q = L.practice[lv][used[lv]]; used[lv]++; n++;
+    h(head('🏋️ تدريب تكيّفي ' + n + ' من ' + total + ' <span class="lvl ' + lv + '">' + LV[lv] + '</span>') +
+      renderAbilityStepper(lv) +
+      '<div class="bar"><i style="width:' + Math.round((n - 1) / total * 100) + '%"></i></div>' + sayBtn(q.q) +
+      mcq(q, {
+        feedback: true,
+        onDone: function (ok, tries, f) {
+          logA('تدريب', q, f, ok, tries);
+          S.data.practice[1]++;
+          if (ok && tries === 1) {
+            S.data.practice[0]++;
+            streak++;
+            if (lv === 'hard') hardMastered++;
+          } else {
+            streak = 0;
+          }
+          var i = ORDER.indexOf(S.data.level), msg = '';
+          // ارتقاء أسرع حسب قدرات الطالب: سؤال واحد صحيح في السهل أو سؤالان في المتوسط ينقلانه للمستوى الأعلى
+          var neededStreak = (i === 0 && S.data.abilityTrack === 'advanced') ? 1 : (i === 0 ? 1 : 2);
+          if (ok && tries === 1 && streak >= neededStreak && i < 2) {
+            S.data.level = ORDER[i + 1];
+            streak = 0;
+            msg = '<div style="padding:10px 14px;border-radius:12px;background:#ecfdf5;border:1.5px solid #10b981;color:#065f46;font-weight:800;margin:8px 0">🚀 ارتقاءٌ تلقائيّ حسبَ قدراتك! انتقلتَ بجدارةٍ إلى مستوى: ' + LV[S.data.level] + '</div>';
+          } else if ((!ok || tries > 1) && i > 0) {
+            S.data.level = ORDER[i - 1];
+            msg = '<div style="padding:10px 14px;border-radius:12px;background:#fffbeb;border:1.5px solid #f59e0b;color:#92400e;font-weight:800;margin:8px 0">🌱 تكيّفٌ داعمٌ حسبَ وتيرتك: نتدرّبُ على خطوةٍ أبسطَ لتثبيتِ المهارةِ ثمَّ نصعدُ مجدّداً!</div>';
+          }
+          report();
+          // إذا أتقن الطالب المستوى المتقدم (صعب) بجدارة، نمنحه خيار الاجتياز المتسارع حسب قدراته!
+          if (hardMastered >= 2 && n < total) {
+            showNext(msg +
+              '<div style="padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:2px solid #8b5cf6;color:#4c1d95;margin:10px 0">' +
+                '<b>⚡ اجتيازٌ متسارعٌ للمتميّزين حسبَ قدراتك!</b><br>لقد أتقنتَ تحدّياتِ المستوى المتقدّمِ من المحاولةِ الأولى؛ يمكنكَ الانتقالُ فوراً إلى اللّعبةِ التّفاعليّةِ أو مواصلةُ الأسئلةِ الإثرائيّة:' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+                  '<button type="button" class="btn ok" id="fast-track-game-btn" style="flex:1;margin:0">⚡ انتقلْ فوراً إلى اللّعبة 🎮</button>' +
+                  '<button type="button" class="btn alt" id="continue-enrich-btn" style="flex:1;margin:0">➕ سؤالٌ إثرائيٌّ آخر ⬅</button>' +
+                '</div>' +
+              '</div>');
+            setTimeout(function () {
+              if ($('#fast-track-game-btn')) $('#fast-track-game-btn').onclick = game;
+              if ($('#continue-enrich-btn')) $('#continue-enrich-btn').onclick = one;
+            }, 20);
+            return;
+          }
+          showNext(msg + next(n >= total ? 'إلى اللّعبة 🎮' : 'السّؤال التّالي ⬅', one));
+        }
+      }) + '<div id="after"></div></div>');
   }
   one();
 }
@@ -1688,15 +1827,25 @@ function harvest() {
 function end(H) {
   stopStudentTimer();
   saveStudentPortfolioRecord();
+  var diag = S.data.diagnostic || computeStudentAbilityDiagnostic();
   var totalSec = studentStartTime ? Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000)) : (S.data.durationSec || 0);
   var m = Math.floor(totalSec / 60), s = totalSec % 60;
   var totalStr = (m > 0 ? (m + ' دقيقة و ') : '') + s + ' ثانية (' + formatDuration(totalSec) + ')';
   var d = S.data, rw = { a: 'حقّق 🌟', p: 'حقّق جزئيًّا 🌱', n: 'لم يحقّق بعد 🛠️' };
   h('<div class="card">' + bar() + '</div><div class="card"><div class="emoji">🎉</div><h2 style="text-align:center">أحسنتَ يا ' + esc(S.name) + '!</h2><p style="text-align:center">أنهيتَ حصّة «' + esc(L.title) + '»</p>' +
-    '<table><tr><td>⏱️ وقت التعلّم الإجمالي</td><td><b style="color:#0b6bcb">' + totalStr + '</b></td></tr><tr><td>✋ أسئلة «أرني»</td><td>' + d.checks[0] + ' / ' + d.checks[1] + '</td></tr><tr><td>🏋️ التّدريب (من المحاولة الأولى)</td><td>' + d.practice[0] + ' / ' + d.practice[1] + ' · وصلتَ إلى مستوى ' + LV[d.level] + '</td></tr>' +
+    '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:16px;padding:14px;margin:12px 0">' +
+      '<h3 style="margin:0 0 6px;color:#92400e">📊 تقييمُ وضعِ الطالب التّشخيصيّ (حسبَ قدراتك): ' + esc(diag.standingLabel) + '</h3>' +
+      '<p style="margin:0 0 8px;font-size:14px;color:#78350f">' + esc(diag.recommendation) + '</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<span class="pill" style="background:#fff;color:#0369a1;font-weight:800">📘 الاستيعاب (ف): ' + diag.comprehensionPct + '%</span>' +
+        '<span class="pill" style="background:#fff;color:#0f766e;font-weight:800">🏋️ التّدريب التّكيّفي (ت): ' + diag.adaptivePracticePct + '% (' + esc(LV[d.level]) + ')</span>' +
+        '<span class="pill" style="background:#fff;color:#15803d;font-weight:800">📝 إثبات الدّليل (ا): ' + diag.evidencePct + '%</span>' +
+      '</div>' +
+    '</div>' +
+    '<table><tr><td>⏱️ وقت التعلّم الإجمالي</td><td><b style="color:#0b6bcb">' + totalStr + '</b></td></tr><tr><td>✋ أسئلة «أرني» (من المحاولة الأولى)</td><td>' + (d.checksFirstTry !== undefined ? d.checksFirstTry : d.checks[0]) + ' / ' + d.checks[1] + '</td></tr><tr><td>🏋️ التّدريب التّكيّفي</td><td>' + d.practice[0] + ' / ' + d.practice[1] + ' · وصلتَ إلى ' + LV[d.level] + '</td></tr>' +
     (d.game ? '<tr><td>🎮 اللّعبة</td><td>' + d.game.seconds + ' ث · ' + d.game.mistakes + ' أخطاء</td></tr>' : '') + '<tr><td>📝 مهمّة الدّليل</td><td><b>' + rw[d.result] + '</b> (' + d.evidence.score + ' / ' + d.evidence.of + ')</td></tr></table>' +
     '<h3>🌾 حصادي</h3>' + H.map(function (q, i) { return '<p><b>' + esc(q) + '</b><br>' + esc(d.harvest[i]) + '</p>'; }).join('') +
-    '<p class="muted">' + (S.sid ? '✔️ وصلتْ نتيجتُك إلى معلِّمِك.' : 'أرِ معلِّمَك هذه الشّاشة.') + '</p>' +
+    '<p class="muted">' + (S.sid ? '✔️ وصلتْ نتيجتُك وتقييمُ قدراتكَ إلى معلِّمِك وإلى سجلِّ سنةِ التميّز.' : 'أرِ معلِّمَك هذه الشّاشة.') + '</p>' +
     '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn alt" style="flex:1" onclick="location.reload()">🔁 من جديد</button><button class="btn ok" style="flex:1" id="final-exit-btn">🚪 خروج من التطبيق</button></div></div>');
   setTimeout(function () {
     var eb = document.getElementById('final-exit-btn');
