@@ -106,7 +106,12 @@ app.addEventListener('click', function (e) { var b = e.target.closest('[data-say
 function mcq(q, opts) {
   // opts: {feedback:true, onDone(correct, tries)}
   var id = 'q' + Math.random().toString(36).slice(2, 7);
-  var html = '<div class="q" dir="auto">' + esc(q.q) + '</div>' + q.options.map(function (o, i) { return '<button class="opt" dir="auto" data-q="' + id + '" data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '<div id="' + id + 'fb"></div>';
+  var items = (q.options || []).map(function (o, i) { return { text: o, origIdx: i }; });
+  for (var s = items.length - 1; s > 0; s--) {
+    var r = Math.floor(Math.random() * (s + 1));
+    var tmp = items[s]; items[s] = items[r]; items[r] = tmp;
+  }
+  var html = '<div class="q" dir="auto">' + esc(q.q) + '</div>' + items.map(function (it) { return '<button class="opt" dir="auto" data-q="' + id + '" data-i="' + it.origIdx + '">' + esc(it.text) + '</button>'; }).join('') + '<div id="' + id + 'fb"></div>';
   setTimeout(function () {
     var tries = 0, locked = false, first = null;
     document.querySelectorAll('[data-q="' + id + '"]').forEach(function (b) {
@@ -117,7 +122,7 @@ function mcq(q, opts) {
         else { b.classList.add('wrong'); b.disabled = true;
           if (tries === 1 && q.hint) fb.innerHTML = '<div class="fb bad">💡 تلميح: ' + esc(q.hint) + ' جرّبْ مرّةً أخرى.</div>';
           else if (tries === 1) fb.innerHTML = '<div class="fb bad">🤔 ليس تمامًا، جرّبْ مرّةً أخرى.</div>';
-          else { locked = true; document.querySelectorAll('[data-q="' + id + '"]')[q.answer].classList.add('right'); fb.innerHTML = '<div class="fb bad">الجوابُ الصّحيح مُعلَّمٌ بالأخضر. ' + esc(q.why || '') + '</div>'; opts.onDone(false, tries, first); } }
+          else { locked = true; var rightBtn = document.querySelector('[data-q="' + id + '"][data-i="' + q.answer + '"]'); if (rightBtn) rightBtn.classList.add('right'); fb.innerHTML = '<div class="fb bad">الجوابُ الصّحيح مُعلَّمٌ بالأخضر. ' + esc(q.why || '') + '</div>'; opts.onDone(false, tries, first); } }
       };
     });
   });
@@ -1555,7 +1560,7 @@ function start() {
 
   // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
   if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
-    fetch('lessons/TMYZ26.json?v=20261114_v6')
+    fetch('lessons/TMYZ26.json?v=20261114_v7')
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })
       .then(function (lData) {
         try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -2550,11 +2555,18 @@ function experiment() {
       sayBtn(sc.situation) +
       '<p style="margin:12px 0 8px;font-size:14.5px;font-weight:800;color:#334155">👇 اخترِ القرارَ أو التّصرّفَ لتشغيلِ المحاكاةِ ومشاهدةِ أثرهِ المباشر:</p>' +
       '<div id="sim-choices-wrap">' +
-        (sc.choices || []).map(function (ch, cIdx) {
-          return '<button type="button" class="opt" data-sim-c="' + cIdx + '" style="text-align:right;font-size:16px;font-weight:700;margin-bottom:8px;transition:all 0.2s">' +
-            esc(ch.text) +
-          '</button>';
-        }).join('') +
+        (function () {
+          var simItems = (sc.choices || []).map(function (ch, cIdx) { return { ch: ch, cIdx: cIdx }; });
+          for (var s = simItems.length - 1; s > 0; s--) {
+            var r = Math.floor(Math.random() * (s + 1));
+            var tmp = simItems[s]; simItems[s] = simItems[r]; simItems[r] = tmp;
+          }
+          return simItems.map(function (it) {
+            return '<button type="button" class="opt" data-sim-c="' + it.cIdx + '" style="text-align:right;font-size:16px;font-weight:700;margin-bottom:8px;transition:all 0.2s">' +
+              esc(it.ch.text) +
+            '</button>';
+          }).join('');
+        })() +
       '</div>' +
       '<div id="sim-effect-box" style="margin-top:10px"></div>' +
     '</div>';

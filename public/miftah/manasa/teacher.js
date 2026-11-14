@@ -328,7 +328,7 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
-    fetch('lessons/excellence.json?v=20261114_v6')
+    fetch('lessons/excellence.json?v=20261114_v7')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (lData) {
         if (lData) {
@@ -1016,7 +1016,7 @@
     } catch (_) {}
 
     if (code === 'TMYZ26') {
-      fetch('lessons/excellence.json?v=20261114_v6')
+      fetch('lessons/excellence.json?v=20261114_v7')
         .then(function (r) { return r.json(); })
         .then(function (data) {
           data.code = 'TMYZ26';
