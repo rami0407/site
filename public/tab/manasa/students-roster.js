@@ -3477,43 +3477,10 @@
   }
 };
 
+  var BASE_ROSTER_JSON = JSON.stringify(ROSTER);
   var BY_ID = {};
   var ALL_STUDENTS = [];
   var CLASS_LIST = [];
-
-  Object.keys(ROSTER).forEach(function (classKey) {
-    var c = ROSTER[classKey];
-    CLASS_LIST.push({
-      classKey: classKey,
-      classLabel: c.classLabel,
-      classArabic: c.classArabic,
-      gradeArabic: c.gradeArabic,
-      homeroomName: c.homeroomName,
-      homeroomArabic: c.homeroomArabic,
-      count: c.students.length
-    });
-    c.students.forEach(function (s) {
-      var cleanId = String(s.idNumber || '').replace(/\.0$/, '').replace(/\D/g, '');
-      var paddedId = cleanId.padStart(9, '0');
-      var entry = {
-        num: s.num,
-        idNumber: cleanId,
-        paddedId: paddedId,
-        studentName: s.studentName,
-        gender: s.gender,
-        genderHe: s.genderHe,
-        classKey: classKey,
-        classLabel: c.classLabel,
-        classArabic: c.classArabic,
-        gradeArabic: c.gradeArabic,
-        homeroomName: c.homeroomName,
-        homeroomArabic: c.homeroomArabic
-      };
-      BY_ID[cleanId] = entry;
-      BY_ID[paddedId] = entry;
-      ALL_STUDENTS.push(entry);
-    });
-  });
 
   function normalizeId(raw) {
     if (!raw) return '';
@@ -3523,6 +3490,58 @@
       return String(d.charCodeAt(0) - 0x06F0);
     }).replace(/\D/g, '');
   }
+
+  function rebuildIndexes() {
+    BY_ID = {};
+    ALL_STUDENTS = [];
+    CLASS_LIST = [];
+    Object.keys(ROSTER).forEach(function (classKey) {
+      var c = ROSTER[classKey];
+      var clsStudents = c.students || [];
+      var tName = c.homeroomArabic || c.homeroomName || '';
+      CLASS_LIST.push({
+        classKey: classKey,
+        classLabel: c.classLabel || classKey,
+        classArabic: c.classArabic || classKey,
+        gradeArabic: c.gradeArabic || '',
+        homeroomName: c.homeroomName || '',
+        homeroomArabic: tName,
+        teacherName: tName,
+        students: clsStudents,
+        count: clsStudents.length
+      });
+      clsStudents.forEach(function (s, idx) {
+        var cleanId = normalizeId(s.idNumber);
+        if (!cleanId) return;
+        var paddedId = cleanId.padStart(9, '0');
+        var entry = {
+          num: s.num || (idx + 1),
+          idNumber: cleanId,
+          paddedId: paddedId,
+          studentName: s.studentName,
+          gender: s.gender || 'ذكر',
+          genderHe: s.genderHe || (s.gender === 'أنثى' ? 'נקבה' : 'זכר'),
+          classKey: classKey,
+          classLabel: c.classLabel || classKey,
+          classArabic: c.classArabic || classKey,
+          gradeArabic: c.gradeArabic || '',
+          homeroomName: c.homeroomName || '',
+          homeroomArabic: tName,
+          teacherName: tName
+        };
+        BY_ID[cleanId] = entry;
+        BY_ID[paddedId] = entry;
+        ALL_STUDENTS.push(entry);
+      });
+    });
+    if (window.MIFTAH_ROSTER) {
+      window.MIFTAH_ROSTER.classesMap = ROSTER;
+      window.MIFTAH_ROSTER.classesList = CLASS_LIST;
+      window.MIFTAH_ROSTER.allStudents = ALL_STUDENTS;
+      window.MIFTAH_ROSTER.byId = BY_ID;
+    }
+  }
+  rebuildIndexes();
 
   function findStudentById(rawId) {
     var clean = normalizeId(rawId);
@@ -3782,6 +3801,145 @@
     try { return window.localStorage.getItem(key) || ''; } catch (_) { return memStore[key] || ''; }
   }
 
+  var CUSTOM_ROSTER_KEY = 'manasa-custom-roster';
+  var ROSTER_FS_DOC = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_school_roster_custom';
+  var ROSTER_API_KEY = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+
+  function getCustomChanges() {
+    try {
+      var raw = safeGetStorage(CUSTOM_ROSTER_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            upserts: parsed.upserts && typeof parsed.upserts === 'object' ? parsed.upserts : {},
+            deletedIds: Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [],
+            updatedAt: parsed.updatedAt || 0
+          };
+        }
+      }
+    } catch (_) {}
+    return { upserts: {}, deletedIds: [], updatedAt: 0 };
+  }
+
+  function applyCustomChanges(customObj) {
+    if (!customObj || typeof customObj !== 'object') return;
+    var upserts = customObj.upserts || {};
+    var deletedSet = {};
+    (customObj.deletedIds || []).forEach(function (id) {
+      var n = normalizeId(id);
+      if (n) {
+        deletedSet[n] = true;
+        deletedSet[n.padStart(9, '0')] = true;
+      }
+    });
+    var upsertIds = {};
+    Object.keys(upserts).forEach(function (k) {
+      var u = upserts[k];
+      if (!u) return;
+      var n = normalizeId(u.idNumber || k);
+      if (n) {
+        upsertIds[n] = u;
+        upsertIds[n.padStart(9, '0')] = u;
+      }
+    });
+
+    try {
+      ROSTER = JSON.parse(BASE_ROSTER_JSON);
+    } catch (_) {
+      ROSTER = {};
+    }
+
+    // Remove deleted or moved/updated students from base classes
+    Object.keys(ROSTER).forEach(function (ck) {
+      var cls = ROSTER[ck];
+      if (!cls || !Array.isArray(cls.students)) return;
+      cls.students = cls.students.filter(function (s) {
+        var cid = normalizeId(s.idNumber);
+        var pid = cid.padStart(9, '0');
+        return !deletedSet[cid] && !deletedSet[pid] && !upsertIds[cid] && !upsertIds[pid];
+      });
+    });
+
+    // Insert upserted students into their target class
+    Object.keys(upserts).forEach(function (k) {
+      var u = upserts[k];
+      if (!u || !u.studentName) return;
+      var cid = normalizeId(u.idNumber || k);
+      if (!cid || deletedSet[cid] || deletedSet[cid.padStart(9, '0')]) return;
+      var ck = u.classKey || 'class_custom';
+      if (!ROSTER[ck]) {
+        ROSTER[ck] = {
+          classKey: ck,
+          classLabel: u.classLabel || u.classArabic || ck,
+          classArabic: u.classArabic || ck,
+          gradeArabic: u.gradeArabic || u.classArabic || '',
+          homeroomName: u.homeroomArabic || '',
+          homeroomArabic: u.homeroomArabic || 'إدارة المدرسة',
+          students: []
+        };
+      } else if (u.classArabic && !ROSTER[ck].classArabic) {
+        ROSTER[ck].classArabic = u.classArabic;
+      }
+      ROSTER[ck].students.push({
+        num: ROSTER[ck].students.length + 1,
+        idNumber: cid.padStart(9, '0'),
+        studentName: String(u.studentName).trim(),
+        gender: u.gender === 'أنثى' ? 'أنثى' : 'ذكر',
+        genderHe: u.gender === 'أنثى' ? 'נקבה' : 'זכר'
+      });
+    });
+
+    rebuildIndexes();
+  }
+
+  function saveCustomChanges(customObj) {
+    customObj.updatedAt = Date.now();
+    var jsonStr = JSON.stringify(customObj);
+    safeSetStorage(CUSTOM_ROSTER_KEY, jsonStr);
+    applyCustomChanges(customObj);
+    var body = {
+      fields: {
+        is_miftaah_roster: { booleanValue: true },
+        updatedAt: { integerValue: String(customObj.updatedAt) },
+        json: { stringValue: jsonStr }
+      }
+    };
+    return fetch(ROSTER_FS_DOC + '?key=' + ROSTER_API_KEY, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return true;
+    }).catch(function () { return false; });
+  }
+
+  function syncCustomRosterFromCloud(cb) {
+    return fetch(ROSTER_FS_DOC + '?key=' + ROSTER_API_KEY)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+          var cloudObj = JSON.parse(doc.fields.json.stringValue);
+          var localObj = getCustomChanges();
+          if ((cloudObj.updatedAt || 0) >= (localObj.updatedAt || 0)) {
+            safeSetStorage(CUSTOM_ROSTER_KEY, JSON.stringify(cloudObj));
+            applyCustomChanges(cloudObj);
+          }
+        }
+        if (typeof cb === 'function') cb(window.MIFTAH_ROSTER);
+        return window.MIFTAH_ROSTER;
+      })
+      .catch(function () {
+        if (typeof cb === 'function') cb(window.MIFTAH_ROSTER);
+        return window.MIFTAH_ROSTER;
+      });
+  }
+
+  // Apply local custom roster immediately, then sync from cloud in background
+  applyCustomChanges(getCustomChanges());
+  syncCustomRosterFromCloud();
+
   window.MIFTAH_ROSTER = {
     classesMap: ROSTER,
     classesList: CLASS_LIST,
@@ -3791,6 +3949,10 @@
     findStudentById: findStudentById,
     computeExcellenceScore: computeExcellenceScore,
     safeSetStorage: safeSetStorage,
-    safeGetStorage: safeGetStorage
+    safeGetStorage: safeGetStorage,
+    getCustomChanges: getCustomChanges,
+    applyCustomChanges: applyCustomChanges,
+    saveCustomChanges: saveCustomChanges,
+    syncCustomRosterFromCloud: syncCustomRosterFromCloud
   };
 })();

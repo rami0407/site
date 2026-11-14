@@ -328,7 +328,7 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
-    fetch('lessons/excellence.json?v=20261114_v8')
+    fetch('lessons/excellence.json?v=20261114_v9')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (lData) {
         if (lData) {
@@ -1016,7 +1016,7 @@
     } catch (_) {}
 
     if (code === 'TMYZ26') {
-      fetch('lessons/excellence.json?v=20261114_v8')
+      fetch('lessons/excellence.json?v=20261114_v9')
         .then(function (r) { return r.json(); })
         .then(function (data) {
           data.code = 'TMYZ26';
@@ -2548,6 +2548,23 @@
     };
   }
 
+  function refreshExcellenceClassSelect(keepValue) {
+    var roster = window.MIFTAH_ROSTER;
+    var clsSel = $('exc-class-select');
+    if (!roster || !clsSel) return;
+    var prevVal = keepValue ? clsSel.value : '';
+    var opts = '<option value="ALL">🏫 كلّ صفوف المدرسة (' + roster.classesList.length + ' صفّاً — ' + roster.allStudents.length + ' طالباً)</option>';
+    roster.classesList.forEach(function (c) {
+      opts += '<option value="' + esc(c.classKey) + '">' + esc(c.classArabic + ' (' + c.classKey + ') — المربّي/ة: ' + (c.teacherName || c.homeroomArabic || 'إدارة المدرسة') + ' (' + (c.students ? c.students.length : c.count) + ' طالباً)') + '</option>';
+    });
+    clsSel.innerHTML = opts;
+    if (prevVal && (prevVal === 'ALL' || roster.classesMap[prevVal])) {
+      clsSel.value = prevVal;
+    } else if (roster.classesList.length) {
+      clsSel.value = roster.classesList[0].classKey;
+    }
+  }
+
   function initAndRenderExcellenceView() {
     loadLocalExcellenceData();
     var roster = window.MIFTAH_ROSTER;
@@ -2555,30 +2572,28 @@
 
     if (!excInited) {
       excInited = true;
-      var clsSel = $('exc-class-select');
-      if (clsSel) {
-        var opts = '<option value="ALL">🏫 كلّ صفوف المدرسة (19 صفّاً — ' + roster.allStudents.length + ' طالباً)</option>';
-        roster.classesList.forEach(function (c) {
-          opts += '<option value="' + esc(c.classKey) + '">' + esc(c.classArabic + ' (' + c.classKey + ') — المربّي/ة: ' + c.teacherName + ' (' + c.students.length + ' طالباً)') + '</option>';
-        });
-        clsSel.innerHTML = opts;
-        // الافتراضي: أول صف (السادس 4) لسرعة العرض والوضوح، أو كل الصفوف عند البحث
-        if (roster.classesList.length) clsSel.value = roster.classesList[0].classKey;
-        clsSel.onchange = renderExcellenceTable;
-      }
+      refreshExcellenceClassSelect(false);
+      if ($('exc-class-select')) $('exc-class-select').onchange = renderExcellenceTable;
       if ($('exc-search-input')) {
         $('exc-search-input').oninput = function () {
-          // إذا كتب المعلم بحثاً، نبحث في كل المدرسة إذا لم يجد في الصف الحالي
           renderExcellenceTable();
         };
       }
       if ($('exc-status-filter')) $('exc-status-filter').onchange = renderExcellenceTable;
       if ($('btn-export-excellence-csv')) $('btn-export-excellence-csv').onclick = exportExcellenceToCSV;
       if ($('btn-print-class-cards')) $('btn-print-class-cards').onclick = printClassSecretCards;
+      if ($('btn-add-exc-student')) $('btn-add-exc-student').onclick = function () { openStudentRosterEditModal(null); };
+      if ($('btn-import-exc-students')) $('btn-import-exc-students').onclick = openBulkImportStudentsModal;
       if ($('exc-share-model-wa')) {
         $('exc-share-model-wa').onclick = function () {
           shareViaWhatsApp('TMYZ26', 'رحلة التميّز في مدرسة مشيرفة — كيف أصنع تميّزي؟', 'سنة التميّز ومهارات التفكير', 'جميع الصفوف');
         };
+      }
+      if (roster.syncCustomRosterFromCloud) {
+        roster.syncCustomRosterFromCloud(function () {
+          refreshExcellenceClassSelect(true);
+          renderExcellenceTable();
+        });
       }
     }
 
@@ -2684,7 +2699,10 @@
         '</td>' +
         '<td style="max-width:260px;font-size:13px;color:#334155;line-height:1.5">' + esc(item.finalNote) + '</td>' +
         '<td>' +
-          '<button type="button" class="btn alt" data-eval-stu="' + esc(stu.idNumber) + '" style="min-height:36px;padding:6px 12px;font-size:13px;margin:0;white-space:nowrap">📝 تقييم الشهادة / السجلّ</button>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            '<button type="button" class="btn alt" data-eval-stu="' + esc(stu.idNumber) + '" style="min-height:36px;padding:6px 10px;font-size:12.5px;margin:0;white-space:nowrap">📝 السجلّ والشهادة</button>' +
+            '<button type="button" class="btn alt" data-edit-stu="' + esc(stu.idNumber) + '" style="min-height:36px;padding:6px 10px;font-size:12.5px;margin:0;border-color:#0f766e;color:#0f766e;white-space:nowrap">✏️ تعديل الطالب</button>' +
+          '</div>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -2699,7 +2717,7 @@
         '<th>تفصيل سيرورة التقييم</th>' +
         '<th>درجة التميّز للشهادة</th>' +
         '<th>توصية الشهادة المدرسية</th>' +
-        '<th>إجراء المعلّم</th>' +
+        '<th>إجراء الإدارة والمعلّم</th>' +
       '</tr></thead>' +
       '<tbody>' + rowsHtml + '</tbody>' +
     '</table>';
@@ -2716,6 +2734,14 @@
       btn.onclick = function () {
         var sid = btn.getAttribute('data-eval-stu');
         openStudentExcellenceModal(sid);
+      };
+    });
+
+    wrap.querySelectorAll('[data-edit-stu]').forEach(function (btn) {
+      btn.onclick = function () {
+        var sid = btn.getAttribute('data-edit-stu');
+        var stuObj = roster.findStudentById(sid);
+        if (stuObj) openStudentRosterEditModal(stuObj);
       };
     });
   }
@@ -2878,25 +2904,67 @@
     }
     modal.hidden = false;
 
-    var planSummaryHtml = savedPlan
-      ? '<div style="background:#f0f9ff;border:2px solid #7dd3fc;border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.6">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">' +
-            '<b style="font-size:15.5px;color:#0369a1">📂 ملفُّ وخُطّةُ التميّز الشّخصيّة المحفوظة للطالب:</b>' +
-            '<button type="button" class="btn ok" id="exc-modal-print-pdf-btn" style="min-height:34px;padding:5px 12px;font-size:12.5px;margin:0;background:linear-gradient(135deg,#0284c7,#0369a1)">📄 شهادة وملف الطالب (PDF)</button>' +
+    var editPlanObj = savedPlan ? JSON.parse(JSON.stringify(savedPlan)) : {
+      studentId: stu.idNumber,
+      studentName: stu.studentName,
+      classArabic: stu.classArabic,
+      howToExcel: '',
+      goalsRanked: ['', '', ''],
+      projectTitle: '',
+      projectDescription: '',
+      practicalSteps: ['', '', ''],
+      selfEval: { term1: {}, term2: {}, term3: {} }
+    };
+    var sEval = editPlanObj.selfEval || { term1: {}, term2: {}, term3: {} };
+
+    var planSummaryHtml = '<div style="background:#f0f9ff;border:2px solid #7dd3fc;border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.6">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">' +
+          '<b style="font-size:15.5px;color:#0369a1">📂 ملفُّ وخُطّةُ التميّز الشّخصيّة للطالب:</b>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            '<button type="button" class="btn alt" id="exc-modal-refresh-cloud-btn" style="min-height:34px;padding:5px 10px;font-size:12.5px;margin:0">🔄 استرجاع من السحابة</button>' +
+            '<button type="button" class="btn alt" id="exc-modal-toggle-plan-edit" style="min-height:34px;padding:5px 10px;font-size:12.5px;margin:0;border-color:#7c3aed;color:#6b21a8">✏️ تعديل المعطيات</button>' +
+            '<button type="button" class="btn ok" id="exc-modal-print-pdf-btn" style="min-height:34px;padding:5px 12px;font-size:12.5px;margin:0;background:linear-gradient(135deg,#0284c7,#0369a1)">📄 شهادة وملف (PDF)</button>' +
           '</div>' +
-          '<div>🌟 <b>كيف يتميّز:</b> ' + esc(savedPlan.howToExcel || '—') + '</div>' +
-          '<div>🥇 <b>الهدف 1 (الأهم):</b> ' + esc((savedPlan.goalsRanked && savedPlan.goalsRanked[0]) || '—') + '</div>' +
-          '<div>🥈 <b>الهدف 2:</b> ' + esc((savedPlan.goalsRanked && savedPlan.goalsRanked[1]) || '—') + '</div>' +
-          '<div>🥉 <b>الهدف 3:</b> ' + esc((savedPlan.goalsRanked && savedPlan.goalsRanked[2]) || '—') + '</div>' +
-          '<div>🚀 <b>المشروع:</b> <b>' + esc(savedPlan.projectTitle || '—') + '</b> — ' + esc(savedPlan.projectDescription || '') + '</div>' +
-          '<div>🛠️ <b>الخطوات العملية:</b> ' + esc((savedPlan.practicalSteps || []).filter(Boolean).join(' | ')) + '</div>' +
-          '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">' +
-            '<span class="pill" style="background:#fff;color:#059669;border:1px solid #86efac">🌱 الفصل 1: ' + (savedPlan.selfEval && savedPlan.selfEval.term1 && savedPlan.selfEval.term1.done ? (savedPlan.selfEval.term1.scorePct + '% ✓') : 'قيد الانتظار') + '</span>' +
-            '<span class="pill" style="background:#fff;color:#0284c7;border:1px solid #7dd3fc">⚡ نهاية الفصل 2: ' + (savedPlan.selfEval && savedPlan.selfEval.term2 && savedPlan.selfEval.term2.done ? (savedPlan.selfEval.term2.scorePct + '% ✓') : 'قيد الانتظار') + '</span>' +
-            '<span class="pill" style="background:#fff;color:#7c3aed;border:1px solid #d8b4fe">🏆 نهاية الفصل 3: ' + (savedPlan.selfEval && savedPlan.selfEval.term3 && savedPlan.selfEval.term3.done ? (savedPlan.selfEval.term3.scorePct + '% ✓') : 'قيد الانتظار') + '</span>' +
+        '</div>' +
+        (savedPlan
+          ? '<div>🌟 <b>كيف يتميّز:</b> ' + esc(savedPlan.howToExcel || '—') + '</div>' +
+            '<div>🥇 <b>الهدف 1 (الأهم):</b> ' + esc((savedPlan.goalsRanked && savedPlan.goalsRanked[0]) || '—') + '</div>' +
+            '<div>🥈 <b>الهدف 2:</b> ' + esc((savedPlan.goalsRanked && savedPlan.goalsRanked[1]) || '—') + '</div>' +
+            '<div>🥉 <b>الهدف 3:</b> ' + esc((savedPlan.goalsRanked && savedPlan.goalsRanked[2]) || '—') + '</div>' +
+            '<div>🚀 <b>المشروع:</b> <b>' + esc(savedPlan.projectTitle || '—') + '</b> — ' + esc(savedPlan.projectDescription || '') + '</div>' +
+            '<div>🛠️ <b>الخطوات العملية:</b> ' + esc((savedPlan.practicalSteps || []).filter(Boolean).join(' | ') || '—') + '</div>' +
+            '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">' +
+              '<span class="pill" style="background:#fff;color:#059669;border:1px solid #86efac">🌱 الفصل 1: ' + (savedPlan.selfEval && savedPlan.selfEval.term1 && savedPlan.selfEval.term1.done ? (savedPlan.selfEval.term1.scorePct + '% ✓') : 'قيد الانتظار') + '</span>' +
+              '<span class="pill" style="background:#fff;color:#0284c7;border:1px solid #7dd3fc">⚡ نهاية الفصل 2: ' + (savedPlan.selfEval && savedPlan.selfEval.term2 && savedPlan.selfEval.term2.done ? (savedPlan.selfEval.term2.scorePct + '% ✓') : 'قيد الانتظار') + '</span>' +
+              '<span class="pill" style="background:#fff;color:#7c3aed;border:1px solid #d8b4fe">🏆 نهاية الفصل 3: ' + (savedPlan.selfEval && savedPlan.selfEval.term3 && savedPlan.selfEval.term3.done ? (savedPlan.selfEval.term3.scorePct + '% ✓') : 'قيد الانتظار') + '</span>' +
+            '</div>'
+          : '<div class="muted">لم يعبّئ الطالب خطّته بعد — يمكنك الضغط على «🔄 استرجاع من السحابة» أو «✏️ تعديل المعطيات» لإدخالها أو تعديلها مباشرة من الإدارة.</div>') +
+        '<div id="exc-plan-editor-wrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1.5px dashed #93c5fd">' +
+          '<div style="font-weight:900;color:#6b21a8;margin-bottom:8px">✏️ تعديل معطيات خطّة الطالب (الإدارة):</div>' +
+          '<label style="font-size:12.5px;font-weight:800">🌟 كيف سيتميّز هذا العام:</label>' +
+          '<input type="text" id="exc-adm-how" value="' + esc(editPlanObj.howToExcel || '') + '" style="margin-bottom:6px">' +
+          '<label style="font-size:12.5px;font-weight:800">🥇 الهدف 1 (الأولوية الأولى):</label>' +
+          '<input type="text" id="exc-adm-g0" value="' + esc((editPlanObj.goalsRanked && editPlanObj.goalsRanked[0]) || '') + '" style="margin-bottom:6px">' +
+          '<label style="font-size:12.5px;font-weight:800">🥈 الهدف 2:</label>' +
+          '<input type="text" id="exc-adm-g1" value="' + esc((editPlanObj.goalsRanked && editPlanObj.goalsRanked[1]) || '') + '" style="margin-bottom:6px">' +
+          '<label style="font-size:12.5px;font-weight:800">🥉 الهدف 3:</label>' +
+          '<input type="text" id="exc-adm-g2" value="' + esc((editPlanObj.goalsRanked && editPlanObj.goalsRanked[2]) || '') + '" style="margin-bottom:6px">' +
+          '<label style="font-size:12.5px;font-weight:800">🚀 عنوان / حالة المشروع:</label>' +
+          '<input type="text" id="exc-adm-ptitle" value="' + esc(editPlanObj.projectTitle || '') + '" style="margin-bottom:6px">' +
+          '<label style="font-size:12.5px;font-weight:800">📝 وصف المشروع:</label>' +
+          '<textarea id="exc-adm-pdesc" style="min-height:56px;margin-bottom:6px">' + esc(editPlanObj.projectDescription || '') + '</textarea>' +
+          '<label style="font-size:12.5px;font-weight:800">🛠️ الخطوات العملية الثلاث:</label>' +
+          '<input type="text" id="exc-adm-s0" placeholder="الخطوة 1" value="' + esc((editPlanObj.practicalSteps && editPlanObj.practicalSteps[0]) || '') + '" style="margin-bottom:4px">' +
+          '<input type="text" id="exc-adm-s1" placeholder="الخطوة 2" value="' + esc((editPlanObj.practicalSteps && editPlanObj.practicalSteps[1]) || '') + '" style="margin-bottom:4px">' +
+          '<input type="text" id="exc-adm-s2" placeholder="الخطوة 3" value="' + esc((editPlanObj.practicalSteps && editPlanObj.practicalSteps[2]) || '') + '" style="margin-bottom:8px">' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">' +
+            '<div><label style="font-size:12px;font-weight:800">🌱 تقييم ف1 (%):</label><input type="number" id="exc-adm-t1" min="0" max="100" value="' + esc(sEval.term1 && sEval.term1.done ? sEval.term1.scorePct : '') + '"></div>' +
+            '<div><label style="font-size:12px;font-weight:800">⚡ تقييم ف2 (%):</label><input type="number" id="exc-adm-t2" min="0" max="100" value="' + esc(sEval.term2 && sEval.term2.done ? sEval.term2.scorePct : '') + '"></div>' +
+            '<div><label style="font-size:12px;font-weight:800">🏆 تقييم ف3 (%):</label><input type="number" id="exc-adm-t3" min="0" max="100" value="' + esc(sEval.term3 && sEval.term3.done ? sEval.term3.scorePct : '') + '"></div>' +
           '</div>' +
-        '</div>'
-      : '<div style="margin-bottom:12px;text-align:left"><button type="button" class="btn alt" id="exc-modal-print-pdf-btn" style="min-height:36px;padding:6px 14px;font-size:13px;margin:0;border-color:#0284c7;color:#0369a1">📄 استخراج شهادة وملف الطالب (PDF)</button></div>';
+          '<button type="button" class="btn ok" id="exc-adm-save-plan-btn" style="width:100%;margin:0">💾 حفظ تعديلات خطّة الطالب في السحابة</button>' +
+        '</div>' +
+      '</div>';
 
     var recsHtml = data.records.length
       ? data.records.map(function (r) {
@@ -2957,6 +3025,116 @@
       };
     }
 
+    if ($('exc-modal-toggle-plan-edit')) {
+      $('exc-modal-toggle-plan-edit').onclick = function () {
+        var wrap = $('exc-plan-editor-wrap');
+        if (wrap) wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+      };
+    }
+
+    if ($('exc-modal-refresh-cloud-btn')) {
+      $('exc-modal-refresh-cloud-btn').onclick = function () {
+        var btn = $('exc-modal-refresh-cloud-btn');
+        btn.disabled = true;
+        btn.textContent = '⏳ جارٍ الاسترجاع...';
+        var docId = 'miftaah_excplan_' + encodeURIComponent(stu.idNumber);
+        fetch(FS_BASE + '/' + docId + '?key=' + FIREBASE_API_KEY)
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (doc) {
+            if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+              var pObj = JSON.parse(doc.fields.json.stringValue);
+              if (pObj && typeof pObj === 'object') {
+                // Inject/update into excRecords so getStudentSavedExcellencePlan picks it up immediately
+                excRecords.unshift({
+                  id: docId,
+                  studentId: stu.idNumber,
+                  studentName: stu.studentName,
+                  classKey: stu.classKey,
+                  excellencePlan: pObj,
+                  updatedAt: pObj.updatedAt || Date.now()
+                });
+                openStudentExcellenceModal(stu.idNumber);
+                showToast('✅ تم استرجاع أحدث معطيات الطالب من السحابة!');
+                return;
+              }
+            }
+            btn.disabled = false;
+            btn.textContent = '🔄 استرجاع من السحابة';
+            showToast('ℹ️ لا توجد خطة سحابية محفوظة لهذا الطالب بعد.');
+          })
+          .catch(function () {
+            btn.disabled = false;
+            btn.textContent = '🔄 استرجاع من السحابة';
+            showToast('⚠️ تعذّر الاتصال بالسحابة حالياً.');
+          });
+      };
+    }
+
+    if ($('exc-adm-save-plan-btn')) {
+      $('exc-adm-save-plan-btn').onclick = function () {
+        var nowTs = Date.now();
+        editPlanObj.studentId = stu.idNumber;
+        editPlanObj.studentName = stu.studentName;
+        editPlanObj.classArabic = stu.classArabic;
+        editPlanObj.howToExcel = ($('exc-adm-how').value || '').trim();
+        editPlanObj.goalsRanked = [
+          ($('exc-adm-g0').value || '').trim(),
+          ($('exc-adm-g1').value || '').trim(),
+          ($('exc-adm-g2').value || '').trim()
+        ];
+        editPlanObj.projectTitle = ($('exc-adm-ptitle').value || '').trim();
+        editPlanObj.projectDescription = ($('exc-adm-pdesc').value || '').trim();
+        editPlanObj.practicalSteps = [
+          ($('exc-adm-s0').value || '').trim(),
+          ($('exc-adm-s1').value || '').trim(),
+          ($('exc-adm-s2').value || '').trim()
+        ];
+        if (!editPlanObj.selfEval) editPlanObj.selfEval = {};
+        [['term1', 'exc-adm-t1'], ['term2', 'exc-adm-t2'], ['term3', 'exc-adm-t3']].forEach(function (pair) {
+          var v = ($('' + pair[1]).value || '').trim();
+          if (v !== '') {
+            var num = Math.min(100, Math.max(0, Number(v)));
+            if (!editPlanObj.selfEval[pair[0]]) editPlanObj.selfEval[pair[0]] = {};
+            editPlanObj.selfEval[pair[0]].done = true;
+            editPlanObj.selfEval[pair[0]].scorePct = num;
+            editPlanObj.selfEval[pair[0]].updatedAt = nowTs;
+          }
+        });
+        editPlanObj.updatedAt = nowTs;
+        editPlanObj.updatedByAdmin = currentTeacher.name || 'الإدارة';
+
+        var docId = 'miftaah_excplan_' + encodeURIComponent(stu.idNumber);
+        fetch(FS_BASE + '/' + docId + '?key=' + FIREBASE_API_KEY, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fields: {
+              recordType: { stringValue: 'miftaah_excellence_plan' },
+              studentId: { stringValue: String(stu.idNumber) },
+              studentName: { stringValue: String(stu.studentName) },
+              classKey: { stringValue: String(stu.classKey || '') },
+              updatedAt: { integerValue: String(nowTs) },
+              json: { stringValue: JSON.stringify(editPlanObj) }
+            }
+          })
+        }).then(function () {
+          excRecords.unshift({
+            id: docId,
+            studentId: stu.idNumber,
+            studentName: stu.studentName,
+            classKey: stu.classKey,
+            excellencePlan: editPlanObj,
+            updatedAt: nowTs
+          });
+          openStudentExcellenceModal(stu.idNumber);
+          renderExcellenceTable();
+          showToast('✅ تم حفظ وتحديث معطيات خطة الطالب في السحابة!');
+        }).catch(function () {
+          showToast('⚠️ حدث خطأ أثناء الحفظ في السحابة.');
+        });
+      };
+    }
+
     modal.querySelectorAll('[data-quick-note]').forEach(function (b) {
       b.onclick = function () {
         $('exc-edit-note').value = b.getAttribute('data-quick-note');
@@ -2999,6 +3177,305 @@
       modal.hidden = true;
       renderExcellenceTable();
       showToast('✅ تم اعتماد تقييم الشهادة للطالب: ' + stu.studentName);
+    };
+  }
+
+  function openStudentRosterEditModal(existingStu) {
+    var roster = window.MIFTAH_ROSTER;
+    if (!roster) return;
+    var isEdit = !!existingStu;
+    var modal = document.getElementById('exc-roster-edit-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'exc-roster-edit-modal';
+      modal.className = 'msheet';
+      document.body.appendChild(modal);
+    }
+    modal.hidden = false;
+
+    var curClassKey = (existingStu && existingStu.classKey) || ($('exc-class-select') && $('exc-class-select').value !== 'ALL' ? $('exc-class-select').value : (roster.classesList[0] ? roster.classesList[0].classKey : 'class_custom'));
+    var classOpts = roster.classesList.map(function (c) {
+      return '<option value="' + esc(c.classKey) + '"' + (c.classKey === curClassKey ? ' selected' : '') + '>' + esc(c.classArabic + ' (' + c.classKey + ')') + '</option>';
+    }).join('') + '<option value="__NEW__">➕ إنشاء صف جديد...</option>';
+
+    modal.innerHTML = '<div class="mpanel" style="max-width:520px">' +
+      '<button class="mx" id="exc-re-close">✕</button>' +
+      '<h2 style="margin:0 0 10px;color:#0b2a4a">' + (isEdit ? '✏️ تعديل بيانات الطالب في السجل' : '➕ إضافة طالب جديد لمشروع التميّز') + '</h2>' +
+      '<label style="font-weight:800">🔐 رقم الهوية (الكود السري — 9 أرقام):</label>' +
+      '<input type="text" id="exc-re-id" dir="ltr" value="' + esc(existingStu ? existingStu.idNumber : '') + '" placeholder="مثال: 340041722">' +
+      '<label style="font-weight:800;margin-top:8px;display:block">👤 الاسم الكامل للطالب:</label>' +
+      '<input type="text" id="exc-re-name" value="' + esc(existingStu ? existingStu.studentName : '') + '" placeholder="مثال: أحمد محمد إغبارية">' +
+      '<label style="font-weight:800;margin-top:8px;display:block">🏫 الصف:</label>' +
+      '<select id="exc-re-class">' + classOpts + '</select>' +
+      '<div id="exc-re-newclass-wrap" style="display:none;margin-top:8px">' +
+        '<label style="font-weight:800">اسم الصف الجديد (بالعربية):</label>' +
+        '<input type="text" id="exc-re-newclass-name" placeholder="مثال: السادس 5">' +
+      '</div>' +
+      '<label style="font-weight:800;margin-top:8px;display:block">⚧ الجنس:</label>' +
+      '<select id="exc-re-gender">' +
+        '<option value="ذكر"' + (!existingStu || existingStu.gender !== 'أنثى' ? ' selected' : '') + '>ذكر</option>' +
+        '<option value="أنثى"' + (existingStu && existingStu.gender === 'أنثى' ? ' selected' : '') + '>أنثى</option>' +
+      '</select>' +
+      '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
+        '<button type="button" class="btn ok" id="exc-re-save" style="flex:1;margin:0">💾 حفظ في السجل السحابي</button>' +
+        (isEdit ? '<button type="button" class="btn" id="exc-re-delete" style="background:#dc2626;color:#fff;margin:0">🗑️ حذف الطالب</button>' : '') +
+      '</div>' +
+    '</div>';
+
+    $('exc-re-close').onclick = function () { modal.hidden = true; };
+    modal.onclick = function (e) { if (e.target === modal) modal.hidden = true; };
+    $('exc-re-class').onchange = function () {
+      $('exc-re-newclass-wrap').style.display = $('exc-re-class').value === '__NEW__' ? 'block' : 'none';
+    };
+
+    $('exc-re-save').onclick = function () {
+      var cleanId = roster.normalizeId($('exc-re-id').value);
+      var stuName = ($('exc-re-name').value || '').trim();
+      if (!cleanId || cleanId.length < 5) { alert('الرجاء إدخال رقم هوية صحيح (أرقام فقط).'); return; }
+      if (!stuName) { alert('الرجاء إدخال اسم الطالب الكامل.'); return; }
+      var paddedId = cleanId.padStart(9, '0');
+      var clsVal = $('exc-re-class').value;
+      var clsObj = roster.classesMap[clsVal];
+      var clsKey = clsVal;
+      var clsArabic = clsObj ? clsObj.classArabic : '';
+      var clsLabel = clsObj ? clsObj.classLabel : '';
+      if (clsVal === '__NEW__') {
+        var newName = ($('exc-re-newclass-name').value || '').trim();
+        if (!newName) { alert('الرجاء كتابة اسم الصف الجديد.'); return; }
+        clsKey = 'class_' + Date.now().toString(36);
+        clsArabic = newName;
+        clsLabel = newName;
+      }
+
+      var custom = roster.getCustomChanges();
+      if (isEdit && existingStu.idNumber) {
+        var oldId = roster.normalizeId(existingStu.idNumber).padStart(9, '0');
+        if (oldId !== paddedId) {
+          delete custom.upserts[oldId];
+          if (custom.deletedIds.indexOf(oldId) < 0) custom.deletedIds.push(oldId);
+        }
+      }
+      custom.deletedIds = custom.deletedIds.filter(function (d) { return roster.normalizeId(d).padStart(9, '0') !== paddedId; });
+      custom.upserts[paddedId] = {
+        idNumber: paddedId,
+        studentName: stuName,
+        classKey: clsKey,
+        classArabic: clsArabic,
+        classLabel: clsLabel,
+        gender: $('exc-re-gender').value
+      };
+
+      roster.saveCustomChanges(custom).then(function () {
+        refreshExcellenceClassSelect(true);
+        if ($('exc-class-select') && roster.classesMap[clsKey]) $('exc-class-select').value = clsKey;
+        renderExcellenceTable();
+        modal.hidden = true;
+        showToast('✅ تم حفظ بيانات الطالب (' + stuName + ') ومزامنتها سحابياً!');
+      });
+    };
+
+    if ($('exc-re-delete')) {
+      $('exc-re-delete').onclick = function () {
+        if (!confirm('هل تريد بالتأكيد حذف الطالب «' + existingStu.studentName + '» من القائمة؟')) return;
+        var oldId = roster.normalizeId(existingStu.idNumber).padStart(9, '0');
+        var custom = roster.getCustomChanges();
+        delete custom.upserts[oldId];
+        if (custom.deletedIds.indexOf(oldId) < 0) custom.deletedIds.push(oldId);
+        roster.saveCustomChanges(custom).then(function () {
+          refreshExcellenceClassSelect(true);
+          renderExcellenceTable();
+          modal.hidden = true;
+          showToast('🗑️ تم حذف الطالب من القائمة.');
+        });
+      };
+    }
+  }
+
+  function openBulkImportStudentsModal() {
+    var roster = window.MIFTAH_ROSTER;
+    if (!roster) return;
+    var modal = document.getElementById('exc-bulk-import-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'exc-bulk-import-modal';
+      modal.className = 'msheet';
+      document.body.appendChild(modal);
+    }
+    modal.hidden = false;
+
+    var classOpts = roster.classesList.map(function (c) {
+      return '<option value="' + esc(c.classKey) + '">' + esc(c.classArabic + ' (' + c.classKey + ')') + '</option>';
+    }).join('');
+    var parsedRows = [];
+
+    modal.innerHTML = '<div class="mpanel" style="max-width:650px;max-height:88vh;overflow-y:auto">' +
+      '<button class="mx" id="exc-bi-close">✕</button>' +
+      '<h2 style="margin:0 0 6px;color:#0b2a4a">📤 رفع ملف طلاب لقائمة المدرسة (Excel / CSV)</h2>' +
+      '<p style="margin:0 0 12px;font-size:13.5px;color:#475569;line-height:1.6">ارفع ملف طلاب بصيغة <b>Excel (.xls / .xlsx)</b> أو <b>CSV</b> (بما في ذلك تقارير الوزارة/مشوف مثل DochTalmidim). سيتعرّف النظام تلقائياً على عمود <b>رقم الهوية</b>، <b>الاسم</b>، و<b>الصف</b>.</p>' +
+      '<div style="background:#f8fafc;border:2px dashed #7c3aed;border-radius:14px;padding:14px;margin-bottom:12px">' +
+        '<input type="file" id="exc-bi-file" accept=".xls,.xlsx,.csv,.tsv,.txt" style="width:100%">' +
+        '<div style="margin-top:10px">' +
+          '<label style="font-size:13px;font-weight:800">🏫 الصف الافتراضي (في حال لم يحتوي الملف على عمود صفّ):</label>' +
+          '<select id="exc-bi-default-class">' + classOpts + '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div id="exc-bi-preview" style="font-size:13.5px;margin-bottom:12px"></div>' +
+      '<button type="button" class="btn ok" id="exc-bi-confirm" disabled style="width:100%;margin:0">💾 استيراد وحفظ القائمة في السجل السحابي</button>' +
+    '</div>';
+
+    $('exc-bi-close').onclick = function () { modal.hidden = true; };
+    modal.onclick = function (e) { if (e.target === modal) modal.hidden = true; };
+
+    function resolveClassKey(rawCls, fallbackKey) {
+      if (!rawCls) return { key: fallbackKey, arabic: (roster.classesMap[fallbackKey] && roster.classesMap[fallbackKey].classArabic) || fallbackKey };
+      var s = String(rawCls).trim();
+      for (var i = 0; i < roster.classesList.length; i++) {
+        var c = roster.classesList[i];
+        if (s === c.classKey || s === c.classArabic || s === c.classLabel || s.indexOf(c.classArabic) >= 0) {
+          return { key: c.classKey, arabic: c.classArabic };
+        }
+      }
+      var safeKey = 'class_' + s.replace(/[^\w\u0590-\u05FF\u0600-\u06FF]+/g, '_');
+      return { key: safeKey, arabic: s };
+    }
+
+    function extractStudentsFromGrid(grid) {
+      if (!grid || !grid.length) return [];
+      var headerIdx = -1;
+      var colId = -1, colName = -1, colFirst = -1, colLast = -1, colClass = -1, colGender = -1;
+      for (var r = 0; r < Math.min(15, grid.length); r++) {
+        var row = grid[r].map(function (c) { return String(c || '').trim(); });
+        for (var c = 0; c < row.length; c++) {
+          var h = row[c];
+          if (/זהות|ת"ז|ת\.ז|הوية|هويّة|id/i.test(h)) colId = c;
+          else if (/שם משפחה|العائلة/i.test(h)) colLast = c;
+          else if (/שם פרטי|الاسم الشخصي/i.test(h)) colFirst = c;
+          else if (/שם תלמיד|שם מלא|اسم الطالب|الاسم|^שם$/i.test(h)) colName = c;
+          else if (/כיתה|صف|الصف|class/i.test(h)) colClass = c;
+          else if (/מין|جنس|الجنس|gender/i.test(h)) colGender = c;
+        }
+        if (colId >= 0 && (colName >= 0 || colFirst >= 0)) { headerIdx = r; break; }
+      }
+      var out = [];
+      var startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
+      for (var i = startRow; i < grid.length; i++) {
+        var rw = grid[i];
+        if (!rw || !rw.length) continue;
+        var rawId = colId >= 0 ? rw[colId] : '';
+        if (!rawId) {
+          for (var j = 0; j < rw.length; j++) {
+            var cand = roster.normalizeId(rw[j]);
+            if (cand.length >= 8 && cand.length <= 9) { rawId = cand; break; }
+          }
+        }
+        var nid = roster.normalizeId(rawId);
+        if (!nid || nid.length < 5) continue;
+        var fullName = '';
+        if (colName >= 0 && rw[colName]) fullName = String(rw[colName]).trim();
+        else if (colLast >= 0 || colFirst >= 0) fullName = [colLast >= 0 ? rw[colLast] : '', colFirst >= 0 ? rw[colFirst] : ''].filter(Boolean).join(' ').trim();
+        else {
+          for (var k = 0; k < rw.length; k++) {
+            var txt = String(rw[k] || '').trim();
+            if (txt && !/^\d+$/.test(txt) && txt.length >= 3) { fullName = txt; break; }
+          }
+        }
+        if (!fullName) continue;
+        var gVal = colGender >= 0 ? String(rw[colGender] || '') : '';
+        var gender = /נקבה|أنثى|انثى|f/i.test(gVal) ? 'أنثى' : 'ذكر';
+        out.push({
+          idNumber: nid.padStart(9, '0'),
+          studentName: fullName,
+          rawClass: colClass >= 0 ? String(rw[colClass] || '').trim() : '',
+          gender: gender
+        });
+      }
+      return out;
+    }
+
+    function showParsedPreview(rows) {
+      parsedRows = rows;
+      var prev = $('exc-bi-preview');
+      if (!rows.length) {
+        prev.innerHTML = '<div style="color:#dc2626;font-weight:800">⚠️ لم يتم العثور على طلاب صالحين في الملف. تأكد من وجود عمود رقم الهوية والاسم.</div>';
+        $('exc-bi-confirm').disabled = true;
+        return;
+      }
+      $('exc-bi-confirm').disabled = false;
+      var sample = rows.slice(0, 6).map(function (r) {
+        return '<tr><td>' + esc(r.idNumber) + '</td><td>' + esc(r.studentName) + '</td><td>' + esc(r.rawClass || 'الافتراضي') + '</td></tr>';
+      }).join('');
+      prev.innerHTML = '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:10px">' +
+        '<b style="color:#15803d">✅ تم التعرّف على ' + rows.length + ' طالباً بنجاح! (معاينة أول ' + Math.min(6, rows.length) + '):</b>' +
+        '<table style="width:100%;margin-top:6px;font-size:12.5px"><thead><tr><th>الهوية</th><th>الاسم</th><th>الصف</th></tr></thead><tbody>' + sample + '</tbody></table>' +
+      '</div>';
+    }
+
+    $('exc-bi-file').onchange = function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      $('exc-bi-preview').innerHTML = '⏳ جارٍ قراءة الملف وتحليله...';
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var buf = ev.target.result;
+        var bytes = new Uint8Array(buf);
+        var isBinary = (bytes[0] === 0x50 && bytes[1] === 0x4B) || (bytes[0] === 0xD0 && bytes[1] === 0xCF);
+        if (!isBinary) {
+          var text = new TextDecoder('utf-8').decode(bytes);
+          if (/<table|<tr|<td/i.test(text)) {
+            var doc = new DOMParser().parseFromString(text, 'text/html');
+            var grid = Array.from(doc.querySelectorAll('tr')).map(function (tr) {
+              return Array.from(tr.querySelectorAll('th,td')).map(function (td) { return td.textContent.trim(); });
+            });
+            showParsedPreview(extractStudentsFromGrid(grid));
+            return;
+          }
+          var lines = text.split(/\r?\n/).filter(Boolean);
+          var sep = text.indexOf('\t') >= 0 ? '\t' : ',';
+          var csvGrid = lines.map(function (ln) { return ln.split(sep).map(function (v) { return v.replace(/^"|"$/g, '').trim(); }); });
+          showParsedPreview(extractStudentsFromGrid(csvGrid));
+          return;
+        }
+        // Binary .xlsx / .xls -> load SheetJS dynamically
+        function parseWithXLSX() {
+          var wb = window.XLSX.read(bytes, { type: 'array' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var grid = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          showParsedPreview(extractStudentsFromGrid(grid));
+        }
+        if (window.XLSX) { parseWithXLSX(); }
+        else {
+          var sc = document.createElement('script');
+          sc.src = 'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+          sc.onload = parseWithXLSX;
+          sc.onerror = function () { $('exc-bi-preview').innerHTML = '<div style="color:#dc2626">⚠️ تعذّر تحميل قارئ ملفات Excel الثنائية. يُرجى حفظ الملف بصيغة CSV أو XLS من التقرير.</div>'; };
+          document.head.appendChild(sc);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    $('exc-bi-confirm').onclick = function () {
+      if (!parsedRows.length) return;
+      var defClass = $('exc-bi-default-class').value;
+      var custom = roster.getCustomChanges();
+      parsedRows.forEach(function (r) {
+        var clsInfo = resolveClassKey(r.rawClass, defClass);
+        custom.deletedIds = custom.deletedIds.filter(function (d) { return roster.normalizeId(d).padStart(9, '0') !== r.idNumber; });
+        custom.upserts[r.idNumber] = {
+          idNumber: r.idNumber,
+          studentName: r.studentName,
+          classKey: clsInfo.key,
+          classArabic: clsInfo.arabic,
+          classLabel: clsInfo.arabic,
+          gender: r.gender
+        };
+      });
+      roster.saveCustomChanges(custom).then(function () {
+        refreshExcellenceClassSelect(true);
+        renderExcellenceTable();
+        modal.hidden = true;
+        showToast('✅ تم استيراد وحفظ ' + parsedRows.length + ' طالباً في السجل السحابي!');
+      });
     };
   }
 
