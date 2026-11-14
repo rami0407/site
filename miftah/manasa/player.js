@@ -1,4 +1,4 @@
-﻿
+
 (function () {
 'use strict';
 var HARVEST = ['ماذا استفدت؟', 'ماذا ساعدني في التعلّم؟', 'أين سأقابل ما تعلّمته؟'];
@@ -1555,7 +1555,7 @@ function start() {
 
   // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
   if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
-    fetch('lessons/TMYZ26.json?v=20261114_v5')
+    fetch('lessons/TMYZ26.json?v=20261114_v6')
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })
       .then(function (lData) {
         try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -2064,13 +2064,27 @@ function renderExcellenceStationFBuilder(stepIdx) {
       { t: '👑 مشروعُ الزّميلِ المساندِ في الرّياضيّاتِ واللّغات', d: 'إعدادُ أوراقِ عملٍ وألعابٍ تعليميّةٍ مبسّطةٍ لمساعدةِ زملائي في فهمِ الدّروسِ والتّدريبِ عليها.' },
       { t: '🌍 مشروعُ أصدقاءِ البيئةِ والجمالِ في مشيرفة', d: 'العنايةُ بحديقةِ ونظافةِ الصّفِّ والمدرسةِ وتوعيةُ الطّلّابِ بالعاداتِ الصّحّيّةِ والبيئيّة.' }
     ];
+    var noProjOptions = [
+      { t: '⏳ لم أخترْ مشروعي حاليّاً', d: 'لم أخترْ مشروعي حاليّاً، وسأحدّدُه لاحقاً بالتّشاور مع معلّمي بعدَ استكمالِ خطّتي.' },
+      { t: '🤔 لم أقرّرْ بعد', d: 'ما زلتُ في مرحلةِ التّفكيرِ والاختيار، وسأقرّرُ فكرةَ مشروعي في الفترةِ القادمة.' },
+      { t: '🎯 أكتفي بأهدافي الثّلاثةِ حاليّاً', d: 'سأركّزُ جهدي هذا الفصلَ على تحقيقِ أهدافي الثّلاثةِ وتطويرِ مستواي دونَ مشروعٍ منفصلٍ حاليّاً.' },
+      { t: '✨ خيارٌ أو مسارٌ آخر', d: 'لديّ مسارٌ أو فكرةٌ أخرى سأعملُ عليها أو أضيفُ تفاصيلَها لاحقاً.' }
+    ];
     return '<div class="card" style="border:2.5px solid #7c3aed;background:linear-gradient(135deg,#faf5ff,#f3e8ff)">' +
       '<h3 style="margin:0 0 6px;color:#6b21a8;font-size:19px">🚀 ورشةُ تحديدِ مشروعي الشّخصيِّ للتميّز هذا العام</h3>' +
-      '<p style="margin:0 0 10px;font-size:14.5px;color:#334155">اكتبْ ما هو مشروعُكَ الشّخصيُّ الّذي ستعملُ عليهِ لتطبيقِ أهدافِكَ (أو اخترْ فكرةً ملهمةً بالأسفل وطوِّرْها بأسلوبك):</p>' +
-      '<label style="font-weight:800;color:#4c1d95">📌 عنوانُ / اسمُ مشروعي للتميّز:</label>' +
-      '<input type="text" id="exc-proj-title" value="' + esc(p.projectTitle || '') + '" placeholder="مثال: مشروع المبتكر الصغير / تحدّي القراءة / الزميل المساند...">' +
-      '<label style="font-weight:800;color:#4c1d95;margin-top:10px;display:block">📝 فكرةُ مشروعي وما الّذي سأقومُ بعملِه وتقديمِه فيه:</label>' +
-      '<textarea id="exc-proj-desc" style="min-height:85px" placeholder="اشرحْ باختصارٍ ما هو مشروعُك، وكيفَ سيفيدُكَ ويفيدُ صفَّكَ ومدرستَك...">' + esc(p.projectDescription || '') + '</textarea>' +
+      '<p style="margin:0 0 10px;font-size:14.5px;color:#334155">اكتبْ مشروعَكَ الشّخصيَّ أو اخترْ فكرةً من الأسفل — وإذا لم تحدّدْ مشروعاً بعدُ يمكنك اختيارُ أحدِ الخياراتِ الجاهزةِ (مثل: لم أختر مشروعي حاليّاً / لم أقرّر بعد):</p>' +
+      '<div style="background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px">' +
+        '<div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:6px">⏳ لم تحدّدْ مشروعَكَ بعد؟ اخترْ أحدَ هذه الخياراتِ بنقرةٍ واحدةٍ:</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          noProjOptions.map(function (np) {
+            return '<button type="button" data-proj-tpl-t="' + esc(np.t) + '" data-proj-tpl-d="' + esc(np.d) + '" style="font-size:13px;font-weight:800;padding:7px 12px;background:#fff;border:1.5px solid #fbbf24;border-radius:10px;color:#78350f;cursor:pointer">' + esc(np.t) + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<label style="font-weight:800;color:#4c1d95">📌 عنوانُ / حالةُ مشروعي للتميّز:</label>' +
+      '<input type="text" id="exc-proj-title" value="' + esc(p.projectTitle || '') + '" placeholder="مثال: مشروع المبتكر الصغير / أو لم أختر مشروعي حاليّاً...">' +
+      '<label style="font-weight:800;color:#4c1d95;margin-top:10px;display:block">📝 فكرةُ مشروعي أو توضيحُ اختياري:</label>' +
+      '<textarea id="exc-proj-desc" style="min-height:85px" placeholder="اشرحْ باختصارٍ ما هو مشروعُك، أو سببَ تأجيلِ اختيارِه...">' + esc(p.projectDescription || '') + '</textarea>' +
       '<div style="margin-top:10px">' +
         '<div style="font-size:13px;font-weight:800;color:#6b21a8;margin-bottom:6px">💡 أفكارُ مشاريعَ ملهمةٍ (اضغطْ لتعبئتِها وتخصيصِها):</div>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">' +
@@ -2226,9 +2240,12 @@ function validateExcellenceStepBeforeNext(stepIdx) {
     }
   }
   if (stepIdx === 1) {
-    if (!p.projectTitle || !p.projectDescription) {
-      alert('الرجاء كتابة عنوان مشروعك وفكرته (أو اختيار فكرة مشروع وتخصيصها) قبل المتابعة 🚀');
+    if (!p.projectTitle) {
+      alert('الرجاء كتابة عنوان مشروعك أو اختيار أحد الخيارات (مثل: لم أختر مشروعي حاليّاً / لم أقرّر بعد) قبل المتابعة 🚀');
       return false;
+    }
+    if (!p.projectDescription) {
+      p.projectDescription = 'سيتمّ استكمالُ تفاصيلِ هذا الخيارِ مع المعلّمِ لاحقاً.';
     }
   }
   if (stepIdx === 2) {
