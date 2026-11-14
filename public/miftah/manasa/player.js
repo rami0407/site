@@ -246,7 +246,14 @@ function startStudentTimer(name) {
       timerBox = document.createElement('div');
       timerBox.id = 'pupil-timer-box';
       timerBox.className = 'pupil-timer-bar';
-      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(name || S.name) + '</span>' +
+      var official = S.officialName || '';
+      var chosen = name || S.name || '';
+      var displayName = official || chosen || 'طالب';
+      if (official && chosen && chosen !== official) {
+        displayName = official + ' (' + chosen + ')';
+      }
+      var classPart = S.classArabic ? ' — ' + S.classArabic : '';
+      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(displayName + classPart) + '</span>' +
         '<span class="p-clock" id="pupil-timer-clock">⏱️ 00:00</span>' +
         '<button type="button" class="p-exit-btn" id="pupil-exit-btn">🚪 خروج</button>';
       topEl.appendChild(timerBox);
@@ -1560,7 +1567,7 @@ function start() {
 
   // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
   if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
-    fetch('lessons/TMYZ26.json?v=20261114_v7')
+    fetch('lessons/TMYZ26.json?v=20261114_v8')
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })
       .then(function (lData) {
         try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}

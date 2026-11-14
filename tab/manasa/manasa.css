@@ -9,7 +9,7 @@ a{color:#5b21b6}
 .pupil-timer-bar .p-clock{font-family:monospace,Tahoma,sans-serif;letter-spacing:1px;background:#fff;color:#0b6bcb;padding:3px 10px;border-radius:8px;font-weight:800;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 .pupil-timer-bar .p-exit-btn{background:#e5484d;color:#fff;border:0;border-radius:10px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;margin-right:2px;transition:all .2s;font-family:inherit}
 .pupil-timer-bar .p-exit-btn:hover{background:#c93b40;transform:scale(1.05)}
-.pupil-timer-bar .p-name{color:#ffea79;font-weight:800}
+.pupil-timer-bar .p-name{color:#3b0764;background:#fef08a;padding:3px 12px;border-radius:999px;font-weight:900;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 
 /* خيارات الحصاد التفاعلية لدعم التمايز والطلاب */
 .harvest-q-box{margin-bottom:20px;background:#fcfdff;border:1px solid #e2ebf4;border-radius:14px;padding:14px}
