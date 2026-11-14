@@ -1207,24 +1207,33 @@ function fetchCloudLessonByCode(code) {
     });
 }
 
+function sanitizeLessonSimulation(lObj) {
+  if (!lObj || typeof lObj !== 'object') return lObj;
+  var isHeat = (lObj.id === 'heat' || lObj.code === 'heat');
+  if (!isHeat && lObj.experiment && lObj.experiment.type === 'spoons') {
+    delete lObj.experiment;
+  }
+  return lObj;
+}
+
 function findLocalLessonByCode(code) {
   var cleanCode = String(code || '').trim().toUpperCase();
   if (!cleanCode) return null;
   try {
     var cachedL = JSON.parse(localStorage.getItem('manasa-lesson-' + cleanCode) || 'null');
-    if (cachedL && cachedL.title) return cachedL;
+    if (cachedL && cachedL.title) return sanitizeLessonSimulation(cachedL);
   } catch (_) {}
   try {
     var cachedS = JSON.parse(localStorage.getItem('manasa-session-' + cleanCode) || 'null');
     if (cachedS) {
       var ld = cachedS.lessonData || JSON.parse(localStorage.getItem('manasa-lesson-' + cachedS.lesson) || 'null');
-      if (ld && ld.title) return ld;
+      if (ld && ld.title) return sanitizeLessonSimulation(ld);
     }
   } catch (_) {}
   try {
     var arch = JSON.parse(localStorage.getItem('miftah_archive_lessons') || '[]');
     var found = arch.find(function (item) { return String(item.code || '').toUpperCase() === cleanCode; });
-    if (found && found.data && found.data.title) return found.data;
+    if (found && found.data && found.data.title) return sanitizeLessonSimulation(found.data);
   } catch (_) {}
   return null;
 }
@@ -1233,6 +1242,27 @@ function start() {
   var cCode = qs.get('c');
   var sCode = S.sid;
   var targetCode = cCode || sCode;
+
+  // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
+  if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
+    fetch('lessons/TMYZ26.json?v=20261114_v3')
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (lData) {
+        try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
+        L = lData;
+        document.title = L.title + ' — منصة مفتاح';
+        welcome();
+      })
+      .catch(function () {
+        var fallbackLocal = findLocalLessonByCode('TMYZ26');
+        if (fallbackLocal) {
+          L = fallbackLocal;
+          document.title = L.title + ' — منصة مفتاح';
+          welcome();
+        }
+      });
+    return;
+  }
 
   // 1. فحص التخزين المحلي أولاً للدخول الفوري
   if (targetCode) {
@@ -1423,8 +1453,7 @@ function renderStudentGroupPicker(isSwitching) {
 
 function launchStationTaContent() {
   waitingForTeacherGroup = false;
-  if (L.experiment) experiment();
-  else practice();
+  experiment();
 }
 
 function enterStationTa() {
@@ -1556,24 +1585,330 @@ function stationF(i) {
     }) + '<div id="after"></div></div>');
 }
 // ---------- ت ----------
-function experiment() {
-  S.st = 2; report(); var x = L.experiment; ctx(L.recap, x.intro);
-  h(head('🧪 ' + esc(x.title)) + '<p>' + esc(x.intro) + '</p>' + sayBtn(x.intro) +
-    '<p class="q">توقُّعي:</p><div id="pred">' + x.materials.map(function (m, i) { return '<button class="opt" data-m="' + i + '">' + m.emoji + ' ' + esc(m.name) + '</button>'; }).join('') + '</div>' +
-    '<div class="lab">' + x.materials.map(function (m, i) { return '<div><div class="beaker"><div class="steam">♨️</div><div class="spoon" style="background:' + m.color + '"><div class="butter" id="bt' + i + '"></div></div></div><b>' + m.emoji + ' ' + esc(m.name) + '</b><div class="bar"><i id="hb' + i + '" style="background:#e0524f"></i></div></div>'; }).join('') + '</div>' +
-    '<div class="timer" id="tm">0 ث</div><button class="btn big" id="go" disabled>▶️ شغِّلِ التّجربة</button><div id="after"></div></div>');
-  var pick = null;
-  app.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { app.querySelectorAll('[data-m]').forEach(function (z) { z.classList.remove('pick'); }); b.classList.add('pick'); pick = +b.getAttribute('data-m'); $('#go').disabled = false; }; });
-  $('#go').onclick = function () {
-    $('#go').disabled = true; app.querySelectorAll('[data-m]').forEach(function (z) { z.disabled = true; });
-    var t = 0, heat = x.materials.map(function () { return 0; });
-    var iv = setInterval(function () {
-      t++; $('#tm').textContent = t + ' ث';
-      x.materials.forEach(function (m, i) { heat[i] = Math.min(100, heat[i] + m.speed * 12); $('#hb' + i).style.width = heat[i] + '%'; var b = $('#bt' + i); var melt = Math.max(0, (heat[i] - 40) / 60); b.style.height = Math.max(4, 22 - 18 * melt) + 'px'; b.style.width = (34 + 16 * melt) + 'px'; b.style.opacity = 1 - 0.6 * melt; });
-      if (t >= 10) { clearInterval(iv); var right = x.materials[pick].name === x.answer;
-        showNext('<div class="fb ' + (right ? 'good' : 'bad') + '">' + (right ? '✅ توقّعُك صحيح! ' : '🤔 توقّعُك كان مختلفًا، وهذا جيّد: العلماءُ يتعلّمون من التّجربة. ') + esc(x.conclusion) + '</div>' + sayBtn(x.conclusion) + next('إلى التّمارين التّكيّفيّة ⬅', practice)); }
-    }, 600);
+var DEFAULT_EXCELLENCE_SIM = {
+  type: 'scenario_lab',
+  title: 'محاكاةُ مواقفِ التميّز: كيفَ تصنعُ قراراتُكَ تفوّقَكَ في الصّفّ؟',
+  intro: 'في هذه المحاكاةِ التّفاعليّةِ المرتبطةِ بموضوعِ التميّز، ستعيشُ 3 مواقفَ حقيقيّةٍ لطالبٍ في مدرسةِ مشيرفة الابتدائية. في كلِّ موقفٍ، جرِّبِ اتّخاذَ القرارِ وراقبْ كيفَ تتأثّرُ مؤشّراتُ التميّزِ الأربعةُ لديكَ (الفهمُ العميق، المثابرة، التّعاون، وإثباتُ الدّليل) مباشرةً بناءً على اختيارك!',
+  gauges: [
+    { id: 'comprehension', label: '🧠 الفهمُ العميق', color: '#0284c7' },
+    { id: 'persistence', label: '💪 المثابرةُ والتّعلّمُ من الخطأ', color: '#7c3aed' },
+    { id: 'teamwork', label: '🤝 التّعاونُ الإيجابيّ', color: '#059669' },
+    { id: 'evidence', label: '🔍 التّحقّقُ بالدّليل', color: '#d97706' }
+  ],
+  scenarios: [
+    {
+      title: 'الموقفُ الأوّل: مواجهةُ فكرةٍ جديدةٍ وسؤالٍ غيرِ مألوفٍ في الحصّة',
+      situation: 'أثناءَ تعلّمِكَ في محطّةِ «ف»، واجهتَ فكرةً علميّةً جديدةً وسؤالاً لم تعرفْ إجابتَه من النّظرةِ الأولى. أيُّ قرارٍ تتّخذُه الآنَ في المحاكاة؟',
+      choices: [
+        {
+          text: '⚡ أضغطُ على أيِّ خيارٍ عشوائيّاً بسرعةٍ حتّى أنتهيَ قبلَ الجميع',
+          isOptimal: false,
+          impact: { comprehension: -15, persistence: -10, teamwork: 0, evidence: -15 },
+          effectText: '📉 نتيجةُ المحاكاة: التّسرّعُ العشوائيُّ أدّى إلى إجابةٍ خاطئةٍ دونَ فهمِ القاعدة، فتراجعتْ دقّةُ الفهمِ والدّليلِ وتوقّفَ التّقدّمُ عندَ السّؤالِ التّالي!'
+        },
+        {
+          text: '🔑 أقرأُ الشّرحَ بتركيزٍ وأستعينُ بزرِّ «اشرح لي أكثر» أو «🔑 مفتاح» لفهمِ السّببِ العلميّ',
+          isOptimal: true,
+          impact: { comprehension: 30, persistence: 25, teamwork: 10, evidence: 20 },
+          effectText: '🌟 نتيجةُ المحاكاة: قرارٌ متميّز! البحثُ عن الفهمِ العميقِ واستخدامُ أدواتِ المبادرةِ رفعَ مؤشّرَ الاستيعابِ والمثابرةِ ومكّنكَ من حلِّ السّؤالِ بثقةٍ تامّة!'
+        },
+        {
+          text: '😶 أتوقّفُ عن المحاولةِ وأقولُ: هذا الموضوعُ صعبٌ ولن أفهمَه',
+          isOptimal: false,
+          impact: { comprehension: -10, persistence: -25, teamwork: -5, evidence: -10 },
+          effectText: '📉 نتيجةُ المحاكاة: الاستسلامُ المبكّرُ أوقفَ نموَّ مؤشّرِ المثابرةِ وحرمَكَ من فرصةِ التّعلّمِ السّهلِ خطوةً بخطوة!'
+        }
+      ]
+    },
+    {
+      title: 'الموقفُ الثّاني: العملُ التّعاونيُّ ضمنَ المجموعةِ في محطّةِ التّدريب',
+      situation: 'في مرحلةِ التّدريبِ ضمنَ المجموعات، لاحظتَ أنَّ زميلَكَ في المجموعةِ أخطأَ في حلِّ مسألةٍ بينما عرفتَ أنتَ طريقةَ الحلِّ الصّحيحة. كيفَ تتصرّفُ؟',
+      choices: [
+        {
+          text: '✍️ أعطيهِ الجوابَ النّهائيَّ فقط ليكتبَه بسرعةٍ دونَ أن أشرحَ له السّبب',
+          isOptimal: false,
+          impact: { comprehension: -5, persistence: 0, teamwork: -15, evidence: -10 },
+          effectText: '📉 نتيجةُ المحاكاة: نقلُ الجوابِ بلا شرحٍ لم يبنِ فهماً حقيقيّاً لدى زميلِكَ، فتعثّرتِ المجموعةُ عندما تغيّرتْ أرقامُ السّؤال!'
+        },
+        {
+          text: '🤝 أشرحُ لزميلي خطواتِ الحلِّ بهدوءٍ وأناقشُ معهُ القاعدةَ حتّى نُتقنَ الفكرةَ معاً',
+          isOptimal: true,
+          impact: { comprehension: 25, persistence: 20, teamwork: 35, evidence: 20 },
+          effectText: '🌟 نتيجةُ المحاكاة: تصرّفُ القائدِ المتميّز! عندما شرحتَ الفكرةَ لزميلِكَ ترسّختِ المعلومةُ في ذهنِكَ أضعافاً وارتفعَ مؤشّرُ التّعاونِ وتفوّقتِ المجموعةُ بأكملها!'
+        },
+        {
+          text: '🏃‍♂️ أعملُ بمفردي تماماً وأتجاهلُ أسئلةَ أفرادِ مجموعتي',
+          isOptimal: false,
+          impact: { comprehension: 0, persistence: -5, teamwork: -25, evidence: 0 },
+          effectText: '📉 نتيجةُ المحاكاة: العملُ الانفراديُّ داخلَ المجموعةِ أضعفَ روحَ الفريقِ وخفّضَ مؤشّرَ التّعاونِ الإيجابيّ!'
+        }
+      ]
+    },
+    {
+      title: 'الموقفُ الثّالث: التّحقّقُ بالدّليلِ قبلَ تسليمِ المهمّةِ النّهائيّة',
+      situation: 'وصلتَ إلى سؤالِ الدّليلِ الفرديِّ لإثباتِ تميّزِكَ في الشّهادةِ المدرسيّة، ووجدتَ خيارَيْنِ يبدوانِ متقاربَيْنِ جدّاً. ما هو قرارُكَ الحاسم؟',
+      choices: [
+        {
+          text: '🔍 أراجعُ قاعدةَ الدّرسِ وأفحصُ كلَّ خيارٍ بالدّليلِ العلميِّ وأستبعدُ الخيارَ غيرَ الدّقيق',
+          isOptimal: true,
+          impact: { comprehension: 25, persistence: 25, teamwork: 15, evidence: 35 },
+          effectText: '🌟 نتيجةُ المحاكاة: إتقانٌ كامل! التّحقّقُ بالدّليلِ والبرهانِ كشفَ لكَ الفرقَ الدّقيقَ بينَ الخيارَيْنِ فحقّقتَ درجةَ التميّزِ الكاملةَ عن جدارة!'
+        },
+        {
+          text: '🎲 أعتمدُ على الحظِّ والتّخمينِ السّريعِ بينَ الخيارَيْنِ دونَ مراجعة',
+          isOptimal: false,
+          impact: { comprehension: -10, persistence: -15, teamwork: 0, evidence: -25 },
+          effectText: '📉 نتيجةُ المحاكاة: التّخمينُ العشوائيُّ أوقعَكَ في الخيارِ المشتِّتِ وأفقدَكَ نقاطَ الدّليلِ والبرهان!'
+        },
+        {
+          text: '⏩ أختارُ الخيارَ الأوّلَ فوراً دونَ قراءةِ بقيّةِ الكلماتِ حتّى النّهاية',
+          isOptimal: false,
+          impact: { comprehension: -15, persistence: -10, teamwork: 0, evidence: -20 },
+          effectText: '📉 نتيجةُ المحاكاة: القراءةُ النّاقصةُ أغفلتْ كلمةً مفتاحيّةً مهمّةً في نهايةِ السّؤالِ غيّرتِ المعنى!'
+        }
+      ]
+    }
+  ],
+  conclusion: 'أثبتتْ محاكاةُ المواقفِ أنَّ التميّزَ في مدرسةِ مشيرفة ليس ضربةَ حظّ، بل هو حصيلةُ قراراتٍ ذكيّةٍ متتالية: البحثُ عن الفهمِ العميق، المثابرةُ والتّعلّمُ من الخطأ، مساندةُ الزّملاءِ بالشّرح، والتّحقّقُ بالدّليل!'
+};
+
+function buildTopicScenarioLabFromLesson(lessonObj) {
+  var isExc = (lessonObj.id === 'TMYZ26' || lessonObj.code === 'TMYZ26' || lessonObj.id === 'excellence' || /التميز|التميّز/.test(lessonObj.title || ''));
+  if (isExc) return DEFAULT_EXCELLENCE_SIM;
+
+  var steps = (lessonObj.explain && Array.isArray(lessonObj.explain.steps)) ? lessonObj.explain.steps : [];
+  if (!steps.length) return null;
+
+  var gauges = steps.slice(0, 3).map(function (st, idx) {
+    var colors = ['#0284c7', '#7c3aed', '#059669'];
+    var icons = ['📘', '⚡', '🎯'];
+    var shortLabel = (st.title || ('المفهوم ' + (idx + 1))).replace(/^الخطوة\s*\d+\s*[:\-]?\s*/i, '').slice(0, 38);
+    return {
+      id: 'g' + idx,
+      label: icons[idx % 3] + ' ' + shortLabel,
+      color: colors[idx % 3]
+    };
+  });
+
+  var scenarios = steps.slice(0, 3).map(function (st, idx) {
+    var chk = st.check || {};
+    var opts = Array.isArray(chk.options) && chk.options.length >= 2 ? chk.options : ['تطبيق القاعدة الصحيحة للدرس', 'تخمين غير مبني على قاعدة الدرس'];
+    var ansIdx = typeof chk.answer === 'number' ? chk.answer : 0;
+    var gKey = 'g' + idx;
+    var choices = opts.map(function (optText, oIdx) {
+      var isRight = oIdx === ansIdx;
+      var imp = {};
+      gauges.forEach(function (g) { imp[g.id] = isRight ? (g.id === gKey ? 45 : 15) : (g.id === gKey ? -15 : -5); });
+      return {
+        text: (isRight ? '🔬 ' : '💭 ') + optText,
+        isOptimal: isRight,
+        impact: imp,
+        effectText: isRight
+          ? ('🌟 نتيجة المحاكاة التطبيقية: ' + (chk.why || st.text || 'تطبيق صحيح ودقيق لمفهوم الدرس!'))
+          : ('📉 نتيجة المحاكاة: هذا الاختيار لا يتوافق مع قاعدة الدرس (' + (st.more || st.text || '') + '). جرّب القرار العلمي الصحيح!')
+      };
+    });
+    return {
+      title: 'تجربة المفهوم ' + (idx + 1) + ': ' + (st.title || lessonObj.title),
+      situation: (chk.q ? ('الموقف التطبيقي: ' + chk.q + ' — بناءً على ما تعلّمته: «' + (st.text || '') + '»') : (st.text || '')),
+      choices: choices
+    };
+  });
+
+  return {
+    type: 'scenario_lab',
+    title: 'محاكاةٌ تفاعليّةٌ مرتبطةٌ بمضمونِ: ' + (lessonObj.title || 'الدّرس'),
+    intro: 'في هذه المحاكاةِ التّفاعليّةِ الخاصّةِ بدرسِ «' + (lessonObj.title || '') + '»، اختبرْ تطبيقَ مفاهيمِ الحصّةِ في كلِّ حالةٍ عمليّةٍ وراقبْ كيفَ تتفاعلُ مؤشّراتُ إتقانِ المفهومِ العلميِّ مباشرةً!',
+    gauges: gauges,
+    scenarios: scenarios,
+    conclusion: lessonObj.recap || ('أثبتتِ المحاكاةُ التّطبيقيّةُ صحّةَ قواعدِ ومفاهيمِ درسِ «' + (lessonObj.title || '') + '» عندَ تطبيقِها بالدّليل!')
   };
+}
+
+function experiment() {
+  S.st = 2; report();
+  var isHeatLesson = (L.id === 'heat' || L.code === 'heat');
+
+  // 1. تجربة الملاعق الحرارية تُعرض حصرياً لدرس التوصيل الحراري (heat) فقط وممنوع عرضها لأي درس آخر
+  if (isHeatLesson && L.experiment && Array.isArray(L.experiment.materials)) {
+    var x = L.experiment; ctx(L.recap, x.intro);
+    h(head('🧪 ' + esc(x.title)) + '<p>' + esc(x.intro) + '</p>' + sayBtn(x.intro) +
+      '<p class="q">توقُّعي:</p><div id="pred">' + x.materials.map(function (m, i) { return '<button class="opt" data-m="' + i + '">' + m.emoji + ' ' + esc(m.name) + '</button>'; }).join('') + '</div>' +
+      '<div class="lab">' + x.materials.map(function (m, i) { return '<div><div class="beaker"><div class="steam">♨️</div><div class="spoon" style="background:' + m.color + '"><div class="butter" id="bt' + i + '"></div></div></div><b>' + m.emoji + ' ' + esc(m.name) + '</b><div class="bar"><i id="hb' + i + '" style="background:#e0524f"></i></div></div>'; }).join('') + '</div>' +
+      '<div class="timer" id="tm">0 ث</div><button class="btn big" id="go" disabled>▶️ شغِّلِ التّجربة</button><div id="after"></div></div>');
+    var pick = null;
+    app.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { app.querySelectorAll('[data-m]').forEach(function (z) { z.classList.remove('pick'); }); b.classList.add('pick'); pick = +b.getAttribute('data-m'); $('#go').disabled = false; }; });
+    $('#go').onclick = function () {
+      $('#go').disabled = true; app.querySelectorAll('[data-m]').forEach(function (z) { z.disabled = true; });
+      var t = 0, heat = x.materials.map(function () { return 0; });
+      var iv = setInterval(function () {
+        t++; $('#tm').textContent = t + ' ث';
+        x.materials.forEach(function (m, i) { heat[i] = Math.min(100, heat[i] + m.speed * 12); $('#hb' + i).style.width = heat[i] + '%'; var b = $('#bt' + i); var melt = Math.max(0, (heat[i] - 40) / 60); b.style.height = Math.max(4, 22 - 18 * melt) + 'px'; b.style.width = (34 + 16 * melt) + 'px'; b.style.opacity = 1 - 0.6 * melt; });
+        if (t >= 10) { clearInterval(iv); var right = x.materials[pick].name === x.answer;
+          showNext('<div class="fb ' + (right ? 'good' : 'bad') + '">' + (right ? '✅ توقّعُك صحيح! ' : '🤔 توقّعُك كان مختلفًا، وهذا جيّد: العلماءُ يتعلّمون من التّجربة. ') + esc(x.conclusion) + '</div>' + sayBtn(x.conclusion) + next('إلى التّمارين التّكيّفيّة ⬅', practice)); }
+      }, 600);
+    };
+    return;
+  }
+
+  // 2. المحاكاة التفاعلية المرتبطة ارتباطاً تاماً ووثيقاً بمضمون الدرس وفكرته
+  var sim = (L.experiment && L.experiment.type === 'scenario_lab' && Array.isArray(L.experiment.scenarios) && L.experiment.scenarios.length)
+    ? L.experiment
+    : buildTopicScenarioLabFromLesson(L);
+
+  if (!sim || !Array.isArray(sim.scenarios) || !sim.scenarios.length) {
+    return practice();
+  }
+
+  var gauges = Array.isArray(sim.gauges) && sim.gauges.length ? sim.gauges : [
+    { id: 'comprehension', label: '🧠 استيعابُ المفهوم', color: '#0284c7' },
+    { id: 'application', label: '⚡ دقّةُ التّطبيق', color: '#7c3aed' },
+    { id: 'evidence', label: '🔍 البرهانُ والدّليل', color: '#059669' }
+  ];
+
+  var curIdx = 0;
+  var solvedMap = {};
+  var gaugeVals = {};
+  gauges.forEach(function (g) { gaugeVals[g.id] = 35; });
+
+  function renderSimStep() {
+    var sc = sim.scenarios[curIdx];
+    ctx(L.recap, sim.intro + ' ' + sc.situation);
+
+    var gaugesHtml = '<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border-radius:16px;padding:14px 16px;margin:12px 0;box-shadow:0 8px 20px rgba(15,23,42,0.18)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">' +
+        '<b style="font-size:15px;color:#38bdf8">📊 لوحةُ مؤشّراتِ المحاكاةِ الحيّة (تتفاعلُ مع قراراتك في الموقف):</b>' +
+        '<span class="pill" style="background:rgba(255,255,255,0.15);color:#fef08a;font-size:12.5px;font-weight:800">الموقف ' + (curIdx + 1) + ' من ' + sim.scenarios.length + '</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px">' +
+        gauges.map(function (g) {
+          var v = Math.max(5, Math.min(100, Math.round(gaugeVals[g.id] || 35)));
+          return '<div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:8px 10px">' +
+            '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:5px">' +
+              '<span>' + esc(g.label) + '</span>' +
+              '<span id="sim-gval-' + esc(g.id) + '" style="color:#fef08a">' + v + '%</span>' +
+            '</div>' +
+            '<div style="height:10px;background:rgba(255,255,255,0.15);border-radius:999px;overflow:hidden">' +
+              '<div id="sim-gbar-' + esc(g.id) + '" style="height:100%;width:' + v + '%;background:' + (g.color || '#38bdf8') + ';border-radius:999px;transition:width 0.45s cubic-bezier(.4,0,.2,1)"></div>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+    var stepsPills = '<div style="display:flex;gap:6px;margin:10px 0;flex-wrap:wrap">' +
+      sim.scenarios.map(function (sItem, sIdx) {
+        var isDone = !!solvedMap[sIdx];
+        var isCur = sIdx === curIdx;
+        var bg = isDone ? '#dcfce7' : (isCur ? '#e0f2fe' : '#f1f5f9');
+        var col = isDone ? '#15803d' : (isCur ? '#0369a1' : '#64748b');
+        var brd = isDone ? '#86efac' : (isCur ? '#38bdf8' : '#cbd5e1');
+        return '<span style="padding:5px 12px;border-radius:999px;font-size:13px;font-weight:800;background:' + bg + ';color:' + col + ';border:1.5px solid ' + brd + '">' +
+          (isDone ? '✅ ' : (isCur ? '🎯 ' : '⏳ ')) + 'الموقف ' + (sIdx + 1) +
+        '</span>';
+      }).join('') +
+    '</div>';
+
+    var scenarioCard = '<div style="background:linear-gradient(135deg,#f8fafc,#eff6ff);border:2px solid #93c5fd;border-radius:16px;padding:16px;margin:10px 0">' +
+      '<div style="font-size:14px;font-weight:900;color:#0369a1;margin-bottom:6px">🎬 ' + esc(sc.title || ('الموقف التطبيقي ' + (curIdx + 1))) + '</div>' +
+      '<p style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 10px;line-height:1.65">' + esc(sc.situation) + '</p>' +
+      sayBtn(sc.situation) +
+      '<p style="margin:12px 0 8px;font-size:14.5px;font-weight:800;color:#334155">👇 اخترِ القرارَ أو التّصرّفَ لتشغيلِ المحاكاةِ ومشاهدةِ أثرهِ المباشر:</p>' +
+      '<div id="sim-choices-wrap">' +
+        (sc.choices || []).map(function (ch, cIdx) {
+          return '<button type="button" class="opt" data-sim-c="' + cIdx + '" style="text-align:right;font-size:16px;font-weight:700;margin-bottom:8px;transition:all 0.2s">' +
+            esc(ch.text) +
+          '</button>';
+        }).join('') +
+      '</div>' +
+      '<div id="sim-effect-box" style="margin-top:10px"></div>' +
+    '</div>';
+
+    h(head('🎯 ' + esc(sim.title)) +
+      '<p style="font-size:16px;color:#334155;margin:4px 0 8px">' + esc(sim.intro) + '</p>' +
+      sayBtn(sim.intro) +
+      gaugesHtml +
+      stepsPills +
+      scenarioCard +
+      '<div id="after"></div></div>');
+
+    app.querySelectorAll('[data-sim-c]').forEach(function (btn) {
+      btn.onclick = function () {
+        var cIdx = Number(btn.getAttribute('data-sim-c'));
+        var choice = sc.choices[cIdx];
+        if (!choice) return;
+
+        app.querySelectorAll('[data-sim-c]').forEach(function (b) {
+          b.classList.remove('pick', 'right', 'wrong');
+        });
+        btn.classList.add('pick');
+
+        // تحديث المؤشرات الحية في المحاكاة
+        var imp = choice.impact || {};
+        gauges.forEach(function (g) {
+          var delta = typeof imp[g.id] === 'number' ? imp[g.id] : (choice.isOptimal ? 22 : -10);
+          var baseVal = 35 + (Object.keys(solvedMap).length * 20);
+          var newVal = choice.isOptimal
+            ? Math.min(100, Math.max(baseVal + 20, (gaugeVals[g.id] || 35) + Math.abs(delta)))
+            : Math.max(15, Math.min(90, (gaugeVals[g.id] || 35) + delta));
+          gaugeVals[g.id] = newVal;
+          var barEl = document.getElementById('sim-gbar-' + g.id);
+          var valEl = document.getElementById('sim-gval-' + g.id);
+          if (barEl) {
+            barEl.style.width = newVal + '%';
+            barEl.style.background = choice.isOptimal ? (g.color || '#10b981') : '#ef4444';
+          }
+          if (valEl) valEl.textContent = Math.round(newVal) + '%';
+        });
+
+        var effectBox = document.getElementById('sim-effect-box');
+        if (choice.isOptimal) {
+          btn.classList.add('right');
+          solvedMap[curIdx] = true;
+          app.querySelectorAll('[data-sim-c]').forEach(function (b) { b.disabled = true; });
+          if (effectBox) {
+            effectBox.innerHTML = '<div class="fb good" style="border-width:2px;font-size:16px;line-height:1.6">' +
+              esc(choice.effectText) +
+            '</div>' + sayBtn(choice.effectText);
+          }
+
+          if (curIdx + 1 < sim.scenarios.length) {
+            showNext(next('الموقفُ التّالي في المحاكاة (' + (curIdx + 2) + ' من ' + sim.scenarios.length + ') ⬅', function () {
+              curIdx++;
+              renderSimStep();
+            }));
+          } else {
+            // اكتملت جميع مواقف المحاكاة بنجاح — نرفع المؤشرات إلى 100% ونعرض الاستنتاج
+            gauges.forEach(function (g) {
+              gaugeVals[g.id] = 100;
+              var barEl = document.getElementById('sim-gbar-' + g.id);
+              var valEl = document.getElementById('sim-gval-' + g.id);
+              if (barEl) { barEl.style.width = '100%'; barEl.style.background = '#10b981'; }
+              if (valEl) valEl.textContent = '100%';
+            });
+            showNext(
+              '<div class="fb good" style="margin-top:12px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #10b981;padding:16px;border-radius:14px">' +
+                '<div style="font-size:18px;font-weight:900;color:#065f46;margin-bottom:6px">🏆 اكتملتْ محاكاةُ الدّرسِ بنجاحٍ تامّ (100%)!</div>' +
+                '<p style="margin:0;font-size:16px;color:#064e3b;line-height:1.65">' + esc(sim.conclusion) + '</p>' +
+              '</div>' +
+              sayBtn(sim.conclusion) +
+              next('إلى التّمارين التّكيّفيّة (حسب قدراتك) ⬅', practice)
+            );
+          }
+        } else {
+          btn.classList.add('wrong');
+          if (effectBox) {
+            effectBox.innerHTML = '<div class="fb bad" style="border-width:2px;font-size:15.5px;line-height:1.6">' +
+              esc(choice.effectText) +
+              '<div style="margin-top:6px;font-weight:800;color:#991b1b">🔄 لاحظْ كيفَ تراجعتِ المؤشّراتُ في الأعلى! جرِّبْ قراراً آخرَ في هذا الموقفِ لتصلَ إلى النّتيجةِ المثلى.</div>' +
+            '</div>' + sayBtn(choice.effectText);
+          }
+        }
+      };
+    });
+  }
+
+  renderSimStep();
 }
 var LV = { easy: '🌱 تأسيسي (سهل)', medium: '⚡ متمكّن (متوسّط)', hard: '🏆 متميّز متقدّم (صعب)' }, ORDER = ['easy', 'medium', 'hard'];
 function renderAbilityStepper(curLv) {

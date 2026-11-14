@@ -328,7 +328,7 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
-    fetch('lessons/excellence.json')
+    fetch('lessons/excellence.json?v=20261114_v3')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (lData) {
         if (lData) {
@@ -955,6 +955,55 @@
         ];
       }
     }
+    // ضمان أن المحاكاة مرتبطة ارتباطاً وثيقاً بمضمون الدرس (ومنع محاكاة الملاعق لأي درس غير التوصيل الحراري)
+    var isHeat = (L.id === 'heat' || L.code === 'heat');
+    if (!isHeat && L.experiment && L.experiment.type === 'spoons') {
+      delete L.experiment;
+    }
+    if (!isHeat && (!L.experiment || L.experiment.type !== 'scenario_lab' || !Array.isArray(L.experiment.scenarios) || !L.experiment.scenarios.length)) {
+      var stepsArr = (L.explain && Array.isArray(L.explain.steps)) ? L.explain.steps : [];
+      if (stepsArr.length) {
+        var gaugesArr = stepsArr.slice(0, 3).map(function (st, idx) {
+          var cols = ['#0284c7', '#7c3aed', '#059669'];
+          var icns = ['📘', '⚡', '🎯'];
+          var lbl = (st.title || ('المفهوم ' + (idx + 1))).replace(/^الخطوة\s*\d+\s*[:\-]?\s*/i, '').slice(0, 36);
+          return { id: 'g' + idx, label: icns[idx % 3] + ' ' + lbl, color: cols[idx % 3] };
+        });
+        var scensArr = stepsArr.slice(0, 3).map(function (st, idx) {
+          var chk = st.check || {};
+          var opts = (Array.isArray(chk.options) && chk.options.length >= 2) ? chk.options : ['تطبيق قاعدة الدرس بدقة', 'اختيار غير مبني على القاعدة'];
+          var ansIdx = typeof chk.answer === 'number' ? chk.answer : 0;
+          var gKey = 'g' + idx;
+          var choices = opts.map(function (optText, oIdx) {
+            var isRight = oIdx === ansIdx;
+            var imp = {};
+            gaugesArr.forEach(function (g) { imp[g.id] = isRight ? (g.id === gKey ? 45 : 15) : (g.id === gKey ? -15 : -5); });
+            return {
+              text: (isRight ? '🔬 ' : '💭 ') + optText,
+              isOptimal: isRight,
+              impact: imp,
+              effectText: isRight
+                ? ('🌟 نتيجة المحاكاة التطبيقية: ' + (chk.why || st.text || 'تطبيق سليم ودقيق لمفهوم الدرس!'))
+                : ('📉 نتيجة المحاكاة: هذا الاختيار لا يتطابق مع قاعدة الدرس (' + (st.more || st.text || '') + '). جرّب القرار العلمي الصحيح!')
+            };
+          });
+          return {
+            title: 'تجربة المفهوم ' + (idx + 1) + ': ' + (st.title || L.title),
+            situation: (chk.q ? ('الموقف التطبيقي: ' + chk.q + ' — بناءً على ما تعلمته: «' + (st.text || '') + '»') : (st.text || '')),
+            choices: choices
+          };
+        });
+        L.experiment = {
+          type: 'scenario_lab',
+          title: 'محاكاةٌ تفاعليّةٌ مرتبطةٌ بمضمونِ: ' + (L.title || 'الدّرس'),
+          intro: 'في هذه المحاكاة التفاعليّة المرتبطة بدرس «' + (L.title || '') + '»، اختبرْ تطبيقَ مفاهيم الحصّة في كلّ موقفٍ عمليٍّ وراقبْ كيف تتفاعلُ مؤشّراتُ الإتقانِ مباشرةً!',
+          gauges: gaugesArr,
+          scenarios: scensArr,
+          conclusion: L.recap || ('أثبتت المحاكاة التفاعلية صحة قواعد ومفاهيم درس «' + (L.title || '') + '» عند تطبيقها بالدليل!')
+        };
+      }
+    }
+
     if (!Array.isArray(L.challenges)) L.challenges = [];
     return L;
   }
@@ -965,6 +1014,26 @@
     try {
       lesson = JSON.parse(localStorage.getItem('manasa-lesson-' + code) || 'null');
     } catch (_) {}
+
+    if (code === 'TMYZ26') {
+      fetch('lessons/excellence.json?v=20261114_v3')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          data.code = 'TMYZ26';
+          try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(data)); } catch (_) {}
+          activeInspectedLesson = normalizeLessonStructure(data);
+          renderInspectorUI();
+          showView('inspector');
+        })
+        .catch(function () {
+          if (lesson) {
+            activeInspectedLesson = normalizeLessonStructure(lesson);
+            renderInspectorUI();
+            showView('inspector');
+          }
+        });
+      return;
+    }
 
     if (!lesson && code === 'heat') {
       fetch('lessons/heat.json')
