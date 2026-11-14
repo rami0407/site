@@ -36,7 +36,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b;font-size:14.5px}
 .msg.ok{color:#2f855a}
 </style>
-<script src="manasa/students-roster.js?v=20261114_v1"></script>
+<script src="manasa/students-roster.js?v=20261114_v2"></script>
 </head>
 <body>
 <a class="home" href="teacher/login.html" title="دخول المعلّم" aria-label="دخول المعلّم">🏠</a>
@@ -178,7 +178,8 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
         localStorage.setItem('manasa-class-arabic', stu.classArabic);
         localStorage.setItem('manasa-class-label', stu.classLabel);
       } catch (_) {}
-      location.href = url;
+      var sep = url.indexOf('?') >= 0 ? '&' : '?';
+      location.href = url + sep + 'tz=' + encodeURIComponent(stu.idNumber) + '&nm=' + encodeURIComponent(name);
     }
 
     // 1. فحص التخزين المحلي أولاً للدخول الفوري

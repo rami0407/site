@@ -3674,22 +3674,112 @@
       note = 'يُشارك في محطات منصة مفتاح ويواظب على التدرّب لتعزيز الفهم وإتقان المهارات المطلوبة.';
     }
 
+    var avgFVal = cntChecks ? Math.round(sumChecksPct / cntChecks) : 0;
+    var avgTVal = cntPrac ? Math.round(sumPracPct / cntPrac) : 0;
+    var avgAVal = cntEvid ? Math.round(sumEvidPct / cntEvid) : 0;
     return {
       lessonsCount: n,
       completedCount: completed,
       totalDurationSec: totalDur,
-      avgChecksPct: cntChecks ? Math.round(sumChecksPct / cntChecks) : 0,
-      avgPracticePct: cntPrac ? Math.round(sumPracPct / cntPrac) : 0,
-      avgEvidencePct: cntEvid ? Math.round(sumEvidPct / cntEvid) : 0,
+      avgChecksPct: avgFVal,
+      avgPracticePct: avgTVal,
+      avgEvidencePct: avgAVal,
+      avgF: avgFVal,
+      avgT: avgTVal,
+      avgA: avgAVal,
       harvestCount: harvestCnt,
       challengePoints: chalPts,
       overallScore: overall,
+      tier: overall >= 90 ? 'excellent' : (overall >= 80 ? 'very_good' : (overall >= 70 ? 'good' : 'support')),
       tierLabel: tierLabel,
       tierBadgeBg: tierBg,
       tierBadgeColor: tierColor,
       reportCardNote: note,
       lessonsList: uniqueLessons
     };
+  }
+
+  // حماية شاملة من خطأ امتلاء الذاكرة المحلية (QuotaExceededError) في المتصفح
+  var memStore = {};
+  function freeUpLocalStorageSpace(preserveKey) {
+    try {
+      var items = [];
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (!k || k === preserveKey) continue;
+        // الحفاظ على حسابات المعلمين وجلسة الدخول
+        if (k === 'miftah_user' || k === 'miftah_teachers_v1' || k === 'manasa-student-id' || k === 'manasa-name' || k === 'manasa-pid') continue;
+        var val = window.localStorage.getItem(k) || '';
+        var isExpendable =
+          k.indexOf('manasa-live-state-') === 0 ||
+          k.indexOf('manasa-session-') === 0 ||
+          k.indexOf('school_') === 0 ||
+          k.indexOf('_chunk_') >= 0 ||
+          val.length > 25000;
+        items.push({ key: k, len: val.length, expendable: isExpendable });
+      }
+      // حذف الملفات المؤقتة والكبيرة أولاً
+      items.sort(function (a, b) {
+        if (a.expendable !== b.expendable) return a.expendable ? -1 : 1;
+        return b.len - a.len;
+      });
+      var freed = 0;
+      for (var j = 0; j < items.length; j++) {
+        try {
+          window.localStorage.removeItem(items[j].key);
+          freed += items[j].len;
+          if (freed > 1500000 && j >= 5) break;
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  try {
+    var origSetItem = Storage.prototype.setItem;
+    var origGetItem = Storage.prototype.getItem;
+    Storage.prototype.setItem = function (key, value) {
+      var strVal = String(value == null ? '' : value);
+      memStore[key] = strVal;
+      try {
+        if (this === window.localStorage && key.indexOf('manasa-') === 0 && strVal.length < 2000) {
+          origSetItem.call(window.sessionStorage, key, strVal);
+        }
+      } catch (_) {}
+      try {
+        return origSetItem.call(this, key, strVal);
+      } catch (err) {
+        if (this === window.localStorage) {
+          freeUpLocalStorageSpace(key);
+          try {
+            return origSetItem.call(this, key, strVal);
+          } catch (_) {
+            try {
+              origSetItem.call(window.sessionStorage, key, strVal);
+            } catch (_2) {}
+          }
+        }
+      }
+    };
+    Storage.prototype.getItem = function (key) {
+      try {
+        var v = origGetItem.call(this, key);
+        if (v !== null && v !== undefined && v !== '') return v;
+      } catch (_) {}
+      if (this === window.localStorage) {
+        try {
+          var sv = origGetItem.call(window.sessionStorage, key);
+          if (sv !== null && sv !== undefined && sv !== '') return sv;
+        } catch (_) {}
+      }
+      return memStore[key] !== undefined ? memStore[key] : null;
+    };
+  } catch (_) {}
+
+  function safeSetStorage(key, val) {
+    try { window.localStorage.setItem(key, val); } catch (_) {}
+  }
+  function safeGetStorage(key) {
+    try { return window.localStorage.getItem(key) || ''; } catch (_) { return memStore[key] || ''; }
   }
 
   window.MIFTAH_ROSTER = {
@@ -3699,6 +3789,8 @@
     byId: BY_ID,
     normalizeId: normalizeId,
     findStudentById: findStudentById,
-    computeExcellenceScore: computeExcellenceScore
+    computeExcellenceScore: computeExcellenceScore,
+    safeSetStorage: safeSetStorage,
+    safeGetStorage: safeGetStorage
   };
 })();

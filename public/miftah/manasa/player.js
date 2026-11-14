@@ -1225,101 +1225,60 @@ function start() {
     .catch(function (e) { h('<div class="card"><h2>😕 لم نستطع فتح الحصة</h2><p>' + esc(typeof e === 'string' ? e : 'تأكّد من الرابط أو الرمز.') + '</p><a class="btn" href="./">العودة</a></div>'); });
 }
 function welcome() {
-  var saved = localStorage.getItem('manasa-name') || '';
-  var savedId = localStorage.getItem('manasa-student-id') || '';
+  var saved = '';
+  var savedId = '';
+  try {
+    saved = qs.get('nm') || localStorage.getItem('manasa-name') || sessionStorage.getItem('manasa-name') || '';
+    savedId = qs.get('tz') || localStorage.getItem('manasa-student-id') || sessionStorage.getItem('manasa-student-id') || '';
+  } catch (_) {
+    saved = qs.get('nm') || '';
+    savedId = qs.get('tz') || '';
+  }
   var savedStu = (window.MIFTAH_ROSTER && savedId) ? window.MIFTAH_ROSTER.findStudentById(savedId) : null;
-  if (qs.get('go') === '1' && saved && savedStu) {
-    S.name = saved;
-    S.studentId = savedStu.idNumber;
-    S.officialName = savedStu.studentName;
-    S.classKey = savedStu.classKey;
-    S.classArabic = savedStu.classArabic;
-    S.classLabel = savedStu.classLabel;
-    S.pid = 'id_' + savedStu.idNumber;
-    localStorage.setItem('manasa-pid', S.pid);
+
+  function applyIdentityAndStart() {
+    if (savedStu) {
+      S.studentId = savedStu.idNumber;
+      S.officialName = savedStu.studentName;
+      S.classKey = savedStu.classKey;
+      S.classArabic = savedStu.classArabic;
+      S.classLabel = savedStu.classLabel;
+      S.name = saved || savedStu.studentName;
+      S.pid = 'id_' + savedStu.idNumber;
+    } else {
+      S.name = saved || 'طالب';
+      try {
+        S.pid = localStorage.getItem('manasa-pid') || sessionStorage.getItem('manasa-pid') || ('p_' + Math.random().toString(36).slice(2, 10));
+      } catch (_) {
+        S.pid = 'p_' + Math.random().toString(36).slice(2, 10);
+      }
+    }
+    try {
+      localStorage.setItem('manasa-name', S.name);
+      if (S.studentId) localStorage.setItem('manasa-student-id', S.studentId);
+      if (S.officialName) localStorage.setItem('manasa-official-name', S.officialName);
+      if (S.classKey) localStorage.setItem('manasa-class-key', S.classKey);
+      if (S.classArabic) localStorage.setItem('manasa-class-arabic', S.classArabic);
+      if (S.classLabel) localStorage.setItem('manasa-class-label', S.classLabel);
+      localStorage.setItem('manasa-pid', S.pid);
+    } catch (_) {}
     keyInit();
     startStudentTimer(S.name);
     startFlashWatcher();
     report();
     stationM();
+  }
+
+  // إذا دخل الطالب من صفحة الهبوط، نبدأ الحصة مباشرة بدون إعادة طلب الهوية أو الاسم
+  if (qs.get('go') === '1' || savedId || saved) {
+    applyIdentityAndStart();
     return;
   }
+
   h('<div class="card"><div class="emoji">🔑</div><h1 style="text-align:center">' + esc(L.title) + '</h1><p class="muted" style="text-align:center">' + esc([L.subject, L.grade].filter(Boolean).join(' · ')) + '</p>' +
     '<h3>🎯 هدفُنا اليوم</h3><p>' + esc(L.goal) + '</p>' + (L.success && L.success.length ? '<h3>✅ كيف أعرفُ أنّي نجحْت؟</h3><ul>' + L.success.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-    '<div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:14px;padding:14px;margin:14px 0">' +
-      '<div style="font-weight:800;color:#1e3a8a;margin-bottom:8px">🏆 الدّخول لسجلّ التميّز والشّهادة المدرسيّة</div>' +
-      '<label style="margin-top:4px">🔐 الرّقم السّرّي للطالب (رقم الهويّة - 9 أرقام)</label>' +
-      '<input type="text" inputmode="numeric" id="tz" value="' + esc(savedId) + '" placeholder="أدخل رقم هويّتك (الرقم السري)" maxlength="12" style="text-align:center;font-weight:900;letter-spacing:2px;font-size:20px;direction:ltr">' +
-      '<div id="tz-verify-box" style="margin-top:8px"></div>' +
-      '<label style="margin-top:10px">👤 اسمُك في الحصّة (اكتبه كما تحبّ)</label>' +
-      '<input type="text" id="nm" value="' + esc(saved) + '" placeholder="اكتب اسمك كما تحبّ أن يظهر" maxlength="35">' +
-      '<div id="login-err" style="display:none;margin-top:8px;padding:10px;border-radius:10px;background:#fef2f2;color:#b91c1c;font-weight:800;font-size:14px;text-align:center"></div>' +
-    '</div>' +
-    next('ابدأ الرّحلة 🚀', function () {
-      var tzVal = ($('#tz').value || '').trim();
-      var n = ($('#nm').value || '').trim();
-      var errEl = $('#login-err');
-      var stu = window.MIFTAH_ROSTER ? window.MIFTAH_ROSTER.findStudentById(tzVal) : null;
-      if (!stu) {
-        if (errEl) {
-          errEl.style.display = 'block';
-          errEl.textContent = !tzVal ? '⚠️ الرجاء إدخال الرّقم السّرّي (رقم الهويّة المكون من 9 أرقام).' : '❌ رقم الهويّة غير مسجّل في قائمة طلاب المدرسة. تأكّد من كتابة الـ 9 أرقام بشكل صحيح.';
-        }
-        $('#tz').focus();
-        return;
-      }
-      if (!n) {
-        n = stu.studentName;
-        $('#nm').value = n;
-      }
-      S.name = n;
-      S.studentId = stu.idNumber;
-      S.officialName = stu.studentName;
-      S.classKey = stu.classKey;
-      S.classArabic = stu.classArabic;
-      S.classLabel = stu.classLabel;
-      S.pid = 'id_' + stu.idNumber;
-      localStorage.setItem('manasa-name', n);
-      localStorage.setItem('manasa-student-id', stu.idNumber);
-      localStorage.setItem('manasa-official-name', stu.studentName);
-      localStorage.setItem('manasa-class-key', stu.classKey);
-      localStorage.setItem('manasa-class-arabic', stu.classArabic);
-      localStorage.setItem('manasa-class-label', stu.classLabel);
-      localStorage.setItem('manasa-pid', S.pid);
-      keyInit();
-      startStudentTimer(S.name);
-      startFlashWatcher();
-      report();
-      stationM();
-    }) + (S.sid ? '<p class="muted">رمزُ الحصّة: ' + esc(S.sid) + ' — معلِّمُك يتابعُ تقدُّمَك.</p>' : '') + '</div>');
-
-  setTimeout(function () {
-    var tzInput = $('#tz');
-    var nmInput = $('#nm');
-    var box = $('#tz-verify-box');
-    function updateVerify() {
-      if (!tzInput || !box || !window.MIFTAH_ROSTER) return;
-      var raw = (tzInput.value || '').trim();
-      if (!raw) { box.innerHTML = ''; return; }
-      var stu = window.MIFTAH_ROSTER.findStudentById(raw);
-      if (stu) {
-        box.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:#ecfdf5;border:1.5px solid #34d399;color:#065f46;font-size:14px;font-weight:700">' +
-          '✅ أهلاً بك: <b>' + esc(stu.studentName) + '</b> — الصّف: <b>' + esc(stu.classArabic) + ' (' + esc(stu.classKey) + ')</b>' +
-        '</div>';
-        if (nmInput && !nmInput.value.trim()) nmInput.value = stu.studentName;
-      } else if (raw.replace(/\D/g, '').length >= 7) {
-        box.innerHTML = '<div style="padding:8px 12px;border-radius:10px;background:#fef2f2;border:1.5px solid #f87171;color:#991b1b;font-size:13px;font-weight:700">' +
-          '❌ رقم الهويّة غير مطابق لسجلّ المدرسة. تأكّد من الأرقام الـ 9.' +
-        '</div>';
-      } else {
-        box.innerHTML = '';
-      }
-    }
-    if (tzInput) {
-      tzInput.addEventListener('input', updateVerify);
-      updateVerify();
-    }
-  }, 30);
+    next('ابدأ الرّحلة 🚀', applyIdentityAndStart) +
+    (S.sid ? '<p class="muted">رمزُ الحصّة: ' + esc(S.sid) + ' — معلِّمُك يتابعُ تقدُّمَك.</p>' : '') + '</div>');
 }
 // ---------- م ----------
 function jumpToStationIndex(stIdx) {
