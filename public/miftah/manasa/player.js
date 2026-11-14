@@ -1,4 +1,4 @@
-
+﻿
 (function () {
 'use strict';
 var HARVEST = ['ماذا استفدت؟', 'ماذا ساعدني في التعلّم؟', 'أين سأقابل ما تعلّمته؟'];
@@ -973,6 +973,312 @@ function computeStudentAbilityDiagnostic() {
   };
 }
 
+function isExcellenceLesson() {
+  if (!L) return false;
+  return !!(L.is_excellence_builder || L.id === 'TMYZ26' || L.code === 'TMYZ26' || L.id === 'excellence' || /رحلة.*التميّز|رحلة.*التميز/.test(L.title || ''));
+}
+
+function getExcellencePlanStorageKey() {
+  var keyId = S.studentId || localStorage.getItem('manasa-student-id') || S.name || localStorage.getItem('manasa-name') || 'pupil';
+  return 'manasa-exc-plan-' + String(keyId).trim();
+}
+
+function getOrInitExcellencePlan() {
+  if (S.data.excellencePlan && typeof S.data.excellencePlan === 'object') {
+    return S.data.excellencePlan;
+  }
+  var key = getExcellencePlanStorageKey();
+  var loaded = null;
+  try {
+    loaded = JSON.parse(localStorage.getItem(key) || 'null');
+  } catch (_) {}
+
+  var stuId = S.studentId || localStorage.getItem('manasa-student-id') || '';
+  var stuInfo = (window.MIFTAH_ROSTER && stuId) ? window.MIFTAH_ROSTER.findStudentById(stuId) : null;
+
+  var defPlan = {
+    studentId: stuId,
+    studentName: (stuInfo && stuInfo.studentName) || S.officialName || S.name || '',
+    writtenName: S.name || '',
+    classKey: (stuInfo && stuInfo.classKey) || S.classKey || '',
+    classArabic: (stuInfo && stuInfo.classArabic) || S.classArabic || '',
+    teacherName: (stuInfo && stuInfo.teacherName) || '',
+    chosenDomains: [],
+    howToExcel: '',
+    goalsRanked: ['', '', ''],
+    projectTitle: '',
+    projectDescription: '',
+    practicalSteps: ['', '', ''],
+    actionsHarvest: ['', '', ''],
+    activeEvalTerm: 'term1',
+    selfEval: {
+      term1: { done: false, date: '', g1: 100, g2: 100, g3: 100, proj: 100, scorePct: 100, reflection: '' },
+      term2: { done: false, date: '', g1: 100, g2: 100, g3: 100, proj: 100, scorePct: 100, reflection: '' },
+      term3: { done: false, date: '', g1: 100, g2: 100, g3: 100, proj: 100, scorePct: 100, reflection: '' }
+    },
+    updatedAt: 0
+  };
+
+  if (loaded && typeof loaded === 'object') {
+    defPlan.chosenDomains = Array.isArray(loaded.chosenDomains) ? loaded.chosenDomains : [];
+    defPlan.howToExcel = loaded.howToExcel || '';
+    defPlan.goalsRanked = Array.isArray(loaded.goalsRanked) && loaded.goalsRanked.length === 3 ? loaded.goalsRanked : ['', '', ''];
+    defPlan.projectTitle = loaded.projectTitle || '';
+    defPlan.projectDescription = loaded.projectDescription || '';
+    defPlan.practicalSteps = Array.isArray(loaded.practicalSteps) && loaded.practicalSteps.length === 3 ? loaded.practicalSteps : ['', '', ''];
+    defPlan.actionsHarvest = Array.isArray(loaded.actionsHarvest) && loaded.actionsHarvest.length === 3 ? loaded.actionsHarvest : ['', '', ''];
+    defPlan.activeEvalTerm = loaded.activeEvalTerm || 'term1';
+    if (loaded.selfEval && typeof loaded.selfEval === 'object') {
+      ['term1', 'term2', 'term3'].forEach(function (tk) {
+        if (loaded.selfEval[tk]) {
+          defPlan.selfEval[tk] = Object.assign({}, defPlan.selfEval[tk], loaded.selfEval[tk]);
+        }
+      });
+    }
+    defPlan.updatedAt = loaded.updatedAt || Date.now();
+  }
+
+  S.data.excellencePlan = defPlan;
+  return defPlan;
+}
+
+function saveExcellencePlan(planObj) {
+  var p = planObj || getOrInitExcellencePlan();
+  p.updatedAt = Date.now();
+  p.studentId = S.studentId || p.studentId || '';
+  p.writtenName = S.name || p.writtenName || '';
+  if (S.officialName) p.studentName = S.officialName;
+  if (S.classKey) p.classKey = S.classKey;
+  if (S.classArabic) p.classArabic = S.classArabic;
+  S.data.excellencePlan = p;
+  try {
+    localStorage.setItem(getExcellencePlanStorageKey(), JSON.stringify(p));
+  } catch (_) {}
+
+  var stuId = p.studentId || S.studentId || '';
+  if (stuId) {
+    var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+    var docId = 'miftaah_excplan_' + encodeURIComponent(stuId);
+    fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/' + docId + '?key=' + pKey, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          recordType: { stringValue: 'miftaah_student_exc_plan' },
+          studentId: { stringValue: String(stuId) },
+          classKey: { stringValue: String(p.classKey || '') },
+          updatedAt: { integerValue: String(p.updatedAt) },
+          json: { stringValue: JSON.stringify(p) }
+        }
+      })
+    }).catch(function () {});
+  }
+}
+
+function syncExcellencePlanFromCloud(cb) {
+  var stuId = S.studentId || localStorage.getItem('manasa-student-id') || '';
+  if (!stuId) {
+    if (cb) cb(getOrInitExcellencePlan());
+    return;
+  }
+  var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+  var docId = 'miftaah_excplan_' + encodeURIComponent(stuId);
+  fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/' + docId + '?key=' + pKey)
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (doc) {
+      if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
+        var cloudPlan = JSON.parse(doc.fields.json.stringValue);
+        var localPlan = getOrInitExcellencePlan();
+        if (cloudPlan && (cloudPlan.updatedAt || 0) >= (localPlan.updatedAt || 0)) {
+          S.data.excellencePlan = cloudPlan;
+          try { localStorage.setItem(getExcellencePlanStorageKey(), JSON.stringify(cloudPlan)); } catch (_) {}
+        }
+      }
+      if (cb) cb(getOrInitExcellencePlan());
+    })
+    .catch(function () {
+      if (cb) cb(getOrInitExcellencePlan());
+    });
+}
+
+function hasSavedExcellenceContent(p) {
+  if (!p) return false;
+  return !!(p.howToExcel || (p.goalsRanked && p.goalsRanked[0]) || p.projectTitle || (p.practicalSteps && p.practicalSteps[0]));
+}
+
+function computeFinalExcellenceCertificateScore(planObj) {
+  var diag = S.data.diagnostic || computeStudentAbilityDiagnostic();
+  var baseScore = diag.overallDiagnosticScore || 85;
+  var p = planObj || getOrInitExcellencePlan();
+  var planBonus = 0;
+  if (p.howToExcel) planBonus += 3;
+  if (p.goalsRanked && p.goalsRanked.filter(Boolean).length >= 3) planBonus += 4;
+  if (p.projectTitle && p.projectDescription) planBonus += 4;
+  if (p.practicalSteps && p.practicalSteps.filter(Boolean).length >= 3) planBonus += 4;
+
+  var evalScores = [];
+  ['term1', 'term2', 'term3'].forEach(function (tk) {
+    if (p.selfEval && p.selfEval[tk] && p.selfEval[tk].done) {
+      evalScores.push(Number(p.selfEval[tk].scorePct) || 90);
+    }
+  });
+  var selfEvalAvg = evalScores.length ? Math.round(evalScores.reduce(function (a, b) { return a + b; }, 0) / evalScores.length) : 90;
+  var combined = Math.min(100, Math.round(baseScore * 0.65 + selfEvalAvg * 0.25 + Math.min(10, planBonus)));
+  return Math.max(combined, baseScore);
+}
+
+function exportStudentExcellencePDF(customPlan, customDiag) {
+  var p = customPlan || getOrInitExcellencePlan();
+  var stuId = p.studentId || S.studentId || localStorage.getItem('manasa-student-id') || '';
+  var stuInfo = (window.MIFTAH_ROSTER && stuId) ? window.MIFTAH_ROSTER.findStudentById(stuId) : null;
+  var officialName = (stuInfo && stuInfo.studentName) || p.studentName || S.officialName || S.name || 'طالب متميّز';
+  var writtenName = p.writtenName || S.name || officialName;
+  var classLabel = (stuInfo && (stuInfo.classArabic + ' (' + stuInfo.classKey + ')')) || p.classArabic || S.classArabic || 'الصفّ الدراسي';
+  var teacherName = (stuInfo && stuInfo.teacherName) || p.teacherName || 'مربّي/ة الصّف';
+  var diag = customDiag || S.data.diagnostic || computeStudentAbilityDiagnostic();
+  var finalScore = computeFinalExcellenceCertificateScore(p);
+
+  var tierTitle = finalScore >= 90 ? '🌟 تميّز فائق ومبادرة إبداعية' : finalScore >= 80 ? '✅ تميّز متقدّم ومثابرة عالية' : '🌱 تميّز صاعد ومتطوّر';
+  var goals = (p.goalsRanked && p.goalsRanked.length) ? p.goalsRanked : ['—', '—', '—'];
+  var steps = (p.practicalSteps && p.practicalSteps.length) ? p.practicalSteps : ['—', '—', '—'];
+  var actions = (p.actionsHarvest && p.actionsHarvest.filter(Boolean).length) ? p.actionsHarvest : (S.data.harvest && S.data.harvest.length ? S.data.harvest : ['—', '—', '—']);
+  var se = p.selfEval || {};
+
+  function renderTermRow(termKey, termTitle) {
+    var t = se[termKey] || {};
+    if (!t.done && !t.reflection) {
+      return '<tr>' +
+        '<td style="font-weight:800;color:#1e3a8a">' + termTitle + '</td>' +
+        '<td colspan="4" style="color:#64748b;text-align:center">⏳ لم يحن موعد تعبئته بعد / يُعبّأ عند وصول نهاية الفصل</td>' +
+      '</tr>';
+    }
+    return '<tr>' +
+      '<td style="font-weight:800;color:#1e3a8a">' + termTitle + '<div style="font-size:11px;color:#64748b">' + esc(t.date || 'مكتمل ✓') + '</div></td>' +
+      '<td style="text-align:center;font-weight:800;color:#0369a1">الهدف 1: ' + (t.g1 || 100) + '%<br>الهدف 2: ' + (t.g2 || 100) + '%<br>الهدف 3: ' + (t.g3 || 100) + '%</td>' +
+      '<td style="text-align:center;font-weight:800;color:#059669">' + (t.proj || 100) + '%</td>' +
+      '<td style="text-align:center"><span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px;font-weight:900">' + (t.scorePct || 100) + '%</span></td>' +
+      '<td style="font-size:12.5px;line-height:1.5">' + esc(t.reflection || 'التزام متميّز بالخطة والخطوات العملية.') + '</td>' +
+    '</tr>';
+  }
+
+  var w = window.open('', '_blank');
+  if (!w) {
+    alert('الرجاء السماح بفتح النوافذ المنبثقة لاستخراج وحفظ شهادة وملف الـ PDF.');
+    return;
+  }
+
+  w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
+    '<title>شهادة وملف التميّز الشّخصيّ (PDF) — ' + esc(officialName) + '</title>' +
+    '<style>' +
+      '@page { size: A4; margin: 10mm; }' +
+      'body { font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif; margin: 0; padding: 16px; background: #f1f5f9; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+      '.no-print-bar { max-width: 840px; margin: 0 auto 14px; background: #0f172a; color: #fff; padding: 12px 18px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }' +
+      '.print-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: 0; padding: 10px 22px; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; }' +
+      '.page-sheet { max-width: 840px; margin: 0 auto; background: #fff; border: 4px double #b45309; border-radius: 18px; padding: 22px 26px; box-sizing: border-box; position: relative; }' +
+      '.hdr-box { text-align: center; border-bottom: 2.5px solid #fde68a; padding-bottom: 12px; margin-bottom: 14px; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-radius: 12px; padding: 14px; }' +
+      '.hdr-box h1 { margin: 4px 0; font-size: 23px; color: #78350f; }' +
+      '.hdr-box h2 { margin: 2px 0 0; font-size: 16px; color: #b45309; }' +
+      '.meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }' +
+      '.meta-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 8px 10px; font-size: 13px; }' +
+      '.meta-item b { display: block; color: #0369a1; font-size: 14px; margin-top: 2px; }' +
+      '.score-banner { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 2px solid #3b82f6; border-radius: 14px; padding: 12px 18px; margin-bottom: 14px; }' +
+      '.score-big { font-size: 30px; font-weight: 900; color: #1e3a8a; background: #fff; padding: 6px 18px; border-radius: 12px; border: 2px solid #93c5fd; text-align: center; }' +
+      '.sec-box { border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; margin-bottom: 11px; background: #fff; page-break-inside: avoid; }' +
+      '.sec-title { margin: 0 0 6px; font-size: 15px; font-weight: 900; color: #0b2a4a; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }' +
+      '.goal-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; background: #f8fafc; margin-bottom: 5px; font-size: 13.5px; border: 1px solid #e2e8f0; }' +
+      '.rank-badge { font-weight: 900; padding: 2px 8px; border-radius: 999px; font-size: 12px; white-space: nowrap; }' +
+      'table.eval-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }' +
+      'table.eval-tbl th, table.eval-tbl td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; }' +
+      'table.eval-tbl th { background: #f1f5f9; color: #0f172a; font-weight: 800; }' +
+      '.sig-row { display: flex; justify-content: space-between; margin-top: 16px; padding-top: 12px; border-top: 2px dashed #cbd5e1; font-size: 13px; font-weight: 800; color: #334155; }' +
+      '@media print { body { background: #fff; padding: 0; } .no-print-bar { display: none !important; } .page-sheet { border-width: 3px; max-width: 100%; box-shadow: none; } }' +
+    '</style></head><body>' +
+    '<div class="no-print-bar">' +
+      '<div><b style="font-size:16px">📄 شهادة وملفّ مسيرة التميّز الشّخصيّ للطالب (PDF)</b><div style="font-size:12.5px;color:#cbd5e1">اضغط على الزرّ لحفظ الوثيقة كملف PDF على جهازك أو طباعتها للشهادة المدرسية</div></div>' +
+      '<button class="print-btn" onclick="window.print()">🖨️ حفظ كملف PDF / طباعة الشهادة والملف</button>' +
+    '</div>' +
+    '<div class="page-sheet">' +
+      '<div class="hdr-box">' +
+        '<div style="font-size:13px;font-weight:900;color:#92400e">🏫 مدرسة مشيرفة الابتدائية — منصّة مفتاح التربوية</div>' +
+        '<h1>🏆 شهادة وملفّ مسيرة التميّز الشّخصيّ والتقييم الذّاتي عبر الفصول الثّلاثة</h1>' +
+        '<h2>وثيقة رسمية محفوظة لسنة التميّز والشهادة المدرسية</h2>' +
+      '</div>' +
+
+      '<div class="meta-grid">' +
+        '<div class="meta-item">👤 اسم الطالب/ة الرّسمي:<b>' + esc(officialName) + (writtenName && writtenName !== officialName ? ' (' + esc(writtenName) + ')' : '') + '</b></div>' +
+        '<div class="meta-item">🪪 الرّقم السّرّي (رقم الهويّة):<b style="font-family:monospace;direction:ltr;text-align:right">' + esc(stuId || '—') + '</b></div>' +
+        '<div class="meta-item">🏫 الصّفّ الدّراسيّ:<b>' + esc(classLabel) + '</b></div>' +
+        '<div class="meta-item">👩‍🏫 مربّي/ة الصّفّ:<b>' + esc(teacherName) + '</b></div>' +
+      '</div>' +
+
+      '<div class="score-banner">' +
+        '<div>' +
+          '<div style="font-size:17px;font-weight:900;color:#1e3a8a">🏅 التّقديرُ والمستوى في سنةِ التميّز: ' + esc(tierTitle) + '</div>' +
+          '<div style="font-size:13px;color:#334155;margin-top:4px">🧭 مسارُ القدراتِ التّكيّفيّ: <b>' + esc(diag.standingLabel || 'متمكّن ومتقدّم') + '</b> · ' + esc(diag.recommendation || 'أظهرَ التزاماً ومثابرةً متميّزةً في بناء خطّته ومشروعه.') + '</div>' +
+        '</div>' +
+        '<div class="score-big">' + finalScore + ' <span style="font-size:14px;color:#64748b">/ 100</span><div style="font-size:11px;color:#0369a1;font-weight:800">علامة التميّز</div></div>' +
+      '</div>' +
+
+      '<div class="sec-box">' +
+        '<div class="sec-title">🌟 1. مفهومُ التميّز وكيفَ اخترتُ أن أتميّزَ هذا العام:</div>' +
+        (p.chosenDomains && p.chosenDomains.length ? '<div style="margin-bottom:5px;font-size:12.5px;color:#0369a1;font-weight:800">المجالات المختارة: ' + esc(p.chosenDomains.join(' ، ')) + '</div>' : '') +
+        '<div style="font-size:13.5px;line-height:1.55;background:#f8fafc;padding:7px 10px;border-radius:8px;border:1px solid #e2e8f0">' + esc(p.howToExcel || 'سأتميّزُ بالاجتهادِ والفهمِ العميقِ والمثابرةِ والأخلاقِ الحسنةِ في مدرستي.') + '</div>' +
+      '</div>' +
+
+      '<div class="sec-box">' +
+        '<div class="sec-title">🎯 2. أهدافي الثّلاثةُ لهذه السّنةِ مدرّجةً ومرتّبةً حسبَ الأهمّيّة:</div>' +
+        '<div class="goal-row"><span class="rank-badge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">🥇 الأهمّيّة 1 (القصوى)</span><span>' + esc(goals[0] || '—') + '</span></div>' +
+        '<div class="goal-row"><span class="rank-badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc">🥈 الأهمّيّة 2 (المتوسّطة)</span><span>' + esc(goals[1] || '—') + '</span></div>' +
+        '<div class="goal-row"><span class="rank-badge" style="background:#f3e8ff;color:#6b21a8;border:1px solid #d8b4fe">🥉 الأهمّيّة 3 (التّكميليّة)</span><span>' + esc(goals[2] || '—') + '</span></div>' +
+      '</div>' +
+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div class="sec-box">' +
+          '<div class="sec-title">🚀 3. مشروعي الشّخصيُّ للتميّز:</div>' +
+          '<div style="font-size:13.5px;font-weight:800;color:#6b21a8;margin-bottom:4px">📌 عنوان المشروع: ' + esc(p.projectTitle || 'مشروعي المتميّز في الصّفّ') + '</div>' +
+          '<div style="font-size:13px;line-height:1.5;color:#334155">' + esc(p.projectDescription || 'تطبيقُ ما أتعلّمُه في بناءِ مبادرةٍ أو عملٍ إبداعيٍّ يفيدُ صفّي ومدرستي.') + '</div>' +
+        '</div>' +
+        '<div class="sec-box">' +
+          '<div class="sec-title">🛠️ 4. خطواتي العمليّةُ للتّنفيذ:</div>' +
+          '<div style="font-size:12.5px;line-height:1.55">' +
+            '<div><b>1️⃣ البداية والتّجهيز:</b> ' + esc(steps[0] || '—') + '</div>' +
+            '<div style="margin-top:3px"><b>2️⃣ المتابعة الأسبوعيّة:</b> ' + esc(steps[1] || '—') + '</div>' +
+            '<div style="margin-top:3px"><b>3️⃣ العرض وإثبات النّتيجة:</b> ' + esc(steps[2] || '—') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sec-box">' +
+        '<div class="sec-title">🌾 5. الحصاد: كيفَ أترجمُ خطّتي ومشروعي إلى أفعالٍ يوميّة:</div>' +
+        '<div style="font-size:12.5px;line-height:1.55">' +
+          '<div>• <b>في الصّفّ والمدرسة:</b> ' + esc(actions[0] || '—') + '</div>' +
+          '<div>• <b>في البيت وتنظيم الوقت:</b> ' + esc(actions[1] || '—') + '</div>' +
+          '<div>• <b>الالتزام والمراجعة المستمرّة:</b> ' + esc(actions[2] || '—') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sec-box">' +
+        '<div class="sec-title">🪞 6. سجلُّ التّقييم الذّاتيّ التّراكميّ للطالب عبرَ الفصولِ الدّراسيّة الثّلاثة:</div>' +
+        '<table class="eval-tbl">' +
+          '<thead><tr><th>الفصل الدّراسيّ</th><th>تقييم الأهداف الثّلاثة</th><th>تقييم المشروع والخطوات</th><th>معدّل الفصل</th><th>التّأمّل والمراجعة الذّاتيّة للطالب</th></tr></thead>' +
+          '<tbody>' +
+            renderTermRow('term1', '🌱 الفصل الأوّل') +
+            renderTermRow('term2', '⚡ نهاية الفصل الثّاني') +
+            renderTermRow('term3', '🏆 نهاية الفصل الثّالث') +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+
+      '<div class="sig-row">' +
+        '<div>✍️ توقيع الطالب/ة: ____________________</div>' +
+        '<div>👩‍🏫 توقيع مربّي/ة الصّف: ____________________</div>' +
+        '<div>🏫 اعتماد إدارة مدرسة مشيرفة: ____________________</div>' +
+      '</div>' +
+    '</div>' +
+  '</body></html>');
+  w.document.close();
+}
+
 function saveStudentPortfolioRecord() {
   var name = S.name || localStorage.getItem('manasa-name') || '';
   var stuId = S.studentId || localStorage.getItem('manasa-student-id') || '';
@@ -981,6 +1287,9 @@ function saveStudentPortfolioRecord() {
   var nowTs = Date.now();
   var diag = computeStudentAbilityDiagnostic();
   S.data.diagnostic = diag;
+  if (isExcellenceLesson()) {
+    saveExcellencePlan(getOrInitExcellencePlan());
+  }
   var rec = {
     sid: S.sid,
     studentId: stuId,
@@ -1008,7 +1317,8 @@ function saveStudentPortfolioRecord() {
     harvest: S.data.harvest,
     game: S.data.game,
     chal: S.data.chal,
-    diagnostic: diag
+    diagnostic: diag,
+    excellencePlan: isExcellenceLesson() ? getOrInitExcellencePlan() : undefined
   };
 
   try {
@@ -1245,7 +1555,7 @@ function start() {
 
   // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
   if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
-    fetch('lessons/TMYZ26.json?v=20261114_v3')
+    fetch('lessons/TMYZ26.json?v=20261114_v4')
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })
       .then(function (lData) {
         try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -1335,7 +1645,13 @@ function welcome() {
     startStudentTimer(S.name);
     startFlashWatcher();
     report();
-    stationM();
+    if (isExcellenceLesson()) {
+      syncExcellencePlanFromCloud(function () {
+        stationM();
+      });
+    } else {
+      stationM();
+    }
   }
 
   // إذا دخل الطالب من صفحة الهبوط، نبدأ الحصة مباشرة بدون إعادة طلب الهوية أو الاسم
@@ -1511,8 +1827,161 @@ function enterStationTa() {
   launchStationTaContent();
 }
 
+function renderExcellenceQuickBar() {
+  if (!isExcellenceLesson()) return '';
+  var p = getOrInitExcellencePlan();
+  var hasSaved = hasSavedExcellenceContent(p);
+  var se = p.selfEval || {};
+  var t1Done = se.term1 && se.term1.done;
+  var t2Done = se.term2 && se.term2.done;
+  var t3Done = se.term3 && se.term3.done;
+
+  return '<div class="card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;padding:12px 14px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
+      '<div>' +
+        '<b style="font-size:15.5px;color:#92400e">📂 ملفُّ مسيرةِ التميّز الشّخصيّ المحفوظ عبرَ الفصول الثّلاثة</b>' +
+        '<div style="font-size:12.5px;color:#b45309;font-weight:700">' +
+          (hasSaved ? '✅ خطّتُكَ وأهدافُكَ ومشروعُكَ محفوظةٌ باسمِكَ ورقمِ هويّتك — يمكنُكَ تعديلُها أو الانتقالُ مباشرةً للتّقييم الفصليّ:' : '✍️ كلُّ ما تسجّلُه في هذه الرّحلة يُحفظُ تلقائيّاً في ملفّكَ الرّسميّ لتعودَ إليهِ في نهايةِ الفصلَيْنِ الثّاني والثّالث!') +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="btn ok" id="exc-quick-pdf-btn" style="min-height:36px;padding:6px 14px;font-size:13px;margin:0;background:linear-gradient(135deg,#0284c7,#0369a1)">📄 شهادة وملف PDF</button>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      '<button type="button" class="btn alt" id="exc-go-term1-btn" style="min-height:34px;padding:5px 12px;font-size:12.5px;margin:0;background:#fff;border-color:#cbd5e1;color:#0f172a">🌱 الفصل 1 (الخطّة والتقييم' + (t1Done ? ' ✓' : '') + ')</button>' +
+      '<button type="button" class="btn alt" id="exc-go-term2-btn" style="min-height:34px;padding:5px 12px;font-size:12.5px;margin:0;background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">⚡ تقييم نهاية الفصل الثّاني' + (t2Done ? ' ✓' : '') + '</button>' +
+      '<button type="button" class="btn alt" id="exc-go-term3-btn" style="min-height:34px;padding:5px 12px;font-size:12.5px;margin:0;background:#f3e8ff;border-color:#d8b4fe;color:#6b21a8">🏆 تقييم نهاية الفصل الثّالث' + (t3Done ? ' ✓' : '') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function wireExcellenceQuickBar() {
+  setTimeout(function () {
+    var pdfBtn = document.getElementById('exc-quick-pdf-btn');
+    if (pdfBtn) pdfBtn.onclick = function () { exportStudentExcellencePDF(); };
+    var t1Btn = document.getElementById('exc-go-term1-btn');
+    if (t1Btn) t1Btn.onclick = function () { var p = getOrInitExcellencePlan(); p.activeEvalTerm = 'term1'; saveExcellencePlan(p); evidence(); };
+    var t2Btn = document.getElementById('exc-go-term2-btn');
+    if (t2Btn) t2Btn.onclick = function () { var p = getOrInitExcellencePlan(); p.activeEvalTerm = 'term2'; saveExcellencePlan(p); evidence(); };
+    var t3Btn = document.getElementById('exc-go-term3-btn');
+    if (t3Btn) t3Btn.onclick = function () { var p = getOrInitExcellencePlan(); p.activeEvalTerm = 'term3'; saveExcellencePlan(p); evidence(); };
+  }, 20);
+}
+
 function stationM() {
   S.st = 0; report(); var k = L.hook || {}, v = L.video || {}; ctx(k.more, (k.story || '') + ' ' + (k.question || ''));
+
+  if (isExcellenceLesson()) {
+    var p = getOrInitExcellencePlan();
+    var domainsList = [
+      { id: '📚 التميّز العلميّ والأكاديميّ', desc: 'التفوّق في الدّروس، الفهم العميق، وحلّ المسائل' },
+      { id: '💡 التميّز الإبداعيّ والابتكاريّ', desc: 'التّجارب العلميّة، التّصميم، والأفكار الجديدة' },
+      { id: '🤝 التميّز القياديّ والأخلاقيّ', desc: 'مساندة الزّملاء، التّعاون، والقدوة الحسنة في الصّفّ' },
+      { id: '📖 التميّز اللّغويّ والثّقافيّ', desc: 'القراءة المثمرة، التّعبير، الإلقاء، وإتقان اللّغات' }
+    ];
+    var howChips = [
+      'سأتميّزُ بالانتباهِ العالي في الحصص، وطرحِ الأسئلةِ الذّكيّة، ومراجعةِ دروسي يوميّاً حتّى أصلَ لأعلى درجاتِ الإتقان.',
+      'سأتميّزُ بابتكارِ مشروعٍ علميٍّ وتطبيقيٍّ مفيد، وبالتّعاونِ الإيجابيِّ مع زملائي ومساعدةِ مَن يحتاجُ شرحاً في مجموعتي.',
+      'سأتميّزُ بالقراءةِ المستمرّة، وإتقانِ اللّغاتِ والرّياضيّات، والالتزامِ بالأخلاقِ الرّاقيةِ والنّظامِ في مدرستي مشيرفة.'
+    ];
+
+    var htmlExc = renderExcellenceQuickBar() +
+      head('🌟 الفقرةُ الأولى (م): ' + esc(k.title || 'مفهومُ التميّز — كيفَ سأتميّز؟')) +
+      '<div style="background:#f0f9ff;border:2px solid #7dd3fc;border-radius:16px;padding:16px;margin-bottom:14px">' +
+        '<div style="font-size:15px;font-weight:900;color:#0369a1;margin-bottom:6px">📖 اقرأْ بتمعّن: ما هو مفهومُ التميّزِ في مدرسةِ مشيرفة؟</div>' +
+        '<p class="story" style="margin:0;font-size:18px;line-height:1.75;color:#0f172a">' + esc(k.story) + '</p>' +
+        '<div style="margin-top:8px">' + sayBtn(k.story + ' ' + k.question) + '</div>' +
+      '</div>' +
+
+      '<div style="background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:16px;margin-bottom:12px">' +
+        '<h3 style="margin:0 0 8px;color:#0b2a4a;font-size:18px">1️⃣ اخترْ مجالاً (أو أكثر) تريدُ أن تبرزَ وتتميّزَ فيه هذا العام:</h3>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px" id="exc-domains-grid">' +
+          domainsList.map(function (dm) {
+            var isSel = (p.chosenDomains || []).indexOf(dm.id) >= 0;
+            return '<button type="button" class="opt" data-dom="' + esc(dm.id) + '" style="text-align:right;padding:12px;margin:0;border-width:2px;' + (isSel ? 'border-color:#0284c7;background:#e0f2fe;' : '') + '">' +
+              '<div style="font-weight:900;font-size:15.5px;color:#0f172a">' + esc(dm.id) + '</div>' +
+              '<div style="font-size:12.5px;color:#475569;margin-top:3px">' + esc(dm.desc) + '</div>' +
+            '</button>';
+          }).join('') +
+        '</div>' +
+
+        '<h3 style="margin:10px 0 6px;color:#0b2a4a;font-size:18px">2️⃣ ✍️ بناءً على فهمِكَ لمفهومِ التميّز: اكتبْ كيفَ ستتميّزُ أنتَ هذا العام؟</h3>' +
+        '<textarea id="exc-how-input" placeholder="اكتبْ هنا بأسلوبِكَ كيفَ ستتميّزُ هذا العامَ في صفِّكَ ومدرستِك، أو اضغطْ على إحدى العباراتِ المساندةِ بالأسفل لتعبئتِها وتخصيصِها..." style="min-height:90px;font-size:16px">' + esc(p.howToExcel || S.data.guess || '') + '</textarea>' +
+        '<div style="margin-top:8px">' +
+          '<div style="font-size:13px;font-weight:800;color:#475569;margin-bottom:6px">💡 عباراتٌ مساندةٌ (اضغطْ لاختيارِها والتّعديلِ عليها):</div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px">' +
+            howChips.map(function (chTxt) {
+              return '<button type="button" class="harvest-chip-btn good" data-how-chip="' + esc(chTxt) + '" style="text-align:right;padding:8px 12px;font-size:14px">' +
+                '<span>🌟 ' + esc(chTxt) + '</span>' +
+              '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="card">' +
+        next('حفظُ مسارِ تميّزي والانتقالُ إلى صياغةِ الأهدافِ الثّلاثة (محطّة ف) ⬅', function () {
+          var val = ($('#exc-how-input').value || '').trim();
+          if (!val) {
+            alert('الرجاء كتابة كيف ستتميّز هذا العام (أو اختيار عبارة مساندة) قبل الانتقال 🙂');
+            $('#exc-how-input').focus();
+            return;
+          }
+          p.howToExcel = val.slice(0, 500);
+          S.data.guess = p.howToExcel;
+          saveExcellencePlan(p);
+          saveStudentPortfolioRecord();
+          report();
+          tryAdvanceToStation(1, function () { stationF(0); });
+        }) +
+      '</div>';
+
+    h(htmlExc);
+    wireExcellenceQuickBar();
+
+    app.querySelectorAll('[data-dom]').forEach(function (b) {
+      b.onclick = function () {
+        var dId = b.getAttribute('data-dom');
+        var arr = (p.chosenDomains || []).slice();
+        var idx = arr.indexOf(dId);
+        if (idx >= 0) {
+          arr.splice(idx, 1);
+          b.style.borderColor = '';
+          b.style.background = '';
+        } else {
+          arr.push(dId);
+          b.style.borderColor = '#0284c7';
+          b.style.background = '#e0f2fe';
+        }
+        p.chosenDomains = arr;
+        saveExcellencePlan(p);
+      };
+    });
+
+    app.querySelectorAll('[data-how-chip]').forEach(function (b) {
+      b.onclick = function () {
+        var t = b.getAttribute('data-how-chip');
+        var inp = $('#exc-how-input');
+        if (inp) {
+          inp.value = t;
+          p.howToExcel = t;
+          S.data.guess = t;
+          saveExcellencePlan(p);
+          inp.focus();
+        }
+      };
+    });
+
+    var inpEl = $('#exc-how-input');
+    if (inpEl) {
+      inpEl.addEventListener('input', function () {
+        p.howToExcel = (inpEl.value || '').trim().slice(0, 500);
+        S.data.guess = p.howToExcel;
+        saveExcellencePlan(p);
+      });
+    }
+    return;
+  }
+
   var html = head('🔍 ' + esc(k.title || 'لنبدأ بلغز!')) + '<p class="story">' + esc(k.story) + '</p>' + sayBtn(k.story + ' ' + k.question) + '<p class="q">❓ ' + esc(k.question) + '</p>' +
     '<label>ما تخمينُك؟ اكتبْه (لا يوجدُ خطأٌ هنا):</label><textarea id="guess"></textarea></div>';
   if (v.youtube_id) html += '<div class="card"><h3>🎬 شاهِدْ</h3><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(v.youtube_id) + '?rel=0" title="' + esc(v.title || 'فيديو') + '" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div><p class="muted">' + esc(v.title || '') + '</p></div>';
@@ -1531,6 +2000,241 @@ function stationM() {
   if (k.riddle) { $('#rh').onclick = function () { $('#rr').innerHTML = '<div class="fb bad">💡 ' + esc(k.riddle.hint) + '</div>'; }; $('#ra').onclick = function () { $('#rr').innerHTML = '<div class="fb good">🎉 ' + esc(k.riddle.answer) + '</div>'; }; }
 }
 // ---------- ف ----------
+function renderExcellenceStationFBuilder(stepIdx) {
+  if (!isExcellenceLesson()) return '';
+  var p = getOrInitExcellencePlan();
+
+  // الخطوة 0: الأهداف الثلاثة وتدريجها حسب الأهمية
+  if (stepIdx === 0) {
+    var rankBadges = [
+      { title: '🥇 المرتبة الأولى (الأعلى أهمّيّةً وأولويّة)', bg: '#fffbeb', brd: '#f59e0b', col: '#92400e' },
+      { title: '🥈 المرتبة الثّانية (الأهمّيّة المتوسّطة)', bg: '#f0f9ff', brd: '#38bdf8', col: '#0369a1' },
+      { title: '🥉 المرتبة الثّالثة (الأهمّيّة التّكميليّة)', bg: '#faf5ff', brd: '#c084fc', col: '#6b21a8' }
+    ];
+    var goalSuggestions = [
+      'إتقانُ مهاراتِ الرّياضيّاتِ والعلومِ وحلُّ المسائلِ والتّجاربِ بدقّةٍ وفهمٍ عميق',
+      'قراءةُ وتلخيصُ قصصٍ وكتبٍ مفيدةٍ وتطويرُ طلاقتي في اللّغةِ العربيّةِ والعبريةِ والإنجليزيّة',
+      'الالتزامُ اليوميُّ بواجباتي وترتيبُ وقتي والمشاركةُ الفعّالةُ في كلِّ حصّة',
+      'التّعاونُ الإيجابيُّ مع زملائي في المجموعاتِ ومساعدةُ مَن يحتاجُ شرحاً بأدبٍ واحترام',
+      'تطويرُ ثقتي بنفسي في الإلقاءِ والحوارِ وتقديمِ المبادراتِ الإبداعيّةِ في الصّفّ'
+    ];
+
+    return '<div class="card" id="exc-goals-builder-card" style="border:2.5px solid #0284c7;background:linear-gradient(135deg,#f8fafc,#f0f9ff)">' +
+      '<h3 style="margin:0 0 6px;color:#0369a1;font-size:19px">🎯 ورشةُ صياغةِ أهدافي الثّلاثةِ لهذه السّنة وتدريجِها حسبَ الأهمّيّة</h3>' +
+      '<p style="margin:0 0 12px;font-size:14.5px;color:#334155">اكتبْ أهدافَكَ الثّلاثةَ لهذه السّنة، واستخدمْ أزرارَ (<b>🔼 رفع الأهمّيّة</b> / <b>🔽 خفض الأهمّيّة</b>) لتدريجِها وترتيبِها من الهدفِ الأهمِّ (المرتبة 1) إلى الهدفِ الثّالث:</p>' +
+      '<div id="exc-goals-list-wrap">' +
+        [0, 1, 2].map(function (gIdx) {
+          var rb = rankBadges[gIdx];
+          return '<div style="background:' + rb.bg + ';border:2px solid ' + rb.brd + ';border-radius:14px;padding:12px;margin-bottom:10px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">' +
+              '<b style="color:' + rb.col + ';font-size:15.5px">' + rb.title + '</b>' +
+              '<div style="display:flex;gap:6px">' +
+                (gIdx > 0 ? '<button type="button" class="btn alt" data-goal-up="' + gIdx + '" style="min-height:30px;padding:3px 10px;font-size:12.5px;margin:0;background:#fff">🔼 رفع الأهمّيّة</button>' : '') +
+                (gIdx < 2 ? '<button type="button" class="btn alt" data-goal-dn="' + gIdx + '" style="min-height:30px;padding:3px 10px;font-size:12.5px;margin:0;background:#fff">🔽 خفض الأهمّيّة</button>' : '') +
+              '</div>' +
+            '</div>' +
+            '<input type="text" data-goal-inp="' + gIdx + '" value="' + esc((p.goalsRanked && p.goalsRanked[gIdx]) || '') + '" placeholder="اكتب الهدف رقم ' + (gIdx + 1) + ' في الأهمّيّة هنا...">' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div style="margin-top:8px">' +
+        '<div style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">💡 بنكُ أهدافٍ مقترحةٍ (اضغطْ على أيِّ هدفٍ لإضافتِه إلى الخانةِ الفارغةِ وتعديلِه):</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
+          goalSuggestions.map(function (gs) {
+            return '<button type="button" class="quick-subj-btn" data-add-goal-sug="' + esc(gs) + '" style="font-size:12.5px;padding:6px 10px;background:#fff;border:1px solid #7dd3fc;border-radius:10px;cursor:pointer">➕ ' + esc(gs) + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // الخطوة 1: المشروع الشخصي للتميز
+  if (stepIdx === 1) {
+    var projTemplates = [
+      { t: '🔬 مشروعُ المبتكرِ الصّغير والتّجاربِ العلميّة', d: 'تصميمُ تجربةٍ علميّةٍ أو مجسّمٍ توضيحيٍّ يشرحُ ظاهرةً علميّةً وعرضُه أمامَ طلّابِ الصّفّ.' },
+      { t: '📚 مشروعُ تحدّي القارئِ المتميّز وتلخيصِ القصص', d: 'قراءةُ سلسلةِ قصصٍ هادفةٍ وإعدادُ بطاقاتِ تلخيصٍ مصوّرةٍ باللّغاتِ لمكتبةِ الصّفّ.' },
+      { t: '🤝 مشروعُ الزّميلِ المساندِ في الرّياضيّاتِ واللّغات', d: 'إعدادُ أوراقِ عملٍ وألعابٍ تعليميّةٍ مبسّطةٍ لمساعدةِ زملائي في فهمِ الدّروسِ والتّدريبِ عليها.' },
+      { t: '🌱 مشروعُ سفيرِ النّظامِ والبيئةِ الجميلةِ في مشيرفة', d: 'قيادةُ مبادرةٍ صفّيّةٍ للحفاظِ على جماليّةِ الصّفِّ والمدرسةِ ونشرِ العاداتِ الإيجابيّة.' }
+    ];
+    return '<div class="card" style="border:2.5px solid #7c3aed;background:linear-gradient(135deg,#faf5ff,#f3e8ff)">' +
+      '<h3 style="margin:0 0 6px;color:#6b21a8;font-size:19px">🚀 ورشةُ تحديدِ مشروعي الشّخصيِّ للتميّز هذا العام</h3>' +
+      '<p style="margin:0 0 10px;font-size:14.5px;color:#334155">اكتبْ ما هو مشروعُكَ الشّخصيُّ الّذي ستعملُ عليهِ لتطبيقِ أهدافِكَ (أو اخترْ فكرةً ملهمةً بالأسفل وطوِّرْها بأسلوبك):</p>' +
+      '<label style="font-weight:800;color:#4c1d95">📌 عنوانُ / اسمُ مشروعي للتميّز:</label>' +
+      '<input type="text" id="exc-proj-title" value="' + esc(p.projectTitle || '') + '" placeholder="مثال: مشروع المبتكر الصغير / تحدّي القراءة / الزميل المساند...">' +
+      '<label style="font-weight:800;color:#4c1d95;margin-top:10px;display:block">📝 فكرةُ مشروعي وما الّذي سأقومُ بعملِه وتقديمِه فيه:</label>' +
+      '<textarea id="exc-proj-desc" style="min-height:85px" placeholder="اشرحْ باختصارٍ ما هو مشروعُك، وكيفَ سيفيدُكَ ويفيدُ صفَّكَ ومدرستَك...">' + esc(p.projectDescription || '') + '</textarea>' +
+      '<div style="margin-top:10px">' +
+        '<div style="font-size:13px;font-weight:800;color:#6b21a8;margin-bottom:6px">💡 أفكارُ مشاريعَ ملهمةٍ (اضغطْ لتعبئتِها وتخصيصِها):</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">' +
+          projTemplates.map(function (pt) {
+            return '<button type="button" class="opt" data-proj-tpl-t="' + esc(pt.t) + '" data-proj-tpl-d="' + esc(pt.d) + '" style="text-align:right;padding:10px;margin:0;background:#fff">' +
+              '<div style="font-weight:800;font-size:14px;color:#6b21a8">' + esc(pt.t) + '</div>' +
+              '<div style="font-size:12px;color:#475569;margin-top:3px">' + esc(pt.d) + '</div>' +
+            '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // الخطوة 2: الخطوات العملية الثلاث
+  if (stepIdx === 2) {
+    var stepSuggestions = [
+      ['تحديدُ أدواتِ ومصادرِ مشروعي وتخصيصُ دفترِ متابعةٍ خاصٍّ بأهدافي الثّلاثة منذُ هذا الأسبوع.', 'جمعُ الموادِّ والمعلوماتِ اللّازمةِ لمشروعي بالاستعانةِ بمعلّمي ومكتبةِ المدرسة.'],
+      ['تخصيصُ 20 دقيقةً يوميّاً لتنفيذِ أجزاءِ مشروعي ومراجعةِ أهدافي الثّلاثةِ بانتظام.', 'التّدرّبُ المستمرُّ وتطبيقُ خطواتِ المشروعِ أسبوعيّاً مع طلبِ ملاحظاتِ معلّمي لتطويرِ عملي.'],
+      ['مراجعةُ النّتيجةِ النّهائيّةِ لمشروعي وعرضُها أمامَ صفّي ومعلّمي وتوثيقُها في ملفِّ التميّز.', 'تقديمُ عرضٍ متكاملٍ لمشروعي ومشاركةُ ما تعلّمتُه مع زملائي في مدرسةِ مشيرفة.']
+    ];
+    var stepLabels = [
+      '1️⃣ الخطوةُ العمليّةُ الأولى (البدايةُ والتّجهيزُ والتّخطيط):',
+      '2️⃣ الخطوةُ العمليّةُ الثّانية (التّنفيذُ الأسبوعيُّ والمتابعةُ المستمرّة):',
+      '3️⃣ الخطوةُ العمليّةُ الثّالثة (المراجعةُ والعرضُ النّهائيُّ للمشروع):'
+    ];
+    return '<div class="card" style="border:2.5px solid #059669;background:linear-gradient(135deg,#ecfdf5,#d1fae5)">' +
+      '<h3 style="margin:0 0 6px;color:#065f46;font-size:19px">🛠️ ورشةُ كتابةِ الخطواتِ العمليّةِ لتنفيذِ مشروعي وأهدافي</h3>' +
+      '<p style="margin:0 0 12px;font-size:14.5px;color:#064e3b">اكتبْ 3 خطواتٍ عمليّةٍ واضحةٍ ستقومُ بها لتحويلِ أهدافِكَ ومشروعِكَ («<b>' + esc(p.projectTitle || 'مشروعي للتميّز') + '</b>») إلى إنجازٍ حقيقيّ:</p>' +
+      [0, 1, 2].map(function (sIdx) {
+        return '<div style="background:#fff;border:1.5px solid #6ee7b7;border-radius:12px;padding:10px 12px;margin-bottom:10px">' +
+          '<label style="font-weight:800;color:#065f46;font-size:14.5px">' + stepLabels[sIdx] + '</label>' +
+          '<input type="text" data-pstep-inp="' + sIdx + '" value="' + esc((p.practicalSteps && p.practicalSteps[sIdx]) || '') + '" placeholder="اكتب الخطوة العملية ' + (sIdx + 1) + ' هنا...">' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' +
+            stepSuggestions[sIdx].map(function (sug) {
+              return '<button type="button" data-pstep-sug-idx="' + sIdx + '" data-pstep-sug-txt="' + esc(sug) + '" style="font-size:12px;padding:4px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;color:#166534;cursor:pointer">💡 ' + esc(sug) + '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  return '';
+}
+
+function wireExcellenceStationFBuilder(stepIdx, rerenderStepFn) {
+  if (!isExcellenceLesson()) return;
+  var p = getOrInitExcellencePlan();
+
+  if (stepIdx === 0) {
+    function syncGoalsFromInputs() {
+      [0, 1, 2].forEach(function (idx) {
+        var el = app.querySelector('[data-goal-inp="' + idx + '"]');
+        if (el) p.goalsRanked[idx] = (el.value || '').trim().slice(0, 300);
+      });
+      saveExcellencePlan(p);
+    }
+    app.querySelectorAll('[data-goal-inp]').forEach(function (el) {
+      el.addEventListener('input', syncGoalsFromInputs);
+    });
+    app.querySelectorAll('[data-goal-up]').forEach(function (btn) {
+      btn.onclick = function () {
+        syncGoalsFromInputs();
+        var idx = Number(btn.getAttribute('data-goal-up'));
+        if (idx > 0) {
+          var tmp = p.goalsRanked[idx - 1];
+          p.goalsRanked[idx - 1] = p.goalsRanked[idx];
+          p.goalsRanked[idx] = tmp;
+          saveExcellencePlan(p);
+          rerenderStepFn();
+        }
+      };
+    });
+    app.querySelectorAll('[data-goal-dn]').forEach(function (btn) {
+      btn.onclick = function () {
+        syncGoalsFromInputs();
+        var idx = Number(btn.getAttribute('data-goal-dn'));
+        if (idx < 2) {
+          var tmp = p.goalsRanked[idx + 1];
+          p.goalsRanked[idx + 1] = p.goalsRanked[idx];
+          p.goalsRanked[idx] = tmp;
+          saveExcellencePlan(p);
+          rerenderStepFn();
+        }
+      };
+    });
+    app.querySelectorAll('[data-add-goal-sug]').forEach(function (btn) {
+      btn.onclick = function () {
+        syncGoalsFromInputs();
+        var txt = btn.getAttribute('data-add-goal-sug');
+        var emptyIdx = p.goalsRanked.findIndex(function (g) { return !g || !g.trim(); });
+        if (emptyIdx < 0) emptyIdx = 2;
+        p.goalsRanked[emptyIdx] = txt;
+        saveExcellencePlan(p);
+        rerenderStepFn();
+      };
+    });
+  }
+
+  if (stepIdx === 1) {
+    var tEl = document.getElementById('exc-proj-title');
+    var dEl = document.getElementById('exc-proj-desc');
+    function syncProj() {
+      if (tEl) p.projectTitle = (tEl.value || '').trim().slice(0, 200);
+      if (dEl) p.projectDescription = (dEl.value || '').trim().slice(0, 500);
+      saveExcellencePlan(p);
+    }
+    if (tEl) tEl.addEventListener('input', syncProj);
+    if (dEl) dEl.addEventListener('input', syncProj);
+    app.querySelectorAll('[data-proj-tpl-t]').forEach(function (btn) {
+      btn.onclick = function () {
+        if (tEl) tEl.value = btn.getAttribute('data-proj-tpl-t');
+        if (dEl) dEl.value = btn.getAttribute('data-proj-tpl-d');
+        syncProj();
+      };
+    });
+  }
+
+  if (stepIdx === 2) {
+    function syncPSteps() {
+      [0, 1, 2].forEach(function (idx) {
+        var el = app.querySelector('[data-pstep-inp="' + idx + '"]');
+        if (el) p.practicalSteps[idx] = (el.value || '').trim().slice(0, 300);
+      });
+      saveExcellencePlan(p);
+    }
+    app.querySelectorAll('[data-pstep-inp]').forEach(function (el) {
+      el.addEventListener('input', syncPSteps);
+    });
+    app.querySelectorAll('[data-pstep-sug-idx]').forEach(function (btn) {
+      btn.onclick = function () {
+        var idx = Number(btn.getAttribute('data-pstep-sug-idx'));
+        var txt = btn.getAttribute('data-pstep-sug-txt');
+        var el = app.querySelector('[data-pstep-inp="' + idx + '"]');
+        if (el) {
+          el.value = txt;
+          syncPSteps();
+        }
+      };
+    });
+  }
+}
+
+function validateExcellenceStepBeforeNext(stepIdx) {
+  if (!isExcellenceLesson()) return true;
+  var p = getOrInitExcellencePlan();
+  if (stepIdx === 0) {
+    var filledGoals = (p.goalsRanked || []).filter(function (x) { return x && x.trim().length > 0; });
+    if (filledGoals.length < 3) {
+      alert('الرجاء كتابة أو اختيار أهدافك الثلاثة لهذه السنة وتدريجها حسب الأهمية قبل المتابعة 🎯');
+      return false;
+    }
+  }
+  if (stepIdx === 1) {
+    if (!p.projectTitle || !p.projectDescription) {
+      alert('الرجاء كتابة عنوان مشروعك وفكرته (أو اختيار فكرة مشروع وتخصيصها) قبل المتابعة 🚀');
+      return false;
+    }
+  }
+  if (stepIdx === 2) {
+    var filledSteps = (p.practicalSteps || []).filter(function (x) { return x && x.trim().length > 0; });
+    if (filledSteps.length < 3) {
+      alert('الرجاء كتابة خطواتك العملية الثلاث لتنفيذ مشروعك وأهدافك قبل المتابعة 🛠️');
+      return false;
+    }
+  }
+  saveExcellencePlan(p);
+  saveStudentPortfolioRecord();
+  return true;
+}
+
 function stationF(i) {
   S.st = 1;
   if (i === 0) {
@@ -1539,8 +2243,10 @@ function stationF(i) {
   }
   var steps = L.explain.steps, s = steps[i];
   ctx(s.more, (s.title || '') + ': ' + s.text);
-  h(head('📘 خطوة ' + (i + 1) + ' من ' + steps.length + ': ' + esc(s.title)) + '<div class="bar"><i style="width:' + Math.round((i) / steps.length * 100) + '%"></i></div>' +
-    (s.emoji ? '<div class="emoji">' + esc(s.emoji) + '</div>' : '') + '<p style="font-size:20px">' + esc(s.text) + '</p>' + sayBtn(s.text) + '</div>' +
+  h(renderExcellenceQuickBar() +
+    head('📘 خطوة ' + (i + 1) + ' من ' + steps.length + ': ' + esc(s.title)) + '<div class="bar"><i style="width:' + Math.round((i) / steps.length * 100) + '%"></i></div>' +
+    (s.emoji ? '<div class="emoji">' + esc(s.emoji) + '</div>' : '') + '<p style="font-size:20px;line-height:1.7">' + esc(s.text) + '</p>' + sayBtn(s.text) + '</div>' +
+    renderExcellenceStationFBuilder(i) +
     '<div class="card"><h3>✋ أرِني! <small style="font-size:13px;color:#0284c7;font-weight:700">(يحدّدُ النظامُ مسارَكَ التّالي تلقائياً حسبَ إجابتك وقدراتك)</small></h3>' +
     mcq(s.check, {
       feedback: true,
@@ -1578,11 +2284,15 @@ function stationF(i) {
           saveStudentPortfolioRecord();
         }
         report();
-        showNext(supportHtml + adaptiveBanner + next(i + 1 < steps.length ? 'الخطوة التّالية ⬅' : 'إلى محطّة «ت» (حسب مسار قدراتك) ⬅', function () {
+        showNext(supportHtml + adaptiveBanner + next(i + 1 < steps.length ? 'حفظ والانتقال للخطوة التّالية ⬅' : 'حفظ والانتقال إلى محطّة «ت» (المحاكاة والتدريب) ⬅', function () {
+          if (!validateExcellenceStepBeforeNext(i)) return;
           i + 1 < steps.length ? stationF(i + 1) : tryAdvanceToStation(2, enterStationTa);
         }));
       }
     }) + '<div id="after"></div></div>');
+
+  wireExcellenceQuickBar();
+  wireExcellenceStationFBuilder(i, function () { stationF(i); });
 }
 // ---------- ت ----------
 var DEFAULT_EXCELLENCE_SIM = {
@@ -2007,7 +2717,211 @@ function game() {
   });
 }
 // ---------- ا ----------
+function renderExcellenceSelfEvalStation() {
+  S.st = 3;
+  report();
+  var p = getOrInitExcellencePlan();
+  var activeTerm = p.activeEvalTerm || 'term1';
+  if (!p.selfEval) p.selfEval = {};
+  if (!p.selfEval[activeTerm]) {
+    p.selfEval[activeTerm] = { done: false, date: '', g1: 100, g2: 100, g3: 100, proj: 100, scorePct: 100, reflection: '' };
+  }
+  var curEval = p.selfEval[activeTerm];
+
+  var termMeta = {
+    term1: { title: '🌱 التّقييمُ الذّاتيّ — الفصلُ الأوّل (بدايةُ المسيرةِ والانطلاق)', color: '#059669', bg: '#ecfdf5', brd: '#10b981', desc: 'قيِّمْ مدى وضوحِ خطّتِكَ والتزامِكَ الأوّليِّ بأهدافِكَ الثّلاثةِ وانطلاقِ مشروعِكَ في الفصلِ الأوّل:' },
+    term2: { title: '⚡ التّقييمُ الذّاتيّ — نهايةُ الفصلِ الثّاني (المراجعةُ المرحليّةُ لما تمَّ تعبئتُه)', color: '#0284c7', bg: '#f0f9ff', brd: '#38bdf8', desc: 'ها قد عدتَ في نهايةِ الفصلِ الثّاني! اقرأْ ما سجّلتَه في ملفّكَ بالأسفل، وقيِّمْ بصدقٍ ما أنجزتَه حتّى الآنَ من أهدافِكَ الثّلاثةِ ومشروعِكَ وخطواتِكَ العمليّة:' },
+    term3: { title: '🏆 التّقييمُ الذّاتيّ — نهايةُ الفصلِ الثّالث (الحصادُ السّنويُّ النّهائيُّ للشّهادة)', color: '#7c3aed', bg: '#faf5ff', brd: '#c084fc', desc: 'وصلتَ إلى محطّةِ التّتويجِ في نهايةِ الفصلِ الثّالث! راجعْ كاملَ ملفّكَ المحفوظِ وقيِّمْ حصيلةَ إنجازِكَ السّنويِّ لإصدارِ شهادتِكَ النّهائيّةِ بصيغة PDF:' }
+  };
+  var tm = termMeta[activeTerm] || termMeta.term1;
+
+  var ratingChoices = [
+    { val: 100, label: '🌟 أنجزتُه بامتياز (100%)' },
+    { val: 85, label: '✅ تقدّمتُ فيه كثيراً (85%)' },
+    { val: 70, label: '🌱 في طورِ الإنجاز (70%)' },
+    { val: 50, label: '🛠️ يحتاجُ لمزيدٍ من الجهد (50%)' }
+  ];
+
+  function renderRateRow(fieldKey, iconBadge, itemTitle, itemSavedText) {
+    var curVal = Number(curEval[fieldKey] || 100);
+    return '<div style="background:#fff;border:1.5px solid #cbd5e1;border-radius:14px;padding:12px 14px;margin-bottom:10px">' +
+      '<div style="font-size:13px;font-weight:900;color:#0369a1;margin-bottom:3px">' + iconBadge + ' ' + esc(itemTitle) + '</div>' +
+      '<div style="font-size:15px;font-weight:800;color:#0f172a;background:#f8fafc;padding:7px 10px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px">«' + esc(itemSavedText || 'لم يُكتب نصّ بعد — يمكنك كتابته من زر تعديل الخطة') + '»</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px">' +
+        ratingChoices.map(function (rc) {
+          var isSel = curVal === rc.val;
+          return '<button type="button" class="opt" data-rate-k="' + fieldKey + '" data-rate-v="' + rc.val + '" style="margin:0;padding:8px 10px;font-size:13px;font-weight:800;text-align:center;' + (isSel ? 'background:#0284c7;color:#fff;border-color:#0284c7;' : '') + '">' +
+            rc.label +
+          '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  }
+
+  var reflectionChips = [
+    'التزمتُ بخطواتي العمليّةِ وحقّقتُ تقدّماً ممتازاً في أهدافي الثّلاثةِ ومشروعي.',
+    'أنجزتُ الهدفَ الأوّلَ الأهمَّ بنجاح، وسأضاعفُ جهدي في الهدفَيْنِ الثّاني والثّالثِ خلالَ الفترةِ القادمة.',
+    'فخورٌ بما أنجزتُه في مشروعي الشّخصيّ، وقد ساعدني التّنظيمُ اليوميُّ على تطويرِ مستواي.'
+  ];
+
+  var avgNow = Math.round(((Number(curEval.g1 || 100) + Number(curEval.g2 || 100) + Number(curEval.g3 || 100) + Number(curEval.proj || 100)) / 4));
+  curEval.scorePct = avgNow;
+
+  var html = renderExcellenceQuickBar() +
+    head('🪞 المحطّةُ الرّابعة (ا): التّقييمُ الذّاتيُّ عبرَ الفصولِ الثّلاثة (بناءً على ما تمَّ تعبئتُه)') +
+
+    // 1. فقرة شرح التقييم الذاتي
+    '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:16px;padding:15px 16px;margin-bottom:14px">' +
+      '<div style="font-size:16px;font-weight:900;color:#92400e;margin-bottom:6px">📖 اقرأْ أوّلاً: ما هو «التّقييمُ الذّاتيّ» وكيفَ أقيّمُ نفسي بصدق؟</div>' +
+      '<p style="margin:0;font-size:16.5px;line-height:1.75;color:#78350f">' +
+        'التّقييمُ الذّاتيُّ هو أن يكونَ الطّالبُ المتميّزُ حَكَماً عادلاً وصادقاً على نفسِه؛ فينظرَ إلى ما قامَ بتعبئتِه وتسجيلِه في خطّتِه (أهدافِه الثّلاثةِ المدرّجةِ حسبَ الأهمّيّة، ومشروعِه الشّخصيّ، وخطواتِه العمليّة)، ثمَّ يفحصَ في <b>الفصلِ الأوّل</b>، وفي <b>نهايةِ الفصلِ الثّاني</b>، وفي <b>نهايةِ الفصلِ الثّالث</b>: كم أنجزتُ من خطّتي؟ وما الّذي تطوّرَ في شخصيّتي وتعلّمي؟ وما الّذي يحتاجُ منّي إلى متابعةٍ أقوى؟' +
+      '</p>' +
+    '</div>' +
+
+    // 2. ملخص ما قام الطالب بتعبئته في ملفه المحفوظ
+    '<div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:16px;padding:14px 16px;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
+        '<b style="font-size:16px;color:#0f172a">📂 ملفُّكَ المحفوظ (ما قمتَ بتعبئتِه وتسجيلِه في منصّةِ مفتاح):</b>' +
+        '<button type="button" class="btn alt" id="exc-edit-plan-btn" style="min-height:32px;padding:4px 12px;font-size:12.5px;margin:0">✏️ تعديلُ الأهدافِ أو المشروع</button>' +
+      '</div>' +
+      '<div style="font-size:14px;color:#334155;line-height:1.65">' +
+        '<div>🌟 <b>كيفَ أتميّز:</b> ' + esc(p.howToExcel || '—') + '</div>' +
+        '<div>🚀 <b>مشروعي الشّخصيّ:</b> <b>' + esc(p.projectTitle || '—') + '</b> — ' + esc(p.projectDescription || '') + '</div>' +
+        '<div>🛠️ <b>خطواتي العمليّة:</b> (1) ' + esc((p.practicalSteps && p.practicalSteps[0]) || '—') + ' · (2) ' + esc((p.practicalSteps && p.practicalSteps[1]) || '—') + ' · (3) ' + esc((p.practicalSteps && p.practicalSteps[2]) || '—') + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // 3. تبويبات الفصول الثلاثة
+    '<div style="margin-bottom:12px">' +
+      '<div style="font-size:14px;font-weight:800;color:#334155;margin-bottom:6px">📅 اخترِ الفصلَ الدّراسيَّ الّذي تودُّ تقييمَ نفسِكَ فيهِ الآن:</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">' +
+        [['term1', '🌱 الفصل الأوّل (بداية المسيرة)'], ['term2', '⚡ نهاية الفصل الثّاني'], ['term3', '🏆 نهاية الفصل الثّالث']].map(function (tb) {
+          var isAct = activeTerm === tb[0];
+          var isDone = p.selfEval[tb[0]] && p.selfEval[tb[0]].done;
+          return '<button type="button" class="btn ' + (isAct ? 'ok' : 'alt') + '" data-eval-tab="' + tb[0] + '" style="margin:0;font-size:14px;padding:10px;' + (isAct ? '' : 'background:#fff;color:#0f172a;border-color:#cbd5e1;') + '">' +
+            tb[1] + (isDone ? ' ✅' : '') +
+          '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // 4. استمارة التقييم الذاتي للفصل المختار بناءً على ما تم تعبئته
+    '<div style="background:' + tm.bg + ';border:2.5px solid ' + tm.brd + ';border-radius:16px;padding:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
+        '<h3 style="margin:0;color:' + tm.color + ';font-size:18px">' + tm.title + '</h3>' +
+        '<span class="pill" id="exc-term-avg-pill" style="background:#fff;color:' + tm.color + ';font-weight:900;font-size:14px;border:1.5px solid ' + tm.brd + '">معدّل تقييمي الذاتي للفصل: ' + avgNow + '%</span>' +
+      '</div>' +
+      '<p style="margin:0 0 12px;font-size:14.5px;color:#334155">' + tm.desc + '</p>' +
+
+      renderRateRow('g1', '🥇 الهدف الأوّل (الأعلى أهمّيّة):', 'ما مدى تحقيقِكَ وتقدّمِكَ في هدفِكَ الأوّل؟', (p.goalsRanked && p.goalsRanked[0]) || 'الهدف الأوّل') +
+      renderRateRow('g2', '🥈 الهدف الثّاني (الأهمّيّة الثّانية):', 'ما مدى تحقيقِكَ وتقدّمِكَ في هدفِكَ الثّاني؟', (p.goalsRanked && p.goalsRanked[1]) || 'الهدف الثّاني') +
+      renderRateRow('g3', '🥉 الهدف الثّالث (الأهمّيّة الثّالثة):', 'ما مدى تحقيقِكَ وتقدّمِكَ في هدفِكَ الثّالث؟', (p.goalsRanked && p.goalsRanked[2]) || 'الهدف الثّالث') +
+      renderRateRow('proj', '🚀 مشروعي الشّخصيّ وخطواتي العمليّة:', 'ما مدى التزامِكَ وتقدّمِكَ في تنفيذِ مشروعِكَ وخطواتِكَ العمليّة؟', (p.projectTitle ? (p.projectTitle + ' — ' + (p.projectDescription || '')) : 'مشروعي وخطواتي العمليّة')) +
+
+      '<div style="background:#fff;border:1.5px solid #cbd5e1;border-radius:14px;padding:12px 14px;margin-top:10px">' +
+        '<label style="font-weight:900;color:#0f172a;font-size:14.5px">✍️ تأمّلي الصّادقُ في هذا الفصل (ماذا أنجزتُ؟ وماذا سأطوّرُ؟):</label>' +
+        '<textarea id="exc-term-refl" style="min-height:75px;margin-top:6px" placeholder="اكتبْ ملاحظتَكَ وتقييمَكَ لنفسِكَ في هذا الفصل...">' + esc(curEval.reflection || '') + '</textarea>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
+          reflectionChips.map(function (rcTxt) {
+            return '<button type="button" data-refl-chip="' + esc(rcTxt) + '" style="font-size:12px;padding:5px 10px;background:#f0f9ff;border:1px solid #7dd3fc;border-radius:8px;color:#0369a1;cursor:pointer">💡 ' + esc(rcTxt) + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">' +
+        '<button type="button" class="btn ok" id="exc-save-term-eval-btn" style="flex:2;margin:0;font-size:16px">💾 حفظُ تقييمي الذّاتيّ والانتقالُ إلى الحصادِ وإصدارِ شهادةِ الـ PDF ⬅</button>' +
+        '<button type="button" class="btn alt" id="exc-direct-pdf-from-eval" style="flex:1;margin:0;background:#fff;color:#0369a1;border-color:#0284c7">📄 معاينة شهادة وملف PDF الآن</button>' +
+      '</div>' +
+    '</div>' +
+    '</div>';
+
+  h(html);
+  wireExcellenceQuickBar();
+
+  var editBtn = document.getElementById('exc-edit-plan-btn');
+  if (editBtn) {
+    editBtn.onclick = function () { stationF(0); };
+  }
+
+  app.querySelectorAll('[data-eval-tab]').forEach(function (btn) {
+    btn.onclick = function () {
+      var tk = btn.getAttribute('data-eval-tab');
+      p.activeEvalTerm = tk;
+      saveExcellencePlan(p);
+      renderExcellenceSelfEvalStation();
+    };
+  });
+
+  app.querySelectorAll('[data-rate-k]').forEach(function (btn) {
+    btn.onclick = function () {
+      var k = btn.getAttribute('data-rate-k');
+      var v = Number(btn.getAttribute('data-rate-v')) || 100;
+      curEval[k] = v;
+      curEval.scorePct = Math.round(((Number(curEval.g1 || 100) + Number(curEval.g2 || 100) + Number(curEval.g3 || 100) + Number(curEval.proj || 100)) / 4));
+      curEval.done = true;
+      curEval.date = new Date().toLocaleDateString('ar-EG');
+      saveExcellencePlan(p);
+      renderExcellenceSelfEvalStation();
+    };
+  });
+
+  var reflEl = document.getElementById('exc-term-refl');
+  if (reflEl) {
+    reflEl.addEventListener('input', function () {
+      curEval.reflection = (reflEl.value || '').trim().slice(0, 400);
+      curEval.done = true;
+      curEval.date = new Date().toLocaleDateString('ar-EG');
+      saveExcellencePlan(p);
+    });
+  }
+
+  app.querySelectorAll('[data-refl-chip]').forEach(function (btn) {
+    btn.onclick = function () {
+      var txt = btn.getAttribute('data-refl-chip');
+      if (reflEl) {
+        reflEl.value = txt;
+        curEval.reflection = txt;
+        curEval.done = true;
+        curEval.date = new Date().toLocaleDateString('ar-EG');
+        saveExcellencePlan(p);
+      }
+    };
+  });
+
+  var pdfNowBtn = document.getElementById('exc-direct-pdf-from-eval');
+  if (pdfNowBtn) {
+    pdfNowBtn.onclick = function () {
+      curEval.done = true;
+      curEval.date = new Date().toLocaleDateString('ar-EG');
+      saveExcellencePlan(p);
+      saveStudentPortfolioRecord();
+      exportStudentExcellencePDF(p);
+    };
+  }
+
+  var saveTermBtn = document.getElementById('exc-save-term-eval-btn');
+  if (saveTermBtn) {
+    saveTermBtn.onclick = function () {
+      curEval.done = true;
+      curEval.date = new Date().toLocaleDateString('ar-EG');
+      if (!curEval.reflection) {
+        curEval.reflection = 'راجعتُ أهدافي الثّلاثةَ ومشروعي وخطواتي العمليّةَ وقيّمتُ تقدّمي بصدق.';
+      }
+      saveExcellencePlan(p);
+      var pct = curEval.scorePct || 95;
+      S.data.evidence = { score: 2, of: 2, pct: pct };
+      S.data.result = pct >= 80 ? 'a' : pct >= 50 ? 'p' : 'n';
+      report();
+      saveStudentPortfolioRecord();
+      tryAdvanceToStation(4, harvest);
+    };
+  }
+}
+
 function evidence() {
+  if (isExcellenceLesson()) {
+    return renderExcellenceSelfEvalStation();
+  }
   S.st = 3; report(); S.cur = { exam: true }; var items = L.evidence.items, i = 0, score = 0, ans = [];
   function one() {
     var q = items[i];
@@ -2026,6 +2940,24 @@ function evidence() {
 }
 // ---------- ح ----------
 function getHarvestOptions(i, L) {
+  if (isExcellenceLesson()) {
+    if (i === 0) {
+      return [
+        { text: 'سأترجمُ خطّتي إلى أفعالٍ يوميّةٍ بالانتباهِ الكاملِ للمعلّم، والمشاركةِ البنّاءة، وتطبيقِ خطواتِ مشروعي داخلَ الصّفّ.', type: 'good', icon: '🏫' },
+        { text: 'سأبادرُ بمساندةِ زملائي في المجموعاتِ وتطبيقِ أهدافي الثّلاثةِ في كلِّ مهمّةٍ مدرسيّة.', type: 'good', icon: '🤝' }
+      ];
+    }
+    if (i === 1) {
+      return [
+        { text: 'تخصيصُ وقتٍ يوميٍّ ثابتٍ في البيتِ لمراجعةِ دروسي وتنفيذِ خطواتِ مشروعي الشّخصيِّ بانتظام.', type: 'good', icon: '⏰' },
+        { text: 'القراءةُ اليوميّةُ وتحضيرُ الدّروسِ مسبقاً وتدوينُ ما أنجزتُه من أهدافي الثّلاثة.', type: 'good', icon: '📖' }
+      ];
+    }
+    return [
+      { text: 'أعدُ نفسي بأن أراجعَ ملفّي المحفوظَ بصدقٍ في نهايةِ الفصلِ الثّاني ونهايةِ الفصلِ الثّالثِ حتّى أحقّقَ أهدافي الثّلاثةَ كاملةً.', type: 'good', icon: '🏆' },
+      { text: 'سأواصلُ المثابرةَ والعملَ بخطواتي العمليّةِ كلَّ أسبوعٍ ليظهرَ تميّزي في شهادتي المدرسيّة.', type: 'good', icon: '🌟' }
+    ];
+  }
   var title = (L && L.title) || 'الدرس';
   var recap = (L && L.recap) || '';
   var lang = getLessonLang();
@@ -2097,11 +3029,21 @@ function getHarvestOptions(i, L) {
 
 function harvest() {
   S.st = 4; report(); ctx(L.recap, null); var H = L.harvest && L.harvest.length === 3 ? L.harvest : HARVEST;
+  var p = isExcellenceLesson() ? getOrInitExcellencePlan() : null;
+  var savedHarv = (p && Array.isArray(p.actionsHarvest) && p.actionsHarvest.some(Boolean)) ? p.actionsHarvest : (S.data.harvest || ['', '', '']);
+
+  var introExcHtml = isExcellenceLesson()
+    ? '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:14px;padding:14px;margin-bottom:12px">' +
+        '<div style="font-size:15.5px;font-weight:900;color:#166534;margin-bottom:4px">🌾 فقرةُ الحصادِ والعمل: كيفَ أترجمُ ما قمتُ بتسجيلِه إلى أفعالٍ حقيقيّة؟</div>' +
+        '<p style="margin:0;font-size:15px;color:#14532d;line-height:1.65">الأهدافُ الثّلاثةُ والمشروعُ والخطواتُ العمليّةُ الّتي كتبتَها تكتملُ قيمتُها عندما تترجمُها إلى <b>أفعالٍ وسلوكياتٍ يوميّة</b> في الصّفِّ والبيت. اكتبْ كيفَ ستترجمُ خطّتَكَ إلى أفعالٍ ليُحفظَ ملفُّكَ الكاملُ وتستخرجَ شهادتَكَ بصيغة PDF:</p>' +
+      '</div>'
+    : '<p>فكِّرْ وعبِّرْ: يمكنك الكتابة بحرية، أو اختيار إحدى الإمكانيات المساعدة ثم الإضافة عليها:</p>';
+
   var qHtml = H.map(function (q, i) {
     var opts = getHarvestOptions(i, L);
     return '<div class="harvest-q-box">' +
       '<label class="q">' + (i + 1) + '. ' + esc(q) + '</label>' + sayBtn(q) +
-      '<textarea id="hv' + i + '" placeholder="اكتب إجابتك هنا، أو اضغط على إحدى الإمكانيات المقترحة بالأسفل لتعبئتها والإضافة عليها..."></textarea>' +
+      '<textarea id="hv' + i + '" placeholder="اكتب إجابتك هنا، أو اضغط على إحدى الإمكانيات المقترحة بالأسفل لتعبئتها والإضافة عليها...">' + esc(savedHarv[i] || '') + '</textarea>' +
       '<div class="harvest-chips-label">💡 إمكانيات مقترحة (اختر لتعبئة المربع، ويمكنك الإكمال أو التعديل):</div>' +
       '<div class="harvest-chips">' +
       opts.map(function (op, k) {
@@ -2112,12 +3054,24 @@ function harvest() {
       '</div></div>';
   }).join('');
 
-  h(head('🌾 الحصاد') + '<p>فكِّرْ وعبِّرْ: يمكنك الكتابة بحرية، أو اختيار إحدى الإمكانيات المساعدة ثم الإضافة عليها:</p>' + qHtml +
-    next('أنهيتُ الحصاد ✅', function () {
+  h(renderExcellenceQuickBar() + head('🌾 الحصاد وترجمةُ الخطّة إلى أفعال') + introExcHtml + qHtml +
+    next(isExcellenceLesson() ? '💾 حفظُ ملفي الكامل واستخراجُ شهادةِ التميّز (PDF) 🏆' : 'أنهيتُ الحصاد ✅', function () {
       var a = H.map(function (q, i) { return ($('#hv' + i).value || '').trim().slice(0, 400); });
       if (!a.every(Boolean)) { alert('الرجاء الإجابة عن الأسئلة الثلاثة (بالكتابة أو باختيار إمكانية مساعدة) 🙂'); return; }
-      S.data.harvest = a; S.done = true; report(); end(H);
+      S.data.harvest = a;
+      if (isExcellenceLesson()) {
+        var pl = getOrInitExcellencePlan();
+        pl.actionsHarvest = a;
+        if (pl.selfEval && pl.selfEval.term1 && !pl.selfEval.term1.done) {
+          pl.selfEval.term1.done = true;
+          pl.selfEval.term1.date = new Date().toLocaleDateString('ar-EG');
+        }
+        saveExcellencePlan(pl);
+      }
+      S.done = true; report(); end(H);
     }, 'ok') + '</div>');
+
+  wireExcellenceQuickBar();
 
   setTimeout(function () {
     var syncTimer = null;
@@ -2129,6 +3083,11 @@ function harvest() {
           return el ? (el.value || '').trim().slice(0, 400) : '';
         });
         S.data.harvest = a;
+        if (isExcellenceLesson()) {
+          var pl = getOrInitExcellencePlan();
+          pl.actionsHarvest = a;
+          saveExcellencePlan(pl);
+        }
         report();
       }, 600);
     }
@@ -2159,6 +3118,7 @@ function harvest() {
     });
   });
 }
+
 function end(H) {
   stopStudentTimer();
   saveStudentPortfolioRecord();
@@ -2167,6 +3127,72 @@ function end(H) {
   var m = Math.floor(totalSec / 60), s = totalSec % 60;
   var totalStr = (m > 0 ? (m + ' دقيقة و ') : '') + s + ' ثانية (' + formatDuration(totalSec) + ')';
   var d = S.data, rw = { a: 'حقّق 🌟', p: 'حقّق جزئيًّا 🌱', n: 'لم يحقّق بعد 🛠️' };
+
+  if (isExcellenceLesson()) {
+    var p = getOrInitExcellencePlan();
+    var finalScore = computeFinalExcellenceCertificateScore(p);
+    var se = p.selfEval || {};
+    h('<div class="card">' + bar() + '</div>' +
+      '<div class="card">' +
+        '<div class="emoji">🏆</div>' +
+        '<h2 style="text-align:center;color:#0b2a4a;margin-bottom:4px">مباركٌ يا ' + esc(S.officialName || S.name) + '! تمَّ حفظُ ملفِّ وخُطّةِ التميّزِ الرّسميّةِ لك</h2>' +
+        '<p style="text-align:center;color:#475569;margin-top:0">ملفُّكَ محفوظٌ برقمِ هويّتِكَ لتعودَ إليهِ في نهايةِ الفصلِ الثّاني ونهايةِ الفصلِ الثّالثِ وتستخرجَ شهادتَكَ في أيِّ وقت!</p>' +
+
+        // زر استخراج شهادة وملف PDF البارز
+        '<div style="background:linear-gradient(135deg,#1e3a8a,#0284c7);color:#fff;border-radius:18px;padding:18px;margin:14px 0;text-align:center;box-shadow:0 10px 25px rgba(2,132,199,0.25)">' +
+          '<div style="font-size:15px;color:#bae6fd;font-weight:800">🏅 علامةُ التميّزِ المحسوبةُ في الشّهادةِ والملفّ:</div>' +
+          '<div style="font-size:38px;font-weight:900;color:#fef08a;margin:4px 0">' + finalScore + ' <span style="font-size:18px;color:#fff">/ 100</span></div>' +
+          '<div style="font-size:14px;color:#e0f2fe;margin-bottom:14px">' + esc(diag.standingLabel) + ' — ' + esc(diag.recommendation) + '</div>' +
+          '<button type="button" class="btn" id="exc-final-pdf-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:18px;font-weight:900;padding:14px 24px;border-radius:14px;width:100%;margin:0;box-shadow:0 6px 16px rgba(0,0,0,0.2)">' +
+            '📄 استخراجُ وتحميلُ شهادةِ وملفِّ التميّزِ المحفوظ (PDF)' +
+          '</button>' +
+        '</div>' +
+
+        // أزرار العودة لتقييم الفصل الثاني والفصل الثالث
+        '<div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:16px;padding:14px;margin:12px 0">' +
+          '<b style="color:#92400e;font-size:15.5px;display:block;margin-bottom:8px">🪞 محطّاتُ التّقييمِ الذّاتيّ عبرَ الفصولِ الثّلاثة (بناءً على ما قمتَ بتعبئته):</b>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">' +
+            '<button type="button" class="btn alt" id="end-go-t1" style="margin:0;background:#fff;border-color:#10b981;color:#065f46;font-size:13.5px">🌱 تقييم الفصل الأوّل ' + (se.term1 && se.term1.done ? '(' + se.term1.scorePct + '% ✓)' : '') + '</button>' +
+            '<button type="button" class="btn alt" id="end-go-t2" style="margin:0;background:#fff;border-color:#0284c7;color:#0369a1;font-size:13.5px">⚡ تقييم نهاية الفصل الثّاني ' + (se.term2 && se.term2.done ? '(' + se.term2.scorePct + '% ✓)' : '(اضغط عند نهاية الفصل 2)') + '</button>' +
+            '<button type="button" class="btn alt" id="end-go-t3" style="margin:0;background:#fff;border-color:#7c3aed;color:#6b21a8;font-size:13.5px">🏆 تقييم نهاية الفصل الثّالث ' + (se.term3 && se.term3.done ? '(' + se.term3.scorePct + '% ✓)' : '(اضغط عند نهاية الفصل 3)') + '</button>' +
+          '</div>' +
+        '</div>' +
+
+        // عرض الملف المحفوظ للطالب
+        '<div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:16px;padding:14px;margin:12px 0;font-size:14.5px;line-height:1.65">' +
+          '<h3 style="margin:0 0 8px;color:#0b2a4a">📂 ملخّصُ ملفِّكَ المحفوظِ في منصّةِ مفتاح:</h3>' +
+          '<p style="margin:4px 0"><b>🌟 كيفَ سأتميّز:</b> ' + esc(p.howToExcel || '—') + '</p>' +
+          '<p style="margin:4px 0"><b>🥇 الهدف الأوّل (الأهمّ):</b> ' + esc((p.goalsRanked && p.goalsRanked[0]) || '—') + '</p>' +
+          '<p style="margin:4px 0"><b>🥈 الهدف الثّاني:</b> ' + esc((p.goalsRanked && p.goalsRanked[1]) || '—') + '</p>' +
+          '<p style="margin:4px 0"><b>🥉 الهدف الثّالث:</b> ' + esc((p.goalsRanked && p.goalsRanked[2]) || '—') + '</p>' +
+          '<p style="margin:4px 0"><b>🚀 مشروعي الشّخصيّ:</b> ' + esc(p.projectTitle || '—') + ' — ' + esc(p.projectDescription || '') + '</p>' +
+          '<p style="margin:4px 0"><b>🛠️ خطواتي العمليّة:</b> 1) ' + esc((p.practicalSteps && p.practicalSteps[0]) || '—') + ' | 2) ' + esc((p.practicalSteps && p.practicalSteps[1]) || '—') + ' | 3) ' + esc((p.practicalSteps && p.practicalSteps[2]) || '—') + '</p>' +
+          '<p style="margin:4px 0"><b>🌾 ترجمةُ خطّتي لأفعال (الحصاد):</b> ' + esc((p.actionsHarvest || d.harvest || []).filter(Boolean).join(' | ')) + '</p>' +
+        '</div>' +
+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">' +
+          '<button class="btn alt" style="flex:1" id="end-edit-plan-btn">✏️ مراجعة أو تعديل خطّتي</button>' +
+          '<button class="btn ok" style="flex:1" id="final-exit-btn">🚪 خروج من التطبيق</button>' +
+        '</div>' +
+      '</div>');
+
+    setTimeout(function () {
+      var pdfBtn = document.getElementById('exc-final-pdf-btn');
+      if (pdfBtn) pdfBtn.onclick = function () { exportStudentExcellencePDF(p, diag); };
+      var t1 = document.getElementById('end-go-t1');
+      if (t1) t1.onclick = function () { p.activeEvalTerm = 'term1'; saveExcellencePlan(p); renderExcellenceSelfEvalStation(); };
+      var t2 = document.getElementById('end-go-t2');
+      if (t2) t2.onclick = function () { p.activeEvalTerm = 'term2'; saveExcellencePlan(p); renderExcellenceSelfEvalStation(); };
+      var t3 = document.getElementById('end-go-t3');
+      if (t3) t3.onclick = function () { p.activeEvalTerm = 'term3'; saveExcellencePlan(p); renderExcellenceSelfEvalStation(); };
+      var ed = document.getElementById('end-edit-plan-btn');
+      if (ed) ed.onclick = function () { stationM(); };
+      var eb = document.getElementById('final-exit-btn');
+      if (eb) eb.onclick = exitStudentApp;
+    }, 20);
+    return;
+  }
+
   h('<div class="card">' + bar() + '</div><div class="card"><div class="emoji">🎉</div><h2 style="text-align:center">أحسنتَ يا ' + esc(S.name) + '!</h2><p style="text-align:center">أنهيتَ حصّة «' + esc(L.title) + '»</p>' +
     '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:16px;padding:14px;margin:12px 0">' +
       '<h3 style="margin:0 0 6px;color:#92400e">📊 تقييمُ وضعِ الطالب التّشخيصيّ (حسبَ قدراتك): ' + esc(diag.standingLabel) + '</h3>' +
@@ -2246,3 +3272,4 @@ function keyChallenge() {
 }
 start();
 })();
+
