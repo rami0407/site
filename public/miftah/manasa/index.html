@@ -8,11 +8,12 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
-<link rel="stylesheet" href="manasa.css?v=20261112_v3">
+<link rel="stylesheet" href="manasa.css?v=20261114_v1">
+<script src="students-roster.js?v=20261114_v1"></script>
 <script>
 // إجبار المتصفح على جلب أحدث نسخة بدون كاش
 (function() {
-  var vTag = 'v=hub_20261112_v3';
+  var vTag = 'v=hub_20261114_v1';
   if (!window.location.search.includes(vTag)) {
     var sep = window.location.search ? '&' : '?';
     window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
@@ -92,6 +93,17 @@
         <p class="hub-card-desc">ولّد حصة جديدة بالذكاء الاصطناعي (بالعربية أو العبرية أو الإنجليزية)؛ ينقلك الموقع فور التوليد لفحصها ومشاركة الكود بالواتساب.</p>
         <div class="hub-action-pill">
           <span>ابدأ التوليد الآن</span>
+          <span>⬅</span>
+        </div>
+      </div>
+
+      <!-- الزر الرابع: تقييم سنة التميّز والشهادات -->
+      <div id="btn-open-excellence" class="hub-btn-card primary" style="border-color:#d97706;background:linear-gradient(145deg,#ffffff 0%,#fffbeb 100%)" role="button" tabindex="0">
+        <div class="hub-icon-circle" style="background:linear-gradient(135deg,#d97706,#f59e0b)">🏆</div>
+        <h2 class="hub-card-title" style="color:#92400e">تقييم سنة التميّز والشهادات</h2>
+        <p class="hub-card-desc">سيرورة تقييم جميع طلاب المدرسة (469 طالباً في 19 صفّاً) برقم الهويّة ككود سرّي لمنع تشابه الأسماء، مع احتساب العلامة والتوصية للشهادة المدرسية.</p>
+        <div class="hub-action-pill" style="background:#fef3c7;color:#92400e">
+          <span>فتح سجلّ التميّز والشهادات</span>
           <span>⬅</span>
         </div>
       </div>
@@ -271,10 +283,85 @@
     <div id="inspector-content"></div>
   </section>
 
+  <!-- 5. واجهة سيرورة تقييم سنة التميّز والشهادات المدرسية (469 طالباً — 19 صفاً) -->
+  <section id="view-excellence" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <button class="btn alt" id="back-to-hub-from-excellence" style="min-height:44px;padding:8px 18px;margin:0">⬅ العودة للرئيسية</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="btn-print-class-cards" style="min-height:44px;padding:8px 16px;margin:0;background:#1e3a8a;color:#fff">🖨️ طباعة بطاقات الكود السرّي (أرقام الهوية) للصف</button>
+        <button class="btn ok" id="btn-export-excellence-csv" style="min-height:44px;padding:8px 18px;margin:0">📥 تصدير تقييم الشهادات (ملف Excel / CSV)</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:0;border:2.5px solid #f59e0b;background:linear-gradient(135deg,#fffbeb 0%,#ffffff 100%)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+        <div>
+          <h2 style="margin:0 0 6px;color:#92400e;font-size:24px">🏆 سيرورة تقييم «سنة التميّز» في شهادة الطلاب — مدرسة مشيرفة الابتدائية</h2>
+          <p style="margin:0;color:#475569;font-size:15px;line-height:1.7">
+            يدخل كل طالب إلى منصة مفتاح بـ<b>رقمه السري (رقم الهوية المكون من 9 أرقام)</b> ويكتب اسمه كما يشاء، فيُربط أداؤه تلقائياً بسجلّه الرسمي وصفّه دون أي بلبلة بين الأسماء المتشابهة.
+          </p>
+        </div>
+        <div id="exc-sync-status" class="pill" style="background:#fef3c7;color:#92400e;font-weight:800;padding:8px 14px;font-size:13px">☁️ متّصل بالسجل السحابي</div>
+      </div>
+
+      <!-- شرح سيرورة التقييم المعتمدة للشهادة -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px">
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:12px;padding:10px 12px">
+          <div style="font-weight:900;color:#b45309;font-size:14px">1️⃣ محطّة «م» (15%)</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:2px">المبادرة والفضول العلمي والمشاركة في بداية الحصة</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:12px;padding:10px 12px">
+          <div style="font-weight:900;color:#0369a1;font-size:14px">2️⃣ محطّة «ف» (25%)</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:2px">بناء المعنى وإتقان أسئلة «أرِني» الفهمية</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:12px;padding:10px 12px">
+          <div style="font-weight:900;color:#0f766e;font-size:14px">3️⃣ محطّة «ت» (25%)</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:2px">التدريب المتكيّف والعمل التعاوني بالمجموعات</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:12px;padding:10px 12px">
+          <div style="font-weight:900;color:#15803d;font-size:14px">4️⃣ محطّة «ا» (25%)</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:2px">إثبات الدليل المستقلّ وتحقيق هدف الحصّة</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:12px;padding:10px 12px">
+          <div style="font-weight:900;color:#6b21a8;font-size:14px">5️⃣ محطّة «ح» والتحدّي (10%)</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:2px">التأمّل في الحصاد ونقل الأثر والمثابرة</div>
+        </div>
+      </div>
+
+      <!-- إحصائيات عامة -->
+      <div id="exc-summary-stats" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"></div>
+    </div>
+
+    <!-- فلترة الصفوف والبحث -->
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:end">
+        <div>
+          <label style="margin:0 0 6px;font-weight:800;color:#0f172a">🏫 اختر الصفّ ومربّي/ة الصف:</label>
+          <select id="exc-class-select" style="margin:0;font-weight:800"></select>
+        </div>
+        <div>
+          <label style="margin:0 0 6px;font-weight:800;color:#0f172a">🔍 ابحث باسم الطالب أو رقم الهويّة (الكود السرّي):</label>
+          <input type="text" id="exc-search-input" placeholder="مثال: محمد، زينة، أو رقم الهوية 9 أرقام…" style="margin:0">
+        </div>
+        <div>
+          <label style="margin:0 0 6px;font-weight:800;color:#0f172a">📊 تصفية حسب حالة التقييم:</label>
+          <select id="exc-status-filter" style="margin:0">
+            <option value="all">جميع طلاب الصف</option>
+            <option value="evaluated">الطلاب المقيّمون (لديهم مشاركات أو تقييم)</option>
+            <option value="pending">بانتظار التقييم</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="exc-class-banner" style="margin-top:14px"></div>
+      <div id="exc-students-table-wrap" style="margin-top:12px;overflow-x:auto"></div>
+    </div>
+  </section>
+
   <!-- إطلاق الحصة للطلاب (الكود والباركود) -->
   <div id="sess"></div>
 </main>
 
-<script src="teacher.js?v=20261112_v3"></script>
+<script src="teacher.js?v=20261114_v1"></script>
 </body>
 </html>

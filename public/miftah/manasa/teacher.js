@@ -157,6 +157,7 @@
   var viewArchive = $('view-archive');
   var viewGenerator = $('view-generator');
   var viewInspector = $('view-inspector');
+  var viewExcellence = $('view-excellence');
   var sessBox = $('sess');
   var activeInspectedLesson = null;
 
@@ -165,6 +166,7 @@
     if (viewArchive) viewArchive.style.display = (viewName === 'archive') ? 'block' : 'none';
     if (viewGenerator) viewGenerator.style.display = (viewName === 'generator') ? 'block' : 'none';
     if (viewInspector) viewInspector.style.display = (viewName === 'inspector') ? 'block' : 'none';
+    if (viewExcellence) viewExcellence.style.display = (viewName === 'excellence') ? 'block' : 'none';
     if (sessBox && viewName !== 'hub' && viewName !== 'inspector') sessBox.innerHTML = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -174,6 +176,8 @@
       if ($('archive-filter-subj')) $('archive-filter-subj').value = '';
       if ($('archive-filter-grade')) $('archive-filter-grade').value = '';
       renderArchive();
+    } else if (viewName === 'excellence') {
+      initAndRenderExcellenceView();
     }
   }
 
@@ -181,8 +185,10 @@
   if ($('btn-open-archive')) $('btn-open-archive').onclick = function () { setArchiveTab('all'); showView('archive'); };
   if ($('btn-open-mylibrary')) $('btn-open-mylibrary').onclick = function () { setArchiveTab('mine'); showView('archive'); };
   if ($('btn-open-generator')) $('btn-open-generator').onclick = function () { showView('generator'); };
+  if ($('btn-open-excellence')) $('btn-open-excellence').onclick = function () { showView('excellence'); };
   if ($('back-to-hub-from-archive')) $('back-to-hub-from-archive').onclick = function () { showView('hub'); };
   if ($('back-to-hub-from-gen')) $('back-to-hub-from-gen').onclick = function () { showView('hub'); };
+  if ($('back-to-hub-from-excellence')) $('back-to-hub-from-excellence').onclick = function () { showView('hub'); };
   if ($('go-gen-from-archive')) $('go-gen-from-archive').onclick = function () { showView('generator'); };
   if ($('go-archive-from-gen')) $('go-archive-from-gen').onclick = function () { setArchiveTab('all'); showView('archive'); };
   if ($('back-to-archive-from-inspector')) $('back-to-archive-from-inspector').onclick = function () { showView('archive'); };
@@ -2285,6 +2291,543 @@
     };
   }
 
+  // =========================================================================
+  // 8. سيرورة تقييم «سنة التميّز» وإدراجها في شهادة الطلاب (469 طالباً — 19 صفّاً)
+  // =========================================================================
+  var excInited = false;
+  var excRecordsByStudent = {};
+  var excOverridesByStudent = {};
+
+  function loadLocalExcellenceData() {
+    try {
+      var ov = JSON.parse(localStorage.getItem('manasa-excellence-overrides') || '{}');
+      Object.keys(ov).forEach(function (sid) {
+        if (!excOverridesByStudent[sid] || (ov[sid].updatedAt || 0) >= (excOverridesByStudent[sid].updatedAt || 0)) {
+          excOverridesByStudent[sid] = ov[sid];
+        }
+      });
+    } catch (_) {}
+
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('manasa-id-portfolio-') === 0) {
+          var sid = k.replace('manasa-id-portfolio-', '');
+          var arr = JSON.parse(localStorage.getItem(k) || '[]');
+          if (Array.isArray(arr) && arr.length) {
+            mergeStudentRecords(sid, arr);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  function mergeStudentRecords(sid, records) {
+    if (!sid || !Array.isArray(records)) return;
+    var existing = excRecordsByStudent[sid] || [];
+    var map = {};
+    existing.concat(records).forEach(function (r) {
+      if (!r) return;
+      var key = (r.sid || r.lessonId || r.title || '') + '_' + (r.date || '');
+      if (!map[key] || (r.updatedAt || 0) >= (map[key].updatedAt || 0)) {
+        map[key] = r;
+      }
+    });
+    excRecordsByStudent[sid] = Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) {
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+  }
+
+  function fetchCloudExcellenceData() {
+    var syncBadge = $('exc-sync-status');
+    if (syncBadge) syncBadge.textContent = '⏳ جاري مزامنة تقييمات الطلاب...';
+
+    var qEvals = fetch(FS_ROOT + ':runQuery?key=' + FIREBASE_API_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'school_padlet_cards' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'recordType' },
+              op: 'EQUAL',
+              value: { stringValue: 'miftaah_excellence_eval' }
+            }
+          }
+        }
+      })
+    }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
+
+    var qOverrides = fetch(FS_ROOT + ':runQuery?key=' + FIREBASE_API_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'school_padlet_cards' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'recordType' },
+              op: 'EQUAL',
+              value: { stringValue: 'miftaah_reportcard_override' }
+            }
+          }
+        }
+      })
+    }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
+
+    return Promise.all([qEvals, qOverrides]).then(function (results) {
+      var evalRows = results[0] || [];
+      var ovRows = results[1] || [];
+
+      if (Array.isArray(evalRows)) {
+        var grouped = {};
+        evalRows.forEach(function (row) {
+          if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+            try {
+              var rec = JSON.parse(row.document.fields.json.stringValue);
+              var sid = rec.studentId || (row.document.fields.studentId && row.document.fields.studentId.stringValue);
+              if (sid) {
+                grouped[sid] = grouped[sid] || [];
+                grouped[sid].push(rec);
+              }
+            } catch (_) {}
+          }
+        });
+        Object.keys(grouped).forEach(function (sid) {
+          mergeStudentRecords(sid, grouped[sid]);
+        });
+      }
+
+      if (Array.isArray(ovRows)) {
+        ovRows.forEach(function (row) {
+          if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+            try {
+              var ov = JSON.parse(row.document.fields.json.stringValue);
+              var sid = ov.studentId || (row.document.fields.studentId && row.document.fields.studentId.stringValue);
+              if (sid && (!excOverridesByStudent[sid] || (ov.updatedAt || 0) >= (excOverridesByStudent[sid].updatedAt || 0))) {
+                excOverridesByStudent[sid] = ov;
+              }
+            } catch (_) {}
+          }
+        });
+        try {
+          localStorage.setItem('manasa-excellence-overrides', JSON.stringify(excOverridesByStudent));
+        } catch (_) {}
+      }
+
+      if (syncBadge) syncBadge.textContent = '☁️ السجلّ السحابي محدّث (469 طالباً)';
+      renderExcellenceTable();
+    });
+  }
+
+  function getStudentEvaluationData(stu) {
+    var sid = stu.idNumber;
+    var records = excRecordsByStudent[sid] || [];
+    var computed = window.MIFTAH_ROSTER ? window.MIFTAH_ROSTER.computeExcellenceScore(records) : {
+      lessonsCount: 0, completedCount: 0, overallScore: 0, tier: 'none', tierLabel: 'بانتظار المشاركة', reportCardNote: 'لم يشارك الطالب في حصص تفاعلية بعد.'
+    };
+    var ov = excOverridesByStudent[sid] || null;
+    var finalScore = (ov && ov.customScore !== undefined && ov.customScore !== null && ov.customScore !== '') ? Number(ov.customScore) : computed.overallScore;
+    var finalTier = computed.tier;
+    var finalTierLabel = computed.tierLabel;
+    if (ov && ov.customScore !== undefined && ov.customScore !== '' && !isNaN(finalScore)) {
+      if (finalScore >= 90) { finalTier = 'excellent'; finalTierLabel = '🌟 تميّز فائق (ممتاز)'; }
+      else if (finalScore >= 80) { finalTier = 'very_good'; finalTierLabel = '✅ تميّز متقدّم (جيّد جدّاً)'; }
+      else if (finalScore >= 65) { finalTier = 'good'; finalTierLabel = '🌱 تميّز صاعد (جيّد)'; }
+      else { finalTier = 'support'; finalTierLabel = '🛠️ في طور التمكّن (يحتاج دعماً)'; }
+    }
+    var finalNote = (ov && ov.customNote) ? ov.customNote : computed.reportCardNote;
+    var writtenNames = [];
+    records.forEach(function (r) {
+      if (r.writtenName && r.writtenName !== stu.studentName && writtenNames.indexOf(r.writtenName) < 0) {
+        writtenNames.push(r.writtenName);
+      }
+    });
+    return {
+      student: stu,
+      records: records,
+      computed: computed,
+      override: ov,
+      hasData: records.length > 0 || !!(ov && (ov.customScore !== '' || ov.customNote)),
+      finalScore: finalScore,
+      finalTier: finalTier,
+      finalTierLabel: finalTierLabel,
+      finalNote: finalNote,
+      writtenNames: writtenNames
+    };
+  }
+
+  function initAndRenderExcellenceView() {
+    loadLocalExcellenceData();
+    var roster = window.MIFTAH_ROSTER;
+    if (!roster) return;
+
+    if (!excInited) {
+      excInited = true;
+      var clsSel = $('exc-class-select');
+      if (clsSel) {
+        var opts = '<option value="ALL">🏫 كلّ صفوف المدرسة (19 صفّاً — ' + roster.allStudents.length + ' طالباً)</option>';
+        roster.classesList.forEach(function (c) {
+          opts += '<option value="' + esc(c.classKey) + '">' + esc(c.classArabic + ' (' + c.classKey + ') — المربّي/ة: ' + c.teacherName + ' (' + c.students.length + ' طالباً)') + '</option>';
+        });
+        clsSel.innerHTML = opts;
+        // الافتراضي: أول صف (السادس 4) لسرعة العرض والوضوح، أو كل الصفوف عند البحث
+        if (roster.classesList.length) clsSel.value = roster.classesList[0].classKey;
+        clsSel.onchange = renderExcellenceTable;
+      }
+      if ($('exc-search-input')) {
+        $('exc-search-input').oninput = function () {
+          // إذا كتب المعلم بحثاً، نبحث في كل المدرسة إذا لم يجد في الصف الحالي
+          renderExcellenceTable();
+        };
+      }
+      if ($('exc-status-filter')) $('exc-status-filter').onchange = renderExcellenceTable;
+      if ($('btn-export-excellence-csv')) $('btn-export-excellence-csv').onclick = exportExcellenceToCSV;
+      if ($('btn-print-class-cards')) $('btn-print-class-cards').onclick = printClassSecretCards;
+    }
+
+    renderExcellenceTable();
+    fetchCloudExcellenceData();
+  }
+
+  function renderExcellenceTable() {
+    var roster = window.MIFTAH_ROSTER;
+    if (!roster) return;
+
+    var allEval = roster.allStudents.map(getStudentEvaluationData);
+    var evaluatedList = allEval.filter(function (x) { return x.hasData; });
+    var avgSchool = evaluatedList.length
+      ? Math.round(evaluatedList.reduce(function (s, x) { return s + (x.finalScore || 0); }, 0) / evaluatedList.length)
+      : 0;
+
+    if ($('exc-summary-stats')) {
+      $('exc-summary-stats').innerHTML =
+        '<span class="pill" style="background:#e0f2fe;color:#0369a1;font-weight:900;font-size:14px;padding:7px 14px">👥 إجمالي طلاب المدرسة: ' + roster.allStudents.length + ' طالباً</span>' +
+        '<span class="pill" style="background:#f3e8ff;color:#6b21a8;font-weight:900;font-size:14px;padding:7px 14px">🏫 عدد الصفوف: ' + roster.classesList.length + ' صفّاً</span>' +
+        '<span class="pill" style="background:#dcfce7;color:#15803d;font-weight:900;font-size:14px;padding:7px 14px">✅ طلاب لديهم تقييم نشط: ' + evaluatedList.length + '</span>' +
+        (evaluatedList.length ? '<span class="pill" style="background:#fef3c7;color:#92400e;font-weight:900;font-size:14px;padding:7px 14px">🏅 متوسّط علامة التميّز: ' + avgSchool + ' / 100</span>' : '');
+    }
+
+    var selectedClass = ($('exc-class-select') && $('exc-class-select').value) || 'ALL';
+    var q = (($('exc-search-input') && $('exc-search-input').value) || '').trim().toLowerCase();
+    var stFilter = ($('exc-status-filter') && $('exc-status-filter').value) || 'all';
+
+    var list = allEval.filter(function (item) {
+      var stu = item.student;
+      if (selectedClass !== 'ALL' && stu.classKey !== selectedClass) {
+        // إذا كان يبحث برقم هوية محدد من صف آخر، نظهره له!
+        if (!q || stu.idNumber.indexOf(q) < 0) return false;
+      }
+      if (stFilter === 'evaluated' && !item.hasData) return false;
+      if (stFilter === 'pending' && item.hasData) return false;
+      if (q) {
+        var hay = (stu.studentName + ' ' + stu.idNumber + ' ' + stu.classArabic + ' ' + stu.classKey + ' ' + stu.teacherName + ' ' + item.writtenNames.join(' ')).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+
+    // شريط معلومات الصف المختار
+    var bannerEl = $('exc-class-banner');
+    if (bannerEl) {
+      if (selectedClass !== 'ALL' && roster.classesMap[selectedClass]) {
+        var clsObj = roster.classesMap[selectedClass];
+        bannerEl.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:14px;padding:12px 16px">' +
+          '<div><b style="font-size:18px;color:#0369a1">🏫 الصفّ: ' + esc(clsObj.classArabic) + ' (' + esc(clsObj.classKey) + ')</b> · <span style="color:#0f172a;font-weight:700">👩‍🏫 مربّي/ة الصف: ' + esc(clsObj.teacherName) + '</span></div>' +
+          '<div style="display:flex;gap:8px;align-items:center"><span class="pill" style="background:#fff;color:#0369a1;font-weight:800;border:1px solid #7dd3fc">عدد طلاب الصف: ' + clsObj.students.length + ' طالباً</span></div>' +
+        '</div>';
+      } else {
+        bannerEl.innerHTML = '<div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:14px;padding:10px 16px;font-weight:800;color:#334155">🏫 عرض شامل لصفوف المدرسة — عدد النتائج المطابقة: ' + list.length + ' طالباً</div>';
+      }
+    }
+
+    var wrap = $('exc-students-table-wrap');
+    if (!wrap) return;
+
+    if (!list.length) {
+      wrap.innerHTML = '<p style="text-align:center;color:#64748b;padding:24px">لا يوجد طلاب مطابقون لمعايير البحث الحالية.</p>';
+      return;
+    }
+
+    var tierColors = {
+      excellent: 'background:#dcfce7;color:#15803d;border:1px solid #86efac',
+      very_good: 'background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc',
+      good: 'background:#fef9c3;color:#854d0e;border:1px solid #fde047',
+      support: 'background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5',
+      none: 'background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1'
+    };
+
+    var rowsHtml = list.map(function (item, idx) {
+      var stu = item.student;
+      var c = item.computed;
+      var tStyle = tierColors[item.finalTier] || tierColors.none;
+      var detailStr = item.records.length
+        ? ('أرني: ' + (c.avgF || 0) + '% · تدريب: ' + (c.avgT || 0) + '% · دليل: ' + (c.avgA || 0) + '%')
+        : 'لم ينفّذ حصصاً بعد';
+
+      return '<tr>' +
+        '<td style="font-weight:800;color:#64748b">' + (idx + 1) + '</td>' +
+        '<td>' +
+          '<b style="font-size:15.5px;color:#0f172a">' + esc(stu.studentName) + '</b>' +
+          (item.writtenNames.length ? '<div style="font-size:12px;color:#0369a1;font-weight:700;margin-top:2px">✍️ دخل باسم: ' + esc(item.writtenNames.join('، ')) + '</div>' : '') +
+        '</td>' +
+        '<td>' +
+          '<div style="display:inline-flex;align-items:center;gap:6px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:4px 10px;direction:ltr;font-family:monospace;font-weight:900;font-size:15px;color:#1e3a8a">' +
+            '<span>' + esc(stu.idNumber) + '</span>' +
+            '<button type="button" data-copy-tz="' + esc(stu.idNumber) + '" title="نسخ رقم الهوية" style="border:0;background:transparent;cursor:pointer;font-size:13px;padding:0">📋</button>' +
+          '</div>' +
+        '</td>' +
+        '<td><span style="font-weight:800;color:#334155">' + esc(stu.classArabic) + '</span><div style="font-size:11.5px;color:#64748b">' + esc(stu.teacherName) + '</div></td>' +
+        '<td style="text-align:center"><span class="pill" style="background:' + (c.lessonsCount ? '#e0f2fe;color:#0369a1' : '#f1f5f9;color:#64748b') + ';font-weight:800">' + c.lessonsCount + ' حصص</span></td>' +
+        '<td style="font-size:12.5px;color:#475569">' + esc(detailStr) + '</td>' +
+        '<td style="text-align:center">' +
+          (item.hasData
+            ? '<div style="font-size:20px;font-weight:900;color:#0f172a">' + item.finalScore + ' <small style="font-size:12px;color:#64748b">/100</small></div>' +
+              '<span class="pill" style="' + tStyle + ';font-size:11.5px;font-weight:800;display:inline-block;margin-top:3px">' + esc(item.finalTierLabel) + '</span>'
+            : '<span class="pill" style="' + tStyle + ';font-size:12px">بانتظار التقييم</span>') +
+        '</td>' +
+        '<td style="max-width:260px;font-size:13px;color:#334155;line-height:1.5">' + esc(item.finalNote) + '</td>' +
+        '<td>' +
+          '<button type="button" class="btn alt" data-eval-stu="' + esc(stu.idNumber) + '" style="min-height:36px;padding:6px 12px;font-size:13px;margin:0;white-space:nowrap">📝 تقييم الشهادة / السجلّ</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    wrap.innerHTML = '<table>' +
+      '<thead><tr>' +
+        '<th>#</th>' +
+        '<th>اسم الطالب الرّسمي</th>' +
+        '<th>الرّقم السّرّي (رقم الهويّة)</th>' +
+        '<th>الصّف والمربّي/ة</th>' +
+        '<th>الحصص</th>' +
+        '<th>تفصيل سيرورة التقييم</th>' +
+        '<th>درجة التميّز للشهادة</th>' +
+        '<th>توصية الشهادة المدرسية</th>' +
+        '<th>إجراء المعلّم</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rowsHtml + '</tbody>' +
+    '</table>';
+
+    wrap.querySelectorAll('[data-copy-tz]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var tz = btn.getAttribute('data-copy-tz');
+        copyTextToClipboard(tz, '✅ تم نسخ الرقم السري (رقم الهوية): ' + tz);
+      };
+    });
+
+    wrap.querySelectorAll('[data-eval-stu]').forEach(function (btn) {
+      btn.onclick = function () {
+        var sid = btn.getAttribute('data-eval-stu');
+        openStudentExcellenceModal(sid);
+      };
+    });
+  }
+
+  function openStudentExcellenceModal(sid) {
+    var roster = window.MIFTAH_ROSTER;
+    var stu = roster && roster.findStudentById(sid);
+    if (!stu) return;
+    var data = getStudentEvaluationData(stu);
+
+    var modal = document.getElementById('exc-student-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'exc-student-modal';
+      modal.className = 'msheet';
+      document.body.appendChild(modal);
+    }
+    modal.hidden = false;
+
+    var recsHtml = data.records.length
+      ? data.records.map(function (r) {
+          return '<div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13.5px">' +
+            '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">' +
+              '<b>📖 ' + esc(r.title || 'حصة تفاعلية') + ' (' + esc(r.subject || '') + ')</b>' +
+              '<span class="muted">' + esc(r.date || '') + ' · المحطة: ' + esc(r.station || 'م') + (r.done ? ' ✓' : '') + '</span>' +
+            '</div>' +
+            '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">' +
+              (r.writtenName ? '<span class="pill" style="background:#fef3c7;color:#92400e">✍️ الاسم المكتوب: ' + esc(r.writtenName) + '</span>' : '') +
+              (r.checks ? '<span class="pill" style="background:#e0f2fe;color:#0369a1">✋ أرني: ' + r.checks[0] + '/' + r.checks[1] + '</span>' : '') +
+              (r.practice ? '<span class="pill" style="background:#ccfbf1;color:#0f766e">🏋️ التدريب: ' + r.practice[0] + '/' + r.practice[1] + '</span>' : '') +
+              (r.evidence ? '<span class="pill" style="background:#dcfce7;color:#15803d">📝 الدليل: ' + r.evidence.score + '/' + r.evidence.of + '</span>' : '') +
+            '</div>' +
+            (r.harvest && r.harvest.length ? '<div style="margin-top:6px;color:#334155;font-size:12.5px"><b>🌾 الحصاد:</b> ' + esc(r.harvest.filter(Boolean).join(' | ')) + '</div>' : '') +
+          '</div>';
+        }).join('')
+      : '<p class="muted" style="text-align:center;padding:12px">لا توجد حصص مسجّلة لهذا الطالب بعد، ولكن يمكنك رصد علامة وتوصية الشهادة يدوياً أدناه.</p>';
+
+    modal.innerHTML = '<div class="mpanel" style="max-width:680px;max-height:88vh;overflow-y:auto">' +
+      '<button class="mx" id="exc-modal-close">✕</button>' +
+      '<h2 style="margin:0 0 6px;color:#0b2a4a">🏆 بطاقة تقييم سنة التميّز للشهادة المدرسية</h2>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+        '<span class="pill" style="background:#e0f2fe;color:#0369a1;font-weight:800">👤 الطالب: ' + esc(stu.studentName) + '</span>' +
+        '<span class="pill" style="background:#f3e8ff;color:#6b21a8;font-weight:800">🔐 الرقم السري (الهوية): ' + esc(stu.idNumber) + '</span>' +
+        '<span class="pill" style="background:#dcfce7;color:#15803d;font-weight:800">🏫 الصف: ' + esc(stu.classArabic + ' (' + stu.classKey + ')') + '</span>' +
+        '<span class="pill" style="background:#fef3c7;color:#92400e;font-weight:800">👩‍🏫 المربي/ة: ' + esc(stu.teacherName) + '</span>' +
+      '</div>' +
+
+      '<div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:14px;padding:14px;margin-bottom:14px">' +
+        '<h3 style="margin:0 0 8px;color:#92400e;font-size:17px">📋 اعتماد العلامة والتوصية للشهادة المدرسية</h3>' +
+        '<p style="margin:0 0 10px;font-size:13px;color:#64748b">العلامة المحسوبة تلقائياً من سيرورة المحطات الخمس: <b>' + data.computed.overallScore + ' / 100</b>. يمكنك اعتمادها أو تعديلها للشهادة:</p>' +
+        '<label style="margin-top:6px">🏅 درجة التميّز المعتمدة في الشهادة (من 100):</label>' +
+        '<input type="number" id="exc-edit-score" min="0" max="100" value="' + esc(data.hasData ? data.finalScore : '') + '" placeholder="مثال: 95">' +
+        '<label style="margin-top:10px">📝 نصّ التوصية في الشهادة المدرسية:</label>' +
+        '<textarea id="exc-edit-note" style="min-height:80px">' + esc(data.finalNote) + '</textarea>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+          '<button type="button" class="quick-subj-btn" data-quick-note="أظهر تميّزاً فائقاً ومبادرة إبداعية في التعلّم التفاعلي وحلّ المشكلات عبر منصة مفتاح.">🌟 توصية تميّز فائق</button>' +
+          '<button type="button" class="quick-subj-btn" data-quick-note="شارك بفاعلية واجتهاد في محطات مفتاح وأثبت فهماً متقناً للمهام التعليمية.">✅ توصية تميّز متقدّم</button>' +
+          '<button type="button" class="quick-subj-btn" data-quick-note="يتقدّم بخطى إيجابية في التعلّم التفاعلي عبر منصة مفتاح مع تشجيعه على الاستمرار والمثابرة.">🌱 توصية تميّز صاعد</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:14px">' +
+          '<button type="button" class="btn ok" id="exc-save-override-btn" style="flex:1;margin:0">💾 حفظ واعتماد للشهادة</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<h3 style="margin:12px 0 8px;color:#0b2a4a;font-size:17px">📚 سجلّ مشاركات الطالب في حصص مفتاح (' + data.records.length + ')</h3>' +
+      recsHtml +
+    '</div>';
+
+    $('exc-modal-close').onclick = function () { modal.hidden = true; };
+    modal.onclick = function (e) { if (e.target === modal) modal.hidden = true; };
+
+    modal.querySelectorAll('[data-quick-note]').forEach(function (b) {
+      b.onclick = function () {
+        $('exc-edit-note').value = b.getAttribute('data-quick-note');
+      };
+    });
+
+    $('exc-save-override-btn').onclick = function () {
+      var scVal = ($('exc-edit-score').value || '').trim();
+      var noteVal = ($('exc-edit-note').value || '').trim();
+      var nowTs = Date.now();
+      var ovObj = {
+        studentId: stu.idNumber,
+        studentName: stu.studentName,
+        classKey: stu.classKey,
+        customScore: scVal !== '' ? Math.min(100, Math.max(0, Number(scVal))) : '',
+        customNote: noteVal,
+        updatedBy: currentTeacher.name || 'معلم',
+        updatedAt: nowTs
+      };
+      excOverridesByStudent[stu.idNumber] = ovObj;
+      try {
+        localStorage.setItem('manasa-excellence-overrides', JSON.stringify(excOverridesByStudent));
+      } catch (_) {}
+
+      var docId = 'miftaah_rc_ov_' + encodeURIComponent(stu.idNumber) + '_' + nowTs + '_' + Math.random().toString(36).slice(2, 6);
+      fetch(FS_BASE + '/' + docId + '?key=' + FIREBASE_API_KEY, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: {
+            recordType: { stringValue: 'miftaah_reportcard_override' },
+            studentId: { stringValue: String(stu.idNumber) },
+            classKey: { stringValue: String(stu.classKey) },
+            updatedAt: { integerValue: String(nowTs) },
+            json: { stringValue: JSON.stringify(ovObj) }
+          }
+        })
+      }).catch(function () {});
+
+      modal.hidden = true;
+      renderExcellenceTable();
+      showToast('✅ تم اعتماد تقييم الشهادة للطالب: ' + stu.studentName);
+    };
+  }
+
+  function exportExcellenceToCSV() {
+    var roster = window.MIFTAH_ROSTER;
+    if (!roster) return;
+    var selectedClass = ($('exc-class-select') && $('exc-class-select').value) || 'ALL';
+    var students = selectedClass === 'ALL'
+      ? roster.allStudents
+      : ((roster.classesMap[selectedClass] && roster.classesMap[selectedClass].students) || []);
+
+    var headers = ['الرقم', 'الصف', 'رمز الصف', 'مربي/ة الصف', 'اسم الطالب الرسمي', 'الرقم السري (رقم الهوية)', 'الاسم المكتوب في الحصص', 'عدد الحصص المنجزة', 'درجة التميز للشهادة (من 100)', 'مستوى التميز', 'توصية الشهادة المدرسية'];
+    var csvRows = [headers.join(',')];
+
+    students.forEach(function (stu, idx) {
+      var d = getStudentEvaluationData(stu);
+      var cols = [
+        idx + 1,
+        stu.classArabic,
+        stu.classKey,
+        stu.teacherName,
+        stu.studentName,
+        stu.idNumber,
+        d.writtenNames.join(' / ') || stu.studentName,
+        d.computed.lessonsCount,
+        d.hasData ? d.finalScore : '',
+        d.finalTierLabel,
+        d.finalNote
+      ].map(function (val) {
+        return '"' + String(val == null ? '' : val).replace(/"/g, '""') + '"';
+      });
+      csvRows.push(cols.join(','));
+    });
+
+    var blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'تقييم_سنة_التميز_مشيرفة_' + (selectedClass === 'ALL' ? 'كل_الصفوف' : selectedClass) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('📥 تم تنزيل ملف Excel (CSV) لتقييم الشهادات بنجاح!');
+  }
+
+  function printClassSecretCards() {
+    var roster = window.MIFTAH_ROSTER;
+    if (!roster) return;
+    var selectedClass = ($('exc-class-select') && $('exc-class-select').value) || 'ALL';
+    var students = selectedClass === 'ALL'
+      ? roster.allStudents
+      : ((roster.classesMap[selectedClass] && roster.classesMap[selectedClass].students) || []);
+    var titleText = selectedClass === 'ALL'
+      ? 'جميع صفوف مدرسة مشيرفة الابتدائية'
+      : ('الصف: ' + roster.classesMap[selectedClass].classArabic + ' (' + selectedClass + ') — المربي/ة: ' + roster.classesMap[selectedClass].teacherName);
+
+    var w = window.open('', '_blank');
+    if (!w) {
+      alert('الرجاء السماح بفتح النوافذ المنبثقة للطباعة.');
+      return;
+    }
+    var cardsHtml = students.map(function (stu) {
+      return '<div class="card-item">' +
+        '<div class="hdr">🔑 منصّة مفتاح — سنة التميّز | مدرسة مشيرفة الابتدائية</div>' +
+        '<div class="stu-name">👤 الطالب/ة: <b>' + esc(stu.studentName) + '</b></div>' +
+        '<div class="stu-cls">🏫 الصف: <b>' + esc(stu.classArabic + ' (' + stu.classKey + ')') + '</b> · المربي/ة: ' + esc(stu.teacherName) + '</div>' +
+        '<div class="tz-box">🔐 الكود السّرّي للدخول (رقم الهوية): <span>' + esc(stu.idNumber) + '</span></div>' +
+        '<div class="hint">أدخل رقم هويتك ككود سري، واكتب اسمك كما تحبّ للدخول إلى حصص مفتاح.</div>' +
+      '</div>';
+    }).join('');
+
+    w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقات الكود السري — ' + esc(titleText) + '</title>' +
+      '<style>' +
+        'body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;margin:16px;color:#0f172a;background:#fff}' +
+        '.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #cbd5e1}' +
+        '.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}' +
+        '.card-item{border:2px dashed #1e3a8a;border-radius:14px;padding:12px 14px;page-break-inside:avoid;background:#f8fafc}' +
+        '.hdr{font-size:12px;font-weight:800;color:#b45309;margin-bottom:6px}' +
+        '.stu-name{font-size:16px;margin-bottom:4px}' +
+        '.stu-cls{font-size:12.5px;color:#475569;margin-bottom:8px}' +
+        '.tz-box{background:#fff;border:1.5px solid #0284c7;border-radius:10px;padding:6px 10px;font-size:14px;font-weight:800;color:#0369a1;text-align:center}' +
+        '.tz-box span{font-family:monospace;font-size:18px;letter-spacing:2px;color:#0f172a;direction:ltr;display:inline-block}' +
+        '.hint{font-size:11px;color:#64748b;margin-top:6px;text-align:center}' +
+        '@media print{.no-print{display:none!important}}' +
+      '</style></head><body>' +
+      '<div class="top-bar">' +
+        '<div><h2 style="margin:0">🪪 بطاقات الكود السرّي لطلاب منصة مفتاح (سنة التميّز)</h2><p style="margin:4px 0 0;color:#475569">' + esc(titleText) + ' (' + students.length + ' طالباً)</p></div>' +
+        '<button class="no-print" onclick="window.print()" style="background:#0b6bcb;color:#fff;border:0;padding:10px 20px;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer">🖨️ طباعة البطاقات الآن</button>' +
+      '</div>' +
+      '<div class="grid">' + cardsHtml + '</div>' +
+      '</body></html>');
+    w.document.close();
+  }
+
   // تهيئة بيانات الحصص النموذجية وفتح الشاشة المطلوبة
   ensureModelLessonsData();
   var urlParams = new URLSearchParams(location.search);
@@ -2292,6 +2835,8 @@
     openLessonInspector(urlParams.get('inspect').toUpperCase());
   } else if (urlParams.get('view') === 'generator') {
     showView('generator');
+  } else if (urlParams.get('view') === 'excellence') {
+    showView('excellence');
   } else if (urlParams.get('view') === 'archive') {
     if (urlParams.get('tab')) setArchiveTab(urlParams.get('tab'));
     showView('archive');

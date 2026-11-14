@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>مفتاح | مدرسة مشيرفة الجماهيرية الابتدائية</title>
-<meta name="description" content="«مفتاح» — اكتبِ اسمَك وكودَ الدخول من معلّمك وابدأ الحصّة.">
-<meta property="og:title" content="مفتاح — ادخلْ إلى حصّتك">
-<meta property="og:description" content="اكتبْ اسمَك وكودَ الدخول الذي أرسله معلّمك.">
+<title>مفتاح — سنة التميّز | مدرسة مشيرفة الجماهيرية الابتدائية</title>
+<meta name="description" content="«مفتاح» — اكتبِ اسمَك ورقمَ هويتك وكودَ الدخول من معلّمك وابدأ الحصّة.">
+<meta property="og:title" content="مفتاح — ادخلْ إلى حصّتك (سنة التميّز)">
+<meta property="og:description" content="اكتبْ اسمَك ورقمَ هويتك وكودَ الدخول الذي أرسله معلّمك.">
 <meta property="og:image" content="https://musherfe.com/school_logo.png">
 <link rel="icon" href="assets/logo.jpg">
 <link rel="stylesheet" href="site.css">
@@ -17,21 +17,26 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .home{position:fixed;top:14px;right:14px;z-index:5;width:54px;height:54px;border-radius:16px;background:#fff;display:grid;place-items:center;font-size:28px;text-decoration:none;box-shadow:0 6px 18px #0003;border:0;cursor:pointer}
 .home:hover{transform:scale(1.06)}
 .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:84px 16px 32px}
-.box{width:100%;max-width:440px;background:#fff;border-radius:26px;box-shadow:0 18px 50px #0004;padding:28px 24px 26px;text-align:center}
-.box img.logo{width:92px;height:92px;object-fit:contain;border-radius:20px}
-.box h1{margin:6px 0 0;font-size:30px;color:#5b21b6}
-.box .sub{margin:0 0 18px;color:#5a6b7c;font-size:14px}
-.f{text-align:right;margin:12px 0}
-.f label{display:block;font-weight:700;margin-bottom:4px;font-size:17px}
-.f input{font:inherit;font-size:20px;width:100%;border:2px solid #cfdbe7;border-radius:14px;padding:12px 14px;background:#f8fbfd;outline:none}
+.box{width:100%;max-width:460px;background:#fff;border-radius:26px;box-shadow:0 18px 50px #0004;padding:28px 24px 26px;text-align:center}
+.box img.logo{width:88px;height:88px;object-fit:contain;border-radius:20px}
+.box h1{margin:4px 0 0;font-size:28px;color:#5b21b6}
+.box .sub{margin:0 0 10px;color:#5a6b7c;font-size:14px}
+.excellence-pill{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border:1.5px solid #f59e0b;padding:4px 14px;border-radius:999px;font-size:13px;font-weight:800;margin-bottom:12px}
+.f{text-align:right;margin:11px 0}
+.f label{display:block;font-weight:700;margin-bottom:4px;font-size:16px;color:#1e293b}
+.f input{font:inherit;font-size:19px;width:100%;border:2px solid #cfdbe7;border-radius:14px;padding:11px 14px;background:#f8fbfd;outline:none}
 .f input:focus{border-color:#0b6bcb;background:#fff}
-.f input.code{direction:ltr;text-align:center;letter-spacing:8px;font-size:28px;font-weight:800;text-transform:uppercase}
-.f input.ltr{direction:ltr;text-align:left}
-.go{font:inherit;font-weight:800;font-size:22px;width:100%;border:0;border-radius:16px;padding:14px;margin-top:10px;background:#ffcc33;color:#1d2b3a;cursor:pointer;box-shadow:0 4px 0 #d9a400}
+.f input.code{direction:ltr;text-align:center;letter-spacing:8px;font-size:26px;font-weight:800;text-transform:uppercase}
+.f input.tz-inp{direction:ltr;text-align:center;letter-spacing:4px;font-size:22px;font-weight:800;color:#0f172a}
+.tz-verify-card{border-radius:12px;padding:9px 12px;margin-top:6px;font-size:13.5px;text-align:right;display:none;line-height:1.5}
+.tz-verify-card.ok{display:block;background:#ecfdf5;border:1.5px solid #10b981;color:#065f46}
+.tz-verify-card.err{display:block;background:#fef2f2;border:1.5px solid #f87171;color:#991b1b}
+.go{font:inherit;font-weight:800;font-size:21px;width:100%;border:0;border-radius:16px;padding:13px;margin-top:10px;background:#ffcc33;color:#1d2b3a;cursor:pointer;box-shadow:0 4px 0 #d9a400}
 .go:active{transform:translateY(2px);box-shadow:0 2px 0 #d9a400}.go:disabled{opacity:.6}
-.msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b}
+.msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b;font-size:14.5px}
 .msg.ok{color:#2f855a}
 </style>
+<script src="manasa/students-roster.js?v=20261114_v1"></script>
 </head>
 <body>
 <a class="home" href="teacher/login.html" title="دخول المعلّم" aria-label="دخول المعلّم">🏠</a>
@@ -40,36 +45,141 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     <img class="logo" src="assets/logo.jpg" onerror="this.onerror=null;this.src='https://musherfe.com/school_logo.png';" alt="شعار مدرسة مشيرفة الجماهيرية الابتدائية">
     <h1>🔑 مفتاح</h1>
     <p class="sub">مدرسة مشيرفة الجماهيرية الابتدائية</p>
-    <div class="f"><label for="nm">اسم الطالب</label><input id="nm" maxlength="30" autocomplete="off"></div>
-    <div class="f"><label for="cd">كود الدخول</label><input id="cd" class="code" maxlength="6" autocapitalize="characters" spellcheck="false" inputmode="text"></div>
-    <button class="go" id="go" type="submit">ادخل</button>
-    <button type="button" id="my-portfolio-btn" style="display:block;width:100%;margin-top:10px;background:#eef5ff;color:#0b6bcb;border:1.5px solid #c9d6e4;padding:10px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer">📋 ملفّي التعليمي (سجل تقدّمي)</button>
+    <div class="excellence-pill">🏆 سنة التميّز المدرسي — سجلّ تقييم الطلاب</div>
+
+    <div class="f">
+      <label for="tz">🔐 الرّقم السّرّي للطالب (رقم الهويّة)</label>
+      <input id="tz" class="tz-inp" maxlength="10" inputmode="numeric" placeholder="أدخل رقم هويتك (9 أرقام)" autocomplete="off">
+      <div id="tz-badge" class="tz-verify-card"></div>
+    </div>
+
+    <div class="f">
+      <label for="nm">👤 اسم الطالب <small style="color:#64748b;font-weight:600">(اكتبه كما تحبّ)</small></label>
+      <input id="nm" maxlength="35" placeholder="اكتب اسمك هنا" autocomplete="off">
+    </div>
+
+    <div class="f">
+      <label for="cd">🔢 كود الحصّة</label>
+      <input id="cd" class="code" maxlength="6" autocapitalize="characters" spellcheck="false" inputmode="text" placeholder="مثلاً: M2S87">
+    </div>
+
+    <button class="go" id="go" type="submit">ادخل إلى الحصّة 🚀</button>
+    <button type="button" id="my-portfolio-btn" style="display:block;width:100%;margin-top:10px;background:#eef5ff;color:#0b6bcb;border:1.5px solid #c9d6e4;padding:10px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer">🏆 ملفّي في سنة التميّز (سجلّ تقييمي وشهادتي)</button>
     <p class="msg" id="m" role="alert"></p>
   </form>
 </main>
 <script>
 (function () {
-  var nm = document.getElementById('nm'), cd = document.getElementById('cd'), m = document.getElementById('m'), go = document.getElementById('go');
-  try { nm.value = localStorage.getItem('manasa-name') || ''; } catch (_) {}
-  var q = new URLSearchParams(location.search); if (q.get('code')) cd.value = q.get('code').toUpperCase();
-  cd.addEventListener('input', function () { var p = cd.selectionStart; cd.value = cd.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); try { cd.setSelectionRange(p, p); } catch (_) {} });
-  var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : '';
-  function get(u) {
-    var fullUrl = (u.startsWith('/api/') && apiBase) ? (apiBase + u) : u;
-    return fetch(fullUrl).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+  var nm = document.getElementById('nm'),
+      tz = document.getElementById('tz'),
+      tzBadge = document.getElementById('tz-badge'),
+      cd = document.getElementById('cd'),
+      m = document.getElementById('m'),
+      go = document.getElementById('go');
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
   }
+
+  try {
+    nm.value = localStorage.getItem('manasa-name') || '';
+    tz.value = localStorage.getItem('manasa-student-id') || '';
+  } catch (_) {}
+
+  var q = new URLSearchParams(location.search);
+  if (q.get('code')) cd.value = q.get('code').toUpperCase();
+
+  function verifyTzInput(autoFillName) {
+    var raw = (tz.value || '').trim();
+    var clean = window.MIFTAH_ROSTER ? window.MIFTAH_ROSTER.normalizeId(raw) : raw.replace(/\D/g, '');
+    if (tz.value !== clean) tz.value = clean;
+    if (!clean) {
+      tzBadge.className = 'tz-verify-card';
+      tzBadge.innerHTML = '';
+      return null;
+    }
+    var stu = window.MIFTAH_ROSTER && window.MIFTAH_ROSTER.findStudentById(clean);
+    if (stu) {
+      tzBadge.className = 'tz-verify-card ok';
+      tzBadge.innerHTML = '✅ <b>تمّ التعرّف عليك:</b> ' + esc(stu.studentName) + '<br>' +
+        '🏫 <b>الصفّ:</b> ' + esc(stu.classArabic) + ' (' + esc(stu.classLabel) + ') · <b>المربّي/ة:</b> ' + esc(stu.homeroomArabic || stu.homeroomName);
+      if (autoFillName && !nm.value.trim()) {
+        nm.value = stu.studentName;
+      }
+      return stu;
+    } else if (clean.length >= 8) {
+      tzBadge.className = 'tz-verify-card err';
+      tzBadge.innerHTML = '⚠️ رقم الهوية هذا غير مسجّل في قائمة طلاب مدرسة مشيرفة. تأكّد من كتابة الـ 9 أرقام بشكل صحيح.';
+    } else {
+      tzBadge.className = 'tz-verify-card';
+      tzBadge.innerHTML = '';
+    }
+    return null;
+  }
+
+  tz.addEventListener('input', function () { verifyTzInput(true); });
+  if (tz.value) verifyTzInput(false);
+
+  cd.addEventListener('input', function () {
+    var p = cd.selectionStart;
+    cd.value = cd.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    try { cd.setSelectionRange(p, p); } catch (_) {}
+  });
+
   document.getElementById('f').addEventListener('submit', function (e) {
-    e.preventDefault(); m.className = 'msg'; m.textContent = '';
-    var name = nm.value.trim().replace(/\s+/g, ' '), code = cd.value.trim().toUpperCase();
-    if (!name) { m.textContent = 'اكتبْ اسمَك أوّلًا.'; nm.focus(); return; }
-    if (!code) { m.textContent = 'اكتبْ كودَ الدخول الذي أرسله معلّمك.'; cd.focus(); return; }
-    if (!/^[A-Z0-9]{4,6}$/.test(code)) { m.textContent = 'كودُ الدخول غيرُ صحيح. تأكّدْ منه مع معلّمك.'; cd.focus(); return; }
-    go.disabled = true; go.textContent = '⏳ لحظة…';
+    e.preventDefault();
+    m.className = 'msg';
+    m.textContent = '';
+
+    var stu = verifyTzInput(true);
+    var rawTz = (tz.value || '').trim();
+    if (!rawTz) {
+      m.textContent = 'أدخلْ رقمَ هويتك (الرقم السري للطالب) أوّلاً.';
+      tz.focus();
+      return;
+    }
+    if (!stu) {
+      m.textContent = 'رقمُ الهوية غيرُ موجود في سجلّ طلاب المدرسة. تأكّد من كتابة رقم هويتك الصحيح (9 أرقام).';
+      tz.focus();
+      tz.select();
+      return;
+    }
+
+    var name = nm.value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      name = stu.studentName;
+      nm.value = name;
+    }
+
+    var code = cd.value.trim().toUpperCase();
+    if (!code) {
+      m.textContent = 'اكتبْ كودَ الحصّة الذي أرسله معلّمك.';
+      cd.focus();
+      return;
+    }
+    if (!/^[A-Z0-9]{4,6}$/.test(code)) {
+      m.textContent = 'كودُ الحصّة غيرُ صحيح. تأكّدْ منه مع معلّمك.';
+      cd.focus();
+      return;
+    }
+
+    go.disabled = true;
+    go.textContent = '⏳ لحظة…';
+
     function done(url) {
-      try { var old = localStorage.getItem('manasa-name'); if (old !== name) localStorage.setItem('manasa-pid', Math.random().toString(36).slice(2, 10)); localStorage.setItem('manasa-name', name); } catch (_) {}
+      try {
+        localStorage.setItem('manasa-student-id', stu.idNumber);
+        localStorage.setItem('manasa-pid', 'id_' + stu.idNumber);
+        localStorage.setItem('manasa-name', name);
+        localStorage.setItem('manasa-official-name', stu.studentName);
+        localStorage.setItem('manasa-class-key', stu.classKey);
+        localStorage.setItem('manasa-class-arabic', stu.classArabic);
+        localStorage.setItem('manasa-class-label', stu.classLabel);
+      } catch (_) {}
       location.href = url;
     }
-    function fail(t) { go.disabled = false; go.textContent = 'ادخل'; m.textContent = t; cd.focus(); cd.select(); }
 
     // 1. فحص التخزين المحلي أولاً للدخول الفوري
     try {
@@ -82,26 +192,49 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
       }
     } catch (_) {}
 
-    // 2. فحص السحابة (Firestore) مباشرة عبر REST API لتعمل على جميع أجهزة الطلاب والواتساب
+    // 2. فحص السحابة (Firestore) عبر runQuery
     var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
-    fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/school_padlet_cards/miftaah_lesson_' + encodeURIComponent(code) + '?key=' + pKey)
-      .then(function (r) {
-        if (r.ok) return r.json();
-        throw new Error('not_in_cloud');
-      })
-      .then(function (doc) {
-        if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
-          try {
-            var parsed = JSON.parse(doc.fields.json.stringValue);
-            localStorage.setItem('manasa-lesson-' + code, JSON.stringify(parsed));
-            localStorage.setItem('manasa-session-' + code, JSON.stringify({ code: code, lesson: code, title: parsed.title, lessonData: parsed }));
-          } catch (_) {}
-          return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
+    fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents:runQuery?key=' + pKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'school_padlet_cards' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'code' },
+              op: 'EQUAL',
+              value: { stringValue: String(code) }
+            }
+          }
         }
-        throw new Error('empty');
+      })
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (Array.isArray(rows)) {
+          var best = null, bestTime = -1;
+          rows.forEach(function (row) {
+            if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+              var t = Number((row.document.fields.updatedAt && row.document.fields.updatedAt.integerValue) || (row.document.fields.created && row.document.fields.created.integerValue) || 0);
+              if (t >= bestTime) {
+                try {
+                  best = JSON.parse(row.document.fields.json.stringValue);
+                  bestTime = t;
+                } catch (_) {}
+              }
+            }
+          });
+          if (best) {
+            try {
+              localStorage.setItem('manasa-lesson-' + code, JSON.stringify(best));
+              localStorage.setItem('manasa-session-' + code, JSON.stringify({ code: code, lesson: code, title: best.title, lessonData: best }));
+            } catch (_) {}
+          }
+        }
+        return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
       })
       .catch(function () {
-        // 3. احتياط للروابط أو الجلسات الأخرى
         return done('manasa/lesson.html?c=' + encodeURIComponent(code) + '&go=1');
       });
   });
@@ -109,39 +242,106 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
   var portBtn = document.getElementById('my-portfolio-btn');
   if (portBtn) {
     portBtn.onclick = function () {
-      var name = (nm.value || localStorage.getItem('manasa-name') || '').trim();
-      if (!name) { alert('اكتبْ اسمَك في الحقل أولاً لعرض ملفّك.'); nm.focus(); return; }
+      var stu = verifyTzInput(true);
+      if (!stu) {
+        m.className = 'msg';
+        m.textContent = 'أدخلْ رقمَ هويتك (الرقم السري) في الحقل الأوّل لعرض ملفّ تقييمك في سنة التميّز.';
+        tz.focus();
+        return;
+      }
+      var displayName = (nm.value || stu.studentName || '').trim();
       var modal = document.getElementById('p-modal');
       if (!modal) {
         modal = document.createElement('div');
         modal.id = 'p-modal';
-        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);direction:rtl';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);direction:rtl';
         document.body.appendChild(modal);
       }
       modal.style.display = 'flex';
-      modal.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;padding:22px;position:relative;box-shadow:0 10px 40px rgba(0,0,0,0.2)">' +
-        '<button id="close-pm" style="position:absolute;left:14px;top:14px;border:0;background:#eef2f6;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer">✕</button>' +
-        '<div style="text-align:center;margin-bottom:14px"><div style="font-size:36px">📋</div><h2 style="margin:4px 0">ملف متابعة الطالب: ' + name + '</h2><p style="color:#64748b;margin:0;font-size:14px">سجل الحصص والإنجازات</p></div>' +
-        '<div id="p-content"><p style="text-align:center;color:#64748b">⏳ جلب البيانات…</p></div></div>';
+      modal.innerHTML = '<div style="background:#fff;border-radius:22px;max-width:600px;width:100%;max-height:88vh;overflow-y:auto;padding:24px;position:relative;box-shadow:0 15px 45px rgba(0,0,0,0.28)">' +
+        '<button id="close-pm" style="position:absolute;left:14px;top:14px;border:0;background:#eef2f6;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer">✕</button>' +
+        '<div style="text-align:center;margin-bottom:16px">' +
+          '<div style="font-size:40px">🏆</div>' +
+          '<h2 style="margin:4px 0;color:#4c1d95">ملفّ سنة التميّز للطالب</h2>' +
+          '<div style="font-weight:800;font-size:18px;color:#0f172a">' + esc(stu.studentName) + (displayName !== stu.studentName ? ' (' + esc(displayName) + ')' : '') + '</div>' +
+          '<div style="color:#0369a1;font-weight:700;font-size:14px;margin-top:4px">🏫 الصفّ: ' + esc(stu.classArabic) + ' (' + esc(stu.classLabel) + ') · رقم الهوية: ' + esc(stu.idNumber) + '</div>' +
+        '</div>' +
+        '<div id="p-content"><p style="text-align:center;color:#64748b">⏳ جاري جلب سجلّ تقييمك في سنة التميّز…</p></div></div>';
       document.getElementById('close-pm').onclick = function () { modal.style.display = 'none'; };
       modal.onclick = function (e) { if (e.target === modal) modal.style.display = 'none'; };
 
       var recs = [];
-      try { recs = JSON.parse(localStorage.getItem('manasa-portfolio-' + name) || '[]'); } catch (_) {}
-      var pc = document.getElementById('p-content');
-      if (!pc) return;
-      if (!recs.length) {
-        pc.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b"><p>لا توجد حصص مسجلة باسمك بعد.</p><p style="font-size:13px">عندما تدخل أي حصة باسمك وتتقدم فيها، ستُسجل نتائجك هنا تلقائيًا.</p></div>';
-        return;
-      }
-      pc.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center"><span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">📚 ' + recs.length + ' حصص</span><span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">🌟 مكتملة: ' + recs.filter(function (x) { return x.done; }).length + '</span></div>' +
-        recs.map(function (rc) {
-          return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:10px;background:#f8fafc;text-align:right">' +
-            '<div style="display:flex;justify-content:space-between"><b>📖 ' + (rc.title || 'حصة') + '</b><span style="color:#64748b;font-size:12px">' + (rc.date || '') + '</span></div>' +
-            '<div style="margin:6px 0;font-size:13px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px">المحطة: ' + (rc.station || 'م') + (rc.done ? ' ✓' : '') + '</span> ' + (rc.durationText ? '<span style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:6px">⏱️ ' + rc.durationText + '</span> ' : '') + (rc.result ? '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px">' + (rc.result === 'a' ? 'حقق 🌟' : 'جزئي 🌱') + '</span>' : '') + '</div>' +
-            (rc.harvest ? '<div style="font-size:13px;margin-top:6px;background:#fff;border:1px solid #cbd5e1;padding:8px;border-radius:8px;color:#1b5e3a"><b>الحصاد:</b> ' + (rc.harvest[0] || '—') + '</div>' : '') +
-          '</div>';
-        }).join('');
+      try {
+        var byIdRecs = JSON.parse(localStorage.getItem('manasa-id-portfolio-' + stu.idNumber) || '[]');
+        var byNameRecs = JSON.parse(localStorage.getItem('manasa-portfolio-' + displayName) || '[]');
+        recs = byIdRecs.concat(byNameRecs);
+      } catch (_) {}
+
+      // Also fetch cloud records for this studentId
+      var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
+      fetch('https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents:runQuery?key=' + pKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          structuredQuery: {
+            from: [{ collectionId: 'school_padlet_cards' }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: 'studentId' },
+                op: 'EQUAL',
+                value: { stringValue: String(stu.idNumber) }
+              }
+            }
+          }
+        })
+      })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .catch(function () { return []; })
+        .then(function (rows) {
+          if (Array.isArray(rows)) {
+            rows.forEach(function (row) {
+              if (row && row.document && row.document.fields && row.document.fields.json && row.document.fields.json.stringValue) {
+                try {
+                  recs.push(JSON.parse(row.document.fields.json.stringValue));
+                } catch (_) {}
+              }
+            });
+          }
+          var pc = document.getElementById('p-content');
+          if (!pc) return;
+          var evalObj = window.MIFTAH_ROSTER.computeExcellenceScore(recs);
+          if (!evalObj.lessonsCount) {
+            pc.innerHTML = '<div style="text-align:center;padding:24px;background:#f8fafc;border-radius:16px;border:1.5px dashed #cbd5e1;color:#475569">' +
+              '<p style="font-weight:800;font-size:16px;margin:0 0 6px">لا توجد حصص مسجّلة برقم هويتك حتى الآن.</p>' +
+              '<p style="font-size:14px;margin:0">عندما تدخل إلى حصص «مفتاح» برقم هويتك وتجيب عن الأسئلة، تُحفظ نقاطك وتقييمك هنا تلقائياً لشهادة سنة التميّز.</p>' +
+            '</div>';
+            return;
+          }
+
+          pc.innerHTML =
+            '<div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:2px solid #8b5cf6;border-radius:16px;padding:16px;margin-bottom:16px;text-align:center">' +
+              '<div style="font-size:13px;color:#5b21b6;font-weight:800">التقييم التراكمي في سنة التميّز (للشهادة المدرسية)</div>' +
+              '<div style="font-size:36px;font-weight:900;color:#4c1d95;margin:4px 0">' + evalObj.overallScore + ' <span style="font-size:18px;color:#6d28d9">/ 100</span></div>' +
+              '<span style="display:inline-block;background:' + evalObj.tierBadgeBg + ';color:' + evalObj.tierBadgeColor + ';padding:4px 14px;border-radius:999px;font-weight:800;font-size:14px">' + evalObj.tierLabel + '</span>' +
+              '<p style="margin:10px 0 0;font-size:13.5px;color:#334155;background:#fff;padding:8px 12px;border-radius:10px;border:1px solid #ddd6fe">📋 <b>توصية الشهادة:</b> ' + esc(evalObj.reportCardNote) + '</p>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;margin-bottom:14px;justify-content:center;flex-wrap:wrap">' +
+              '<span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">📚 الحصص: ' + evalObj.lessonsCount + '</span>' +
+              '<span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">🌟 مكتملة: ' + evalObj.completedCount + '</span>' +
+              '<span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px">🎯 إتقان الدليل: ' + evalObj.avgEvidencePct + '%</span>' +
+            '</div>' +
+            (evalObj.lessonsList || []).map(function (rc) {
+              return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:10px;background:#f8fafc;text-align:right">' +
+                '<div style="display:flex;justify-content:space-between"><b>📖 ' + esc(rc.title || 'حصة تفاعلية') + '</b><span style="color:#64748b;font-size:12px">' + esc(rc.date || '') + '</span></div>' +
+                '<div style="margin:6px 0;font-size:13px">' +
+                  '<span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px">المحطة: ' + esc(rc.station || 'م') + (rc.done ? ' ✓' : '') + '</span> ' +
+                  (rc.durationText ? '<span style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:6px">⏱️ ' + esc(rc.durationText) + '</span> ' : '') +
+                  (rc.result ? '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px">' + (rc.result === 'a' ? 'حقق 🌟' : 'جزئي 🌱') + '</span>' : '') +
+                '</div>' +
+                (rc.harvest ? '<div style="font-size:13px;margin-top:6px;background:#fff;border:1px solid #cbd5e1;padding:8px;border-radius:8px;color:#1b5e3a"><b>الحصاد:</b> ' + esc(rc.harvest[0] || '—') + '</div>' : '') +
+              '</div>';
+            }).join('');
+        });
     };
   }
 })();

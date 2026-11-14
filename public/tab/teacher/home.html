@@ -47,6 +47,7 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}td,th{p
 @media (max-width:640px){.tiles{grid-template-columns:1fr}.row{grid-template-columns:1fr}.bar small{display:none}}
 </style>
 <script src="../auth-guard.js?v=20261109_v7" data-to="login.html"></script>
+<script src="../manasa/students-roster.js?v=20261114_v1"></script>
 </head>
 <body>
 <header class="bar">
@@ -87,10 +88,15 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}td,th{p
       <h3>لوحة التحكّم</h3>
       <p>عدّلْ محتوى أيّ حصّة بالكود: الفيديو، الشرح، الأسئلة، اللعبة والتحدّيات.</p>
     </a>
+    <a class="tile" href="../manasa/?view=excellence" style="border:2.5px solid #f59e0b;background:linear-gradient(145deg,#ffffff 0%,#fffbeb 100%)">
+      <div class="i">🏆</div>
+      <h3 style="color:#92400e">تقييم سنة التميّز والشهادات</h3>
+      <p>سجلّ جميع طلاب المدرسة (469 طالباً في 19 صفّاً) برقم الهويّة وتقييم الشهادة المدرسية.</p>
+    </a>
     <a class="tile" href="#sec-classes" id="tile-classes">
       <div class="i">🎓</div>
       <h3>صفوفي وملفّات الطلاب</h3>
-      <p>قائمةُ طلاب كلّ صفّ و«ملف إنجازي» لكلّ طالب: حصصُه ونقاطُه وتقدّمُه.</p>
+      <p>قائمةُ طلاب كلّ صفّ (19 صفّاً) مع الكود السرّي (رقم الهوية) وملف الإنجاز.</p>
     </a>
     <a class="tile" href="#sec-director" id="tile-director">
       <div class="i">📈</div>
@@ -155,17 +161,13 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}td,th{p
   </section>
 
   <!-- 3. صفوفي وملفات الطلاب -->
-  <section class="panelc" id="sec-classes">
+  <section class="panelc" id="sec-classes" style="border:2.5px solid #f59e0b">
     <h2>
-      <span>🎓 صفوفي وطلابي وملفّات الإنجاز</span>
-      <select id="class-grade-select" style="width:auto;min-width:160px;padding:6px 12px;border-radius:10px;border:1.5px solid #cbd5e1;font:inherit;font-weight:700">
-        <option value="الصف الخامس">الصف الخامس</option>
-        <option value="الصف السادس">الصف السادس</option>
-        <option value="الصف الرابع">الصف الرابع</option>
-        <option value="الصف الثالث">الصف الثالث</option>
-        <option value="الصف الثاني">الصف الثاني</option>
-        <option value="الصف الأول">الصف الأول</option>
-      </select>
+      <span>🎓 صفوف المدرسة وطلاب «سنة التميّز» (469 طالباً — 19 صفّاً)</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="class-grade-select" style="width:auto;min-width:220px;padding:6px 12px;border-radius:10px;border:1.5px solid #cbd5e1;font:inherit;font-weight:700"></select>
+        <a class="btn p" href="../manasa/?view=excellence" style="background:#d97706">🏆 فتح سجلّ تقييم الشهادات الكامل</a>
+      </div>
     </h2>
     <div id="classes-box"></div>
     <h3 style="margin:18px 0 8px;color:#1b5e3a">📋 سجلات «ملف إنجازي» للطلاب</h3>
@@ -207,6 +209,6 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}td,th{p
     <p class="msg" id="cm"></p>
   </section>
 </main>
-<script src="home.js?v=20261112_v2"></script>
+<script src="home.js?v=20261114_v1"></script>
 </body>
 </html>

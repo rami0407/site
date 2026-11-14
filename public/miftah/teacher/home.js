@@ -524,25 +524,39 @@ function getAllStudentRecords() {
 function renderClassesSection(allLessons) {
   var box = $('classes-box');
   if (!box) return;
-  var selectedGrade = $('class-grade-select') ? $('class-grade-select').value : 'الصف الخامس';
-  var lessons = (allLessons || getAllLessonsFromStorage()).filter(function (l) {
-    return !selectedGrade || l.grade === selectedGrade;
-  });
-  var recs = getAllStudentRecords();
+  var roster = window.MIFTAH_ROSTER;
+  var selEl = $('class-grade-select');
+  if (roster && selEl && !selEl.getAttribute('data-inited')) {
+    selEl.setAttribute('data-inited', '1');
+    selEl.innerHTML = roster.classesList.map(function (c) {
+      return '<option value="' + esc(c.classKey) + '">' + esc(c.classArabic + ' (' + c.classKey + ') — المربّي/ة: ' + c.teacherName + ' (' + c.students.length + ' طالباً)') + '</option>';
+    }).join('');
+  }
+  var selectedKey = selEl ? selEl.value : (roster && roster.classesList[0] ? roster.classesList[0].classKey : '');
+  var clsObj = roster && roster.classesMap ? roster.classesMap[selectedKey] : null;
+  if (!clsObj) {
+    box.innerHTML = '<p style="color:#64748b">اختر الصفّ لعرض قائمة طلابه وأرقام هويّاتهم.</p>';
+    return;
+  }
 
-  box.innerHTML = '<div style="margin-bottom:10px;color:#475569;font-size:14px">الحصص المخصصة لـ <b>' + esc(selectedGrade) + '</b> (' + lessons.length + ' حصة):</div>' +
-    (lessons.length ? '<table><thead><tr><th>عنوان الحصة</th><th>المادة</th><th>الكود</th><th>حالة المشاركة</th><th>إجراءات الصف</th></tr></thead><tbody>' +
-      lessons.map(function (l) {
-        var doneCount = recs.filter(function (r) { return r.sid === l.code || r.title === l.title; }).length;
+  box.innerHTML = '<div style="margin-bottom:12px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
+      '<div><b style="color:#92400e;font-size:17px">🏫 الصفّ: ' + esc(clsObj.classArabic) + ' (' + esc(clsObj.classKey) + ')</b> · <span style="color:#334155;font-weight:700">👩‍🏫 مربّي/ة الصف: ' + esc(clsObj.teacherName) + '</span></div>' +
+      '<span class="tag" style="background:#dcfce7;color:#15803d;font-size:14px">👥 عدد الطلاب: ' + clsObj.students.length + ' طالباً</span>' +
+    '</div>' +
+    '<div style="max-height:420px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:14px">' +
+      '<table style="margin:0"><thead><tr><th>#</th><th>اسم الطالب الرّسمي</th><th>الكود السّرّي للدخول (رقم الهويّة)</th><th>الصّف</th><th>مربّي/ة الصّف</th><th>تقييم الشهادة</th></tr></thead><tbody>' +
+      clsObj.students.map(function (stu, idx) {
         return '<tr>' +
-          '<td><b>' + esc(l.title) + '</b></td>' +
-          '<td>' + esc(l.subject || 'علوم') + '</td>' +
-          '<td><span class="code-pill">' + esc(l.code) + '</span></td>' +
-          '<td>' + (doneCount > 0 ? '<span class="tag" style="background:#dcfce7;color:#15803d">✅ ' + doneCount + ' طلاب شاركوا</span>' : '<span style="color:#64748b">— بانتظار دخول الطلاب</span>') + '</td>' +
-          '<td><a class="btn p" style="padding:5px 10px;font-size:13px" href="../manasa/live.html?s=' + encodeURIComponent(l.code) + '" target="_blank">📊 متابعة الصف</a> <a class="btn g" style="padding:5px 10px;font-size:13px" href="../manasa/index.html?inspect=' + encodeURIComponent(l.code) + '">✏️ تعديل</a></td>' +
+          '<td style="font-weight:800;color:#64748b">' + (idx + 1) + '</td>' +
+          '<td><b>👤 ' + esc(stu.studentName) + '</b></td>' +
+          '<td><span class="code-pill" style="font-family:monospace;font-size:15px">' + esc(stu.idNumber) + '</span></td>' +
+          '<td>' + esc(stu.classArabic) + '</td>' +
+          '<td>' + esc(stu.teacherName) + '</td>' +
+          '<td><a class="btn p" style="padding:4px 10px;font-size:12.5px" href="../manasa/?view=excellence">🏆 ملف التميّز والشهادة</a></td>' +
         '</tr>';
-      }).join('') + '</tbody></table>'
-    : '<p style="color:#64748b">لا توجد حصص مسجلة لهذا الصف بعد. يمكنك توليد حصة جديدة الآن من «منصّة مفتاح».</p>');
+      }).join('') +
+      '</tbody></table>' +
+    '</div>';
 }
 
 if ($('class-grade-select')) {
@@ -581,14 +595,15 @@ function renderDirectorStats(allLessons) {
   if (!box) return;
   var lessons = allLessons || getAllLessonsFromStorage();
   var teachers = getStoredTeachers();
-  var recs = getAllStudentRecords();
-  var distinctStudents = new Set(recs.map(function (r) { return r.studentName; })).size;
+  var roster = window.MIFTAH_ROSTER;
+  var totalStudents = roster ? roster.allStudents.length : 469;
+  var totalClasses = roster ? roster.classesList.length : 19;
 
   box.innerHTML = '<div class="stat-grid">' +
     '<div class="stat-box"><div class="num">' + lessons.length + '</div><div class="lbl">📚 إجمالي الحصص التفاعلية</div></div>' +
     '<div class="stat-box"><div class="num">' + teachers.length + '</div><div class="lbl">👨‍🏫 المعلمون المسجلون</div></div>' +
-    '<div class="stat-box"><div class="num">' + distinctStudents + '</div><div class="lbl">🎒 الطلاب المشاركون</div></div>' +
-    '<div class="stat-box"><div class="num">6</div><div class="lbl">🏫 الصفوف الدراسية (الأول - السادس)</div></div>' +
+    '<div class="stat-box"><div class="num">' + totalStudents + '</div><div class="lbl">🎒 طلاب المدرسة المسجّلون بالهوية</div></div>' +
+    '<div class="stat-box"><div class="num">' + totalClasses + '</div><div class="lbl">🏫 الشعب الصفية (الأول - السادس)</div></div>' +
   '</div>';
 }
 

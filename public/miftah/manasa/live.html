@@ -1,4 +1,5 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261112_v6">
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261114_v1">
+<script src="students-roster.js?v=20261114_v1"></script>
 <style>
 .kahoot-opt-card {
   padding: 16px;
@@ -1720,21 +1721,44 @@ $('hl').querySelectorAll('[data-done]').forEach(function(b){b.onclick=function()
   saveLocalLiveState(st);
   load();
 }})}
+function getPupilRosterInfo(p){
+  var sid=p.studentId||String(p.pid||'').replace(/^id_/,'');
+  var stu=window.MIFTAH_ROSTER&&sid?window.MIFTAH_ROSTER.findStudentById(sid):null;
+  var official=p.officialName||(stu&&stu.studentName)||'';
+  var cls=p.classArabic||(stu&&stu.classArabic)||'';
+  var idStr=(stu&&stu.idNumber)||(/^\d{7,10}$/.test(sid)?sid:'');
+  return {official:official,cls:cls,idStr:idStr};
+}
+function formatPupilBadge(p){
+  var inf=getPupilRosterInfo(p);
+  var sub=[];
+  if(inf.official && inf.official !== p.name) sub.push('📋 '+esc(inf.official));
+  if(inf.cls) sub.push('🏫 '+esc(inf.cls));
+  if(inf.idStr) sub.push('🪪 ..'+esc(inf.idStr.slice(-4)));
+  return '<b>'+esc(p.name)+'</b> 🔍'+(sub.length?'<div style="font-size:11.5px;color:#0369a1;font-weight:700;margin-top:2px">'+sub.join(' · ')+'</div>':'');
+}
 function table(st){
 var grp=(st&&st.grouping)||ensureGroupingObj(getLocalLiveState());
 var cnt={};P.forEach(function(p){var k=(p.station||'م').indexOf('✓')>=0?'✓':(p.station||'م');cnt[k]=(cnt[k]||0)+1});
 $('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0);
-$('tb').innerHTML='<tr><th>الطالب</th>'+(grp.enabled?'<th>المجموعة</th>':'')+'<th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||p||{},r=d.result&&RW[d.result];
+$('tb').innerHTML='<tr><th>الطالب (والهُويّة)</th>'+(grp.enabled?'<th>المجموعة</th>':'')+'<th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||p||{},r=d.result&&RW[d.result];
 var pid=p.pid||p.name,gAssign=grp.enabled&&pid&&grp.assignments?grp.assignments[pid]:null;
 var gBadge=grp.enabled?(gAssign&&gAssign.group?'<span class="pill" style="background:#ccfbf1;color:#0f766e;font-weight:800">'+(GROUP_META[gAssign.group-1]?GROUP_META[gAssign.group-1].icon:'👥')+' مجموعة '+gAssign.group+'</span>':'<span class="muted">غير منضم</span>'):'';
-return '<tr class="pclick" data-p="'+i+'"><td><b>'+esc(p.name)+'</b> 🔍</td>'+(grp.enabled?'<td>'+gBadge+'</td>':'')+'<td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>'}).join(''):'<tr><td colspan="'+(grp.enabled?9:8)+'" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
+return '<tr class="pclick" data-p="'+i+'"><td>'+formatPupilBadge(p)+'</td>'+(grp.enabled?'<td>'+gBadge+'</td>':'')+'<td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>'}).join(''):'<tr><td colspan="'+(grp.enabled?9:8)+'" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
 $('tb').querySelectorAll('[data-p]').forEach(function(tr){tr.onclick=function(){pupil(P[+tr.getAttribute('data-p')])}});
 var need=P.filter(function(p){var d=p.data||p||{};return d.result==='n'||d.result==='p'||(d.checks&&d.checks[1]>=2&&d.checks[0]/d.checks[1]<0.5)});
 var adv=P.filter(function(p){return ((p.data||p||{}).result)==='a'});
 $('grp').innerHTML='<p><b>🛠️ مجموعة دعم معك:</b> '+(need.length?need.map(function(p){return esc(p.name)+(((p.data||p||{}).result)?'':' (أخطاء في «أرني»)')}).join('، '):'لا أحد حتى الآن')+'</p><p><b>🌟 مَن حقّقوا (يمكنهم مساعدة زملائهم أو مهمة إثراء):</b> '+(adv.length?adv.map(function(p){return esc(p.name)}).join('، '):'—')+'</p>';
 $('hv').innerHTML=P.filter(function(p){return (p.data||p||{}).harvest}).map(function(p){var hArr=(p.data||p).harvest;return '<p><b>'+esc(p.name)+'</b><br>'+H.map(function(q,i){return '• '+q+' '+esc(hArr[i])}).join('<br>')+'</p>'}).join('')||'<p class="muted">لم يصلْ أحدٌ إلى الحصاد بعد.</p>';}
 function pupil(p){var d=p.data||p||{},log=d.log||[],g={};log.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x)});
-var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</span></h3>'+(d.guess?'<p><b>🔍 توقّعُه في «م»:</b> '+esc(d.guess)+'</p>':'');
+var inf=getPupilRosterInfo(p);
+var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</span></h3>'+
+(inf.idStr||inf.official||inf.cls?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
+  (inf.official?'<span class="pill" style="background:#e0f2fe;color:#0369a1;font-weight:800">📋 الاسم الرسمي: '+esc(inf.official)+'</span>':'')+
+  (inf.cls?'<span class="pill" style="background:#dcfce7;color:#15803d;font-weight:800">🏫 الصّف: '+esc(inf.cls)+'</span>':'')+
+  (inf.idStr?'<span class="pill" style="background:#f3e8ff;color:#6b21a8;font-weight:800">🪪 الهويّة: '+esc(inf.idStr)+'</span>':'')+
+'</div>':'')+
+(d.guess?'<p><b>🔍 توقّعُه في «م»:</b> '+esc(d.guess)+'</p>':'');
 ['أرِني','تدريب','تحدٍّ','دليل'].forEach(function(k){if(!g[k])return;var ok=g[k].filter(function(x){return x.ok}).length;html+='<h3>'+({'أرِني':'✋ أرِني','تدريب':'🏋️ التدريب','تحدٍّ':'🏆 التحدّيات','دليل':'📝 مهمّة الدليل'})[k]+' — '+ok+'/'+g[k].length+'</h3>'+g[k].map(function(x){return '<div class="ans '+(x.ok?'y':'n')+'">'+(x.ok?'✅':'❌')+' '+esc(x.q)+'<br><b>أجاب:</b> '+esc(x.a)+(x.ok?'':' · <b>الصحيح:</b> '+esc(x.c))+(x.t>1?' <span class="muted">('+x.t+' محاولات)</span>':'')+'</div>'}).join('')});
 if(d.game)html+='<p><b>🎮 اللعبة:</b> '+d.game.seconds+' ث · '+d.game.mistakes+' أخطاء</p>';
 if(d.harvest)html+='<h3>🌾 الحصاد</h3>'+H.map(function(q,i){return '<p><b>'+q+'</b><br>'+esc(d.harvest[i])+'</p>'}).join('');
