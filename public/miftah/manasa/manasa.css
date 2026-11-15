@@ -1,6 +1,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;800&display=swap');
-*{box-sizing:border-box}html,body{margin:0}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden;max-width:100%}
 body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;background:linear-gradient(160deg,#4c1d95 0%,#6d28d9 45%,#7c3aed 100%);min-height:100vh;color:#1d2b3a;direction:rtl;line-height:1.9;font-size:18px}
 a{color:#5b21b6}
 .top{background:linear-gradient(135deg,#3b0764,#5b21b6);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -177,4 +177,44 @@ body:has(#mkey) .wrap{padding-bottom:110px}
 .kahoot-student-choice-btn:hover:not(:disabled){filter:brightness(1.08)}
 @media (max-width:600px){
   .kahoot-student-choice-btn{padding:16px 12px !important;font-size:17px !important}
+}
+
+/* ملاءمة شاملة للهواتف الذكية */
+@media (max-width:720px){
+  table{display:block;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+}
+@media (max-width:680px){
+  .top{padding:10px 12px;gap:8px}
+  .top b{font-size:17px}
+  .top small{display:none}
+  .pupil-timer-bar{width:100%;justify-content:space-between;padding:5px 10px;font-size:13px;gap:6px}
+  .pupil-timer-bar .p-name{max-width:125px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;padding:2px 8px}
+  .pupil-timer-bar .p-clock{font-size:14px;padding:2px 8px}
+  .pupil-timer-bar .p-exit-btn{font-size:12px;padding:4px 10px}
+  .wrap{padding:10px 8px}
+  .card{padding:14px 12px;border-radius:16px;margin:10px 0}
+  h1{font-size:22px}h2{font-size:19px}h3{font-size:17px}
+  .btn{min-height:46px;padding:10px 14px;font-size:16px;max-width:100%}
+  .btn.big{font-size:17px}
+  .opt{font-size:16px;padding:11px 12px;min-height:48px}
+  .story{font-size:17px;padding:10px 12px}
+  .q{font-size:17px}
+  input[type=text],input[type=search],input[type=number],input[type=url],select,textarea{font-size:16px !important;max-width:100% !important;min-width:0 !important}
+  .buckets{grid-template-columns:1fr}
+  .chip{font-size:15px;padding:7px 12px}
+  .code{font-size:28px;letter-spacing:4px}
+  .hub-container{min-height:auto;padding:12px 2px}
+  .hub-title-box{margin-bottom:18px}
+  .hub-title-box h1{font-size:24px}
+  .hub-title-box p{font-size:14px}
+  .hub-cards-grid{grid-template-columns:1fr !important;gap:14px}
+  .hub-btn-card{padding:20px 14px;border-radius:20px}
+  .hub-icon-circle{width:64px;height:64px;font-size:34px;margin-bottom:12px}
+  .hub-card-title{font-size:20px}
+  .hub-card-desc{font-size:14px;margin-bottom:14px}
+  .archive-tabs{flex-wrap:wrap}
+  .archive-tab{min-width:44%;padding:10px 8px;font-size:14px}
+  .lesson-archive-card{padding:14px 12px}
+  .mpanel{padding:16px 12px 24px;max-height:90vh}
+  .harvest-chip-btn{font-size:14px;padding:9px 10px}
 }

@@ -1586,7 +1586,7 @@ function start() {
           welcome();
           return;
         }
-        return fetch('lessons/TMYZ26.json?v=20261115_v8')
+        return fetch('lessons/TMYZ26.json?v=20261115_v9')
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(function (lData) {
             try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
