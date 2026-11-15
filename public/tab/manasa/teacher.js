@@ -330,7 +330,7 @@
   function ensureModelLessonsData() {
     try {
       if (!localStorage.getItem('manasa-lesson-TMYZ26')) {
-        fetch('lessons/excellence.json?v=20261115_v5')
+        fetch('lessons/excellence.json?v=20261115_v6')
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (lData) {
             if (lData && !localStorage.getItem('manasa-lesson-TMYZ26')) {
@@ -1039,7 +1039,7 @@
             showView('inspector');
             return;
           }
-          return fetch('lessons/excellence.json?v=20261115_v5')
+          return fetch('lessons/excellence.json?v=20261115_v6')
             .then(function (r) { return r.json(); })
             .then(function (data) {
               data.code = 'TMYZ26';
@@ -2505,13 +2505,134 @@
     });
   }
 
-  // 8. تنفيذ التوليد والانتقال المباشر لفحص وتعديل الحصة ومشاركة الكود بالواتساب
+  // 8. تحويل الصور (من كتاب أو ورقة عمل) + تنفيذ التوليد والانتقال المباشر لفحص وتعديل الحصة
+  var uploadedLessonImages = [];
+
+  function compressImageFile(file, maxW, quality) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+          var scale = img.width > maxW ? maxW / img.width : 1;
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderUploadedImagesPreview() {
+    var box = $('lesson-image-preview');
+    var clearBtn = $('lesson-image-clear');
+    if (!box) return;
+    if (!uploadedLessonImages.length) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      return;
+    }
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+    box.style.display = 'block';
+    box.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
+      uploadedLessonImages.map(function (src, i) {
+        return '<div style="position:relative;border:2px solid #818cf8;border-radius:10px;overflow:hidden;background:#fff;padding:3px">' +
+          '<img src="' + src + '" style="height:86px;width:auto;display:block;border-radius:6px">' +
+          '<span style="display:block;text-align:center;font-size:11px;font-weight:700;color:#4338ca;margin-top:2px">صورة ' + (i + 1) + '</span>' +
+        '</div>';
+      }).join('') +
+      '<div style="font-size:13px;font-weight:700;color:#15803d">✅ جاهز للتحويل إلى درس مفتاح (' + uploadedLessonImages.length + ')</div>' +
+    '</div>';
+  }
+
+  var lessonImgInput = $('lesson-image-input');
+  if (lessonImgInput) {
+    lessonImgInput.onchange = function (e) {
+      var files = Array.prototype.slice.call(e.target.files || [], 0, 3);
+      if (!files.length) return;
+      Promise.all(files.map(function (f) { return compressImageFile(f, 1200, 0.82); }))
+        .then(function (urls) {
+          uploadedLessonImages = urls;
+          renderUploadedImagesPreview();
+          showToast('📸 تم تحميل ' + urls.length + ' صورة بنجاح!');
+        })
+        .catch(function () {
+          showToast('تعذّر قراءة الصورة، جرّب صورة أخرى.');
+        });
+    };
+  }
+
+  var lessonImgClear = $('lesson-image-clear');
+  if (lessonImgClear) {
+    lessonImgClear.onclick = function () {
+      uploadedLessonImages = [];
+      if (lessonImgInput) lessonImgInput.value = '';
+      renderUploadedImagesPreview();
+    };
+  }
+
+  function extractLessonContentFromImages(images, subject, grade, lang, hintTopic) {
+    var langName = lang === 'he' ? 'Hebrew (עברית)' : lang === 'en' ? 'English' : 'Arabic (العربية)';
+    var userParts = [
+      {
+        type: 'text',
+        text: 'You are an expert educational OCR and curriculum analyst for elementary school (' + grade + ', Subject: ' + subject + '). ' +
+          'Read ALL text, headings, definitions, examples, diagrams, and questions/exercises visible in the uploaded image(s) carefully. ' +
+          (hintTopic ? 'Teacher topic hint: "' + hintTopic + '". ' : '') +
+          'Return ONLY a valid JSON object (no markdown) with these exact keys:\n' +
+          '{\n' +
+          '  "detectedTitle": "concise lesson title in ' + langName + ' based on the image",\n' +
+          '  "extractedContent": "comprehensive, structured summary in ' + langName + ' of all facts, explanations, terms, examples, and questions from the image(s) so a lesson generator can turn it into a 5-station interactive lesson"\n' +
+          '}'
+      }
+    ];
+    images.forEach(function (dataUrl) {
+      userParts.push({ type: 'image_url', image_url: { url: dataUrl } });
+    });
+
+    function callVision(modelName) {
+      return fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + GROQ_API_KEY
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [{ role: 'user', content: userParts }],
+          temperature: 0.2,
+          max_tokens: 1800,
+          response_format: { type: 'json_object' }
+        })
+      }).then(function (r) {
+        if (!r.ok) return Promise.reject('HTTP ' + r.status);
+        return r.json();
+      }).then(function (data) {
+        var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        var parsed = JSON.parse(raw);
+        if (!parsed || !parsed.extractedContent) throw new Error('Empty vision output');
+        return parsed;
+      });
+    }
+
+    return callVision('meta-llama/llama-4-scout-17b-16e-instruct').catch(function () {
+      return callVision('meta-llama/llama-4-maverick-17b-128e-instruct');
+    });
+  }
+
   var genBtn = $('gen');
   if (genBtn) {
     genBtn.onclick = function () {
       var topic = ($('topic').value || '').trim();
-      if (!topic) {
-        alert('اكتب موضوع الحصة أولاً.');
+      if (!topic && !uploadedLessonImages.length) {
+        alert('اكتب موضوع الحصة أولاً، أو ارفع صورة من الكتاب/ورقة العمل.');
         $('topic').focus();
         return;
       }
@@ -2523,25 +2644,58 @@
       var resolvedLang = detectLessonLanguage(subjectVal, topic, langVal);
       var langLabel = resolvedLang === 'he' ? 'العبرية (עברית)' : resolvedLang === 'en' ? 'الإنجليزية (English)' : 'العربية';
       var isPublicChosen = $('privacy-public') ? $('privacy-public').checked : true;
+      var attachImg = $('lesson-image-attach') ? $('lesson-image-attach').checked : true;
+      var imagesToProcess = uploadedLessonImages.slice();
 
       genBtn.disabled = true;
-      genBtn.textContent = '⏳ جاري توليد الحصة باللغة ' + langLabel + ' والانتقال إليها…';
+      genBtn.textContent = imagesToProcess.length
+        ? '👁️ جاري قراءة الصورة وتحويلها إلى درس…'
+        : '⏳ جاري توليد الحصة باللغة ' + langLabel + ' والانتقال إليها…';
 
       $('genout').innerHTML = '<div style="background:#f8fbff;border:2px dashed #0b6bcb;border-radius:16px;padding:24px;text-align:center;margin-top:14px">' +
-        '<p style="font-size:19px;font-weight:800;color:#0b6bcb;margin:0 0 8px">🧠 جاري توليد حصّة «' + esc(topic) + '» باللغة ' + langLabel + ' وفق نموذج مفتاح…</p>' +
+        '<p style="font-size:19px;font-weight:800;color:#0b6bcb;margin:0 0 8px">' +
+          (imagesToProcess.length ? '📸 جاري تحليل الصورة واستخراج محتوى الدرس بالذكاء الاصطناعي…' : '🧠 جاري توليد حصّة «' + esc(topic) + '» باللغة ' + langLabel + ' وفق نموذج مفتاح…') +
+        '</p>' +
         '<p style="color:#475569;margin:0;font-size:15px">يتم الآن إعداد المحطات الخمس (م - ف - ت - ا - ح) باللغة المطلوبة وحفظها في الأرشيف، وسيتم نقلك تلقائياً لفحص الحصة وتعديلها ومشاركة الكود عبر واتساب.</p>' +
         '</div>';
 
-      generateLessonWithRealAI(
-        subjectVal,
-        gradeVal,
-        topic,
-        notesVal,
-        isPublicChosen,
-        currentTeacher.name || 'معلّم مشيرفة',
-        currentTeacher.email || 'rami0407@gmail.com',
-        resolvedLang
-      ).then(function (lesson) {
+      var prepPromise = imagesToProcess.length
+        ? extractLessonContentFromImages(imagesToProcess, subjectVal, gradeVal, resolvedLang, topic)
+            .then(function (visionRes) {
+              var finalTopic = topic || visionRes.detectedTitle || 'درس مستخرج من الصورة';
+              if (!topic && $('topic')) $('topic').value = finalTopic;
+              var finalLang = detectLessonLanguage(subjectVal, finalTopic + ' ' + visionRes.extractedContent, langVal);
+              var combinedNotes = (notesVal ? notesVal + '\n\n' : '') +
+                'المحتوى التعليمي المستخرج بدقة من الصورة المرفوعة (اعتمد عليه كأساس للشرح والأسئلة):\n' +
+                visionRes.extractedContent;
+              return { topic: finalTopic, notes: combinedNotes, lang: finalLang };
+            })
+            .catch(function (err) {
+              console.warn('Vision extraction failed:', err);
+              showToast('⚠️ تعذّر قراءة الصورة تلقائياً، سيتم التوليد بالمعطيات المتوفرة.');
+              return { topic: topic || 'درس تفاعلي من الكتاب', notes: notesVal, lang: resolvedLang };
+            })
+        : Promise.resolve({ topic: topic, notes: notesVal, lang: resolvedLang });
+
+      prepPromise.then(function (prep) {
+        return generateLessonWithRealAI(
+          subjectVal,
+          gradeVal,
+          prep.topic,
+          prep.notes,
+          isPublicChosen,
+          currentTeacher.name || 'معلّم مشيرفة',
+          currentTeacher.email || 'rami0407@gmail.com',
+          prep.lang
+        );
+      }).then(function (lesson) {
+        if (attachImg && imagesToProcess.length) {
+          lesson.explain = lesson.explain || {};
+          lesson.explain.media = lesson.explain.media || {};
+          if (!lesson.explain.media.image) {
+            lesson.explain.media.image = imagesToProcess[0];
+          }
+        }
         // 1. حفظ الحصة التفاعلية كاملة محلياً
         try {
           localStorage.setItem('manasa-lesson-' + lesson.code, JSON.stringify(lesson));

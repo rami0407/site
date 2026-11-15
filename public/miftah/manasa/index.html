@@ -8,12 +8,12 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
-<link rel="stylesheet" href="manasa.css?v=20261115_v5">
-<script src="students-roster.js?v=20261115_v5"></script>
+<link rel="stylesheet" href="manasa.css?v=20261115_v6">
+<script src="students-roster.js?v=20261115_v6"></script>
 <script>
 // إجبار المتصفح على جلب أحدث نسخة بدون كاش
 (function() {
-  var vTag = 'v=hub_20261115_v5';
+  var vTag = 'v=hub_20261115_v6';
   if (!window.location.search.includes(vTag)) {
     var sep = window.location.search ? '&' : '?';
     window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
@@ -227,8 +227,27 @@
           </select>
         </div>
 
+        <div style="margin-top:14px;background:linear-gradient(135deg,#f0f9ff 0%,#eef2ff 100%);border:2px dashed #6366f1;border-radius:16px;padding:14px 16px">
+          <label style="font-weight:800;color:#312e81;font-size:16px;display:flex;align-items:center;gap:8px">
+            <span>📸 تحويل صورة (صفحة كتاب / ورقة عمل / لوح) إلى درس مفتاح (اختياري):</span>
+          </label>
+          <p style="color:#475569;font-size:13px;margin:4px 0 10px">ارفع صورة أو حتى 3 صور لصفحات من الكتاب، وسيقرأها الذكاء الاصطناعي ويحوّلها تلقائياً إلى حصة تفاعلية كاملة بالمحطات الخمس!</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label class="btn" style="margin:0;cursor:pointer;background:#4f46e5;color:#fff;min-height:42px;padding:8px 16px;font-size:14px">
+              📷 اختر صورة أو التقطها بالكاميرا
+              <input type="file" id="lesson-image-input" accept="image/*" multiple style="display:none">
+            </label>
+            <button type="button" id="lesson-image-clear" class="btn alt" style="display:none;margin:0;min-height:40px;padding:6px 12px;font-size:13px;background:#fee2e2;color:#b91c1c">🗑️ إزالة الصور</button>
+          </div>
+          <div id="lesson-image-preview" style="display:none;margin-top:10px"></div>
+          <label style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;font-weight:700;color:#334155;cursor:pointer">
+            <input type="checkbox" id="lesson-image-attach" checked style="width:auto;margin:0">
+            <span>إرفاق الصورة الأولى داخل محطة الشرح «ف» ليراها الطلاب</span>
+          </label>
+        </div>
+
         <div style="margin-top:14px">
-          <label style="font-weight:700">موضوع الحصّة بدقة:</label>
+          <label style="font-weight:700">موضوع الحصّة بدقة <span style="font-weight:500;color:#64748b;font-size:13px">(أو اتركه فارغاً إذا رفعت صورة وسيتم استنتاجه تلقائياً)</span>:</label>
           <input type="text" id="topic" placeholder="مثال: الجبال، حالات المادة، الكسور العشرية، همزة القطع والوصل، معركة بدر…">
         </div>
 
@@ -386,7 +405,7 @@
   <div id="sess"></div>
 </main>
 
-<script src="teacher.js?v=20261115_v5"></script>
+<script src="teacher.js?v=20261115_v6"></script>
 </body>
 </html>
 
