@@ -330,7 +330,7 @@
   function ensureModelLessonsData() {
     try {
       if (!localStorage.getItem('manasa-lesson-TMYZ26')) {
-        fetch('lessons/excellence.json?v=20261115_v6')
+        fetch('lessons/excellence.json?v=20261115_v7')
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (lData) {
             if (lData && !localStorage.getItem('manasa-lesson-TMYZ26')) {
@@ -1039,7 +1039,7 @@
             showView('inspector');
             return;
           }
-          return fetch('lessons/excellence.json?v=20261115_v6')
+          return fetch('lessons/excellence.json?v=20261115_v7')
             .then(function (r) { return r.json(); })
             .then(function (data) {
               data.code = 'TMYZ26';
@@ -2578,52 +2578,102 @@
     };
   }
 
-  function extractLessonContentFromImages(images, subject, grade, lang, hintTopic) {
-    var langName = lang === 'he' ? 'Hebrew (עברית)' : lang === 'en' ? 'English' : 'Arabic (العربية)';
-    var userParts = [
-      {
-        type: 'text',
-        text: 'You are an expert educational OCR and curriculum analyst for elementary school (' + grade + ', Subject: ' + subject + '). ' +
-          'Read ALL text, headings, definitions, examples, diagrams, and questions/exercises visible in the uploaded image(s) carefully. ' +
-          (hintTopic ? 'Teacher topic hint: "' + hintTopic + '". ' : '') +
-          'Return ONLY a valid JSON object (no markdown) with these exact keys:\n' +
-          '{\n' +
-          '  "detectedTitle": "concise lesson title in ' + langName + ' based on the image",\n' +
-          '  "extractedContent": "comprehensive, structured summary in ' + langName + ' of all facts, explanations, terms, examples, and questions from the image(s) so a lesson generator can turn it into a 5-station interactive lesson"\n' +
-          '}'
-      }
-    ];
-    images.forEach(function (dataUrl) {
-      userParts.push({ type: 'image_url', image_url: { url: dataUrl } });
+  function loadTesseractLib() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = function () {
+        if (window.Tesseract) resolve(window.Tesseract);
+        else reject(new Error('Tesseract not loaded'));
+      };
+      s.onerror = function () { reject(new Error('Failed to load Tesseract.js')); };
+      document.head.appendChild(s);
     });
+  }
 
-    function callVision(modelName) {
-      return fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + GROQ_API_KEY
-        },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [{ role: 'user', content: userParts }],
-          temperature: 0.2,
-          max_tokens: 1800,
-          response_format: { type: 'json_object' }
-        })
-      }).then(function (r) {
-        if (!r.ok) return Promise.reject('HTTP ' + r.status);
-        return r.json();
-      }).then(function (data) {
-        var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        var parsed = JSON.parse(raw);
-        if (!parsed || !parsed.extractedContent) throw new Error('Empty vision output');
-        return parsed;
+  function extractLessonContentFromImages(images, subject, grade, lang, hintTopic, onProgress) {
+    var ocrLang = lang === 'he' ? 'heb+eng' : lang === 'en' ? 'eng' : 'ara+eng';
+    var langName = lang === 'he' ? 'Hebrew (עברית)' : lang === 'en' ? 'English' : 'Arabic (العربية)';
+
+    return loadTesseractLib().then(function (Tesseract) {
+      if (onProgress) onProgress('⏳ جاري تهيئة قارئ النصوص الضوئي (OCR) للغة المطلوبة…');
+      return Tesseract.createWorker(ocrLang, 1, {
+        logger: function (m) {
+          if (m && m.status === 'recognizing text' && typeof m.progress === 'number' && onProgress) {
+            onProgress('📖 جاري قراءة النص من الصورة… (' + Math.round(m.progress * 100) + '%)');
+          }
+        }
+      }).then(function (worker) {
+        var idx = 0;
+        var allTexts = [];
+        function nextImg() {
+          if (idx >= images.length) {
+            return worker.terminate().then(function () { return allTexts.join('\n\n---\n\n'); });
+          }
+          if (onProgress) onProgress('📖 جاري قراءة الصورة ' + (idx + 1) + ' من ' + images.length + '…');
+          return worker.recognize(images[idx]).then(function (res) {
+            var txt = (res && res.data && res.data.text) ? res.data.text.trim() : '';
+            if (txt) allTexts.push(txt);
+            idx++;
+            return nextImg();
+          });
+        }
+        return nextImg();
       });
-    }
+    }).then(function (rawOcrText) {
+      if (onProgress) onProgress('🧠 تم استخراج النص! جاري تنظيمه وتحويله إلى درس مفتاح…');
+      var cleanPrompt = 'You are an expert educational analyst for elementary school (' + grade + ', Subject: ' + subject + ').\n' +
+        'Below is raw OCR text extracted from a textbook page / worksheet image (it may contain minor OCR noise).\n' +
+        (hintTopic ? 'Teacher topic hint: "' + hintTopic + '".\n' : '') +
+        'Raw OCR text:\n"""\n' + (rawOcrText || '(no readable text found)') + '\n"""\n\n' +
+        'Fix any OCR glitches, reconstruct the meaning accurately in ' + langName + ', and return ONLY a valid JSON object:\n' +
+        '{\n' +
+        '  "detectedTitle": "concise accurate lesson title in ' + langName + '",\n' +
+        '  "extractedContent": "clean, well-structured summary in ' + langName + ' of all concepts, facts, examples, and questions from the text"\n' +
+        '}';
 
-    return callVision('meta-llama/llama-4-scout-17b-16e-instruct').catch(function () {
-      return callVision('meta-llama/llama-4-maverick-17b-128e-instruct');
+      function callGroqClean(modelName) {
+        return fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + GROQ_API_KEY
+          },
+          body: JSON.stringify({
+            model: modelName,
+            reasoning_effort: 'low',
+            messages: [{ role: 'user', content: cleanPrompt }],
+            temperature: 0.2,
+            max_tokens: 1500,
+            response_format: { type: 'json_object' }
+          })
+        }).then(function (r) {
+          if (!r.ok) return Promise.reject('HTTP ' + r.status);
+          return r.json();
+        }).then(function (data) {
+          var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          var parsed = JSON.parse(raw);
+          if (!parsed || !parsed.extractedContent) throw new Error('Empty clean output');
+          return parsed;
+        });
+      }
+
+      if (!rawOcrText || rawOcrText.length < 10) {
+        return {
+          detectedTitle: hintTopic || 'درس تفاعلي من الصورة',
+          extractedContent: hintTopic || 'محتوى مرئي مرفق من المعلم.'
+        };
+      }
+
+      return callGroqClean('openai/gpt-oss-120b').catch(function () {
+        return callGroqClean('openai/gpt-oss-20b');
+      }).catch(function () {
+        return {
+          detectedTitle: hintTopic || rawOcrText.split('\n')[0].slice(0, 60) || 'درس من الكتاب',
+          extractedContent: rawOcrText
+        };
+      });
     });
   }
 
@@ -2653,14 +2703,17 @@
         : '⏳ جاري توليد الحصة باللغة ' + langLabel + ' والانتقال إليها…';
 
       $('genout').innerHTML = '<div style="background:#f8fbff;border:2px dashed #0b6bcb;border-radius:16px;padding:24px;text-align:center;margin-top:14px">' +
-        '<p style="font-size:19px;font-weight:800;color:#0b6bcb;margin:0 0 8px">' +
-          (imagesToProcess.length ? '📸 جاري تحليل الصورة واستخراج محتوى الدرس بالذكاء الاصطناعي…' : '🧠 جاري توليد حصّة «' + esc(topic) + '» باللغة ' + langLabel + ' وفق نموذج مفتاح…') +
+        '<p id="gen-progress-msg" style="font-size:19px;font-weight:800;color:#0b6bcb;margin:0 0 8px">' +
+          (imagesToProcess.length ? '📸 جاري تحليل الصورة واستخراج محتوى الدرس…' : '🧠 جاري توليد حصّة «' + esc(topic) + '» باللغة ' + langLabel + ' وفق نموذج مفتاح…') +
         '</p>' +
         '<p style="color:#475569;margin:0;font-size:15px">يتم الآن إعداد المحطات الخمس (م - ف - ت - ا - ح) باللغة المطلوبة وحفظها في الأرشيف، وسيتم نقلك تلقائياً لفحص الحصة وتعديلها ومشاركة الكود عبر واتساب.</p>' +
         '</div>';
 
       var prepPromise = imagesToProcess.length
-        ? extractLessonContentFromImages(imagesToProcess, subjectVal, gradeVal, resolvedLang, topic)
+        ? extractLessonContentFromImages(imagesToProcess, subjectVal, gradeVal, resolvedLang, topic, function (msg) {
+            var pEl = $('gen-progress-msg');
+            if (pEl) pEl.textContent = msg;
+          })
             .then(function (visionRes) {
               var finalTopic = topic || visionRes.detectedTitle || 'درس مستخرج من الصورة';
               if (!topic && $('topic')) $('topic').value = finalTopic;
