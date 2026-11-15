@@ -330,7 +330,7 @@
   function ensureModelLessonsData() {
     try {
       if (!localStorage.getItem('manasa-lesson-TMYZ26')) {
-        fetch('lessons/excellence.json?v=20261115_v7')
+        fetch('lessons/excellence.json?v=20261115_v8')
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (lData) {
             if (lData && !localStorage.getItem('manasa-lesson-TMYZ26')) {
@@ -1039,7 +1039,7 @@
             showView('inspector');
             return;
           }
-          return fetch('lessons/excellence.json?v=20261115_v7')
+          return fetch('lessons/excellence.json?v=20261115_v8')
             .then(function (r) { return r.json(); })
             .then(function (data) {
               data.code = 'TMYZ26';
@@ -1366,13 +1366,16 @@
           var header = '<div class="sub-item-box" style="background:#fdf4ff;border-color:#e879f9;margin-top:18px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">' +
               '<b style="font-size:17px;color:#86198f">🎮 اللعبة / النشاط التفاعلي في المحطة:</b>' +
-              '<select id="insp-game-type" style="width:auto;min-width:250px;margin:0;font-weight:800;border:2px solid #c084fc;background:#fff">' +
-                '<option value="sort_buckets"' + (gType === 'sort_buckets' ? ' selected' : '') + '>🗂️ تصنيف في سلتين</option>' +
-                '<option value="match_pairs"' + (gType === 'match_pairs' ? ' selected' : '') + '>🔗 صل بين جملتين (التوصيل)</option>' +
-                '<option value="fill_blanks"' + (gType === 'fill_blanks' ? ' selected' : '') + '>✍️ املأ الفراغ بالكلمة المناسبة</option>' +
-                '<option value="order_steps"' + (gType === 'order_steps' ? ' selected' : '') + '>🔢 ترتيب الخطوات / الجمل</option>' +
-                '<option value="true_false"' + (gType === 'true_false' ? ' selected' : '') + '>✅❌ صح أم خطأ السريعة</option>' +
-              '</select>' +
+              '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+                '<select id="insp-game-type" style="width:auto;min-width:240px;margin:0;font-weight:800;border:2px solid #c084fc;background:#fff">' +
+                  '<option value="sort_buckets"' + (gType === 'sort_buckets' ? ' selected' : '') + '>🗂️ تصنيف في سلتين</option>' +
+                  '<option value="match_pairs"' + (gType === 'match_pairs' ? ' selected' : '') + '>🔗 صل بين جملتين (التوصيل)</option>' +
+                  '<option value="fill_blanks"' + (gType === 'fill_blanks' ? ' selected' : '') + '>✍️ املأ الفراغ بالكلمة المناسبة</option>' +
+                  '<option value="order_steps"' + (gType === 'order_steps' ? ' selected' : '') + '>🔢 ترتيب الخطوات / الجمل</option>' +
+                  '<option value="true_false"' + (gType === 'true_false' ? ' selected' : '') + '>✅❌ صح أم خطأ السريعة</option>' +
+                '</select>' +
+                '<button type="button" id="insp-ai-games-btn" class="btn" style="min-height:40px;padding:6px 14px;font-size:13px;margin:0;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff">✨ ولّد جميع الأنماط بالذكاء</button>' +
+              '</div>' +
             '</div>' +
             '<div class="grid2">' +
               fieldInput('عنوان النشاط:', 'game.title', false) +
@@ -1580,23 +1583,45 @@
         var gt = $('insp-game-type').value;
         var gObj = activeInspectedLesson.game = activeInspectedLesson.game || {};
         gObj.type = gt;
+        var defMeta = getDefaultGameMeta(gt, activeInspectedLesson.lang || 'ar', activeInspectedLesson.title || '');
+        gObj.title = defMeta.title;
+        gObj.instructions = defMeta.instructions;
         if (gt === 'match_pairs' && (!gObj.pairs || !gObj.pairs.length)) {
-          gObj.instructions = 'صلْ كلَّ عبارةٍ في العمودِ الأيمنِ بما يناسبُها في العمودِ الأيسر:';
           gObj.pairs = [{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }];
         } else if (gt === 'fill_blanks' && (!gObj.blanks || !gObj.blanks.length)) {
-          gObj.instructions = 'اخترِ الكلمةَ المناسبةَ من بنكِ الكلماتِ لملءِ الفراغِ في كلِّ جملة:';
           gObj.blanks = [{ sentence: '', answer: '' }, { sentence: '', answer: '' }];
         } else if (gt === 'order_steps' && (!gObj.steps || !gObj.steps.length)) {
-          gObj.instructions = 'رتّبِ الخطواتِ أوِ الأحداثَ التّاليةَ بالترتيبِ الصّحيحِ من البدايةِ إلى النّهاية:';
           gObj.steps = [{ text: '' }, { text: '' }, { text: '' }];
         } else if (gt === 'true_false' && (!gObj.statements || !gObj.statements.length)) {
-          gObj.instructions = 'حدّدْ ما إذا كانت كلُّ عبارةٍ صحيحةً أم خاطئة:';
           gObj.statements = [{ text: '', isTrue: true }, { text: '', isTrue: false }];
         } else if (gt === 'sort_buckets' && (!gObj.items || !gObj.items.length)) {
           gObj.buckets = gObj.buckets && gObj.buckets.length === 2 ? gObj.buckets : ['المجموعة الأولى', 'المجموعة الثانية'];
           gObj.items = [{ text: '', bucket: 0 }, { text: '', bucket: 1 }];
         }
         renderInspectorUI();
+      };
+    }
+
+    if ($('insp-ai-games-btn')) {
+      $('insp-ai-games-btn').onclick = function () {
+        var btn = $('insp-ai-games-btn');
+        collectInspectorChanges();
+        btn.disabled = true;
+        btn.textContent = '⏳ جاري التوليد للأنماط الخمسة…';
+        generateAllGameVariantsAI(activeInspectedLesson, true)
+          .then(function () {
+            var gt = (activeInspectedLesson.game && activeInspectedLesson.game.type) || 'sort_buckets';
+            var defMeta = getDefaultGameMeta(gt, activeInspectedLesson.lang || 'ar', activeInspectedLesson.title || '');
+            activeInspectedLesson.game.title = defMeta.title;
+            activeInspectedLesson.game.instructions = defMeta.instructions;
+            renderInspectorUI();
+            showToast('✨ تم توليد جميع أنماط الأسئلة والألعاب الخمسة بنجاح! اختر ما يناسبك ثم اضغط حفظ.');
+          })
+          .catch(function () {
+            btn.disabled = false;
+            btn.textContent = '✨ ولّد جميع الأنماط بالذكاء';
+            showToast('تعذّر التوليد حالياً، حاول مرة أخرى.');
+          });
       };
     }
 
@@ -1988,11 +2013,137 @@
         parsed.author_email = authorEmail;
         parsed.is_public = isPublic;
         parsed.created = Date.now();
-        return normalizeLessonStructure(parsed);
+        var norm = normalizeLessonStructure(parsed);
+        return generateAllGameVariantsAI(norm).catch(function () { return norm; });
       })
       .catch(function (err) {
         console.warn('All Groq AI models failed, using intelligent topic fallback:', err);
         return createFallbackMiftahLesson(subject, grade, topic, notes, isPublic, author, authorEmail, code, targetLang);
+      });
+  }
+
+  function getDefaultGameMeta(gt, lang, topic) {
+    var t = topic || '';
+    if (lang === 'he') {
+      if (gt === 'match_pairs') return { title: 'משחק התאמה: ' + t, instructions: 'התאם כל משפט או מושג בעמודה הימנית למתאים לו בעמודה השמאלית:' };
+      if (gt === 'fill_blanks') return { title: 'השלמת משפטים: ' + t, instructions: 'בחר את המילה המתאימה מבנק המילים כדי להשלים כל משפט:' };
+      if (gt === 'order_steps') return { title: 'סידור שלבים: ' + t, instructions: 'סדר את השלבים או המשפטים הבאים בסדר הנכון מההתחלה לסוף:' };
+      if (gt === 'true_false') return { title: 'נכון או לא נכון: ' + t, instructions: 'קבע האם כל היגד נכון או שגוי:' };
+      return { title: 'משחק המיון המהיר: ' + t, instructions: 'מיין כל פריט לסל הנכון:' };
+    }
+    if (lang === 'en') {
+      if (gt === 'match_pairs') return { title: 'Matching Game: ' + t, instructions: 'Match each item on the right with its pair on the left:' };
+      if (gt === 'fill_blanks') return { title: 'Fill in the Blanks: ' + t, instructions: 'Choose the right word from the word bank to complete each sentence:' };
+      if (gt === 'order_steps') return { title: 'Order the Steps: ' + t, instructions: 'Arrange the following steps in the correct order from start to finish:' };
+      if (gt === 'true_false') return { title: 'True or False: ' + t, instructions: 'Decide whether each statement is true or false:' };
+      return { title: 'Quick Sorting Game: ' + t, instructions: 'Sort each item into the correct bucket:' };
+    }
+    if (gt === 'match_pairs') return { title: 'نشاط التوصيل: ' + t, instructions: 'صلْ كلَّ عبارةٍ في العمودِ الأيمنِ بما يناسبُها في العمودِ الأيسر:' };
+    if (gt === 'fill_blanks') return { title: 'نشاط إكمال الفراغ: ' + t, instructions: 'اخترِ الكلمةَ المناسبةَ من بنكِ الكلماتِ لملءِ الفراغِ في كلِّ جملة:' };
+    if (gt === 'order_steps') return { title: 'نشاط ترتيب الخطوات: ' + t, instructions: 'رتّبِ الخطواتِ أوِ الأحداثَ التّاليةَ بالترتيبِ الصّحيحِ من البدايةِ إلى النّهاية:' };
+    if (gt === 'true_false') return { title: 'تحدي صح أم خطأ: ' + t, instructions: 'حدّدْ ما إذا كانت كلُّ عبارةٍ صحيحةً أم خاطئة:' };
+    return { title: 'لعبة التصنيف السريع: ' + t, instructions: 'صنّف كل عنصر في السلة الصحيحة:' };
+  }
+
+  function generateAllGameVariantsAI(lesson, forceRegenerate) {
+    if (!lesson) return Promise.resolve(lesson);
+    var lang = lesson.lang || detectLessonLanguage(lesson.subject, lesson.title, 'ar');
+    var langName = lang === 'he' ? 'Hebrew (עברית)' : lang === 'en' ? 'English' : 'Arabic (العربية)';
+    var gPrompt = 'Create ALL 5 interactive elementary-school game activities in ' + langName + ' for this lesson:\n' +
+      '- Title: ' + (lesson.title || '') + '\n' +
+      '- Subject: ' + (lesson.subject || '') + '\n' +
+      '- Grade: ' + (lesson.grade || '') + '\n' +
+      '- Goal: ' + (lesson.goal || '') + '\n' +
+      '- Summary: ' + (lesson.recap || '') + '\n\n' +
+      'Return ONLY a valid JSON object matching this exact schema (all strings in ' + langName + '):\n' +
+      '{\n' +
+      '  "sort_buckets": {\n' +
+      '    "buckets": ["<Category 1>", "<Category 2>"],\n' +
+      '    "items": [\n' +
+      '      { "text": "<Item 1>", "bucket": 0 }, { "text": "<Item 2>", "bucket": 0 }, { "text": "<Item 3>", "bucket": 0 },\n' +
+      '      { "text": "<Item 4>", "bucket": 1 }, { "text": "<Item 5>", "bucket": 1 }, { "text": "<Item 6>", "bucket": 1 }\n' +
+      '    ]\n' +
+      '  },\n' +
+      '  "match_pairs": [\n' +
+      '    { "left": "<Term/Prompt 1>", "right": "<Matching answer 1>" },\n' +
+      '    { "left": "<Term/Prompt 2>", "right": "<Matching answer 2>" },\n' +
+      '    { "left": "<Term/Prompt 3>", "right": "<Matching answer 3>" },\n' +
+      '    { "left": "<Term/Prompt 4>", "right": "<Matching answer 4>" }\n' +
+      '  ],\n' +
+      '  "fill_blanks": [\n' +
+      '    { "sentence": "<Sentence 1 with ___ where the missing word goes>", "answer": "<Exact missing word 1>" },\n' +
+      '    { "sentence": "<Sentence 2 with ___ where the missing word goes>", "answer": "<Exact missing word 2>" },\n' +
+      '    { "sentence": "<Sentence 3 with ___ where the missing word goes>", "answer": "<Exact missing word 3>" },\n' +
+      '    { "sentence": "<Sentence 4 with ___ where the missing word goes>", "answer": "<Exact missing word 4>" }\n' +
+      '  ],\n' +
+      '  "order_steps": [\n' +
+      '    { "text": "<Step 1 (first)>" },\n' +
+      '    { "text": "<Step 2>" },\n' +
+      '    { "text": "<Step 3>" },\n' +
+      '    { "text": "<Step 4 (last)>" }\n' +
+      '  ],\n' +
+      '  "true_false": [\n' +
+      '    { "text": "<True statement 1>", "isTrue": true },\n' +
+      '    { "text": "<False statement 2>", "isTrue": false },\n' +
+      '    { "text": "<True statement 3>", "isTrue": true },\n' +
+      '    { "text": "<False statement 4>", "isTrue": false }\n' +
+      '  ]\n' +
+      '}';
+
+    function callGamesGroq(modelName) {
+      return fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + GROQ_API_KEY
+        },
+        body: JSON.stringify({
+          model: modelName,
+          reasoning_effort: 'low',
+          messages: [
+            { role: 'system', content: 'Return 100% valid JSON only in ' + langName + '. Every fill_blanks sentence MUST include ___ (three underscores) for the blank.' },
+            { role: 'user', content: gPrompt }
+          ],
+          temperature: 0.35,
+          max_tokens: 1600,
+          response_format: { type: 'json_object' }
+        })
+      }).then(function (r) {
+        if (!r.ok) return Promise.reject('HTTP ' + r.status);
+        return r.json();
+      }).then(function (data) {
+        var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') throw new Error('Invalid games JSON');
+        return parsed;
+      });
+    }
+
+    return callGamesGroq('openai/gpt-oss-120b')
+      .catch(function () { return callGamesGroq('openai/gpt-oss-20b'); })
+      .then(function (gv) {
+        lesson.game = lesson.game || {};
+        if ((forceRegenerate || !lesson.game.items || !lesson.game.items.length) && gv.sort_buckets) {
+          if (Array.isArray(gv.sort_buckets.buckets) && gv.sort_buckets.buckets.length === 2) {
+            lesson.game.buckets = gv.sort_buckets.buckets;
+          }
+          if (Array.isArray(gv.sort_buckets.items) && gv.sort_buckets.items.length) {
+            lesson.game.items = gv.sort_buckets.items;
+          }
+        }
+        if ((forceRegenerate || !lesson.game.pairs || !lesson.game.pairs.length) && Array.isArray(gv.match_pairs) && gv.match_pairs.length) {
+          lesson.game.pairs = gv.match_pairs;
+        }
+        if ((forceRegenerate || !lesson.game.blanks || !lesson.game.blanks.length) && Array.isArray(gv.fill_blanks) && gv.fill_blanks.length) {
+          lesson.game.blanks = gv.fill_blanks;
+        }
+        if ((forceRegenerate || !lesson.game.steps || !lesson.game.steps.length) && Array.isArray(gv.order_steps) && gv.order_steps.length) {
+          lesson.game.steps = gv.order_steps;
+        }
+        if ((forceRegenerate || !lesson.game.statements || !lesson.game.statements.length) && Array.isArray(gv.true_false) && gv.true_false.length) {
+          lesson.game.statements = gv.true_false;
+        }
+        return lesson;
       });
   }
 
