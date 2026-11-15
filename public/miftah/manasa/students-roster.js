@@ -3916,9 +3916,27 @@
   }
 
   function syncCustomRosterFromCloud(cb) {
-    return fetch(ROSTER_FS_DOC + '?key=' + ROSTER_API_KEY)
+    var queryUrl = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents:runQuery?key=' + ROSTER_API_KEY;
+    return fetch(queryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'school_padlet_cards' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'is_miftaah_roster' },
+              op: 'EQUAL',
+              value: { booleanValue: true }
+            }
+          },
+          limit: 1
+        }
+      })
+    })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (doc) {
+      .then(function (rows) {
+        var doc = Array.isArray(rows) && rows[0] && rows[0].document ? rows[0].document : null;
         if (doc && doc.fields && doc.fields.json && doc.fields.json.stringValue) {
           var cloudObj = JSON.parse(doc.fields.json.stringValue);
           var localObj = getCustomChanges();
