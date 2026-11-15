@@ -70,7 +70,33 @@ function report() {
     pushLiveStateToCloud(state);
   } catch (e) {}
 }
-function bar() { return '<div class="stations">' + ST.map(function (s, i) { return '<div class="st ' + (i < S.st || S.done ? 'done' : i === S.st ? 'on' : '') + '">' + s[0] + '</div>'; }).join('') + '</div><div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>'; }
+function isFreeStationNavAllowed() {
+  return !(S.sid && livePacing && livePacing.mode === 'teacher');
+}
+function bar() {
+  var freeNav = isFreeStationNavAllowed();
+  return '<div class="stations">' + ST.map(function (s, i) {
+    var cls = 'st ' + (i === S.st && !S.done ? 'on' : (i < S.st || S.done ? 'done' : '')) + (freeNav ? ' clickable' : '');
+    if (freeNav) {
+      return '<button type="button" class="' + cls + '" data-jump-st="' + i + '" title="الانتقال إلى محطة «' + s[0] + '»: ' + s[1] + '">' + s[0] + '</button>';
+    }
+    return '<div class="' + cls + '">' + s[0] + '</div>';
+  }).join('') + '</div>' +
+  '<div class="stname">' + (S.done ? 'أنهيتَ الرحلة! 🎉' : 'محطّة «' + ST[S.st][0] + '»: ' + ST[S.st][1]) + '</div>' +
+  (freeNav ? '<div class="st-free-hint">✨ اضغط على أي حرف من «م - ف - ت - ا - ح» للتنقل الحر بين المحطات</div>' : '');
+}
+document.addEventListener('click', function (ev) {
+  var btn = ev.target && ev.target.closest ? ev.target.closest('[data-jump-st]') : null;
+  if (!btn) return;
+  if (!isFreeStationNavAllowed()) return;
+  var idx = Number(btn.getAttribute('data-jump-st'));
+  if (!isNaN(idx) && idx >= 0 && idx < ST.length) {
+    pendingStationWait = null;
+    waitingForTeacherGroup = false;
+    S.done = false;
+    jumpToStationIndex(idx);
+  }
+});
 var canSpeak = 'speechSynthesis' in window;
 function getLessonLang() {
   if (L && (L.lang === 'he' || L.lang === 'en' || L.lang === 'ar')) return L.lang;
@@ -804,7 +830,22 @@ function startFlashWatcher() {
 
   function syncAndRender(st) {
     if (!st) return;
+    var prevMode = livePacing && livePacing.mode;
     livePacing = st.pacing || null;
+    var newMode = livePacing && livePacing.mode;
+    if (prevMode !== newMode) {
+      var stWrap = document.querySelector('.stations');
+      if (stWrap && stWrap.parentElement) {
+        var cardEl = stWrap.parentElement;
+        var tmpDiv = document.createElement('div');
+        tmpDiv.innerHTML = bar();
+        var oldHint = cardEl.querySelector('.st-free-hint');
+        if (oldHint) oldHint.remove();
+        var oldName = cardEl.querySelector('.stname');
+        if (oldName) oldName.remove();
+        stWrap.replaceWith.apply(stWrap, Array.prototype.slice.call(tmpDiv.childNodes));
+      }
+    }
     liveGrouping = st.grouping || null;
     livePupilsMap = st.pupils || {};
 
@@ -1586,7 +1627,7 @@ function start() {
           welcome();
           return;
         }
-        return fetch('lessons/TMYZ26.json?v=20261115_v9')
+        return fetch('lessons/TMYZ26.json?v=20261115_v10')
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(function (lData) {
             try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -1697,6 +1738,7 @@ function welcome() {
 }
 // ---------- م ----------
 function jumpToStationIndex(stIdx) {
+  S.done = false;
   if (stIdx === 0) return stationM();
   if (stIdx === 1) return stationF(0);
   if (stIdx === 2) return enterStationTa();

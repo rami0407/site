@@ -25,10 +25,15 @@ a{color:#5b21b6}
 .wrap{max-width:860px;margin:0 auto;padding:14px}
 .card{background:#fff;border-radius:18px;box-shadow:0 4px 18px #0b2a4a14;padding:18px;margin:14px 0}
 h1{font-size:26px;margin:.2em 0}h2{font-size:22px;margin:.2em 0 .5em}h3{font-size:19px;margin:.4em 0}
-.stations{display:flex;gap:6px;justify-content:center;margin:10px 0}
-.st{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:22px;background:#dfe7f0;color:#6b7c8f;border:3px solid transparent}
-.st.on{background:#ffcc33;color:#1d2b3a;border-color:#1d2b3a}.st.done{background:#2fb36d;color:#fff}
-.stname{text-align:center;font-weight:600;color:#5b3cc4}
+.stations{display:flex;gap:8px;justify-content:center;margin:10px 0;align-items:center}
+.st{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:22px;background:#dfe7f0;color:#6b7c8f;border:3px solid transparent;font-family:inherit;padding:0;transition:transform .18s,box-shadow .18s,background .18s}
+.st.clickable{cursor:pointer}
+.st.clickable:hover{transform:scale(1.09);box-shadow:0 4px 12px rgba(91,33,182,0.22)}
+.st.done{background:#2fb36d;color:#fff}
+.st.on{background:linear-gradient(135deg,#fde047,#f59e0b) !important;color:#1e1b4b !important;border-color:#ffffff !important;transform:scale(1.16);box-shadow:0 0 0 4px rgba(245,158,11,0.35),0 0 20px rgba(250,204,21,0.85);animation:stGlow 2s ease-in-out infinite;z-index:2}
+@keyframes stGlow{0%,100%{box-shadow:0 0 0 4px rgba(245,158,11,0.35),0 0 16px rgba(250,204,21,0.75)}50%{box-shadow:0 0 0 7px rgba(245,158,11,0.5),0 0 26px rgba(250,204,21,1)}}
+.stname{text-align:center;font-weight:700;color:#5b3cc4}
+.st-free-hint{text-align:center;font-size:12px;color:#64748b;margin-top:4px;font-weight:600}
 .btn{font:inherit;font-weight:600;border:0;border-radius:14px;padding:12px 20px;min-height:52px;cursor:pointer;background:#0b6bcb;color:#fff;font-size:18px;margin:6px 0}
 .btn.alt{background:#e8eef6;color:#1d2b3a}.btn.ok{background:#2fb36d}.btn.big{width:100%;font-size:20px}
 .btn:disabled{opacity:.45;cursor:default}
