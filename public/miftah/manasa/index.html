@@ -8,12 +8,12 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
-<link rel="stylesheet" href="manasa.css?v=20261115_v10">
-<script src="students-roster.js?v=20261115_v10"></script>
+<link rel="stylesheet" href="manasa.css?v=20261115_v11">
+<script src="students-roster.js?v=20261115_v11"></script>
 <script>
 // إجبار المتصفح على جلب أحدث نسخة بدون كاش
 (function() {
-  var vTag = 'v=hub_20261115_v10';
+  var vTag = 'v=hub_20261115_v11';
   if (!window.location.search.includes(vTag)) {
     var sep = window.location.search ? '&' : '?';
     window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
@@ -296,6 +296,11 @@
           </div>
         </div>
 
+        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700;color:#4c1d95;font-size:14px">
+          <input type="checkbox" id="gen-diff-tracks" checked style="width:18px;height:18px;margin:0;accent-color:#6d28d9">
+          <span>🎯 توليد 3 مسارات متمايزة تلقائياً بالذكاء (دعم إضافي / مسار عادي / إثراء للمتفوقين)</span>
+        </label>
+
         <button class="btn big ok" id="gen" style="margin-top:14px">✨ ولّد الحصّة التفاعلية الذكية وانتقل إليها فوراً</button>
       </form>
 
@@ -419,7 +424,7 @@
   <div id="sess"></div>
 </main>
 
-<script src="teacher.js?v=20261115_v10"></script>
+<script src="teacher.js?v=20261115_v11"></script>
 </body>
 </html>
 

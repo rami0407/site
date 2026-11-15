@@ -1,5 +1,5 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261115_v10">
-<script src="students-roster.js?v=20261115_v10"></script>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261115_v11">
+<script src="students-roster.js?v=20261115_v11"></script>
 <style>
 .kahoot-opt-card {
   padding: 16px;
@@ -286,6 +286,16 @@
         <div class="st-btn-badge" style="font-size:11px;background:#dcfce7;color:#15803d;border-radius:6px;padding:2px 8px;margin-top:6px;font-weight:800">✅ متاحة للطلاب</div>
       </button>
     </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #bae6fd;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <b style="color:#0369a1;font-size:14px">⏱️ مؤقت ذكي للمحطة الحالية:</b>
+        <button type="button" class="btn alt station-timer-set-btn" data-mins="3" style="min-height:34px;padding:4px 12px;font-size:13px;margin:0;background:#e0f2fe;color:#0369a1;font-weight:800">3 دقائق</button>
+        <button type="button" class="btn alt station-timer-set-btn" data-mins="5" style="min-height:34px;padding:4px 12px;font-size:13px;margin:0;background:#e0f2fe;color:#0369a1;font-weight:800">5 دقائق</button>
+        <button type="button" class="btn alt station-timer-set-btn" data-mins="10" style="min-height:34px;padding:4px 12px;font-size:13px;margin:0;background:#e0f2fe;color:#0369a1;font-weight:800">10 دقائق</button>
+        <button type="button" id="station-timer-stop-btn" class="btn alt" style="min-height:34px;padding:4px 12px;font-size:13px;margin:0;background:#fee2e2;color:#b91c1c;font-weight:800;display:none">⏹️ إيقاف</button>
+      </div>
+      <div id="live-station-timer-disp" style="font-weight:900;color:#0f172a;font-size:15px"></div>
+    </div>
   </div>
 </div>
 
@@ -372,7 +382,7 @@
 </div>
 <div id="hbox" class="card helps none"><h2>🙋 طلباتُ المساعدة <span id="hcount"></span></h2><div id="hl"></div></div>
 <div class="card"><div id="sum"></div></div>
-<div class="card"><h2>الطلاب</h2><p class="muted">اضغطْ على اسمِ طالب لترى كلَّ إجاباته.</p><div style="overflow-x:auto"><table id="tb"></table></div><p class="muted">تتحدّث اللوحة كلَّ ٣ ثوانٍ.</p></div>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px"><h2 style="margin:0">الطلاب</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="export-csv-btn" class="btn ok" style="min-height:38px;padding:6px 14px;font-size:14px;margin:0">📊 تصدير Excel (CSV)</button><button type="button" id="print-report-btn" class="btn alt" style="min-height:38px;padding:6px 14px;font-size:14px;margin:0">🖨️ طباعة التقرير</button></div></div><p class="muted">اضغطْ على اسمِ طالب لترى كلَّ إجاباته. الصفوف المظلّلة بالأصفر/الأحمر تشير لرادار الصعوبات.</p><div style="overflow-x:auto"><table id="tb"></table></div><p class="muted">تتحدّث اللوحة كلَّ ٣ ثوانٍ.</p></div>
 <div class="card"><h2>🤝 مجموعات مقترحة</h2><div id="grp"></div></div><div class="card"><h2>🌾 إجابات الحصاد</h2><div id="hv"></div></div></div>
 </main><div id="msheet" class="msheet" hidden></div>
 <script>
@@ -437,7 +447,7 @@ function getLocalLiveState(){
   }catch(_){}
   if(authLiveState && typeof authLiveState==='object') list.push(authLiveState);
   if(list.length > 0) return mergeLiveStates(list);
-  return {pupils:{},helps:[],flash:null,challenge:null,pacing:null,grouping:null};
+  return {pupils:{},helps:[],flash:null,challenge:null,pacing:null,grouping:null,stationTimer:null};
 }
 
 function saveLocalLiveState(st){
@@ -448,7 +458,8 @@ function saveLocalLiveState(st){
       pacing: st.pacing || null,
       grouping: st.grouping || null,
       flash: st.flash || null,
-      challenge: st.challenge || null
+      challenge: st.challenge || null,
+      stationTimer: st.stationTimer || null
     }));
   }catch(_){}
   var nowTs = Date.now();
@@ -467,12 +478,13 @@ function saveLocalLiveState(st){
 }
 
 function mergeLiveStates(statesList) {
-  var merged = { pupils: {}, helps: [], flash: null, challenge: null, pacing: null, grouping: null };
+  var merged = { pupils: {}, helps: [], flash: null, challenge: null, pacing: null, grouping: null, stationTimer: null };
   var latestFlashTime = -1;
   var authChal = null;
   var latestChalTeacherTime = -1;
   var latestPacingTime = -1;
   var latestGroupingCfgTime = -1;
+  var latestTimerTime = -1;
   var authGrouping = null;
 
   statesList.forEach(function (st) {
@@ -518,6 +530,14 @@ function mergeLiveStates(statesList) {
       if (pt >= latestPacingTime) {
         latestPacingTime = pt;
         merged.pacing = JSON.parse(JSON.stringify(st.pacing));
+      }
+    }
+
+    if (st.stationTimer) {
+      var stt = st.stationTimer.updatedAt || 0;
+      if (stt >= latestTimerTime) {
+        latestTimerTime = stt;
+        merged.stationTimer = JSON.parse(JSON.stringify(st.stationTimer));
       }
     }
 
@@ -1739,17 +1759,94 @@ function formatPupilBadge(p){
 }
 function table(st){
 var grp=(st&&st.grouping)||ensureGroupingObj(getLocalLiveState());
+var helpList=(st&&Array.isArray(st.helps))?st.helps:[];
+var activeHelpByPid={};
+helpList.forEach(function(h){if(!h.handled){if(h.pid)activeHelpByPid[h.pid]=h;if(h.name)activeHelpByPid[h.name]=h;}});
 var cnt={};P.forEach(function(p){var k=(p.station||'م').indexOf('✓')>=0?'✓':(p.station||'م');cnt[k]=(cnt[k]||0)+1});
-$('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0);
-$('tb').innerHTML='<tr><th>الطالب (والهُويّة)</th>'+(grp.enabled?'<th>المجموعة</th>':'')+'<th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+(P.length?P.map(function(p,i){var d=p.data||p||{},r=d.result&&RW[d.result];
-var pid=p.pid||p.name,gAssign=grp.enabled&&pid&&grp.assignments?grp.assignments[pid]:null;
-var gBadge=grp.enabled?(gAssign&&gAssign.group?'<span class="pill" style="background:#ccfbf1;color:#0f766e;font-weight:800">'+(GROUP_META[gAssign.group-1]?GROUP_META[gAssign.group-1].icon:'👥')+' مجموعة '+gAssign.group+'</span>':'<span class="muted">غير منضم</span>'):'';
-return '<tr class="pclick" data-p="'+i+'"><td>'+formatPupilBadge(p)+'</td>'+(grp.enabled?'<td>'+gBadge+'</td>':'')+'<td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>'}).join(''):'<tr><td colspan="'+(grp.enabled?9:8)+'" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>');
+var radarCount=0;
+var rowsHtml=P.length?P.map(function(p,i){
+  var d=p.data||p||{},r=d.result&&RW[d.result];
+  var pid=p.pid||p.name,gAssign=grp.enabled&&pid&&grp.assignments?grp.assignments[pid]:null;
+  var gBadge=grp.enabled?(gAssign&&gAssign.group?'<span class="pill" style="background:#ccfbf1;color:#0f766e;font-weight:800">'+(GROUP_META[gAssign.group-1]?GROUP_META[gAssign.group-1].icon:'👥')+' مجموعة '+gAssign.group+'</span>':'<span class="muted">غير منضم</span>'):'';
+  var hasHelp=!!(activeHelpByPid[pid]||activeHelpByPid[p.name]);
+  var lowChecks=d.checks&&d.checks[1]>=2&&(d.checks[0]/d.checks[1]<0.5);
+  var lowPractice=d.practice&&d.practice[1]>=2&&(d.practice[0]/d.practice[1]<0.5);
+  var isRadar=hasHelp||d.result==='n'||lowChecks||lowPractice;
+  if(isRadar)radarCount++;
+  var radarReason=hasHelp?'🙋 طلب مساعدة':(d.result==='n'?'📝 تعثّر بالدليل':(lowChecks?'✋ صعوبة في أرني':(lowPractice?'🏋️ صعوبة بالتدريب':'')));
+  var rowStyle=isRadar?' style="background:'+(hasHelp?'#fee2e2':'#fef9c3')+'"':'';
+  return '<tr class="pclick" data-p="'+i+'"'+rowStyle+'><td>'+formatPupilBadge(p)+(isRadar?'<div style="margin-top:3px"><span class="pill" style="background:#ef4444;color:#fff;font-size:11px;font-weight:800">⚠️ '+esc(radarReason)+'</span></div>':'')+'</td>'+(grp.enabled?'<td>'+gBadge+'</td>':'')+'<td>'+esc(p.station||'م')+'</td><td>'+(d.checks?d.checks[0]+'/'+d.checks[1]:'')+'</td><td>'+(d.practice?d.practice[0]+'/'+d.practice[1]+' · '+(LV[d.level]||''):'')+'</td><td>'+(d.game?d.game.mistakes+' أخطاء':'')+'</td><td>'+(d.chal&&d.chal[1]?'🏆 '+d.chal[0]+'/'+d.chal[1]:'')+'</td><td>'+(r&&d.evidence?'<span class="pill" style="background:'+r[1]+'">'+r[0]+' '+d.evidence.score+'/'+d.evidence.of+'</span>':'—')+'</td><td>'+ago(p.updated||p.updatedAt)+'</td></tr>';
+}).join(''):'<tr><td colspan="'+(grp.enabled?9:8)+'" style="text-align:center;color:#64748b;padding:18px">بانتظار دخول الطلاب بالكود ('+esc(s)+')…</td></tr>';
+$('sum').innerHTML='<b>'+P.length+'</b> طالب متّصل · '+['م','ف','ت','ا','ح'].map(function(k){return '«'+k+'»: '+(cnt[k]||0)}).join(' · ')+' · أنهوا: '+(cnt['✓']||0)+(radarCount?' · <span class="pill" style="background:#fee2e2;color:#b91c1c;font-weight:800">🚨 رادار الصعوبات: '+radarCount+'</span>':'');
+$('tb').innerHTML='<tr><th>الطالب (والهُويّة)</th>'+(grp.enabled?'<th>المجموعة</th>':'')+'<th>المحطة</th><th>أرني</th><th>التدريب</th><th>اللعبة</th><th>التحدّي</th><th>الدليل</th><th>آخر نشاط</th></tr>'+rowsHtml;
 $('tb').querySelectorAll('[data-p]').forEach(function(tr){tr.onclick=function(){pupil(P[+tr.getAttribute('data-p')])}});
 var need=P.filter(function(p){var d=p.data||p||{};return d.result==='n'||d.result==='p'||(d.checks&&d.checks[1]>=2&&d.checks[0]/d.checks[1]<0.5)});
 var adv=P.filter(function(p){return ((p.data||p||{}).result)==='a'});
 $('grp').innerHTML='<p><b>🛠️ مجموعة دعم معك:</b> '+(need.length?need.map(function(p){return esc(p.name)+(((p.data||p||{}).result)?'':' (أخطاء في «أرني»)')}).join('، '):'لا أحد حتى الآن')+'</p><p><b>🌟 مَن حقّقوا (يمكنهم مساعدة زملائهم أو مهمة إثراء):</b> '+(adv.length?adv.map(function(p){return esc(p.name)}).join('، '):'—')+'</p>';
-$('hv').innerHTML=P.filter(function(p){return (p.data||p||{}).harvest}).map(function(p){var hArr=(p.data||p).harvest;return '<p><b>'+esc(p.name)+'</b><br>'+H.map(function(q,i){return '• '+q+' '+esc(hArr[i])}).join('<br>')+'</p>'}).join('')||'<p class="muted">لم يصلْ أحدٌ إلى الحصاد بعد.</p>';}
+$('hv').innerHTML=P.filter(function(p){return (p.data||p||{}).harvest}).map(function(p){var hArr=(p.data||p).harvest;return '<p><b>'+esc(p.name)+'</b><br>'+H.map(function(q,i){return '• '+q+' '+esc(hArr[i])}).join('<br>')+'</p>'}).join('')||'<p class="muted">لم يصلْ أحدٌ إلى الحصاد بعد.</p>';
+updateLiveStationTimerUI(st&&st.stationTimer);}
+
+function updateLiveStationTimerUI(tm){
+  var disp=$('live-station-timer-disp'),stopBtn=$('station-timer-stop-btn');
+  if(!disp)return;
+  if(!tm||!tm.endsAt||tm.endsAt<=Date.now()){
+    disp.textContent=tm&&tm.endsAt?'⏰ انتهى الوقت!':'';
+    if(stopBtn)stopBtn.style.display=tm&&tm.endsAt?'inline-flex':'none';
+    return;
+  }
+  var rem=Math.max(0,Math.ceil((tm.endsAt-Date.now())/1000));
+  var mm=('0'+Math.floor(rem/60)).slice(-2),ss=('0'+(rem%60)).slice(-2);
+  disp.innerHTML='<span class="pill" style="background:#fef3c7;color:#92400e;font-weight:900;font-family:monospace;font-size:15px">⏱️ '+mm+':'+ss+'</span>';
+  if(stopBtn)stopBtn.style.display='inline-flex';
+}
+document.querySelectorAll('.station-timer-set-btn').forEach(function(btn){
+  btn.onclick=function(){
+    var mins=Number(btn.getAttribute('data-mins'))||5;
+    var st=getLocalLiveState();
+    st.stationTimer={endsAt:Date.now()+mins*60000,durationSec:mins*60,updatedAt:Date.now()};
+    saveLocalLiveState(st);
+    updateLiveStationTimerUI(st.stationTimer);
+  };
+});
+if($('station-timer-stop-btn')){
+  $('station-timer-stop-btn').onclick=function(){
+    var st=getLocalLiveState();
+    st.stationTimer={endsAt:0,durationSec:0,updatedAt:Date.now()};
+    saveLocalLiveState(st);
+    updateLiveStationTimerUI(null);
+  };
+}
+setInterval(function(){var st=getLocalLiveState();if(st&&st.stationTimer&&st.stationTimer.endsAt)updateLiveStationTimerUI(st.stationTimer);},1000);
+
+if($('export-csv-btn')){
+  $('export-csv-btn').onclick=function(){
+    var headers=['الاسم','الاسم الرسمي','الصف','رقم الهوية','المحطة','أرني','التدريب','المستوى','أخطاء اللعبة','التحدي','الدليل'];
+    var csvRows=[headers.join(',')];
+    P.forEach(function(p){
+      var d=p.data||p||{},inf=getPupilRosterInfo(p),r=d.result&&RW[d.result];
+      var cols=[
+        p.name||'',
+        inf.official||'',
+        inf.cls||'',
+        inf.idStr||'',
+        p.station||'م',
+        d.checks?(d.checks[0]+'/'+d.checks[1]):'',
+        d.practice?(d.practice[0]+'/'+d.practice[1]):'',
+        LV[d.level]||'',
+        d.game?String(d.game.mistakes):'',
+        d.chal&&d.chal[1]?(d.chal[0]+'/'+d.chal[1]):'',
+        r&&d.evidence?(r[0]+' '+d.evidence.score+'/'+d.evidence.of):''
+      ].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';});
+      csvRows.push(cols.join(','));
+    });
+    var blob=new Blob(['\uFEFF'+csvRows.join('\n')],{type:'text/csv;charset=utf-8;'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download='miftaah_report_'+(s||'session')+'.csv';
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  };
+}
+if($('print-report-btn')){$('print-report-btn').onclick=function(){window.print();};}
 function pupil(p){var d=p.data||p||{},log=d.log||[],g={};log.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x)});
 var inf=getPupilRosterInfo(p);
 var html='<h3>👤 '+esc(p.name)+' <span class="muted">· '+esc(p.station)+'</span></h3>'+

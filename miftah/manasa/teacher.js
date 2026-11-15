@@ -330,7 +330,7 @@
   function ensureModelLessonsData() {
     try {
       if (!localStorage.getItem('manasa-lesson-TMYZ26')) {
-        fetch('lessons/excellence.json?v=20261115_v10')
+        fetch('lessons/excellence.json?v=20261115_v11')
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (lData) {
             if (lData && !localStorage.getItem('manasa-lesson-TMYZ26')) {
@@ -636,6 +636,7 @@
         '<p style="color:#475569;margin:10px 0 12px;font-size:15px;line-height:1.7">' + esc(l.goal || 'حصة تفاعلية متكاملة وفق نموذج مفتاح بخمس محطات.') + '</p>' +
         '<div class="lesson-actions-row">' +
           '<button class="btn ok" data-inspect-lesson="' + esc(l.code) + '">🔍 فحص وتعديل الحصة كاملة ✏️</button>' +
+          '<button class="btn alt" style="background:#f5f3ff;color:#5b21b6;border:1.5px solid #c4b5fd" data-clone-lesson="' + esc(l.code) + '">📑 نسخ لمكتبتي وتعديل</button>' +
           '<button class="btn whatsapp-btn" data-wa-lesson="' + esc(l.code) + '" data-title="' + esc(l.title) + '" data-subj="' + esc(l.subject || '') + '" data-grade="' + esc(l.grade || '') + '">💬 إرسال الكود والرابط بالواتساب</button>' +
           '<a class="btn alt" href="' + studentUrl + '" target="_blank">👀 معاينة كطالب</a>' +
           '<button class="btn alt" data-copy-link="' + esc(l.code) + '">🔗 نسخ رابط الطالب</button>' +
@@ -672,6 +673,56 @@
     container.querySelectorAll('[data-inspect-lesson]').forEach(function (btn) {
       btn.onclick = function () {
         openLessonInspector(btn.getAttribute('data-inspect-lesson'));
+      };
+    });
+
+    container.querySelectorAll('[data-clone-lesson]').forEach(function (btn) {
+      btn.onclick = function () {
+        var srcCode = btn.getAttribute('data-clone-lesson');
+        btn.disabled = true;
+        btn.textContent = '⏳ جاري النسخ…';
+        var loadSrc = Promise.resolve().then(function () {
+          try {
+            var loc = JSON.parse(localStorage.getItem('manasa-lesson-' + srcCode) || 'null');
+            if (loc && loc.title) return loc;
+          } catch (_) {}
+          return fetchCloudLessonByCode(srcCode);
+        });
+        loadSrc.then(function (orig) {
+          if (!orig) throw new Error('not_found');
+          var clone = JSON.parse(JSON.stringify(orig));
+          var newCode = 'M' + Math.random().toString(36).slice(2, 6).toUpperCase();
+          clone.id = newCode;
+          clone.code = newCode;
+          clone.title = (clone.title || 'حصة') + ' (نسخة)';
+          clone.author = currentTeacher.name || 'معلم مشيرفة';
+          clone.author_email = currentTeacher.email || '';
+          clone.created = Date.now();
+          clone.updatedAt = Date.now();
+          clone.is_edited_by_teacher = true;
+          try { localStorage.setItem('manasa-lesson-' + newCode, JSON.stringify(clone)); } catch (_) {}
+          var arch = getStoredArchive();
+          arch.unshift({
+            code: newCode,
+            title: clone.title,
+            subject: clone.subject || 'عام',
+            grade: clone.grade || 'الصف الخامس',
+            goal: clone.goal || '',
+            author: clone.author,
+            author_email: clone.author_email,
+            is_public: false,
+            created: clone.created,
+            localOwner: true
+          });
+          saveStoredArchive(arch);
+          saveLessonToCloud(clone);
+          showToast('✅ تم نسخ الحصة لمكتبتك بكود جديد: ' + newCode);
+          openLessonInspector(newCode);
+        }).catch(function () {
+          btn.disabled = false;
+          btn.textContent = '📑 نسخ لمكتبتي وتعديل';
+          showToast('تعذّر نسخ الحصة حالياً.');
+        });
       };
     });
 
@@ -1039,7 +1090,7 @@
             showView('inspector');
             return;
           }
-          return fetch('lessons/excellence.json?v=20261115_v10')
+          return fetch('lessons/excellence.json?v=20261115_v11')
             .then(function (r) { return r.json(); })
             .then(function (data) {
               data.code = 'TMYZ26';
@@ -2147,6 +2198,76 @@
       });
   }
 
+  function generateDifferentiatedTracksAI(lesson) {
+    if (!lesson) return Promise.resolve(lesson);
+    var lang = lesson.lang || detectLessonLanguage(lesson.subject, lesson.title, 'ar');
+    var langName = lang === 'he' ? 'Hebrew (עברית)' : lang === 'en' ? 'English' : 'Arabic (العربية)';
+    var tPrompt = 'Create 3 differentiated learning tracks in ' + langName + ' for this elementary lesson:\n' +
+      '- Title: ' + (lesson.title || '') + '\n' +
+      '- Subject: ' + (lesson.subject || '') + '\n' +
+      '- Grade: ' + (lesson.grade || '') + '\n' +
+      '- Goal: ' + (lesson.goal || '') + '\n\n' +
+      'Return ONLY a valid JSON object matching this schema (all strings in ' + langName + '):\n' +
+      '{\n' +
+      '  "support": {\n' +
+      '    "title": "<Simple title for struggling learners>",\n' +
+      '    "tip": "<Very simple 2-sentence visual/step-by-step explanation>",\n' +
+      '    "q": "<Easy confidence-building MCQ question>",\n' +
+      '    "options": ["<Correct>", "<Wrong 1>", "<Wrong 2>"],\n' +
+      '    "answer": 0,\n' +
+      '    "why": "<Encouraging explanation>"\n' +
+      '  },\n' +
+      '  "standard": {\n' +
+      '    "title": "<Core grade-level track title>",\n' +
+      '    "tip": "<Clear 2-sentence key rule summary>",\n' +
+      '    "q": "<Standard application MCQ question>",\n' +
+      '    "options": ["<Wrong 1>", "<Correct>", "<Wrong 2>"],\n' +
+      '    "answer": 1,\n' +
+      '    "why": "<Clear explanation>"\n' +
+      '  },\n' +
+      '  "enrichment": {\n' +
+      '    "title": "<Challenge track title for advanced learners>",\n' +
+      '    "challenge": "<Open-ended real-world or higher-order thinking challenge>",\n' +
+      '    "hint": "<Smart thinking hint>",\n' +
+      '    "sampleAnswer": "<Model answer / key points>"\n' +
+      '  }\n' +
+      '}';
+
+    function callTracks(modelName) {
+      return fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + GROQ_API_KEY
+        },
+        body: JSON.stringify({
+          model: modelName,
+          reasoning_effort: 'low',
+          messages: [
+            { role: 'system', content: 'Return 100% valid JSON only in ' + langName + '.' },
+            { role: 'user', content: tPrompt }
+          ],
+          temperature: 0.35,
+          max_tokens: 1100,
+          response_format: { type: 'json_object' }
+        })
+      }).then(function (r) {
+        if (!r.ok) return Promise.reject('HTTP ' + r.status);
+        return r.json();
+      }).then(function (data) {
+        var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        var parsed = JSON.parse(raw);
+        if (!parsed || !parsed.support || !parsed.enrichment) throw new Error('Invalid tracks JSON');
+        lesson.tracks = parsed;
+        return lesson;
+      });
+    }
+
+    return callTracks('openai/gpt-oss-120b')
+      .catch(function () { return callTracks('openai/gpt-oss-20b'); })
+      .catch(function () { return lesson; });
+  }
+
   function createFallbackMiftahLesson(subject, grade, topic, notes, isPublic, author, authorEmail, customCode, explicitLang) {
     var code = customCode || ('M' + Math.random().toString(36).slice(2, 6).toUpperCase());
     var lang = detectLessonLanguage(subject, topic, explicitLang);
@@ -2892,6 +3013,10 @@
           currentTeacher.email || 'rami0407@gmail.com',
           prep.lang
         );
+      }).then(function (lesson) {
+        var wantTracks = $('gen-diff-tracks') ? $('gen-diff-tracks').checked : true;
+        if (!wantTracks) return lesson;
+        return generateDifferentiatedTracksAI(lesson);
       }).then(function (lesson) {
         if (attachImg && imagesToProcess.length) {
           lesson.explain = lesson.explain || {};

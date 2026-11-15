@@ -674,12 +674,13 @@ setInterval(function () {
 }, 1000);
 
 function mergeLiveStates(statesList) {
-  var merged = { pupils: {}, helps: [], flash: null, challenge: null, pacing: null, grouping: null };
+  var merged = { pupils: {}, helps: [], flash: null, challenge: null, pacing: null, grouping: null, stationTimer: null };
   var latestFlashTime = -1;
   var authChal = null;
   var latestChalTeacherTime = -1;
   var latestPacingTime = -1;
   var latestGroupingCfgTime = -1;
+  var latestTimerTime = -1;
   var authGrouping = null;
 
   statesList.forEach(function (st) {
@@ -725,6 +726,14 @@ function mergeLiveStates(statesList) {
       if (pt >= latestPacingTime) {
         latestPacingTime = pt;
         merged.pacing = JSON.parse(JSON.stringify(st.pacing));
+      }
+    }
+
+    if (st.stationTimer) {
+      var stt = st.stationTimer.updatedAt || 0;
+      if (stt >= latestTimerTime) {
+        latestTimerTime = stt;
+        merged.stationTimer = JSON.parse(JSON.stringify(st.stationTimer));
       }
     }
 
@@ -828,8 +837,54 @@ function startFlashWatcher() {
   var pKey = atob('QUl6YVN5QktkY01NTTQtWTY5VkVzTEMyVjNTY0ZfTDVoWWlETmMw');
   var queryUrl = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents:runQuery?key=' + pKey;
 
+  var activeStationTimer = null;
+  var stationTimerTickIv = null;
+  var expiredTimerNotifiedAt = 0;
+
+  function updateStudentStationTimer(tm) {
+    activeStationTimer = tm || null;
+    var el = document.getElementById('student-station-timer');
+    if (!tm || !tm.endsAt || tm.endsAt <= 0) {
+      if (el) el.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'student-station-timer';
+      el.style.cssText = 'position:fixed;top:64px;left:14px;z-index:55;background:#fef3c7;border:2px solid #f59e0b;color:#92400e;padding:6px 14px;border-radius:999px;font-weight:900;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,0.16);font-family:monospace,Tahoma,sans-serif;direction:ltr';
+      document.body.appendChild(el);
+    }
+    var rem = Math.max(0, Math.ceil((tm.endsAt - Date.now()) / 1000));
+    if (rem <= 0) {
+      el.style.background = '#fee2e2';
+      el.style.borderColor = '#ef4444';
+      el.style.color = '#991b1b';
+      el.textContent = '⏰ 00:00';
+      if (expiredTimerNotifiedAt !== tm.updatedAt) {
+        expiredTimerNotifiedAt = tm.updatedAt;
+        toast('⏰ انتهى وقت المحطة! استعدّ للانتقال مع معلّمك.');
+      }
+      return;
+    }
+    el.style.background = '#fef3c7';
+    el.style.borderColor = '#f59e0b';
+    el.style.color = '#92400e';
+    var mm = ('0' + Math.floor(rem / 60)).slice(-2);
+    var ss = ('0' + (rem % 60)).slice(-2);
+    el.textContent = '⏱️ ' + mm + ':' + ss;
+  }
+
+  if (!stationTimerTickIv) {
+    stationTimerTickIv = setInterval(function () {
+      if (activeStationTimer && activeStationTimer.endsAt) {
+        updateStudentStationTimer(activeStationTimer);
+      }
+    }, 1000);
+  }
+
   function syncAndRender(st) {
     if (!st) return;
+    updateStudentStationTimer(st.stationTimer || null);
     var prevMode = livePacing && livePacing.mode;
     livePacing = st.pacing || null;
     var newMode = livePacing && livePacing.mode;
@@ -1627,7 +1682,7 @@ function start() {
           welcome();
           return;
         }
-        return fetch('lessons/TMYZ26.json?v=20261115_v10')
+        return fetch('lessons/TMYZ26.json?v=20261115_v11')
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(function (lData) {
             try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -2771,6 +2826,51 @@ function renderAbilityStepper(curLv) {
     }).join(' ⬅ ') +
   '</div>';
 }
+function renderDifferentiatedTracksCard(curLv) {
+  if (!L || !L.tracks || (!L.tracks.support && !L.tracks.enrichment)) return '';
+  var defKey = curLv === 'easy' ? 'support' : curLv === 'hard' ? 'enrichment' : 'standard';
+  if (!L.tracks[defKey]) defKey = L.tracks.support ? 'support' : (L.tracks.standard ? 'standard' : 'enrichment');
+  setTimeout(function () {
+    var box = document.getElementById('diff-tracks-box');
+    if (!box) return;
+    function showTab(k) {
+      box.querySelectorAll('[data-track-tab]').forEach(function (b) {
+        var on = b.getAttribute('data-track-tab') === k;
+        b.style.background = on ? '#5b21b6' : '#f1f5f9';
+        b.style.color = on ? '#fff' : '#334155';
+      });
+      var bodyEl = document.getElementById('diff-tracks-body');
+      var tr = L.tracks[k];
+      if (!bodyEl || !tr) return;
+      if (k === 'enrichment') {
+        bodyEl.innerHTML = '<div style="font-weight:800;color:#6d28d9;margin-bottom:4px">🚀 ' + esc(tr.title || 'تحدي الإثراء للمتفوقين') + '</div>' +
+          '<p style="margin:4px 0 8px">' + esc(tr.challenge || '') + '</p>' +
+          (tr.hint ? '<div style="font-size:13.5px;color:#475569;background:#fff;padding:8px 10px;border-radius:10px;border:1px dashed #c4b5fd">💡 <b>تلميح:</b> ' + esc(tr.hint) + '</div>' : '');
+      } else {
+        bodyEl.innerHTML = '<div style="font-weight:800;color:#0369a1;margin-bottom:4px">' + (k === 'support' ? '🌱 ' : '⭐ ') + esc(tr.title || '') + '</div>' +
+          (tr.tip ? '<p style="margin:4px 0 6px">' + esc(tr.tip) + '</p>' : '') +
+          (tr.q ? '<div style="background:#fff;padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;font-size:14px"><b>سؤال سريع:</b> ' + esc(tr.q) + '</div>' : '');
+      }
+    }
+    box.querySelectorAll('[data-track-tab]').forEach(function (b) {
+      b.onclick = function () { showTab(b.getAttribute('data-track-tab')); };
+    });
+    showTab(defKey);
+  }, 20);
+
+  return '<div id="diff-tracks-box" style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:14px;padding:12px;margin:10px 0">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">' +
+      '<b style="color:#4c1d95;font-size:14px">🎯 مسار التمايز الذكي (اختر مستواك):</b>' +
+      '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
+        (L.tracks.support ? '<button type="button" data-track-tab="support" style="border:0;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">🌱 دعم إضافي</button>' : '') +
+        (L.tracks.standard ? '<button type="button" data-track-tab="standard" style="border:0;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">⭐ مسار عادي</button>' : '') +
+        (L.tracks.enrichment ? '<button type="button" data-track-tab="enrichment" style="border:0;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">🚀 إثراء</button>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div id="diff-tracks-body" style="font-size:14.5px;line-height:1.6"></div>' +
+  '</div>';
+}
+
 function practice() {
   S.st = 2; report(); ctx(L.recap, null);
   var used = { easy: 0, medium: 0, hard: 0 }, n = 0, total = 6, streak = 0, hardMastered = 0;
@@ -2785,6 +2885,7 @@ function practice() {
     var q = L.practice[lv][used[lv]]; used[lv]++; n++;
     h(head('🏋️ تدريب تكيّفي ' + n + ' من ' + total + ' <span class="lvl ' + lv + '">' + LV[lv] + '</span>') +
       renderAbilityStepper(lv) +
+      (n === 1 ? renderDifferentiatedTracksCard(lv) : '') +
       '<div class="bar"><i style="width:' + Math.round((n - 1) / total * 100) + '%"></i></div>' +
       (n === 1 ? renderStationMediaHtml(L.practice && L.practice.media) : '') +
       sayBtn(q.q) +
@@ -3575,8 +3676,82 @@ function keyInit() {
 }
 function sheet(html) { var sh = document.getElementById('msheet'); sh.innerHTML = '<div class="mpanel"><button class="mx" aria-label="إغلاق">✕</button>' + html + '</div>'; sh.hidden = false; sh.querySelector('.mx').onclick = function () { sh.hidden = true; }; return sh; }
 function keyMenu() {
-  var sh = sheet('<h3>🔑 مفتاح</h3><p class="muted">ماذا تحتاجُ الآن؟</p><button class="btn kb" data-k="x">💡 اشرحْ لي أكثر</button><button class="btn kb" data-k="h">🙋 أحتاجُ مساعدةً من المعلّم</button><button class="btn kb" data-k="c">🏆 أعطِني تحدّيًا</button>');
-  sh.querySelectorAll('[data-k]').forEach(function (x) { x.onclick = function () { var k = x.getAttribute('data-k'); k === 'x' ? keyExplain() : k === 'h' ? keyHelp() : keyChallenge(); }; });
+  var sh = sheet('<h3>🔑 مفتاح</h3><p class="muted">ماذا تحتاجُ الآن؟</p>' +
+    '<button class="btn kb" data-k="ai" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff">🤖 اسأل مساعد مفتاح الذكي</button>' +
+    '<button class="btn kb" data-k="x">💡 اشرحْ لي أكثر</button>' +
+    '<button class="btn kb" data-k="h">🙋 أحتاجُ مساعدةً من المعلّم</button>' +
+    '<button class="btn kb" data-k="c">🏆 أعطِني تحدّيًا</button>');
+  sh.querySelectorAll('[data-k]').forEach(function (x) {
+    x.onclick = function () {
+      var k = x.getAttribute('data-k');
+      if (k === 'ai') keyAITutor();
+      else if (k === 'x') keyExplain();
+      else if (k === 'h') keyHelp();
+      else keyChallenge();
+    };
+  });
+}
+function keyAITutor() {
+  if (S.cur.exam) return sheet('<h3>🤖 مساعد مفتاح الذكي</h3><p>في مهمّة الدليل حاوِل الاعتماد على نفسك أولاً 💪. إذا علِقت، اطلب مساعدة المعلم.</p><button class="btn alt kb" id="kh">🙋 أحتاجُ المعلّم</button>').querySelector('#kh').onclick = keyHelp;
+  var lang = getLessonLang();
+  var langName = lang === 'he' ? 'Hebrew' : lang === 'en' ? 'English' : 'Arabic';
+  var sh = sheet('<h3>🤖 مساعد مفتاح الذكي</h3>' +
+    '<p class="muted" style="font-size:13.5px">اسألني أي سؤال عن «' + esc((L && L.title) || 'الدرس') + '» وسأرشدك بمثال مبسّط دون كشف الإجابة الجاهزة!</p>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+      '<button type="button" class="btn alt ai-chip" data-q="بسّط لي الفكرة الأساسية بمثال من الحياة" style="min-height:34px;padding:4px 10px;font-size:13px;margin:0">🌱 بسّط لي الفكرة</button>' +
+      '<button type="button" class="btn alt ai-chip" data-q="أعطني تلميحاً يساعدني على الفهم" style="min-height:34px;padding:4px 10px;font-size:13px;margin:0">💡 أعطني تلميحاً</button>' +
+    '</div>' +
+    '<input type="text" id="ai-q-inp" placeholder="اكتب سؤالك هنا…">' +
+    '<button class="btn kb" id="ai-q-send" style="background:#5b21b6;color:#fff">✨ اسأل المساعد</button>' +
+    '<div id="ai-q-ans" style="margin-top:10px"></div>');
+
+  function askAI(questionText) {
+    var ansBox = sh.querySelector('#ai-q-ans');
+    var sendBtn = sh.querySelector('#ai-q-send');
+    if (!questionText) return;
+    sendBtn.disabled = true;
+    ansBox.innerHTML = '<p class="muted">⏳ يفكّر مساعد مفتاح…</p>';
+    var gk = ['gs', 'k_', 'Bjye', 'fCPla', '1HfTVuMYWdmW', 'Gdyb3FYujmC', 'KlPpsY3UJmzg', 'RUiR3EwZ'].join('');
+    var sysPrompt = 'You are a warm, Socratic elementary school tutor on the Miftaah platform. Answer in ' + langName + ' in 2-4 simple, encouraging sentences. Use an everyday example if helpful. NEVER give away the direct answer to any quiz question—guide the student to think.';
+    var usrPrompt = 'Lesson: ' + ((L && L.title) || '') + ' (' + ((L && L.subject) || '') + ', ' + ((L && L.grade) || '') + ')\nCurrent station context: ' + (S.cur.text || (L && L.recap) || '') + '\nStudent question: ' + questionText;
+
+    function callTutor(modelName) {
+      return fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + gk },
+        body: JSON.stringify({
+          model: modelName,
+          reasoning_effort: 'low',
+          messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: usrPrompt }],
+          temperature: 0.4,
+          max_tokens: 450
+        })
+      }).then(function (r) { if (!r.ok) return Promise.reject(r.status); return r.json(); });
+    }
+
+    callTutor('openai/gpt-oss-120b').catch(function () { return callTutor('openai/gpt-oss-20b'); })
+      .then(function (d) {
+        sendBtn.disabled = false;
+        var reply = (d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
+        if (!reply) throw new Error('empty');
+        ansBox.innerHTML = '<div class="more" style="font-size:16px">' + esc(reply) + '</div>' + sayBtnK(reply);
+      })
+      .catch(function () {
+        sendBtn.disabled = false;
+        ansBox.innerHTML = '<div class="fb bad">تعذّر الاتصال بالمساعد حالياً. يمكنك طلب مساعدة المعلم 🙋.</div>';
+      });
+  }
+
+  sh.querySelectorAll('.ai-chip').forEach(function (c) {
+    c.onclick = function () {
+      var q = c.getAttribute('data-q');
+      sh.querySelector('#ai-q-inp').value = q;
+      askAI(q);
+    };
+  });
+  sh.querySelector('#ai-q-send').onclick = function () {
+    askAI((sh.querySelector('#ai-q-inp').value || '').trim());
+  };
 }
 function keyExplain() {
   if (S.cur.exam) return sheet('<h3>💡 اشرحْ لي أكثر</h3><p>هذه مهمّةُ الدّليل: حاوِلْ وحدَك 💪. إذا علِقْتَ، اطلبْ مساعدةَ المعلّم.</p><button class="btn alt kb" id="kh">🙋 أحتاجُ المعلّم</button>').querySelector('#kh').onclick = keyHelp;
