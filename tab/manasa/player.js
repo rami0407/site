@@ -1565,20 +1565,39 @@ function start() {
   var sCode = S.sid;
   var targetCode = cCode || sCode;
 
-  // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
+  // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence): نفحص أولاً إن كان المعلم قد عدّل الحصة في السحابة أو محلياً، وإلا نجلب الملف الافتراضي
   if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
-    fetch('lessons/TMYZ26.json?v=20261115_v1')
-      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
-      .then(function (lData) {
-        try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
-        L = lData;
-        document.title = L.title + ' — منصة مفتاح';
-        welcome();
+    var localTmyz = findLocalLessonByCode('TMYZ26');
+    fetchCloudLessonByCode('TMYZ26')
+      .then(function (cloudData) {
+        if (localTmyz && (localTmyz.updatedAt || 0) > (cloudData.updatedAt || 0)) {
+          return localTmyz;
+        }
+        return cloudData;
       })
       .catch(function () {
-        var fallbackLocal = findLocalLessonByCode('TMYZ26');
-        if (fallbackLocal) {
-          L = fallbackLocal;
+        if (localTmyz && localTmyz.is_edited_by_teacher) return localTmyz;
+        return null;
+      })
+      .then(function (editedData) {
+        if (editedData && editedData.is_edited_by_teacher) {
+          L = editedData;
+          document.title = L.title + ' — منصة مفتاح';
+          welcome();
+          return;
+        }
+        return fetch('lessons/TMYZ26.json?v=20261115_v2')
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+          .then(function (lData) {
+            try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
+            L = lData;
+            document.title = L.title + ' — منصة مفتاح';
+            welcome();
+          });
+      })
+      .catch(function () {
+        if (localTmyz) {
+          L = localTmyz;
           document.title = L.title + ' — منصة مفتاح';
           welcome();
         }
@@ -1586,28 +1605,27 @@ function start() {
     return;
   }
 
-  // 1. فحص التخزين المحلي أولاً للدخول الفوري
-  if (targetCode) {
-    var localData = findLocalLessonByCode(targetCode);
-    if (localData && localData.title) {
-      L = localData;
-      document.title = L.title + ' — منصة مفتاح';
-      welcome();
-      return;
-    }
-  }
+  // لأي حصة: نجلب أحدث نسخة من السحابة (Firestore) ونقارنها بالنسخة المحلية، لضمان وصول تعديلات المعلم فوراً لكل طالب
+  var localData = targetCode ? findLocalLessonByCode(targetCode) : null;
 
-  // 2. إذا كان رمز حصة مولّدة أو جلسة، نفحص السحابة (Firestore) أو ملفات الدروس الثابتة
   var src;
   if (qs.get('l')) {
     src = fetch('lessons/' + encodeURIComponent(qs.get('l')) + '.json').then(function (r) { if (!r.ok) throw 0; return r.json(); });
   } else if (targetCode) {
-    src = fetchCloudLessonByCode(targetCode).catch(function () {
-      return fetch('lessons/' + encodeURIComponent(targetCode) + '.json').then(function (r) {
-        if (r.ok) return r.json();
-        throw 'لم نجد الحصة بالرمز (' + targetCode + '). تأكّد من الرمز مع معلّمك.';
+    src = fetchCloudLessonByCode(targetCode)
+      .then(function (cloudData) {
+        if (localData && (localData.updatedAt || 0) > (cloudData.updatedAt || 0)) {
+          return localData;
+        }
+        return cloudData;
+      })
+      .catch(function () {
+        if (localData && localData.title) return localData;
+        return fetch('lessons/' + encodeURIComponent(targetCode) + '.json').then(function (r) {
+          if (r.ok) return r.json();
+          throw 'لم نجد الحصة بالرمز (' + targetCode + '). تأكّد من الرمز مع معلّمك.';
+        });
       });
-    });
   } else {
     src = Promise.reject('لا توجد حصة في الرابط.');
   }

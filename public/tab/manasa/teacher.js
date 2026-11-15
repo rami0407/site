@@ -328,7 +328,7 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
-    fetch('lessons/excellence.json?v=20261115_v1')
+    fetch('lessons/excellence.json?v=20261115_v2')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (lData) {
         if (lData) {
@@ -1016,7 +1016,7 @@
     } catch (_) {}
 
     if (code === 'TMYZ26') {
-      fetch('lessons/excellence.json?v=20261115_v1')
+      fetch('lessons/excellence.json?v=20261115_v2')
         .then(function (r) { return r.json(); })
         .then(function (data) {
           data.code = 'TMYZ26';
@@ -1151,6 +1151,8 @@
   function saveInspectedLesson() {
     if (!activeInspectedLesson) return;
     collectInspectorChanges();
+    activeInspectedLesson.updatedAt = Date.now();
+    activeInspectedLesson.is_edited_by_teacher = true;
     var code = activeInspectedLesson.code;
 
     // 1. حفظ الحصة الكاملة في localStorage
