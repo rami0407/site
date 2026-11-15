@@ -1586,7 +1586,7 @@ function start() {
           welcome();
           return;
         }
-        return fetch('lessons/TMYZ26.json?v=20261115_v4')
+        return fetch('lessons/TMYZ26.json?v=20261115_v5')
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(function (lData) {
             try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -1901,7 +1901,7 @@ function extractYoutubeIdPlayer(url) {
   if (!url) return '';
   var s = String(url).trim();
   if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
-  var m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  var m = s.match(/(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:embed|shorts|live)\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : '';
 }
 

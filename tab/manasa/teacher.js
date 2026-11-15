@@ -328,14 +328,18 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
-    fetch('lessons/excellence.json?v=20261115_v4')
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (lData) {
-        if (lData) {
-          lData.code = 'TMYZ26';
-          try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
-        }
-      }).catch(function () {});
+    try {
+      if (!localStorage.getItem('manasa-lesson-TMYZ26')) {
+        fetch('lessons/excellence.json?v=20261115_v5')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (lData) {
+            if (lData && !localStorage.getItem('manasa-lesson-TMYZ26')) {
+              lData.code = 'TMYZ26';
+              try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
+            }
+          }).catch(function () {});
+      }
+    } catch (_) {}
 
     defaultModelLessons.forEach(function (dm) {
       if (dm.code === 'heat' || dm.code === 'TMYZ26') return;
@@ -779,7 +783,7 @@
   }
   function extractYoutubeId(s) {
     s = String(s || '').trim();
-    var m = s.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+    var m = s.match(/(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:embed|shorts|live)\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : (/^[A-Za-z0-9_-]{11}$/.test(s) ? s : '');
   }
 
@@ -1016,14 +1020,34 @@
     } catch (_) {}
 
     if (code === 'TMYZ26') {
-      fetch('lessons/excellence.json?v=20261115_v4')
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          data.code = 'TMYZ26';
-          try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(data)); } catch (_) {}
-          activeInspectedLesson = normalizeLessonStructure(data);
-          renderInspectorUI();
-          showView('inspector');
+      fetchCloudLessonByCode('TMYZ26')
+        .then(function (cloudData) {
+          if (lesson && (lesson.updatedAt || 0) > (cloudData.updatedAt || 0)) {
+            return lesson;
+          }
+          return cloudData;
+        })
+        .catch(function () {
+          return (lesson && lesson.is_edited_by_teacher) ? lesson : null;
+        })
+        .then(function (edited) {
+          if (edited && edited.is_edited_by_teacher) {
+            edited.code = 'TMYZ26';
+            try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(edited)); } catch (_) {}
+            activeInspectedLesson = normalizeLessonStructure(edited);
+            renderInspectorUI();
+            showView('inspector');
+            return;
+          }
+          return fetch('lessons/excellence.json?v=20261115_v5')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              data.code = 'TMYZ26';
+              try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(data)); } catch (_) {}
+              activeInspectedLesson = normalizeLessonStructure(data);
+              renderInspectorUI();
+              showView('inspector');
+            });
         })
         .catch(function () {
           if (lesson) {
@@ -1263,7 +1287,7 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.2)">' +
           '<button type="button" class="btn whatsapp-btn" id="insp-wa-btn" style="font-size:16px;padding:10px 20px;margin:0">💬 إرسال الكود والرابط بالواتساب للطلاب</button>' +
           '<button type="button" class="btn alt" id="insp-copy-link-btn" style="background:#fff;color:#0f172a;margin:0">🔗 نسخ رابط الحصة المباشر</button>' +
-          '<a class="btn alt" href="' + studentUrl + '" target="_blank" style="background:#fef08a;color:#1e293b;text-decoration:none;margin:0">👀 معاينة وتجربة الحصة كطالب</a>' +
+          '<a class="btn alt" id="insp-preview-btn" href="' + studentUrl + '" target="_blank" style="background:#fef08a;color:#1e293b;text-decoration:none;margin:0">👀 معاينة وتجربة الحصة كطالب</a>' +
           '<button type="button" class="btn ok" id="insp-start-live-btn" style="background:#10b981;margin:0">🏫 بدء البث ولوحة المتابعة المباشرة</button>' +
         '</div>' +
       '</div>' +
@@ -1466,12 +1490,19 @@
     // ربط الأزرار التفاعلية داخل الفاحص
     if ($('insp-copy-code-btn')) {
       $('insp-copy-code-btn').onclick = function () {
-        copyTextToClipboard(L.code, '✅ تم نسخ كود الحصة: ' + L.code);
+        saveInspectedLesson();
+        copyTextToClipboard(L.code, '✅ تم حفظ الحصة ونسخ الكود: ' + L.code);
       };
     }
     if ($('insp-copy-link-btn')) {
       $('insp-copy-link-btn').onclick = function () {
-        copyTextToClipboard(studentUrl, '✅ تم نسخ رابط الحصة المباشر للطلاب!');
+        saveInspectedLesson();
+        copyTextToClipboard(studentUrl, '✅ تم حفظ الحصة ونسخ رابط الطلاب المباشر!');
+      };
+    }
+    if ($('insp-preview-btn')) {
+      $('insp-preview-btn').onclick = function () {
+        saveInspectedLesson();
       };
     }
     if ($('insp-wa-btn')) {
