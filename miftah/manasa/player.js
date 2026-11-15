@@ -1567,7 +1567,7 @@ function start() {
 
   // للدرس النموذجي «رحلة التميز» (TMYZ26 / excellence) نجلب أحدث نسخة دائماً لضمان المحاكاة المرتبطة بمضمون التميز
   if (String(targetCode || '').toUpperCase() === 'TMYZ26' || qs.get('l') === 'excellence') {
-    fetch('lessons/TMYZ26.json?v=20261114_v9')
+    fetch('lessons/TMYZ26.json?v=20261115_v1')
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })
       .then(function (lData) {
         try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -1879,6 +1879,38 @@ function wireExcellenceQuickBar() {
   }, 20);
 }
 
+function extractYoutubeIdPlayer(url) {
+  if (!url) return '';
+  var s = String(url).trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  var m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : '';
+}
+
+function renderStationMediaHtml(media) {
+  if (!media || typeof media !== 'object') return '';
+  var ytId = extractYoutubeIdPlayer(media.youtube || '');
+  var imgUrl = (media.image || '').trim();
+  var linkUrl = (media.link || '').trim();
+  var linkLabel = (media.linkLabel || '').trim() || 'افتح المورد الإضافي';
+  if (!ytId && !imgUrl && !linkUrl) return '';
+  var out = '<div class="card" style="background:#f8fafc;border:1.5px solid #cbd5e1;margin:10px 0">';
+  if (ytId) {
+    out += '<div style="font-weight:800;color:#0f172a;margin-bottom:6px">🎬 فيديو توضيحي للمحطة:</div>' +
+      '<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(ytId) + '?rel=0" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div>';
+  }
+  if (imgUrl) {
+    out += '<div style="margin-top:' + (ytId ? '10px' : '0') + ';text-align:center"><img src="' + esc(imgUrl) + '" alt="وسيط تعليمي" style="max-width:100%;max-height:360px;border-radius:12px;border:1px solid #cbd5e1;object-fit:contain"></div>';
+  }
+  if (linkUrl) {
+    out += '<div style="margin-top:' + (ytId || imgUrl ? '10px' : '0') + '">' +
+      '<a href="' + esc(linkUrl) + '" target="_blank" rel="noopener" class="btn alt" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">🌐 ' + esc(linkLabel) + ' ↗</a>' +
+    '</div>';
+  }
+  out += '</div>';
+  return out;
+}
+
 function stationM() {
   S.st = 0; report(); var k = L.hook || {}, v = L.video || {}; ctx(k.more, (k.story || '') + ' ' + (k.question || ''));
 
@@ -1908,6 +1940,7 @@ function stationM() {
         '<p class="story" style="margin:0;font-size:18px;line-height:1.75;color:#0f172a">' + esc(k.story) + '</p>' +
         '<div style="margin-top:8px">' + sayBtn(k.story + ' ' + k.question) + '</div>' +
       '</div>' +
+      renderStationMediaHtml(k.media) +
 
       '<div style="background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:16px;margin-bottom:12px">' +
         '<h3 style="margin:0 0 8px;color:#0b2a4a;font-size:18px">1️⃣ اخترْ مجالاً (أو أكثر) تريدُ أن تبرزَ وتتميّزَ فيه هذا العام:</h3>' +
@@ -2000,7 +2033,8 @@ function stationM() {
   }
 
   var html = head('🔍 ' + esc(k.title || 'لنبدأ بلغز!')) + '<p class="story">' + esc(k.story) + '</p>' + sayBtn(k.story + ' ' + k.question) + '<p class="q">❓ ' + esc(k.question) + '</p>' +
-    '<label>ما تخمينُك؟ اكتبْه (لا يوجدُ خطأٌ هنا):</label><textarea id="guess"></textarea></div>';
+    '<label>ما تخمينُك؟ اكتبْه (لا يوجدُ خطأٌ هنا):</label><textarea id="guess"></textarea></div>' +
+    renderStationMediaHtml(k.media);
   if (v.youtube_id) html += '<div class="card"><h3>🎬 شاهِدْ</h3><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(v.youtube_id) + '?rel=0" title="' + esc(v.title || 'فيديو') + '" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div><p class="muted">' + esc(v.title || '') + '</p></div>';
   if (k.riddle) { var rq = k.riddle.q || k.riddle.text || ''; html += '<div class="card"><h3>🧩 حَزّورة</h3><p>' + esc(rq) + '</p>' + sayBtn(rq) + ' <button class="btn alt" id="rh">💡 تلميح</button> <button class="btn alt" id="ra">👀 الجواب</button><div id="rr"></div></div>'; }
   html += '<div class="card">' + next('إلى محطّة «ف» ⬅', function () { S.data.guess = ($('#guess').value || '').slice(0, 300); report(); tryAdvanceToStation(1, function () { stationF(0); }); }) + '</div>';
@@ -2283,6 +2317,7 @@ function stationF(i) {
   h(renderExcellenceQuickBar() +
     head('📘 خطوة ' + (i + 1) + ' من ' + steps.length + ': ' + esc(s.title)) + '<div class="bar"><i style="width:' + Math.round((i) / steps.length * 100) + '%"></i></div>' +
     (s.emoji ? '<div class="emoji">' + esc(s.emoji) + '</div>' : '') + '<p style="font-size:20px;line-height:1.7">' + esc(s.text) + '</p>' + sayBtn(s.text) + '</div>' +
+    (i === 0 ? renderStationMediaHtml(L.explain && L.explain.media) : '') +
     renderExcellenceStationFBuilder(i) +
     '<div class="card"><h3>✋ أرِني! <small style="font-size:13px;color:#0284c7;font-weight:700">(يحدّدُ النظامُ مسارَكَ التّالي تلقائياً حسبَ إجابتك وقدراتك)</small></h3>' +
     mcq(s.check, {
@@ -2690,7 +2725,9 @@ function practice() {
     var q = L.practice[lv][used[lv]]; used[lv]++; n++;
     h(head('🏋️ تدريب تكيّفي ' + n + ' من ' + total + ' <span class="lvl ' + lv + '">' + LV[lv] + '</span>') +
       renderAbilityStepper(lv) +
-      '<div class="bar"><i style="width:' + Math.round((n - 1) / total * 100) + '%"></i></div>' + sayBtn(q.q) +
+      '<div class="bar"><i style="width:' + Math.round((n - 1) / total * 100) + '%"></i></div>' +
+      (n === 1 ? renderStationMediaHtml(L.practice && L.practice.media) : '') +
+      sayBtn(q.q) +
       mcq(q, {
         feedback: true,
         onDone: function (ok, tries, f) {
@@ -2739,16 +2776,222 @@ function practice() {
 }
 function game() {
   ctx(L.recap, null);
-  var g = L.game, items = g.items.map(function (x, i) { return { t: x.text, b: x.bucket, i: i }; }).sort(function () { return Math.random() - 0.5; }), sel = null, placed = 0, mistakes = 0, t0 = Date.now();
+  var g = L.game || {}, gType = g.type || 'sort_buckets', mistakes = 0, t0 = Date.now();
+  function finishGame() {
+    var sec = Math.round((Date.now() - t0) / 1000);
+    S.data.game = { mistakes: mistakes, seconds: sec };
+    report();
+    saveStudentPortfolioRecord();
+    showNext('<div class="res a">🏆 أنهيتَ اللّعبة في ' + sec + ' ثانية، بـ' + mistakes + ' أخطاء!</div>' + next('إلى محطّة «ا» ⬅', function () { tryAdvanceToStation(3, evidence); }));
+  }
+
+  // 1. صل بين جملتين / التوصيل (match_pairs)
+  if (gType === 'match_pairs' && Array.isArray(g.pairs) && g.pairs.length) {
+    var pairs = g.pairs.filter(function (pr) { return pr.left && pr.right; });
+    if (!pairs.length) return tryAdvanceToStation(3, evidence);
+    var leftList = pairs.map(function (pr, i) { return { txt: pr.left, i: i }; }).sort(function () { return Math.random() - 0.5; });
+    var rightList = pairs.map(function (pr, i) { return { txt: pr.right, i: i }; }).sort(function () { return Math.random() - 0.5; });
+    var selL = null, selR = null, matched = 0;
+
+    h(head('🔗 ' + esc(g.title || 'صلْ بين الجملتَيْن')) +
+      '<p>' + esc(g.instructions || 'اضغطْ على بطاقةٍ من العمودِ الأيمنِ ثمَّ ما يناسبُها من العمودِ الأيسر:') + '</p>' +
+      '<div class="grid2">' +
+        '<div style="display:grid;gap:8px">' + leftList.map(function (x) { return '<button type="button" class="opt" data-ml="' + x.i + '" style="margin:0;text-align:right;font-weight:700">' + esc(x.txt) + '</button>'; }).join('') + '</div>' +
+        '<div style="display:grid;gap:8px">' + rightList.map(function (x) { return '<button type="button" class="opt" data-mr="' + x.i + '" style="margin:0;text-align:right;font-weight:700">' + esc(x.txt) + '</button>'; }).join('') + '</div>' +
+      '</div>' +
+      '<div id="gfb" style="margin-top:10px"></div><div id="after"></div></div>');
+
+    function tryMatch() {
+      if (!selL || !selR) return;
+      var li = +selL.getAttribute('data-ml'), ri = +selR.getAttribute('data-mr');
+      if (li === ri) {
+        selL.classList.remove('pick'); selR.classList.remove('pick');
+        selL.classList.add('right'); selR.classList.add('right');
+        selL.disabled = true; selR.disabled = true;
+        matched++;
+        $('#gfb').innerHTML = '<div class="fb good">✅ توصيلٌ صحيح! (' + matched + ' / ' + pairs.length + ')</div>';
+        if (matched === pairs.length) finishGame();
+      } else {
+        mistakes++;
+        selL.classList.remove('pick'); selR.classList.remove('pick');
+        $('#gfb').innerHTML = '<div class="fb bad">❌ غير متطابق — حاولْ مرّةً أخرى!</div>';
+      }
+      selL = null; selR = null;
+    }
+    app.querySelectorAll('[data-ml]').forEach(function (b) {
+      b.onclick = function () {
+        if (b.disabled) return;
+        app.querySelectorAll('[data-ml]').forEach(function (z) { z.classList.remove('pick'); });
+        b.classList.add('pick'); selL = b; tryMatch();
+      };
+    });
+    app.querySelectorAll('[data-mr]').forEach(function (b) {
+      b.onclick = function () {
+        if (b.disabled) return;
+        app.querySelectorAll('[data-mr]').forEach(function (z) { z.classList.remove('pick'); });
+        b.classList.add('pick'); selR = b; tryMatch();
+      };
+    });
+    return;
+  }
+
+  // 2. املأ الفراغ بالكلمة المناسبة (fill_blanks)
+  if (gType === 'fill_blanks' && Array.isArray(g.blanks) && g.blanks.length) {
+    var blanks = g.blanks.filter(function (bl) { return bl.sentence && bl.answer; });
+    if (!blanks.length) return tryAdvanceToStation(3, evidence);
+    var bank = blanks.map(function (bl, i) { return { word: bl.answer, i: i }; }).sort(function () { return Math.random() - 0.5; });
+    var pickedWord = null, filled = {}, doneCount = 0;
+
+    h(head('✍️ ' + esc(g.title || 'املأ الفراغَ بالكلمةِ المناسبة')) +
+      '<p>' + esc(g.instructions || 'اخترْ كلمةً من بنكِ الكلماتِ ثمَّ اضغطْ على الفراغِ المناسب:') + '</p>' +
+      '<div class="items" id="word-bank" style="margin-bottom:14px">' +
+        bank.map(function (w) { return '<button type="button" class="chip" data-bw="' + esc(w.word) + '" data-bi="' + w.i + '">' + esc(w.word) + '</button>'; }).join('') +
+      '</div>' +
+      '<div style="display:grid;gap:10px">' +
+        blanks.map(function (bl, idx) {
+          var sentHtml = esc(bl.sentence).replace(/___+|\[___+\]/g, '<button type="button" class="btn alt" data-slot="' + idx + '" style="min-height:34px;padding:4px 14px;margin:0 4px;border:2px dashed #0284c7;background:#f0f9ff;color:#0369a1;font-weight:900">_____</button>');
+          if (sentHtml.indexOf('data-slot') < 0) {
+            sentHtml += ' <button type="button" class="btn alt" data-slot="' + idx + '" style="min-height:34px;padding:4px 14px;margin:0 4px;border:2px dashed #0284c7;background:#f0f9ff;color:#0369a1;font-weight:900">_____</button>';
+          }
+          return '<div style="background:#fff;border:1.5px solid #cbd5e1;border-radius:12px;padding:12px;font-size:17px;line-height:1.8">' + (idx + 1) + '. ' + sentHtml + '</div>';
+        }).join('') +
+      '</div>' +
+      '<div id="gfb" style="margin-top:10px"></div><div id="after"></div></div>');
+
+    app.querySelectorAll('[data-bw]').forEach(function (b) {
+      b.onclick = function () {
+        if (b.disabled) return;
+        app.querySelectorAll('[data-bw]').forEach(function (z) { z.classList.remove('sel'); });
+        b.classList.add('sel');
+        pickedWord = b;
+      };
+    });
+    app.querySelectorAll('[data-slot]').forEach(function (slotBtn) {
+      slotBtn.onclick = function () {
+        var idx = +slotBtn.getAttribute('data-slot');
+        if (filled[idx] || !pickedWord) return;
+        var w = pickedWord.getAttribute('data-bw');
+        if (w.trim() === blanks[idx].answer.trim()) {
+          filled[idx] = true;
+          doneCount++;
+          slotBtn.textContent = w;
+          slotBtn.style.background = '#dcfce7';
+          slotBtn.style.borderColor = '#16a34a';
+          slotBtn.style.color = '#15803d';
+          pickedWord.classList.remove('sel');
+          pickedWord.classList.add('ok');
+          pickedWord.disabled = true;
+          pickedWord = null;
+          $('#gfb').innerHTML = '<div class="fb good">✅ إجابةٌ صحيحة! (' + doneCount + ' / ' + blanks.length + ')</div>';
+          if (doneCount === blanks.length) finishGame();
+        } else {
+          mistakes++;
+          pickedWord.classList.remove('sel');
+          pickedWord = null;
+          $('#gfb').innerHTML = '<div class="fb bad">❌ هذه الكلمةُ لا تناسبُ هذا الفراغ — جرّبْ كلمةً أخرى!</div>';
+        }
+      };
+    });
+    return;
+  }
+
+  // 3. ترتيب الخطوات / الجمل (order_steps)
+  if (gType === 'order_steps' && Array.isArray(g.steps) && g.steps.length) {
+    var origSteps = g.steps.filter(function (st) { return st.text; });
+    if (!origSteps.length) return tryAdvanceToStation(3, evidence);
+    var curOrder = origSteps.map(function (st, i) { return { text: st.text, origIdx: i }; }).sort(function () { return Math.random() - 0.5; });
+
+    function renderOrderList() {
+      h(head('🔢 ' + esc(g.title || 'رتّبِ الخطواتِ بالترتيبِ الصّحيح')) +
+        '<p>' + esc(g.instructions || 'استخدمْ أسهمَ الصّعودِ والنّزولِ لترتيبِ الجملِ من (1) إلى (' + curOrder.length + ') ثمَّ اضغطْ «تحقّق»:') + '</p>' +
+        '<div style="display:grid;gap:8px">' +
+          curOrder.map(function (st, idx) {
+            return '<div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #cbd5e1;border-radius:12px;padding:10px 12px">' +
+              '<span style="font-weight:900;color:#0284c7;min-width:26px">' + (idx + 1) + '.</span>' +
+              '<span style="flex:1;font-size:16px;font-weight:700">' + esc(st.text) + '</span>' +
+              '<button type="button" class="btn alt" data-ord-up="' + idx + '" style="min-height:34px;padding:4px 10px;margin:0"' + (idx === 0 ? ' disabled' : '') + '>⬆️</button>' +
+              '<button type="button" class="btn alt" data-ord-dn="' + idx + '" style="min-height:34px;padding:4px 10px;margin:0"' + (idx === curOrder.length - 1 ? ' disabled' : '') + '>⬇️</button>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+        '<button type="button" class="btn ok big" id="ord-check-btn" style="margin-top:12px">✅ تحقّق من التّرتيب</button>' +
+        '<div id="gfb" style="margin-top:10px"></div><div id="after"></div></div>');
+
+      app.querySelectorAll('[data-ord-up]').forEach(function (b) {
+        b.onclick = function () {
+          var idx = +b.getAttribute('data-ord-up');
+          if (idx > 0) { var t = curOrder[idx - 1]; curOrder[idx - 1] = curOrder[idx]; curOrder[idx] = t; renderOrderList(); }
+        };
+      });
+      app.querySelectorAll('[data-ord-dn]').forEach(function (b) {
+        b.onclick = function () {
+          var idx = +b.getAttribute('data-ord-dn');
+          if (idx < curOrder.length - 1) { var t = curOrder[idx + 1]; curOrder[idx + 1] = curOrder[idx]; curOrder[idx] = t; renderOrderList(); }
+        };
+      });
+      $('#ord-check-btn').onclick = function () {
+        var allRight = curOrder.every(function (st, idx) { return st.origIdx === idx; });
+        if (allRight) {
+          $('#gfb').innerHTML = '<div class="fb good">🌟 ترتيبٌ صحيحٌ 100%!</div>';
+          finishGame();
+        } else {
+          mistakes++;
+          $('#gfb').innerHTML = '<div class="fb bad">❌ هناك خطواتٌ ليست في مكانِها بعد — راجعِ التّرتيبَ وحاولْ مجدّداً!</div>';
+        }
+      };
+    }
+    renderOrderList();
+    return;
+  }
+
+  // 4. صح أم خطأ السريعة (true_false)
+  if (gType === 'true_false' && Array.isArray(g.statements) && g.statements.length) {
+    var stmts = g.statements.filter(function (tf) { return tf.text; });
+    if (!stmts.length) return tryAdvanceToStation(3, evidence);
+    var tfIdx = 0;
+
+    function renderTfStep() {
+      var cur = stmts[tfIdx];
+      h(head('✅❌ ' + esc(g.title || 'صحّ أم خطأ السّريعة') + ' (' + (tfIdx + 1) + ' / ' + stmts.length + ')') +
+        '<p>' + esc(g.instructions || 'حدّدْ ما إذا كانت العبارةُ صحيحةً أم خاطئة:') + '</p>' +
+        '<div class="bar"><i style="width:' + Math.round((tfIdx / stmts.length) * 100) + '%"></i></div>' +
+        '<div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:14px;padding:16px;font-size:19px;font-weight:800;margin:12px 0">' + esc(cur.text) + '</div>' +
+        '<div class="grid2">' +
+          '<button type="button" class="btn ok big" data-tf-pick="true" style="margin:0">✅ صحّ</button>' +
+          '<button type="button" class="btn big" data-tf-pick="false" style="margin:0;background:#dc2626;color:#fff">❌ خطأ</button>' +
+        '</div>' +
+        '<div id="gfb" style="margin-top:10px"></div><div id="after"></div></div>');
+
+      app.querySelectorAll('[data-tf-pick]').forEach(function (b) {
+        b.onclick = function () {
+          var pick = b.getAttribute('data-tf-pick') === 'true';
+          var actual = cur.isTrue !== false;
+          if (pick === actual) {
+            $('#gfb').innerHTML = '<div class="fb good">✅ أحسنت! إجابةٌ صحيحة.</div>';
+            tfIdx++;
+            if (tfIdx < stmts.length) setTimeout(renderTfStep, 600);
+            else finishGame();
+          } else {
+            mistakes++;
+            $('#gfb').innerHTML = '<div class="fb bad">❌ فكّرْ مرّةً أخرى!</div>';
+          }
+        };
+      });
+    }
+    renderTfStep();
+    return;
+  }
+
+  // 5. تصنيف في سلتين (sort_buckets - الافتراضي)
+  var items = (g.items || []).map(function (x, i) { return { t: x.text, b: x.bucket, i: i }; }).sort(function () { return Math.random() - 0.5; }), sel = null, placed = 0;
   h(head('🎮 ' + esc(g.title || 'لعبة التّصنيف')) + '<p>' + esc(g.instructions || 'صنِّفْ كلَّ عنصرٍ في السّلّةِ المناسبة.') + '</p><div class="items" id="pool">' + items.map(function (x) { return '<span class="chip" data-i="' + x.i + '" draggable="true">' + esc(x.t) + '</span>'; }).join('') + '</div>' +
-    '<div class="buckets">' + g.buckets.map(function (b, i) { return '<div class="bucket ' + (i ? 'cold' : 'hot') + '" data-b="' + i + '"><b>' + esc(b) + '</b><div class="items"></div></div>'; }).join('') + '</div><div id="gfb"></div><div id="after"></div></div>');
+    '<div class="buckets">' + (g.buckets || ['المجموعة 1', 'المجموعة 2']).map(function (b, i) { return '<div class="bucket ' + (i ? 'cold' : 'hot') + '" data-b="' + i + '"><b>' + esc(b) + '</b><div class="items"></div></div>'; }).join('') + '</div><div id="gfb"></div><div id="after"></div></div>');
   function drop(chip, bi) {
     var it = g.items[+chip.getAttribute('data-i')];
     if (it.bucket === bi) { chip.classList.remove('sel'); chip.classList.add('ok'); chip.setAttribute('draggable', 'false'); app.querySelector('[data-b="' + bi + '"] .items').appendChild(chip); placed++; $('#gfb').innerHTML = '<div class="fb good">✅ صحيح!</div>'; }
     else { mistakes++; chip.classList.remove('sel'); $('#gfb').innerHTML = '<div class="fb bad">❌ فكِّرْ مرّةً أخرى: هل «' + esc(it.text) + '» ' + esc(g.buckets[bi]) + '؟</div>'; }
     sel = null;
-    if (placed === g.items.length) { var sec = Math.round((Date.now() - t0) / 1000); S.data.game = { mistakes: mistakes, seconds: sec }; report(); saveStudentPortfolioRecord();
-      showNext('<div class="res a">🏆 أنهيتَ اللّعبة في ' + sec + ' ثانية، بـ' + mistakes + ' أخطاء!</div>' + next('إلى محطّة «ا» ⬅', function () { tryAdvanceToStation(3, evidence); })); }
+    if (placed === g.items.length) finishGame();
   }
   app.querySelectorAll('.chip').forEach(function (c) {
     c.onclick = function () { if (c.classList.contains('ok')) return; app.querySelectorAll('.chip').forEach(function (z) { z.classList.remove('sel'); }); c.classList.add('sel'); sel = c; };
@@ -2969,7 +3212,9 @@ function evidence() {
   S.st = 3; report(); S.cur = { exam: true }; var items = L.evidence.items, i = 0, score = 0, ans = [];
   function one() {
     var q = items[i];
-    h(head('📝 مهمّةُ الدّليل — ' + (i + 1) + ' من ' + items.length) + '<p class="muted">' + esc(L.evidence.instructions || 'أجبْ وحدَك.') + '</p><div class="bar"><i style="width:' + Math.round(i / items.length * 100) + '%"></i></div>' + sayBtn(q.q) +
+    h(head('📝 مهمّةُ الدّليل — ' + (i + 1) + ' من ' + items.length) + '<p class="muted">' + esc(L.evidence.instructions || 'أجبْ وحدَك.') + '</p><div class="bar"><i style="width:' + Math.round(i / items.length * 100) + '%"></i></div>' +
+      (i === 0 ? renderStationMediaHtml(L.evidence && L.evidence.media) : '') +
+      sayBtn(q.q) +
       mcq(q, { feedback: false, onDone: function (ok, t, pick) { logA('دليل', q, pick, ok, 1); if (ok) score++; ans.push(pick); i++; setTimeout(function () { i < items.length ? one() : done(); }, 350); } }) + '</div>');
   }
   function done() {
@@ -3098,7 +3343,7 @@ function harvest() {
       '</div></div>';
   }).join('');
 
-  h(renderExcellenceQuickBar() + head('🌾 الحصاد وترجمةُ الخطّة إلى أفعال') + introExcHtml + qHtml +
+  h(renderExcellenceQuickBar() + head('🌾 الحصاد وترجمةُ الخطّة إلى أفعال') + renderStationMediaHtml(L.harvestMedia) + introExcHtml + qHtml +
     next(isExcellenceLesson() ? '💾 حفظُ ملفي الكامل واستخراجُ شهادةِ التميّز (PDF) 🏆' : 'أنهيتُ الحصاد ✅', function () {
       var a = H.map(function (q, i) { return ($('#hv' + i).value || '').trim().slice(0, 400); });
       if (!a.every(Boolean)) { alert('الرجاء الإجابة عن الأسئلة الثلاثة (بالكتابة أو باختيار إمكانية مساعدة) 🙂'); return; }

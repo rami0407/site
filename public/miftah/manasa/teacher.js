@@ -328,7 +328,7 @@
 
   // ضمان توفر بيانات الحصص النموذجية كاملة في التخزين المحلي
   function ensureModelLessonsData() {
-    fetch('lessons/excellence.json?v=20261114_v9')
+    fetch('lessons/excellence.json?v=20261115_v1')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (lData) {
         if (lData) {
@@ -1016,7 +1016,7 @@
     } catch (_) {}
 
     if (code === 'TMYZ26') {
-      fetch('lessons/excellence.json?v=20261114_v9')
+      fetch('lessons/excellence.json?v=20261115_v1')
         .then(function (r) { return r.json(); })
         .then(function (data) {
           data.code = 'TMYZ26';
@@ -1124,9 +1124,17 @@
     root.querySelectorAll('[data-inum]').forEach(function (el) {
       setNested(activeInspectedLesson, el.getAttribute('data-inum'), Number(el.value));
     });
+    root.querySelectorAll('[data-ibool]').forEach(function (el) {
+      setNested(activeInspectedLesson, el.getAttribute('data-ibool'), el.value === 'true');
+    });
     root.querySelectorAll('[data-ians]:checked').forEach(function (el) {
       setNested(activeInspectedLesson, el.getAttribute('data-ians') + '.answer', Number(el.value));
     });
+    var gtSel = document.getElementById('insp-game-type');
+    if (gtSel) {
+      activeInspectedLesson.game = activeInspectedLesson.game || {};
+      activeInspectedLesson.game.type = gtSel.value || 'sort_buckets';
+    }
     var vInput = document.getElementById('insp-video-url');
     if (vInput) {
       activeInspectedLesson.video = activeInspectedLesson.video || {};
@@ -1191,6 +1199,38 @@
 
   if ($('save-inspector-top-btn')) {
     $('save-inspector-top-btn').onclick = saveInspectedLesson;
+  }
+
+  function renderStationMediaEditor(mediaPath) {
+    var m = getNested(activeInspectedLesson, mediaPath) || {};
+    var hasAny = !!(m.youtube || m.link || m.image);
+    return '<details style="margin-top:12px;background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:12px;padding:10px 12px"' + (hasAny ? ' open' : '') + '>' +
+      '<summary style="cursor:pointer;font-weight:800;font-size:14px;color:#0f172a">📎 وسائط إضافية للمحطة (رابط يوتيوب / رابط موقع / صورة)' + (hasAny ? ' ✅' : '') + '</summary>' +
+      '<div style="margin-top:10px;display:grid;gap:8px">' +
+        '<div>' +
+          '<label style="font-weight:700;font-size:13px;color:#334155">🎬 رابط فيديو يوتيوب (اختياري):</label>' +
+          '<input type="text" data-ip="' + mediaPath + '.youtube" value="' + esc(m.youtube || '') + '" placeholder="https://www.youtube.com/watch?v=..." style="direction:ltr">' +
+        '</div>' +
+        '<div class="grid2">' +
+          '<div>' +
+            '<label style="font-weight:700;font-size:13px;color:#334155">🌐 رابط موقع أو مورد إثرائي (اختياري):</label>' +
+            '<input type="text" data-ip="' + mediaPath + '.link" value="' + esc(m.link || '') + '" placeholder="https://..." style="direction:ltr">' +
+          '</div>' +
+          '<div>' +
+            '<label style="font-weight:700;font-size:13px;color:#334155">🏷️ عنوان الرابط للطلاب (اختياري):</label>' +
+            '<input type="text" data-ip="' + mediaPath + '.linkLabel" value="' + esc(m.linkLabel || '') + '" placeholder="مثال: افتح المحاكاة / المقال التفاعلي">' +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-weight:700;font-size:13px;color:#334155">🖼️ رابط صورة أو رفع صورة من جهازك (اختياري):</label>' +
+          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+            '<input type="text" data-ip="' + mediaPath + '.image" value="' + esc(m.image || '') + '" placeholder="https://... أو ارفع صورة بالزر المجاور" style="flex:1;min-width:200px;direction:ltr;margin:0">' +
+            '<label class="btn alt" style="min-height:38px;padding:6px 12px;font-size:13px;margin:0;cursor:pointer">📁 رفع صورة<input type="file" accept="image/*" data-media-img-upload="' + mediaPath + '.image" style="display:none"></label>' +
+          '</div>' +
+          (m.image ? '<div style="margin-top:6px"><img src="' + esc(m.image) + '" style="max-height:90px;border-radius:8px;border:1px solid #cbd5e1"></div>' : '') +
+        '</div>' +
+      '</div>' +
+    '</details>';
   }
 
   function renderInspectorUI() {
@@ -1258,6 +1298,7 @@
           '<label style="font-weight:700;font-size:14px;color:#334155">🎬 رابط فيديو يوتيوب داعم (اختياري):</label>' +
           '<input type="text" id="insp-video-url" value="' + esc(v.youtube_id ? 'https://www.youtube.com/watch?v=' + v.youtube_id : '') + '" placeholder="https://www.youtube.com/watch?v=..." style="direction:ltr">' +
         '</div>' +
+        renderStationMediaEditor('hook.media') +
       '</div>' +
 
       // المحطة 2: ف — فهم وبناء المعنى
@@ -1277,11 +1318,12 @@
           '</div>';
         }).join('') +
         '<button type="button" class="btn alt" data-iadd="explain.steps" data-ikind="step">➕ إضافة خطوة شرح جديدة</button>' +
+        renderStationMediaEditor('explain.media') +
       '</div>' +
 
-      // المحطة 3: ت — تدريب وتطبيق متدرج + اللعبة
+      // المحطة 3: ت — تدريب وتطبيق متدرج + اللعبة المتنوعة
       '<div class="station-edit-card">' +
-        '<h3><span class="station-badge-letter" style="background:#d97706">ت</span> المحطة الثالثة (ت): تدريب وتطبيق متكيّف + لعبة التصنيف</h3>' +
+        '<h3><span class="station-badge-letter" style="background:#d97706">ت</span> المحطة الثالثة (ت): تدريب وتطبيق متكيّف + اللعبة التفاعلية</h3>' +
         [['easy', '🌱 المستوى السهل (دعم وانطلاق)'], ['medium', '⭐ المستوى المتوسط (تمكّن وممارسة)'], ['hard', '🚀 المستوى المتقدم (تحدي الأبطال)']].map(function (lv) {
           var arr = L.practice[lv[0]] || [];
           return '<div style="margin:14px 0">' +
@@ -1293,26 +1335,95 @@
           '</div>';
         }).join('') +
 
-        '<div class="sub-item-box" style="background:#fdf4ff;border-color:#e879f9;margin-top:18px">' +
-          '<b style="font-size:17px;color:#86198f">🎮 لعبة التصنيف التفاعلية:</b>' +
-          '<div class="grid2">' +
-            fieldInput('اسم السلة الأولى:', 'game.buckets.0', false) +
-            fieldInput('اسم السلة الثانية:', 'game.buckets.1', false) +
-          '</div>' +
-          '<label style="font-weight:700;font-size:14px;display:block;margin:8px 0 4px">عناصر اللعبة وتصنيفها الصحيح:</label>' +
-          (g.items || []).map(function (it, idx) {
-            var p = 'game.items.' + idx;
-            return '<div class="opt-edit-row">' +
-              '<input type="text" data-ip="' + p + '.text" value="' + esc(it.text) + '" placeholder="نص العنصر">' +
-              '<select data-inum="' + p + '.bucket" style="width:220px;margin:0">' +
-                '<option value="0"' + (Number(it.bucket) === 0 ? ' selected' : '') + '>' + esc((g.buckets || [])[0] || 'السلة 1') + '</option>' +
-                '<option value="1"' + (Number(it.bucket) === 1 ? ' selected' : '') + '>' + esc((g.buckets || [])[1] || 'السلة 2') + '</option>' +
+        (function () {
+          var gType = g.type || 'sort_buckets';
+          var header = '<div class="sub-item-box" style="background:#fdf4ff;border-color:#e879f9;margin-top:18px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">' +
+              '<b style="font-size:17px;color:#86198f">🎮 اللعبة / النشاط التفاعلي في المحطة:</b>' +
+              '<select id="insp-game-type" style="width:auto;min-width:250px;margin:0;font-weight:800;border:2px solid #c084fc;background:#fff">' +
+                '<option value="sort_buckets"' + (gType === 'sort_buckets' ? ' selected' : '') + '>🗂️ تصنيف في سلتين</option>' +
+                '<option value="match_pairs"' + (gType === 'match_pairs' ? ' selected' : '') + '>🔗 صل بين جملتين (التوصيل)</option>' +
+                '<option value="fill_blanks"' + (gType === 'fill_blanks' ? ' selected' : '') + '>✍️ املأ الفراغ بالكلمة المناسبة</option>' +
+                '<option value="order_steps"' + (gType === 'order_steps' ? ' selected' : '') + '>🔢 ترتيب الخطوات / الجمل</option>' +
+                '<option value="true_false"' + (gType === 'true_false' ? ' selected' : '') + '>✅❌ صح أم خطأ السريعة</option>' +
               '</select>' +
-              '<button type="button" class="btn alt" style="min-height:36px;padding:4px 10px;margin:0;background:#fee2e2;color:#b91c1c" data-irm="' + p + '">🗑️</button>' +
+            '</div>' +
+            '<div class="grid2">' +
+              fieldInput('عنوان النشاط:', 'game.title', false) +
+              fieldInput('تعليمات للطالب:', 'game.instructions', false) +
             '</div>';
-          }).join('') +
-          '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.items" data-ikind="item">➕ إضافة عنصر للعبة</button>' +
-        '</div>' +
+
+          var body = '';
+          if (gType === 'sort_buckets') {
+            body = '<div class="grid2">' +
+              fieldInput('اسم السلة الأولى:', 'game.buckets.0', false) +
+              fieldInput('اسم السلة الثانية:', 'game.buckets.1', false) +
+            '</div>' +
+            '<label style="font-weight:700;font-size:14px;display:block;margin:8px 0 4px">عناصر اللعبة وتصنيفها الصحيح:</label>' +
+            (g.items || []).map(function (it, idx) {
+              var p = 'game.items.' + idx;
+              return '<div class="opt-edit-row">' +
+                '<input type="text" data-ip="' + p + '.text" value="' + esc(it.text) + '" placeholder="نص العنصر">' +
+                '<select data-inum="' + p + '.bucket" style="width:220px;margin:0">' +
+                  '<option value="0"' + (Number(it.bucket) === 0 ? ' selected' : '') + '>' + esc((g.buckets || [])[0] || 'السلة 1') + '</option>' +
+                  '<option value="1"' + (Number(it.bucket) === 1 ? ' selected' : '') + '>' + esc((g.buckets || [])[1] || 'السلة 2') + '</option>' +
+                '</select>' +
+                '<button type="button" class="btn alt" style="min-height:36px;padding:4px 10px;margin:0;background:#fee2e2;color:#b91c1c" data-irm="' + p + '">🗑️</button>' +
+              '</div>';
+            }).join('') +
+            '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.items" data-ikind="item">➕ إضافة عنصر للعبة</button>';
+          } else if (gType === 'match_pairs') {
+            body = '<label style="font-weight:700;font-size:14px;display:block;margin:8px 0 4px">🔗 أزواج التوصيل (العمود الأول ↔ العمود الثاني المطابق له):</label>' +
+            (g.pairs || []).map(function (pr, idx) {
+              var p = 'game.pairs.' + idx;
+              return '<div class="opt-edit-row">' +
+                '<input type="text" data-ip="' + p + '.left" value="' + esc(pr.left) + '" placeholder="الجملة / المفهوم (أ)">' +
+                '<span style="font-weight:900;color:#86198f">↔</span>' +
+                '<input type="text" data-ip="' + p + '.right" value="' + esc(pr.right) + '" placeholder="المطابق له (ب)">' +
+                '<button type="button" class="btn alt" style="min-height:36px;padding:4px 10px;margin:0;background:#fee2e2;color:#b91c1c" data-irm="' + p + '">🗑️</button>' +
+              '</div>';
+            }).join('') +
+            '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.pairs" data-ikind="pair">➕ إضافة زوج توصيل</button>';
+          } else if (gType === 'fill_blanks') {
+            body = '<label style="font-weight:700;font-size:14px;display:block;margin:8px 0 4px">✍️ جمل إكمال الفراغ (اكتب ___ مكان الكلمة المفقودة، والكلمة الصحيحة بجانبها):</label>' +
+            (g.blanks || []).map(function (bl, idx) {
+              var p = 'game.blanks.' + idx;
+              return '<div class="opt-edit-row">' +
+                '<input type="text" data-ip="' + p + '.sentence" value="' + esc(bl.sentence) + '" placeholder="مثال: التميّز الحقيقي يظهر في ___ والعمل" style="flex:2">' +
+                '<input type="text" data-ip="' + p + '.answer" value="' + esc(bl.answer) + '" placeholder="الكلمة الصحيحة" style="flex:1">' +
+                '<button type="button" class="btn alt" style="min-height:36px;padding:4px 10px;margin:0;background:#fee2e2;color:#b91c1c" data-irm="' + p + '">🗑️</button>' +
+              '</div>';
+            }).join('') +
+            '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.blanks" data-ikind="blank">➕ إضافة جملة فراغ</button>';
+          } else if (gType === 'order_steps') {
+            body = '<label style="font-weight:700;font-size:14px;display:block;margin:8px 0 4px">🔢 اكتب الخطوات أو الجمل بالترتيب الصحيح (سيتم خلطها تلقائياً للطالب):</label>' +
+            (g.steps || []).map(function (st, idx) {
+              var p = 'game.steps.' + idx;
+              return '<div class="opt-edit-row">' +
+                '<span style="font-weight:900;color:#86198f;min-width:28px">' + (idx + 1) + '.</span>' +
+                '<input type="text" data-ip="' + p + '.text" value="' + esc(st.text) + '" placeholder="الخطوة ' + (idx + 1) + '">' +
+                '<button type="button" class="btn alt" style="min-height:36px;padding:4px 10px;margin:0;background:#fee2e2;color:#b91c1c" data-irm="' + p + '">🗑️</button>' +
+              '</div>';
+            }).join('') +
+            '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.steps" data-ikind="order_step">➕ إضافة خطوة للترتيب</button>';
+          } else if (gType === 'true_false') {
+            body = '<label style="font-weight:700;font-size:14px;display:block;margin:8px 0 4px">✅❌ عبارات صح أم خطأ السريعة:</label>' +
+            (g.statements || []).map(function (tf, idx) {
+              var p = 'game.statements.' + idx;
+              return '<div class="opt-edit-row">' +
+                '<input type="text" data-ip="' + p + '.text" value="' + esc(tf.text) + '" placeholder="نص العبارة">' +
+                '<select data-ibool="' + p + '.isTrue" style="width:140px;margin:0">' +
+                  '<option value="true"' + (tf.isTrue !== false ? ' selected' : '') + '>✅ صح</option>' +
+                  '<option value="false"' + (tf.isTrue === false ? ' selected' : '') + '>❌ خطأ</option>' +
+                '</select>' +
+                '<button type="button" class="btn alt" style="min-height:36px;padding:4px 10px;margin:0;background:#fee2e2;color:#b91c1c" data-irm="' + p + '">🗑️</button>' +
+              '</div>';
+            }).join('') +
+            '<button type="button" class="btn alt" style="font-size:14px;min-height:36px;margin-top:8px" data-iadd="game.statements" data-ikind="tf">➕ إضافة عبارة</button>';
+          }
+          return header + body + '</div>';
+        })() +
+        renderStationMediaEditor('practice.media') +
       '</div>' +
 
       // المحطة 4: ا — إثبات الدليل
@@ -1323,6 +1434,7 @@
           return renderMcqEditor('evidence.items.' + idx, '📝 سؤال الدليل الفردي ' + (idx + 1), false, true);
         }).join('') +
         '<button type="button" class="btn alt" data-iadd="evidence.items" data-ikind="mcq">➕ إضافة سؤال دليل جديد</button>' +
+        renderStationMediaEditor('evidence.media') +
       '</div>' +
 
       // المحطة 5: ح — حصاد ونقل الأثر
@@ -1332,6 +1444,7 @@
         fieldInput('سؤال الحصاد الثاني (التأمل في طريقة التعلم):', 'harvest.1', false) +
         fieldInput('سؤال الحصاد الثالث (نقل الأثر للحياة اليومية):', 'harvest.2', false) +
         fieldInput('🔑 خلاصة الحصة المرجعية (تظهر في مفتاح المساعدة):', 'recap', true) +
+        renderStationMediaEditor('harvestMedia') +
       '</div>' +
 
       // شريط الحفظ والمشاركة السفلي
@@ -1415,8 +1528,69 @@
           arr.push({ q: '', options: ['', '', ''], answer: 0, hint: '', why: '' });
         } else if (kind === 'item') {
           arr.push({ text: '', bucket: 0 });
+        } else if (kind === 'pair') {
+          arr.push({ left: '', right: '' });
+        } else if (kind === 'blank') {
+          arr.push({ sentence: '', answer: '' });
+        } else if (kind === 'order_step') {
+          arr.push({ text: '' });
+        } else if (kind === 'tf') {
+          arr.push({ text: '', isTrue: true });
         }
         renderInspectorUI();
+      };
+    });
+
+    if ($('insp-game-type')) {
+      $('insp-game-type').onchange = function () {
+        collectInspectorChanges();
+        var gt = $('insp-game-type').value;
+        var gObj = activeInspectedLesson.game = activeInspectedLesson.game || {};
+        gObj.type = gt;
+        if (gt === 'match_pairs' && (!gObj.pairs || !gObj.pairs.length)) {
+          gObj.instructions = 'صلْ كلَّ عبارةٍ في العمودِ الأيمنِ بما يناسبُها في العمودِ الأيسر:';
+          gObj.pairs = [{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }];
+        } else if (gt === 'fill_blanks' && (!gObj.blanks || !gObj.blanks.length)) {
+          gObj.instructions = 'اخترِ الكلمةَ المناسبةَ من بنكِ الكلماتِ لملءِ الفراغِ في كلِّ جملة:';
+          gObj.blanks = [{ sentence: '', answer: '' }, { sentence: '', answer: '' }];
+        } else if (gt === 'order_steps' && (!gObj.steps || !gObj.steps.length)) {
+          gObj.instructions = 'رتّبِ الخطواتِ أوِ الأحداثَ التّاليةَ بالترتيبِ الصّحيحِ من البدايةِ إلى النّهاية:';
+          gObj.steps = [{ text: '' }, { text: '' }, { text: '' }];
+        } else if (gt === 'true_false' && (!gObj.statements || !gObj.statements.length)) {
+          gObj.instructions = 'حدّدْ ما إذا كانت كلُّ عبارةٍ صحيحةً أم خاطئة:';
+          gObj.statements = [{ text: '', isTrue: true }, { text: '', isTrue: false }];
+        } else if (gt === 'sort_buckets' && (!gObj.items || !gObj.items.length)) {
+          gObj.buckets = gObj.buckets && gObj.buckets.length === 2 ? gObj.buckets : ['المجموعة الأولى', 'المجموعة الثانية'];
+          gObj.items = [{ text: '', bucket: 0 }, { text: '', bucket: 1 }];
+        }
+        renderInspectorUI();
+      };
+    }
+
+    root.querySelectorAll('[data-media-img-upload]').forEach(function (inp) {
+      inp.onchange = function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        var path = inp.getAttribute('data-media-img-upload');
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var maxW = 720;
+            var scale = img.width > maxW ? maxW / img.width : 1;
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            collectInspectorChanges();
+            setNested(activeInspectedLesson, path, dataUrl);
+            renderInspectorUI();
+            showToast('✅ تم رفع الصورة وإرفاقها بالمحطة!');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
       };
     });
   }
