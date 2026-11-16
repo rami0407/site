@@ -330,7 +330,7 @@
   function ensureModelLessonsData() {
     try {
       if (!localStorage.getItem('manasa-lesson-TMYZ26')) {
-        fetch('lessons/excellence.json?v=20261116_v2')
+        fetch('lessons/excellence.json?v=20261116_v3')
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (lData) {
             if (lData && !localStorage.getItem('manasa-lesson-TMYZ26')) {
@@ -1090,7 +1090,7 @@
             showView('inspector');
             return;
           }
-          return fetch('lessons/excellence.json?v=20261116_v2')
+          return fetch('lessons/excellence.json?v=20261116_v3')
             .then(function (r) { return r.json(); })
             .then(function (data) {
               data.code = 'TMYZ26';
