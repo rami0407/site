@@ -346,6 +346,7 @@ function renderMineLessons(allLessons) {
         '<button type="button" class="btn" style="font-size:13px;padding:6px 10px;background:#fff" data-copy-c="' + esc(x.code) + '">📋 نسخ الكود</button>' +
         '<button type="button" class="btn wa" style="font-size:13px;padding:6px 10px" data-wa-c="' + esc(x.code) + '" data-wa-t="' + esc(x.title || '') + '" data-wa-s="' + esc(x.subject || '') + '" data-wa-g="' + esc(x.grade || '') + '">💬 واتساب</button>' +
         '<a class="btn g" style="font-size:13px;padding:6px 10px" href="../manasa/index.html?inspect=' + encodeURIComponent(x.code) + '">🔍 فحص وتعديل</a>' +
+        '<button type="button" class="btn" style="font-size:13px;padding:6px 10px;background:#f5f3ff;color:#5b21b6;border-color:#c4b5fd" data-clone-c="' + esc(x.code) + '">📑 نسخ الفعالية</button>' +
         '<a class="btn p" style="font-size:13px;padding:6px 10px" href="../manasa/live.html?s=' + encodeURIComponent(x.code) + '" target="_blank">📊 متابعة</a>' +
       '</div>' +
     '</div>';
@@ -401,43 +402,119 @@ function renderAllTeachersArchive(allLessons) {
         '<button type="button" class="btn wa" style="font-size:13px;padding:6px 10px" data-wa-c="' + esc(x.code) + '" data-wa-t="' + esc(x.title || '') + '" data-wa-s="' + esc(x.subject || '') + '" data-wa-g="' + esc(x.grade || '') + '">💬 واتساب</button>' +
         '<a class="btn" style="font-size:13px;padding:6px 10px" href="' + studentUrl + '" target="_blank">👀 معاينة</a>' +
         '<a class="btn g" style="font-size:13px;padding:6px 10px" href="../manasa/index.html?inspect=' + encodeURIComponent(x.code) + '">🔍 فحص وتعديل</a>' +
-        (!isMine ? '<button type="button" class="btn p" style="font-size:13px;padding:6px 10px" data-clone-c="' + esc(x.code) + '">📥 نسخ لمكتبتي</button>' : '') +
+        '<button type="button" class="btn p" style="font-size:13px;padding:6px 10px" data-clone-c="' + esc(x.code) + '">' + (isMine ? '📑 نسخ الفعالية' : '📥 نسخ لمكتبتي') + '</button>' +
       '</div>' +
     '</div>';
   }).join('') + '</div>';
 }
 
-function cloneLessonToMyLibrary(sourceCode) {
+function fetchCloudLessonForClone(code) {
+  var docUrl = 'https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents:runQuery?key=' + FIREBASE_API_KEY;
+  return fetch(docUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: 'school_padlet_cards' }],
+        where: { fieldFilter: { field: { fieldPath: 'code' }, op: 'EQUAL', value: { stringValue: String(code) } } }
+      }
+    })
+  })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (rows) {
+      if (!Array.isArray(rows)) return null;
+      var best = null, bestTime = -1;
+      rows.forEach(function (row) {
+        var f = row && row.document && row.document.fields;
+        if (f && f.json && f.json.stringValue) {
+          var t = Number((f.updatedAt && f.updatedAt.integerValue) || (f.created && f.created.integerValue) || 0);
+          if (t >= bestTime) {
+            try { best = JSON.parse(f.json.stringValue); bestTime = t; } catch (_) {}
+          }
+        }
+      });
+      return best;
+    })
+    .catch(function () { return null; });
+}
+
+function saveClonedLessonToCloud(lessonObj) {
+  if (!lessonObj || !lessonObj.code) return;
+  var nowTs = Date.now();
+  var docId = 'miftaah_lesson_' + encodeURIComponent(lessonObj.code);
+  fetch(FS_BASE + '/' + docId + '?key=' + FIREBASE_API_KEY, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fields: {
+        code: { stringValue: String(lessonObj.code) },
+        title: { stringValue: String(lessonObj.title || '') },
+        subject: { stringValue: String(lessonObj.subject || 'عام') },
+        grade: { stringValue: String(lessonObj.grade || 'الصف الخامس') },
+        goal: { stringValue: String(lessonObj.goal || '') },
+        author: { stringValue: String(lessonObj.author || '') },
+        author_email: { stringValue: String(lessonObj.author_email || '') },
+        is_public: { booleanValue: false },
+        created: { integerValue: String(nowTs) },
+        updatedAt: { integerValue: String(nowTs) },
+        json: { stringValue: JSON.stringify(lessonObj) }
+      }
+    })
+  }).catch(function () {});
+}
+
+function cloneLessonToMyLibrary(sourceCode, btnEl) {
   var all = getAllLessonsFromStorage();
   var src = all.find(function (x) { return x.code === sourceCode; });
   if (!src) return;
-  var newCode = 'M' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  var prevText = btnEl ? btnEl.textContent : '';
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ جاري النسخ…'; }
+
   var rawLesson = null;
   try {
     rawLesson = JSON.parse(localStorage.getItem('manasa-lesson-' + sourceCode) || 'null');
   } catch (_) {}
-  if (rawLesson) {
-    var clonedData = JSON.parse(JSON.stringify(rawLesson));
-    clonedData.id = newCode;
-    clonedData.code = newCode;
-    clonedData.author = currentUser.name || 'معلم مشيرفة';
-    clonedData.author_email = currentUser.email || '';
-    clonedData.created = Date.now();
-    try { localStorage.setItem('manasa-lesson-' + newCode, JSON.stringify(clonedData)); } catch (_) {}
-  }
-  var clonedMeta = Object.assign({}, src, {
-    code: newCode,
-    author: currentUser.name || 'معلم مشيرفة',
-    author_email: currentUser.email || '',
-    created: Date.now(),
-    localOwner: true
+
+  var loadPromise = rawLesson ? Promise.resolve(rawLesson) : fetchCloudLessonForClone(sourceCode);
+  loadPromise.then(function (loadedLesson) {
+    var newCode = 'M' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    var nowTs = Date.now();
+    var baseTitle = (src.title || (loadedLesson && loadedLesson.title) || 'حصة تفاعلية').replace(/\s*\(نسخة(?:\s*\d+)?\)\s*$/, '');
+    var clonedTitle = baseTitle + ' (نسخة)';
+
+    if (loadedLesson) {
+      var clonedData = JSON.parse(JSON.stringify(loadedLesson));
+      clonedData.id = newCode;
+      clonedData.code = newCode;
+      clonedData.title = clonedTitle;
+      clonedData.author = currentUser.name || 'معلم مشيرفة';
+      clonedData.author_email = currentUser.email || '';
+      clonedData.created = nowTs;
+      clonedData.updatedAt = nowTs;
+      clonedData.is_edited_by_teacher = true;
+      clonedData.is_public = false;
+      try { localStorage.setItem('manasa-lesson-' + newCode, JSON.stringify(clonedData)); } catch (_) {}
+      saveClonedLessonToCloud(clonedData);
+    }
+
+    var clonedMeta = Object.assign({}, src, {
+      code: newCode,
+      title: clonedTitle,
+      author: currentUser.name || 'معلم مشيرفة',
+      author_email: currentUser.email || '',
+      is_public: false,
+      created: nowTs,
+      localOwner: true
+    });
+    var updated = [clonedMeta].concat(all);
+    try { localStorage.setItem('miftah_archive_lessons', JSON.stringify(updated)); } catch (_) {}
+    renderMineLessons(updated);
+    renderAllTeachersArchive(updated);
+    var sec = $('sec-mylibrary');
+    if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+  }).catch(function () {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = prevText || '📑 نسخ الفعالية'; }
   });
-  var updated = [clonedMeta].concat(all);
-  try { localStorage.setItem('miftah_archive_lessons', JSON.stringify(updated)); } catch (_) {}
-  renderMineLessons(updated);
-  renderAllTeachersArchive(updated);
-  var sec = $('sec-mylibrary');
-  if (sec) sec.scrollIntoView({ behavior: 'smooth' });
 }
 
 if ($('arch-q')) $('arch-q').oninput = function () { renderAllTeachersArchive(getAllLessonsFromStorage()); };
@@ -476,7 +553,7 @@ function wireCardActions(containerEl) {
     }
     var cloneBtn = e.target.closest('[data-clone-c]');
     if (cloneBtn) {
-      cloneLessonToMyLibrary(cloneBtn.getAttribute('data-clone-c'));
+      cloneLessonToMyLibrary(cloneBtn.getAttribute('data-clone-c'), cloneBtn);
     }
   });
 }
