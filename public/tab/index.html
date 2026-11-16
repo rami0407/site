@@ -9,7 +9,19 @@
 <meta property="og:description" content="اكتبْ اسمَك ورقمَ هويتك وكودَ الدخول الذي أرسله معلّمك.">
 <meta property="og:image" content="https://musherfe.com/school_logo.png">
 <link rel="icon" href="assets/logo.jpg">
-<link rel="stylesheet" href="site.css">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="stylesheet" href="site.css?v=20261116_v9">
+<script>
+(function(){
+  var vTag='v=pupil_20261116_v9';
+  if(!window.location.search.includes(vTag)){
+    var sep=window.location.search?'&':'?';
+    window.location.replace(window.location.pathname+window.location.search+sep+vTag+'&_ts='+Date.now()+window.location.hash);
+  }
+})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;800&display=swap');
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
@@ -35,8 +47,12 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .go:active{transform:translateY(2px);box-shadow:0 2px 0 #d9a400}.go:disabled{opacity:.6}
 .msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b;font-size:14.5px}
 .msg.ok{color:#2f855a}
+.role-tabs{display:flex;gap:8px;background:#f1f5f9;padding:5px;border-radius:16px;margin:6px 0 12px;border:1.5px solid #e2e8f0}
+.role-tab{flex:1;border:0;border-radius:12px;padding:9px 8px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;background:transparent;color:#475569;transition:all .18s}
+.role-tab.active{background:#fff;color:#5b21b6;box-shadow:0 3px 10px rgba(91,33,182,.14);border:1.5px solid #ddd6fe}
+.guest-note{display:none;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#4c1d95;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;text-align:right;margin-bottom:10px;line-height:1.55}
 </style>
-<script src="manasa/students-roster.js?v=20261116_v5"></script>
+<script src="manasa/students-roster.js?v=20261116_v9"></script>
 </head>
 <body>
 <a class="home" href="teacher/login.html" title="دخول المعلّم" aria-label="دخول المعلّم">🏠</a>
@@ -47,14 +63,21 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     <p class="sub">مدرسة مشيرفة الجماهيرية الابتدائية</p>
     <div class="excellence-pill">🏆 سنة التميّز المدرسي — سجلّ تقييم الطلاب</div>
 
-    <div class="f">
+    <div class="role-tabs" role="tablist" aria-label="نوع الدخول">
+      <button type="button" class="role-tab active" id="tab-student" role="tab" aria-selected="true">🎒 طالب</button>
+      <button type="button" class="role-tab" id="tab-guest" role="tab" aria-selected="false">👩‍🏫 معلّم / ضيف (فعالية)</button>
+    </div>
+
+    <div id="guest-note" class="guest-note">✨ <b>وضع الفعاليات والمعلّمين:</b> أدخل اسمك وكود الحصّة فقط للدخول مباشرة بدون رقم هويّة طالب.</div>
+
+    <div class="f" id="tz-wrap">
       <label for="tz">🔐 الرّقم السّرّي للطالب (رقم الهويّة)</label>
       <input id="tz" class="tz-inp" maxlength="10" inputmode="numeric" placeholder="أدخل رقم هويتك (9 أرقام)" autocomplete="off">
       <div id="tz-badge" class="tz-verify-card"></div>
     </div>
 
     <div class="f">
-      <label for="nm">👤 اسم الطالب <small style="color:#64748b;font-weight:600">(اكتبه كما تحبّ)</small></label>
+      <label for="nm" id="nm-label">👤 اسم الطالب <small style="color:#64748b;font-weight:600">(اكتبه كما تحبّ)</small></label>
       <input id="nm" maxlength="35" placeholder="اكتب اسمك هنا" autocomplete="off">
     </div>
 
@@ -71,11 +94,43 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 <script>
 (function () {
   var nm = document.getElementById('nm'),
+      nmLabel = document.getElementById('nm-label'),
       tz = document.getElementById('tz'),
+      tzWrap = document.getElementById('tz-wrap'),
       tzBadge = document.getElementById('tz-badge'),
       cd = document.getElementById('cd'),
       m = document.getElementById('m'),
-      go = document.getElementById('go');
+      go = document.getElementById('go'),
+      tabStudent = document.getElementById('tab-student'),
+      tabGuest = document.getElementById('tab-guest'),
+      guestNote = document.getElementById('guest-note'),
+      portfolioBtn = document.getElementById('my-portfolio-btn'),
+      isGuestMode = false;
+
+  function setEntryMode(guest) {
+    isGuestMode = !!guest;
+    if (tabStudent) {
+      tabStudent.classList.toggle('active', !isGuestMode);
+      tabStudent.setAttribute('aria-selected', String(!isGuestMode));
+    }
+    if (tabGuest) {
+      tabGuest.classList.toggle('active', isGuestMode);
+      tabGuest.setAttribute('aria-selected', String(isGuestMode));
+    }
+    if (tzWrap) tzWrap.style.display = isGuestMode ? 'none' : 'block';
+    if (guestNote) guestNote.style.display = isGuestMode ? 'block' : 'none';
+    if (portfolioBtn) portfolioBtn.style.display = isGuestMode ? 'none' : 'block';
+    if (nmLabel) {
+      nmLabel.innerHTML = isGuestMode
+        ? '👩‍🏫 اسم المشارك / المعلّم'
+        : '👤 اسم الطالب <small style="color:#64748b;font-weight:600">(اكتبه كما تحبّ)</small>';
+    }
+    if (nm) nm.placeholder = isGuestMode ? 'اكتب اسمك الكامل هنا' : 'اكتب اسمك هنا';
+    if (m) { m.className = 'msg'; m.textContent = ''; }
+  }
+
+  if (tabStudent) tabStudent.addEventListener('click', function () { setEntryMode(false); });
+  if (tabGuest) tabGuest.addEventListener('click', function () { setEntryMode(true); nm && nm.focus(); });
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -90,6 +145,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 
   var q = new URLSearchParams(location.search);
   if (q.get('code')) cd.value = q.get('code').toUpperCase();
+  if (q.get('guest') === '1' || q.get('mode') === 'staff') setEntryMode(true);
 
   function verifyTzInput(autoFillName) {
     var raw = (tz.value || '').trim();
@@ -133,24 +189,32 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     m.className = 'msg';
     m.textContent = '';
 
-    var stu = verifyTzInput(true);
-    var rawTz = (tz.value || '').trim();
-    if (!rawTz) {
-      m.textContent = 'أدخلْ رقمَ هويتك (الرقم السري للطالب) أوّلاً.';
-      tz.focus();
-      return;
-    }
-    if (!stu) {
-      m.textContent = 'رقمُ الهوية غيرُ موجود في سجلّ طلاب المدرسة. تأكّد من كتابة رقم هويتك الصحيح (9 أرقام).';
-      tz.focus();
-      tz.select();
-      return;
-    }
-
+    var stu = null;
     var name = nm.value.trim().replace(/\s+/g, ' ');
-    if (!name) {
-      name = stu.studentName;
-      nm.value = name;
+    if (isGuestMode) {
+      if (!name) {
+        m.textContent = 'أدخلْ اسمك للمشاركة في الفعالية أو الحصّة.';
+        nm.focus();
+        return;
+      }
+    } else {
+      stu = verifyTzInput(true);
+      var rawTz = (tz.value || '').trim();
+      if (!rawTz) {
+        m.textContent = 'أدخلْ رقمَ هويتك (الرقم السري للطالب) أوّلاً.';
+        tz.focus();
+        return;
+      }
+      if (!stu) {
+        m.textContent = 'رقمُ الهوية غيرُ موجود في سجلّ طلاب المدرسة. تأكّد من كتابة رقم هويتك الصحيح (9 أرقام) أو اختر وضع «معلّم / ضيف».';
+        tz.focus();
+        tz.select();
+        return;
+      }
+      if (!name) {
+        name = stu.studentName;
+        nm.value = name;
+      }
     }
 
     var code = cd.value.trim().toUpperCase();
@@ -169,6 +233,27 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     go.textContent = '⏳ لحظة…';
 
     function done(url) {
+      var sep = url.indexOf('?') >= 0 ? '&' : '?';
+      var bust = 'v=20261116_v9&_ts=' + Date.now();
+      if (isGuestMode) {
+        var guestPid = '';
+        try {
+          var existingPid = localStorage.getItem('manasa-pid') || '';
+          guestPid = (existingPid && existingPid.indexOf('staff_') === 0)
+            ? existingPid
+            : ('staff_' + Math.random().toString(36).slice(2, 10));
+          localStorage.removeItem('manasa-student-id');
+          localStorage.removeItem('manasa-official-name');
+          localStorage.removeItem('manasa-class-key');
+          localStorage.removeItem('manasa-class-arabic');
+          localStorage.removeItem('manasa-class-label');
+          localStorage.removeItem('manasa-group-mates');
+          localStorage.setItem('manasa-pid', guestPid);
+          localStorage.setItem('manasa-name', name);
+        } catch (_) {}
+        location.href = url + sep + 'guest=1&nm=' + encodeURIComponent(name) + '&' + bust;
+        return;
+      }
       try {
         localStorage.setItem('manasa-student-id', stu.idNumber);
         localStorage.setItem('manasa-pid', 'id_' + stu.idNumber);
@@ -177,9 +262,9 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
         localStorage.setItem('manasa-class-key', stu.classKey);
         localStorage.setItem('manasa-class-arabic', stu.classArabic);
         localStorage.setItem('manasa-class-label', stu.classLabel);
+        localStorage.removeItem('manasa-group-mates');
       } catch (_) {}
-      var sep = url.indexOf('?') >= 0 ? '&' : '?';
-      location.href = url + sep + 'tz=' + encodeURIComponent(stu.idNumber) + '&nm=' + encodeURIComponent(name);
+      location.href = url + sep + 'tz=' + encodeURIComponent(stu.idNumber) + '&nm=' + encodeURIComponent(name) + '&' + bust;
     }
 
     // 1. فحص التخزين المحلي أولاً للدخول الفوري
