@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="site.css?v=20261116_v7">
+<link rel="stylesheet" href="site.css?v=20261116_v8">
 <script>
 (function(){
   var vTag='v=pupil_20261116_v7';
@@ -48,7 +48,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b;font-size:14.5px}
 .msg.ok{color:#2f855a}
 </style>
-<script src="manasa/students-roster.js?v=20261116_v7"></script>
+<script src="manasa/students-roster.js?v=20261116_v8"></script>
 </head>
 <body>
 <a class="home" href="teacher/login.html" title="دخول المعلّم" aria-label="دخول المعلّم">🏠</a>
@@ -192,7 +192,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
         localStorage.removeItem('manasa-group-mates');
       } catch (_) {}
       var sep = url.indexOf('?') >= 0 ? '&' : '?';
-      var bust = 'v=20261116_v7&_ts=' + Date.now();
+      var bust = 'v=20261116_v8&_ts=' + Date.now();
       location.href = url + sep + 'tz=' + encodeURIComponent(stu.idNumber) + '&nm=' + encodeURIComponent(name) + '&' + bust;
     }
 

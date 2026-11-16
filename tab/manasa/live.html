@@ -1202,6 +1202,26 @@ function autoBalancePupilsIntoGroups(st, forceRedistribute) {
   P.forEach(function (p) {
     var pid = p.pid || p.name;
     if (!pid) return;
+    if (p.sharedTabletLeader) {
+      // الطالب مضاف على جهاز مشترك مع قائد — يُلحق تلقائياً بنفس مجموعة قائده
+      var leader = P.find(function (x) {
+        return (x.pid && x.pid === p.sharedTabletLeader) ||
+               (x.officialName && x.officialName === p.sharedTabletLeader) ||
+               (x.name && x.name === p.sharedTabletLeader) ||
+               (Array.isArray(x.sharedTabletWith) && (x.sharedTabletWith.includes(p.name) || x.sharedTabletWith.includes(p.officialName)));
+      });
+      var leaderPid = leader ? (leader.pid || leader.name) : p.sharedTabletLeader;
+      var leaderG = (grp.assignments[leaderPid] && grp.assignments[leaderPid].group) || 1;
+      grp.assignments[pid] = {
+        group: leaderG,
+        name: p.officialName || p.name || 'طالب',
+        sharedTabletLeader: p.sharedTabletLeader,
+        updatedBy: 'shared_tablet',
+        updatedAt: nowTs
+      };
+      bucketSizes[leaderG] = (bucketSizes[leaderG] || 0) + 1;
+      return;
+    }
     if (!grp.assignments[pid]) {
       var bestG = 1;
       for (var g = 2; g <= count; g++) {
@@ -1540,6 +1560,59 @@ function renderPacingAndGroupingUI(st) {
   });
 
   // Build pupil lookup & group lists
+  // مزامنة طلاب الأجهزة المشتركة تلقائياً مع مجموعات قادتهم
+  P.forEach(function (p) {
+    var pid = p.pid || p.name;
+    if (p.sharedTabletLeader) {
+      var leader = P.find(function (x) {
+        return (x.pid && x.pid === p.sharedTabletLeader) ||
+               (x.officialName && x.officialName === p.sharedTabletLeader) ||
+               (x.name && x.name === p.sharedTabletLeader) ||
+               (Array.isArray(x.sharedTabletWith) && (x.sharedTabletWith.includes(p.name) || x.sharedTabletWith.includes(p.officialName)));
+      });
+      var leaderPid = leader ? (leader.pid || leader.name) : null;
+      var leaderAssign = leaderPid ? grp.assignments[leaderPid] : null;
+      if (!leaderAssign) {
+        var lKey = Object.keys(grp.assignments).find(function (k) {
+          var a = grp.assignments[k];
+          return a && (a.name === p.sharedTabletLeader || k === p.sharedTabletLeader);
+        });
+        if (lKey) leaderAssign = grp.assignments[lKey];
+      }
+      if (leaderAssign && leaderAssign.group) {
+        grp.assignments[pid] = {
+          group: leaderAssign.group,
+          name: p.officialName || p.name || 'طالب',
+          sharedTabletLeader: p.sharedTabletLeader,
+          updatedBy: 'shared_tablet',
+          updatedAt: Date.now()
+        };
+      }
+    }
+  });
+
+  P.forEach(function (leader) {
+    if (Array.isArray(leader.sharedTabletWith) && leader.sharedTabletWith.length) {
+      var lPid = leader.pid || leader.name;
+      var lAssign = grp.assignments[lPid];
+      if (lAssign && lAssign.group) {
+        leader.sharedTabletWith.forEach(function (mateName) {
+          var mateP = P.find(function (x) { return x.name === mateName || x.officialName === mateName; });
+          var mPid = mateP ? (mateP.pid || mateP.name) : ('id_name_' + mateName);
+          if (!grp.assignments[mPid] || grp.assignments[mPid].group !== lAssign.group) {
+            grp.assignments[mPid] = {
+              group: lAssign.group,
+              name: mateName,
+              sharedTabletLeader: leader.officialName || leader.name,
+              updatedBy: 'shared_tablet',
+              updatedAt: Date.now()
+            };
+          }
+        });
+      }
+    }
+  });
+
   var unassignedPupils = [];
   var groupsMembers = {};
   for (var g = 1; g <= grp.groupCount; g++) groupsMembers[g] = [];
@@ -1619,8 +1692,14 @@ function renderPacingAndGroupingUI(st) {
         for (var k = 1; k <= grp.groupCount; k++) {
           moveOpts += '<option value="' + k + '"' + (k === gIdx ? ' selected' : '') + '>مجموعة ' + k + '</option>';
         }
+        var tabletBadge = '';
+        if (Array.isArray(m.sharedTabletWith) && m.sharedTabletWith.length) {
+          tabletBadge = ' <span class="pill" style="background:#f3e8ff;color:#7c3aed;font-size:11px;padding:2px 7px;font-weight:800;border:1px solid #c4b5fd">👑 قائد جهاز (+ ' + m.sharedTabletWith.length + ')</span>';
+        } else if (m.sharedTabletLeader) {
+          tabletBadge = ' <span class="pill" style="background:#ede9fe;color:#6d28d9;font-size:11px;padding:2px 7px;font-weight:800;border:1px solid #ddd6fe">📱 مشترك مع: ' + esc(m.sharedTabletLeader) + '</span>';
+        }
         return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 8px;border-radius:8px;margin-bottom:5px;font-size:13.5px;border:1px solid #e2e8f0">' +
-          '<div><b>' + esc(m.name) + '</b> <small class="muted">(«' + esc(m.station || 'م') + '» · تدريب ' + pScore + ')</small></div>' +
+          '<div><b>' + esc(m.name) + '</b>' + tabletBadge + ' <small class="muted">(«' + esc(m.station || 'م') + '» · تدريب ' + pScore + ')</small></div>' +
           '<select data-assign-pid="' + esc(pid) + '" data-assign-name="' + esc(m.name) + '" title="نقل الطالب لمجموعة أخرى" style="padding:2px 6px;border-radius:6px;border:1px solid #cbd5e1;font-size:12px;font-family:inherit;width:auto;margin:0">' + moveOpts + '</select>' +
         '</div>';
       }).join('') : '<p class="muted" style="font-size:13px;text-align:center;margin:12px 0">لا يوجد طلاب في هذه المجموعة بعد</p>') +
@@ -1655,6 +1734,23 @@ function renderPacingAndGroupingUI(st) {
           updatedBy: 'teacher',
           updatedAt: nowTs
         };
+        // إذا كان هذا الطالب قائد جهاز، انقل جميع زملائه المضافين معه لنفس المجموعة
+        var curP = (Array.isArray(curSt.pupils) ? curSt.pupils : Object.values(curSt.pupils || {}));
+        var leaderPupil = curP.find(function(x) { return (x.pid || x.name) === pid || x.officialName === pname || x.name === pname; });
+        if (leaderPupil && Array.isArray(leaderPupil.sharedTabletWith)) {
+          curP.forEach(function(tp) {
+            if (tp.sharedTabletLeader === pname || tp.sharedTabletLeader === leaderPupil.name || leaderPupil.sharedTabletWith.includes(tp.name)) {
+              var tPid = tp.pid || tp.name;
+              curGrp.assignments[tPid] = {
+                group: targetG,
+                name: tp.name,
+                sharedTabletLeader: pname,
+                updatedBy: 'teacher',
+                updatedAt: nowTs
+              };
+            }
+          });
+        }
         curGrp.updatedAt = nowTs;
         saveLocalLiveState(curSt);
         renderState(curSt);

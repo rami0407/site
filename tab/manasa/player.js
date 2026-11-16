@@ -278,6 +278,67 @@ function renderSharedTabletGroupBoxHtml() {
   '</div>';
 }
 
+function getStudentGroupMembership(stuObj) {
+  if (!stuObj) return null;
+  var tz = String(stuObj.idNumber || '').trim();
+  var sName = String(stuObj.studentName || '').trim();
+
+  // 1. هل الطالب مضاف معي على نفس هذا الجهاز؟
+  if (Array.isArray(S.mates) && S.mates.some(function (m) {
+    return (tz && String(m.idNumber) === tz) || (sName && m.studentName === sName);
+  })) {
+    return { inMyGroup: true, label: 'مضاف معك في هذا الجهاز' };
+  }
+
+  // 2. هل الطالب مضاف على جهاز مشترك آخر أو قائد جهاز آخر (من سجل الطلاب المباشر)؟
+  if (livePupilsMap && typeof livePupilsMap === 'object') {
+    var pList = Array.isArray(livePupilsMap) ? livePupilsMap : Object.values(livePupilsMap);
+    for (var i = 0; i < pList.length; i++) {
+      var p = pList[i];
+      if (!p) continue;
+      var pTz = String(p.studentId || '').trim();
+      var pName = String(p.officialName || p.name || '').trim();
+      var isThisStudent = (tz && pTz === tz) || (sName && (pName === sName || p.name === sName));
+
+      if (isThisStudent) {
+        if (p.sharedTabletLeader && p.sharedTabletLeader !== S.officialName && p.sharedTabletLeader !== S.name) {
+          return { taken: true, leader: p.sharedTabletLeader, label: 'منضم لمجموعة أخرى (مع: ' + p.sharedTabletLeader + ')' };
+        }
+        if (Array.isArray(p.sharedTabletWith) && p.sharedTabletWith.length && p.studentId !== S.studentId) {
+          return { taken: true, leader: pName, label: 'قائد جهاز لمجموعة أخرى' };
+        }
+      }
+
+      if (p.studentId !== S.studentId && Array.isArray(p.sharedTabletWith)) {
+        if (p.sharedTabletWith.some(function (n) { return n === sName || n === pName; })) {
+          return { taken: true, leader: (p.officialName || p.name), label: 'منضم لمجموعة أخرى (مع: ' + (p.officialName || p.name) + ')' };
+        }
+      }
+    }
+  }
+
+  // 3. هل الطالب مسجّل بالفعل في مجموعة معيّنة ضمن تعيينات المجموعات؟
+  if (liveGrouping && liveGrouping.assignments && typeof liveGrouping.assignments === 'object') {
+    var aKeys = Object.keys(liveGrouping.assignments);
+    for (var j = 0; j < aKeys.length; j++) {
+      var aPid = aKeys[j];
+      var a = liveGrouping.assignments[aPid];
+      if (!a || !a.group) continue;
+      if (aPid === S.pid || aPid === ('id_' + S.studentId)) continue;
+      var aTz = aPid.replace(/^id_/, '');
+      var aName = String(a.name || '').trim();
+
+      if ((tz && aTz === tz) || (sName && aName === sName)) {
+        var meta = GROUP_META_PLAYER[a.group - 1] || { name: 'المجموعة ' + a.group };
+        var extra = a.sharedTabletLeader ? ' (مع: ' + a.sharedTabletLeader + ')' : '';
+        return { taken: true, groupNum: a.group, label: 'منضم إلى: ' + meta.name + extra };
+      }
+    }
+  }
+
+  return null;
+}
+
 function wireSharedTabletGroupBox() {
   var chk = document.getElementById('ta-shared-chk');
   var panel = document.getElementById('ta-shared-panel');
@@ -296,14 +357,14 @@ function wireSharedTabletGroupBox() {
       var base = nameEl.textContent.replace(/\s*👥\s*\+\d+$/, '');
       nameEl.textContent = (S.mates && S.mates.length) ? (base + ' 👥 +' + S.mates.length) : base;
     }
-    if (S.sid && liveGrouping && liveGrouping.assignments) {
-      var myPid = S.pid || ('p_' + (S.name || 'pupil'));
-      var myAssign = liveGrouping.assignments[myPid];
-      if (myAssign && myAssign.group) {
-        assignStudentToGroup(myAssign.group, 'shared_tablet');
-      }
+    var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+    var myAssign = liveGrouping && liveGrouping.assignments && liveGrouping.assignments[myPid];
+    var leaderGroup = (myAssign && myAssign.group) || 1;
+    if (S.sid) {
+      assignStudentToGroup(leaderGroup, 'shared_tablet');
     }
     report();
+    populateSelect();
   }
 
   function populateSelect() {
@@ -314,10 +375,27 @@ function wireSharedTabletGroupBox() {
     } else if (Array.isArray(window.MIFTAH_ROSTER.allStudents)) {
       list = window.MIFTAH_ROSTER.allStudents;
     }
-    sel.innerHTML = '<option value="">-- اختر زميلاً ' + (S.classArabic ? 'من ' + esc(S.classArabic) : '') + ' --</option>' +
+    var curVal = sel.value;
+    sel.innerHTML = '<option value="">-- اختر زميلاً من الصف --</option>' +
       list.filter(function (x) { return x.idNumber !== S.studentId; }).map(function (x) {
-        return '<option value="' + esc(x.idNumber) + '">' + esc(x.studentName) + (S.classKey ? '' : ' (' + esc(x.classArabic) + ')') + '</option>';
+        var info = getStudentGroupMembership(x);
+        var clsPart = S.classKey ? '' : ' (' + esc(x.classArabic) + ')';
+        if (info && info.taken) {
+          // رمادي فاتح وغير متاح للاختيار لأنه منضم لمجموعة أخرى
+          return '<option value="' + esc(x.idNumber) + '" disabled style="color:#94a3b8;background:#f8fafc;font-style:italic">' +
+            '🔒 ' + esc(x.studentName) + clsPart + ' — [' + esc(info.label) + ']' +
+          '</option>';
+        } else if (info && info.inMyGroup) {
+          return '<option value="' + esc(x.idNumber) + '" disabled style="color:#7c3aed;background:#f5f3ff">' +
+            '✓ ' + esc(x.studentName) + clsPart + ' (مضاف معك)' +
+          '</option>';
+        } else {
+          return '<option value="' + esc(x.idNumber) + '" style="color:#0f172a;font-weight:700">' +
+            '👤 ' + esc(x.studentName) + clsPart +
+          '</option>';
+        }
       }).join('');
+    if (curVal) sel.value = curVal;
   }
 
   function renderList() {
@@ -350,6 +428,11 @@ function wireSharedTabletGroupBox() {
     if (msgEl) msgEl.textContent = '';
     if (stuObj.idNumber === S.studentId) {
       if (msgEl) msgEl.textContent = 'هذا رقم هويتك أنت! أضف رقم هوية زميلك.';
+      return;
+    }
+    var info = getStudentGroupMembership(stuObj);
+    if (info && info.taken) {
+      if (msgEl) msgEl.textContent = '⚠️ الطالب «' + stuObj.studentName + '» ' + info.label + '؛ لا يمكن إضافته لأكثر من مجموعة.';
       return;
     }
     S.mates = S.mates || [];
@@ -1097,6 +1180,9 @@ function startFlashWatcher() {
     }
     liveGrouping = st.grouping || null;
     livePupilsMap = st.pupils || {};
+    if (document.getElementById('ta-mate-select')) {
+      wireSharedTabletGroupBox();
+    }
 
     // 1. Flash alert
     if (st.flash && st.flash.active && st.flash.expiresAt > Date.now()) {
@@ -2024,18 +2110,48 @@ function tryAdvanceToStation(targetSt, proceedFn) {
 function assignStudentToGroup(groupNum, byWho) {
   if (!S.sid) return;
   var myPid = S.pid || ('p_' + (S.name || 'pupil'));
+  var leaderName = S.officialName || S.name || 'طالب';
   var nowTs = Date.now();
   try {
     var liveKey = 'manasa-live-state-' + S.sid;
     var state = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":{},"helps":[],"flash":null}');
     state.grouping = state.grouping || liveGrouping || { enabled: true, groupCount: 4, assignMode: 'student', moveMode: 'free', resetId: 1, assignments: {} };
     state.grouping.assignments = state.grouping.assignments || {};
+    
+    // تعيين قائد الجهاز للمجموعة
     state.grouping.assignments[myPid] = {
       group: groupNum,
-      name: S.name || 'طالب',
+      name: leaderName,
       updatedBy: byWho || 'student',
       updatedAt: nowTs
     };
+
+    // تعيين جميع الزملاء المضافين على هذا الجهاز التشاركي لنفس المجموعة فوراً
+    var activeMates = Array.isArray(S.mates) ? S.mates : [];
+    activeMates.forEach(function (mt) {
+      if (mt && mt.idNumber) {
+        var mPid = 'id_' + mt.idNumber;
+        state.grouping.assignments[mPid] = {
+          group: groupNum,
+          name: mt.studentName,
+          sharedTabletLeader: leaderName,
+          updatedBy: 'shared_tablet',
+          updatedAt: nowTs
+        };
+      }
+    });
+
+    // إزالة تعيين أي زميل تم حذفه من الجهاز
+    Object.keys(state.grouping.assignments).forEach(function (pid) {
+      var a = state.grouping.assignments[pid];
+      if (a && a.updatedBy === 'shared_tablet' && a.sharedTabletLeader === leaderName) {
+        var stillIn = activeMates.some(function (mt) { return ('id_' + mt.idNumber) === pid || mt.studentName === a.name; });
+        if (!stillIn) {
+          delete state.grouping.assignments[pid];
+        }
+      }
+    });
+
     state.grouping.updatedAt = nowTs;
     liveGrouping = state.grouping;
     localStorage.setItem(liveKey, JSON.stringify(state));
