@@ -2010,18 +2010,20 @@ function start() {
     .catch(function (e) { h('<div class="card"><h2>😕 لم نستطع فتح الحصة</h2><p>' + esc(typeof e === 'string' ? e : 'تأكّد من الرابط أو الرمز.') + '</p><a class="btn" href="./">العودة</a></div>'); });
 }
 function welcome() {
+  var isGuest = qs.get('guest') === '1';
   var saved = '';
   var savedId = '';
   try {
     saved = qs.get('nm') || localStorage.getItem('manasa-name') || sessionStorage.getItem('manasa-name') || '';
-    savedId = qs.get('tz') || localStorage.getItem('manasa-student-id') || sessionStorage.getItem('manasa-student-id') || '';
+    savedId = isGuest ? '' : (qs.get('tz') || localStorage.getItem('manasa-student-id') || sessionStorage.getItem('manasa-student-id') || '');
   } catch (_) {
     saved = qs.get('nm') || '';
-    savedId = qs.get('tz') || '';
+    savedId = isGuest ? '' : (qs.get('tz') || '');
   }
-  var savedStu = (window.MIFTAH_ROSTER && savedId) ? window.MIFTAH_ROSTER.findStudentById(savedId) : null;
+  var savedStu = (!isGuest && window.MIFTAH_ROSTER && savedId) ? window.MIFTAH_ROSTER.findStudentById(savedId) : null;
 
   function applyIdentityAndStart() {
+    S.isGuest = isGuest || !savedStu;
     if (savedStu) {
       S.studentId = savedStu.idNumber;
       S.officialName = savedStu.studentName;
@@ -2031,11 +2033,17 @@ function welcome() {
       S.name = saved || savedStu.studentName;
       S.pid = 'id_' + savedStu.idNumber;
     } else {
-      S.name = saved || 'طالب';
+      S.studentId = '';
+      S.officialName = '';
+      S.classKey = '';
+      S.classArabic = '';
+      S.classLabel = '';
+      S.name = saved || (isGuest ? 'مشارك' : 'طالب');
       try {
-        S.pid = localStorage.getItem('manasa-pid') || sessionStorage.getItem('manasa-pid') || ('p_' + Math.random().toString(36).slice(2, 10));
+        var storedPid = localStorage.getItem('manasa-pid') || sessionStorage.getItem('manasa-pid') || '';
+        S.pid = (storedPid && storedPid.indexOf('id_') !== 0) ? storedPid : ('staff_' + Math.random().toString(36).slice(2, 10));
       } catch (_) {
-        S.pid = 'p_' + Math.random().toString(36).slice(2, 10);
+        S.pid = 'staff_' + Math.random().toString(36).slice(2, 10);
       }
     }
     try {
