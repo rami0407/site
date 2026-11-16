@@ -1,5 +1,5 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261115_v11">
-<script src="students-roster.js?v=20261115_v11"></script>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة المتابعة — منصة مفتاح</title><link rel="stylesheet" href="manasa.css?v=20261116_v1">
+<script src="students-roster.js?v=20261116_v1"></script>
 <style>
 .kahoot-opt-card {
   padding: 16px;
@@ -1755,6 +1755,8 @@ function formatPupilBadge(p){
   if(inf.official && inf.official !== p.name) sub.push('📋 '+esc(inf.official));
   if(inf.cls) sub.push('🏫 '+esc(inf.cls));
   if(inf.idStr) sub.push('🪪 ..'+esc(inf.idStr.slice(-4)));
+  if(Array.isArray(p.sharedTabletWith)&&p.sharedTabletWith.length) sub.push('📱 تابليت مشترك (+'+p.sharedTabletWith.length+')');
+  if(p.sharedTabletLeader) sub.push('📱 مع: '+esc(p.sharedTabletLeader));
   return '<b>'+esc(p.name)+'</b> 🔍'+(sub.length?'<div style="font-size:11.5px;color:#0369a1;font-weight:700;margin-top:2px">'+sub.join(' · ')+'</div>':'');
 }
 function table(st){

@@ -37,6 +37,7 @@ function report() {
     var state = JSON.parse(localStorage.getItem(liveKey) || '{"pupils":{},"helps":[],"flash":null}');
     var nowTs = Date.now();
     var myPid = S.pid || (S.studentId ? ('id_' + S.studentId) : ('p_' + (S.name || 'pupil')));
+    var matesList = Array.isArray(S.mates) ? S.mates : [];
     var pupilObj = {
       pid: myPid,
       studentId: S.studentId || '',
@@ -45,6 +46,7 @@ function report() {
       classArabic: S.classArabic || '',
       classLabel: S.classLabel || '',
       name: S.name || 'طالب',
+      sharedTabletWith: matesList.map(function (m) { return m.studentName; }),
       station: ST[Math.min(S.st, 4)][0] + (S.done ? '✓' : ''),
       level: S.data.level,
       checks: S.data.checks,
@@ -58,14 +60,32 @@ function report() {
       updated: nowTs,
       updatedAt: nowTs
     };
-    if (Array.isArray(state.pupils)) {
-      var idx = state.pupils.findIndex(function (p) { return (p.pid && p.pid === pupilObj.pid) || (p.name && p.name === pupilObj.name); });
-      if (idx >= 0) state.pupils[idx] = pupilObj;
-      else state.pupils.push(pupilObj);
-    } else {
-      state.pupils = state.pupils || {};
-      state.pupils[myPid] = pupilObj;
+    function upsertPupilRecord(rec) {
+      if (Array.isArray(state.pupils)) {
+        var idx = state.pupils.findIndex(function (p) { return (p.pid && p.pid === rec.pid) || (p.name && p.name === rec.name); });
+        if (idx >= 0) state.pupils[idx] = rec;
+        else state.pupils.push(rec);
+      } else {
+        state.pupils = state.pupils || {};
+        state.pupils[rec.pid] = rec;
+      }
     }
+    upsertPupilRecord(pupilObj);
+    matesList.forEach(function (mt) {
+      if (!mt || !mt.idNumber || mt.idNumber === S.studentId) return;
+      var mateObj = Object.assign({}, pupilObj, {
+        pid: 'id_' + mt.idNumber,
+        studentId: mt.idNumber,
+        officialName: mt.studentName,
+        classKey: mt.classKey || pupilObj.classKey,
+        classArabic: mt.classArabic || pupilObj.classArabic,
+        classLabel: mt.classLabel || pupilObj.classLabel,
+        name: mt.studentName,
+        sharedTabletWith: [],
+        sharedTabletLeader: S.officialName || S.name || 'زميل المجموعة'
+      });
+      upsertPupilRecord(mateObj);
+    });
     localStorage.setItem(liveKey, JSON.stringify(state));
     pushLiveStateToCloud(state);
   } catch (e) {}
@@ -279,7 +299,8 @@ function startStudentTimer(name) {
         displayName = official + ' (' + chosen + ')';
       }
       var classPart = S.classArabic ? ' — ' + S.classArabic : '';
-      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(displayName + classPart) + '</span>' +
+      var matesBadge = (Array.isArray(S.mates) && S.mates.length) ? (' 👥 +' + S.mates.length) : '';
+      timerBox.innerHTML = '<span class="p-name">👤 ' + esc(displayName + classPart + matesBadge) + '</span>' +
         '<span class="p-clock" id="pupil-timer-clock">⏱️ 00:00</span>' +
         '<button type="button" class="p-exit-btn" id="pupil-exit-btn">🚪 خروج</button>';
       topEl.appendChild(timerBox);
@@ -1682,7 +1703,7 @@ function start() {
           welcome();
           return;
         }
-        return fetch('lessons/TMYZ26.json?v=20261115_v11')
+        return fetch('lessons/TMYZ26.json?v=20261116_v1')
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(function (lData) {
             try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -1757,6 +1778,12 @@ function welcome() {
       } catch (_) {
         S.pid = 'p_' + Math.random().toString(36).slice(2, 10);
       }
+    }
+    try {
+      var rawMates = JSON.parse(localStorage.getItem('manasa-group-mates') || '[]');
+      S.mates = Array.isArray(rawMates) ? rawMates.filter(function (x) { return x && x.idNumber && x.idNumber !== S.studentId; }) : [];
+    } catch (_) {
+      S.mates = [];
     }
     try {
       localStorage.setItem('manasa-name', S.name);
