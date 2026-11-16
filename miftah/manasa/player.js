@@ -311,6 +311,20 @@ function startStudentTimer(name) {
     }
   }
 
+  function refreshTopNameBadge() {
+    var nameEl = document.querySelector('#pupil-timer-bar .p-name');
+    if (!nameEl) return;
+    var official = S.officialName || '';
+    var chosen = S.name || '';
+    var displayName = official || chosen || 'طالب';
+    if (official && chosen && chosen !== official) {
+      displayName = official + ' (' + chosen + ')';
+    }
+    var classPart = S.classArabic ? ' — ' + S.classArabic : '';
+    var matesBadge = (Array.isArray(S.mates) && S.mates.length) ? (' 👥 +' + S.mates.length) : '';
+    nameEl.textContent = '👤 ' + displayName + classPart + matesBadge;
+  }
+
   function tick() {
     var elapsedSec = Math.max(0, Math.floor((Date.now() - studentStartTime) / 1000));
     var clockEl = document.getElementById('pupil-timer-clock');
@@ -1703,7 +1717,7 @@ function start() {
           welcome();
           return;
         }
-        return fetch('lessons/TMYZ26.json?v=20261116_v4')
+        return fetch('lessons/TMYZ26.json?v=20261116_v5')
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(function (lData) {
             try { localStorage.setItem('manasa-lesson-TMYZ26', JSON.stringify(lData)); } catch (_) {}
@@ -2898,6 +2912,150 @@ function renderDifferentiatedTracksCard(curLv) {
   '</div>';
 }
 
+function renderSharedTabletGroupBoxHtml() {
+  var active = Array.isArray(S.mates) && S.mates.length > 0;
+  setTimeout(wireSharedTabletGroupBox, 25);
+  return '<div id="ta-shared-group-box" style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:14px;padding:10px 12px;margin:10px 0">' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:14.5px;font-weight:800;color:#4c1d95">' +
+      '<input type="checkbox" id="ta-shared-chk"' + (active ? ' checked' : '') + ' style="width:18px;height:18px;margin:0;accent-color:#6d28d9">' +
+      '<span>👥 نعمل كمجموعة على هذا الجهاز (حتى 6 طلاب) — اختياري</span>' +
+    '</label>' +
+    '<div id="ta-shared-panel" style="display:' + (active ? 'block' : 'none') + ';margin-top:10px;border-top:1px dashed #c4b5fd;padding-top:8px">' +
+      '<p style="margin:0 0 6px;font-size:12.5px;color:#5b21b6;font-weight:600">الوضع الافتراضي فردي؛ عند التفعيل أضف زملاءك ليُسجَّل التمرين واللعبة للجميع:</p>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">' +
+        '<select id="ta-mate-select" style="flex:1;min-width:150px;font:inherit;font-size:14px;padding:6px 8px;border:1.5px solid #c4b5fd;border-radius:10px;background:#fff">' +
+          '<option value="">-- اختر زميلاً من الصف --</option>' +
+        '</select>' +
+        '<button type="button" id="ta-mate-add-sel" class="btn" style="min-height:36px;padding:6px 12px;font-size:13px;margin:0;background:#6d28d9;color:#fff">➕ أضف</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<input type="text" id="ta-mate-tz" maxlength="10" inputmode="numeric" placeholder="أو أدخل رقم هوية الزميل" style="flex:1;min-width:150px;font-size:14px;padding:6px 10px;direction:ltr;text-align:center;margin:0">' +
+        '<button type="button" id="ta-mate-add-tz" class="btn" style="min-height:36px;padding:6px 12px;font-size:13px;margin:0;background:#0b6bcb;color:#fff">➕ بالهوية</button>' +
+      '</div>' +
+      '<div id="ta-mates-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>' +
+      '<div id="ta-mate-msg" style="font-size:12.5px;color:#b91c1c;font-weight:700;margin-top:4px"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function wireSharedTabletGroupBox() {
+  var chk = document.getElementById('ta-shared-chk');
+  var panel = document.getElementById('ta-shared-panel');
+  var sel = document.getElementById('ta-mate-select');
+  var addSel = document.getElementById('ta-mate-add-sel');
+  var tzInp = document.getElementById('ta-mate-tz');
+  var addTz = document.getElementById('ta-mate-add-tz');
+  var listEl = document.getElementById('ta-mates-list');
+  var msgEl = document.getElementById('ta-mate-msg');
+  if (!chk || !panel) return;
+
+  function syncMatesState() {
+    try { localStorage.setItem('manasa-group-mates', JSON.stringify(S.mates || [])); } catch (_) {}
+    var nameEl = document.querySelector('#pupil-timer-bar .p-name');
+    if (nameEl) {
+      var base = nameEl.textContent.replace(/\s*👥\s*\+\d+$/, '');
+      nameEl.textContent = (S.mates && S.mates.length) ? (base + ' 👥 +' + S.mates.length) : base;
+    }
+    report();
+  }
+
+  function populateSelect() {
+    if (!sel || !window.MIFTAH_ROSTER) return;
+    var list = [];
+    if (S.classKey && window.MIFTAH_ROSTER.classesMap && window.MIFTAH_ROSTER.classesMap[S.classKey]) {
+      list = window.MIFTAH_ROSTER.classesMap[S.classKey].students || [];
+    } else if (Array.isArray(window.MIFTAH_ROSTER.allStudents)) {
+      list = window.MIFTAH_ROSTER.allStudents;
+    }
+    sel.innerHTML = '<option value="">-- اختر زميلاً ' + (S.classArabic ? 'من ' + esc(S.classArabic) : '') + ' --</option>' +
+      list.filter(function (x) { return x.idNumber !== S.studentId; }).map(function (x) {
+        return '<option value="' + esc(x.idNumber) + '">' + esc(x.studentName) + (S.classKey ? '' : ' (' + esc(x.classArabic) + ')') + '</option>';
+      }).join('');
+  }
+
+  function renderList() {
+    if (!listEl) return;
+    var arr = S.mates || [];
+    if (!arr.length) {
+      listEl.innerHTML = '<span style="font-size:12px;color:#64748b">لم تتم إضافة زملاء بعد (العمل فردي حالياً).</span>';
+      return;
+    }
+    listEl.innerHTML = arr.map(function (mt, idx) {
+      return '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #8b5cf6;color:#4c1d95;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:800">' +
+        '👤 ' + esc(mt.studentName) +
+        '<button type="button" data-ta-rm="' + idx + '" style="border:0;background:#fee2e2;color:#b91c1c;border-radius:50%;width:18px;height:18px;line-height:18px;padding:0;cursor:pointer;font-size:11px;font-weight:900">×</button>' +
+      '</span>';
+    }).join('');
+    listEl.querySelectorAll('[data-ta-rm]').forEach(function (b) {
+      b.onclick = function () {
+        S.mates.splice(Number(b.getAttribute('data-ta-rm')), 1);
+        renderList();
+        syncMatesState();
+      };
+    });
+  }
+
+  function addMate(stuObj) {
+    if (!stuObj) return;
+    if (msgEl) msgEl.textContent = '';
+    if (stuObj.idNumber === S.studentId) {
+      if (msgEl) msgEl.textContent = 'هذا رقم هويتك أنت! أضف رقم هوية زميلك.';
+      return;
+    }
+    S.mates = S.mates || [];
+    if (S.mates.some(function (x) { return x.idNumber === stuObj.idNumber; })) return;
+    if (S.mates.length >= 5) {
+      if (msgEl) msgEl.textContent = 'الحد الأقصى 6 طلاب في المجموعة (أنت + 5 زملاء).';
+      return;
+    }
+    S.mates.push({
+      idNumber: stuObj.idNumber,
+      studentName: stuObj.studentName,
+      classKey: stuObj.classKey || '',
+      classArabic: stuObj.classArabic || '',
+      classLabel: stuObj.classLabel || ''
+    });
+    renderList();
+    syncMatesState();
+  }
+
+  chk.onchange = function () {
+    panel.style.display = chk.checked ? 'block' : 'none';
+    if (chk.checked) {
+      populateSelect();
+      renderList();
+    } else {
+      S.mates = [];
+      syncMatesState();
+    }
+  };
+  if (chk.checked) {
+    populateSelect();
+    renderList();
+  }
+  if (addSel) {
+    addSel.onclick = function () {
+      var idVal = sel && sel.value;
+      if (!idVal) return;
+      var found = window.MIFTAH_ROSTER && window.MIFTAH_ROSTER.findStudentById(idVal);
+      if (found) addMate(found);
+      if (sel) sel.value = '';
+    };
+  }
+  if (addTz) {
+    addTz.onclick = function () {
+      var raw = (tzInp && tzInp.value || '').trim();
+      var found = window.MIFTAH_ROSTER && window.MIFTAH_ROSTER.findStudentById(raw);
+      if (!found) {
+        if (msgEl) msgEl.textContent = 'رقم هوية الزميل غير موجود في سجل المدرسة.';
+        return;
+      }
+      addMate(found);
+      if (tzInp) tzInp.value = '';
+    };
+  }
+}
+
 function practice() {
   S.st = 2; report(); ctx(L.recap, null);
   var used = { easy: 0, medium: 0, hard: 0 }, n = 0, total = 6, streak = 0, hardMastered = 0;
@@ -2912,6 +3070,7 @@ function practice() {
     var q = L.practice[lv][used[lv]]; used[lv]++; n++;
     h(head('🏋️ تدريب تكيّفي ' + n + ' من ' + total + ' <span class="lvl ' + lv + '">' + LV[lv] + '</span>') +
       renderAbilityStepper(lv) +
+      (n === 1 ? renderSharedTabletGroupBoxHtml() : '') +
       (n === 1 ? renderDifferentiatedTracksCard(lv) : '') +
       '<div class="bar"><i style="width:' + Math.round((n - 1) / total * 100) + '%"></i></div>' +
       (n === 1 ? renderStationMediaHtml(L.practice && L.practice.media) : '') +
@@ -3400,10 +3559,28 @@ function evidence() {
   S.st = 3; report(); S.cur = { exam: true }; var items = L.evidence.items, i = 0, score = 0, ans = [];
   function one() {
     var q = items[i];
-    h(head('📝 مهمّةُ الدّليل — ' + (i + 1) + ' من ' + items.length) + '<p class="muted">' + esc(L.evidence.instructions || 'أجبْ وحدَك.') + '</p><div class="bar"><i style="width:' + Math.round(i / items.length * 100) + '%"></i></div>' +
+    var groupWarnHtml = (i === 0 && Array.isArray(S.mates) && S.mates.length)
+      ? '<div id="ev-group-warn" style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:12px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:13.5px">' +
+          '<span style="color:#92400e;font-weight:700">📝 هذه محطة الدليل الفردي (كنتم تعملون كمجموعة +' + S.mates.length + ' في التمرين).</span>' +
+          '<button type="button" id="ev-switch-indiv-btn" class="btn alt" style="min-height:32px;padding:4px 10px;font-size:12.5px;margin:0;background:#fff;border:1px solid #d97706;color:#92400e">👤 تحوّل للحل الفردي الآن</button>' +
+        '</div>'
+      : '';
+    h(head('📝 مهمّةُ الدّليل — ' + (i + 1) + ' من ' + items.length) + groupWarnHtml + '<p class="muted">' + esc(L.evidence.instructions || 'أجبْ وحدَك.') + '</p><div class="bar"><i style="width:' + Math.round(i / items.length * 100) + '%"></i></div>' +
       (i === 0 ? renderStationMediaHtml(L.evidence && L.evidence.media) : '') +
       sayBtn(q.q) +
       mcq(q, { feedback: false, onDone: function (ok, t, pick) { logA('دليل', q, pick, ok, 1); if (ok) score++; ans.push(pick); i++; setTimeout(function () { i < items.length ? one() : done(); }, 350); } }) + '</div>');
+    var swBtn = document.getElementById('ev-switch-indiv-btn');
+    if (swBtn) {
+      swBtn.onclick = function () {
+        S.mates = [];
+        try { localStorage.removeItem('manasa-group-mates'); } catch (_) {}
+        var nameEl = document.querySelector('#pupil-timer-bar .p-name');
+        if (nameEl) nameEl.textContent = nameEl.textContent.replace(/\s*👥\s*\+\d+$/, '');
+        var box = document.getElementById('ev-group-warn');
+        if (box) box.remove();
+        report();
+      };
+    }
   }
   function done() {
     var pct = Math.round(score / items.length * 100), r = pct >= 80 ? 'a' : pct >= 50 ? 'p' : 'n';

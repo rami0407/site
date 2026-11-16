@@ -12,10 +12,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="site.css?v=20261116_v4">
+<link rel="stylesheet" href="site.css?v=20261116_v5">
 <script>
 (function(){
-  var vTag='v=pupil_20261116_v4';
+  var vTag='v=pupil_20261116_v5';
   if(!window.location.search.includes(vTag)){
     var sep=window.location.search?'&':'?';
     window.location.replace(window.location.pathname+window.location.search+sep+vTag+window.location.hash);
@@ -48,7 +48,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
 .msg{min-height:28px;margin:10px 0 0;font-weight:600;color:#c0392b;font-size:14.5px}
 .msg.ok{color:#2f855a}
 </style>
-<script src="manasa/students-roster.js?v=20261116_v4"></script>
+<script src="manasa/students-roster.js?v=20261116_v5"></script>
 </head>
 <body>
 <a class="home" href="teacher/login.html" title="دخول المعلّم" aria-label="دخول المعلّم">🏠</a>
@@ -68,27 +68,6 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     <div class="f">
       <label for="nm">👤 اسم الطالب <small style="color:#64748b;font-weight:600">(اكتبه كما تحبّ)</small></label>
       <input id="nm" maxlength="35" placeholder="اكتب اسمك هنا" autocomplete="off">
-    </div>
-
-    <div class="f" style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:14px;padding:10px 12px;margin:10px 0">
-      <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:14.5px;color:#4c1d95">
-        <input type="checkbox" id="shared-group-chk" style="width:18px;height:18px;margin:0;accent-color:#6d28d9">
-        <span>👥 هل تتشاركون هذا التابليت كمجموعة؟ (اختياري)</span>
-      </label>
-      <div id="shared-group-panel" style="display:none;margin-top:10px;border-top:1px dashed #c4b5fd;padding-top:8px">
-        <p style="margin:0 0 6px;font-size:12.5px;color:#5b21b6;font-weight:600">أضف زملاءك المشاركين معك على نفس التابليت ليُسجَّل الحضور والإنجاز للجميع:</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-          <select id="mate-class-select" style="flex:1;min-width:140px;font:inherit;font-size:14px;padding:7px 8px;border:1.5px solid #c4b5fd;border-radius:10px;background:#fff">
-            <option value="">-- اختر زميلاً من الصف --</option>
-          </select>
-          <button type="button" id="mate-add-select-btn" style="font:inherit;font-size:13px;font-weight:800;padding:7px 12px;border-radius:10px;border:0;background:#6d28d9;color:#fff;cursor:pointer">➕ أضف</button>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <input id="mate-tz-inp" maxlength="10" inputmode="numeric" placeholder="أو أدخل رقم هوية الزميل" style="flex:1;min-width:140px;font-size:14px;padding:7px 10px;direction:ltr;text-align:center">
-          <button type="button" id="mate-add-tz-btn" style="font:inherit;font-size:13px;font-weight:800;padding:7px 12px;border-radius:10px;border:0;background:#0b6bcb;color:#fff;cursor:pointer">➕ بالهوية</button>
-        </div>
-        <div id="shared-mates-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-      </div>
     </div>
 
     <div class="f">
@@ -152,124 +131,8 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
     return null;
   }
 
-  var sharedChk = document.getElementById('shared-group-chk'),
-      sharedPanel = document.getElementById('shared-group-panel'),
-      mateSelect = document.getElementById('mate-class-select'),
-      mateAddSelBtn = document.getElementById('mate-add-select-btn'),
-      mateTzInp = document.getElementById('mate-tz-inp'),
-      mateAddTzBtn = document.getElementById('mate-add-tz-btn'),
-      matesListEl = document.getElementById('shared-mates-list'),
-      selectedMates = [];
-
-  try {
-    var savedMates = JSON.parse(localStorage.getItem('manasa-group-mates') || '[]');
-    if (Array.isArray(savedMates) && savedMates.length) {
-      selectedMates = savedMates;
-      if (sharedChk) sharedChk.checked = true;
-      if (sharedPanel) sharedPanel.style.display = 'block';
-    }
-  } catch (_) {}
-
-  function populateClassMatesSelect(primaryStu) {
-    if (!mateSelect || !window.MIFTAH_ROSTER) return;
-    var list = [];
-    if (primaryStu && primaryStu.classKey && window.MIFTAH_ROSTER.classesMap && window.MIFTAH_ROSTER.classesMap[primaryStu.classKey]) {
-      list = window.MIFTAH_ROSTER.classesMap[primaryStu.classKey].students || [];
-    } else if (Array.isArray(window.MIFTAH_ROSTER.allStudents)) {
-      list = window.MIFTAH_ROSTER.allStudents;
-    }
-    var curTz = (tz.value || '').trim();
-    mateSelect.innerHTML = '<option value="">-- اختر زميلاً ' + (primaryStu ? 'من ' + esc(primaryStu.classArabic) : '') + ' --</option>' +
-      list.filter(function (s) { return s.idNumber !== curTz; }).map(function (s) {
-        return '<option value="' + esc(s.idNumber) + '">' + esc(s.studentName) + (primaryStu ? '' : ' (' + esc(s.classArabic) + ')') + '</option>';
-      }).join('');
-  }
-
-  function renderSelectedMates() {
-    if (!matesListEl) return;
-    if (!selectedMates.length) {
-      matesListEl.innerHTML = '<span style="font-size:12px;color:#64748b">لم تتم إضافة زملاء بعد.</span>';
-      return;
-    }
-    matesListEl.innerHTML = selectedMates.map(function (mt, idx) {
-      return '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #8b5cf6;color:#4c1d95;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:800">' +
-        '👤 ' + esc(mt.studentName) +
-        '<button type="button" data-rm-mate="' + idx + '" style="border:0;background:#fee2e2;color:#b91c1c;border-radius:50%;width:18px;height:18px;line-height:18px;padding:0;cursor:pointer;font-size:11px;font-weight:900">×</button>' +
-      '</span>';
-    }).join('');
-    matesListEl.querySelectorAll('[data-rm-mate]').forEach(function (b) {
-      b.onclick = function () {
-        selectedMates.splice(Number(b.getAttribute('data-rm-mate')), 1);
-        renderSelectedMates();
-      };
-    });
-  }
-
-  function addMateByStudent(stuObj) {
-    if (!stuObj) return;
-    var curTz = (tz.value || '').trim();
-    if (stuObj.idNumber === curTz) {
-      m.textContent = 'هذا رقم هويتك أنت! أضف رقم هوية زميلك.';
-      return;
-    }
-    if (selectedMates.some(function (x) { return x.idNumber === stuObj.idNumber; })) return;
-    if (selectedMates.length >= 5) {
-      m.textContent = 'الحد الأقصى 6 طلاب في المجموعة (أنت + 5 زملاء).';
-      return;
-    }
-    selectedMates.push({
-      idNumber: stuObj.idNumber,
-      studentName: stuObj.studentName,
-      classKey: stuObj.classKey || '',
-      classArabic: stuObj.classArabic || '',
-      classLabel: stuObj.classLabel || ''
-    });
-    m.textContent = '';
-    renderSelectedMates();
-  }
-
-  if (sharedChk) {
-    sharedChk.onchange = function () {
-      if (sharedPanel) sharedPanel.style.display = sharedChk.checked ? 'block' : 'none';
-      if (sharedChk.checked) {
-        populateClassMatesSelect(verifyTzInput(false));
-        renderSelectedMates();
-      }
-    };
-  }
-  if (mateAddSelBtn) {
-    mateAddSelBtn.onclick = function () {
-      var idVal = mateSelect && mateSelect.value;
-      if (!idVal) return;
-      var found = window.MIFTAH_ROSTER && window.MIFTAH_ROSTER.findStudentById(idVal);
-      if (found) addMateByStudent(found);
-      if (mateSelect) mateSelect.value = '';
-    };
-  }
-  if (mateAddTzBtn) {
-    mateAddTzBtn.onclick = function () {
-      var raw = (mateTzInp && mateTzInp.value || '').trim();
-      var found = window.MIFTAH_ROSTER && window.MIFTAH_ROSTER.findStudentById(raw);
-      if (!found) {
-        m.textContent = 'رقم هوية الزميل غير موجود في سجل المدرسة.';
-        return;
-      }
-      addMateByStudent(found);
-      if (mateTzInp) mateTzInp.value = '';
-    };
-  }
-
-  tz.addEventListener('input', function () {
-    var sObj = verifyTzInput(true);
-    if (sharedChk && sharedChk.checked) populateClassMatesSelect(sObj);
-  });
-  if (tz.value) {
-    var initS = verifyTzInput(false);
-    if (sharedChk && sharedChk.checked) {
-      populateClassMatesSelect(initS);
-      renderSelectedMates();
-    }
-  }
+  tz.addEventListener('input', function () { verifyTzInput(true); });
+  if (tz.value) verifyTzInput(false);
 
   cd.addEventListener('input', function () {
     var p = cd.selectionStart;
@@ -326,8 +189,7 @@ body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl;color:#1d2b3
         localStorage.setItem('manasa-class-key', stu.classKey);
         localStorage.setItem('manasa-class-arabic', stu.classArabic);
         localStorage.setItem('manasa-class-label', stu.classLabel);
-        var matesToSave = (sharedChk && sharedChk.checked) ? selectedMates.filter(function (x) { return x.idNumber !== stu.idNumber; }) : [];
-        localStorage.setItem('manasa-group-mates', JSON.stringify(matesToSave));
+        localStorage.removeItem('manasa-group-mates');
       } catch (_) {}
       var sep = url.indexOf('?') >= 0 ? '&' : '?';
       location.href = url + sep + 'tz=' + encodeURIComponent(stu.idNumber) + '&nm=' + encodeURIComponent(name);
