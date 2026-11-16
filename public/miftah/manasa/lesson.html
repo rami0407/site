@@ -8,21 +8,21 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="icon" href="../assets/logo.jpg">
-<link rel="stylesheet" href="manasa.css?v=20261116_v6">
 <script>
 (function(){
-  var vTag = 'v=20261116_v6';
-  if (!window.location.search.includes(vTag)) {
+  var requiredVer = '20261116_v7';
+  if (!window.location.search.includes('v=' + requiredVer)) {
     var sep = window.location.search ? '&' : '?';
-    window.location.replace(window.location.pathname + window.location.search + sep + vTag + window.location.hash);
+    window.location.replace(window.location.pathname + window.location.search + sep + 'v=' + requiredVer + '&_ts=' + Date.now() + window.location.hash);
   }
 })();
 </script>
+<link rel="stylesheet" href="manasa.css?v=20261116_v7">
 </head>
 <body>
 <div class="top"><b>🔑 منصة مفتاح</b><span class="sp"></span><small>التطبيقُ يعلّم، والمعلّمُ يوجّه</small></div>
 <main class="wrap" id="app"><div class="card">⏳ جارٍ فتحُ الحصّة…</div></main>
-<script src="students-roster.js?v=20261116_v6"></script>
-<script src="player.js?v=20261116_v6"></script>
+<script src="students-roster.js?v=20261116_v7"></script>
+<script src="player.js?v=20261116_v7"></script>
 </body>
 </html>
