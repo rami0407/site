@@ -21,7 +21,7 @@ import {
 import { mathAudio } from '../utils/mathSoundEffects';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { getStudentSession, saveStudentSession, snapshotCurrentStudentProgress, syncStudentProfileWithCloud } from '../utils/studentAuth';
+import { getStudentSession, saveStudentSession, snapshotCurrentStudentProgress, syncStudentProfileWithCloud, logoutStudent, restoreStudentProgressFromVault } from '../utils/studentAuth';
 import './MathChampionshipArena.css';
 
 const LOCAL_STORAGE_KEY = 'musheirifa_math_championship_v1';
@@ -272,6 +272,95 @@ export default function MathChampionshipArena() {
       window.removeEventListener('studentPointsUpdated', handleAuthChange);
     };
   }, []);
+
+  // Logout current student and reset for next student in school lab
+  const handleLogoutStudent = () => {
+    if (gameState === 'playing') {
+      if (!window.confirm('أنت الآن في منتصف لعبة! هل أنت متأكد من إنهاء اللعبة الحالية وتسجيل الخروج؟')) {
+        return;
+      }
+      clearInterval(timerRef.current);
+      setGameState('idle');
+    } else {
+      if (!window.confirm(`هل تريد تسجيل خروج الطالب (${player.studentName || 'الحالي'}) لتمكين طالب آخر من الدخول في غرفة الحواسيب؟\nسيتم حفظ جميع نقاطك وإنجازاتك بأمان.`)) {
+        return;
+      }
+    }
+
+    try {
+      snapshotCurrentStudentProgress();
+      const session = getStudentSession();
+      if (session && session.fullName) {
+        syncStudentProfileWithCloud(session.fullName, session.idNumber, session.studentClass);
+      }
+    } catch (e) {
+      console.warn('Error saving snapshot during logout:', e);
+    }
+
+    logoutStudent();
+
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch (e) {}
+
+    setPlayer({
+      studentName: '',
+      grade: 'الصف الثالث',
+      section: 'أ',
+      totalPoints: 0,
+      totalQuestionsSolved: 0,
+      bestStreak: 0,
+      unlockedAwards: [],
+      history: []
+    });
+
+    setIsEditingProfile(true);
+
+    try {
+      mathAudio.playClick();
+    } catch (e) {}
+  };
+
+  // Save profile and enter/restore student progress
+  const handleSaveProfile = () => {
+    const cleanName = player.studentName.trim();
+    if (!cleanName) return;
+
+    // Snapshot previous student if needed
+    const prevSession = getStudentSession();
+    if (prevSession && prevSession.fullName && prevSession.fullName !== cleanName) {
+      snapshotCurrentStudentProgress(prevSession);
+    }
+
+    // Try restoring progress from vault
+    const restored = restoreStudentProgressFromVault(cleanName, '', `${player.grade} (${player.section})`);
+    if (restored && restored.scopedStorage && restored.scopedStorage[LOCAL_STORAGE_KEY]) {
+      try {
+        const savedMath = JSON.parse(restored.scopedStorage[LOCAL_STORAGE_KEY]);
+        setPlayer({
+          studentName: cleanName,
+          grade: player.grade,
+          section: player.section,
+          totalPoints: savedMath.totalPoints || 0,
+          totalQuestionsSolved: savedMath.totalQuestionsSolved || 0,
+          bestStreak: savedMath.bestStreak || 0,
+          unlockedAwards: savedMath.unlockedAwards || [],
+          history: savedMath.history || []
+        });
+        setIsEditingProfile(false);
+        return;
+      } catch (e) {}
+    }
+
+    saveStudentSession({
+      fullName: cleanName,
+      studentClass: `${player.grade} (${player.section})`,
+      role: 'student',
+      loginTime: new Date().toISOString()
+    });
+
+    setIsEditingProfile(false);
+  };
 
   // Multiplication tournament settings
   const [selectedTable, setSelectedTable] = useState('all');
@@ -660,6 +749,17 @@ export default function MathChampionshipArena() {
           </div>
 
           <div className="math-hero-controls">
+            {player.studentName && (
+              <button 
+                type="button" 
+                className="top-logout-btn"
+                onClick={handleLogoutStudent}
+                title="تسجيل خروج الطالب لدخول طالب جديد في غرفة الحواسيب"
+              >
+                <i className="fas fa-sign-out-alt"></i> خروج ({player.studentName.split(' ')[0]})
+              </button>
+            )}
+
             <button 
               type="button" 
               className="sound-toggle-btn"
@@ -704,13 +804,27 @@ export default function MathChampionshipArena() {
               <div className="player-info">
                 {isEditingProfile || !player.studentName ? (
                   <div className="profile-edit-form">
+                    <div className="profile-edit-header">
+                      <span className="profile-edit-title">👋 مرحباً بك! اكتب اسمك لدخول التحدي:</span>
+                      <button
+                        type="button"
+                        className="unified-login-shortcut-btn"
+                        onClick={() => window.dispatchEvent(new Event('openStudentAuth'))}
+                        title="تسجيل الدخول الموحد ببطاقة الهوية لحفظ نقاطك عبر كل أجهزة المدرسة"
+                      >
+                        🔑 الدخول الموحد
+                      </button>
+                    </div>
                     <input 
                       type="text" 
-                      placeholder="اكتب اسمك يا بطل..."
+                      placeholder="اكتب اسمك الثلاثي يا بطل..."
                       value={player.studentName}
                       onChange={(e) => setPlayer({ ...player, studentName: e.target.value })}
                       className="name-input"
                       autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveProfile();
+                      }}
                     />
                     <div className="class-pick-row">
                       <select 
@@ -734,11 +848,9 @@ export default function MathChampionshipArena() {
                       <button 
                         type="button" 
                         className="save-profile-btn"
-                        onClick={() => {
-                          if (player.studentName.trim()) setIsEditingProfile(false);
-                        }}
+                        onClick={handleSaveProfile}
                       >
-                        حفظ ✓
+                        حفظ ودخول ✓
                       </button>
                     </div>
                   </div>
@@ -755,7 +867,17 @@ export default function MathChampionshipArena() {
                         ✏️
                       </button>
                     </div>
-                    <span className="player-class">{player.grade} ({player.section})</span>
+                    <div className="player-class-row">
+                      <span className="player-class">{player.grade} ({player.section})</span>
+                      <button 
+                        type="button"
+                        className="student-logout-badge-btn"
+                        onClick={handleLogoutStudent}
+                        title="تسجيل خروج الطالب الحالي لتمكين طالب آخر من الدخول في غرفة الحواسيب"
+                      >
+                        <i className="fas fa-sign-out-alt"></i> خروج الطالب 🚪
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
