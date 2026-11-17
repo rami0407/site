@@ -1,3 +1,4 @@
+import { findStudentByRosterId, normalizeRosterId } from '../data/schoolStudentsRoster';
 import React, { useState, useEffect } from 'react';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
 import { sanitizeText } from '../utils/security';
@@ -9,6 +10,29 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
   const [idNumber, setIdNumber] = useState(currentSession?.idNumber !== '000000000' ? (currentSession?.idNumber || '') : '');
   const [studentClass, setStudentClass] = useState(currentSession?.studentClass || 'الصف الثالث (أ)');
   const [errorMsg, setErrorMsg] = useState('');
+  const [matchedRosterStudent, setMatchedRosterStudent] = useState(null);
+
+  const handleIdChange = (val) => {
+    const raw = val.replace(/\D/g, '');
+    setIdNumber(raw);
+    setErrorMsg('');
+
+    if (raw.length >= 8) {
+      const match = findStudentByRosterId(raw);
+      if (match) {
+        setMatchedRosterStudent(match);
+        if (!fullName || fullName === currentSession?.fullName) {
+          setFullName(match.studentName);
+        }
+        const cls = `${match.gradeArabic || 'الصف'} (${match.classArabic || match.classLabel || ''})`;
+        setStudentClass(cls);
+      } else {
+        setMatchedRosterStudent(null);
+      }
+    } else {
+      setMatchedRosterStudent(null);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -33,10 +57,17 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
     const cleanName = sanitizeText(fullName.trim());
     const cleanId = sanitizeText(idNumber.trim());
 
-    // Validate name (at least 2 words)
-    const nameParts = cleanName.split(/\s+/).filter(Boolean);
-    if (nameParts.length < 2) {
-      setErrorMsg('⚠️ يرجى إدخال اسم الطالب كاملاً (الاسم الثنائي أو الثلاثي على الأقل).');
+    // Check if ID matches official school roster
+    const matchFromRoster = findStudentByRosterId(cleanId);
+    let finalStudentName = cleanName;
+    if (matchFromRoster && (!finalStudentName || finalStudentName.length < 2)) {
+      finalStudentName = matchFromRoster.studentName;
+    }
+
+    // Validate name (at least 2 words unless matched in official school roster)
+    const nameParts = finalStudentName.split(/\s+/).filter(Boolean);
+    if (!matchFromRoster && !isVisitor && nameParts.length < 2) {
+      setErrorMsg('⚠️ يرجى إدخال اسم الطالب كاملاً أو إدخال رقم الهوية للتعرف التلقائي من السجل الرسمي.');
       return;
     }
 
@@ -83,7 +114,7 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
 
     // Save session
     const session = saveStudentSession({
-      fullName: cleanName,
+      fullName: finalStudentName || cleanName,
       idNumber: cleanId || '0000',
       studentClass: finalClass,
       role,
@@ -134,15 +165,36 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
         )}
 
         <form onSubmit={handleSubmit} className="student-auth-form">
-          <div className="auth-form-group">
-            <label><i className="fas fa-user"></i> اسم المستخدم / الطالب (الاسم الثنائي أو الثلاثي):</label>
+          <div className="auth-form-group" style={{ background: 'rgba(56, 189, 248, 0.08)', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(56, 189, 248, 0.3)' }}>
+            <label style={{ color: '#38bdf8', fontWeight: 800 }}>
+              <i className="fas fa-id-card"></i> رقم الهوية المدرسية (نفس رقم منصة مفتاح):
+            </label>
             <input 
               type="text" 
-              placeholder={isTeacher ? 'مثال: الأستاذ محمود ارفاعية' : isVisitor ? 'مثال: رامي ارفاعية (ولي أمر)' : 'مثال: رامي أحمد ارفاعية'} 
+              inputMode="numeric"
+              maxLength={9}
+              placeholder="اكتب رقم الهوية هنا (مثال: 340041722)" 
+              value={idNumber}
+              onChange={(e) => handleIdChange(e.target.value)}
+              autoFocus
+              style={{ fontSize: '1.1rem', letterSpacing: '1px', fontWeight: 800 }}
+            />
+            {matchedRosterStudent && (
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', borderRadius: '8px', color: '#34d399', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-check-circle" style={{ color: '#10b981' }}></i>
+                <span>تم التعرف عليك: <strong>{matchedRosterStudent.studentName}</strong> — {matchedRosterStudent.gradeArabic} ({matchedRosterStudent.classArabic})</span>
+              </div>
+            )}
+            <small className="field-hint" style={{ marginTop: '6px' }}>يكفي إدخال رقم الهوية المسجل في منصة مفتاح وسيتم جلب اسمك وصفك فوراً.</small>
+          </div>
+
+          <div className="auth-form-group">
+            <label><i className="fas fa-user"></i> اسم الطالب / المستخدم (اختياري عند كتابة رقم الهوية):</label>
+            <input 
+              type="text" 
+              placeholder={isTeacher ? 'مثال: الأستاذ محمود ارفاعية' : isVisitor ? 'مثال: رامي ارفاعية (ولي أمر)' : 'اسم الطالب'} 
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              required
-              autoFocus
             />
           </div>
 

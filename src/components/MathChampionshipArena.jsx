@@ -1,3 +1,4 @@
+import { findStudentByRosterId, normalizeRosterId } from '../data/schoolStudentsRoster';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   MATH_GRADES, 
@@ -259,6 +260,88 @@ export default function MathChampionshipArena() {
   const [player, setPlayer] = useState(getInitialPlayerProfile);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [idNumberInput, setIdNumberInput] = useState('');
+  const [matchedRosterStudent, setMatchedRosterStudent] = useState(null);
+  const [idLoginError, setIdLoginError] = useState('');
+  const [showManualNameEntry, setShowManualNameEntry] = useState(false);
+
+  const handleIdNumberInputChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setIdNumberInput(raw);
+    setIdLoginError('');
+
+    if (raw.length >= 8) {
+      const match = findStudentByRosterId(raw);
+      if (match) {
+        setMatchedRosterStudent(match);
+      } else {
+        setMatchedRosterStudent(null);
+      }
+    } else {
+      setMatchedRosterStudent(null);
+    }
+  };
+
+  const handleLoginWithIdNumber = (e) => {
+    if (e) e.preventDefault();
+    setIdLoginError('');
+
+    const cleanId = idNumberInput.trim().replace(/\D/g, '');
+    if (!cleanId) {
+      setIdLoginError('يرجى كتابة رقم الهوية المدرسية.');
+      return;
+    }
+
+    const match = findStudentByRosterId(cleanId);
+    if (match) {
+      const studentName = match.studentName;
+      const grade = match.gradeArabic || 'الصف الثالث';
+      const section = (match.classArabic || '').replace(/[^0-9أ-ي]/g, '') || 'أ';
+
+      const prevSession = getStudentSession();
+      if (prevSession && prevSession.fullName && prevSession.fullName !== studentName) {
+        snapshotCurrentStudentProgress(prevSession);
+      }
+
+      const restored = restoreStudentProgressFromVault(studentName, match.idNumber, `${grade} (${section})`);
+      let mathData = {};
+      if (restored && restored.scopedStorage && restored.scopedStorage[LOCAL_STORAGE_KEY]) {
+        try {
+          mathData = JSON.parse(restored.scopedStorage[LOCAL_STORAGE_KEY]) || {};
+        } catch (err) {}
+      }
+
+      setPlayer({
+        studentName,
+        grade,
+        section,
+        totalPoints: mathData.totalPoints || 0,
+        totalQuestionsSolved: mathData.totalQuestionsSolved || 0,
+        bestStreak: mathData.bestStreak || 0,
+        unlockedAwards: mathData.unlockedAwards || [],
+        history: mathData.history || []
+      });
+
+      saveStudentSession({
+        fullName: studentName,
+        idNumber: match.idNumber,
+        studentClass: `${grade} (${section})`,
+        role: 'student',
+        roleIcon: match.gender === 'أنثى' ? '👩‍🎓' : '👨‍🎓',
+        loginTime: new Date().toISOString()
+      });
+
+      setIsEditingProfile(false);
+      setIdNumberInput('');
+      setMatchedRosterStudent(null);
+
+      try {
+        mathAudio.playTrophyFanfare();
+      } catch (err) {}
+    } else {
+      setIdLoginError('لم يتم العثور على طالب بهذا الرقم في سجل مدرسة مشيرفة الرسمي. يرجى التأكد من رقم الهوية (نفس رقم منصة مفتاح) أو استخدام الدخول بالاسم.');
+    }
+  };
 
   // Sync unified session changes & restore student's saved profile
   useEffect(() => {
@@ -805,54 +888,102 @@ export default function MathChampionshipArena() {
                 {isEditingProfile || !player.studentName ? (
                   <div className="profile-edit-form">
                     <div className="profile-edit-header">
-                      <span className="profile-edit-title">👋 مرحباً بك! اكتب اسمك لدخول التحدي:</span>
+                      <span className="profile-edit-title">🆔 أدخل رقم الهوية للدخول (نفس رقم منصة مفتاح):</span>
                       <button
                         type="button"
                         className="unified-login-shortcut-btn"
                         onClick={() => window.dispatchEvent(new Event('openStudentAuth'))}
-                        title="تسجيل الدخول الموحد ببطاقة الهوية لحفظ نقاطك عبر كل أجهزة المدرسة"
+                        title="فتح نافذة تسجيل الدخول الشاملة"
                       >
                         🔑 الدخول الموحد
                       </button>
                     </div>
-                    <input 
-                      type="text" 
-                      placeholder="اكتب اسمك الثلاثي يا بطل..."
-                      value={player.studentName}
-                      onChange={(e) => setPlayer({ ...player, studentName: e.target.value })}
-                      className="name-input"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveProfile();
-                      }}
-                    />
-                    <div className="class-pick-row">
-                      <select 
-                        value={player.grade}
-                        onChange={(e) => setPlayer({ ...player, grade: e.target.value })}
-                        className="grade-select"
+
+                    <form onSubmit={handleLoginWithIdNumber} className="id-entry-inline-form">
+                      <div className="id-input-wrap">
+                        <i className="fas fa-id-card id-icon"></i>
+                        <input 
+                          type="text" 
+                          inputMode="numeric"
+                          placeholder="أدخل رقم الهوية (مثال: 340041722)..."
+                          value={idNumberInput}
+                          onChange={handleIdNumberInputChange}
+                          className="id-number-field"
+                          autoFocus
+                          maxLength={9}
+                        />
+                        <button 
+                          type="submit" 
+                          className="id-enter-btn"
+                          disabled={!idNumberInput.trim()}
+                        >
+                          دخول للتحدي ⚡
+                        </button>
+                      </div>
+                    </form>
+
+                    {matchedRosterStudent && (
+                      <div className="matched-student-pill pop-in">
+                        <span className="pill-check">✓</span>
+                        <span className="pill-name">{matchedRosterStudent.studentName}</span>
+                        <span className="pill-class">({matchedRosterStudent.gradeArabic} - {matchedRosterStudent.classArabic})</span>
+                      </div>
+                    )}
+
+                    {idLoginError && (
+                      <div className="id-login-error-msg">
+                        <i className="fas fa-exclamation-circle"></i> {idLoginError}
+                      </div>
+                    )}
+
+                    <div className="manual-name-toggle-box">
+                      <button
+                        type="button"
+                        className="toggle-manual-link"
+                        onClick={() => setShowManualNameEntry(!showManualNameEntry)}
                       >
-                        {['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع', 'الصف الخامس', 'الصف السادس'].map(g => (
-                          <option key={g} value={g}>{g}</option>
-                        ))}
-                      </select>
-                      <select 
-                        value={player.section}
-                        onChange={(e) => setPlayer({ ...player, section: e.target.value })}
-                        className="section-select"
-                      >
-                        {['أ', 'ب', 'ج', 'د'].map(s => (
-                          <option key={s} value={s}>شعبة {s}</option>
-                        ))}
-                      </select>
-                      <button 
-                        type="button" 
-                        className="save-profile-btn"
-                        onClick={handleSaveProfile}
-                      >
-                        حفظ ودخول ✓
+                        {showManualNameEntry ? '▲ إخفاء الدخول اليدوي' : '▼ أو اكتب اسمك وصفك يدوياً'}
                       </button>
                     </div>
+
+                    {showManualNameEntry && (
+                      <div className="manual-entry-subform">
+                        <input 
+                          type="text" 
+                          placeholder="اكتب اسمك الثلاثي يا بطل..."
+                          value={player.studentName}
+                          onChange={(e) => setPlayer({ ...player, studentName: e.target.value })}
+                          className="name-input"
+                        />
+                        <div className="class-pick-row">
+                          <select 
+                            value={player.grade}
+                            onChange={(e) => setPlayer({ ...player, grade: e.target.value })}
+                            className="grade-select"
+                          >
+                            {['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع', 'الصف الخامس', 'الصف السادس'].map(g => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                          <select 
+                            value={player.section}
+                            onChange={(e) => setPlayer({ ...player, section: e.target.value })}
+                            className="section-select"
+                          >
+                            {['أ', 'ب', 'ج', 'د'].map(s => (
+                              <option key={s} value={s}>شعبة {s}</option>
+                            ))}
+                          </select>
+                          <button 
+                            type="button" 
+                            className="save-profile-btn"
+                            onClick={handleSaveProfile}
+                          >
+                            حفظ يدوي ✓
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -869,6 +1000,13 @@ export default function MathChampionshipArena() {
                     </div>
                     <div className="player-class-row">
                       <span className="player-class">{player.grade} ({player.section})</span>
+                      {(() => {
+                        const sess = getStudentSession();
+                        if (sess && sess.idNumber && sess.idNumber !== '0000' && sess.idNumber !== '000000000') {
+                          return <span className="player-id-badge" title="رقم الهوية الموحد">🆔 {sess.idNumber}</span>;
+                        }
+                        return null;
+                      })()}
                       <button 
                         type="button"
                         className="student-logout-badge-btn"

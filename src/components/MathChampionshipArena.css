@@ -3487,3 +3487,149 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
 }
+
+/* ==================== ID LOGIN & AUTO-DETECT STYLES ==================== */
+.id-entry-inline-form {
+  margin: 0.35rem 0;
+}
+
+.id-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1.5px solid #38bdf8;
+  border-radius: 10px;
+  padding: 0.25rem 0.5rem;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+}
+
+.id-icon {
+  color: #38bdf8;
+  font-size: 1rem;
+  margin-right: 0.25rem;
+}
+
+.id-number-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 0.35rem 0.25rem;
+  outline: none;
+}
+
+.id-enter-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.id-enter-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.id-enter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.matched-student-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  color: #34d399;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.pill-check {
+  background: #10b981;
+  color: #ffffff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+.pill-name {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.pill-class {
+  color: #6ee7b7;
+}
+
+.id-login-error-msg {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.manual-name-toggle-box {
+  margin-top: 0.35rem;
+}
+
+.toggle-manual-link {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.toggle-manual-link:hover {
+  color: #f8fafc;
+}
+
+.manual-entry-subform {
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.player-id-badge {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}

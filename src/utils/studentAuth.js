@@ -1,3 +1,4 @@
+import { findStudentByRosterId, normalizeRosterId } from '../data/schoolStudentsRoster';
 // Utility module for Global Unified User Session (Single Sign-On) & Persistent Student Progress Vault
 // Supports Students, Teachers, and Visitors across all site features, games, and devices
 
@@ -389,6 +390,31 @@ export const getStudentSession = () => {
         return data;
       }
     }
+    // Bridge from Miftaah / Tab platform if logged in by ID there!
+    const manasaId = localStorage.getItem('manasa-student-id');
+    if (manasaId) {
+      const stu = findStudentByRosterId(manasaId);
+      if (stu) {
+        const studentName = localStorage.getItem('manasa-name') || stu.studentName;
+        const studentClass = `${stu.gradeArabic || 'الصف'} (${stu.classArabic || stu.classLabel || ''})`;
+        const bridged = {
+          fullName: studentName,
+          idNumber: stu.idNumber,
+          studentClass,
+          role: 'student',
+          roleIcon: stu.gender === 'أنثى' ? '👩‍🎓' : '👨‍🎓',
+          roleLabel: 'طالب',
+          isLoggedIn: true,
+          loginTime: new Date().toISOString()
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(bridged));
+        localStorage.setItem('school_unified_student_name', studentName);
+        localStorage.setItem('school_unified_student_class', studentClass);
+        localStorage.setItem('school_unified_student_pin', stu.idNumber);
+        return bridged;
+      }
+    }
+
     // Fallback: Check individual keys if JSON was not set
     const fallbackName = localStorage.getItem('school_unified_student_name');
     if (fallbackName && fallbackName.trim()) {
@@ -411,6 +437,31 @@ export const getStudentSession = () => {
     console.warn("Failed to parse user session:", e);
   }
   return null;
+};
+
+// Quick Login by ID Number (same ID number as in Miftaah / Tab platform)
+export const loginStudentByIdNumber = (idInput) => {
+  const student = findStudentByRosterId(idInput);
+  if (!student) {
+    return { 
+      success: false, 
+      error: 'لم يتم العثور على طالب بهذا الرقم في سجل المدرسة الرسمي. يرجى التأكد من رقم الهوية المدرسية.' 
+    };
+  }
+
+  const fullName = student.studentName;
+  const idNumber = student.idNumber;
+  const studentClass = `${student.gradeArabic || 'الصف'} (${student.classArabic || student.classLabel || ''})`;
+
+  const session = saveStudentSession({
+    fullName,
+    idNumber,
+    studentClass,
+    role: 'student',
+    roleIcon: student.gender === 'أنثى' ? '👩‍🎓' : '👨‍🎓'
+  });
+
+  return { success: true, student, session };
 };
 
 export const saveStudentSession = (sessionData) => {
@@ -459,6 +510,16 @@ export const saveStudentSession = (sessionData) => {
     localStorage.setItem('school_unified_student_pin', payload.idNumber);
   }
 
+  // Also sync with Miftaah / Tab platform keys so pupil is instantly recognized across the whole site
+  try {
+    if (payload.idNumber && payload.idNumber !== '000000000') {
+      localStorage.setItem('manasa-student-id', payload.idNumber);
+      localStorage.setItem('manasa-pid', 'id_' + payload.idNumber);
+      localStorage.setItem('manasa-name', payload.fullName);
+      localStorage.setItem('manasa-official-name', payload.fullName);
+    }
+  } catch (e) {}
+
   // 2. Restore this student's saved points, games, trophies, and achievements
   restoreStudentProgressFromVault(payload.fullName, payload.idNumber, payload.studentClass);
 
@@ -479,6 +540,14 @@ export const logoutStudent = () => {
   localStorage.removeItem('school_unified_student_name');
   localStorage.removeItem('school_unified_student_class');
   localStorage.removeItem('school_unified_student_pin');
+  // Clear Miftaah pupil session keys
+  localStorage.removeItem('manasa-student-id');
+  localStorage.removeItem('manasa-pid');
+  localStorage.removeItem('manasa-name');
+  localStorage.removeItem('manasa-official-name');
+  localStorage.removeItem('manasa-class-key');
+  localStorage.removeItem('manasa-class-arabic');
+  localStorage.removeItem('manasa-class-label');
   window.dispatchEvent(new Event('studentAuthChanged'));
   window.dispatchEvent(new Event('studentPointsUpdated'));
 };
