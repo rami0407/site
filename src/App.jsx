@@ -72,6 +72,7 @@ const QanatPage = lazyWithRetry(() => import('./components/QanatPage'));
 const AflamMaharatPage = lazyWithRetry(() => import('./components/AflamMaharatPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const HolisticMappingPage = lazyWithRetry(() => import('./components/HolisticMappingPage'));
+const RavenExamPage = lazyWithRetry(() => import('./components/RavenExamPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
 const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
 const PwaInstallPrompt = lazyWithRetry(() => import('./components/PwaInstallPrompt'));
@@ -191,6 +192,15 @@ function App() {
     currentHash.includes('holistic-mapping') ||
     currentHash.includes('holistic') ||
     currentHash.includes('mipui');
+  const isRavenTeacherView =
+    currentHash.includes('raven-teacher') ||
+    currentHash.includes('raven-monitor') ||
+    currentHash.includes('raven-admin');
+  const isRavenExamView =
+    isRavenTeacherView ||
+    currentHash.includes('raven-exam') ||
+    currentHash.includes('raven-test') ||
+    currentHash.includes('raven');
   const isStudentDismissalView = currentHash.includes('student-dismissal') || currentHash.includes('tasreeh') || currentHash.includes('dismissal');
   const isResearchQuestView = currentHash.includes('scientific-research') || 
     currentHash.includes('research-quest') || 
@@ -211,6 +221,14 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <HolisticMappingPage />
+      </Suspense>
+    );
+  }
+
+  if (isRavenExamView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <RavenExamPage initialMode={isRavenTeacherView ? 'teacher' : 'student'} />
       </Suspense>
     );
   }

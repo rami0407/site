@@ -38,6 +38,7 @@ import ScientificResearchAdminTab from './ScientificResearchAdminTab';
 import MiftaahSupervisionAdminTab from './MiftaahSupervisionAdminTab';
 import MafatihAdminTab from './MafatihAdminTab';
 import HolisticMappingPage from './HolisticMappingPage';
+import RavenExamTeacherDashboard from './RavenExamTeacherDashboard';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
@@ -5766,6 +5767,27 @@ const AdminDashboard = () => {
               🧭 מיפוי הוליסטי רב-שנתי (19 כיתות) 🔒
             </button>
 
+            {/* 🧠 تبويب: لوحة مراقبة وعلامات اختبار رافن المحوسب */}
+            <button
+              onClick={() => setActiveTab('raven-exam-admin')}
+              className={`filter-chip ${activeTab === 'raven-exam-admin' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.95rem 1.2rem',
+                fontSize: '1.02rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'raven-exam-admin' ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : '#eff6ff',
+                color: activeTab === 'raven-exam-admin' ? '#ffffff' : '#1e3a8a',
+                fontWeight: 900,
+                border: '2px solid #93c5fd',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)'
+              }}
+            >
+              <i className="fas fa-brain" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem', color: activeTab === 'raven-exam-admin' ? '#93c5fd' : '#2563eb' }}></i>
+              🧠 اختبار رافن المحوسب (مراقبة العلامات)
+            </button>
+
           </div>
         </aside>
 
@@ -9836,6 +9858,13 @@ const AdminDashboard = () => {
               {activeTab === 'holistic-mapping-admin' && (
                 <div style={{ margin: '-1.5rem' }}>
                   <HolisticMappingPage isAdminEmbed={true} />
+                </div>
+              )}
+
+              {/* 🧠 تبويب: مراقبة وعلامات اختبار رافن المحوسب */}
+              {activeTab === 'raven-exam-admin' && (
+                <div style={{ margin: '-1.5rem' }}>
+                  <RavenExamTeacherDashboard isAdminEmbed={true} />
                 </div>
               )}
 
